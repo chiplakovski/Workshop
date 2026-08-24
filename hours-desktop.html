@@ -1,0 +1,256 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><title>Varmak — Hours (Desktop)</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),
+      radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),
+      linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 60% 8%,#000 20%,transparent 80%);mask-image:radial-gradient(circle at 60% 8%,#000 20%,transparent 80%);}
+  .glow{position:absolute;left:50%;top:38%;width:460px;height:460px;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(74,144,255,0.2),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .brand .logo{font-family:'Sora';font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;}
+  .clock .time{font-family:'Sora';font-weight:600;}
+  .clock .date{font-size:11px;color:var(--steel-400);}
+
+  .modhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
+  .modhead .title{display:flex;align-items:center;gap:10px;}
+  .modhead .title .ic{background:rgba(74,144,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .modhead .title h1{font-family:'Sora';font-weight:600;letter-spacing:-.01em;}
+  .modhead .title p{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .card{background:rgba(255,255,255,.035);border:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 16px 50px rgba(0,0,0,.35);}
+  label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;font-weight:500;}
+  .fld{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:14px;padding:10px 12px;outline:none;transition:.15s;}
+  .fld:focus{border-color:var(--spark);box-shadow:0 0 0 3px rgba(74,144,255,.16);}
+  select.fld{appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="%238ea3c0" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>');background-repeat:no-repeat;background-position:right 10px center;padding-right:36px;}
+  textarea.fld{resize:vertical;line-height:1.45;}
+  .itemhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .itemhead label{margin-bottom:0;}
+  .est{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;background:rgba(74,144,255,.12);border:1px solid rgba(74,144,255,.35);font-size:11px;color:#cfe0ff;}
+  .est b{font-family:'Sora';font-weight:600;}
+  .est.warn{background:rgba(255,138,74,.12);border-color:rgba(255,138,74,.4);color:#ffd0b0;}
+  .eqrow{display:grid;grid-template-columns:1fr 96px 38px;gap:8px;margin-bottom:8px;}
+  .eqrow .eqdel{background:transparent;border:1px solid var(--field-line);color:var(--steel-400);cursor:pointer;font-size:16px;line-height:1;transition:.15s;}
+  .eqrow .eqdel:hover{border-color:#ff6b6b;color:#ff9d9d;}
+  .addeq{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px dashed var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 12px;cursor:pointer;transition:.15s;}
+  .addeq:hover{border-color:var(--spark);color:var(--ice);}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:12.5px;cursor:pointer;font-family:'Inter';transition:.15s;user-select:none;}
+  .chip:hover{color:var(--ice);border-color:rgba(185,198,218,.4);}
+  .chip.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .save{display:flex;gap:10px;}
+  .save button{font-family:'Sora';font-weight:600;font-size:14px;padding:13px;cursor:pointer;transition:.18s;border:none;}
+  .btn-primary{flex:1;background:linear-gradient(180deg,#2c6bd6,#013179);color:#fff;box-shadow:0 8px 24px rgba(1,49,121,.5);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(44,107,214,.5);}
+  .btn-ghost{background:transparent;border:1px solid var(--field-line)!important;color:var(--steel-300);padding:13px 16px;}
+  .btn-ghost:hover{border-color:var(--spark)!important;color:var(--ice);}
+  body{min-height:100vh;}
+  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:8px 40px 20px;}
+  body{padding-bottom:72px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+  .brand .logo{font-size:16px;} .clock .time{font-size:16px;}
+  .modhead{margin-bottom:16px;padding-bottom:12px;}
+  .modhead .title .ic{width:34px;height:34px;} .modhead .title h1{font-size:19px;}
+  .card{padding:30px;}
+  .fld{padding:12px 15px;font-size:15px;}
+  label{font-size:11px;margin-bottom:8px;}
+  .cardgrid{display:grid;grid-template-columns:1.3fr 1fr;gap:44px;align-items:stretch;}
+  .col{display:flex;flex-direction:column;} .colr{display:flex;flex-direction:column;}
+  .row{margin-bottom:18px;} .col .row:last-child,.colr .save{margin-bottom:0;}
+  .grid-hd{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .colr .notes-row{flex:1;display:flex;flex-direction:column;} .colr textarea{flex:1;min-height:180px;}
+  .colr .actions{margin-bottom:18px;gap:10px;}
+  @media(max-width:900px){.cardgrid{grid-template-columns:1fr;gap:22px;}.colr textarea{min-height:120px;}}
+
+  /* compact collapsible language switcher */
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
+  .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);}
+  .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
+  .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
+  .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .langmenu button.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
+
+  /* 3K / 4K scaling */
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
+  .topfull .topbar,.topfull .modhead{max-width:none;}
+  .sfooter{position:relative;z-index:2;width:100%;margin-top:40px;border-top:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0));}
+  .sfoot-inner{max-width:1100px;margin:0 auto;padding:22px 48px 28px;display:flex;gap:16px;align-items:flex-start;justify-content:center;text-align:left;}
+  .sfoot-icon{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,207,135,0.08);border:1px solid rgba(255,207,135,0.25);}
+  .sfoot-text h4{font-family:'Sora';font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#ffcf87;margin-bottom:5px;}
+  .sfoot-text p{font-size:13px;color:var(--steel-300);line-height:1.6;max-width:820px;}
+
+  @media(min-width:1800px){
+    .wrap{max-width:1560px;padding:44px 60px 90px;}
+    .card{padding:40px;} .fld{padding:14px 17px;font-size:16px;} label{font-size:12px;}
+    .modhead .title h1{font-size:23px;} .modhead .title p{font-size:13px;} .modhead .title .ic{width:40px;height:40px;}
+    .cardgrid{gap:56px;} .colr textarea{min-height:240px;}
+    .brand .logo{font-size:19px;} .clock .time{font-size:19px;} .clock .date{font-size:13px;}
+    .chip{font-size:14px;padding:11px 15px;} .addeq{font-size:14px;} .est{font-size:13px;}
+    .btn-primary,.btn-ghost{font-size:16px;padding:15px;}
+    .topfull{padding:32px 60px 0;} .sfoot-inner{max-width:1300px;padding:28px 60px 34px;}
+    .sfoot-text h4{font-size:15px;} .sfoot-text p{font-size:15px;max-width:1000px;}
+  }
+  @media(min-width:2600px){
+    .wrap{max-width:2050px;padding:64px 90px 120px;}
+    .card{padding:56px;} .fld{padding:18px 22px;font-size:20px;} label{font-size:14px;letter-spacing:.07em;}
+    .modhead .title h1{font-size:30px;} .modhead .title p{font-size:16px;} .modhead .title .ic{width:52px;height:52px;}
+    .cardgrid{gap:80px;} .colr textarea{min-height:340px;}
+    .brand .logo{font-size:24px;} .clock .time{font-size:26px;} .clock .date{font-size:16px;}
+    .chip{font-size:17px;padding:15px 20px;} .addeq{font-size:17px;} .est{font-size:16px;}
+    .btn-primary,.btn-ghost{font-size:20px;padding:20px;}
+    .who .badge{font-size:16px;padding:8px 14px;} .who .out{font-size:16px;padding:9px 15px;}
+    .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;padding:14px 18px;}
+    .topfull{padding:44px 90px 0;} .sfoot-inner{max-width:1700px;padding:40px 90px 48px;gap:22px;}
+    .sfoot-icon{width:54px;height:54px;} .sfoot-text h4{font-size:19px;} .sfoot-text p{font-size:19px;max-width:1300px;}
+  }
+
+</style></head><body>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<div class="topfull">
+  <div class="topbar">
+    <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+    <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+  </div>
+  <div class="modhead">
+    <div class="title"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div><h1 data-i="modtitle">Hours</h1><p data-i="modsub">Log time &amp; materials</p></div></div>
+    <div class="who"><div class="badge"><span class="av">MK</span><span>Marko K.</span></div><button class="out" data-i="logout">Log out</button></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="card cardgrid">
+    <div class="col">
+    <div class="row">
+      <label data-i="project">Select Project</label>
+      <select class="fld" id="project"><option value="">—</option></select>
+    </div>
+    <div class="row">
+      <div class="itemhead"><label data-i="item">Select Item</label>
+        <span class="est" id="estChip" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-i="est">Est.</span> <b id="estVal">—</b></span>
+      </div>
+      <select class="fld" id="item"><option value="">—</option></select>
+    </div>
+    <div class="row grid-hd">
+      <div><label data-i="hours">Enter Hours</label><input class="fld" id="hours" type="number" step="0.25" min="0" placeholder="0.00"></div>
+      <div><label data-i="date">Date</label><input class="fld" id="date2" type="date"></div>
+    </div>
+    <div class="row">
+      <label data-i="intcost">Equipment used</label>
+      <div id="equipList"></div>
+      <button type="button" class="addeq" id="addEq"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addeq">Add equipment</span></button>
+    </div>
+</div>
+    <div class="colr">
+    <div class="row notes-row">
+      <label data-i="notes">Notes</label>
+      <textarea class="fld" id="notes" data-i-ph="notesph" placeholder="What was done…"></textarea>
+    </div>
+    <div class="row actions">
+      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="0"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-8 8"/></svg><span data-i="addpics">Add pics</span></div>
+      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="explain">More detail</span></div>
+      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i="teamtalk">Share to team feed</span></div>
+    </div>
+    <div class="save">
+      <button class="btn-primary" data-i="savebtn" onclick="alert('Saved (demo)')">Save entry</button>
+      <button class="btn-ghost" data-i="savenew" onclick="alert('Saved + new (demo)')">Save &amp; new</button>
+    </div>
+</div>
+  </div>
+</div>
+
+<footer class="sfooter">
+  <div class="sfoot-inner">
+    <div class="sfoot-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffcf87" stroke-width="2"><path d="M12 2l9 4v6c0 5-3.5 8.5-9 10-5.5-1.5-9-5-9-10V6l9-4z"/><path d="M12 8v4M12 16h.01"/></svg></div>
+    <div class="sfoot-text">
+      <h4 data-i="safetytitle">Safety information</h4>
+      <p data-i="safetybody">Placeholder — add workshop safety rules, required PPE, machine-specific warnings and emergency contacts here.</p>
+    </div>
+  </div>
+</footer>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu">
+    <button data-lang="sv">Svenska</button>
+    <button data-lang="en">English</button>
+    <button data-lang="mk">Makedonski</button>
+  </div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language">
+    <svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+    <span class="cur" id="langcur">EN</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</div>
+<script>
+  const DATA={
+    "P-2401 · Bakery line — Åhus":[{n:"Frame weldment",est:14},{n:"Conveyor guard",est:6},{n:"Drive mount plate",est:3.5}],
+    "P-2402 · Folding machine retrofit":[{n:"Panel wiring",est:20},{n:"HMI bracket",est:2},{n:"Safety cover",est:5}],
+    "P-2403 · Service — Malmö":[{n:"On-site inspection",est:4},{n:"Bearing replacement",est:8}]
+  };
+  const EQUIP=["Plasma cutter 5mm","Folding machine","Welding machine","Hand tools"];
+  const T={
+    sv:{modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",safetytitle:"Säkerhetsinformation",safetybody:"Platshållare — lägg till verkstadens säkerhetsregler, obligatorisk skyddsutrustning, maskinspecifika varningar och nödkontakter här.",locale:"sv-SE"},
+    en:{modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",safetytitle:"Safety information",safetybody:"Placeholder — add workshop safety rules, required PPE, machine-specific warnings and emergency contacts here.",locale:"en-GB"},
+    mk:{modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",safetytitle:"Bezbednosni informacii",safetybody:"Placeholder — dodadi gi bezbednosnite pravila na rabotilnicata, potrebnata zaštitna oprema, predupreduvanja za mašinite i itni kontakti tuka.",locale:"mk"}
+  };
+  let current="en";
+  function setLang(code){current=code;const t=T[code];
+    document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t[el.getAttribute('data-i')]);
+    document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
+    document.documentElement.lang=code==="mk"?"mk-Latn":code;var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();
+    document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+    refreshEqLang();tick();}
+  document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
+  const proj=document.getElementById('project'),item=document.getElementById('item');
+  Object.keys(DATA).forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;proj.appendChild(o);});
+  proj.addEventListener('change',()=>{item.innerHTML='<option value="">—</option>';(DATA[proj.value]||[]).forEach(it=>{const o=document.createElement('option');o.value=it.n;o.dataset.est=it.est;o.textContent=it.n;item.appendChild(o);});updateEst();});
+  item.addEventListener('change',updateEst);document.getElementById('hours').addEventListener('input',updateEst);
+  function updateEst(){const chip=document.getElementById('estChip'),val=document.getElementById('estVal');const sel=item.options[item.selectedIndex];
+    if(sel&&sel.dataset.est){chip.style.display='inline-flex';val.textContent=sel.dataset.est+' h';const h=parseFloat(document.getElementById('hours').value||0);chip.classList.toggle('warn',h>parseFloat(sel.dataset.est));}else chip.style.display='none';}
+  const equipList=document.getElementById('equipList');
+  function addEqRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
+    const sel=document.createElement('select');sel.className='fld eqsel';const ph=document.createElement('option');ph.value='';ph.textContent=t.eqph;sel.appendChild(ph);
+    EQUIP.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+    const hrs=document.createElement('input');hrs.className='fld eqhrs';hrs.type='number';hrs.step='0.25';hrs.min='0';hrs.placeholder=t.hrs;
+    const del=document.createElement('button');del.type='button';del.className='eqdel';del.textContent='×';del.onclick=()=>row.remove();
+    row.append(sel,hrs,del);equipList.appendChild(row);}
+  document.getElementById('addEq').addEventListener('click',addEqRow);
+  function refreshEqLang(){const t=T[current];document.querySelectorAll('.eqsel').forEach(s=>{if(s.options[0])s.options[0].textContent=t.eqph;});document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);}
+  function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+    try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+  document.getElementById('date2').valueAsDate=new Date();
+  setLang("en");setInterval(tick,10000);addEqRow();
+  const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+
+  (function(){var lc=document.getElementById('langc'),lt=document.getElementById('langtoggle');
+    if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});
+    document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+</script></body></html>

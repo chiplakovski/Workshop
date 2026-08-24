@@ -1,0 +1,327 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Hub</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),
+      radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),
+      linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:34%;width:520px;height:520px;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(74,144,255,0.18),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  /* full-width top bar */
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;}
+  .clock .time{font-family:'Sora';font-weight:600;font-size:16px;}
+  .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:34px 40px 90px;}
+  .hubtitle{margin-bottom:20px;}
+  .hubtitle h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;}
+  .hubtitle p{font-size:12px;color:var(--steel-400);margin-top:2px;}
+
+  .hub{display:grid;grid-template-columns:3fr 1.15fr;gap:18px;align-items:stretch;}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:18px;}
+  .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:190px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;cursor:pointer;overflow:hidden;
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transition:transform .18s,border-color .18s,box-shadow .18s,background .18s;}
+  .tile:hover{transform:translateY(-3px);border-color:rgba(74,144,255,.6);background:rgba(74,144,255,.07);box-shadow:0 16px 44px rgba(1,49,121,.5);}
+  .tile .ic{width:46px;height:46px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .tile h3{font-family:'Sora';font-weight:600;font-size:17px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;}
+  .tile p{font-size:12px;color:var(--steel-400);}
+  .tile .arrow{position:absolute;top:20px;right:18px;color:var(--steel-400);opacity:0;transform:translateX(-4px);transition:.18s;}
+  .tile:hover .arrow{opacity:1;transform:translateX(0);color:var(--spark);}
+
+  /* team talk panel */
+  .teamtalk{display:flex;flex-direction:column;background:rgba(255,255,255,.035);border:1px solid var(--line);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);overflow:hidden;}
+  .tt-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);}
+  .tt-head .ic{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .tt-head h3{font-family:'Sora';font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;}
+  .tt-head p{font-size:10.5px;color:var(--steel-400);}
+  .tt-feed{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow:auto;}
+  .msg{display:flex;gap:10px;}
+  .msg .mav{flex:none;width:26px;height:26px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .msg .mbody .mname{font-size:12px;font-weight:600;} .msg .mbody .mname span{color:var(--steel-400);font-weight:400;font-size:10.5px;margin-left:6px;}
+  .msg .mbody .mtext{font-size:12.5px;color:var(--steel-300);line-height:1.5;margin-top:2px;}
+  .tt-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);}
+  .tt-input input{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:10px 12px;outline:none;}
+  .tt-input input:focus{border-color:var(--spark);}
+  .tt-input button{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;padding:0 14px;cursor:pointer;display:flex;align-items:center;}
+
+  /* language switcher */
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
+  .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
+  .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
+  .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .langmenu button.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
+
+
+  .tile .art{position:absolute;right:-6%;bottom:-9%;width:58%;max-width:210px;height:auto;color:var(--steel-400);opacity:.5;pointer-events:none;z-index:0;
+    -webkit-mask-image:linear-gradient(135deg,transparent 12%,#000 80%);mask-image:linear-gradient(135deg,transparent 12%,#000 80%);transition:opacity .18s,color .18s;}
+  .tile:hover .art{color:var(--spark);opacity:.72;}
+  .tile .ic,.tile>div:not(.art),.tile .arrow{position:relative;z-index:1;}
+  .teamtalk{position:relative;overflow:hidden;}
+  .teamtalk .ttart{position:absolute;right:-6%;bottom:-3%;width:52%;max-width:220px;height:auto;color:var(--steel-400);opacity:.4;pointer-events:none;z-index:0;
+    -webkit-mask-image:linear-gradient(135deg,transparent 22%,#000 88%);mask-image:linear-gradient(135deg,transparent 22%,#000 88%);}
+  .tt-head,.tt-feed,.tt-input{position:relative;z-index:1;}
+
+
+  /* DAB / web radio widget (bottom-right) */
+  .radio{position:fixed;right:18px;bottom:16px;z-index:40;font-family:'Inter';}
+  .radio-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:rgba(7,26,51,.82);border:1px solid rgba(142,163,192,0.16);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .radio-bar:hover{border-color:rgba(185,198,218,0.35);}
+  .radio .rico{width:16px;height:16px;color:var(--spark);flex:none;}
+  .radio .rstation{font-size:12px;font-weight:600;letter-spacing:.02em;min-width:78px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ice);}
+  .radio .rsub{font-size:9.5px;color:var(--steel-400);letter-spacing:.06em;text-transform:uppercase;}
+  .radio .rmeta{display:flex;flex-direction:column;gap:1px;}
+  .radio .eq{display:flex;align-items:flex-end;gap:2px;height:16px;width:20px;}
+  .radio .eq span{flex:1;background:var(--spark);height:4px;opacity:.5;}
+  .radio.playing .eq span{animation:eq .9s ease-in-out infinite;}
+  .radio .eq span:nth-child(2){animation-delay:.15s;} .radio .eq span:nth-child(3){animation-delay:.3s;} .radio .eq span:nth-child(4){animation-delay:.45s;}
+  @keyframes eq{0%,100%{height:4px;opacity:.45}50%{height:15px;opacity:1}}
+  @media (prefers-reduced-motion:reduce){.radio.playing .eq span{animation:none;height:9px;}}
+  .radio .rbtn{width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;transition:.15s;}
+  .radio .rbtn:hover{filter:brightness(1.12);}
+  .radio .rexp{width:28px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;color:var(--steel-400);}
+  .radio .rexp:hover{color:var(--ice);}
+  .radio .rexp svg{transition:transform .18s;} .radio.open .rexp svg{transform:rotate(180deg);}
+  .radio-panel{position:absolute;right:0;bottom:calc(100% + 6px);width:230px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .radio.open .radio-panel{opacity:1;visibility:visible;transform:translateY(0);}
+  .radio-panel .ph{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel-400);padding:11px 14px 7px;}
+  .radio-panel .st{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:9px 14px;cursor:pointer;transition:.13s;}
+  .radio-panel .st:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .radio-panel .st.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
+  .radio-panel .vol{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(142,163,192,0.14);}
+  .radio-panel .vol svg{width:15px;height:15px;color:var(--steel-400);flex:none;}
+  .radio-panel .vol input{flex:1;accent-color:var(--spark);}
+
+  @media(max-width:1000px){
+    .hub{grid-template-columns:1fr;} .teamtalk{min-height:420px;}
+    .tiles{grid-template-columns:repeat(2,1fr);grid-template-rows:auto;}
+  }
+  @media(max-width:560px){ .tiles{grid-template-columns:1fr;} .topfull{padding:18px 18px 0;} .wrap{padding:24px 18px 90px;} }
+
+  /* 3K / 4K scaling */
+  @media(min-width:1800px){
+    .wrap{max-width:1620px;padding:48px 60px 100px;}
+    .topfull{padding:32px 60px 0;}
+    .hub{gap:24px;} .tiles{gap:24px;} .tile{min-height:240px;padding:26px;}
+    .tile .ic{width:56px;height:56px;} .tile h3{font-size:20px;} .tile p{font-size:14px;}
+    .hubtitle h1{font-size:26px;} .hubtitle p{font-size:14px;}
+    .brand .logo{font-size:19px;} .clock .time{font-size:19px;} .clock .date{font-size:13px;}
+    .tt-head h3{font-size:17px;} .tt-feed .mtext{font-size:14px;} .tt-input input{font-size:15px;}
+  }
+  @media(min-width:2600px){
+    .wrap{max-width:2200px;padding:70px 90px 130px;}
+    .topfull{padding:46px 90px 0;}
+    .hub{gap:34px;} .tiles{gap:34px;} .tile{min-height:320px;padding:38px;}
+    .tile .ic{width:74px;height:74px;} .tile h3{font-size:27px;} .tile p{font-size:18px;}
+    .hubtitle h1{font-size:34px;} .hubtitle p{font-size:18px;}
+    .brand .logo{font-size:24px;} .clock .time{font-size:26px;} .clock .date{font-size:16px;}
+    .who .badge{font-size:16px;padding:8px 14px;} .who .out{font-size:16px;padding:9px 15px;}
+    .tt-head h3{font-size:21px;} .tt-feed .mtext{font-size:17px;} .tt-input input{font-size:18px;padding:14px 16px;}
+    .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;padding:14px 18px;}
+  }
+</style></head><body>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<div class="topfull">
+  <div class="topbar">
+    <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se</div></div>
+    <div class="topright">
+      <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+      <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="hubtitle"><h1 data-i="welcome">Choose a module</h1><p data-i="welcomesub">Full access · all workshop tools</p></div>
+  <div class="hub">
+    <div class="tiles">
+      <div class="tile" onclick="alert('Open: Hours')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="56" cy="62" r="38"/><path d="M56 38v24l17 11"/><path d="M56 18v6M56 100v6M16 62h6M90 62h6"/><circle cx="98" cy="28" r="11"/><path d="M98 23v-5M98 38v-4M93 28h-5M108 28h-4"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div><h3 data-i="m_hours">Hours</h3><p data-i="c_hours">Log time & materials</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="tile" onclick="alert('Open: Projects')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 46h30l8 8h50v52H16z"/><path d="M16 46v-9h24l8 9"/><path d="M30 70h62M30 82h62M30 94h40"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
+        <div><h3 data-i="m_projects">Projects</h3><p data-i="c_projects">Jobs & customers</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="tile" onclick="alert('Open: Estimations')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/><path d="M22 46l19-15 17 9 22-24"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
+        <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="tile" onclick="alert('Open: Store')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M58 20l36 19v42L58 100 22 81V39z"/><path d="M22 39l36 19 36-19M58 58v42"/><path d="M40 29l36 19"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
+        <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="tile" onclick="alert('Open: Jobcard')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="28" y="26" width="54" height="70"/><rect x="45" y="19" width="20" height="13"/><path d="M38 50h34M38 63h34M38 76h20"/><path d="M78 78l9 9 16-18" stroke-width="4"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
+        <div><h3 data-i="m_jobcard">Jobcard</h3><p data-i="c_jobcard">Work orders</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="tile" onclick="alert('Open: Reports')">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M32 18h36l22 22v62H32z"/><path d="M68 18v22h22"/><path d="M44 62h34M44 74h34M44 86h20"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <div><h3 data-i="m_reports">Reports</h3><p data-i="c_reports">Inspection & test</p></div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div class="teamtalk">
+      <div class="ttart"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 34h58a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H42l-16 14V76h-6a8 8 0 0 1-8-8V42a8 8 0 0 1 8-8z"/><path d="M34 50h30M34 62h20"/></svg></div>
+      <div class="tt-head">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div><h3 data-i="m_team">Team Talk</h3><p data-i="c_team">Internal feed</p></div>
+      </div>
+      <div class="tt-feed">
+        <div class="msg"><div class="mav">MK</div><div class="mbody"><div class="mname">Marko K.<span>08:12</span></div><div class="mtext">Panel wiring on P-2402 done, moving to HMI bracket.</div></div></div>
+        <div class="msg"><div class="mav">EN</div><div class="mbody"><div class="mname">Elena N.<span>09:40</span></div><div class="mtext">Steel delivery for the bakery line arrives Thursday.</div></div></div>
+        <div class="msg"><div class="mav">AK</div><div class="mbody"><div class="mname">Aleksandar<span>10:05</span></div><div class="mtext">Good. Log plasma cutter hours on that job please.</div></div></div>
+      </div>
+      <div class="tt-input">
+        <input type="text" data-i-ph="ttph" placeholder="Write to team…">
+        <button><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="radio" id="radio">
+  <div class="radio-panel" id="radioPanel">
+    <div class="ph">Stations</div>
+    <div id="stationList"></div>
+    <div class="vol">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
+      <input type="range" id="radioVol" min="0" max="1" step="0.05" value="0.7">
+    </div>
+  </div>
+  <div class="radio-bar">
+    <svg class="rico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16v10H4z"/><circle cx="16" cy="15" r="2.5"/><path d="M8 14h2M8 17h2M4 10l13-5"/></svg>
+    <div class="rmeta"><span class="rstation" id="radioName">P4 Malmöhus</span><span class="rsub">DAB · Live</span></div>
+    <div class="eq"><span></span><span></span><span></span><span></span></div>
+    <button class="rbtn" id="radioBtn" aria-label="Play"><svg id="radioIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="rexp" id="radioExp" aria-label="Stations"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+  <audio id="radioAudio" preload="none"></audio>
+</div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu">
+    <button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button>
+  </div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language">
+    <svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+    <span class="cur" id="langcur">EN</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</div>
+
+<script>
+  const T={
+    sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
+      m_hours:"Timmar",c_hours:"Registrera tid & material",m_projects:"Projekt",c_projects:"Jobb & kunder",
+      m_estim:"Kalkyler",c_estim:"Offerter & kostnad",m_store:"Lager",c_store:"Inventarie & delar",
+      m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",m_reports:"Rapporter",c_reports:"Besiktning & test",
+      m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
+    en:{role:"Admin",logout:"Log out",welcome:"Choose a module",welcomesub:"Full access · all workshop tools",
+      m_hours:"Hours",c_hours:"Log time & materials",m_projects:"Projects",c_projects:"Jobs & customers",
+      m_estim:"Estimations",c_estim:"Quotes & costing",m_store:"Store",c_store:"Inventory & parts",
+      m_jobcard:"Jobcard",c_jobcard:"Work orders",m_reports:"Reports",c_reports:"Inspection & test",
+      m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
+    mk:{role:"Admin",logout:"Odjavi se",welcome:"Izberi modul",welcomesub:"Poln pristap · site alatki",
+      m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_projects:"Proekti",c_projects:"Raboti i klienti",
+      m_estim:"Procenki",c_estim:"Ponudi i trošoci",m_store:"Magacin",c_store:"Inventar i delovi",
+      m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",m_reports:"Izveštai",c_reports:"Inspekcija i test",
+      m_team:"Tim-feed",c_team:"Vnatrešen kanal",ttph:"Napiši do timot…",locale:"mk"}
+  };
+  let current="en";
+  function setLang(code){current=code;const t=T[code];
+    document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t[el.getAttribute('data-i')]);
+    document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
+    document.documentElement.lang=code==="mk"?"mk-Latn":code;
+    document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+    var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();
+    tick();}
+  document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
+  function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+    try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+  setLang("en");setInterval(tick,10000);
+  const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+  (function(){var lc=document.getElementById('langc'),lt=document.getElementById('langtoggle');
+    if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});
+    document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+
+  // ── web radio (DAB stations stream online) ──
+  const STATIONS=[
+    {name:"P4 Malmöhus",url:"https://http-live.sr.se/p4malmo-mp3-192"},
+    {name:"Sveriges Radio P1",url:"https://http-live.sr.se/p1-mp3-192"},
+    {name:"Sveriges Radio P2",url:"https://http-live.sr.se/p2-mp3-192"},
+    {name:"Sveriges Radio P3",url:"https://http-live.sr.se/p3-mp3-192"},
+    {name:"Mix Megapol",url:"https://fm02-icecast.mediatop.se/mix_128"}
+  ];
+  const rAudio=document.getElementById('radioAudio'),rBtn=document.getElementById('radioBtn'),rIcon=document.getElementById('radioIcon'),
+        rName=document.getElementById('radioName'),rExp=document.getElementById('radioExp'),rWrap=document.getElementById('radio'),
+        rPanel=document.getElementById('radioPanel'),rVol=document.getElementById('radioVol'),rList=document.getElementById('stationList');
+  let curStation=0;
+  rAudio.volume=parseFloat(rVol.value);
+  STATIONS.forEach((s,i)=>{const b=document.createElement('button');b.className='st';b.textContent=s.name;b.onclick=()=>{selectStation(i);};rList.appendChild(b);});
+  function markActive(){rList.querySelectorAll('.st').forEach((b,i)=>b.classList.toggle('active',i===curStation));}
+  markActive();
+  const PLAY='<path d="M8 5v14l11-7z"/>', PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+  function play(){rAudio.src=STATIONS[curStation].url;const p=rAudio.play();
+    if(p)p.then(()=>{}).catch(()=>{ /* stream blocked in preview; UI still reflects intent */ });
+    rWrap.classList.add('playing');rIcon.innerHTML=PAUSE;}
+  function pause(){rAudio.pause();rWrap.classList.remove('playing');rIcon.innerHTML=PLAY;}
+  function selectStation(i){curStation=i;rName.textContent=STATIONS[i].name;markActive();play();}
+  rBtn.addEventListener('click',()=>{rWrap.classList.contains('playing')?pause():play();});
+  rExp.addEventListener('click',e=>{e.stopPropagation();rWrap.classList.toggle('open');});
+  document.addEventListener('click',e=>{if(!rWrap.contains(e.target))rWrap.classList.remove('open');});
+  rVol.addEventListener('input',()=>{rAudio.volume=parseFloat(rVol.value);});
+
+</script>
+</body></html>
