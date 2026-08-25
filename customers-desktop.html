@@ -1,0 +1,361 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Customers</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;
+    --st-draft:#8ea3c0;--st-quotation:#9db4d8;--st-approved:#4a90ff;--st-planned:#6fd1ff;--st-active:#4a90ff;--st-hold:#ffb057;--st-completed:#4ad48a;--st-closed:#b9c6da;--st-cancelled:#ff6b6b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:26%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1360px;margin:0 auto;padding:26px 40px 90px;}
+  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
+  .modhead .ttl{display:flex;align-items:center;gap:11px;}
+  .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .modhead h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .search{position:relative;flex:1;min-width:220px;}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--steel-400);}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:14px;padding:11px 12px 11px 36px;outline:none;}
+  .search input:focus{border-color:var(--spark);}
+  .tbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:13px;padding:11px 15px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+
+  .kpistrip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+  .kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px 18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .kpi .kl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:7px;}
+  .kpi .kv{font-family:'Sora';font-size:22px;font-weight:600;} .kpi .kv.warn{color:var(--warn);}
+  @media(max-width:760px){.kpistrip{grid-template-columns:1fr 1fr;}}
+
+  .ptable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);}
+  .ptable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px;}
+  .ptable th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:11px 12px;white-space:nowrap;}
+  .ptable td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .ptable tr.prow2{cursor:pointer;transition:.14s;}
+  .ptable tr.prow2:hover{background:rgba(74,144,255,.07);}
+  .ptable tr:last-child td{border-bottom:none;}
+  .pnum{font-family:'Sora';font-weight:600;color:var(--steel-300);font-size:12px;white-space:nowrap;}
+  .pname{font-weight:600;} .pcust2{color:var(--steel-400);font-size:11.5px;}
+  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  .sbadge{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;font-weight:600;white-space:nowrap;border:1px solid;}
+  .sbadge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
+  .sbadge.draft{color:var(--st-draft);border-color:rgba(142,163,192,.4);background:rgba(142,163,192,.1);}
+  .sbadge.quotation{color:var(--st-quotation);border-color:rgba(157,180,216,.4);background:rgba(157,180,216,.12);}
+  .sbadge.approved{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .sbadge.planned{color:var(--st-planned);border-color:rgba(111,209,255,.4);background:rgba(111,209,255,.1);}
+  .sbadge.active{color:#cfe0ff;border-color:rgba(74,144,255,.55);background:rgba(74,144,255,.18);}
+  .sbadge.hold{color:var(--st-hold);border-color:rgba(255,176,87,.45);background:rgba(255,176,87,.12);}
+  .sbadge.completed{color:var(--st-completed);border-color:rgba(74,212,138,.45);background:rgba(74,212,138,.12);}
+  .sbadge.closed{color:var(--st-closed);border-color:rgba(185,198,218,.35);background:rgba(185,198,218,.08);}
+  .sbadge.cancelled{color:var(--st-cancelled);border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.12);}
+
+  .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:20px;}
+  .dhead h2{font-family:'Sora';font-weight:600;font-size:22px;} .dhead .pnum{font-size:13px;margin-top:4px;display:inline-block;}
+  .dfacts{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:22px;}
+  .dfacts .df .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;} .dfacts .df .v{font-size:14px;font-weight:600;}
+
+  .ovgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+  .ovcard{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;}
+  .ovcard h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+  .ovcard h4 svg{width:14px;height:14px;color:var(--spark);}
+  .ovbig{font-family:'Sora';font-size:24px;font-weight:600;} .ovbig.warn{color:var(--warn);}
+  @media(max-width:1050px){.ovgrid{grid-template-columns:1fr 1fr;} .dfacts{gap:16px;}}
+
+  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:12px;letter-spacing:.03em;text-transform:uppercase;padding:12px 15px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .ptabs button:hover{color:var(--ice);}
+  .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
+  .tabpanel{min-height:220px;}
+  .card2{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;}
+  .tabhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .tabhead h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);}
+
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:480px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus{border-color:var(--spark);}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+
+  .empty2{text-align:center;color:var(--steel-400);padding:34px;font-size:13px;}
+
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+
+  @media(min-width:1800px){.wrap{max-width:1760px;padding:34px 60px 100px;} .topfull{padding:32px 60px 0;} .modhead h1{font-size:26px;}}
+  @media(min-width:2600px){.wrap{max-width:2300px;padding:48px 90px 130px;} .topfull{padding:46px 90px 0;} .modhead h1{font-size:34px;} .modhead .ic{width:54px;height:54px;}}
+</style></head><body>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<div class="topfull"><div class="topbar">
+  <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+  <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+</div></div>
+
+<div class="wrap">
+  <div class="modhead">
+    <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
+    <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div><h1 data-i="ctitle">Customers</h1><p data-i="csub">Contacts & accounts</p></div></div>
+  </div>
+
+  <div id="listView"></div>
+  <div id="detailView" style="display:none;"></div>
+</div>
+
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+function fmtD(d){return d?d:"—";}
+
+let CUSTOMERS=[
+  {id:1,name:"Sanus Glutenfri AB",org:"559812-4471",contact:"Per Nilsson",email:"per@sanusglutenfri.se"},
+  {id:2,name:"Schröder Nordic",org:"556234-9012",contact:"Anna Berg",email:"anna@schroder.se"},
+  {id:3,name:"Lund Konditori",org:"559045-1123",contact:"Sofia L.",email:"sofia@lundkond.se"},
+  {id:4,name:"Helsingborg Foods",org:"556678-3345",contact:"Erik S.",email:"erik@hbgfoods.se"},
+  {id:5,name:"Malmö Livs",org:"559211-7789",contact:"Karim A.",email:"info@malmolivs.se"},
+  {id:6,name:"Ystad Bageri",org:"556990-2201",contact:"Nina H.",email:"nina@ystadbageri.se"},
+  {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se"}
+];
+let nextCustId=8;
+
+// mirrors projects-desktop.html's PROJECTS (trimmed to the fields this screen needs)
+const PROJECTS=[
+  {no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,status:"active",quotedValue:92000,deadline:"2026-09-10"},
+  {no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,status:"quotation",quotedValue:145000,deadline:"2026-09-20"},
+  {no:"P-26-0003",name:"Mixer Overhaul — Preliminary",customerId:3,status:"draft",quotedValue:0,deadline:""},
+  {no:"P-26-0004",name:"Guard Fabrication",customerId:4,status:"completed",quotedValue:58000,deadline:"2026-06-20"},
+  {no:"P-26-0005",name:"Service — Malmö Slicer",customerId:5,status:"closed",quotedValue:16500,deadline:"2026-08-20"},
+  {no:"P-26-0006",name:"Spiral Mixer Service",customerId:6,status:"hold",quotedValue:24000,deadline:"2026-09-05"},
+  {no:"P-26-0007",name:"Packing Line Extension",customerId:7,status:"cancelled",quotedValue:210000,deadline:"2026-10-01"},
+  {no:"P-26-0008",name:"Bearing Replacement",customerId:5,status:"approved",quotedValue:14000,deadline:"2026-09-15"},
+  {no:"P-26-0009",name:"HMI Upgrade",customerId:2,status:"planned",quotedValue:31000,deadline:"2026-09-18"}
+];
+const OPEN_STATUSES=["quotation","approved","planned","active","hold"];
+
+const T={
+  en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Customers",ctitle:"Customers",csub:"Contacts & accounts",
+    searchph:"Search name, org. number, contact…",newcust:"+ New customer",
+    kpi_customers:"Customers",kpi_quoted:"Total quoted value",kpi_open:"Open projects",kpi_hold:"On hold",
+    th_name:"Customer",th_org:"Org. number",th_contact:"Contact",th_projects:"Projects",th_quoted:"Quoted value",th_status:"Latest status",
+    empty:"No customers match your search.",
+    tab_overview:"Overview",tab_projects:"Projects",
+    ov_projects:"Projects",ov_quoted:"Total quoted",ov_open:"Open",ov_realized:"Realized (completed + closed)",
+    d_contact:"Contact person",d_email:"Email",d_org:"Org. number",
+    proj_th_no:"Project #",proj_th_name:"Project name",proj_th_status:"Status",proj_th_quoted:"Quoted value",proj_th_deadline:"Deadline",proj_empty:"No projects for this customer yet.",
+    nc_title:"New customer",nc_name:"Customer name",nc_org:"Org. number",nc_contact:"Contact person",nc_email:"Email",nc_save:"Add customer",nc_cancel:"Cancel",
+    st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",st_none:"—",
+    locale:"en-GB"},
+  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Kunder",ctitle:"Kunder",csub:"Kontakter & konton",
+    searchph:"Sök namn, org.nr, kontakt…",newcust:"+ Ny kund",
+    kpi_customers:"Kunder",kpi_quoted:"Totalt offertvärde",kpi_open:"Öppna projekt",kpi_hold:"Pausade",
+    th_name:"Kund",th_org:"Org.nr",th_contact:"Kontakt",th_projects:"Projekt",th_quoted:"Offertvärde",th_status:"Senaste status",
+    empty:"Inga kunder matchar din sökning.",
+    tab_overview:"Översikt",tab_projects:"Projekt",
+    ov_projects:"Projekt",ov_quoted:"Totalt offertvärde",ov_open:"Öppna",ov_realized:"Realiserat (klart + stängt)",
+    d_contact:"Kontaktperson",d_email:"E-post",d_org:"Org.nr",
+    proj_th_no:"Projekt-nr",proj_th_name:"Projektnamn",proj_th_status:"Status",proj_th_quoted:"Offertvärde",proj_th_deadline:"Deadline",proj_empty:"Inga projekt för denna kund ännu.",
+    nc_title:"Ny kund",nc_name:"Kundnamn",nc_org:"Org.nr",nc_contact:"Kontaktperson",nc_email:"E-post",nc_save:"Lägg till kund",nc_cancel:"Avbryt",
+    st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänd",st_planned:"Planerad",st_active:"Aktiv",st_hold:"Pausad",st_completed:"Klar",st_closed:"Stängd",st_cancelled:"Avbruten",st_none:"—",
+    locale:"sv-SE"},
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",back_list:"Klienti",ctitle:"Klienti",csub:"Kontakti i smetki",
+    searchph:"Prebaraj ime, EMBS, kontakt…",newcust:"+ Nov klient",
+    kpi_customers:"Klienti",kpi_quoted:"Vkupno ponudena vrednost",kpi_open:"Otvoreni proekti",kpi_hold:"Pauzirani",
+    th_name:"Klient",th_org:"EMBS",th_contact:"Kontakt",th_projects:"Proekti",th_quoted:"Ponudena vrednost",th_status:"Posleden status",
+    empty:"Nema klienti što odgovaraat na baraњeto.",
+    tab_overview:"Pregled",tab_projects:"Proekti",
+    ov_projects:"Proekti",ov_quoted:"Vkupno ponudeno",ov_open:"Otvoreni",ov_realized:"Realizirano (završeno + zatvoreno)",
+    d_contact:"Kontakt lice",d_email:"E-pošta",d_org:"EMBS",
+    proj_th_no:"Proekt br.",proj_th_name:"Ime na proekt",proj_th_status:"Status",proj_th_quoted:"Ponudena vrednost",proj_th_deadline:"Rok",proj_empty:"Sè uште nema proekti za ovoj klient.",
+    nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"EMBS",nc_contact:"Kontakt lice",nc_email:"E-pošta",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
+    st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",st_none:"—",
+    locale:"mk"}
+};
+
+let LANG="en",VIEW="list",currentId=null,activeTab="overview",query="";
+
+function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
+function custStats(id){const ps=custProjects(id);
+  const quoted=ps.reduce((a,b)=>a+b.quotedValue,0);
+  const open=ps.filter(p=>OPEN_STATUSES.includes(p.status)).length;
+  const realized=ps.filter(p=>p.status==='completed'||p.status==='closed').reduce((a,b)=>a+b.quotedValue,0);
+  const latest=ps[ps.length-1];
+  return{count:ps.length,quoted,open,realized,latestStatus:latest?latest.status:null};}
+function statusBadge(s){const t=T[LANG];if(!s)return `<span class="sbadge draft">${t.st_none}</span>`;return `<span class="sbadge ${s}">${t["st_"+s]}</span>`;}
+
+function renderList(){
+  const t=T[LANG];
+  const kQuoted=CUSTOMERS.reduce((a,c)=>a+custStats(c.id).quoted,0);
+  const kOpen=PROJECTS.filter(p=>OPEN_STATUSES.includes(p.status)).length;
+  const kHold=CUSTOMERS.filter(c=>custProjects(c.id).some(p=>p.status==='hold')).length;
+
+  const q=query.trim().toLowerCase();
+  const rows=CUSTOMERS.filter(c=>!q||c.name.toLowerCase().includes(q)||c.org.toLowerCase().includes(q)||c.contact.toLowerCase().includes(q))
+    .sort((a,b)=>custStats(b.id).quoted-custStats(a.id).quoted);
+
+  const trs=rows.map(c=>{const s=custStats(c.id);
+    return `<tr class="prow2" onclick="openCustomer(${c.id})">
+      <td><div class="pname">${c.name}</div></td>
+      <td class="pnum">${c.org}</td>
+      <td><div>${c.contact}</div><div class="pcust2">${c.email}</div></td>
+      <td class="rnum">${s.count}</td>
+      <td class="rnum">${fmt(s.quoted)}</td>
+      <td>${statusBadge(s.latestStatus)}</td>
+    </tr>`;}).join("");
+
+  $("listView").innerHTML=`
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl">${t.kpi_customers}</div><div class="kv">${CUSTOMERS.length}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_quoted}</div><div class="kv">${fmt(kQuoted)}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_open}</div><div class="kv">${kOpen}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_hold}</div><div class="kv ${kHold?'warn':''}">${kHold}</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
+      <button class="tbtn primary" onclick="openNewCustomer()">${t.newcust}</button>
+    </div>
+    <div class="ptable-wrap"><table class="ptable"><thead><tr>
+      <th>${t.th_name}</th><th>${t.th_org}</th><th>${t.th_contact}</th><th>${t.th_projects}</th><th>${t.th_quoted}</th><th>${t.th_status}</th>
+    </tr></thead><tbody>${trs||`<tr><td colspan="6" class="empty2">${t.empty}</td></tr>`}</tbody></table></div>`;
+  $("search").addEventListener('input',e=>{query=e.target.value;renderList();});
+}
+
+function openCustomer(id){currentId=id;VIEW="detail";activeTab="overview";render();}
+
+function renderDetail(){
+  const t=T[LANG];const c=CUSTOMERS.find(x=>x.id===currentId);if(!c)return;
+  const s=custStats(c.id);
+  $("detailView").innerHTML=`
+    <div class="dhead">
+      <div><h2>${c.name}</h2><span class="pnum">${t.d_org}: ${c.org}</span></div>
+    </div>
+    <div class="ovgrid">
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg>${t.ov_projects}</h4><div class="ovbig">${s.count}</div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>${t.ov_quoted}</h4><div class="ovbig">${fmt(s.quoted)}</div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.ov_open}</h4><div class="ovbig ${s.open?'warn':''}">${s.open}</div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${t.ov_realized}</h4><div class="ovbig">${fmt(s.realized)}</div></div>
+    </div>
+    <div class="ptabs">
+      <button data-tab="overview" class="${activeTab==='overview'?'on':''}">${t.tab_overview}</button>
+      <button data-tab="projects" class="${activeTab==='projects'?'on':''}">${t.tab_projects}</button>
+    </div>
+    <div class="tabpanel" id="tabpanel"></div>`;
+  document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>{activeTab=b.getAttribute('data-tab');renderDetail();}));
+  renderTab(c);
+}
+
+function renderTab(c){
+  const t=T[LANG];
+  if(activeTab==='projects'){
+    const ps=custProjects(c.id);
+    const rows=ps.map(p=>`<tr class="prow2" onclick="location.href='projects-desktop.html'">
+      <td class="pnum">${p.no}</td><td class="pname">${p.name}</td><td>${statusBadge(p.status)}</td>
+      <td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${fmtD(p.deadline)}</td></tr>`).join("");
+    $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_projects}</h3></div>
+      <div class="ptable-wrap"><table class="ptable"><thead><tr><th>${t.proj_th_no}</th><th>${t.proj_th_name}</th><th>${t.proj_th_status}</th><th>${t.proj_th_quoted}</th><th>${t.proj_th_deadline}</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="5" class="empty2">${t.proj_empty}</td></tr>`}</tbody></table></div></div>`;
+  }else{
+    $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_overview}</h3></div>
+      <div class="dfacts" style="margin-bottom:0;">
+        <div class="df"><div class="k">${t.d_org}</div><div class="v">${c.org}</div></div>
+        <div class="df"><div class="k">${t.d_contact}</div><div class="v">${c.contact}</div></div>
+        <div class="df"><div class="k">${t.d_email}</div><div class="v">${c.email}</div></div>
+      </div></div>`;
+  }
+}
+
+function openNewCustomer(){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.csub}</p>
+    <div class="frow"><label>${t.nc_name}</label><input id="ncName"></div>
+    <div class="frow"><label>${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div>
+    <div class="frow"><label>${t.nc_contact}</label><input id="ncContact"></div>
+    <div class="frow"><label>${t.nc_email}</label><input id="ncEmail" type="email"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function closeModal(){$("fov").classList.remove("show");}
+function saveNewCustomer(){
+  const name=$("ncName").value.trim();if(!name)return;
+  CUSTOMERS.push({id:nextCustId++,name,org:$("ncOrg").value.trim()||"—",contact:$("ncContact").value.trim()||"—",email:$("ncEmail").value.trim()||"—"});
+  closeModal();renderList();
+}
+$("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
+
+function render(){
+  const t=T[LANG];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
+  if(VIEW==="list"){
+    $("listView").style.display="";$("detailView").style.display="none";
+    $("backLbl").textContent=t.back_hub;$("backBtn").onclick=()=>{location.href="hub-desktop.html";};
+    renderList();
+  }else{
+    $("listView").style.display="none";$("detailView").style.display="";
+    $("backLbl").textContent=t.back_list;$("backBtn").onclick=()=>{VIEW="list";render();};
+    renderDetail();
+  }
+}
+
+function setLang(code){LANG=code;
+  document.documentElement.lang=code==="mk"?"mk-Latn":code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
+  render();tick();
+}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
+function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+setLang("en");setInterval(tick,10000);
+
+const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+(function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+</script>
+</body></html>
