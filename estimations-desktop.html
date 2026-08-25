@@ -1,0 +1,999 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Estimations</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:20%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 36px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1620px;margin:0 auto;padding:26px 32px 40px;}
+  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
+  .modhead .ttl{display:flex;align-items:center;gap:11px;}
+  .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .modhead h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn.danger{border-color:rgba(255,107,107,.4);color:#ffb3b3;}
+  .tbtn.danger:hover{border-color:var(--danger);color:#fff;background:rgba(255,107,107,.1);}
+  .tbtn svg{flex:none;width:13px;height:13px;}
+
+  .crmgrid{display:grid;grid-template-columns:300px 1fr 320px;gap:16px;align-items:start;}
+  @media(max-width:1400px){.crmgrid{grid-template-columns:1fr;}}
+  .col{display:flex;flex-direction:column;gap:16px;}
+  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;gap:10px;}
+  .panel .phead h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+
+  .search{position:relative;flex:1;}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+  .search input:focus{border-color:var(--spark);}
+  .listtoolbar{display:flex;gap:8px;margin-bottom:11px;}
+  .iconbtn{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);cursor:pointer;}
+  .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
+
+  .segtabs{display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap;}
+  .segtabs button{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:10.5px;padding:7px 4px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .segtabs button.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+
+  .estlist{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow-y:auto;margin:-4px;padding:4px;}
+  .estrow{padding:10px 11px;border:1px solid var(--line);cursor:pointer;transition:.14s;}
+  .estrow:hover{background:rgba(255,255,255,.03);}
+  .estrow.sel{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.45);}
+  .estrow .er1{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
+  .estrow .eno{font-family:'Sora';font-weight:600;font-size:12.5px;}
+  .estrow .ecust{font-size:11px;color:var(--steel-400);margin-bottom:5px;}
+  .estrow .er2{display:flex;justify-content:space-between;align-items:center;}
+  .estrow .eval{font-family:'Sora';font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums;}
+
+  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-size:11px;color:var(--steel-400);}
+  .pager .pnav{display:flex;gap:5px;}
+  .pager button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);width:24px;height:24px;cursor:pointer;font-size:11px;}
+  .pager button.cur{background:rgba(74,144,255,.18);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .pager button:disabled{opacity:.35;cursor:not-allowed;}
+
+  .sumgrid2{display:flex;flex-direction:column;gap:0;}
+  .sumtotal{display:flex;justify-content:space-between;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);}
+  .sumtotal .sl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
+  .sumtotal .sv{font-family:'Sora';font-size:19px;font-weight:600;}
+  .sumbystatus{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .sumbystatus .ss{}
+  .sumbystatus .sl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;}
+  .sumbystatus .sv{font-family:'Sora';font-size:16px;font-weight:600;} .sumbystatus .sv.draft{color:var(--steel-300);} .sumbystatus .sv.sent{color:var(--spark);} .sumbystatus .sv.accepted{color:var(--ok);} .sumbystatus .sv.declined{color:var(--danger);}
+  .sumbystatus .ssub{font-size:10.5px;color:var(--steel-400);}
+
+  .dhead3{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .dhead3 .idn{display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
+  .dhead3 h2{font-family:'Sora';font-weight:700;font-size:19px;letter-spacing:-.01em;}
+  .dhead3 .dbtns{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .stpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;font-weight:700;white-space:nowrap;border:1px solid;}
+  .stpill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .stpill.draft{color:#cfe0ff;border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.18);}
+  .stpill.review{color:var(--steel-300);border-color:var(--field-line);background:rgba(142,163,192,.1);}
+  .stpill.sent{color:var(--spark);border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.1);}
+  .stpill.accepted{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
+  .stpill.declined{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
+  .stpill.expired{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+
+  .metarow{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:18px;}
+  .meta{display:flex;align-items:flex-start;gap:8px;}
+  .meta svg{flex:none;width:14px;height:14px;color:var(--steel-400);margin-top:2px;}
+  .meta .mk{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:2px;}
+  .meta .mv{font-size:13px;font-weight:600;}
+
+  .stepper{display:flex;align-items:center;margin-bottom:22px;overflow-x:auto;padding-bottom:2px;}
+  .step{display:flex;align-items:center;gap:8px;flex:none;cursor:pointer;padding:6px 4px;border:none;background:none;}
+  .step .sdot{width:22px;height:22px;border-radius:50%;border:2px solid var(--field-line);display:flex;align-items:center;justify-content:center;color:var(--steel-400);flex:none;transition:.15s;}
+  .step .slabel{font-size:11.5px;font-weight:600;color:var(--steel-400);white-space:nowrap;}
+  .step.done .sdot{border-color:var(--ok);background:rgba(74,212,138,.15);color:var(--ok);}
+  .step.done .slabel{color:var(--steel-300);}
+  .step.current .sdot{border-color:var(--spark);background:var(--spark);color:#fff;box-shadow:0 0 0 4px rgba(74,144,255,.18);}
+  .step.current .slabel{color:var(--ice);}
+  .step.declined.current .sdot{border-color:var(--danger);background:var(--danger);box-shadow:0 0 0 4px rgba(255,107,107,.18);}
+  .step.declined.current .slabel{color:#ffb3b3;}
+  .stepline{width:34px;height:1px;background:var(--field-line);flex:none;}
+
+  .infocard3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+  @media(max-width:1000px){.infocard3{grid-template-columns:1fr;}}
+  .icard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:15px;}
+  .icard .ich{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+  .icard h4{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
+  .icard .irow2{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .icard .irow2:last-child{border-bottom:none;}
+  .icard .irow2 .ik{color:var(--steel-400);} .icard .irow2 .iv{font-weight:600;text-align:right;}
+  .icard .ilead{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .icard .istatus{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ok);margin-bottom:10px;}
+  .icard .istatus::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .icard .iline{font-size:12.5px;color:var(--steel-300);display:flex;align-items:flex-start;gap:7px;margin-bottom:7px;}
+  .icard .iline svg{flex:none;width:13px;height:13px;color:var(--steel-400);margin-top:1px;}
+
+  .itemshead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+  .itemshead h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+  .itemsactions{display:flex;gap:8px;align-items:center;}
+  .costtoggle{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--steel-300);cursor:pointer;user-select:none;}
+  .costtoggle input{accent-color:var(--spark);}
+
+  .opttabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .opttab{display:flex;align-items:center;gap:7px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:8px 12px;cursor:pointer;transition:.15s;}
+  .opttab.on{border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.12);color:#cfe0ff;}
+  .opttab input{accent-color:var(--spark);pointer-events:none;}
+  .opttab .odelta{font-variant-numeric:tabular-nums;font-weight:600;color:var(--steel-400);}
+  .opttab.on .odelta{color:var(--ok);}
+
+  .itable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);margin-bottom:18px;}
+  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;}
+  .itable th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:9px 10px;white-space:nowrap;}
+  .itable th.n,.itable td.n{text-align:right;}
+  .itable td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .itable tr.sectionrow td{background:rgba(74,144,255,.06);font-family:'Sora';font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ff;padding:8px 10px;}
+  .itable tr.subtotalrow td{background:rgba(255,255,255,.02);font-weight:600;color:var(--steel-300);border-bottom:1px solid var(--line);}
+  .itable tr.optrow td{background:rgba(74,212,138,.05);}
+  .itable .grip{color:var(--steel-400);opacity:.5;margin-right:6px;}
+  .itable .idesc{font-weight:500;}
+  .itable .isub{color:var(--steel-400);font-size:11px;}
+  .itable .costsub{color:var(--steel-400);font-size:10.5px;display:block;margin-top:1px;}
+  .subtag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);border:1px solid rgba(255,176,87,.4);background:rgba(255,176,87,.1);padding:1px 6px;margin-left:6px;}
+  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  .tccard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:15px;margin-bottom:14px;}
+  .tccard .ich{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+  .tccard h4{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
+  .tccard p{font-size:12.5px;color:var(--steel-300);line-height:1.6;}
+  .tccard ul{padding-left:18px;font-size:12.5px;color:var(--steel-300);line-height:1.8;}
+
+  .pricerow{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;}
+  .pricerow .pk{color:var(--steel-400);} .pricerow .pv{font-weight:600;font-variant-numeric:tabular-nums;}
+  .pricerow.divider{border-top:1px solid var(--line);margin-top:4px;padding-top:12px;}
+  .pricerow.grand{padding-top:12px;border-top:1px solid var(--line);margin-top:4px;}
+  .pricerow.grand .pk{font-family:'Sora';font-size:13px;color:var(--steel-300);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .pricerow.grand .pv{font-family:'Sora';font-size:22px;color:var(--spark);font-weight:700;}
+  .pricerow input.pctinput{width:48px;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-size:11.5px;padding:3px 5px;text-align:right;margin-left:6px;}
+
+  .costrow{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;color:var(--steel-300);}
+  .costrow .ck{color:var(--steel-400);}
+  .costrow.sub{padding-top:9px;border-top:1px solid var(--line);margin-top:3px;font-weight:600;color:var(--ice);}
+  .costrow.final{padding-top:10px;border-top:1px solid var(--line);margin-top:6px;font-weight:700;color:var(--ice);}
+  .costrow.profit{color:var(--ok);font-weight:700;font-size:14px;padding-top:10px;border-top:1px solid rgba(74,212,138,.25);margin-top:6px;}
+  .costrow.margin{color:var(--ok);font-weight:600;}
+  .markupby{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .markupby .mb{flex:1;text-align:center;}
+  .markupby .ml{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
+  .markupby .mv{font-family:'Sora';font-weight:700;font-size:14px;color:var(--ok);}
+
+  .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .empty3{text-align:center;color:var(--steel-400);padding:20px;font-size:12px;}
+
+  .docrow2{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
+  .docrow2:last-child{border-bottom:none;}
+  .dicon{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:8px;color:#fff;}
+  .dicon.pdf{background:#c0392b;} .dicon.doc{background:#2c6bd6;} .dicon.xls{background:#1f9d55;} .dicon.zip{background:#8e6bd6;}
+  .docrow2 .dn{flex:1;font-weight:500;} .docrow2 .dd{color:var(--steel-400);font-size:10.5px;white-space:nowrap;}
+  .docrow2 a{color:var(--steel-400);display:flex;} .docrow2 a:hover{color:var(--ice);}
+
+  .histrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
+  .histrow:last-child{border-bottom:none;}
+  .histrow .hdate{color:var(--steel-400);font-size:10.5px;white-space:nowrap;flex:none;width:76px;}
+  .histrow .haction{font-weight:500;} .histrow .hby{color:var(--steel-400);font-size:10.5px;margin-top:1px;}
+
+  .notecard{font-size:12.5px;color:var(--steel-300);line-height:1.55;padding:10px 0;border-bottom:1px solid var(--line);}
+  .notecard:last-child{border-bottom:none;}
+
+  .actionbar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:20px;}
+  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:11.5px;padding:16px 8px;cursor:pointer;transition:.16s;}
+  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(74,144,255,.07);transform:translateY(-2px);}
+  .actionbar button.danger{border-color:rgba(255,107,107,.35);color:#ffb3b3;}
+  .actionbar button.danger:hover{border-color:var(--danger);color:#fff;background:rgba(255,107,107,.1);}
+  .actionbar button svg{width:19px;height:19px;color:var(--spark);}
+  .actionbar button.danger svg{color:var(--danger);}
+  @media(max-width:1400px){.actionbar{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:640px){.actionbar{grid-template-columns:repeat(2,1fr);}}
+
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:500px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus{border-color:var(--spark);}
+  .fcard textarea{min-height:60px;resize:vertical;}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+  .fcard .fnote{font-size:11.5px;color:var(--steel-400);margin-top:-6px;margin-bottom:14px;}
+
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+
+  @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;} }
+</style></head><body>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<div class="topfull"><div class="topbar">
+  <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+  <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+</div></div>
+
+<div class="wrap">
+  <div class="modhead">
+    <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+    <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
+      <div><h1 data-i="etitle">Estimations</h1><p data-i="esub">Quotes & costing</p></div></div>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+<div id="printSheet" style="display:none;"></div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
+function fmt0(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+
+const CUSTOMERS={
+  1:{name:"Sanus Glutenfri AB",city:"Landskrona",address:"Industrigatan 8, 261 42 Landskrona, Sweden",contact:"Per Nilsson",email:"per@sanusglutenfri.se",phone:"+46 70 123 45 67",org:"559812-4471",status:"active"},
+  2:{name:"Schröder Nordic",city:"Helsingborg",address:"Verkstadsvägen 22, 254 33 Helsingborg, Sweden",contact:"Anna Berg",email:"anna@schroder.se",phone:"+46 70 234 56 78",org:"556234-9012",status:"active"},
+  3:{name:"Lund Konditori",city:"Lund",address:"Storgatan 4, 222 22 Lund, Sweden",contact:"Sofia L.",email:"sofia@lundkond.se",phone:"+46 70 345 67 89",org:"559045-1123",status:"inactive"},
+  4:{name:"Helsingborg Foods",city:"Helsingborg",address:"Emballagevägen 9, 254 66 Helsingborg, Sweden",contact:"Erik S.",email:"erik@hbgfoods.se",phone:"+46 70 456 78 90",org:"556678-3345",status:"active"},
+  5:{name:"Malmö Livs",city:"Malmö",address:"Saluhallen 3, 211 34 Malmö, Sweden",contact:"Karim A.",email:"info@malmolivs.se",phone:"+46 70 567 89 01",org:"559211-7789",status:"active"},
+  6:{name:"Ystad Bageri",city:"Ystad",address:"Bagerigatan 2, 271 41 Ystad, Sweden",contact:"Nina H.",email:"nina@ystadbageri.se",phone:"+46 70 678 90 12",org:"556990-2201",status:"active"},
+  7:{name:"Trelleborg Snacks",city:"Trelleborg",address:"Fabriksgatan 15, 231 62 Trelleborg, Sweden",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se",phone:"+46 70 789 01 23",org:"559333-6654",status:"inactive"}
+};
+const PROJECTS={
+  "P-26-0001":{name:"Bakery Conveyor Modification",type:"Stainless Fabrication & Installation",status:"active"},
+  "P-26-0002":{name:"Folding Machine Retrofit",type:"Machine Retrofit",status:"quotation"},
+  "P-26-0003":{name:"Mixer Overhaul — Preliminary",type:"Repair",status:"draft"},
+  "P-26-0004":{name:"Guard Fabrication",type:"Fabrication & Installation",status:"completed"},
+  "P-26-0005":{name:"Service — Malmö Slicer",type:"Service",status:"closed"},
+  "P-26-0006":{name:"Spiral Mixer Service",type:"Repair & Service",status:"hold"},
+  "P-26-0007":{name:"Packing Line Extension",type:"Fabrication & Installation",status:"cancelled"},
+  "P-26-0008":{name:"Bearing Replacement",type:"Repair",status:"approved"},
+  "P-26-0009":{name:"HMI Upgrade",type:"Electrical",status:"planned"}
+};
+
+function autoItems(total){
+  const matSell=Math.round(total*0.28),labSell=Math.round(total*0.55),machSell=Math.round(total-matSell-labSell);
+  return [
+    {desc:"Materials & fabrication stock",category:"material",qty:1,unit:"lot",weight:0,waste:5,cost:Math.round(matSell*0.68),sell:matSell,disc:0,tax:25},
+    {desc:"Labour — fabrication & installation",category:"labour",qty:1,unit:"lot",cost:Math.round(labSell*0.74),sell:labSell,disc:0,tax:25},
+    {desc:"Machine time & consumables",category:"machine",qty:1,unit:"lot",cost:Math.round(machSell*0.72),sell:machSell,disc:0,tax:25}
+  ];
+}
+
+let ESTIMATIONS=[
+  {id:1,no:"EST-26-0001",customerId:1,projectNo:"P-26-0001",status:"accepted",created:"2026-08-10",validUntil:"2026-09-09",
+    currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(92000),options:[],
+    exclusions:["Electrical connection to plant mains excluded.","Customer to supply access for on-site installation."],
+    terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
+    documents:[{name:"Customer PO.pdf",type:"pdf",date:"2026-08-08"}],
+    history:[{date:"2026-08-10",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-12",action:"Accepted by customer",by:"Aleksandar C."}],
+    notes:[]},
+  {id:2,no:"EST-26-0002",customerId:2,projectNo:"P-26-0002",status:"sent",created:"2026-08-18",validUntil:"2026-09-17",
+    currency:"SEK",deliveryTime:"4–5 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-114",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,
+    items:[
+      {desc:"Steel Sheet 3mm (S235JR)",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:450,sell:620,disc:0,tax:25},
+      {desc:"Square Tube 40x40x3mm (S235JR)",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:95,sell:135,disc:0,tax:25},
+      {desc:"HMI Mounting Bracket Kit",category:"material",qty:1,unit:"set",weight:12,waste:0,cost:2100,sell:2850,disc:0,tax:25},
+      {desc:"Fasteners & Hardware Set",category:"material",qty:1,unit:"set",weight:4,waste:0,cost:680,sell:950,disc:0,tax:25},
+
+      {desc:"Site Visit & Measurements",category:"labour",qty:4,unit:"h",cost:350,sell:450,disc:0,tax:25},
+      {desc:"Engineering / CAD Drawings",category:"labour",qty:14,unit:"h",cost:380,sell:490,disc:0,tax:25},
+      {desc:"CAM Programming",category:"labour",qty:5,unit:"h",cost:380,sell:490,disc:0,tax:25},
+      {desc:"Cutting",category:"labour",qty:8,unit:"h",cost:320,sell:420,disc:0,tax:25},
+      {desc:"Fitting",category:"labour",qty:18,unit:"h",cost:320,sell:420,disc:0,tax:25},
+      {desc:"MIG/MAG Welding",category:"labour",qty:24,unit:"h",cost:340,sell:440,disc:0,tax:25},
+      {desc:"Grinding & Finishing",category:"labour",qty:10,unit:"h",cost:300,sell:400,disc:0,tax:25},
+      {desc:"Panel Wiring (Electrical)",category:"labour",qty:26,unit:"h",cost:360,sell:470,disc:0,tax:25},
+      {desc:"Assembly",category:"labour",qty:16,unit:"h",cost:320,sell:420,disc:0,tax:25},
+      {desc:"Installation (On-site)",category:"labour",qty:20,unit:"h",cost:340,sell:450,disc:0,tax:25},
+      {desc:"Inspection & QA",category:"labour",qty:5,unit:"h",cost:350,sell:450,disc:0,tax:25},
+
+      {desc:"CNC Laser Cutting (steel sheet)",category:"machine",qty:8,unit:"m²",cost:180,sell:240,disc:0,tax:25},
+      {desc:"CNC Bending",category:"machine",qty:22,unit:"bends",cost:45,sell:65,disc:0,tax:25},
+      {desc:"Powder Coating (RAL 7035)",category:"machine",qty:6,unit:"m²",cost:220,sell:310,disc:0,tax:25},
+      {desc:"External Subcontractor — HMI Touchscreen Programming",category:"subcontractor",qty:1,unit:"job",cost:4200,sell:5400,disc:0,tax:25},
+
+      {desc:"MIG Welding Wire ER70S-6 Ø1.0mm",category:"consumable",qty:12,unit:"kg",cost:85,sell:115,disc:0,tax:25},
+      {desc:"Shielding Gas (Ar/CO2 mix)",category:"consumable",qty:2,unit:"bottle",cost:450,sell:590,disc:0,tax:25},
+      {desc:"Grinding & Cutting Discs",category:"consumable",qty:15,unit:"pcs",cost:28,sell:40,disc:0,tax:25},
+      {desc:"Fasteners (M8 stainless)",category:"consumable",qty:60,unit:"pcs",cost:4,sell:6,disc:0,tax:25},
+
+      {desc:"Delivery — Workshop to Helsingborg",category:"logistics",qty:1,unit:"trip",cost:900,sell:1200,disc:0,tax:25},
+      {desc:"Travel Time (2 technicians, on-site day)",category:"logistics",qty:8,unit:"h",cost:280,sell:350,disc:0,tax:25},
+      {desc:"Mileage Allowance",category:"logistics",qty:140,unit:"km",cost:4.5,sell:6,disc:0,tax:25},
+
+      {desc:"Packing & Crating",category:"other",qty:1,unit:"set",cost:450,sell:650,disc:0,tax:25}
+    ],
+    options:[
+      {id:1,name:"316L Stainless Upgrade",included:false,items:[
+        {desc:"Steel Sheet 3mm (AISI 316L) — upgrade from S235JR",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:980,sell:1340,disc:0,tax:25},
+        {desc:"Square Tube 40x40x3mm (AISI 316L) — upgrade",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:210,sell:290,disc:0,tax:25}
+      ]},
+      {id:2,name:"Touchscreen HMI Panel",included:false,items:[
+        {desc:"10\" Industrial Touchscreen HMI Unit",category:"material",qty:1,unit:"pcs",weight:3,waste:0,cost:8200,sell:11400,disc:0,tax:25},
+        {desc:"External Subcontractor — HMI Panel Integration",category:"subcontractor",qty:1,unit:"job",cost:5100,sell:6600,disc:0,tax:25}
+      ]}
+    ],
+    exclusions:[
+      "Electrical connection to plant mains beyond the machine control cabinet is excluded.",
+      "Customer to supply existing machine drawings for reference where available.",
+      "Price is based on standard S235JR steel unless Option 1 (316L Stainless) is selected.",
+      "Installation assumes normal working-hours access to the customer's site.",
+      "Any structural modification to the existing machine base is out of scope."
+    ],
+    terms:"Prices valid for 30 days. Payment within 30 days from invoice date. Delivery time confirmed on order.",
+    documents:[{name:"Specification Draft.pdf",type:"pdf",date:"2026-08-14"},{name:"MAK 2500 Layout.pdf",type:"pdf",date:"2026-08-15"},{name:"Panel Wiring Diagram.docx",type:"doc",date:"2026-08-16"}],
+    history:[
+      {date:"2026-08-14",action:"Estimation created (Rev 0)",by:"Aleksandar C."},
+      {date:"2026-08-16",action:"Item 1.2 quantity updated — Rev 1",by:"Aleksandar C."},
+      {date:"2026-08-18",action:"Sent to customer for review",by:"Aleksandar C."}],
+    notes:[{date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final retrofit scope before locking materials."}]},
+  {id:3,no:"EST-26-0003",customerId:3,projectNo:"P-26-0003",status:"draft",created:"2026-08-22",validUntil:"2026-09-21",
+    currency:"SEK",deliveryTime:"1–2 weeks",paymentTerms:"15 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(16000),options:[],
+    exclusions:["Preliminary estimate only, subject to inspection findings."],
+    terms:"Prices valid for 30 days.",documents:[],
+    history:[{date:"2026-08-22",action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]},
+  {id:4,no:"EST-26-0004",customerId:4,projectNo:"P-26-0004",status:"accepted",created:"2026-05-28",validUntil:"2026-06-27",
+    currency:"SEK",deliveryTime:"3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"HF-2201",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(58000),options:[],
+    exclusions:["Painting/finishing beyond mill finish excluded."],
+    terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
+    documents:[{name:"Completion Report.pdf",type:"pdf",date:"2026-06-20"}],
+    history:[{date:"2026-05-28",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-05-30",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
+  {id:5,no:"EST-26-0005",customerId:5,projectNo:"P-26-0005",status:"accepted",created:"2026-08-05",validUntil:"2026-09-04",
+    currency:"SEK",deliveryTime:"Same week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-99",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(16500),options:[],
+    exclusions:["Parts availability subject to supplier stock."],
+    terms:"Prices valid for 14 days for service call-outs.",documents:[],
+    history:[{date:"2026-08-05",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-06",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
+  {id:6,no:"EST-26-0006",customerId:6,projectNo:"P-26-0006",status:"sent",created:"2026-08-12",validUntil:"2026-09-11",
+    currency:"SEK",deliveryTime:"2 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"YB-33",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(24000),options:[],
+    exclusions:["Seal kit lead time dependent on supplier — see notes."],
+    terms:"Prices valid for 30 days.",documents:[],
+    history:[{date:"2026-08-12",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-13",action:"Sent to customer for review",by:"Aleksandar C."}],
+    notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit, resume expected Sept 1."}]},
+  {id:7,no:"EST-26-0007",customerId:7,projectNo:"P-26-0007",status:"declined",created:"2026-07-20",validUntil:"2026-08-19",
+    currency:"SEK",deliveryTime:"6 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"TS-500",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(210000),options:[],
+    exclusions:["Civil works and conveyor pit modification excluded."],
+    terms:"Prices valid for 30 days.",documents:[],
+    history:[{date:"2026-07-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-05",action:"Declined — customer postponed investment",by:"Aleksandar C."}],notes:[]},
+  {id:8,no:"EST-26-0008",customerId:5,projectNo:"P-26-0008",status:"accepted",created:"2026-08-20",validUntil:"2026-09-19",
+    currency:"SEK",deliveryTime:"1 week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-101",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(14000),options:[],
+    exclusions:["Scheduling subject to workshop capacity."],
+    terms:"Prices valid for 30 days.",documents:[],
+    history:[{date:"2026-08-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-22",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
+  {id:9,no:"EST-26-0009",customerId:2,projectNo:"P-26-0009",status:"sent",created:"2026-08-24",validUntil:"2026-09-23",
+    currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-108",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(31000),options:[],
+    exclusions:["PLC software licensing costs excluded, billed separately if required."],
+    terms:"Prices valid for 30 days.",documents:[],
+    history:[{date:"2026-08-24",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-24",action:"Sent to customer for review",by:"Aleksandar C."}],notes:[]}
+];
+let nextEstId=10;
+
+const SECTION_LABEL={material:"Materials",labour:"Labour",machine:"Machines & Services",subcontractor:"Machines & Services",consumable:"Consumables",logistics:"Logistics",other:"Other Costs"};
+const SECTION_ORDER=["material","labour","machine","consumable","logistics","other"];
+const STAGES=["draft","review","sent","accepted"];
+
+const T={
+  en:{role:"Admin",logout:"Log out",back_hub:"Hub",etitle:"Estimations",esub:"Quotes & costing",
+    searchph:"Search estimations…",newest:"New Estimation",
+    f_all:"All",f_draft:"Draft",f_sent:"Sent",f_accepted:"Accepted",f_declined:"Declined",
+    p_list:"Estimation List",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
+    sum_total:"Total Estimations",sum_value:"Total Value (All)",
+    edit:"Edit",duplicate:"Duplicate",print:"Print / PDF",
+    st_draft:"Draft",st_review:"In Review",st_sent:"Sent",st_accepted:"Accepted",st_declined:"Declined",st_expired:"Expired",
+    m_created:"Created",m_valid:"Valid Until",m_customer:"Customer",m_project:"Project",m_createdby:"Created By",
+    c_customer:"Customer",c_estinfo:"Estimation Info",c_project:"Project",
+    ei_number:"Estimation Number",ei_ref:"Reference / PO",ei_date:"Estimation Date",ei_valid:"Valid Until",ei_currency:"Currency",
+    ei_delivery:"Delivery Time",ei_terms:"Payment Terms",ei_pricelist:"Price List",ei_incoterms:"Incoterms",ei_notes:"Notes",
+    pj_location:"Location",pj_type:"Project Type",pj_contact:"Contact Person",pj_status:"Project Status",pj_open:"Open Project",
+    items:"Estimation Items",additem:"Add Item",addsection:"Add Section",showcost:"Show internal cost & margin",
+    th_no:"#",th_item:"Item / Description",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total (SEK)",
+    subtotal_section:"Subtotal",
+    base_offer:"Base Offer",option:"Option",include:"include",
+    terms_title:"Terms & Conditions",excl_title:"Exclusions & Assumptions",edit_short:"Edit",
+    price_summary:"Price Summary",ps_subtotal:"Subtotal (excl. tax)",ps_discount:"Discount",ps_tax:"Tax (25%)",ps_total:"TOTAL (incl. tax)",
+    cost_breakdown:"Cost Breakdown",cb_material:"Material Cost",cb_labour:"Labour Cost",cb_machine:"Machine Cost",cb_sub:"Subcontractor Cost",
+    cb_consumable:"Consumables",cb_logistics:"Transport",cb_other:"Other Cost",cb_direct:"Total Direct Cost",cb_overhead:"Overhead",cb_contingency:"Contingency",
+    cb_internal:"Total Internal Cost",cb_selling:"Selling Price",cb_profit:"Gross Profit",cb_margin:"Margin %",
+    mk_material:"Material markup",mk_labour:"Labour margin",mk_sub:"Subcontractor markup",
+    documents:"Documents",upload:"Upload",history:"History",notes:"Notes",addnote:"+ Add Note",
+    empty_docs:"No documents yet.",empty_notes:"No notes yet.",empty_hist:"No history yet.",
+    act_preview:"Preview PDF",act_email:"Send by Email",act_convert:"Convert to Project",act_open:"Open Project",act_duplicate:"Duplicate",act_export:"Export to Excel",act_delete:"Delete",
+    nc_title:"New Estimation",nc_customer:"Customer",nc_project:"Project reference",nc_valid:"Valid until",nc_save:"Create",nc_cancel:"Cancel",
+    an_title:"Add Note",an_text:"Note",an_save:"Add note",
+    ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
+    pricing_title:"Pricing settings",pricing_note:"Overhead and contingency are applied to total direct cost and reduce gross profit — they are not added to the customer price.",
+    confirm_delete:"Delete this estimation? This cannot be undone.",confirm_stage:"Move this estimation to \"{s}\"?",
+    locale:"en-GB"},
+  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
+    searchph:"Sök kalkyler…",newest:"Ny kalkyl",
+    f_all:"Alla",f_draft:"Utkast",f_sent:"Skickad",f_accepted:"Accepterad",f_declined:"Nekad",
+    p_list:"Kalkyllista",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
+    sum_total:"Totalt antal kalkyler",sum_value:"Totalt värde (alla)",
+    edit:"Redigera",duplicate:"Duplicera",print:"Skriv ut / PDF",
+    st_draft:"Utkast",st_review:"Under granskning",st_sent:"Skickad",st_accepted:"Accepterad",st_declined:"Nekad",st_expired:"Utgången",
+    m_created:"Skapad",m_valid:"Giltig till",m_customer:"Kund",m_project:"Projekt",m_createdby:"Skapad av",
+    c_customer:"Kund",c_estinfo:"Kalkylinfo",c_project:"Projekt",
+    ei_number:"Kalkylnummer",ei_ref:"Referens / PO",ei_date:"Kalkyldatum",ei_valid:"Giltig till",ei_currency:"Valuta",
+    ei_delivery:"Leveranstid",ei_terms:"Betalningsvillkor",ei_pricelist:"Prislista",ei_incoterms:"Incoterms",ei_notes:"Anteckningar",
+    pj_location:"Plats",pj_type:"Projekttyp",pj_contact:"Kontaktperson",pj_status:"Projektstatus",pj_open:"Öppna projekt",
+    items:"Kalkylposter",additem:"Lägg till post",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
+    th_no:"#",th_item:"Post / Beskrivning",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa (SEK)",
+    subtotal_section:"Delsumma",
+    base_offer:"Grunderbjudande",option:"Tillval",include:"inkludera",
+    terms_title:"Villkor",excl_title:"Undantag & antaganden",edit_short:"Redigera",
+    price_summary:"Prissammanfattning",ps_subtotal:"Delsumma (exkl. moms)",ps_discount:"Rabatt",ps_tax:"Moms (25%)",ps_total:"TOTALT (inkl. moms)",
+    cost_breakdown:"Kostnadsfördelning",cb_material:"Materialkostnad",cb_labour:"Arbetskostnad",cb_machine:"Maskinkostnad",cb_sub:"Underleverantörskostnad",
+    cb_consumable:"Förbrukningsmaterial",cb_logistics:"Transport",cb_other:"Övrig kostnad",cb_direct:"Total direktkostnad",cb_overhead:"Omkostnader",cb_contingency:"Marginal för osäkerhet",
+    cb_internal:"Total intern kostnad",cb_selling:"Försäljningspris",cb_profit:"Bruttovinst",cb_margin:"Marginal %",
+    mk_material:"Materialpåslag",mk_labour:"Arbetsmarginal",mk_sub:"Underleverantörspåslag",
+    documents:"Dokument",upload:"Ladda upp",history:"Historik",notes:"Anteckningar",addnote:"+ Lägg till anteckning",
+    empty_docs:"Inga dokument ännu.",empty_notes:"Inga anteckningar ännu.",empty_hist:"Ingen historik ännu.",
+    act_preview:"Förhandsgranska PDF",act_email:"Skicka via e-post",act_convert:"Konvertera till projekt",act_open:"Öppna projekt",act_duplicate:"Duplicera",act_export:"Exportera till Excel",act_delete:"Ta bort",
+    nc_title:"Ny kalkyl",nc_customer:"Kund",nc_project:"Projektreferens",nc_valid:"Giltig till",nc_save:"Skapa",nc_cancel:"Avbryt",
+    an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
+    ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
+    pricing_title:"Prisinställningar",pricing_note:"Omkostnader och osäkerhetsmarginal appliceras på total direktkostnad och minskar bruttovinsten — de läggs inte till kundpriset.",
+    confirm_delete:"Ta bort denna kalkyl? Detta kan inte ångras.",confirm_stage:"Flytta denna kalkyl till \"{s}\"?",
+    locale:"sv-SE"},
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
+    searchph:"Prebaraj kalkulacii…",newest:"Nova kalkulacija",
+    f_all:"Site",f_draft:"Nacrt",f_sent:"Ispratena",f_accepted:"Prifatena",f_declined:"Odbiena",
+    p_list:"Lista na kalkulacii",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
+    sum_total:"Vkupno kalkulacii",sum_value:"Vkupna vrednost (site)",
+    edit:"Uredi",duplicate:"Dupliciraj",print:"Pečati / PDF",
+    st_draft:"Nacrt",st_review:"Vo pregled",st_sent:"Ispratena",st_accepted:"Prifatena",st_declined:"Odbiena",st_expired:"Istekla",
+    m_created:"Kreirana",m_valid:"Važi do",m_customer:"Klient",m_project:"Proekt",m_createdby:"Kreiral",
+    c_customer:"Klient",c_estinfo:"Info za kalkulacija",c_project:"Proekt",
+    ei_number:"Broj na kalkulacija",ei_ref:"Referenca / PO",ei_date:"Datum",ei_valid:"Važi do",ei_currency:"Valuta",
+    ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plaќaњe",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
+    pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
+    items:"Stavki od kalkulacija",additem:"Dodaj stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
+    th_no:"#",th_item:"Stavka / Opis",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
+    subtotal_section:"Meѓuzbir",
+    base_offer:"Osnovna ponuda",option:"Opcija",include:"vkluči",
+    terms_title:"Uslovi",excl_title:"Isklučuvaњa i pretpostavki",edit_short:"Uredi",
+    price_summary:"Pregled na cena",ps_subtotal:"Meѓuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",
+    cost_breakdown:"Raspredelba na troшoci",cb_material:"Trošok za materijal",cb_labour:"Trošok za rabota",cb_machine:"Trošok za mašini",cb_sub:"Trošok za podizveduvač",
+    cb_consumable:"Potroшen materijal",cb_logistics:"Transport",cb_other:"Drug trošok",cb_direct:"Vkupen direkten trošok",cb_overhead:"Režiski troшoci",cb_contingency:"Rezerva za nesigurnost",
+    cb_internal:"Vkupna interna cena",cb_selling:"Prodažna cena",cb_profit:"Bruto profit",cb_margin:"Marža %",
+    mk_material:"Marža na materijal",mk_labour:"Marža na rabota",mk_sub:"Marža na podizveduvač",
+    documents:"Dokumenti",upload:"Otpremi",history:"Istorija",notes:"Beleški",addnote:"+ Dodaj beleška",
+    empty_docs:"Sè uште nema dokumenti.",empty_notes:"Sè uште nema beleški.",empty_hist:"Sè uште nema istorija.",
+    act_preview:"Pregled na PDF",act_email:"Isprati po e-pošta",act_convert:"Konvertiraj vo proekt",act_open:"Otvori proekt",act_duplicate:"Dupliciraj",act_export:"Izvezi vo Excel",act_delete:"Izbriši",
+    nc_title:"Nova kalkulacija",nc_customer:"Klient",nc_project:"Referenca na proekt",nc_valid:"Važi do",nc_save:"Kreiraj",nc_cancel:"Otkaži",
+    an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
+    ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
+    pricing_title:"Cenovni podesuvaњa",pricing_note:"Režiskite troшoci i rezervata se primenuvaat na vkupniot direkten trošok i go namaluvaat bruto profitot — ne se dodavaat na cenata za klientot.",
+    confirm_delete:"Izbriši ja ovaa kalkulacija? Ova ne može da se vrati.",confirm_stage:"Premesti ja ovaa kalkulacija vo \"{s}\"?",
+    locale:"mk"}
+};
+
+let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,activeOptTab="base";
+
+function getEst(id){return ESTIMATIONS.find(e=>e.id===id);}
+function stageIndex(status){if(status==='declined'||status==='expired')return 3;return STAGES.indexOf(status);}
+
+function lineTotal(it){return it.qty*it.sell*(1-(it.disc||0)/100);}
+function lineTax(it){return lineTotal(it)*(it.tax||0)/100;}
+function lineCostTotal(it){return it.qty*it.cost;}
+
+function activeItems(e){
+  let items=e.items.slice();
+  if(activeOptTab!=="base"){
+    const opt=e.options.find(o=>o.id===activeOptTab);
+    if(opt)items=items.concat(opt.items.map(i=>Object.assign({},i,{fromOption:opt.name})));
+  }
+  return items;
+}
+
+function computeTotals(e){
+  const items=activeItems(e);
+  const bySection={};
+  items.forEach(it=>{const s=it.category;bySection[s]=(bySection[s]||0)+lineTotal(it);});
+  const sellSubtotal=items.reduce((a,b)=>a+lineTotal(b),0);
+  const taxTotal=items.reduce((a,b)=>a+lineTax(b),0);
+  const discount=e.discount||0;
+  const netSubtotal=sellSubtotal-discount;
+  const grandTotal=netSubtotal+taxTotal;
+
+  const costOf=cat=>items.filter(it=>it.category===cat).reduce((a,b)=>a+lineCostTotal(b),0);
+  const sellOf=cat=>items.filter(it=>it.category===cat).reduce((a,b)=>a+lineTotal(b),0);
+  const materialCost=costOf('material'),labourCost=costOf('labour'),machineCost=costOf('machine'),subCost=costOf('subcontractor'),
+    consumableCost=costOf('consumable'),logisticsCost=costOf('logistics'),otherCost=costOf('other');
+  const totalDirectCost=materialCost+labourCost+machineCost+subCost+consumableCost+logisticsCost+otherCost;
+  const overhead=totalDirectCost*(e.overheadPct||0)/100;
+  const contingency=totalDirectCost*(e.contingencyPct||0)/100;
+  const totalInternalCost=totalDirectCost+overhead+contingency;
+  const sellingPrice=sellSubtotal;
+  const grossProfit=(sellingPrice-discount)-totalInternalCost;
+  const margin=sellingPrice?grossProfit/(sellingPrice-discount)*100:0;
+
+  const matSell=sellOf('material'),labSell=sellOf('labour'),subSell=sellOf('subcontractor');
+  const matMarkup=materialCost?((matSell-materialCost)/materialCost*100):0;
+  const labMargin=labourCost?((labSell-labourCost)/labourCost*100):0;
+  const subMarkup=subCost?((subSell-subCost)/subCost*100):0;
+
+  return{items,bySection,sellSubtotal,taxTotal,discount,netSubtotal,grandTotal,
+    materialCost,labourCost,machineCost,subCost,consumableCost,logisticsCost,otherCost,
+    totalDirectCost,overhead,contingency,totalInternalCost,sellingPrice,grossProfit,margin,
+    matMarkup,labMargin,subMarkup};
+}
+
+function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st_"+s]}</span>`;}
+
+function renderLeft(){
+  const t=T[LANG];
+  const q=query.trim().toLowerCase();
+  let rows=ESTIMATIONS.filter(e=>filterStatus==='all'||e.status===filterStatus)
+    .filter(e=>{const c=CUSTOMERS[e.customerId];return !q||e.no.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);})
+    .sort((a,b)=>b.created.localeCompare(a.created));
+
+  const counts={draft:0,sent:0,accepted:0,declined:0};
+  ESTIMATIONS.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
+  const totalValue=ESTIMATIONS.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  const valueByStatus=st=>ESTIMATIONS.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+
+  const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
+    return `<div class="estrow ${e.id===selectedId?'sel':''}" onclick="selectEst(${e.id})">
+      <div class="er1"><span class="eno">${e.no}</span>${statusPill(e.status)}</div>
+      <div class="ecust">${c.name}</div>
+      <div class="er2"><span class="eval">${fmt0(tot.grandTotal)}</span></div>
+    </div>`;}).join("");
+
+  return `
+    <div class="panel">
+      <div class="phead"><h3>${t.p_list}</h3></div>
+      <div class="listtoolbar">
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
+      </div>
+      <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewEst()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newest}</button>
+      <div class="segtabs">
+        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${ESTIMATIONS.length})</button>
+        <button class="${filterStatus==='draft'?'on':''}" onclick="setFilter('draft')">${t.f_draft} (${counts.draft})</button>
+        <button class="${filterStatus==='sent'?'on':''}" onclick="setFilter('sent')">${t.f_sent} (${counts.sent})</button>
+        <button class="${filterStatus==='accepted'?'on':''}" onclick="setFilter('accepted')">${t.f_accepted} (${counts.accepted})</button>
+        <button class="${filterStatus==='declined'?'on':''}" onclick="setFilter('declined')">${t.f_declined} (${counts.declined})</button>
+      </div>
+      <div class="estlist">${estRows||`<div class="empty3">—</div>`}</div>
+      <div class="pager"><span>${t.showing.replace('{a}','1').replace('{b}',rows.length).replace('{n}',rows.length)}</span>
+        <div class="pnav"><button disabled>‹</button><button class="cur">1</button><button disabled>›</button></div></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.p_summary}</h3></div>
+      <div class="sumgrid2">
+        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${ESTIMATIONS.length}</div></div>
+          <div style="text-align:right;"><div class="sl">${t.sum_value}</div><div class="sv">${fmt0(totalValue)}</div></div></div>
+        <div class="sumbystatus">
+          <div class="ss"><div class="sl">${t.f_draft}</div><div class="sv draft">${counts.draft}</div><div class="ssub">${fmt0(valueByStatus('draft'))}</div></div>
+          <div class="ss"><div class="sl">${t.f_sent}</div><div class="sv sent">${counts.sent}</div><div class="ssub">${fmt0(valueByStatus('sent'))}</div></div>
+          <div class="ss"><div class="sl">${t.f_accepted}</div><div class="sv accepted">${counts.accepted}</div><div class="ssub">${fmt0(valueByStatus('accepted'))}</div></div>
+          <div class="ss"><div class="sl">${t.f_declined}</div><div class="sv declined">${counts.declined}</div><div class="ssub">${fmt0(valueByStatus('declined'))}</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+function computeTotalsQuiet(e){const savedTab=activeOptTab;activeOptTab="base";const r=computeTotals(e);activeOptTab=savedTab;return r;}
+
+function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
+function setFilter(f){filterStatus=f;renderAll();}
+
+function renderMiddle(e){
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo];
+  const stages=[{k:"draft",lbl:t.st_draft},{k:"review",lbl:t.st_review},{k:"sent",lbl:t.st_sent},{k:"accepted",lbl:t.st_accepted},{k:"declined",lbl:t.st_declined},{k:"expired",lbl:t.st_expired}];
+  const curIdx=STAGES.indexOf(e.status);
+  const stepsHtml=stages.map((s,i)=>{
+    let cls="";
+    if(s.k===e.status)cls="current"+(s.k==='declined'||s.k==='expired'?' declined':'');
+    else if(i<3 && curIdx>=0 && i<curIdx)cls="done";
+    else if(i<3 && (e.status==='accepted'||e.status==='declined'||e.status==='expired'))cls="done";
+    return `<button class="step ${cls}" onclick="setStage(${e.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${s.lbl}</span></button>${i<stages.length-1?'<span class="stepline"></span>':''}`;
+  }).join("");
+
+  return `
+    <div class="panel">
+      <div class="dhead3">
+        <div class="idn"><h2>${e.no}</h2>${statusPill(e.status)}</div>
+        <div class="dbtns">
+          <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${t.edit}</button>
+          <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${t.duplicate}</button>
+          <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${t.print}</button>
+        </div>
+      </div>
+      <div class="metarow">
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${t.m_created}</div><div class="mv">${e.created}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${t.m_valid}</div><div class="mv">${e.validUntil}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><div><div class="mk">${t.m_customer}</div><div class="mv">${c.name}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg><div><div class="mk">${t.m_project}</div><div class="mv">${e.projectNo}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><div class="mk">${t.m_createdby}</div><div class="mv">${e.createdBy}</div></div></div>
+      </div>
+      <div class="stepper">${stepsHtml}</div>
+
+      <div class="infocard3">
+        <div class="icard"><div class="ich"><h4>${t.c_customer}</h4></div>
+          <div class="ilead">${c.name}</div><div class="istatus">${c.status==='active'?'Active':'Inactive'}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${c.address}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${c.contact}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg>${c.email}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg>${c.phone}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>VAT/Org: ${c.org}</div>
+        </div>
+        <div class="icard"><div class="ich"><h4>${t.c_estinfo}</h4></div>
+          <div class="irow2"><span class="ik">${t.ei_number}</span><span class="iv">${e.no}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_ref}</span><span class="iv">${e.reference}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_date}</span><span class="iv">${e.created}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_valid}</span><span class="iv">${e.validUntil}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_currency}</span><span class="iv">${e.currency}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_delivery}</span><span class="iv">${e.deliveryTime}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_terms}</span><span class="iv">${e.paymentTerms}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_pricelist}</span><span class="iv">${e.priceList}</span></div>
+          <div class="irow2"><span class="ik">${t.ei_incoterms}</span><span class="iv">${e.incoterms}</span></div>
+        </div>
+        <div class="icard"><div class="ich"><h4>${t.c_project}</h4></div>
+          <div class="ilead">${p.name}</div><div class="istatus">${p.status}</div>
+          <div class="irow2"><span class="ik">${t.pj_location}</span><span class="iv">${c.city}, Sweden</span></div>
+          <div class="irow2"><span class="ik">${t.pj_type}</span><span class="iv">${p.type}</span></div>
+          <div class="irow2"><span class="ik">${t.pj_contact}</span><span class="iv">${c.contact}</span></div>
+          <div class="irow2"><span class="ik">${t.pj_status}</span><span class="iv">${p.status}</span></div>
+          <div style="margin-top:12px;"><button class="tbtn small" style="width:100%;justify-content:center;" onclick="location.href='projects-desktop.html'">${t.pj_open}</button></div>
+        </div>
+      </div>
+
+      <div class="itemshead">
+        <h3>${t.items}</h3>
+        <div class="itemsactions">
+          <label class="costtoggle"><input type="checkbox" ${showCost?'checked':''} onchange="showCost=this.checked;renderAll();">${t.showcost}</label>
+          <button class="tbtn small" onclick="openAddItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.additem}</button>
+        </div>
+      </div>
+      ${e.options.length?`<div class="opttabs">
+        <div class="opttab ${activeOptTab==='base'?'on':''}" onclick="setOptTab('base')">${t.base_offer}</div>
+        ${e.options.map(o=>{const d=optionDelta(e,o);return `<div class="opttab ${activeOptTab===o.id?'on':''}" onclick="setOptTab(${o.id})"><input type="checkbox" ${activeOptTab===o.id?'checked':''} readonly>${t.option} — ${o.name}<span class="odelta">+${fmt0(d)}</span></div>`;}).join("")}
+      </div>`:''}
+      ${renderItemsTable(e)}
+
+      <div class="tccard"><div class="ich"><h4>${t.terms_title}</h4><button class="tbtn small" onclick="openEditText(${e.id},'terms')">${t.edit_short}</button></div><p>${e.terms}</p></div>
+      <div class="tccard"><div class="ich"><h4>${t.excl_title}</h4><button class="tbtn small" onclick="openEditText(${e.id},'exclusions')">${t.edit_short}</button></div><ul>${e.exclusions.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    </div>`;
+}
+
+function optionDelta(e,opt){return opt.items.reduce((a,it)=>a+lineTotal(it),0);}
+
+function renderItemsTable(e){
+  const t=T[LANG];
+  const items=activeItems(e);
+  let rows="";let n=1;
+  const seenLabels=new Set();
+  SECTION_ORDER.forEach(cat=>{
+    const label=SECTION_LABEL[cat];
+    if(seenLabels.has(label))return;
+    seenLabels.add(label);
+    const catsInSection=Object.keys(SECTION_LABEL).filter(k=>SECTION_LABEL[k]===label);
+    const list=items.filter(it=>catsInSection.includes(it.category));
+    if(!list.length)return;
+    rows+=`<tr class="sectionrow"><td colspan="${showCost?9:7}">${n++}. ${label.toUpperCase()}</td></tr>`;
+    let sIdx=1;let sectionSell=0;
+    list.forEach(it=>{
+      const tot=lineTotal(it);sectionSell+=tot;
+      const isOpt=it.fromOption;
+      rows+=`<tr class="${isOpt?'optrow':''}">
+        <td class="rnum">${n-1}.${sIdx++}</td>
+        <td><span class="grip">⠿⠿</span><span class="idesc">${it.desc}</span>${it.category==='subcontractor'?`<span class="subtag">${t.cb_sub.split(' ')[0]}</span>`:''}${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${it.fromOption}</span>`:''}
+          ${it.weight?`<span class="isub">${it.weight} kg${it.waste?` · ${it.waste}% waste`:''}</span>`:''}
+        </td>
+        <td class="rnum">${it.qty}</td>
+        <td>${it.unit}</td>
+        <td class="rnum">${it.sell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}${showCost?`<span class="costsub">cost ${it.cost.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:''}</td>
+        <td class="rnum">${it.disc||0}</td>
+        <td class="rnum">${it.tax||0}</td>
+        ${showCost?`<td class="rnum">${((it.sell-it.cost)*it.qty).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
+        <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      </tr>`;
+    });
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?8:6)}" style="text-align:right;">${t.subtotal_section} — ${SECTION_LABEL[cat]}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+  });
+  return `<div class="itable-wrap"><table class="itable"><thead><tr>
+    <th>${t.th_no}</th><th>${t.th_item}</th><th class="n">${t.th_qty}</th><th>${t.th_unit}</th><th class="n">${t.th_price}</th><th class="n">${t.th_disc}</th><th class="n">${t.th_tax}</th>
+    ${showCost?`<th class="n">Margin (SEK)</th><th class="n">Margin %</th>`:''}
+    <th class="n">${t.th_total}</th>
+  </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderRight(e){
+  const t=T[LANG];const tot=computeTotals(e);
+  return `
+    <div class="panel">
+      <div class="phead"><h3>${t.price_summary}</h3></div>
+      <div class="pricerow"><span class="pk">${t.ps_subtotal}</span><span class="pv">${fmt(tot.sellSubtotal)}</span></div>
+      <div class="pricerow"><span class="pk">${t.ps_discount}</span><span class="pv">${fmt(tot.discount)}</span></div>
+      <div class="pricerow"><span class="pk">${t.ps_tax}</span><span class="pv">${fmt(tot.taxTotal)}</span></div>
+      <div class="pricerow grand"><span class="pk">${t.ps_total}</span><span class="pv">${fmt(tot.grandTotal)}</span></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.cost_breakdown}</h3><button class="iconbtn" style="width:28px;height:28px;" onclick="openPricingSettings(${e.id})" aria-label="Pricing settings"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button></div>
+      <div class="costrow"><span class="ck">${t.cb_material}</span><span>${fmt0(tot.materialCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_labour}</span><span>${fmt0(tot.labourCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_machine}</span><span>${fmt0(tot.machineCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_sub}</span><span>${fmt0(tot.subCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_consumable}</span><span>${fmt0(tot.consumableCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_logistics}</span><span>${fmt0(tot.logisticsCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_other}</span><span>${fmt0(tot.otherCost)}</span></div>
+      <div class="costrow sub"><span>${t.cb_direct}</span><span>${fmt0(tot.totalDirectCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_overhead} (${e.overheadPct}%)</span><span>${fmt0(tot.overhead)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_contingency} (${e.contingencyPct}%)</span><span>${fmt0(tot.contingency)}</span></div>
+      <div class="costrow final"><span>${t.cb_internal}</span><span>${fmt0(tot.totalInternalCost)}</span></div>
+      <div class="costrow"><span class="ck">${t.cb_selling}</span><span>${fmt0(tot.sellingPrice)}</span></div>
+      <div class="costrow profit"><span>${t.cb_profit}</span><span>${fmt0(tot.grossProfit)}</span></div>
+      <div class="costrow margin"><span>${t.cb_margin}</span><span>${tot.margin.toFixed(1)}%</span></div>
+      <div class="markupby">
+        <div class="mb"><div class="ml">${t.mk_material}</div><div class="mv">${tot.matMarkup.toFixed(0)}%</div></div>
+        <div class="mb"><div class="ml">${t.mk_labour}</div><div class="mv">${tot.labMargin.toFixed(0)}%</div></div>
+        <div class="mb"><div class="ml">${t.mk_sub}</div><div class="mv">${tot.subCost?tot.subMarkup.toFixed(0):'—'}%</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.documents}</h3><button class="tbtn small" onclick="openUpload(${e.id})">${t.upload}</button></div>
+      ${e.documents.map(d=>`<div class="docrow2"><div class="dicon ${d.type}">${d.type.toUpperCase()}</div><div class="dn">${d.name}</div><div class="dd">${d.date}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.history}</h3></div>
+      ${e.history.slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${h.date}</div><div><div class="haction">${h.action}</div><div class="hby">by ${h.by}</div></div></div>`).join("")||`<div class="empty3">${t.empty_hist}</div>`}
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.notes}</h3><button class="tbtn small" onclick="openAddNote(${e.id})">${t.addnote}</button></div>
+      ${e.notes.slice().reverse().map(n=>`<div class="notecard"><b>${n.date}</b> — ${n.text}<div style="color:var(--steel-400);margin-top:4px;">– ${n.author}</div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`}
+    </div>`;
+}
+
+function renderActionBar(e){
+  const t=T[LANG];
+  return `<div class="actionbar">
+    <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${t.act_preview}</button>
+    <button onclick="sendEmail(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${t.act_email}</button>
+    <button onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${t.act_open}</button>
+    <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${t.act_duplicate}</button>
+    <button onclick="exportExcel(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${t.act_export}</button>
+    <button class="danger" onclick="deleteEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${t.act_delete}</button>
+  </div>`;
+}
+
+function renderAll(){
+  const t=T[LANG];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
+  let e=getEst(selectedId);if(!e){e=ESTIMATIONS[0];selectedId=e.id;}
+  $("app").innerHTML=`<div class="crmgrid">
+    <div class="col">${renderLeft()}</div>
+    <div class="col">${renderMiddle(e)}</div>
+    <div class="col">${renderRight(e)}</div>
+  </div>${renderActionBar(e)}`;
+  const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
+}
+
+function setOptTab(id){activeOptTab=id;renderAll();}
+
+function setStage(id,stage){
+  const e=getEst(id);if(e.status===stage)return;
+  const t=T[LANG];
+  if(!confirm(t.confirm_stage.replace('{s}',t["st_"+stage])))return;
+  e.status=stage;
+  e.history.push({date:new Date().toISOString().slice(0,10),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
+  renderAll();
+}
+
+function closeModal(){$("fov").classList.remove("show");}
+$("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
+
+function openNewEst(){
+  const t=T[LANG];
+  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${CUSTOMERS[id].name}</option>`).join("");
+  const projOpts=Object.keys(PROJECTS).map(no=>`<option value="${no}">${no} — ${PROJECTS[no].name}</option>`).join("");
+  $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.esub}</p>
+    <div class="frow"><label>${t.nc_customer}</label><select id="neCustomer">${custOpts}</select></div>
+    <div class="frow"><label>${t.nc_project}</label><select id="neProject">${projOpts}</select></div>
+    <div class="frow"><label>${t.nc_valid}</label><input id="neValid" type="date"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewEst()">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveNewEst(){
+  const customerId=parseInt($("neCustomer").value);const projectNo=$("neProject").value;
+  const no="EST-26-0"+String(nextEstId).padStart(2,'0');
+  ESTIMATIONS.push({id:nextEstId++,no,customerId,projectNo,status:"draft",created:new Date().toISOString().slice(0,10),
+    validUntil:$("neValid").value||new Date().toISOString().slice(0,10),currency:"SEK",deliveryTime:"—",paymentTerms:"30 days",
+    priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
+    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(20000),options:[],exclusions:[],terms:"Prices valid for 30 days.",
+    documents:[],history:[{date:new Date().toISOString().slice(0,10),action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]});
+  closeModal();selectedId=nextEstId-1;renderAll();
+}
+
+function openEditEst(id){
+  const t=T[LANG];const e=getEst(id);
+  $("fcard").innerHTML=`<h2>${t.edit} — ${e.no}</h2>
+    <div class="frow2"><div><label>${t.ei_ref}</label><input id="eeRef" value="${e.reference}"></div><div><label>${t.ei_valid}</label><input id="eeValid" type="date" value="${e.validUntil}"></div></div>
+    <div class="frow2"><div><label>${t.ei_delivery}</label><input id="eeDelivery" value="${e.deliveryTime}"></div><div><label>${t.ei_terms}</label><input id="eeTerms" value="${e.paymentTerms}"></div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditEst(${id})">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveEditEst(id){
+  const e=getEst(id);e.reference=$("eeRef").value;e.validUntil=$("eeValid").value||e.validUntil;e.deliveryTime=$("eeDelivery").value;e.paymentTerms=$("eeTerms").value;
+  closeModal();renderAll();
+}
+
+function openPricingSettings(id){
+  const t=T[LANG];const e=getEst(id);
+  $("fcard").innerHTML=`<h2>${t.pricing_title}</h2><p class="fsub">${e.no}</p>
+    <p class="fnote">${t.pricing_note}</p>
+    <div class="frow2"><div><label>${t.cb_overhead} %</label><input id="psOverhead" type="number" value="${e.overheadPct}"></div><div><label>${t.cb_contingency} %</label><input id="psContingency" type="number" value="${e.contingencyPct}"></div></div>
+    <div class="frow"><label>${t.ps_discount} (SEK)</label><input id="psDiscount" type="number" value="${e.discount}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="savePricingSettings(${id})">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function savePricingSettings(id){
+  const e=getEst(id);e.overheadPct=parseFloat($("psOverhead").value)||0;e.contingencyPct=parseFloat($("psContingency").value)||0;e.discount=parseFloat($("psDiscount").value)||0;
+  closeModal();renderAll();
+}
+
+function openAddItem(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.additem}</h2>
+    <div class="frow"><label>${t.th_item}</label><input id="aiDesc"></div>
+    <div class="frow"><label>Category</label><select id="aiCat">
+      <option value="material">Materials</option><option value="labour">Labour</option><option value="machine">Machines & Services</option>
+      <option value="subcontractor">Subcontractor</option><option value="consumable">Consumables</option><option value="logistics">Logistics</option><option value="other">Other</option>
+    </select></div>
+    <div class="frow3"><div><label>${t.th_qty}</label><input id="aiQty" type="number" value="1"></div><div><label>${t.th_unit}</label><input id="aiUnit" value="pcs"></div><div><label>${t.th_price}</label><input id="aiSell" type="number" value="0"></div></div>
+    <div class="frow"><label>Internal cost</label><input id="aiCost" type="number" value="0"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="saveAddItem(${id})">${t.additem}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveAddItem(id){
+  const desc=$("aiDesc").value.trim();if(!desc)return;
+  const e=getEst(id);
+  e.items.push({desc,category:$("aiCat").value,qty:parseFloat($("aiQty").value)||1,unit:$("aiUnit").value||"pcs",
+    cost:parseFloat($("aiCost").value)||0,sell:parseFloat($("aiSell").value)||0,disc:0,tax:25});
+  e.history.push({date:new Date().toISOString().slice(0,10),action:`Item added: ${desc}`,by:"Aleksandar C."});
+  closeModal();renderAll();
+}
+
+function openEditText(id,field){
+  const t=T[LANG];const e=getEst(id);
+  const isExcl=field==='exclusions';
+  $("fcard").innerHTML=`<h2>${isExcl?t.excl_title:t.terms_title}</h2>
+    <div class="frow"><textarea id="etText" style="min-height:120px;">${isExcl?e.exclusions.join("\\n"):e.terms}</textarea></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditText(${id},'${field}')">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveEditText(id,field){
+  const e=getEst(id);const val=$("etText").value;
+  if(field==='exclusions')e.exclusions=val.split("\n").map(s=>s.trim()).filter(Boolean);else e.terms=val;
+  closeModal();renderAll();
+}
+
+function openAddNote(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.an_title}</h2><p class="fsub">${getEst(id).no}</p>
+    <div class="frow"><label>${t.an_text}</label><textarea id="anText"></textarea></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${t.an_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveAddNote(id){
+  const text=$("anText").value.trim();if(!text)return;
+  getEst(id).notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar",text});
+  closeModal();renderAll();
+}
+
+function openUpload(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${getEst(id).no}</p>
+    <div class="frow"><label>${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUpload(${id})">${t.ud_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveUpload(id){
+  const name=$("udName").value.trim();if(!name)return;
+  const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':(ext==='zip')?'zip':'doc';
+  const e=getEst(id);e.documents.push({name,type,date:new Date().toISOString().slice(0,10)});
+  e.history.push({date:new Date().toISOString().slice(0,10),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
+  closeModal();renderAll();
+}
+
+function duplicateEst(id){
+  const src=getEst(id);
+  const copy=JSON.parse(JSON.stringify(src));
+  copy.id=nextEstId++;copy.no="EST-26-0"+String(nextEstId-1).padStart(2,'0');copy.status="draft";
+  copy.created=new Date().toISOString().slice(0,10);
+  copy.history=[{date:copy.created,action:`Duplicated from ${src.no}`,by:"Aleksandar C."}];
+  ESTIMATIONS.push(copy);selectedId=copy.id;renderAll();
+}
+function deleteEst(id){
+  const t=T[LANG];if(!confirm(t.confirm_delete))return;
+  ESTIMATIONS=ESTIMATIONS.filter(e=>e.id!==id);
+  if(selectedId===id)selectedId=ESTIMATIONS.length?ESTIMATIONS[0].id:null;
+  renderAll();
+}
+function sendEmail(id){
+  const e=getEst(id);const c=CUSTOMERS[e.customerId];
+  location.href=`mailto:${c.email}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
+}
+function exportExcel(id){alert("Export to Excel (demo) — "+getEst(id).no+".xlsx");}
+function printEst(id){selectedId=id;renderPrintSheet(getEst(id));window.print();}
+
+function renderPrintSheet(e){
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);
+  const items=activeItems(e);
+  const rows=items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.desc}</td><td style="text-align:right;">${it.qty}</td><td>${it.unit}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
+  $("printSheet").innerHTML=`<h1 style="font-family:sans-serif;">Varmak AB — Estimation ${e.no}</h1>
+    <p>${c.name}, ${c.address}</p><p>Date: ${e.created} · Valid until: ${e.validUntil}</p>
+    <table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="6"><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="margin-top:16px;">Subtotal: ${tot.sellSubtotal.toFixed(2)} SEK<br>Tax: ${tot.taxTotal.toFixed(2)} SEK<br><b>Total: ${tot.grandTotal.toFixed(2)} SEK</b></p>
+    <p style="margin-top:16px;">${e.terms}</p>`;
+}
+
+function setLang(code){LANG=code;
+  document.documentElement.lang=code==="mk"?"mk-Latn":code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
+  renderAll();tick();
+}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
+function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+setLang("en");setInterval(tick,10000);
+
+const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+(function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+</script>
+</body></html>
