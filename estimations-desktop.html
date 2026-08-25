@@ -165,6 +165,11 @@
   .itable .isub{color:var(--steel-400);font-size:11px;}
   .itable .costsub{color:var(--steel-400);font-size:10.5px;display:block;margin-top:1px;}
   .subtag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);border:1px solid rgba(255,176,87,.4);background:rgba(255,176,87,.1);padding:1px 6px;margin-left:6px;}
+  .cattag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;margin-left:6px;border:1px solid var(--field-line);color:var(--steel-300);background:rgba(255,255,255,.04);}
+  .cattag.cat-material{color:#cfe0ff;border-color:rgba(74,144,255,.35);background:rgba(74,144,255,.08);}
+  .cattag.cat-subcontractor{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+  .addline-btn{background:none;border:none;color:var(--spark);font-size:11px;cursor:pointer;margin-left:10px;font-family:'Inter';}
+  .addline-btn:hover{text-decoration:underline;}
   .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
 
   .tccard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:15px;margin-bottom:14px;}
@@ -299,16 +304,20 @@ const PROJECTS={
 function autoItems(total){
   const matSell=Math.round(total*0.28),labSell=Math.round(total*0.55),machSell=Math.round(total-matSell-labSell);
   return [
-    {desc:"Materials & fabrication stock",category:"material",qty:1,unit:"lot",weight:0,waste:5,cost:Math.round(matSell*0.68),sell:matSell,disc:0,tax:25},
-    {desc:"Labour — fabrication & installation",category:"labour",qty:1,unit:"lot",cost:Math.round(labSell*0.74),sell:labSell,disc:0,tax:25},
-    {desc:"Machine time & consumables",category:"machine",qty:1,unit:"lot",cost:Math.round(machSell*0.72),sell:machSell,disc:0,tax:25}
+    {no:"",desc:"Fabrication & Materials",lines:[
+      {desc:"Materials & fabrication stock",category:"material",qty:1,unit:"lot",weight:0,waste:5,cost:Math.round(matSell*0.68),sell:matSell,disc:0,tax:25},
+      {desc:"Machine time & consumables",category:"machine",qty:1,unit:"lot",cost:Math.round(machSell*0.72),sell:machSell,disc:0,tax:25}
+    ]},
+    {no:"",desc:"Labour & Installation",lines:[
+      {desc:"Labour — fabrication & installation",category:"labour",qty:1,unit:"lot",cost:Math.round(labSell*0.74),sell:labSell,disc:0,tax:25}
+    ]}
   ];
 }
 
 let ESTIMATIONS=[
   {id:1,no:"EST-26-0001",customerId:1,projectNo:"P-26-0001",status:"accepted",created:"2026-08-10",validUntil:"2026-09-09",
     currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(92000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(92000),options:[],
     exclusions:["Electrical connection to plant mains excluded.","Customer to supply access for on-site installation."],
     terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
     documents:[{name:"Customer PO.pdf",type:"pdf",date:"2026-08-08"}],
@@ -317,46 +326,51 @@ let ESTIMATIONS=[
   {id:2,no:"EST-26-0002",customerId:2,projectNo:"P-26-0002",status:"sent",created:"2026-08-18",validUntil:"2026-09-17",
     currency:"SEK",deliveryTime:"4–5 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-114",createdBy:"Aleksandar C.",
     overheadPct:8,contingencyPct:5,discount:0,
-    items:[
-      {desc:"Steel Sheet 3mm (S235JR)",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:450,sell:620,disc:0,tax:25},
-      {desc:"Square Tube 40x40x3mm (S235JR)",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:95,sell:135,disc:0,tax:25},
-      {desc:"HMI Mounting Bracket Kit",category:"material",qty:1,unit:"set",weight:12,waste:0,cost:2100,sell:2850,disc:0,tax:25},
-      {desc:"Fasteners & Hardware Set",category:"material",qty:1,unit:"set",weight:4,waste:0,cost:680,sell:950,disc:0,tax:25},
-
-      {desc:"Site Visit & Measurements",category:"labour",qty:4,unit:"h",cost:350,sell:450,disc:0,tax:25},
-      {desc:"Engineering / CAD Drawings",category:"labour",qty:14,unit:"h",cost:380,sell:490,disc:0,tax:25},
-      {desc:"CAM Programming",category:"labour",qty:5,unit:"h",cost:380,sell:490,disc:0,tax:25},
-      {desc:"Cutting",category:"labour",qty:8,unit:"h",cost:320,sell:420,disc:0,tax:25},
-      {desc:"Fitting",category:"labour",qty:18,unit:"h",cost:320,sell:420,disc:0,tax:25},
-      {desc:"MIG/MAG Welding",category:"labour",qty:24,unit:"h",cost:340,sell:440,disc:0,tax:25},
-      {desc:"Grinding & Finishing",category:"labour",qty:10,unit:"h",cost:300,sell:400,disc:0,tax:25},
-      {desc:"Panel Wiring (Electrical)",category:"labour",qty:26,unit:"h",cost:360,sell:470,disc:0,tax:25},
-      {desc:"Assembly",category:"labour",qty:16,unit:"h",cost:320,sell:420,disc:0,tax:25},
-      {desc:"Installation (On-site)",category:"labour",qty:20,unit:"h",cost:340,sell:450,disc:0,tax:25},
-      {desc:"Inspection & QA",category:"labour",qty:5,unit:"h",cost:350,sell:450,disc:0,tax:25},
-
-      {desc:"CNC Laser Cutting (steel sheet)",category:"machine",qty:8,unit:"m²",cost:180,sell:240,disc:0,tax:25},
-      {desc:"CNC Bending",category:"machine",qty:22,unit:"bends",cost:45,sell:65,disc:0,tax:25},
-      {desc:"Powder Coating (RAL 7035)",category:"machine",qty:6,unit:"m²",cost:220,sell:310,disc:0,tax:25},
-      {desc:"External Subcontractor — HMI Touchscreen Programming",category:"subcontractor",qty:1,unit:"job",cost:4200,sell:5400,disc:0,tax:25},
-
-      {desc:"MIG Welding Wire ER70S-6 Ø1.0mm",category:"consumable",qty:12,unit:"kg",cost:85,sell:115,disc:0,tax:25},
-      {desc:"Shielding Gas (Ar/CO2 mix)",category:"consumable",qty:2,unit:"bottle",cost:450,sell:590,disc:0,tax:25},
-      {desc:"Grinding & Cutting Discs",category:"consumable",qty:15,unit:"pcs",cost:28,sell:40,disc:0,tax:25},
-      {desc:"Fasteners (M8 stainless)",category:"consumable",qty:60,unit:"pcs",cost:4,sell:6,disc:0,tax:25},
-
-      {desc:"Delivery — Workshop to Helsingborg",category:"logistics",qty:1,unit:"trip",cost:900,sell:1200,disc:0,tax:25},
-      {desc:"Travel Time (2 technicians, on-site day)",category:"logistics",qty:8,unit:"h",cost:280,sell:350,disc:0,tax:25},
-      {desc:"Mileage Allowance",category:"logistics",qty:140,unit:"km",cost:4.5,sell:6,disc:0,tax:25},
-
-      {desc:"Packing & Crating",category:"other",qty:1,unit:"set",cost:450,sell:650,disc:0,tax:25}
+    workItems:[
+      {no:"JC-26-0040",desc:"Engineering & Preparation",lines:[
+        {desc:"Site Visit & Measurements",category:"labour",qty:4,unit:"h",cost:350,sell:450,disc:0,tax:25},
+        {desc:"Engineering / CAD Drawings",category:"labour",qty:14,unit:"h",cost:380,sell:490,disc:0,tax:25},
+        {desc:"CAM Programming",category:"labour",qty:5,unit:"h",cost:380,sell:490,disc:0,tax:25}
+      ]},
+      {no:"JC-26-0041",desc:"Frame & Bracket Fabrication",lines:[
+        {desc:"Steel Sheet 3mm (S235JR)",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:450,sell:620,disc:0,tax:25},
+        {desc:"Square Tube 40x40x3mm (S235JR)",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:95,sell:135,disc:0,tax:25},
+        {desc:"HMI Mounting Bracket Kit",category:"material",qty:1,unit:"set",weight:12,waste:0,cost:2100,sell:2850,disc:0,tax:25},
+        {desc:"Fasteners & Hardware Set",category:"material",qty:1,unit:"set",weight:4,waste:0,cost:680,sell:950,disc:0,tax:25},
+        {desc:"Cutting",category:"labour",qty:8,unit:"h",cost:320,sell:420,disc:0,tax:25},
+        {desc:"Fitting",category:"labour",qty:18,unit:"h",cost:320,sell:420,disc:0,tax:25},
+        {desc:"Grinding & Finishing",category:"labour",qty:10,unit:"h",cost:300,sell:400,disc:0,tax:25},
+        {desc:"CNC Laser Cutting (steel sheet)",category:"machine",qty:8,unit:"m²",cost:180,sell:240,disc:0,tax:25},
+        {desc:"CNC Bending",category:"machine",qty:22,unit:"bends",cost:45,sell:65,disc:0,tax:25},
+        {desc:"Powder Coating (RAL 7035)",category:"machine",qty:6,unit:"m²",cost:220,sell:310,disc:0,tax:25},
+        {desc:"Grinding & Cutting Discs",category:"consumable",qty:15,unit:"pcs",cost:28,sell:40,disc:0,tax:25},
+        {desc:"Fasteners (M8 stainless)",category:"consumable",qty:60,unit:"pcs",cost:4,sell:6,disc:0,tax:25}
+      ]},
+      {no:"JC-26-0042",desc:"Welding & Assembly",lines:[
+        {desc:"MIG/MAG Welding",category:"labour",qty:24,unit:"h",cost:340,sell:440,disc:0,tax:25},
+        {desc:"Assembly",category:"labour",qty:16,unit:"h",cost:320,sell:420,disc:0,tax:25},
+        {desc:"MIG Welding Wire ER70S-6 Ø1.0mm",category:"consumable",qty:12,unit:"kg",cost:85,sell:115,disc:0,tax:25},
+        {desc:"Shielding Gas (Ar/CO2 mix)",category:"consumable",qty:2,unit:"bottle",cost:450,sell:590,disc:0,tax:25}
+      ]},
+      {no:"JC-26-0043",desc:"Panel Wiring & HMI Integration",lines:[
+        {desc:"Panel Wiring (Electrical)",category:"labour",qty:26,unit:"h",cost:360,sell:470,disc:0,tax:25},
+        {desc:"External Subcontractor — HMI Touchscreen Programming",category:"subcontractor",qty:1,unit:"job",cost:4200,sell:5400,disc:0,tax:25}
+      ]},
+      {no:"JC-26-0044",desc:"Installation & Commissioning",lines:[
+        {desc:"Installation (On-site)",category:"labour",qty:20,unit:"h",cost:340,sell:450,disc:0,tax:25},
+        {desc:"Inspection & QA",category:"labour",qty:5,unit:"h",cost:350,sell:450,disc:0,tax:25},
+        {desc:"Delivery — Workshop to Helsingborg",category:"logistics",qty:1,unit:"trip",cost:900,sell:1200,disc:0,tax:25},
+        {desc:"Travel Time (2 technicians, on-site day)",category:"logistics",qty:8,unit:"h",cost:280,sell:350,disc:0,tax:25},
+        {desc:"Mileage Allowance",category:"logistics",qty:140,unit:"km",cost:4.5,sell:6,disc:0,tax:25},
+        {desc:"Packing & Crating",category:"other",qty:1,unit:"set",cost:450,sell:650,disc:0,tax:25}
+      ]}
     ],
     options:[
-      {id:1,name:"316L Stainless Upgrade",included:false,items:[
+      {id:1,name:"316L Stainless Upgrade",included:false,intoWorkItem:"JC-26-0041",lines:[
         {desc:"Steel Sheet 3mm (AISI 316L) — upgrade from S235JR",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:980,sell:1340,disc:0,tax:25},
         {desc:"Square Tube 40x40x3mm (AISI 316L) — upgrade",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:210,sell:290,disc:0,tax:25}
       ]},
-      {id:2,name:"Touchscreen HMI Panel",included:false,items:[
+      {id:2,name:"Touchscreen HMI Panel",included:false,intoWorkItem:"JC-26-0043",lines:[
         {desc:"10\" Industrial Touchscreen HMI Unit",category:"material",qty:1,unit:"pcs",weight:3,waste:0,cost:8200,sell:11400,disc:0,tax:25},
         {desc:"External Subcontractor — HMI Panel Integration",category:"subcontractor",qty:1,unit:"job",cost:5100,sell:6600,disc:0,tax:25}
       ]}
@@ -377,54 +391,53 @@ let ESTIMATIONS=[
     notes:[{date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final retrofit scope before locking materials."}]},
   {id:3,no:"EST-26-0003",customerId:3,projectNo:"P-26-0003",status:"draft",created:"2026-08-22",validUntil:"2026-09-21",
     currency:"SEK",deliveryTime:"1–2 weeks",paymentTerms:"15 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(16000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(16000),options:[],
     exclusions:["Preliminary estimate only, subject to inspection findings."],
     terms:"Prices valid for 30 days.",documents:[],
     history:[{date:"2026-08-22",action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]},
   {id:4,no:"EST-26-0004",customerId:4,projectNo:"P-26-0004",status:"accepted",created:"2026-05-28",validUntil:"2026-06-27",
     currency:"SEK",deliveryTime:"3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"HF-2201",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(58000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(58000),options:[],
     exclusions:["Painting/finishing beyond mill finish excluded."],
     terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
     documents:[{name:"Completion Report.pdf",type:"pdf",date:"2026-06-20"}],
     history:[{date:"2026-05-28",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-05-30",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
   {id:5,no:"EST-26-0005",customerId:5,projectNo:"P-26-0005",status:"accepted",created:"2026-08-05",validUntil:"2026-09-04",
     currency:"SEK",deliveryTime:"Same week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-99",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(16500),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(16500),options:[],
     exclusions:["Parts availability subject to supplier stock."],
     terms:"Prices valid for 14 days for service call-outs.",documents:[],
     history:[{date:"2026-08-05",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-06",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
   {id:6,no:"EST-26-0006",customerId:6,projectNo:"P-26-0006",status:"sent",created:"2026-08-12",validUntil:"2026-09-11",
     currency:"SEK",deliveryTime:"2 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"YB-33",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(24000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(24000),options:[],
     exclusions:["Seal kit lead time dependent on supplier — see notes."],
     terms:"Prices valid for 30 days.",documents:[],
     history:[{date:"2026-08-12",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-13",action:"Sent to customer for review",by:"Aleksandar C."}],
     notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit, resume expected Sept 1."}]},
   {id:7,no:"EST-26-0007",customerId:7,projectNo:"P-26-0007",status:"declined",created:"2026-07-20",validUntil:"2026-08-19",
     currency:"SEK",deliveryTime:"6 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"TS-500",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(210000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(210000),options:[],
     exclusions:["Civil works and conveyor pit modification excluded."],
     terms:"Prices valid for 30 days.",documents:[],
     history:[{date:"2026-07-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-05",action:"Declined — customer postponed investment",by:"Aleksandar C."}],notes:[]},
   {id:8,no:"EST-26-0008",customerId:5,projectNo:"P-26-0008",status:"accepted",created:"2026-08-20",validUntil:"2026-09-19",
     currency:"SEK",deliveryTime:"1 week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-101",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(14000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(14000),options:[],
     exclusions:["Scheduling subject to workshop capacity."],
     terms:"Prices valid for 30 days.",documents:[],
     history:[{date:"2026-08-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-22",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
   {id:9,no:"EST-26-0009",customerId:2,projectNo:"P-26-0009",status:"sent",created:"2026-08-24",validUntil:"2026-09-23",
     currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-108",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(31000),options:[],
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(31000),options:[],
     exclusions:["PLC software licensing costs excluded, billed separately if required."],
     terms:"Prices valid for 30 days.",documents:[],
     history:[{date:"2026-08-24",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-24",action:"Sent to customer for review",by:"Aleksandar C."}],notes:[]}
 ];
 let nextEstId=10;
 
-const SECTION_LABEL={material:"Materials",labour:"Labour",machine:"Machines & Services",subcontractor:"Machines & Services",consumable:"Consumables",logistics:"Logistics",other:"Other Costs"};
-const SECTION_ORDER=["material","labour","machine","consumable","logistics","other"];
 const STAGES=["draft","review","sent","accepted"];
+function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
 
 const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",etitle:"Estimations",esub:"Quotes & costing",
@@ -439,9 +452,11 @@ const T={
     ei_number:"Estimation Number",ei_ref:"Reference / PO",ei_date:"Estimation Date",ei_valid:"Valid Until",ei_currency:"Currency",
     ei_delivery:"Delivery Time",ei_terms:"Payment Terms",ei_pricelist:"Price List",ei_incoterms:"Incoterms",ei_notes:"Notes",
     pj_location:"Location",pj_type:"Project Type",pj_contact:"Contact Person",pj_status:"Project Status",pj_open:"Open Project",
-    items:"Estimation Items",additem:"Add Item",addsection:"Add Section",showcost:"Show internal cost & margin",
-    th_no:"#",th_item:"Item / Description",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total (SEK)",
+    items:"Estimation Items",additem:"Add Item",addline:"Add Line",addworkitem:"Add Work Item",addsection:"Add Section",showcost:"Show internal cost & margin",
+    wi_no:"Job / item number (optional)",wi_desc:"Work item description",
+    th_no:"#",th_item:"Item / Description",th_category:"Category",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total (SEK)",
     subtotal_section:"Subtotal",
+    cat_material:"Material",cat_labour:"Labour",cat_machine:"Machine",cat_subcontractor:"Subcontractor",cat_consumable:"Consumable",cat_logistics:"Logistics",cat_other:"Other",
     base_offer:"Base Offer",option:"Option",include:"include",
     terms_title:"Terms & Conditions",excl_title:"Exclusions & Assumptions",edit_short:"Edit",
     price_summary:"Price Summary",ps_subtotal:"Subtotal (excl. tax)",ps_discount:"Discount",ps_tax:"Tax (25%)",ps_total:"TOTAL (incl. tax)",
@@ -470,9 +485,11 @@ const T={
     ei_number:"Kalkylnummer",ei_ref:"Referens / PO",ei_date:"Kalkyldatum",ei_valid:"Giltig till",ei_currency:"Valuta",
     ei_delivery:"Leveranstid",ei_terms:"Betalningsvillkor",ei_pricelist:"Prislista",ei_incoterms:"Incoterms",ei_notes:"Anteckningar",
     pj_location:"Plats",pj_type:"Projekttyp",pj_contact:"Kontaktperson",pj_status:"Projektstatus",pj_open:"Öppna projekt",
-    items:"Kalkylposter",additem:"Lägg till post",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
-    th_no:"#",th_item:"Post / Beskrivning",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa (SEK)",
+    items:"Kalkylposter",additem:"Lägg till post",addline:"Lägg till rad",addworkitem:"Lägg till arbetsmoment",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
+    wi_no:"Jobb-/artikelnummer (valfritt)",wi_desc:"Beskrivning av arbetsmoment",
+    th_no:"#",th_item:"Post / Beskrivning",th_category:"Kategori",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa (SEK)",
     subtotal_section:"Delsumma",
+    cat_material:"Material",cat_labour:"Arbete",cat_machine:"Maskin",cat_subcontractor:"Underleverantör",cat_consumable:"Förbrukning",cat_logistics:"Transport",cat_other:"Övrigt",
     base_offer:"Grunderbjudande",option:"Tillval",include:"inkludera",
     terms_title:"Villkor",excl_title:"Undantag & antaganden",edit_short:"Redigera",
     price_summary:"Prissammanfattning",ps_subtotal:"Delsumma (exkl. moms)",ps_discount:"Rabatt",ps_tax:"Moms (25%)",ps_total:"TOTALT (inkl. moms)",
@@ -501,9 +518,11 @@ const T={
     ei_number:"Broj na kalkulacija",ei_ref:"Referenca / PO",ei_date:"Datum",ei_valid:"Važi do",ei_currency:"Valuta",
     ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plaќaњe",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
     pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
-    items:"Stavki od kalkulacija",additem:"Dodaj stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
-    th_no:"#",th_item:"Stavka / Opis",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
+    items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addworkitem:"Dodaj rabotna stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
+    wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",
+    th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
     subtotal_section:"Meѓuzbir",
+    cat_material:"Materijal",cat_labour:"Rabota",cat_machine:"Mašina",cat_subcontractor:"Podizveduvač",cat_consumable:"Potrošen materijal",cat_logistics:"Transport",cat_other:"Drugo",
     base_offer:"Osnovna ponuda",option:"Opcija",include:"vkluči",
     terms_title:"Uslovi",excl_title:"Isklučuvaњa i pretpostavki",edit_short:"Uredi",
     price_summary:"Pregled na cena",ps_subtotal:"Meѓuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",
@@ -531,17 +550,23 @@ function lineTotal(it){return it.qty*it.sell*(1-(it.disc||0)/100);}
 function lineTax(it){return lineTotal(it)*(it.tax||0)/100;}
 function lineCostTotal(it){return it.qty*it.cost;}
 
-function activeItems(e){
-  let items=e.items.slice();
+function mergedWorkItems(e){
+  const wis=e.workItems.map(wi=>({no:wi.no,desc:wi.desc,lines:wi.lines.slice()}));
   if(activeOptTab!=="base"){
     const opt=e.options.find(o=>o.id===activeOptTab);
-    if(opt)items=items.concat(opt.items.map(i=>Object.assign({},i,{fromOption:opt.name})));
+    if(opt){
+      const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name}));
+      const target=wis.find(wi=>wi.no&&wi.no===opt.intoWorkItem);
+      if(target)target.lines=target.lines.concat(optLines);
+      else wis.push({no:"",desc:opt.name,lines:optLines});
+    }
   }
-  return items;
+  return wis;
 }
+function flatLines(e){return mergedWorkItems(e).flatMap(wi=>wi.lines);}
 
 function computeTotals(e){
-  const items=activeItems(e);
+  const items=flatLines(e);
   const bySection={};
   items.forEach(it=>{const s=it.category;bySection[s]=(bySection[s]||0)+lineTotal(it);});
   const sellSubtotal=items.reduce((a,b)=>a+lineTotal(b),0);
@@ -696,7 +721,7 @@ function renderMiddle(e){
         <h3>${t.items}</h3>
         <div class="itemsactions">
           <label class="costtoggle"><input type="checkbox" ${showCost?'checked':''} onchange="showCost=this.checked;renderAll();">${t.showcost}</label>
-          <button class="tbtn small" onclick="openAddItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.additem}</button>
+          <button class="tbtn small" onclick="openAddWorkItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.addworkitem}</button>
         </div>
       </div>
       ${e.options.length?`<div class="opttabs">
@@ -710,28 +735,23 @@ function renderMiddle(e){
     </div>`;
 }
 
-function optionDelta(e,opt){return opt.items.reduce((a,it)=>a+lineTotal(it),0);}
+function optionDelta(e,opt){return opt.lines.reduce((a,it)=>a+lineTotal(it),0);}
 
 function renderItemsTable(e){
   const t=T[LANG];
-  const items=activeItems(e);
+  const workItems=mergedWorkItems(e);
   let rows="";let n=1;
-  const seenLabels=new Set();
-  SECTION_ORDER.forEach(cat=>{
-    const label=SECTION_LABEL[cat];
-    if(seenLabels.has(label))return;
-    seenLabels.add(label);
-    const catsInSection=Object.keys(SECTION_LABEL).filter(k=>SECTION_LABEL[k]===label);
-    const list=items.filter(it=>catsInSection.includes(it.category));
-    if(!list.length)return;
-    rows+=`<tr class="sectionrow"><td colspan="${showCost?9:7}">${n++}. ${label.toUpperCase()}</td></tr>`;
+  workItems.forEach((wi,idx)=>{
+    if(!wi.lines.length)return;
+    const canAddHere=idx<e.workItems.length;
+    rows+=`<tr class="sectionrow"><td colspan="${showCost?9:7}">${n}. ${wi.desc.toUpperCase()}${wi.no?` <span style="opacity:.6;font-weight:600;">(${wi.no})</span>`:''}</td></tr>`;
     let sIdx=1;let sectionSell=0;
-    list.forEach(it=>{
+    wi.lines.forEach(it=>{
       const tot=lineTotal(it);sectionSell+=tot;
       const isOpt=it.fromOption;
       rows+=`<tr class="${isOpt?'optrow':''}">
-        <td class="rnum">${n-1}.${sIdx++}</td>
-        <td><span class="grip">⠿⠿</span><span class="idesc">${it.desc}</span>${it.category==='subcontractor'?`<span class="subtag">${t.cb_sub.split(' ')[0]}</span>`:''}${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${it.fromOption}</span>`:''}
+        <td class="rnum">${n}.${sIdx++}</td>
+        <td><span class="grip">⠿⠿</span><span class="idesc">${it.desc}</span><span class="cattag cat-${it.category}">${catLabel(it.category)}</span>${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${it.fromOption}</span>`:''}
           ${it.weight?`<span class="isub">${it.weight} kg${it.waste?` · ${it.waste}% waste`:''}</span>`:''}
         </td>
         <td class="rnum">${it.qty}</td>
@@ -743,7 +763,8 @@ function renderItemsTable(e){
         <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?8:6)}" style="text-align:right;">${t.subtotal_section} — ${SECTION_LABEL[cat]}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?8:6)}" style="text-align:right;">${t.subtotal_section} — ${wi.desc}${canAddHere?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${t.addline}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    n++;
   });
   return `<div class="itable-wrap"><table class="itable"><thead><tr>
     <th>${t.th_no}</th><th>${t.th_item}</th><th class="n">${t.th_qty}</th><th>${t.th_unit}</th><th class="n">${t.th_price}</th><th class="n">${t.th_disc}</th><th class="n">${t.th_tax}</th>
@@ -853,7 +874,7 @@ function saveNewEst(){
   ESTIMATIONS.push({id:nextEstId++,no,customerId,projectNo,status:"draft",created:new Date().toISOString().slice(0,10),
     validUntil:$("neValid").value||new Date().toISOString().slice(0,10),currency:"SEK",deliveryTime:"—",paymentTerms:"30 days",
     priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,items:autoItems(20000),options:[],exclusions:[],terms:"Prices valid for 30 days.",
+    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(20000),options:[],exclusions:[],terms:"Prices valid for 30 days.",
     documents:[],history:[{date:new Date().toISOString().slice(0,10),action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]});
   closeModal();selectedId=nextEstId-1;renderAll();
 }
@@ -885,25 +906,41 @@ function savePricingSettings(id){
   closeModal();renderAll();
 }
 
-function openAddItem(id){
+function openAddWorkItem(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.additem}</h2>
+  $("fcard").innerHTML=`<h2>${t.addworkitem}</h2><p class="fsub">${getEst(id).no}</p>
+    <div class="frow"><label>${t.wi_no}</label><input id="awNo" placeholder="JC-26-00XX"></div>
+    <div class="frow"><label>${t.wi_desc}</label><input id="awDesc"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddWorkItem(${id})">${t.addworkitem}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveAddWorkItem(id){
+  const desc=$("awDesc").value.trim();if(!desc)return;
+  const e=getEst(id);
+  e.workItems.push({no:$("awNo").value.trim(),desc,lines:[]});
+  e.history.push({date:new Date().toISOString().slice(0,10),action:`Work item added: ${desc}`,by:"Aleksandar C."});
+  closeModal();renderAll();
+}
+
+function openAddLine(id,idx){
+  const t=T[LANG];const wi=getEst(id).workItems[idx];
+  $("fcard").innerHTML=`<h2>${t.addline}</h2><p class="fsub">${wi.desc}</p>
     <div class="frow"><label>${t.th_item}</label><input id="aiDesc"></div>
-    <div class="frow"><label>Category</label><select id="aiCat">
-      <option value="material">Materials</option><option value="labour">Labour</option><option value="machine">Machines & Services</option>
-      <option value="subcontractor">Subcontractor</option><option value="consumable">Consumables</option><option value="logistics">Logistics</option><option value="other">Other</option>
+    <div class="frow"><label>${t.th_category}</label><select id="aiCat">
+      <option value="material">${catLabel('material')}</option><option value="labour">${catLabel('labour')}</option><option value="machine">${catLabel('machine')}</option>
+      <option value="subcontractor">${catLabel('subcontractor')}</option><option value="consumable">${catLabel('consumable')}</option><option value="logistics">${catLabel('logistics')}</option><option value="other">${catLabel('other')}</option>
     </select></div>
     <div class="frow3"><div><label>${t.th_qty}</label><input id="aiQty" type="number" value="1"></div><div><label>${t.th_unit}</label><input id="aiUnit" value="pcs"></div><div><label>${t.th_price}</label><input id="aiSell" type="number" value="0"></div></div>
     <div class="frow"><label>Internal cost</label><input id="aiCost" type="number" value="0"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="saveAddItem(${id})">${t.additem}</button></div>`;
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddLine(${id},${idx})">${t.addline}</button></div>`;
   $("fov").classList.add("show");
 }
-function saveAddItem(id){
+function saveAddLine(id,idx){
   const desc=$("aiDesc").value.trim();if(!desc)return;
-  const e=getEst(id);
-  e.items.push({desc,category:$("aiCat").value,qty:parseFloat($("aiQty").value)||1,unit:$("aiUnit").value||"pcs",
+  const e=getEst(id);const wi=e.workItems[idx];if(!wi)return;
+  wi.lines.push({desc,category:$("aiCat").value,qty:parseFloat($("aiQty").value)||1,unit:$("aiUnit").value||"pcs",
     cost:parseFloat($("aiCost").value)||0,sell:parseFloat($("aiSell").value)||0,disc:0,tax:25});
-  e.history.push({date:new Date().toISOString().slice(0,10),action:`Item added: ${desc}`,by:"Aleksandar C."});
+  e.history.push({date:new Date().toISOString().slice(0,10),action:`Item added to ${wi.desc}: ${desc}`,by:"Aleksandar C."});
   closeModal();renderAll();
 }
 
@@ -972,7 +1009,7 @@ function printEst(id){selectedId=id;renderPrintSheet(getEst(id));window.print();
 
 function renderPrintSheet(e){
   const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);
-  const items=activeItems(e);
+  const items=flatLines(e);
   const rows=items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.desc}</td><td style="text-align:right;">${it.qty}</td><td>${it.unit}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
   $("printSheet").innerHTML=`<h1 style="font-family:sans-serif;">Varmak AB — Estimation ${e.no}</h1>
     <p>${c.name}, ${c.address}</p><p>Date: ${e.created} · Valid until: ${e.validUntil}</p>
