@@ -32,7 +32,7 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:20px 28px 40px;}
-  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:14px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
 
   .pheader{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
@@ -128,6 +128,13 @@
   .glegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:11px;color:var(--steel-300);}
   .glegend .lg{display:flex;align-items:center;gap:6px;} .glegend .ldot{width:9px;height:9px;}
 
+  .pipelinelist{display:flex;flex-direction:column;gap:9px;}
+  .pipelinerow{padding:10px 12px;border:1px solid var(--line);cursor:pointer;transition:.14s;background:rgba(255,255,255,.015);}
+  .pipelinerow:hover{border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.05);}
+  .pl-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;}
+  .pl-top b{font-size:12.5px;line-height:1.3;}
+  .pl-bottom{display:flex;align-items:center;gap:9px;}
+  .pl-next{font-size:11px;color:var(--steel-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
   .idealist,.projlist,.futlist{display:flex;flex-direction:column;gap:8px;}
   .listcard{border:1px solid var(--line);padding:12px 14px;cursor:pointer;transition:.14s;background:rgba(255,255,255,.015);}
   .listcard:hover{border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.05);}
@@ -757,8 +764,10 @@ function renderOverviewCards(){
 
 function renderBottomRow(){
   const t=T[LANG];
-  const pipeline=IDEAS.slice(0,5).map(i=>`<tr onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();" style="cursor:pointer;">
-    <td>${i.name}</td><td><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span></td><td class="rnum">${ideaScore(i).toFixed(1)}</td><td class="gsub">${i.nextAction}</td></tr>`).join("");
+  const pipeline=IDEAS.slice(0,4).map(i=>`<div class="pipelinerow" onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();">
+    <div class="pl-top"><b>${i.name}</b><span class="scorebadge">${ideaScore(i).toFixed(1)}</span></div>
+    <div class="pl-bottom"><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span><span class="pl-next">${i.nextAction}</span></div>
+  </div>`).join("");
 
   const allMilestones=[];
   activeProjects().forEach(p=>p.milestones.forEach(m=>allMilestones.push({...m,proj:p.name})));
@@ -778,8 +787,7 @@ function renderBottomRow(){
 
   return `<div class="fieldgrid" style="grid-template-columns:1.3fr 1fr 1fr 1.3fr;margin-bottom:0;">
     <div class="panel"><div class="phead"><h3>${t.pipeline}</h3><button class="tbtn small" onclick="openNewIdea()">${t.addidea}</button></div>
-      <table class="stbl" style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr style="color:var(--steel-400);font-size:10px;text-transform:uppercase;"><th style="text-align:left;padding-bottom:6px;">${t.th_idea}</th><th style="text-align:left;">${t.th_stage}</th><th style="text-align:right;">${t.th_score}</th><th style="text-align:left;">${t.th_next}</th></tr></thead>
-      <tbody>${pipeline}</tbody></table>
+      <div class="pipelinelist">${pipeline}</div>
       <div style="text-align:center;margin-top:10px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setSub('ideas')">${t.viewall} →</a></div></div>
     <div class="panel"><div class="phead"><h3>${t.upcoming_milestones}</h3></div>${msHtml}
       <div style="text-align:center;margin-top:8px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setTab('gantt')">${t.viewall} →</a></div></div>
