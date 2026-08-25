@@ -1,0 +1,1130 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Planning</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:16%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.14),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .topfull{position:relative;z-index:2;width:100%;padding:20px 32px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:20px 28px 40px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:14px;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
+
+  .pheader{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .pheader .ttl{display:flex;align-items:center;gap:12px;}
+  .pheader .ic{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .pheader h1{font-family:'Sora';font-weight:700;font-size:21px;letter-spacing:-.01em;} .pheader p{font-size:12px;color:var(--steel-400);}
+  .toptabs{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:3px;}
+  .toptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11.5px;letter-spacing:.02em;padding:9px 13px;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .toptabs button.on{background:rgba(74,144,255,.16);color:#cfe0ff;}
+  .toptabs button:hover{color:var(--ice);}
+  .hcontrols{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn svg{flex:none;width:13px;height:13px;}
+  .daterange{display:flex;align-items:center;gap:6px;background:var(--field);border:1px solid var(--field-line);padding:8px 12px;font-size:12px;color:var(--steel-300);}
+  .daterange button{background:none;border:none;color:var(--steel-400);cursor:pointer;display:flex;align-items:center;padding:2px;}
+  .daterange button:hover{color:var(--ice);}
+
+  .maingrid{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start;}
+  @media(max-width:1200px){.maingrid{grid-template-columns:1fr;}}
+  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
+  .panel .phead h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+  .col{display:flex;flex-direction:column;gap:16px;}
+
+  .subnav{display:flex;flex-direction:column;gap:3px;}
+  .subnav button{display:flex;align-items:center;gap:9px;background:transparent;border:1px solid transparent;color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 10px;cursor:pointer;text-align:left;transition:.14s;}
+  .subnav button:hover{background:rgba(255,255,255,.03);}
+  .subnav button.on{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.4);color:#cfe0ff;}
+  .subnav button .sic{width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.12);}
+  .subnav button .sic svg{width:14px;height:14px;color:var(--spark);}
+  .subnav button .stxt{flex:1;} .subnav button .stxt b{display:block;font-weight:600;font-size:12.5px;}
+  .subnav button .scount{font-family:'Sora';font-weight:700;font-size:12px;color:var(--steel-400);}
+
+  .qsrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .qsrow:last-of-type{border-bottom:none;}
+  .qsrow .qk{color:var(--steel-400);} .qsrow .qv{font-family:'Sora';font-weight:700;} .qsrow .qv.warn{color:var(--warn);} .qsrow .qv.ok{color:var(--ok);}
+  .utilbar{height:7px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px;} .utilbar i{display:block;height:100%;background:var(--spark);}
+  .utilbar.over i{background:var(--danger);}
+
+  .legend{display:flex;flex-direction:column;gap:7px;}
+  .legend .lrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--steel-300);}
+  .legend .ldot{width:10px;height:10px;flex:none;border-radius:2px;}
+
+  .ovcards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+  @media(max-width:900px){.ovcards{grid-template-columns:1fr;}}
+  .ovcard2{background:rgba(255,255,255,.03);border:1px solid var(--line);padding:16px;display:flex;gap:13px;}
+  .ovcard2 .oic{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .ovcard2 .oic svg{width:22px;height:22px;}
+  .ovcard2.ideas .oic{background:rgba(192,132,252,.15);} .ovcard2.ideas .oic svg{color:var(--idea);}
+  .ovcard2.existing .oic{background:rgba(74,144,255,.15);} .ovcard2.existing .oic svg{color:var(--spark);}
+  .ovcard2.future .oic{background:rgba(74,212,138,.15);} .ovcard2.future .oic svg{color:var(--ok);}
+  .ovcard2 .otitle{display:flex;align-items:center;gap:8px;font-family:'Sora';font-weight:700;font-size:14px;margin-bottom:4px;}
+  .ovcard2 .ocount{font-family:'Sora';font-size:11px;font-weight:700;color:var(--ice);background:rgba(255,255,255,.08);padding:1px 8px;}
+  .ovcard2 .odesc{font-size:11.5px;color:var(--steel-400);margin-bottom:8px;line-height:1.4;}
+  .ovcard2 .ostat{font-size:11.5px;margin-bottom:3px;} .ovcard2 .ostat.warn{color:var(--warn);} .ovcard2 .ostat.ok{color:var(--ok);}
+  .ovcard2 a{font-size:11.5px;color:var(--spark);text-decoration:none;cursor:pointer;} .ovcard2 a:hover{text-decoration:underline;}
+
+  .gwrap{overflow-x:auto;}
+  .gantthead{display:flex;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px;position:sticky;top:0;}
+  .gcolfixed{flex:none;width:280px;padding-right:10px;}
+  .gtimeline{flex:1;position:relative;min-width:640px;}
+  .gmonths{display:flex;font-size:10px;color:var(--steel-400);text-transform:uppercase;letter-spacing:.04em;position:relative;height:16px;}
+  .gticks{display:flex;font-size:10px;color:var(--steel-400);position:relative;height:16px;font-variant-numeric:tabular-nums;}
+  .gtick{position:absolute;transform:translateX(-50%);}
+  .gmonthlbl{position:absolute;font-weight:700;color:#cfe0ff;}
+  .grow{display:flex;align-items:center;min-height:34px;border-bottom:1px solid var(--line);}
+  .grow.grouprow{background:rgba(74,144,255,.05);font-family:'Sora';font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ff;min-height:28px;cursor:default;}
+  .grow.taskrow{background:rgba(255,255,255,.015);}
+  .grow:hover:not(.grouprow){background:rgba(255,255,255,.025);}
+  .gname{flex:none;width:280px;padding-right:10px;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .gname .chev{width:10px;height:10px;color:var(--steel-400);transition:transform .15s;flex:none;}
+  .gname.open .chev{transform:rotate(90deg);}
+  .gname b{font-weight:600;} .gname .gsub{color:var(--steel-400);font-size:10.5px;}
+  .gname .gpct{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--steel-400);font-size:11px;flex:none;}
+  .gtrack{flex:1;position:relative;height:34px;min-width:640px;}
+  .gbar{position:absolute;top:8px;height:18px;border-radius:1px;overflow:hidden;cursor:pointer;}
+  .gbar .gfill{position:absolute;inset:0;}
+  .gbar .gprog{position:absolute;inset:0 auto 0 0;background:rgba(255,255,255,.28);}
+  .gbar.st-idea .gfill{background:var(--idea);} .gbar.st-planned .gfill{background:var(--steel-400);}
+  .gbar.st-active .gfill{background:var(--spark);} .gbar.st-hold .gfill{background:var(--warn);}
+  .gbar.st-completed .gfill{background:var(--ok);} .gbar.st-future .gfill{background:rgba(74,212,138,.5);}
+  .gmilestone{position:absolute;top:11px;width:11px;height:11px;background:#fff;transform:translateX(-50%) rotate(45deg);border:2px solid var(--navy-950);z-index:2;cursor:pointer;}
+  .gmilestone.done{background:var(--ok);} .gmilestone.pending{background:var(--warn);}
+  .gtoday{position:absolute;top:0;bottom:0;width:1px;background:var(--danger);z-index:1;}
+  .gtoday .gtodaylbl{position:absolute;top:-2px;left:3px;font-size:9px;color:var(--danger);font-weight:700;white-space:nowrap;}
+  .gshift{display:inline-flex;gap:2px;margin-left:8px;}
+  .gshift button{width:16px;height:16px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:10px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .gshift button:hover{border-color:var(--spark);color:var(--ice);}
+  .glegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:11px;color:var(--steel-300);}
+  .glegend .lg{display:flex;align-items:center;gap:6px;} .glegend .ldot{width:9px;height:9px;}
+
+  .idealist,.projlist,.futlist{display:flex;flex-direction:column;gap:8px;}
+  .listcard{border:1px solid var(--line);padding:12px 14px;cursor:pointer;transition:.14s;background:rgba(255,255,255,.015);}
+  .listcard:hover{border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.05);}
+  .lc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:10px;}
+  .lc-top b{font-size:13px;} .lc-sub{font-size:11.5px;color:var(--steel-400);}
+  .stagepill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;font-weight:700;white-space:nowrap;border:1px solid;flex:none;}
+  .stagepill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .stagepill.new{color:var(--steel-300);border-color:var(--field-line);background:rgba(142,163,192,.1);}
+  .stagepill.evaluation,.stagepill.concept{color:var(--idea);border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12);}
+  .stagepill.feasibility{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+  .stagepill.approved,.stagepill.confirmed{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.12);}
+  .stagepill.future,.stagepill.probable{color:var(--spark);border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .stagepill.rejected,.stagepill.onhold{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
+  .stagepill.tentative{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+  .scorebadge{font-family:'Sora';font-weight:700;font-size:13px;color:var(--ok);flex:none;}
+
+  .detailhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
+  .detailhead h2{font-family:'Sora';font-weight:700;font-size:20px;}
+  .fieldgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media(max-width:1000px){.fieldgrid{grid-template-columns:1fr 1fr;}}
+  .field .fk{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
+  .field .fv{font-size:13px;font-weight:600;}
+  .scorecard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:16px;margin-bottom:16px;}
+  .scorerow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .scorerow:last-of-type{border-bottom:none;}
+  .scorebar{width:120px;height:6px;background:rgba(255,255,255,.08);overflow:hidden;margin:0 10px;}
+  .scorebar i{display:block;height:100%;background:var(--idea);}
+  .scoretotal{display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:8px;border-top:1px solid var(--line);font-family:'Sora';font-weight:700;font-size:16px;color:var(--idea);}
+
+  .calgrid{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;}
+  @media(max-width:1000px){.calgrid{grid-template-columns:1fr;}}
+  .calnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .calnav h3{font-family:'Sora';font-weight:700;font-size:15px;}
+  .calnav button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);width:26px;height:26px;cursor:pointer;}
+  .calmonth{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .calmonth .cdow{font-size:10px;text-transform:uppercase;color:var(--steel-400);text-align:center;padding-bottom:4px;}
+  .calday{min-height:76px;background:rgba(255,255,255,.02);border:1px solid var(--line);padding:5px;font-size:11px;cursor:pointer;transition:.14s;}
+  .calday:hover{border-color:rgba(74,144,255,.4);}
+  .calday.today{border-color:var(--spark);background:rgba(74,144,255,.08);}
+  .calday.sel{border-color:var(--spark);background:rgba(74,144,255,.14);}
+  .calday.other{opacity:.3;}
+  .calday .cdnum{font-weight:600;margin-bottom:3px;}
+  .caldot{display:block;font-size:9px;padding:1px 4px;margin-bottom:2px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dayevents{display:flex;flex-direction:column;gap:8px;}
+  .evrow{display:flex;gap:9px;padding:9px;border:1px solid var(--line);background:rgba(255,255,255,.02);}
+  .evrow .edot{width:8px;height:8px;flex:none;margin-top:4px;border-radius:2px;}
+  .evrow b{font-size:12.5px;display:block;} .evrow span{font-size:11px;color:var(--steel-400);}
+
+  .zoomtabs{display:flex;gap:4px;}
+  .zoomtabs button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:11px;padding:6px 11px;cursor:pointer;}
+  .zoomtabs button.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+
+  .wkcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  @media(max-width:1100px){.wkcols{grid-template-columns:1fr;}}
+  .wkrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .wkrow:last-child{border-bottom:none;}
+  .wkrow .wkname{width:130px;flex:none;font-size:12px;} .wkrow .wkrole{font-size:10px;color:var(--steel-400);display:block;}
+  .wkrow .wkbar{flex:1;height:8px;background:rgba(255,255,255,.08);position:relative;overflow:visible;}
+  .wkrow .wkbar i{display:block;height:100%;background:var(--spark);}
+  .wkrow .wkbar.over i{background:var(--danger);}
+  .wkrow .wkpct{width:42px;flex:none;text-align:right;font-family:'Sora';font-weight:700;font-size:12px;}
+  .wkrow.overload .wkpct{color:var(--danger);}
+  .warnbanner{display:flex;align-items:flex-start;gap:10px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.4);padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:#ffb3b3;}
+  .warnbanner svg{flex:none;width:16px;height:16px;margin-top:1px;}
+  .warnbanner .wsuggest{margin-top:6px;color:var(--steel-300);font-size:12px;}
+
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:560px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus{border-color:var(--spark);}
+  .fcard textarea{min-height:60px;resize:vertical;}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+  .empty3{text-align:center;color:var(--steel-400);padding:20px;font-size:12px;}
+  .docrow2{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
+  .docrow2:last-child{border-bottom:none;}
+  .dicon{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:8px;color:#fff;}
+  .docrow2 .dn{flex:1;font-weight:500;} .docrow2 .dd{color:var(--steel-400);font-size:10.5px;white-space:nowrap;}
+  .stbl th{text-align:left;padding:6px 8px 6px 0;} .stbl td{padding:8px 8px 8px 0;vertical-align:top;border-bottom:1px solid var(--line);}
+  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #app .stepper{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px;}
+
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+</style></head><body>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<div class="topfull"><div class="topbar">
+  <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+  <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+</div></div>
+
+<div class="wrap">
+  <button class="back" onclick="location.href='hub-desktop.html'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+  <div id="app"></div>
+</div>
+
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const MSDAY=86400000;
+function d(s){return new Date(s+"T00:00:00");}
+function addDays(dt,n){return new Date(dt.getTime()+n*MSDAY);}
+function daysBetween(a,b){return Math.round((b.getTime()-a.getTime())/MSDAY);}
+function fmtISO(dt){return dt.toISOString().slice(0,10);}
+function fmtShort(dt){return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}
+function fmt0(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+
+const CUSTOMERS={1:"Sanus Glutenfri AB",2:"Schröder Nordic",3:"Lund Konditori",4:"Helsingborg Foods",5:"Malmö Livs",6:"Ystad Bageri",7:"Trelleborg Snacks"};
+
+let PROJECTS=[
+  {no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,start:"2026-08-18",deadline:"2026-09-10",progress:60,
+    plannedHours:80,usedHours:48,phase:"production",materialStatus:"Delivered",responsible:"Aleksandar C.",
+    workers:["Marko K.","Elena N."],machines:["Laser","Press Brake","TIG Station 1"],dependencyNote:"Material delivery (done)",
+    problems:[],updatedCompletion:"2026-09-10",
+    tasks:[
+      {id:"t1",name:"Site Measurement",start:"2026-08-14",dur:1,dependsOn:[],resource:"Aleksandar C.",status:"completed",shift:0},
+      {id:"t2",name:"Design / Drawings",dur:3,dependsOn:["t1"],resource:"Elena N.",status:"completed",shift:0},
+      {id:"t3",name:"Material Ordering",dur:1,dependsOn:["t2"],resource:"Aleksandar C.",status:"completed",shift:0},
+      {id:"t4",name:"Material Delivery Wait",dur:3,dependsOn:["t3"],resource:"—",status:"completed",shift:0},
+      {id:"t5",name:"Laser Cutting",dur:1,dependsOn:["t4"],resource:"Marko K.",status:"completed",shift:0},
+      {id:"t6",name:"Bending",dur:2,dependsOn:["t5"],resource:"Marko K.",status:"completed",shift:0},
+      {id:"t7",name:"TIG Welding",dur:5,dependsOn:["t6"],resource:"Marko K.",status:"active",shift:0},
+      {id:"t8",name:"Assembly",dur:3,dependsOn:["t7"],resource:"Elena N.",status:"planned",shift:0},
+      {id:"t9",name:"Panel Wiring",dur:2,dependsOn:["t8"],resource:"Marko K.",status:"planned",shift:0},
+      {id:"t10",name:"Inspection",dur:1,dependsOn:["t9"],resource:"Aleksandar C.",status:"planned",shift:0},
+      {id:"t11",name:"Delivery",dur:1,dependsOn:["t10"],resource:"Aleksandar C.",status:"planned",shift:0}
+    ],
+    milestones:[{name:"Drawings Approved",date:"2026-08-18",done:true},{name:"Material Delivered",date:"2026-08-22",done:true},{name:"FAT / Inspection",date:"2026-09-08",done:false}]},
+  {no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,start:"2026-08-18",deadline:"2026-09-20",progress:10,
+    plannedHours:80,usedHours:12,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
+    workers:["Marko K."],machines:["Laser","Press Brake"],dependencyNote:"Awaiting customer scope confirmation",
+    problems:["Customer has not confirmed final scope"],updatedCompletion:"2026-09-20",
+    tasks:[{id:"a1",name:"Full Retrofit Scope",start:"2026-08-18",dur:23,dependsOn:[],resource:"Marko K.",status:"active",shift:0}],
+    milestones:[{name:"Scope Confirmed",date:"2026-08-28",done:false}]},
+  {no:"P-26-0003",name:"Mixer Overhaul — Preliminary",customerId:3,start:"2026-09-01",deadline:"2026-09-15",progress:0,
+    plannedHours:16,usedHours:0,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
+    workers:[],machines:[],dependencyNote:"Awaiting customer decision on quote",
+    problems:[],updatedCompletion:"2026-09-15",
+    tasks:[{id:"b1",name:"Gearbox Service & Guard",start:"2026-09-01",dur:14,dependsOn:[],resource:"—",status:"planned",shift:0}],
+    milestones:[]},
+  {no:"P-26-0004",name:"Guard Fabrication",customerId:4,start:"2026-06-02",deadline:"2026-06-20",progress:100,
+    plannedHours:24,usedHours:23.5,phase:"completed",materialStatus:"Used",responsible:"Aleksandar C.",
+    workers:["Marko K.","Elena N."],machines:["Laser","Press Brake"],dependencyNote:"—",
+    problems:[],updatedCompletion:"2026-06-20",
+    tasks:[{id:"c1",name:"Guards — Fabricate & Install",start:"2026-06-02",dur:18,dependsOn:[],resource:"Marko K.",status:"completed",shift:0}],
+    milestones:[{name:"Delivered",date:"2026-06-20",done:true}]},
+  {no:"P-26-0005",name:"Service — Malmö Slicer",customerId:5,start:"2026-08-10",deadline:"2026-08-18",progress:100,
+    plannedHours:12,usedHours:12,phase:"completed",materialStatus:"Used",responsible:"Marko K.",
+    workers:["Marko K."],machines:[],dependencyNote:"—",
+    problems:[],updatedCompletion:"2026-08-18",
+    tasks:[{id:"e1",name:"Inspection & Bearing Replacement",start:"2026-08-10",dur:8,dependsOn:[],resource:"Marko K.",status:"completed",shift:0}],
+    milestones:[{name:"Delivered",date:"2026-08-18",done:true}]},
+  {no:"P-26-0006",name:"Spiral Mixer Service",customerId:6,start:"2026-08-19",deadline:"2026-09-05",progress:30,
+    plannedHours:16,usedHours:3,phase:"production",materialStatus:"Awaiting supplier",responsible:"Aleksandar C.",
+    workers:["Marko K."],machines:[],dependencyNote:"Waiting on gearbox seal kit from supplier",
+    problems:["Supplier delay on seal kit — resume expected Sep 1"],updatedCompletion:"2026-09-08",
+    tasks:[{id:"f1",name:"Gearbox Teardown",start:"2026-08-19",dur:3,dependsOn:[],resource:"Marko K.",status:"completed",shift:0},
+      {id:"f2",name:"Awaiting Seal Kit",dur:10,dependsOn:["f1"],resource:"—",status:"hold",shift:0},
+      {id:"f3",name:"Reassembly & Test",dur:3,dependsOn:["f2"],resource:"Marko K.",status:"planned",shift:0}],
+    milestones:[{name:"Seal Kit Delivered",date:"2026-09-02",done:false}]},
+  {no:"P-26-0008",name:"Bearing Replacement",customerId:5,start:"2026-08-28",deadline:"2026-09-15",progress:5,
+    plannedHours:8,usedHours:0,phase:"material_ordered",materialStatus:"Ordered",responsible:"Aleksandar C.",
+    workers:["Marko K."],machines:[],dependencyNote:"—",
+    problems:[],updatedCompletion:"2026-09-15",
+    tasks:[{id:"g1",name:"Bearing Replacement",start:"2026-08-28",dur:8,dependsOn:[],resource:"Marko K.",status:"planned",shift:0}],
+    milestones:[]},
+  {no:"P-26-0009",name:"HMI Upgrade",customerId:2,start:"2026-08-28",deadline:"2026-09-18",progress:0,
+    plannedHours:18,usedHours:0,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
+    workers:["Marko K.","Elena N."],machines:["Laser"],dependencyNote:"Starts after Folding Machine Retrofit frees capacity",
+    problems:[],updatedCompletion:"2026-09-18",
+    tasks:[{id:"h1",name:"HMI Panel Wiring & Bracket",start:"2026-08-28",dur:14,dependsOn:[],resource:"Elena N.",status:"planned",shift:0}],
+    milestones:[]}
+];
+
+let FUTURE=[
+  {id:1,name:"Cold Room Panel Installation",customerId:5,expectedStart:"2026-10-05",expectedFinish:"2026-10-25",probability:"probable",probabilityPct:70,
+    estValue:180000,estHours:140,employees:2,machines:["Press Brake","TIG Station 2"],materialLeadTime:"3 weeks",dependencyNote:"Awaiting site survey",priority:"high"},
+  {id:2,name:"Second Oven Line Guarding",customerId:6,expectedStart:"2026-11-01",expectedFinish:"2026-11-20",probability:"probable",probabilityPct:60,
+    estValue:95000,estHours:90,employees:1,machines:["Laser","Press Brake"],materialLeadTime:"2 weeks",dependencyNote:"Pending budget approval",priority:"medium"},
+  {id:3,name:"Brewery Piping & Platform",customerId:null,customerName:"Lund Bryggeri (prospect)",expectedStart:"2026-12-01",expectedFinish:"2027-01-15",probability:"tentative",probabilityPct:30,
+    estValue:340000,estHours:260,employees:3,machines:["Laser","Press Brake","TIG Station 1","TIG Station 2"],materialLeadTime:"4 weeks",dependencyNote:"Initial site visit not yet scheduled",priority:"medium"}
+];
+
+let IDEAS=[
+  {id:1,name:"Automatic Solar-Hybrid Dryer",desc:"Solar-assisted drying cabinet for small food producers — cuts energy cost vs. pure electric drying.",
+    source:"internal",category:"Product Development",priority:"high",investment:180000,expectedRevenue:420000,estProfit:240000,estHours:220,
+    machines:["Laser","Press Brake","TIG Station 1"],materials:["Stainless sheet","Insulation panel","Solar controller"],
+    scores:{market:8,profit:9,investment:6,difficulty:7,equipment:9,devtime:7,strategic:9},
+    risk:"medium",nextAction:"Feasibility study — thermal test rig",responsible:"Aleksandar C.",targetDate:"2026-09-20",stage:"evaluation",
+    documents:[{name:"Concept Sketch.pdf",type:"pdf",date:"2026-08-05"}]},
+  {id:2,name:"Portable Smokehouse",desc:"Trailer-mounted smokehouse unit for mobile food vendors.",
+    source:"customer",category:"Custom Equipment",priority:"medium",investment:95000,expectedRevenue:260000,estProfit:130000,estHours:160,
+    machines:["Laser","Press Brake","TIG Station 1"],materials:["Stainless sheet","Insulation","Wheels & chassis kit"],
+    scores:{market:7,profit:8,investment:7,difficulty:6,equipment:8,devtime:8,strategic:6},
+    risk:"low",nextAction:"Market research — 3 target customers",responsible:"Aleksandar C.",targetDate:"2026-09-10",stage:"evaluation",documents:[]},
+  {id:3,name:"Modular Grill System",desc:"Stackable modular grill units for food truck operators.",
+    source:"internal",category:"Product Development",priority:"low",investment:60000,expectedRevenue:150000,estProfit:70000,estHours:110,
+    machines:["Laser","Press Brake"],materials:["Mild steel sheet","Grill grates"],
+    scores:{market:6,profit:6,investment:8,difficulty:5,equipment:8,devtime:7,strategic:5},
+    risk:"low",nextAction:"Prototype design",responsible:"Elena N.",targetDate:"2026-10-01",stage:"concept",documents:[]},
+  {id:4,name:"Fish Drying Cabinet",desc:"Ventilated drying cabinet for small-scale fish processing.",
+    source:"customer",category:"Custom Equipment",priority:"low",investment:40000,expectedRevenue:95000,estProfit:45000,estHours:70,
+    machines:["Laser","Press Brake"],materials:["Stainless sheet","Fan units"],
+    scores:{market:5,profit:5,investment:8,difficulty:4,equipment:8,devtime:8,strategic:4},
+    risk:"low",nextAction:"Basic sketch",responsible:"Marko K.",targetDate:"2026-10-15",stage:"new",documents:[]},
+  {id:5,name:"Mobile Workstation",desc:"Rolling tool cart / workstation for workshop floor efficiency.",
+    source:"internal",category:"Internal Tooling",priority:"low",investment:15000,expectedRevenue:0,estProfit:0,estHours:24,
+    machines:["Press Brake"],materials:["Mild steel tube","Casters"],
+    scores:{market:3,profit:2,investment:9,difficulty:3,equipment:9,devtime:9,strategic:5},
+    risk:"low",nextAction:"Needs analysis with floor staff",responsible:"Marko K.",targetDate:"2026-09-30",stage:"new",documents:[]}
+];
+let nextIdeaId=6,nextFutureId=4;
+
+const EMPLOYEES=[{name:"Aleksandar C.",role:"Project Manager",util:82},{name:"Marko K.",role:"Welder (TIG)",util:95},
+  {name:"Elena N.",role:"Fitter / Fabricator",util:65},{name:"David H.",role:"Welder (MIG)",util:55}];
+const MACHINES=[{name:"Laser",util:88},{name:"Press Brake",util:65},{name:"TIG Station 1",util:90},{name:"TIG Station 2",util:40}];
+const WEEKS=[{label:"Week 34 (17–23 Aug)",util:72},{label:"Week 35 (24–30 Aug)",util:96},{label:"Week 36 (31 Aug–6 Sep)",util:110},
+  {label:"Week 37 (7–13 Sep)",util:88},{label:"Week 38 (14–20 Sep)",util:60}];
+
+const CAL_EVENTS=[
+  {date:"2026-08-22",title:"Welding & Assembly",sub:"Bakery Conveyor Modification",type:"task"},
+  {date:"2026-08-23",title:"Material Delivery",sub:"Stainless Steel Sheets",type:"delivery"},
+  {date:"2026-08-24",title:"Site Visit",sub:"Sanus Glutenfri AB",type:"visit"},
+  {date:"2026-08-30",title:"Machine Service",sub:"TIG Station 2 — annual service",type:"service"},
+  {date:"2026-09-01",title:"Employee Holiday",sub:"Elena N. — vacation day",type:"holiday"},
+  {date:"2026-09-02",title:"Material Delivery",sub:"Gearbox seal kit — Ystad Bageri job",type:"delivery"},
+  {date:"2026-09-08",title:"FAT / Inspection",sub:"Bakery Conveyor Modification",type:"inspection"},
+  {date:"2026-09-10",title:"Delivery",sub:"Bakery Conveyor Modification",type:"delivery"},
+  {date:"2026-09-15",title:"Customer Meeting",sub:"Schröder Nordic — scope review",type:"meeting"}
+];
+const EVENT_COLOR={task:"#4a90ff",delivery:"#4ad48a",visit:"#c084fc",service:"#ffb057",holiday:"#8ea3c0",inspection:"#ff6b6b",meeting:"#4a90ff"};
+
+// Scheduling engine: task start = max(end of dependencies) + manual shift; only the root
+// task (no dependencies) keeps its own literal start date. This is what makes shifting one
+// task (e.g. a material delivery) automatically cascade through everything downstream.
+function scheduleProject(p){
+  const computed={};
+  p.tasks.forEach(t=>{
+    let start;
+    if(t.dependsOn.length){
+      const depEnds=t.dependsOn.map(id=>computed[id].end.getTime());
+      start=new Date(Math.max(...depEnds));
+    }else{
+      start=d(t.start);
+    }
+    start=addDays(start,t.shift||0);
+    const end=addDays(start,t.dur);
+    computed[t.id]={start,end};
+  });
+  return computed;
+}
+function projectSpan(p){
+  const sched=scheduleProject(p);
+  const starts=p.tasks.map(t=>sched[t.id].start.getTime());
+  const ends=p.tasks.map(t=>sched[t.id].end.getTime());
+  return{start:new Date(Math.min(...starts)),end:new Date(Math.max(...ends))};
+}
+function shiftTask(projNo,taskId,delta){
+  const p=PROJECTS.find(x=>x.no===projNo);const t=p.tasks.find(x=>x.id===taskId);
+  t.shift=(t.shift||0)+delta;
+  renderAll();
+}
+
+function ideaScore(idea){
+  const s=idea.scores;const vals=[s.market,s.profit,s.investment,s.difficulty,s.equipment,s.devtime,s.strategic];
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+
+const STAGE_ORDER=["new","evaluation","feasibility","approved","future"];
+const IDEA_MACHINES_CAPACITY=MACHINES.map(m=>m.name);
+
+let LANG="en",activeTab="overview",activeSub="overview",query="",
+  ganttFilter={ideas:true,existing:true,future:true},
+  expandedProjects={},selectedIdeaId=1,selectedProjNo="P-26-0001",selectedFutureId=1,
+  calMonth=new Date(2026,7,1),calSelDate="2026-08-22",timelineZoom="6m";
+
+const T={
+  en:{role:"Admin",logout:"Log out",back_hub:"Hub",ptitle:"Planning",psub:"Schedule & capacity",
+    tab_overview:"Planning Overview",tab_gantt:"Gantt Chart",tab_calendar:"Calendar",tab_timeline:"Timeline",tab_workload:"Workload",
+    today:"Today",filter:"Filter",new:"New",
+    sub_overview:"Overview",sub_ideas:"Planning New Ideas",sub_existing:"Existing Projects",sub_future:"Future Projects",
+    submodules:"Submodules",quicksummary:"Quick Summary",statuslegend:"Status Legend",
+    total_projects:"Total Projects",in_progress:"In Progress",planned:"Planned",completed:"Completed",overdue:"Overdue",
+    planned_hours:"Planned Hours",utilization:"Utilization",est_revenue:"Estimated Revenue",
+    leg_idea:"Idea / Concept",leg_planned:"Planned",leg_inprogress:"In Progress",leg_hold:"On Hold",leg_completed:"Completed",leg_overdue:"Overdue",
+    submod_overview:"Submodules Overview",
+    ov_ideas_desc:"Collect, evaluate and develop new ideas and concepts.",
+    ov_existing_desc:"Active projects in production and ongoing work.",
+    ov_future_desc:"Projects planned for the future.",
+    open_ideas:"Open ideas",open_projects:"Open projects",open_future:"Open future projects",
+    gantt_title:"Gantt Chart — All Projects",
+    pipeline:"New Ideas Pipeline",addidea:"+ Add Idea",viewall:"View All",
+    th_idea:"Idea",th_stage:"Stage",th_score:"Score",th_next:"Next Step",
+    upcoming_milestones:"Upcoming Milestones",task_overview:"Task Overview",totalhours:"Total Hours",
+    resource_overview:"Resource Overview",viewres:"View all resources",th_resource:"Resource",th_role:"Role",th_util:"Utilization",
+    project_timeline:"Project Timeline — High Level",viewfulltimeline:"View full timeline",
+    zoom:"Zoom",expand:"Expand",
+    idealist_title:"Planning New Ideas",existing_title:"Existing Projects",future_title:"Future Projects",
+    newidea:"+ New Idea",newfuture:"+ New Future Project",
+    stg_new:"New Idea",stg_evaluation:"Evaluation",stg_feasibility:"Feasibility",stg_approved:"Approved",stg_future:"Future Project",stg_rejected:"Rejected",stg_onhold:"On Hold",stg_concept:"Concept",
+    prob_confirmed:"Confirmed",prob_probable:"Probable",prob_tentative:"Tentative",
+    f_source:"Source",f_category:"Category",f_priority:"Priority",f_investment:"Expected Investment",f_revenue:"Expected Revenue",
+    f_profit:"Estimated Profit",f_hours:"Estimated Hours",f_machines:"Required Machines",f_materials:"Required Materials",
+    f_difficulty:"Technical Difficulty",f_market:"Market Potential",f_risk:"Risk",f_next:"Next Action",f_responsible:"Responsible Person",
+    f_target:"Target Date",f_customer:"Customer",f_deadline:"Delivery Deadline",f_start:"Start Date",f_progress:"Progress",
+    f_plannedh:"Planned Hours",f_usedh:"Used Hours",f_remainh:"Remaining Hours",f_material:"Material Status",f_phase:"Current Phase",
+    f_workers:"Workers Assigned",f_dependencies:"Dependencies",f_problems:"Problems / Delays",f_updatedcompletion:"Updated Completion",
+    f_expstart:"Expected Start",f_expfinish:"Expected Finish",f_probability:"Probability",f_workload:"Estimated Workload",
+    f_employees:"Required Employees",f_leadtime:"Material Lead Time",
+    scoring_title:"Idea Scoring",overall_score:"Overall Idea Score",
+    sc_market:"Market potential",sc_profit:"Profit potential",sc_investment:"Investment required",sc_difficulty:"Technical difficulty",
+    sc_equipment:"Available equipment",sc_devtime:"Development time",sc_strategic:"Strategic value",
+    documents:"Documents",empty_docs:"No documents yet.",
+    warn_overload:"Workshop overloaded by {h} hours in {w}.",suggest:"Suggested: move a lower-priority job by a few days, or add short-term capacity on the tightest resource.",
+    ph_design:"Design",ph_material_ordered:"Material Ordered",ph_ready:"Ready for Production",ph_production:"Production",ph_inspection:"Inspection",ph_delivery:"Delivery",ph_completed:"Completed",
+    nc_cancel:"Cancel",nc_save:"Save",
+    ni_title:"New Idea",ni_name:"Idea name",ni_desc:"Short description",
+    nf_title:"New Future Project",nf_name:"Project name",
+    by_employee:"By Employee",by_machine:"By Machine",by_week:"By Workshop Week",
+    day_events:"Events",no_events:"No events on this day.",
+    locale:"en-GB"},
+  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ptitle:"Planering",psub:"Schema & kapacitet",
+    tab_overview:"Planeringsöversikt",tab_gantt:"Gantt-schema",tab_calendar:"Kalender",tab_timeline:"Tidslinje",tab_workload:"Beläggning",
+    today:"Idag",filter:"Filter",new:"Ny",
+    sub_overview:"Översikt",sub_ideas:"Nya idéer",sub_existing:"Pågående projekt",sub_future:"Framtida projekt",
+    submodules:"Undermoduler",quicksummary:"Snabböversikt",statuslegend:"Statusförklaring",
+    total_projects:"Totalt antal projekt",in_progress:"Pågår",planned:"Planerade",completed:"Klara",overdue:"Försenade",
+    planned_hours:"Planerade timmar",utilization:"Beläggning",est_revenue:"Beräknad intäkt",
+    leg_idea:"Idé / Koncept",leg_planned:"Planerad",leg_inprogress:"Pågår",leg_hold:"Pausad",leg_completed:"Klar",leg_overdue:"Försenad",
+    submod_overview:"Undermoduler",
+    ov_ideas_desc:"Samla, utvärdera och utveckla nya idéer och koncept.",
+    ov_existing_desc:"Aktiva projekt i produktion och pågående arbete.",
+    ov_future_desc:"Projekt planerade för framtiden.",
+    open_ideas:"Öppna idéer",open_projects:"Öppna projekt",open_future:"Öppna framtida projekt",
+    gantt_title:"Gantt-schema — Alla projekt",
+    pipeline:"Idépipeline",addidea:"+ Lägg till idé",viewall:"Visa alla",
+    th_idea:"Idé",th_stage:"Steg",th_score:"Poäng",th_next:"Nästa steg",
+    upcoming_milestones:"Kommande milstolpar",task_overview:"Uppgiftsöversikt",totalhours:"Totalt timmar",
+    resource_overview:"Resursöversikt",viewres:"Visa alla resurser",th_resource:"Resurs",th_role:"Roll",th_util:"Beläggning",
+    project_timeline:"Projekttidslinje — Övergripande",viewfulltimeline:"Visa hela tidslinjen",
+    zoom:"Zoom",expand:"Expandera",
+    idealist_title:"Nya idéer",existing_title:"Pågående projekt",future_title:"Framtida projekt",
+    newidea:"+ Ny idé",newfuture:"+ Nytt framtida projekt",
+    stg_new:"Ny idé",stg_evaluation:"Utvärdering",stg_feasibility:"Genomförbarhet",stg_approved:"Godkänd",stg_future:"Framtida projekt",stg_rejected:"Avvisad",stg_onhold:"Pausad",stg_concept:"Koncept",
+    prob_confirmed:"Bekräftad",prob_probable:"Sannolik",prob_tentative:"Preliminär",
+    f_source:"Källa",f_category:"Kategori",f_priority:"Prioritet",f_investment:"Förväntad investering",f_revenue:"Förväntad intäkt",
+    f_profit:"Beräknad vinst",f_hours:"Beräknade timmar",f_machines:"Nödvändiga maskiner",f_materials:"Nödvändigt material",
+    f_difficulty:"Teknisk svårighet",f_market:"Marknadspotential",f_risk:"Risk",f_next:"Nästa åtgärd",f_responsible:"Ansvarig person",
+    f_target:"Måldatum",f_customer:"Kund",f_deadline:"Leveransdeadline",f_start:"Startdatum",f_progress:"Framsteg",
+    f_plannedh:"Planerade timmar",f_usedh:"Använda timmar",f_remainh:"Återstående timmar",f_material:"Materialstatus",f_phase:"Aktuell fas",
+    f_workers:"Tilldelade arbetare",f_dependencies:"Beroenden",f_problems:"Problem / förseningar",f_updatedcompletion:"Uppdaterat klardatum",
+    f_expstart:"Förväntad start",f_expfinish:"Förväntat slut",f_probability:"Sannolikhet",f_workload:"Beräknad arbetsbelastning",
+    f_employees:"Nödvändiga anställda",f_leadtime:"Materialets ledtid",
+    scoring_title:"Idépoängsättning",overall_score:"Total idépoäng",
+    sc_market:"Marknadspotential",sc_profit:"Vinstpotential",sc_investment:"Investering som krävs",sc_difficulty:"Teknisk svårighet",
+    sc_equipment:"Tillgänglig utrustning",sc_devtime:"Utvecklingstid",sc_strategic:"Strategiskt värde",
+    documents:"Dokument",empty_docs:"Inga dokument ännu.",
+    warn_overload:"Verkstaden överbelastad med {h} timmar i {w}.",suggest:"Förslag: flytta ett lägre prioriterat jobb några dagar, eller tillför kortsiktig kapacitet på den mest belastade resursen.",
+    ph_design:"Design",ph_material_ordered:"Material beställt",ph_ready:"Redo för produktion",ph_production:"Produktion",ph_inspection:"Besiktning",ph_delivery:"Leverans",ph_completed:"Klar",
+    nc_cancel:"Avbryt",nc_save:"Spara",
+    ni_title:"Ny idé",ni_name:"Idénamn",ni_desc:"Kort beskrivning",
+    nf_title:"Nytt framtida projekt",nf_name:"Projektnamn",
+    by_employee:"Per anställd",by_machine:"Per maskin",by_week:"Per verkstadsvecka",
+    day_events:"Händelser",no_events:"Inga händelser denna dag.",
+    locale:"sv-SE"},
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",ptitle:"Planiraњe",psub:"Raspored i kapacitet",
+    tab_overview:"Pregled na planiraњeto",tab_gantt:"Gant dijagram",tab_calendar:"Kalendar",tab_timeline:"Vremenska linija",tab_workload:"Optovaruvaњe",
+    today:"Denes",filter:"Filter",new:"Novo",
+    sub_overview:"Pregled",sub_ideas:"Novi idei",sub_existing:"Postojni proekti",sub_future:"Idni proekti",
+    submodules:"Podmoduli",quicksummary:"Brz pregled",statuslegend:"Legenda na statusi",
+    total_projects:"Vkupno proekti",in_progress:"Vo tek",planned:"Planirani",completed:"Završeni",overdue:"Docneti",
+    planned_hours:"Planirani časovi",utilization:"Optovaruvaњe",est_revenue:"Proceneta prihod",
+    leg_idea:"Ideja / Koncept",leg_planned:"Planirano",leg_inprogress:"Vo tek",leg_hold:"Pauzirano",leg_completed:"Završeno",leg_overdue:"Docneto",
+    submod_overview:"Podmoduli",
+    ov_ideas_desc:"Sobiraj, oceni i razvivaj novi idei i koncepti.",
+    ov_existing_desc:"Aktivni proekti vo proizvodstvo i tekovna rabota.",
+    ov_future_desc:"Proekti planirani za idnina.",
+    open_ideas:"Otvori idei",open_projects:"Otvori proekti",open_future:"Otvori idni proekti",
+    gantt_title:"Gant dijagram — Site proekti",
+    pipeline:"Pipeline na idei",addidea:"+ Dodaj ideja",viewall:"Vidi gi site",
+    th_idea:"Ideja",th_stage:"Faza",th_score:"Ocenka",th_next:"Sleden čekor",
+    upcoming_milestones:"Idni prekretnici",task_overview:"Pregled na zadači",totalhours:"Vkupno časovi",
+    resource_overview:"Pregled na resursi",viewres:"Vidi gi site resursi",th_resource:"Resurs",th_role:"Uloga",th_util:"Optovaruvaњe",
+    project_timeline:"Vremenska linija na proekti",viewfulltimeline:"Vidi ja celata vremenska linija",
+    zoom:"Zum",expand:"Rasiri",
+    idealist_title:"Novi idei",existing_title:"Postojni proekti",future_title:"Idni proekti",
+    newidea:"+ Nova ideja",newfuture:"+ Nov ideн proekt",
+    stg_new:"Nova ideja",stg_evaluation:"Ocenuvaњe",stg_feasibility:"Izvodlivost",stg_approved:"Odobreno",stg_future:"Iden proekt",stg_rejected:"Odbieno",stg_onhold:"Pauzirano",stg_concept:"Koncept",
+    prob_confirmed:"Potvrdeno",prob_probable:"Verojatno",prob_tentative:"Nesigurno",
+    f_source:"Izvor",f_category:"Kategorija",f_priority:"Prioritet",f_investment:"Očekuvana investicija",f_revenue:"Očekuvan prihod",
+    f_profit:"Proceneta dobivka",f_hours:"Proceneti časovi",f_machines:"Potrebni mašini",f_materials:"Potrebni materijali",
+    f_difficulty:"Tehnička složenost",f_market:"Pazaren potencijal",f_risk:"Rizik",f_next:"Sledna akcija",f_responsible:"Odgovorno lice",
+    f_target:"Cel datum",f_customer:"Klient",f_deadline:"Rok za isporaka",f_start:"Datum na početok",f_progress:"Napredok",
+    f_plannedh:"Planirani časovi",f_usedh:"Iskoristeni časovi",f_remainh:"Preostanati časovi",f_material:"Status na materijal",f_phase:"Tekovna faza",
+    f_workers:"Nazначeni rabotnici",f_dependencies:"Zavisnosti",f_problems:"Problemi / docnenja",f_updatedcompletion:"Ažuriran datum na završuvaњe",
+    f_expstart:"Očekuvan početok",f_expfinish:"Očekuvan kraj",f_probability:"Verojatnost",f_workload:"Procenet obem na rabota",
+    f_employees:"Potrebni vraboteni",f_leadtime:"Vreme za dostava na materijal",
+    scoring_title:"Ocenuvaњe na ideja",overall_score:"Vkupna ocenka na ideja",
+    sc_market:"Pazaren potencijal",sc_profit:"Potencijal za profit",sc_investment:"Potrebna investicija",sc_difficulty:"Tehnička složenost",
+    sc_equipment:"Dostapna oprema",sc_devtime:"Vreme za razvoj",sc_strategic:"Strateška vrednost",
+    documents:"Dokumenti",empty_docs:"Sè uште nema dokumenti.",
+    warn_overload:"Rabotilnicata e preоptovarena za {h} časovi vo {w}.",suggest:"Predlog: pomesti pomalku priоriteten proekt za nekolku dena, ili dodaj kratkoročna kapacitet na najоptovarenata resursa.",
+    ph_design:"Dizajn",ph_material_ordered:"Materijal nараčan",ph_ready:"Podgotveno za proizvodstvo",ph_production:"Proizvodstvo",ph_inspection:"Inspekcija",ph_delivery:"Isporaka",ph_completed:"Završeno",
+    nc_cancel:"Otkaži",nc_save:"Začuvaj",
+    ni_title:"Nova ideja",ni_name:"Ime na ideja",ni_desc:"Kratok opis",
+    nf_title:"Nov iden proekt",nf_name:"Ime na proekt",
+    by_employee:"Po vraboten",by_machine:"Po mašina",by_week:"Po nedela vo rabotilnica",
+    day_events:"Nastani",no_events:"Nema nastani na ovoj den.",
+    locale:"mk"}
+};
+
+function activeProjects(){return PROJECTS;}
+function projStats(){
+  const total=activeProjects().length+FUTURE.length;
+  const inProgress=activeProjects().filter(p=>p.phase!=='completed'&&p.progress>0).length;
+  const planned=activeProjects().filter(p=>p.progress===0).length+FUTURE.length;
+  const completed=activeProjects().filter(p=>p.phase==='completed').length;
+  const today=d("2026-08-25");
+  const overdue=activeProjects().filter(p=>p.phase!=='completed'&&d(p.deadline)<today).length;
+  const plannedHours=activeProjects().reduce((a,p)=>a+p.plannedHours,0);
+  const usedHours=activeProjects().reduce((a,p)=>a+p.usedHours,0);
+  const util=Math.round(usedHours/plannedHours*100);
+  const revenue=180000+95000+340000; // sum of FUTURE est. values as pipeline revenue
+  return{total,inProgress,planned,completed,overdue,plannedHours,util,revenue};
+}
+
+function renderHeader(){
+  const t=T[LANG];
+  const tabs=[["overview","tab_overview"],["gantt","tab_gantt"],["calendar","tab_calendar"],["timeline","tab_timeline"],["workload","tab_workload"]];
+  return `<div class="pheader">
+    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h2M8 18h2M14 14h2M14 18h2"/></svg></div>
+      <div><h1>${t.ptitle}</h1><p>${t.psub}</p></div></div>
+    <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${t[l]}</button>`).join("")}</div>
+    <div class="hcontrols">
+      ${activeTab!=='overview'?`<button class="tbtn small" onclick="setFilterOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>${t.filter}</button>`:''}
+      <button class="tbtn primary small" onclick="openNewForContext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.new}</button>
+    </div>
+  </div>`;
+}
+
+function renderLeft(){
+  const t=T[LANG];const s=projStats();
+  const subs=[
+    ["overview","sub_overview",null,`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>`],
+    ["ideas","sub_ideas",IDEAS.length,`<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/>`],
+    ["existing","sub_existing",activeProjects().length,`<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/>`],
+    ["future","sub_future",FUTURE.length,`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>`]
+  ];
+  return `
+    <div class="panel">
+      <div class="phead"><h3>${t.submodules}</h3></div>
+      <div class="subnav">${subs.map(([k,l,c,ic])=>`<button class="${activeSub===k?'on':''}" onclick="setSub('${k}')">
+        <span class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg></span>
+        <span class="stxt"><b>${t[l]}</b></span>${c!==null?`<span class="scount">${c}</span>`:''}
+      </button>`).join("")}</div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.quicksummary}</h3></div>
+      <div class="qsrow"><span class="qk">${t.total_projects}</span><span class="qv">${s.total}</span></div>
+      <div class="qsrow"><span class="qk">${t.in_progress}</span><span class="qv">${s.inProgress}</span></div>
+      <div class="qsrow"><span class="qk">${t.planned}</span><span class="qv">${s.planned}</span></div>
+      <div class="qsrow"><span class="qk">${t.completed}</span><span class="qv">${s.completed}</span></div>
+      <div class="qsrow"><span class="qk">${t.overdue}</span><span class="qv ${s.overdue?'warn':''}">${s.overdue}</span></div>
+      <div class="qsrow"><span class="qk">${t.planned_hours}</span><span class="qv">${s.plannedHours.toLocaleString('sv-SE')} h</span></div>
+      <div style="padding:8px 0;"><div class="qsrow" style="border:none;padding:0;"><span class="qk">${t.utilization}</span><span class="qv">${s.util}%</span></div>
+        <div class="utilbar ${s.util>100?'over':''}"><i style="width:${Math.min(100,s.util)}%"></i></div></div>
+      <div class="qsrow" style="border-top:1px solid var(--line);padding-top:10px;"><span class="qk">${t.est_revenue}</span><span class="qv ok">${fmt0(s.revenue)}</span></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.statuslegend}</h3></div>
+      <div class="legend">
+        <div class="lrow"><span class="ldot" style="background:var(--idea);"></span>${t.leg_idea}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--steel-400);"></span>${t.leg_planned}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--spark);"></span>${t.leg_inprogress}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--warn);"></span>${t.leg_hold}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--ok);"></span>${t.leg_completed}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--danger);"></span>${t.leg_overdue}</div>
+      </div>
+    </div>`;
+}
+
+function setTab(k){activeTab=k;activeSub='overview';renderAll();}
+function setSub(k){activeSub=k;activeTab='overview';renderAll();}
+function setFilterOpen(){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.filter}</h2>
+    <div class="frow"><label><input type="checkbox" id="ffIdeas" ${ganttFilter.ideas?'checked':''} style="width:auto;display:inline-block;margin-right:8px;">${t.sub_ideas}</label></div>
+    <div class="frow"><label><input type="checkbox" id="ffExisting" ${ganttFilter.existing?'checked':''} style="width:auto;display:inline-block;margin-right:8px;">${t.sub_existing}</label></div>
+    <div class="frow"><label><input type="checkbox" id="ffFuture" ${ganttFilter.future?'checked':''} style="width:auto;display:inline-block;margin-right:8px;">${t.sub_future}</label></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="applyFilter()">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function applyFilter(){
+  ganttFilter.ideas=$("ffIdeas").checked;ganttFilter.existing=$("ffExisting").checked;ganttFilter.future=$("ffFuture").checked;
+  closeModal();renderAll();
+}
+function closeModal(){$("fov").classList.remove("show");}
+function openNewForContext(){
+  if(activeSub==='future')openNewFuture();else openNewIdea();
+}
+
+let gRangeStart=d("2026-08-18"),gRangeEnd=d("2026-12-12");
+function gShiftRange(weeks){gRangeStart=addDays(gRangeStart,weeks*7);gRangeEnd=addDays(gRangeEnd,weeks*7);renderAll();}
+function gToday(){gRangeStart=d("2026-08-18");gRangeEnd=d("2026-12-12");renderAll();}
+
+function ganttHeaderHtml(rangeStart,rangeEnd){
+  const totalDays=daysBetween(rangeStart,rangeEnd);
+  const months=[];let cur=new Date(rangeStart.getFullYear(),rangeStart.getMonth(),1);
+  while(cur<rangeEnd){const next=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+    const segStart=cur<rangeStart?rangeStart:cur;const segEnd=next>rangeEnd?rangeEnd:next;
+    const left=daysBetween(rangeStart,segStart)/totalDays*100;
+    months.push({label:cur.toLocaleDateString('en-GB',{month:'short',year:'numeric'}),left});
+    cur=next;}
+  const ticks=[];let td=new Date(rangeStart);
+  while(td<rangeEnd){ticks.push({label:td.getDate(),left:daysBetween(rangeStart,td)/totalDays*100});td=addDays(td,7);}
+  return `<div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline">
+    <div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div>
+    <div class="gticks">${ticks.map(tk=>`<span class="gtick" style="left:${tk.left}%">${tk.label}</span>`).join("")}</div>
+  </div></div>`;
+}
+
+function ganttBarHtml(rangeStart,rangeEnd,start,end,status,progress,milestones,extraRight){
+  const totalDays=daysBetween(rangeStart,rangeEnd);
+  const left=Math.max(0,daysBetween(rangeStart,start)/totalDays*100);
+  const width=Math.max(0.6,daysBetween(start,end)/totalDays*100);
+  const todayOffset=daysBetween(rangeStart,d("2026-08-25"))/totalDays*100;
+  const msHtml=(milestones||[]).map(m=>{const mo=daysBetween(rangeStart,d(m.date))/totalDays*100;if(mo<0||mo>100)return'';
+    return `<div class="gmilestone ${m.done?'done':'pending'}" style="left:${mo}%" title="${m.name} — ${m.date}"></div>`;}).join("");
+  const todayHtml=(todayOffset>=0&&todayOffset<=100)?`<div class="gtoday" style="left:${todayOffset}%"><span class="gtodaylbl">Today</span></div>`:'';
+  return `<div class="gtrack">${todayHtml}
+    <div class="gbar st-${status}" style="left:${left}%;width:${width}%" title="${fmtISO(start)} → ${fmtISO(end)}">
+      <div class="gfill"></div>${progress?`<div class="gprog" style="right:${100-progress}%"></div>`:''}
+    </div>${msHtml}</div>`;
+}
+
+function renderGanttChart(compact){
+  const t=T[LANG];
+  const rows=[];
+  if(ganttFilter.ideas&&IDEAS.length){
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_ideas.toUpperCase()}</div></div>`);
+    IDEAS.slice(0,compact?3:IDEAS.length).forEach(idea=>{
+      const start=d(idea.targetDate?addDaysISO(idea.targetDate,-30):"2026-08-01");const end=d(idea.targetDate);
+      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();"><b>${idea.name}</b></div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
+    });
+  }
+  if(ganttFilter.existing&&activeProjects().length){
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_existing.toUpperCase()}</div></div>`);
+    activeProjects().forEach(p=>{
+      const open=!!expandedProjects[p.no];
+      const span=projectSpan(p);
+      const status=p.phase==='completed'?'completed':(p.phase==='production'&&p.problems.length?'hold':(p.progress>0?'active':'planned'));
+      rows.push(`<div class="grow taskrow"><div class="gname ${open?'open':''}" onclick="toggleExpand('${p.no}')">
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg>
+        <b>${p.name}</b><span class="gpct">${p.progress}%</span></div>${ganttBarHtml(gRangeStart,gRangeEnd,span.start,span.end,status,p.progress,p.milestones)}</div>`);
+      if(open){
+        const sched=scheduleProject(p);
+        p.tasks.forEach(tk=>{
+          const sc=sched[tk.id];
+          rows.push(`<div class="grow taskrow" style="background:rgba(255,255,255,.008);"><div class="gname" style="padding-left:22px;">
+            <span class="gsub">${tk.name}</span>
+            <span class="gshift"><button onclick="shiftTask('${p.no}','${tk.id}',-1)" title="Shift earlier">−</button><button onclick="shiftTask('${p.no}','${tk.id}',1)" title="Shift later">+</button></span>
+          </div>${ganttBarHtml(gRangeStart,gRangeEnd,sc.start,sc.end,tk.status,tk.status==='completed'?100:(tk.status==='active'?50:0),[])}</div>`);
+        });
+      }
+    });
+  }
+  if(ganttFilter.future&&FUTURE.length){
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_future.toUpperCase()}</div></div>`);
+    FUTURE.forEach(f=>{
+      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('future');selectedFutureId=${f.id};renderAll();"><b>${f.name}</b></div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
+    });
+  }
+  return `<div class="gwrap">${ganttHeaderHtml(gRangeStart,gRangeEnd)}<div>${rows.join("")}</div></div>
+    <div class="glegend">
+      <div class="lg"><span class="ldot" style="background:var(--idea);"></span>${t.leg_idea}</div>
+      <div class="lg"><span class="ldot" style="background:var(--steel-400);"></span>${t.leg_planned}</div>
+      <div class="lg"><span class="ldot" style="background:var(--spark);"></span>${t.leg_inprogress}</div>
+      <div class="lg"><span class="ldot" style="background:var(--warn);"></span>${t.leg_hold}</div>
+      <div class="lg"><span class="ldot" style="background:var(--ok);"></span>${t.leg_completed}</div>
+      <div class="lg"><span style="width:9px;height:9px;background:#fff;transform:rotate(45deg);display:inline-block;"></span>Milestone</div>
+    </div>`;
+}
+function addDaysISO(iso,n){return fmtISO(addDays(d(iso),n));}
+function toggleExpand(no){expandedProjects[no]=!expandedProjects[no];renderAll();}
+
+function renderOverviewCards(){
+  const t=T[LANG];
+  const ideasEval=IDEAS.filter(i=>i.stage==='evaluation').length,ideasReady=IDEAS.filter(i=>i.stage==='feasibility'||i.stage==='approved').length;
+  const inProg=activeProjects().filter(p=>p.progress>0&&p.phase!=='completed').length,onHold=activeProjects().filter(p=>p.problems.length).length;
+  const futSched=FUTURE.filter(f=>f.probability!=='tentative').length,futWait=FUTURE.length-futSched;
+  return `<div class="ovcards">
+    <div class="ovcard2 ideas"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/></svg></div>
+      <div style="flex:1;"><div class="otitle">${t.sub_ideas}<span class="ocount">${IDEAS.length}</span></div>
+      <div class="odesc">${t.ov_ideas_desc}</div>
+      <div class="ostat">${ideasEval} in evaluation</div><div class="ostat ok">${ideasReady} ready for planning</div>
+      <a onclick="setSub('ideas')">${t.open_ideas} →</a></div></div>
+    <div class="ovcard2 existing"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg></div>
+      <div style="flex:1;"><div class="otitle">${t.sub_existing}<span class="ocount">${activeProjects().length}</span></div>
+      <div class="odesc">${t.ov_existing_desc}</div>
+      <div class="ostat">${inProg} in progress</div><div class="ostat warn">${onHold} with delays</div>
+      <a onclick="setSub('existing')">${t.open_projects} →</a></div></div>
+    <div class="ovcard2 future"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg></div>
+      <div style="flex:1;"><div class="otitle">${t.sub_future}<span class="ocount">${FUTURE.length}</span></div>
+      <div class="odesc">${t.ov_future_desc}</div>
+      <div class="ostat">${futSched} scheduled</div><div class="ostat">${futWait} waiting for start date</div>
+      <a onclick="setSub('future')">${t.open_future} →</a></div></div>
+  </div>`;
+}
+
+function renderBottomRow(){
+  const t=T[LANG];
+  const pipeline=IDEAS.slice(0,5).map(i=>`<tr onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();" style="cursor:pointer;">
+    <td>${i.name}</td><td><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span></td><td class="rnum">${ideaScore(i).toFixed(1)}</td><td class="gsub">${i.nextAction}</td></tr>`).join("");
+
+  const allMilestones=[];
+  activeProjects().forEach(p=>p.milestones.forEach(m=>allMilestones.push({...m,proj:p.name})));
+  allMilestones.sort((a,b)=>a.date.localeCompare(b.date));
+  const msHtml=allMilestones.slice(0,4).map(m=>`<div class="evrow"><span class="edot" style="background:${m.done?'var(--ok)':'var(--warn)'};"></span>
+    <div><b>${fmtShort(d(m.date))} — ${m.name}</b><span>${m.proj}</span></div></div>`).join("")||`<div class="empty3">—</div>`;
+
+  const totalH=projStats().plannedHours;
+  const inProgH=activeProjects().filter(p=>p.progress>0&&p.phase!=='completed').reduce((a,p)=>a+p.plannedHours,0);
+  const plannedH=activeProjects().filter(p=>p.progress===0).reduce((a,p)=>a+p.plannedHours,0);
+  const futH=FUTURE.reduce((a,f)=>a+f.estHours,0);
+  const grandH=inProgH+plannedH+futH;
+  const pctIn=Math.round(inProgH/grandH*100),pctPl=Math.round(plannedH/grandH*100),pctFu=100-pctIn-pctPl;
+
+  const resHtml=EMPLOYEES.map(e=>`<tr><td>${e.name}<div class="gsub">${e.role}</div></td><td class="rnum">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><div class="utilbar ${e.util>100?'over':''}" style="width:60px;"><i style="width:${Math.min(100,e.util)}%"></i></div>${e.util}%</div></td></tr>`).join("");
+
+  return `<div class="fieldgrid" style="grid-template-columns:1.3fr 1fr 1fr 1.3fr;margin-bottom:0;">
+    <div class="panel"><div class="phead"><h3>${t.pipeline}</h3><button class="tbtn small" onclick="openNewIdea()">${t.addidea}</button></div>
+      <table class="stbl" style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr style="color:var(--steel-400);font-size:10px;text-transform:uppercase;"><th style="text-align:left;padding-bottom:6px;">${t.th_idea}</th><th style="text-align:left;">${t.th_stage}</th><th style="text-align:right;">${t.th_score}</th><th style="text-align:left;">${t.th_next}</th></tr></thead>
+      <tbody>${pipeline}</tbody></table>
+      <div style="text-align:center;margin-top:10px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setSub('ideas')">${t.viewall} →</a></div></div>
+    <div class="panel"><div class="phead"><h3>${t.upcoming_milestones}</h3></div>${msHtml}
+      <div style="text-align:center;margin-top:8px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setTab('gantt')">${t.viewall} →</a></div></div>
+    <div class="panel"><div class="phead"><h3>${t.task_overview}</h3></div>
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <svg width="120" height="120" viewBox="0 0 42 42" style="transform:rotate(-90deg);">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--ok)" stroke-width="6" stroke-dasharray="${pctFu} ${100-pctFu}" stroke-dashoffset="0"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--warn)" stroke-width="6" stroke-dasharray="${pctPl} ${100-pctPl}" stroke-dashoffset="${-pctFu}"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--spark)" stroke-width="6" stroke-dasharray="${pctIn} ${100-pctIn}" stroke-dashoffset="${-(pctFu+pctPl)}"/>
+        </svg>
+        <div style="margin-top:-78px;text-align:center;"><div style="font-family:'Sora';font-size:20px;font-weight:700;">${grandH.toLocaleString('sv-SE')} h</div><div style="font-size:10px;color:var(--steel-400);">${t.totalhours}</div></div>
+        <div style="margin-top:14px;width:100%;font-size:11px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--spark);">● In Progress</span><span>${inProgH} h (${pctIn}%)</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--warn);">● Planned</span><span>${plannedH} h (${pctPl}%)</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--ok);">● Future</span><span>${futH} h (${pctFu}%)</span></div>
+        </div>
+      </div></div>
+    <div class="panel"><div class="phead"><h3>${t.resource_overview}</h3><a style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('workload')">${t.viewres} →</a></div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;"><tbody>${resHtml}</tbody></table></div>
+  </div>`;
+}
+
+function renderTimelineStrip(){
+  const t=T[LANG];
+  const rangeStart=d("2026-08-01"),rangeEnd=d("2027-12-31");
+  const totalDays=daysBetween(rangeStart,rangeEnd);
+  const months=[];let cur=new Date(rangeStart.getFullYear(),rangeStart.getMonth(),1);
+  while(cur<rangeEnd){months.push({label:cur.toLocaleDateString('en-GB',{month:'short'})+(cur.getMonth()===0?' '+cur.getFullYear():''),left:daysBetween(rangeStart,cur)/totalDays*100});cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}
+  const items=[...activeProjects().map(p=>({name:p.name,start:d(p.start),end:d(p.deadline),status:p.phase==='completed'?'completed':(p.progress>0?'active':'planned')})),
+    ...FUTURE.map(f=>({name:f.name,start:d(f.expectedStart),end:d(f.expectedFinish),status:'future'}))];
+  const rows=items.map(it=>{const left=daysBetween(rangeStart,it.start)/totalDays*100;const width=Math.max(0.6,daysBetween(it.start,it.end)/totalDays*100);
+    return `<div class="grow taskrow"><div class="gname"><b style="font-size:11.5px;">${it.name}</b></div><div class="gtrack" style="height:26px;"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;top:4px;height:16px;"><div class="gfill"></div></div></div></div>`;}).join("");
+  return `<div class="panel"><div class="phead"><h3>${t.project_timeline}</h3><a style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('timeline')">${t.viewfulltimeline} →</a></div>
+    <div class="gwrap"><div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline"><div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div></div></div>
+    <div>${rows}</div></div></div>`;
+}
+
+function renderOverviewTab(){
+  const t=T[LANG];
+  return `${renderOverviewCards()}
+    <div class="maingrid" style="grid-template-columns:1fr 320px;margin-bottom:16px;">
+      <div class="panel"><div class="phead"><h3>${t.gantt_title}</h3></div>${renderGanttChart(true)}</div>
+      ${renderCalendarWidget()}
+    </div>
+    ${renderBottomRow()}
+    <div style="margin-top:16px;">${renderTimelineStrip()}</div>`;
+}
+
+function monthGrid(monthDate){
+  const year=monthDate.getFullYear(),month=monthDate.getMonth();
+  const first=new Date(year,month,1);
+  const startOffset=(first.getDay()+6)%7; // Monday=0
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const cells=[];
+  for(let i=0;i<startOffset;i++){const dt=new Date(year,month,1-(startOffset-i));cells.push({date:dt,other:true});}
+  for(let dnum=1;dnum<=daysInMonth;dnum++){cells.push({date:new Date(year,month,dnum),other:false});}
+  while(cells.length%7!==0||cells.length<42){const last=cells[cells.length-1].date;cells.push({date:addDays(last,1),other:true});}
+  return cells;
+}
+function eventsOn(iso){return CAL_EVENTS.filter(e=>e.date===iso);}
+
+function renderCalendarWidget(){
+  const t=T[LANG];
+  const cells=monthGrid(calMonth).slice(0,35);
+  const dow=["M","T","W","T","F","S","S"];
+  return `<div class="panel"><div class="phead"><h3>${t.tab_calendar}</h3></div>
+    <div class="calnav"><h3>${calMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h3>
+      <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button onclick="calNavMini(1)">›</button></div></div>
+    <div class="calmonth">${dow.map(x=>`<div class="cdow">${x}</div>`).join("")}
+    ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso==="2026-08-25";const isSel=iso===calSelDate;
+      return `<div class="calday ${c.other?'other':''} ${isToday?'today':''} ${isSel?'sel':''}" style="min-height:auto;padding:6px 3px;" onclick="selectCalDate('${iso}')">
+        <div class="cdnum">${c.date.getDate()}</div>${evs.slice(0,1).map(e=>`<span class="caldot" style="background:${EVENT_COLOR[e.type]};"></span>`).join("")}
+      </div>`;}).join("")}
+    </div></div>`;
+}
+function calNavMini(dir){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+dir,1);renderAll();}
+function selectCalDate(iso){calSelDate=iso;if(activeTab!=='calendar')setTab('calendar');else renderAll();}
+
+function renderCalendarTab(){
+  const t=T[LANG];
+  const cells=monthGrid(calMonth);
+  const dow=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const dayEvents=eventsOn(calSelDate);
+  return `<div class="calgrid">
+    <div class="panel">
+      <div class="calnav"><h3>${calMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h3>
+        <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button class="tbtn small" onclick="calMonth=new Date(2026,7,1);renderAll();">${t.today}</button><button onclick="calNavMini(1)">›</button></div></div>
+      <div class="calmonth">${dow.map(x=>`<div class="cdow">${x}</div>`).join("")}
+      ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso==="2026-08-25";const isSel=iso===calSelDate;
+        return `<div class="calday ${c.other?'other':''} ${isToday?'today':''} ${isSel?'sel':''}" onclick="selectCalDate('${iso}')">
+          <div class="cdnum">${c.date.getDate()}</div>${evs.map(e=>`<span class="caldot" style="background:${EVENT_COLOR[e.type]};">${e.title}</span>`).join("")}
+        </div>`;}).join("")}
+      </div>
+    </div>
+    <div class="panel"><div class="phead"><h3>${t.day_events} — ${calSelDate}</h3></div>
+      <div class="dayevents">${dayEvents.map(e=>`<div class="evrow"><span class="edot" style="background:${EVENT_COLOR[e.type]};"></span><div><b>${e.title}</b><span>${e.sub}</span></div></div>`).join("")||`<div class="empty3">${t.no_events}</div>`}</div>
+    </div>
+  </div>`;
+}
+
+function setZoom(z){timelineZoom=z;renderAll();}
+function renderTimelineTab(){
+  const t=T[LANG];
+  const zoomDays={"1m":30,"3m":90,"6m":183,"12m":365,"24m":730};
+  const rangeStart=d("2026-08-18");const rangeEnd=addDays(rangeStart,zoomDays[timelineZoom]);
+  const totalDays=daysBetween(rangeStart,rangeEnd);
+  const months=[];let cur=new Date(rangeStart.getFullYear(),rangeStart.getMonth(),1);
+  while(cur<rangeEnd){months.push({label:cur.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}),left:daysBetween(rangeStart,cur)/totalDays*100});cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}
+  const items=[...activeProjects().map(p=>({name:p.name,start:d(p.start),end:d(p.deadline),status:p.phase==='completed'?'completed':(p.progress>0?'active':'planned')})),
+    ...FUTURE.map(f=>({name:f.name,start:d(f.expectedStart),end:d(f.expectedFinish),status:'future'})),
+    ...IDEAS.filter(i=>i.stage==='approved'||i.stage==='feasibility').map(i=>({name:i.name,start:addDays(d(i.targetDate),-20),end:d(i.targetDate),status:'idea'}))];
+  const rows=items.map(it=>{const left=Math.max(0,daysBetween(rangeStart,it.start)/totalDays*100);const width=Math.max(0.6,daysBetween(it.start,it.end)/totalDays*100);
+    return `<div class="grow taskrow"><div class="gname"><b>${it.name}</b></div><div class="gtrack"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;"><div class="gfill"></div></div></div></div>`;}).join("");
+  return `<div class="panel"><div class="phead"><h3>${t.project_timeline}</h3>
+    <div class="zoomtabs">${[["1m","1M"],["3m","3M"],["6m","6M"],["12m","1Y"],["24m","2Y"]].map(([k,l])=>`<button class="${timelineZoom===k?'on':''}" onclick="setZoom('${k}')">${l}</button>`).join("")}</div></div>
+    <div class="gwrap"><div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline"><div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div></div></div>
+    <div>${rows}</div></div></div>`;
+}
+
+function renderWorkloadTab(){
+  const t=T[LANG];
+  const overloaded=WEEKS.filter(w=>w.util>100);
+  const warnHtml=overloaded.map(w=>`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    <div><div>${t.warn_overload.replace('{h}',Math.round((w.util-100)/100*40)).replace('{w}',w.label.split(' (')[0])}</div>
+    <div class="wsuggest">${t.suggest}</div></div></div>`).join("");
+  const empRows=EMPLOYEES.map(e=>`<div class="wkrow ${e.util>100?'overload':''}"><div class="wkname">${e.name}<span class="wkrole">${e.role}</span></div>
+    <div class="wkbar ${e.util>100?'over':''}"><i style="width:${Math.min(100,e.util)}%"></i></div><div class="wkpct">${e.util}%</div></div>`).join("");
+  const machRows=MACHINES.map(m=>`<div class="wkrow ${m.util>100?'overload':''}"><div class="wkname">${m.name}</div>
+    <div class="wkbar ${m.util>100?'over':''}"><i style="width:${Math.min(100,m.util)}%"></i></div><div class="wkpct">${m.util}%</div></div>`).join("");
+  const wkRows=WEEKS.map(w=>`<div class="wkrow ${w.util>100?'overload':''}"><div class="wkname">${w.label}</div>
+    <div class="wkbar ${w.util>100?'over':''}"><i style="width:${Math.min(100,w.util)}%"></i></div><div class="wkpct">${w.util}%${w.util>100?' ⚠':''}</div></div>`).join("");
+  return `${warnHtml}
+    <div class="wkcols">
+      <div class="panel"><div class="phead"><h3>${t.by_employee}</h3></div>${empRows}</div>
+      <div class="panel"><div class="phead"><h3>${t.by_machine}</h3></div>${machRows}</div>
+      <div class="panel"><div class="phead"><h3>${t.by_week}</h3></div>${wkRows}</div>
+    </div>`;
+}
+
+function renderGanttTab(){
+  const t=T[LANG];
+  return `<div class="panel"><div class="phead"><h3>${t.gantt_title}</h3></div>${renderGanttChart(false)}</div>`;
+}
+
+function stagePillsRow(idea){
+  const t=T[LANG];
+  return `<div class="stepper" style="margin-bottom:0;">${STAGE_ORDER.map((s,i)=>`<span class="stagepill ${s}" style="cursor:pointer;${idea.stage===s?'':'opacity:.45;'}" onclick="setIdeaStage(${idea.id},'${s}')">${t["stg_"+s]}</span>${i<STAGE_ORDER.length-1?'<span style="color:var(--steel-400);">→</span>':''}`).join(" ")}
+    <span style="color:var(--steel-400);">|</span> <span class="stagepill rejected" style="cursor:pointer;${idea.stage==='rejected'?'':'opacity:.45;'}" onclick="setIdeaStage(${idea.id},'rejected')">${t.stg_rejected}</span>
+    <span class="stagepill onhold" style="cursor:pointer;${idea.stage==='onhold'?'':'opacity:.45;'}" onclick="setIdeaStage(${idea.id},'onhold')">${t.stg_onhold}</span></div>`;
+}
+function setIdeaStage(id,stage){const i=IDEAS.find(x=>x.id===id);i.stage=stage;renderAll();}
+
+function renderIdeasSub(){
+  const t=T[LANG];const idea=IDEAS.find(i=>i.id===selectedIdeaId)||IDEAS[0];
+  const listHtml=IDEAS.map(i=>`<div class="listcard" onclick="selectedIdeaId=${i.id};renderAll();" style="${i.id===idea.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+    <div class="lc-top"><b>${i.name}</b><span class="scorebadge">${ideaScore(i).toFixed(1)}</span></div>
+    <div class="lc-sub">${i.category} · ${i.responsible}</div>
+    <div style="margin-top:6px;"><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span></div></div>`).join("");
+  const s=idea.scores;
+  const scoreRows=[["sc_market","market"],["sc_profit","profit"],["sc_investment","investment"],["sc_difficulty","difficulty"],["sc_equipment","equipment"],["sc_devtime","devtime"],["sc_strategic","strategic"]]
+    .map(([lbl,k])=>`<div class="scorerow"><span>${t[lbl]}</span><div style="display:flex;align-items:center;"><div class="scorebar"><i style="width:${s[k]*10}%"></i></div><b>${s[k]}/10</b></div></div>`).join("");
+  return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
+    <div class="panel"><div class="phead"><h3>${t.idealist_title}</h3><button class="tbtn small" onclick="openNewIdea()">${t.newidea}</button></div>
+      <div class="idealist">${listHtml}</div></div>
+    <div class="panel">
+      <div class="detailhead"><div><h2>${idea.name}</h2><div class="lc-sub" style="margin-top:4px;">${idea.desc}</div></div>
+        <button class="tbtn small" onclick="openUploadIdea(${idea.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 16H7a3 3 0 0 1-3-1.1z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></svg>Attach</button></div>
+      ${stagePillsRow(idea)}
+      <div class="fieldgrid" style="margin-top:18px;">
+        <div class="field"><div class="fk">${t.f_source}</div><div class="fv">${idea.source==='customer'?'Customer':'Internal'}</div></div>
+        <div class="field"><div class="fk">${t.f_category}</div><div class="fv">${idea.category}</div></div>
+        <div class="field"><div class="fk">${t.f_priority}</div><div class="fv" style="text-transform:capitalize;">${idea.priority}</div></div>
+        <div class="field"><div class="fk">${t.f_investment}</div><div class="fv">${fmt0(idea.investment)}</div></div>
+        <div class="field"><div class="fk">${t.f_revenue}</div><div class="fv">${fmt0(idea.expectedRevenue)}</div></div>
+        <div class="field"><div class="fk">${t.f_profit}</div><div class="fv" style="color:var(--ok);">${fmt0(idea.estProfit)}</div></div>
+        <div class="field"><div class="fk">${t.f_hours}</div><div class="fv">${idea.estHours} h</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${idea.machines.join(", ")}</div></div>
+        <div class="field"><div class="fk">${t.f_materials}</div><div class="fv">${idea.materials.join(", ")}</div></div>
+        <div class="field"><div class="fk">${t.f_risk}</div><div class="fv" style="text-transform:capitalize;">${idea.risk}</div></div>
+        <div class="field"><div class="fk">${t.f_next}</div><div class="fv">${idea.nextAction}</div></div>
+        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${idea.responsible}</div></div>
+        <div class="field"><div class="fk">${t.f_target}</div><div class="fv">${idea.targetDate}</div></div>
+      </div>
+      <div class="scorecard"><div class="phead"><h3>${t.scoring_title}</h3></div>${scoreRows}
+        <div class="scoretotal"><span>${t.overall_score}</span><span>${ideaScore(idea).toFixed(1)} / 10</span></div></div>
+      <div class="panel" style="padding:14px;"><div class="phead"><h3>${t.documents}</h3></div>
+        ${idea.documents.map(dd=>`<div class="docrow2" style="border-color:var(--line);"><div class="dicon pdf" style="background:#c0392b;">${dd.type.toUpperCase()}</div><div class="dn">${dd.name}</div><div class="dd">${dd.date}</div></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}</div>
+    </div>
+  </div>`;
+}
+
+function phaseFlow(p){
+  const t=T[LANG];const order=["design","material_ordered","ready","production","inspection","delivery","completed"];
+  return `<div class="stepper" style="margin-bottom:0;">${order.map((ph,i)=>`<span class="stagepill ${ph===p.phase?'approved':'new'}" style="cursor:pointer;${ph===p.phase?'':'opacity:.4;'}" onclick="setPhase('${p.no}','${ph}')">${t["ph_"+ph]}</span>${i<order.length-1?'<span style="color:var(--steel-400);">→</span>':''}`).join(" ")}</div>`;
+}
+function setPhase(no,phase){const p=PROJECTS.find(x=>x.no===no);p.phase=phase;if(phase==='completed')p.progress=100;renderAll();}
+
+function renderExistingSub(){
+  const t=T[LANG];const p=PROJECTS.find(x=>x.no===selectedProjNo)||activeProjects()[0];
+  const listHtml=activeProjects().map(pr=>`<div class="listcard" onclick="selectedProjNo='${pr.no}';renderAll();" style="${pr.no===p.no?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+    <div class="lc-top"><b>${pr.no}</b><span style="font-size:11px;color:var(--steel-400);">${pr.progress}%</span></div>
+    <div class="lc-sub">${pr.name}</div><div class="lc-sub">${CUSTOMERS[pr.customerId]}</div></div>`).join("");
+  const remain=p.plannedHours-p.usedHours;
+  return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
+    <div class="panel"><div class="phead"><h3>${t.existing_title}</h3></div><div class="projlist">${listHtml}</div></div>
+    <div class="panel">
+      <div class="detailhead"><div><h2>${p.no} — ${p.name}</h2><div class="lc-sub" style="margin-top:4px;">${CUSTOMERS[p.customerId]}</div></div>
+        <button class="tbtn small" onclick="location.href='projects-desktop.html'">Open in Projects →</button></div>
+      ${phaseFlow(p)}
+      <div class="fieldgrid" style="margin-top:18px;">
+        <div class="field"><div class="fk">${t.f_start}</div><div class="fv">${p.start}</div></div>
+        <div class="field"><div class="fk">${t.f_deadline}</div><div class="fv">${p.deadline}</div></div>
+        <div class="field"><div class="fk">${t.f_progress}</div><div class="fv">${p.progress}%</div></div>
+        <div class="field"><div class="fk">${t.f_plannedh}</div><div class="fv">${p.plannedHours} h</div></div>
+        <div class="field"><div class="fk">${t.f_usedh}</div><div class="fv">${p.usedHours} h</div></div>
+        <div class="field"><div class="fk">${t.f_remainh}</div><div class="fv" style="${remain<0?'color:var(--warn);':''}">${remain} h</div></div>
+        <div class="field"><div class="fk">${t.f_material}</div><div class="fv">${p.materialStatus}</div></div>
+        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${p.responsible}</div></div>
+        <div class="field"><div class="fk">${t.f_workers}</div><div class="fv">${p.workers.join(", ")||"—"}</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${p.machines.join(", ")||"—"}</div></div>
+        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${p.dependencyNote}</div></div>
+        <div class="field"><div class="fk">${t.f_updatedcompletion}</div><div class="fv">${p.updatedCompletion}</div></div>
+      </div>
+      ${p.problems.length?`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>${t.f_problems}</b><div>${p.problems.join("; ")}</div></div></div>`:''}
+      <div class="panel" style="padding:14px;"><div class="phead"><h3>${t.gantt_title.split(' — ')[0]}</h3></div>
+        <div class="gwrap">${(function(){const span=projectSpan(p);return ganttHeaderHtml(addDays(span.start,-2),addDays(span.end,2))+`<div>${(function(){const sched=scheduleProject(p);return p.tasks.map(tk=>{const sc=sched[tk.id];
+          return `<div class="grow taskrow"><div class="gname"><span class="gsub">${tk.name}</span><span class="gshift"><button onclick="shiftTask('${p.no}','${tk.id}',-1)">−</button><button onclick="shiftTask('${p.no}','${tk.id}',1)">+</button></span></div>${ganttBarHtml(addDays(span.start,-2),addDays(span.end,2),sc.start,sc.end,tk.status,tk.status==='completed'?100:(tk.status==='active'?50:0),[])}</div>`;}).join("");})()}</div>`;})()}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFutureSub(){
+  const t=T[LANG];const f=FUTURE.find(x=>x.id===selectedFutureId)||FUTURE[0];
+  const listHtml=FUTURE.map(fr=>`<div class="listcard" onclick="selectedFutureId=${fr.id};renderAll();" style="${fr.id===f.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+    <div class="lc-top"><b>${fr.name}</b><span class="stagepill ${fr.probability}">${t["prob_"+fr.probability]}</span></div>
+    <div class="lc-sub">${fr.customerId?CUSTOMERS[fr.customerId]:fr.customerName}</div>
+    <div class="lc-sub">${fmt0(fr.estValue)}</div></div>`).join("");
+  return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
+    <div class="panel"><div class="phead"><h3>${t.future_title}</h3><button class="tbtn small" onclick="openNewFuture()">${t.newfuture}</button></div><div class="futlist">${listHtml}</div></div>
+    <div class="panel">
+      <div class="detailhead"><div><h2>${f.name}</h2><div class="lc-sub" style="margin-top:4px;">${f.customerId?CUSTOMERS[f.customerId]:f.customerName}</div></div>
+        <span class="stagepill ${f.probability}">${t["prob_"+f.probability]} — ${f.probabilityPct}%</span></div>
+      <div class="fieldgrid" style="margin-top:6px;">
+        <div class="field"><div class="fk">${t.f_expstart}</div><div class="fv">${f.expectedStart}</div></div>
+        <div class="field"><div class="fk">${t.f_expfinish}</div><div class="fv">${f.expectedFinish}</div></div>
+        <div class="field"><div class="fk">${t.f_probability}</div><div class="fv">${f.probabilityPct}%</div></div>
+        <div class="field"><div class="fk">${t.f_revenue}</div><div class="fv">${fmt0(f.estValue)}</div></div>
+        <div class="field"><div class="fk">${t.f_workload}</div><div class="fv">${f.estHours} h</div></div>
+        <div class="field"><div class="fk">${t.f_employees}</div><div class="fv">${f.employees}</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${f.machines.join(", ")}</div></div>
+        <div class="field"><div class="fk">${t.f_leadtime}</div><div class="fv">${f.materialLeadTime}</div></div>
+        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${f.dependencyNote}</div></div>
+        <div class="field"><div class="fk">${t.f_priority}</div><div class="fv" style="text-transform:capitalize;">${f.priority}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openNewIdea(){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.ni_title}</h2>
+    <div class="frow"><label>${t.ni_name}</label><input id="niName"></div>
+    <div class="frow"><label>${t.ni_desc}</label><textarea id="niDesc"></textarea></div>
+    <div class="frow2"><div><label>${t.f_category}</label><input id="niCat" value="Product Development"></div><div><label>${t.f_responsible}</label><input id="niResp" value="Aleksandar C."></div></div>
+    <div class="frow3"><div><label>${t.f_investment}</label><input id="niInv" type="number" value="50000"></div><div><label>${t.f_revenue}</label><input id="niRev" type="number" value="150000"></div><div><label>${t.f_hours}</label><input id="niHrs" type="number" value="100"></div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewIdea()">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveNewIdea(){
+  const name=$("niName").value.trim();if(!name)return;
+  const inv=parseFloat($("niInv").value)||0,rev=parseFloat($("niRev").value)||0;
+  IDEAS.push({id:nextIdeaId++,name,desc:$("niDesc").value.trim(),source:"internal",category:$("niCat").value||"General",priority:"medium",
+    investment:inv,expectedRevenue:rev,estProfit:Math.max(0,rev-inv),estHours:parseFloat($("niHrs").value)||0,
+    machines:[],materials:[],scores:{market:5,profit:5,investment:5,difficulty:5,equipment:5,devtime:5,strategic:5},
+    risk:"medium",nextAction:"Initial review",responsible:$("niResp").value||"Aleksandar C.",targetDate:"2026-10-01",stage:"new",documents:[]});
+  closeModal();setSub('ideas');selectedIdeaId=nextIdeaId-1;renderAll();
+}
+function openUploadIdea(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.documents}</h2>
+    <div class="frow"><label>File name</label><input id="uiName" placeholder="Sketch.pdf"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUploadIdea(${id})">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveUploadIdea(id){
+  const name=$("uiName").value.trim();if(!name)return;
+  const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc';
+  IDEAS.find(i=>i.id===id).documents.push({name,type,date:"2026-08-25"});
+  closeModal();renderAll();
+}
+
+function openNewFuture(){
+  const t=T[LANG];
+  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${CUSTOMERS[id]}</option>`).join("");
+  $("fcard").innerHTML=`<h2>${t.nf_title}</h2>
+    <div class="frow"><label>${t.nf_name}</label><input id="nfName"></div>
+    <div class="frow"><label>${t.f_customer}</label><select id="nfCust">${custOpts}</select></div>
+    <div class="frow2"><div><label>${t.f_expstart}</label><input id="nfStart" type="date" value="2026-11-01"></div><div><label>${t.f_expfinish}</label><input id="nfFinish" type="date" value="2026-11-20"></div></div>
+    <div class="frow3"><div><label>${t.f_revenue}</label><input id="nfValue" type="number" value="100000"></div><div><label>${t.f_workload}</label><input id="nfHours" type="number" value="80"></div><div><label>${t.f_probability}</label><select id="nfProb"><option value="tentative">${t.prob_tentative}</option><option value="probable" selected>${t.prob_probable}</option><option value="confirmed">${t.prob_confirmed}</option></select></div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewFuture()">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveNewFuture(){
+  const name=$("nfName").value.trim();if(!name)return;
+  const prob=$("nfProb").value;
+  FUTURE.push({id:nextFutureId++,name,customerId:parseInt($("nfCust").value),expectedStart:$("nfStart").value,expectedFinish:$("nfFinish").value,
+    probability:prob,probabilityPct:prob==='confirmed'?90:(prob==='probable'?60:30),estValue:parseFloat($("nfValue").value)||0,
+    estHours:parseFloat($("nfHours").value)||0,employees:1,machines:[],materialLeadTime:"2 weeks",dependencyNote:"—",priority:"medium"});
+  closeModal();setSub('future');selectedFutureId=nextFutureId-1;renderAll();
+}
+
+$("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
+
+function renderAll(){
+  const t=T[LANG];
+  let body;
+  if(activeSub==='ideas')body=renderIdeasSub();
+  else if(activeSub==='existing')body=renderExistingSub();
+  else if(activeSub==='future')body=renderFutureSub();
+  else{
+    if(activeTab==='gantt')body=renderGanttTab();
+    else if(activeTab==='calendar')body=renderCalendarTab();
+    else if(activeTab==='timeline')body=renderTimelineTab();
+    else if(activeTab==='workload')body=renderWorkloadTab();
+    else body=renderOverviewTab();
+  }
+  const showSidebar=(activeSub==='overview');
+  $("app").innerHTML=`${renderHeader()}<div class="maingrid">${showSidebar?`<div class="col">${renderLeft()}</div><div class="col">${body}</div>`:`<div class="col" style="grid-column:1/-1;">${body}</div>`}</div>`;
+}
+
+function setLang(code){LANG=code;
+  document.documentElement.lang=code==="mk"?"mk-Latn":code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
+  renderAll();tick();
+}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
+function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+setLang("en");setInterval(tick,10000);
+
+const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+(function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+</script>
+</body></html>
