@@ -29,6 +29,9 @@
   .clock .date{font-size:11px;color:var(--steel-400);}
 
   .modhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
+  .modleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .back{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:11px;padding:6px 10px;cursor:pointer;transition:.15s;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .title{display:flex;align-items:center;gap:10px;}
   .modhead .title .ic{background:rgba(74,144,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
   .modhead .title h1{font-family:'Sora';font-weight:600;letter-spacing:-.01em;}
@@ -111,8 +114,11 @@
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
     </div>
     <div class="modhead">
-      <div class="title"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-        <div><h1 data-i="modtitle">Hours</h1><p data-i="modsub">Log time &amp; materials</p></div></div>
+      <div class="modleft">
+        <button class="back" onclick="location.href='hub-mobile.html'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+        <div class="title"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div><h1 data-i="modtitle">Hours</h1><p data-i="modsub">Log time &amp; materials</p></div></div>
+      </div>
       <div class="who"><div class="badge"><span class="av">MK</span><span>Marko K.</span></div><button class="out" data-i="logout">Log out</button></div>
     </div>
     <div class="card">
@@ -181,9 +187,9 @@
   };
   const EQUIP=["Plasma cutter 5mm","Folding machine","Welding machine","Hand tools"];
   const T={
-    sv:{modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE"},
-    en:{modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB"},
-    mk:{modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk"}
+    sv:{back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE"},
+    en:{back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB"},
+    mk:{back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
