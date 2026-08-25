@@ -136,6 +136,11 @@
       <div id="equipList"></div>
       <button type="button" class="addeq" id="addEq"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addeq">Add equipment</span></button>
     </div>
+    <div class="row">
+      <label data-i="matlabel">Material used</label>
+      <div id="matList"></div>
+      <button type="button" class="addeq" id="addMat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addmat">Add material</span></button>
+    </div>
 
     <div class="row notes-row">
       <label data-i="notes">Notes</label>
@@ -176,9 +181,9 @@
   };
   const EQUIP=["Plasma cutter 5mm","Folding machine","Welding machine","Hand tools"];
   const T={
-    sv:{modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE"},
-    en:{modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB"},
-    mk:{modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk"}
+    sv:{modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE"},
+    en:{modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB"},
+    mk:{modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -202,11 +207,19 @@
     const del=document.createElement('button');del.type='button';del.className='eqdel';del.textContent='×';del.onclick=()=>row.remove();
     row.append(sel,hrs,del);equipList.appendChild(row);}
   document.getElementById('addEq').addEventListener('click',addEqRow);
-  function refreshEqLang(){const t=T[current];document.querySelectorAll('.eqsel').forEach(s=>{if(s.options[0])s.options[0].textContent=t.eqph;});document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);}
+  const matList=document.getElementById('matList');
+  function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
+    const name=document.createElement('input');name.className='fld matname';name.type='text';name.placeholder=t.matph;
+    const qty=document.createElement('input');qty.className='fld matqty';qty.type='number';qty.step='0.1';qty.min='0';qty.placeholder=t.qty;
+    const del=document.createElement('button');del.type='button';del.className='eqdel';del.textContent='×';del.onclick=()=>row.remove();
+    row.append(name,qty,del);matList.appendChild(row);}
+  document.getElementById('addMat').addEventListener('click',addMatRow);
+  function refreshEqLang(){const t=T[current];document.querySelectorAll('.eqsel').forEach(s=>{if(s.options[0])s.options[0].textContent=t.eqph;});document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
+    document.querySelectorAll('.matname').forEach(n=>n.placeholder=t.matph);document.querySelectorAll('.matqty').forEach(q=>q.placeholder=t.qty);}
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   document.getElementById('date2').valueAsDate=new Date();
-  setLang("en");setInterval(tick,10000);addEqRow();
+  setLang("en");setInterval(tick,10000);addEqRow();addMatRow();
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 

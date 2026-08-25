@@ -5,13 +5,14 @@
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
     --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
-    --ok:#4ad48a;--warn:#ffb057;--quoted:#9db4d8;}
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;
+    --st-draft:#8ea3c0;--st-quotation:#9db4d8;--st-approved:#4a90ff;--st-planned:#6fd1ff;--st-active:#4a90ff;--st-hold:#ffb057;--st-completed:#4ad48a;--st-closed:#b9c6da;--st-cancelled:#ff6b6b;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
   .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
-  .glow{position:absolute;left:50%;top:32%;width:520px;height:520px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  .glow{position:absolute;left:50%;top:26%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
   .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
@@ -31,7 +32,7 @@
   .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .wrap{position:relative;z-index:2;max-width:1360px;margin:0 auto;padding:26px 40px 90px;}
+  .wrap{position:relative;z-index:2;max-width:1480px;margin:0 auto;padding:26px 40px 90px;}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
@@ -39,65 +40,178 @@
   .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
   .modhead h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
-  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
-  .search{position:relative;flex:1;min-width:200px;}
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .search{position:relative;flex:1;min-width:220px;}
   .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--steel-400);}
   .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:14px;padding:11px 12px 11px 36px;outline:none;}
   .search input:focus{border-color:var(--spark);}
-  .filters{display:flex;gap:6px;}
-  .filters button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:10px 13px;cursor:pointer;transition:.15s;}
-  .filters button:hover{color:var(--ice);} .filters button.active{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
-  .tbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:13px;padding:11px 15px;cursor:pointer;transition:.16s;}
+  .tbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:13px;padding:11px 15px;cursor:pointer;transition:.16s;white-space:nowrap;}
   .tbtn:hover{border-color:var(--spark);color:var(--ice);}
   .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
   .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.ghost2{border-style:dashed;}
+  .tbtn.danger{border-color:rgba(255,107,107,.4);color:#ffb3b3;}
+  .tbtn.danger:hover{border-color:var(--danger);color:#fff;}
+  .tbtn:disabled{opacity:.35;cursor:not-allowed;}
+  .tbtn:disabled:hover{transform:none;box-shadow:none;border-color:var(--field-line);color:var(--steel-300);}
 
-  .pcols{display:grid;grid-template-columns:1fr 1.5fr;gap:18px;align-items:start;}
-  .plist{display:flex;flex-direction:column;gap:10px;max-height:74vh;overflow:auto;padding-right:4px;}
-  .prow{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px;cursor:pointer;transition:.15s;}
-  .prow:hover{border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);}
-  .prow.sel{border-color:var(--spark);background:rgba(74,144,255,.1);box-shadow:inset 3px 0 0 var(--spark);}
-  .prow .r1{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
-  .prow .pno{font-family:'Sora';font-weight:600;font-size:13px;color:var(--steel-300);letter-spacing:.03em;}
-  .prow .ptitle{font-size:15px;font-weight:600;margin-bottom:2px;} .prow .pcust{font-size:12px;color:var(--steel-400);}
-  .badge-st{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;font-weight:600;white-space:nowrap;}
-  .st-active{background:rgba(74,144,255,.16);color:#cfe0ff;box-shadow:inset 0 0 0 1px rgba(74,144,255,.4);}
-  .st-quoted{background:rgba(157,180,216,.14);color:var(--quoted);box-shadow:inset 0 0 0 1px rgba(157,180,216,.35);}
-  .st-hold{background:rgba(255,176,87,.14);color:var(--warn);box-shadow:inset 0 0 0 1px rgba(255,176,87,.4);}
-  .st-done{background:rgba(74,212,138,.14);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(74,212,138,.4);}
-  .prog{margin-top:10px;} .prog .bar{height:5px;background:rgba(255,255,255,.08);overflow:hidden;} .prog .fill{height:100%;background:var(--spark);} .prog .fill.over{background:var(--warn);}
-  .prog .lbl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--steel-400);margin-top:5px;font-variant-numeric:tabular-nums;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .filters button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:11.5px;padding:8px 12px;cursor:pointer;transition:.15s;letter-spacing:.02em;text-transform:uppercase;}
+  .filters button:hover{color:var(--ice);} .filters button.active{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
 
-  .pdetail{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:24px;min-height:420px;position:sticky;top:20px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
-  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:360px;color:var(--steel-400);gap:12px;text-align:center;} .empty svg{opacity:.4;}
-  .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px;}
-  .dhead .pno{font-family:'Sora';font-size:12px;color:var(--steel-300);letter-spacing:.04em;} .dhead h2{font-family:'Sora';font-weight:600;font-size:20px;margin-top:3px;}
-  .facts{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-bottom:18px;}
-  .fact .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;} .fact .v{font-size:14px;}
-  .dactions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  .morewrap{margin-bottom:16px;}
+  .morepanel{display:none;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:end;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:14px;margin-top:8px;}
+  .morewrap.open .morepanel{display:grid;}
+  .morepanel label{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
+  .morepanel select,.morepanel input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:12.5px;padding:8px 9px;outline:none;}
 
-  .items h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);margin-bottom:10px;display:flex;justify-content:space-between;}
-  .item{border:1px solid var(--line);margin-bottom:9px;background:rgba(255,255,255,.02);}
-  .item .ihead{display:grid;grid-template-columns:22px 1fr auto auto;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;}
-  .item .chev{color:var(--steel-400);transition:transform .18s;} .item.open .chev{transform:rotate(90deg);}
-  .item .iname{font-size:14px;font-weight:600;} .item .itags{display:flex;gap:6px;margin-top:4px;}
-  .tag{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;color:var(--steel-400);border:1px solid var(--line);}
-  .tag.on{color:#cfe0ff;border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.1);}
-  .tag.jc-inprogress{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
-  .tag.jc-done{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
-  .item .ih{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--steel-300);text-align:right;} .item .ih small{color:var(--steel-400);}
-  .item .ih .over{color:var(--warn);}
-  .isub{display:none;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:0 14px 14px;} .item.open .isub{display:grid;}
-  .scard{border:1px solid var(--line);padding:13px;background:rgba(255,255,255,.02);}
-  .scard .sh{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:10px;} .scard .sh svg{width:14px;height:14px;color:var(--spark);}
-  .scard .line{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;} .scard .line .lk{color:var(--steel-400);} .scard .line.tot{border-top:1px solid var(--line);padding-top:7px;margin-top:7px;font-weight:600;}
-  .scard .ob{width:100%;margin-top:10px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:8px;cursor:pointer;transition:.15s;}
-  .scard .ob:hover{border-color:var(--spark);color:var(--ice);}
-  .itotal{display:flex;justify-content:space-between;padding:14px;margin-top:4px;border:1px solid rgba(74,144,255,.3);background:rgba(74,144,255,.06);font-family:'Sora';}
-  .itotal .lk{color:var(--steel-300);} .itotal .lv{font-weight:600;}
+  .ptable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);}
+  .ptable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1080px;}
+  .ptable th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:11px 12px;cursor:pointer;white-space:nowrap;user-select:none;}
+  .ptable th:hover{color:var(--ice);}
+  .ptable th .sa{opacity:.5;margin-left:3px;font-size:9px;}
+  .ptable td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .ptable tr.prow2{cursor:pointer;transition:.14s;}
+  .ptable tr.prow2:hover{background:rgba(74,144,255,.07);}
+  .pnum{font-family:'Sora';font-weight:600;color:var(--steel-300);font-size:12px;white-space:nowrap;}
+  .pname{font-weight:600;} .pcust2{color:var(--steel-400);font-size:11.5px;}
+  .miniprog{width:76px;height:5px;background:rgba(255,255,255,.08);overflow:hidden;} .miniprog i{display:block;height:100%;background:var(--spark);}
+  .miniprog i.over{background:var(--warn);}
+  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .over{color:var(--warn);}
+  .emptyrow td{text-align:center;color:var(--steel-400);padding:34px;}
+  .kpistrip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+  .kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px 18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .kpi .kl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:7px;}
+  .kpi .kv{font-family:'Sora';font-size:22px;font-weight:600;} .kpi .kv.warn{color:var(--warn);}
+  @media(max-width:760px){.kpistrip{grid-template-columns:1fr 1fr;}}
 
-  /* offer modal */
-  .overlay{position:fixed;inset:0;z-index:80;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .sbadge{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;font-weight:600;white-space:nowrap;border:1px solid;}
+  .sbadge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
+  .sbadge.draft{color:var(--st-draft);border-color:rgba(142,163,192,.4);background:rgba(142,163,192,.1);}
+  .sbadge.quotation{color:var(--st-quotation);border-color:rgba(157,180,216,.4);background:rgba(157,180,216,.12);}
+  .sbadge.approved{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .sbadge.planned{color:var(--st-planned);border-color:rgba(111,209,255,.4);background:rgba(111,209,255,.1);}
+  .sbadge.active{color:#cfe0ff;border-color:rgba(74,144,255,.55);background:rgba(74,144,255,.18);}
+  .sbadge.hold{color:var(--st-hold);border-color:rgba(255,176,87,.45);background:rgba(255,176,87,.12);}
+  .sbadge.completed{color:var(--st-completed);border-color:rgba(74,212,138,.45);background:rgba(74,212,138,.12);}
+  .sbadge.closed{color:var(--st-closed);border-color:rgba(185,198,218,.35);background:rgba(185,198,218,.08);}
+  .sbadge.cancelled{color:var(--st-cancelled);border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.12);}
+
+  /* detail header */
+  .dethead{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:22px 24px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
+  .dethead .dtop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .dethead .pno{font-family:'Sora';font-size:12px;color:var(--steel-300);letter-spacing:.04em;} .dethead h2{font-family:'Sora';font-weight:600;font-size:22px;margin-top:3px;}
+  .dethead .dcust{font-size:12.5px;color:var(--steel-400);margin-top:3px;}
+  .dfacts{display:flex;gap:28px;flex-wrap:wrap;}
+  .dfacts .df .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;} .dfacts .df .v{font-size:14px;font-weight:600;}
+  .roactions{display:flex;gap:8px;flex-wrap:wrap;}
+  .roactions .more{position:relative;}
+  .moremenu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:rgba(7,26,51,.98);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.5);z-index:50;}
+  .moremenu.open{display:block;}
+  .moremenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:11px 14px;cursor:pointer;}
+  .moremenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .moremenu button.danger2:hover{background:rgba(255,107,107,.12);color:#ffb3b3;}
+  .roreadonly{margin-top:12px;font-size:11.5px;color:var(--warn);display:flex;align-items:center;gap:7px;}
+
+  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:12px;letter-spacing:.03em;text-transform:uppercase;padding:12px 15px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .ptabs button:hover{color:var(--ice);}
+  .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
+
+  .tabpanel{min-height:280px;}
+  .card2{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;}
+  .warnbox{border:1px solid rgba(255,176,87,.4);background:rgba(255,176,87,.08);padding:13px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:7px;}
+  .warnbox .wline{font-size:12px;color:#ffd0b0;display:flex;gap:8px;align-items:flex-start;}
+  .warnbox .wline svg{flex:none;margin-top:1px;}
+  .pinnote{border:1px solid rgba(255,176,87,.35);background:rgba(255,176,87,.06);padding:12px 15px;margin-bottom:16px;font-size:12.5px;color:var(--steel-300);}
+  .pinnote b{color:#ffd0b0;font-family:'Sora';font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:5px;}
+
+  .ovgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;}
+  .ovcard{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;}
+  .ovcard h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+  .ovcard h4 svg{width:14px;height:14px;color:var(--spark);}
+  .ovline{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;} .ovline .lk{color:var(--steel-400);}
+  .ovbar{height:7px;background:rgba(255,255,255,.08);overflow:hidden;margin:4px 0 8px;} .ovbar i{display:block;height:100%;background:var(--spark);}
+  .ovbig{font-family:'Sora';font-size:22px;font-weight:600;}
+  @media(max-width:1200px){.ovgrid{grid-template-columns:repeat(2,1fr);}}
+
+  .subtable{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .subtable th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:9px 10px;white-space:nowrap;}
+  .subtable td{padding:10px;border-bottom:1px solid var(--line);}
+  .subtable tfoot td{border-bottom:none;padding-top:12px;font-weight:600;font-family:'Sora';}
+  .rowactions{display:flex;gap:8px;margin-top:12px;}
+  .rowbtn{background:transparent;border:1px solid var(--field-line);color:var(--steel-400);cursor:pointer;padding:4px 8px;font-size:11px;transition:.15s;}
+  .rowbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .rowbtn.danger2:hover{border-color:var(--danger);color:#ff9d9d;}
+  .tabhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .tabhead h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);}
+  .smtag{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;color:var(--steel-400);border:1px solid var(--line);white-space:nowrap;}
+  .smtag.src-store{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.1);}
+  .smtag.src-purchase{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+
+  .folder{margin-bottom:14px;border:1px solid var(--line);}
+  .folder .fh{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;cursor:pointer;background:rgba(255,255,255,.02);}
+  .folder .fh:hover{background:rgba(74,144,255,.06);}
+  .folder .fh .fn{font-family:'Sora';font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:8px;}
+  .folder .fh .fn svg{width:14px;height:14px;color:var(--spark);}
+  .folder .fh .fc{font-size:11px;color:var(--steel-400);}
+  .folder .fb{display:none;padding:4px 14px 10px;}
+  .folder.open .fb{display:block;}
+  .folder .fh .chev{transition:transform .16s;color:var(--steel-400);}
+  .folder.open .fh .chev{transform:rotate(90deg);}
+  .docrow{display:flex;justify-content:space-between;align-items:center;padding:9px 4px;border-top:1px solid var(--line);font-size:12.5px;}
+  .docrow:first-child{border-top:none;}
+  .docrow .dn{display:flex;align-items:center;gap:8px;} .docrow .dmeta{font-size:11px;color:var(--steel-400);}
+  .revtag{font-size:9.5px;padding:2px 6px;border:1px solid var(--field-line);color:var(--steel-300);}
+  .dstat{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;}
+  .dstat.current{color:var(--ok);border:1px solid rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
+  .dstat.superseded{color:var(--steel-400);border:1px solid var(--line);}
+  .dstat.archived{color:var(--steel-400);border:1px solid var(--line);opacity:.7;}
+
+  .costgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .costcol{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;}
+  .costcol h4{font-family:'Sora';font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-300);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .costline{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:9px;color:var(--steel-300);} .costline .lk{color:var(--steel-400);}
+  .costline.tot{border-top:1px solid var(--line);padding-top:10px;margin-top:6px;font-weight:600;color:var(--ice);}
+  .costline.profit{font-weight:600;color:var(--ok);} .costline.profit.neg{color:var(--danger);}
+  @media(max-width:900px){.costgrid{grid-template-columns:1fr;}}
+
+  .actrow{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:12.5px;}
+  .actrow:first-child{border-top:none;}
+  .actrow .adot{width:7px;height:7px;border-radius:50%;background:var(--spark);margin-top:5px;flex:none;}
+  .actrow .atime{color:var(--steel-400);font-size:11px;white-space:nowrap;width:118px;flex:none;}
+  .actrow .auser{font-weight:600;margin-right:4px;}
+
+  .notecard{border:1px solid var(--line);padding:12px 14px;margin-bottom:10px;background:rgba(255,255,255,.02);}
+  .notecard.pinned{border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.05);}
+  .notecard .nh{display:flex;justify-content:space-between;font-size:11px;color:var(--steel-400);margin-bottom:6px;}
+  .notecard .ntag{font-size:9px;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line);margin-left:7px;}
+  .notecard p{font-size:12.5px;color:var(--steel-300);line-height:1.5;}
+
+  /* generic form modal */
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:660px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus,.fcard textarea:focus{border-color:var(--spark);}
+  .fcard input[readonly]{color:var(--steel-400);}
+  .fcard textarea{min-height:64px;resize:vertical;}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+  .fcard .fnewlink{font-size:11.5px;color:var(--spark);cursor:pointer;margin-top:6px;display:inline-block;}
+  .mchips{display:flex;flex-wrap:wrap;gap:7px;}
+  .mchip{display:inline-flex;align-items:center;padding:7px 11px;border:1px solid var(--field-line);color:var(--steel-300);font-size:11.5px;cursor:pointer;transition:.14s;user-select:none;}
+  .mchip.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .issuelist{list-style:none;margin:14px 0;} .issuelist li{font-size:12.5px;color:#ffd0b0;padding:8px 0 8px 22px;position:relative;border-top:1px solid var(--line);}
+  .issuelist li:first-child{border-top:none;}
+  .issuelist li::before{content:"!";position:absolute;left:0;top:8px;width:15px;height:15px;border-radius:50%;background:rgba(255,176,87,.18);border:1px solid rgba(255,176,87,.5);color:var(--warn);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+  .overlay{position:fixed;inset:0;z-index:95;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
   .overlay.show{display:flex;}
   .sheet{background:#fff;color:#14202e;width:760px;max-width:100%;padding:48px 54px;font-size:13px;line-height:1.5;box-shadow:0 30px 80px rgba(0,0,0,.5);}
   .sheet .oh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #013179;padding-bottom:18px;margin-bottom:22px;}
@@ -112,6 +226,7 @@
   .obar{display:flex;gap:10px;justify-content:flex-end;width:760px;max-width:100%;margin-bottom:12px;}
   .obar button{font-family:'Sora';font-weight:600;font-size:13px;padding:11px 18px;cursor:pointer;border:none;}
   .obar .pr{background:#2c6bd6;color:#fff;} .obar .cl{background:rgba(255,255,255,.1);color:#e8f0fb;border:1px solid var(--field-line);}
+  @media print{body *{visibility:hidden;} .overlay,.overlay *{visibility:visible;} .overlay{position:absolute;inset:0;background:#fff;padding:0;display:block;} .sheet{box-shadow:none;width:100%;} .obar{display:none;}}
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -121,10 +236,9 @@
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
 
-  @media(max-width:1050px){.pcols{grid-template-columns:1fr;} .pdetail{position:static;} .plist{max-height:none;} .isub{grid-template-columns:1fr;}}
-  @media(min-width:1800px){.wrap{max-width:1760px;padding:34px 60px 100px;} .topfull{padding:32px 60px 0;} .modhead h1{font-size:26px;} .prow .ptitle{font-size:17px;} .dhead h2{font-size:24px;} .fact .v{font-size:16px;} .item .iname{font-size:16px;}}
-  @media(min-width:2600px){.wrap{max-width:2300px;padding:48px 90px 130px;} .topfull{padding:46px 90px 0;} .modhead h1{font-size:34px;} .modhead .ic{width:54px;height:54px;} .prow .ptitle{font-size:21px;} .dhead h2{font-size:30px;} .fact .v{font-size:19px;} .item .iname{font-size:19px;} .search input,.filters button,.tbtn{font-size:16px;} .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;}}
-  @media print{body *{visibility:hidden;} .overlay,.overlay *{visibility:visible;} .overlay{position:absolute;inset:0;background:#fff;padding:0;display:block;} .sheet{box-shadow:none;width:100%;} .obar{display:none;}}
+  @media(max-width:1050px){.dfacts{gap:16px;} .ovgrid{grid-template-columns:1fr;}}
+  @media(min-width:1800px){.wrap{max-width:1760px;padding:34px 60px 100px;} .topfull{padding:32px 60px 0;} .modhead h1{font-size:26px;}}
+  @media(min-width:2600px){.wrap{max-width:2300px;padding:48px 90px 130px;} .topfull{padding:46px 90px 0;} .modhead h1{font-size:34px;} .modhead .ic{width:54px;height:54px;}}
 </style></head><body>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -136,25 +250,17 @@
 
 <div class="wrap">
   <div class="modhead">
-    <button class="back" onclick="alert('Back to hub')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back">Hub</span></button>
+    <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
-      <div><h1 data-i="ptitle">Projects</h1><p data-i="psub">Jobs &amp; customers</p></div></div>
+      <div><h1 data-i="ptitle">Projects</h1><p data-i="psub">Central job container</p></div></div>
   </div>
 
-  <div class="toolbar">
-    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" data-i-ph="searchph" placeholder="Search project, customer…"></div>
-    <div class="filters" id="filters">
-      <button data-f="all" class="active" data-i="f_all">All</button><button data-f="active" data-i="f_active">Active</button>
-      <button data-f="quoted" data-i="f_quoted">Quoted</button><button data-f="hold" data-i="f_hold">On hold</button><button data-f="done" data-i="f_done">Done</button>
-    </div>
-    <button class="tbtn" onclick="alert('New customer form (demo)')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><span data-i="newcust">New customer</span></button>
-    <button class="tbtn primary" onclick="alert('New project (demo)')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="newproj">New project</span></button>
-  </div>
-
-  <div class="pcols"><div class="plist" id="plist"></div><div class="pdetail" id="pdetail"></div></div>
+  <div id="listView"></div>
+  <div id="detailView" style="display:none;"></div>
 </div>
 
-<div class="overlay" id="overlay"><div><div class="obar"><button class="cl" id="offClose" data-i="close">Close</button><button class="pr" onclick="window.print()" data-i="printbtn">Print</button></div><div class="sheet" id="sheet"></div></div></div>
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+<div class="overlay" id="overlay"><div><div class="obar"><button class="cl" id="offClose">Close</button><button class="pr" onclick="window.print()">Print</button></div><div class="sheet" id="sheet"></div></div></div>
 
 <div class="langc" id="langc">
   <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
@@ -162,157 +268,1014 @@
 </div>
 
 <script>
-  const RATE=650, VAT=0.25;
-  const PROJECTS=[
-    {no:"P-2401",title:"Bakery line",customer:"Åhus Bageri AB",contact:"Per Nilsson · per@ahusbageri.se",machine:"Conveyor system",status:"active",start:"2026-07-14",deadline:"2026-09-05",
-      items:[{n:"Frame weldment",est:14,act:11,mat:3200,jc:"inprogress",steps:5},{n:"Conveyor guard",est:6,act:7.5,mat:1400,jc:"done",steps:3},{n:"Drive mount plate",est:3.5,act:2,mat:600,jc:"notstarted",steps:2}]},
-    {no:"P-2402",title:"Folding machine retrofit",customer:"Schröder Nordic",contact:"Anna Berg · anna@schroder.se",machine:"MAK 2500/1.25",status:"active",start:"2026-08-01",deadline:"2026-09-20",
-      items:[{n:"Panel wiring",est:20,act:12,mat:5400,jc:"inprogress",steps:8},{n:"HMI bracket",est:2,act:0,mat:300,jc:"notstarted",steps:2},{n:"Safety cover",est:5,act:0,mat:1100,jc:"notstarted",steps:3}]},
-    {no:"P-2403",title:"Service — Malmö",customer:"Malmö Livs",contact:"Karim A. · info@malmolivs.se",machine:"Slicer L-40",status:"hold",start:"2026-08-10",deadline:"2026-08-30",
-      items:[{n:"On-site inspection",est:4,act:4,mat:0,jc:"done",steps:1},{n:"Bearing replacement",est:8,act:0,mat:900,jc:"notstarted",steps:4}]},
-    {no:"P-2404",title:"Mixer overhaul",customer:"Lund Konditori",contact:"Sofia L. · sofia@lundkond.se",machine:"Spiral mixer SM-80",status:"quoted",start:"—",deadline:"2026-10-01",
-      items:[{n:"Gearbox service",est:10,act:0,mat:2400,jc:"notstarted",steps:6},{n:"New bowl guard",est:6,act:0,mat:1300,jc:"notstarted",steps:3}]},
-    {no:"P-2398",title:"Guard fabrication",customer:"Helsingborg Foods",contact:"Erik S. · erik@hbgfoods.se",machine:"Packing line P2",status:"done",start:"2026-06-02",deadline:"2026-06-20",
-      items:[{n:"Sheet metal guards",est:18,act:17,mat:4100,jc:"done",steps:7},{n:"Install on-site",est:6,act:6.5,mat:0,jc:"done",steps:2}]}
-  ];
+const RATE=450;
+const $=id=>document.getElementById(id);
 
-  const T={
-    sv:{role:"Admin",logout:"Logga ut",back:"Nav",ptitle:"Projekt",psub:"Jobb & kunder",searchph:"Sök projekt, kund…",
-      f_all:"Alla",f_active:"Aktiva",f_quoted:"Offert",f_hold:"Pausade",f_done:"Klara",newproj:"Nytt projekt",newcust:"Ny kund",
-      d_customer:"Kund",d_contact:"Kontakt",d_machine:"Maskin",d_start:"Start",d_deadline:"Deadline",d_est:"Est. timmar",d_act:"Verkliga timmar",
-      d_items:"Poster",printoffer:"Skriv ut offert",edit:"Redigera",pick:"Välj ett projekt för att se detaljer",
-      st_active:"Aktiv",st_quoted:"Offert",st_hold:"Pausad",st_done:"Klar",hrs:"h",
-      e_head:"Kalkyl",e_material:"Material",e_labour:"Arbete",e_total:"Pris",j_head:"Jobbkort",j_status:"Status",j_steps:"Steg",
-      jc_notstarted:"Ej påbörjad",jc_inprogress:"Pågår",jc_done:"Klar",h_head:"Timmar",h_logged:"Loggat",open:"Öppna",loghours:"Logga tid",
-      itotal:"Offert totalt",tag_est:"Kalkyl",
-      o_title:"OFFERT",o_no:"Offertnr",o_date:"Datum",o_to:"Till",o_desc:"Beskrivning",o_hrs:"Tim",o_mat:"Material",o_amount:"Belopp",o_subtotal:"Delsumma",o_vat:"Moms 25%",o_total:"Att betala",o_valid:"Offerten gäller i 30 dagar. Priser exkl. moms där ej annat anges.",
-      printbtn:"Skriv ut",close:"Stäng",locale:"sv-SE"},
-    en:{role:"Admin",logout:"Log out",back:"Hub",ptitle:"Projects",psub:"Jobs & customers",searchph:"Search project, customer…",
-      f_all:"All",f_active:"Active",f_quoted:"Quoted",f_hold:"On hold",f_done:"Done",newproj:"New project",newcust:"New customer",
-      d_customer:"Customer",d_contact:"Contact",d_machine:"Machine",d_start:"Start",d_deadline:"Deadline",d_est:"Est. hours",d_act:"Actual hours",
-      d_items:"Items",printoffer:"Print offer",edit:"Edit",pick:"Select a project to see details",
-      st_active:"Active",st_quoted:"Quoted",st_hold:"On hold",st_done:"Done",hrs:"h",
-      e_head:"Estimation",e_material:"Material",e_labour:"Labour",e_total:"Price",j_head:"Jobcard",j_status:"Status",j_steps:"Steps",
-      jc_notstarted:"Not started",jc_inprogress:"In progress",jc_done:"Done",h_head:"Hours",h_logged:"Logged",open:"Open",loghours:"Log time",
-      itotal:"Offer total",tag_est:"Est",
-      o_title:"OFFER",o_no:"Offer no",o_date:"Date",o_to:"To",o_desc:"Description",o_hrs:"Hrs",o_mat:"Material",o_amount:"Amount",o_subtotal:"Subtotal",o_vat:"VAT 25%",o_total:"Total due",o_valid:"Offer valid 30 days. Prices excl. VAT where not stated.",
-      printbtn:"Print",close:"Close",locale:"en-GB"},
-    mk:{role:"Admin",logout:"Odjavi se",back:"Мени",ptitle:"Proekti",psub:"Raboti i klienti",searchph:"Prebaraj proekt, klient…",
-      f_all:"Site",f_active:"Aktivni",f_quoted:"Ponuda",f_hold:"Pauzirani",f_done:"Završeni",newproj:"Nov proekt",newcust:"Nov klient",
-      d_customer:"Klient",d_contact:"Kontakt",d_machine:"Mašina",d_start:"Početok",d_deadline:"Rok",d_est:"Proc. časovi",d_act:"Realni časovi",
-      d_items:"Stavki",printoffer:"Pečati ponuda",edit:"Uredi",pick:"Izberi proekt za detali",
-      st_active:"Aktiven",st_quoted:"Ponuda",st_hold:"Pauziran",st_done:"Završen",hrs:"č",
-      e_head:"Procenka",e_material:"Materijal",e_labour:"Rabota",e_total:"Cena",j_head:"Rabotna karta",j_status:"Status",j_steps:"Čekori",
-      jc_notstarted:"Ne započnato",jc_inprogress:"Vo tek",jc_done:"Završeno",h_head:"Časovi",h_logged:"Zapišano",open:"Otvori",loghours:"Zapiši vreme",
-      itotal:"Vkupna ponuda",tag_est:"Proc",
-      o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Meѓuzbir",o_vat:"DDV 25%",o_total:"Za plaќaњe",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",
-      printbtn:"Pečati",close:"Zatvori",locale:"mk"}
-  };
+let CUSTOMERS=[
+  {id:1,name:"Sanus Glutenfri AB",org:"559812-4471",contact:"Per Nilsson · per@sanusglutenfri.se"},
+  {id:2,name:"Schröder Nordic",org:"556234-9012",contact:"Anna Berg · anna@schroder.se"},
+  {id:3,name:"Lund Konditori",org:"559045-1123",contact:"Sofia L. · sofia@lundkond.se"},
+  {id:4,name:"Helsingborg Foods",org:"556678-3345",contact:"Erik S. · erik@hbgfoods.se"},
+  {id:5,name:"Malmö Livs",org:"559211-7789",contact:"Karim A. · info@malmolivs.se"},
+  {id:6,name:"Ystad Bageri",org:"556990-2201",contact:"Nina H. · nina@ystadbageri.se"},
+  {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P. · jonas@trelleborgsnacks.se"}
+];
+let nextCustId=8;
+const PEOPLE=["Aleksandar","Marko","Elena","Sofia","Erik"];
+const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Service","Stainless Steel","Aluminium","Carbon Steel","Piping","CNC Cutting","Electrical","Assembly","Maintenance","Other"];
+const HOLD_REASONS=["material","customer","drawing","approval","breakdown","external","other"];
+const NOTE_TAGS=["general","customer","workshop","quality","purchase","important"];
 
-  let current="en",filter="all",selected=null,query="",openItems={};
-  const $=id=>document.getElementById(id);
-  const fmt=n=>Math.round(n).toLocaleString('sv-SE')+" kr";
-  const itemPrice=it=>it.est*RATE+it.mat;
-  const sums=p=>({est:p.items.reduce((a,b)=>a+b.est,0),act:p.items.reduce((a,b)=>a+b.act,0),offer:p.items.reduce((a,b)=>a+itemPrice(b),0)});
+let seqProject=10, seqJobcard=39, seqPO=19, seqReport=3;
+function projNo(){return "P-26-"+String(seqProject++).padStart(4,'0');}
+function jcNo(){return "JC-26-"+String(seqJobcard++).padStart(4,'0');}
+function poNo(){return "PO-26-"+String(seqPO++).padStart(4,'0');}
+function rptNo(){return "RPT-26-"+String(seqReport++).padStart(4,'0');}
 
-  function renderList(){
-    const t=T[current];const list=$("plist");list.innerHTML="";
-    const rows=PROJECTS.filter(p=>filter==="all"||p.status===filter)
-      .filter(p=>{const q=query.toLowerCase();return !q||p.title.toLowerCase().includes(q)||p.customer.toLowerCase().includes(q)||p.no.toLowerCase().includes(q);});
-    rows.forEach(p=>{const {est,act}=sums(p);const pct=est?Math.min(100,Math.round(act/est*100)):0;const over=act>est;
-      const d=document.createElement('div');d.className="prow"+(selected===p.no?" sel":"");
-      d.onclick=()=>{selected=p.no;openItems={};renderList();renderDetail();};
-      d.innerHTML=`<div class="r1"><span class="pno">${p.no}</span><span class="badge-st st-${p.status}">${t["st_"+p.status]}</span></div>
-        <div class="ptitle">${p.title}</div><div class="pcust">${p.customer}</div>
-        <div class="prog"><div class="bar"><div class="fill ${over?'over':''}" style="width:${over?100:pct}%"></div></div>
-        <div class="lbl"><span>${act} / ${est} ${t.hrs}</span><span>${over?'+'+(act-est).toFixed(1)+' '+t.hrs:pct+'%'}</span></div></div>`;
-      list.appendChild(d);});
-    if(!rows.length)list.innerHTML=`<div style="color:var(--steel-400);font-size:13px;padding:20px;text-align:center;">—</div>`;
+let PROJECTS=[
+  {id:1,no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,customerRef:"PO-48215",poNumber:"PO-48215",
+   description:"Fabricate and install stainless steel conveyor extension including supports and guarding.",notes:[
+     {date:"2026-08-15",author:"Aleksandar",text:"Customer confirmed guard color RAL 7035.",tag:"customer",pinned:false},
+     {date:"2026-08-20",author:"Elena",text:"Drawing revision B approved — proceed with cutting.",tag:"workshop",pinned:true}],
+   types:["Fabrication","Stainless Steel","Installation"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
+   createdDate:"2026-08-10",plannedStart:"2026-08-18",actualStart:"2026-08-18",deadline:"2026-09-10",plannedCompletion:"2026-09-08",actualCompletion:"",closedDate:"",
+   quotedValue:92000,estLabourHours:80,estMaterialCost:20000,estPurchaseCost:8000,otherCostEst:0,otherCostAct:500,
+   status:"active",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[
+     {no:"JC-26-0034",desc:"Cut Frame Profiles",assigned:"Marko",status:"completed",est:8,act:8,progress:100,estMaterial:3200},
+     {no:"JC-26-0035",desc:"Weld Main Frame",assigned:"Marko",status:"active",est:20,act:14,progress:70,estMaterial:9000},
+     {no:"JC-26-0036",desc:"Fabricate Guarding",assigned:"Elena",status:"planned",est:10,act:0,progress:0,estMaterial:4800},
+     {no:"JC-26-0037",desc:"Installation",assigned:"Team",status:"planned",est:16,act:0,progress:0,estMaterial:1500},
+     {no:"JC-26-0038",desc:"Panel & Controls Wiring",assigned:"Marko",status:"planned",est:26,act:0,progress:0,estMaterial:1500}],
+   hours:[
+     {date:"2026-08-18",worker:"Marko",jobcard:"JC-26-0034",desc:"Cut Frame Profiles",hours:8},
+     {date:"2026-08-19",worker:"Marko",jobcard:"JC-26-0035",desc:"Weld Main Frame — setup",hours:6},
+     {date:"2026-08-20",worker:"Marko",jobcard:"JC-26-0035",desc:"Weld Main Frame",hours:8},
+     {date:"2026-08-21",worker:"Aleksandar",jobcard:"",desc:"Project management / site coordination",hours:3}],
+   materials:[
+     {name:"304L Sheet 2mm",spec:"2mm stainless",qty:3,unit:"sheets",source:"store",jobcard:"JC-26-0034",cost:4800,status:"used"},
+     {name:"RHS 40x40x2",spec:"box section",qty:24,unit:"m",source:"store",jobcard:"JC-26-0035",cost:1560,status:"issued"},
+     {name:"M8 Stainless Bolts",spec:"A2 stainless",qty:40,unit:"pcs",source:"store",jobcard:"JC-26-0034",cost:280,status:"used"},
+     {name:"Stainless Hinges",spec:"316 grade",qty:6,unit:"pcs",source:"purchase",jobcard:"JC-26-0037",cost:780,status:"reserved"}],
+   purchases:[
+     {po:"PO-26-0018",supplier:"Ahlsell",date:"2026-08-20",items:"Fittings, Bolts, Grinding Discs",ordered:12350,received:8550,status:"partdelivered",expected:"2026-08-27"}],
+   documents:{
+     "Drawings":[{name:"Frame Drawing",rev:"A",date:"2026-08-10",by:"Aleksandar",status:"superseded"},{name:"Frame Drawing",rev:"B",date:"2026-08-20",by:"Aleksandar",status:"current"},{name:"Guard Drawing.dxf",rev:"-",date:"2026-08-15",by:"Elena",status:"current"}],
+     "Customer Documents":[{name:"Customer PO.pdf",rev:"-",date:"2026-08-08",by:"Aleksandar",status:"current"},{name:"Customer Specification.pdf",rev:"-",date:"2026-08-08",by:"Aleksandar",status:"current"}],
+     "Material Certificates":[{name:"EN 10204 3.1 Certificate.pdf",rev:"-",date:"2026-08-19",by:"Marko",status:"current"}],
+     "Photos":[{name:"Before Work.jpg",rev:"-",date:"2026-08-18",by:"Marko",status:"current"},{name:"Fabrication.jpg",rev:"-",date:"2026-08-20",by:"Marko",status:"current"}],
+     "Quality":[{name:"WPS-01.pdf",rev:"-",date:"2026-08-10",by:"Aleksandar",status:"current"}],
+     "Inspection Reports":[{name:"Inspection Report RPT-26-0001 (Approved)",rev:"-",date:"2026-08-20",by:"Aleksandar",status:"current"},{name:"Welding Report RPT-26-0002 (Draft)",rev:"-",date:"2026-08-21",by:"Marko",status:"current"}]},
+   activity:[
+     {date:"2026-08-10",time:"09:00",user:"Aleksandar",action:"Project Created"},
+     {date:"2026-08-10",time:"09:05",user:"Aleksandar",action:"Status changed: DRAFT → QUOTATION"},
+     {date:"2026-08-12",time:"11:20",user:"Aleksandar",action:"Quotation approved by customer — status changed: QUOTATION → APPROVED"},
+     {date:"2026-08-14",time:"10:00",user:"Aleksandar",action:"Jobcards created (JC-26-0034 … JC-26-0038)"},
+     {date:"2026-08-15",time:"14:40",user:"Aleksandar",action:"Note added (customer)"},
+     {date:"2026-08-16",time:"08:30",user:"Aleksandar",action:"Status changed: APPROVED → PLANNED"},
+     {date:"2026-08-18",time:"07:15",user:"Marko",action:"Status changed: PLANNED → ACTIVE — first hours logged"},
+     {date:"2026-08-18",time:"15:30",user:"Marko",action:"Logged 8h on JC-26-0034"},
+     {date:"2026-08-20",time:"09:10",user:"Aleksandar",action:"Drawing updated REV A → REV B"},
+     {date:"2026-08-20",time:"09:42",user:"Aleksandar",action:"PO-26-0018 created (Ahlsell)"},
+     {date:"2026-08-20",time:"16:05",user:"Elena",action:"Note pinned (workshop)"},
+     {date:"2026-08-21",time:"17:00",user:"Aleksandar",action:"Logged 3h — Project management"}]},
+
+  {id:2,no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,customerRef:"SN-Q-114",poNumber:"",
+   description:"Retrofit MAK 2500/1.25 folding machine — new panel wiring, HMI bracket and safety cover.",notes:[
+     {date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final scope.",tag:"customer",pinned:false}],
+   types:["Fabrication","Electrical"],pm:"Aleksandar",workshop:"",sales:"Aleksandar",
+   createdDate:"2026-08-14",plannedStart:"",actualStart:"",deadline:"2026-09-20",plannedCompletion:"",actualCompletion:"",closedDate:"",
+   quotedValue:145000,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"quotation",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[],hours:[],materials:[],purchases:[],
+   documents:{"Customer Documents":[{name:"Specification Draft.pdf",rev:"-",date:"2026-08-14",by:"Aleksandar",status:"current"}]},
+   activity:[{date:"2026-08-14",time:"10:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-14",time:"10:05",user:"Aleksandar",action:"Status changed: DRAFT → QUOTATION"}]},
+
+  {id:3,no:"P-26-0003",name:"Mixer Overhaul — Preliminary",customerId:3,customerRef:"",poNumber:"",
+   description:"Preliminary gearbox service and bowl guard replacement.",notes:[],
+   types:["Repair"],pm:"Aleksandar",workshop:"",sales:"",
+   createdDate:"2026-08-22",plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
+   quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
+   activity:[{date:"2026-08-22",time:"13:10",user:"Aleksandar",action:"Project Created"}]},
+
+  {id:4,no:"P-26-0004",name:"Guard Fabrication",customerId:4,customerRef:"HF-2201",poNumber:"HF-2201",
+   description:"Sheet metal guards for packing line P2, fabricated and installed on-site.",notes:[],
+   types:["Fabrication","Installation"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
+   createdDate:"2026-05-28",plannedStart:"2026-06-02",actualStart:"2026-06-02",deadline:"2026-06-20",plannedCompletion:"2026-06-19",actualCompletion:"2026-06-20",closedDate:"",
+   quotedValue:58000,estLabourHours:24,estMaterialCost:12000,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"completed",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[
+     {no:"JC-26-0011",desc:"Sheet metal guards",assigned:"Marko",status:"completed",est:18,act:17,progress:100,estMaterial:9500},
+     {no:"JC-26-0012",desc:"Install on-site",assigned:"Team",status:"completed",est:6,act:6.5,progress:100,estMaterial:2500}],
+   hours:[{date:"2026-06-18",worker:"Marko",jobcard:"JC-26-0011",desc:"Guard fabrication",hours:17},{date:"2026-06-20",worker:"Elena",jobcard:"JC-26-0012",desc:"Site install",hours:6.5}],
+   materials:[{name:"Mild Steel Sheet 3mm",spec:"3mm",qty:6,unit:"sheets",source:"store",jobcard:"JC-26-0011",cost:4100,status:"used"}],
+   purchases:[],
+   documents:{"Photos":[{name:"Install Complete.jpg",rev:"-",date:"2026-06-20",by:"Marko",status:"current"}],
+     "Inspection Reports":[{name:"Completion Report RPT-26-0001 (Signed)",rev:"-",date:"2026-06-20",by:"Aleksandar",status:"current"}]},
+   activity:[{date:"2026-05-28",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-06-20",time:"16:00",user:"Aleksandar",action:"Status changed: ACTIVE → COMPLETED"}]},
+
+  {id:5,no:"P-26-0005",name:"Service — Malmö Slicer",customerId:5,customerRef:"ML-99",poNumber:"",
+   description:"On-site inspection and bearing replacement on Slicer L-40.",notes:[],
+   types:["Service"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
+   createdDate:"2026-08-05",plannedStart:"2026-08-10",actualStart:"2026-08-10",deadline:"2026-08-20",plannedCompletion:"2026-08-18",actualCompletion:"2026-08-18",closedDate:"2026-08-19",
+   quotedValue:16500,estLabourHours:12,estMaterialCost:900,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"closed",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[{no:"JC-26-0009",desc:"On-site inspection",assigned:"Marko",status:"completed",est:4,act:4,progress:100,estMaterial:0},{no:"JC-26-0010",desc:"Bearing replacement",assigned:"Marko",status:"completed",est:8,act:8,progress:100,estMaterial:900}],
+   hours:[{date:"2026-08-10",worker:"Marko",jobcard:"JC-26-0009",desc:"Inspection",hours:4},{date:"2026-08-18",worker:"Marko",jobcard:"JC-26-0010",desc:"Bearing replacement",hours:8}],
+   materials:[{name:"Bearing 6205-2RS",spec:"-",qty:2,unit:"pcs",source:"store",jobcard:"JC-26-0010",cost:900,status:"used"}],
+   purchases:[],documents:{"Inspection Reports":[{name:"Inspection Report RPT-26-0001 (Signed)",rev:"-",date:"2026-08-18",by:"Marko",status:"current"}]},
+   activity:[{date:"2026-08-05",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-19",time:"09:00",user:"Aleksandar",action:"Status changed: COMPLETED → CLOSED"}]},
+
+  {id:6,no:"P-26-0006",name:"Spiral Mixer Service",customerId:6,customerRef:"YB-33",poNumber:"",
+   description:"Gearbox service on spiral mixer SM-80.",notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit.",tag:"purchase",pinned:true}],
+   types:["Repair","Service"],pm:"Aleksandar",workshop:"Marko",sales:"",
+   createdDate:"2026-08-12",plannedStart:"2026-08-19",actualStart:"2026-08-19",deadline:"2026-09-05",plannedCompletion:"",actualCompletion:"",closedDate:"",
+   quotedValue:24000,estLabourHours:16,estMaterialCost:3700,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"hold",holdReason:"material",holdComment:"Waiting for gearbox seal kit from supplier.",expectedResume:"2026-09-01",cancelReason:"",
+   jobcards:[{no:"JC-26-0022",desc:"Gearbox service",assigned:"Marko",status:"active",est:10,act:3,progress:30,estMaterial:2400},{no:"JC-26-0023",desc:"New bowl guard",assigned:"Elena",status:"planned",est:6,act:0,progress:0,estMaterial:1300}],
+   hours:[{date:"2026-08-19",worker:"Marko",jobcard:"JC-26-0022",desc:"Gearbox teardown",hours:3}],
+   materials:[],purchases:[{po:"PO-26-0016",supplier:"SKF Sverige",date:"2026-08-19",items:"Gearbox seal kit",ordered:1300,received:0,status:"ordered",expected:"2026-09-02"}],
+   documents:{},
+   activity:[{date:"2026-08-12",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-19",time:"10:00",user:"Aleksandar",action:"Status changed: ACTIVE → ON HOLD (Waiting for Material)"}]},
+
+  {id:7,no:"P-26-0007",name:"Packing Line Extension",customerId:7,customerRef:"TS-500",poNumber:"",
+   description:"Extension of packing line with additional conveyor section.",notes:[],
+   types:["Fabrication","Installation"],pm:"Aleksandar",workshop:"",sales:"Aleksandar",
+   createdDate:"2026-07-20",plannedStart:"",actualStart:"",deadline:"2026-10-01",plannedCompletion:"",actualCompletion:"",closedDate:"",
+   quotedValue:210000,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"cancelled",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"Customer postponed investment.",
+   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
+   activity:[{date:"2026-07-20",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-05",time:"12:00",user:"Aleksandar",action:"Status changed: QUOTATION → CANCELLED"}]},
+
+  {id:8,no:"P-26-0008",name:"Bearing Replacement",customerId:5,customerRef:"ML-101",poNumber:"",
+   description:"Bearing replacement on Slicer L-40, approved and awaiting scheduling.",notes:[],
+   types:["Repair"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
+   createdDate:"2026-08-20",plannedStart:"",actualStart:"",deadline:"2026-09-15",plannedCompletion:"",actualCompletion:"",closedDate:"",
+   quotedValue:14000,estLabourHours:8,estMaterialCost:900,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"approved",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
+   activity:[{date:"2026-08-20",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-22",time:"14:00",user:"Aleksandar",action:"Status changed: QUOTATION → APPROVED"}]},
+
+  {id:9,no:"P-26-0009",name:"HMI Upgrade",customerId:2,customerRef:"SN-Q-108",poNumber:"",
+   description:"HMI panel upgrade, jobcards prepared, work not yet started.",notes:[],
+   types:["Electrical"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
+   createdDate:"2026-08-10",plannedStart:"2026-08-28",actualStart:"",deadline:"2026-09-18",plannedCompletion:"2026-09-15",actualCompletion:"",closedDate:"",
+   quotedValue:31000,estLabourHours:18,estMaterialCost:4200,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+   status:"planned",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+   jobcards:[{no:"JC-26-0030",desc:"HMI panel wiring",assigned:"Marko",status:"planned",est:12,act:0,progress:0,estMaterial:2700},{no:"JC-26-0031",desc:"Bracket fabrication",assigned:"Elena",status:"planned",est:6,act:0,progress:0,estMaterial:1500}],
+   hours:[],materials:[],purchases:[],documents:{},
+   activity:[{date:"2026-08-10",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-24",time:"08:00",user:"Aleksandar",action:"Status changed: APPROVED → PLANNED"}]}
+];
+
+function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"+m+"-"+y;}
+function today(){return new Date("2026-08-24T12:00:00");}
+function daysBetween(iso){if(!iso)return null;return Math.round((new Date(iso+"T12:00:00")-today())/86400000);}
+function custName(id){const c=CUSTOMERS.find(x=>x.id===id);return c?c.name:"—";}
+function custObj(id){return CUSTOMERS.find(x=>x.id===id);}
+function getProject(id){return PROJECTS.find(p=>p.id===id);}
+
+function jcTotals(p){const est=p.jobcards.reduce((a,b)=>a+b.est,0),act=p.jobcards.reduce((a,b)=>a+b.act,0),completed=p.jobcards.filter(j=>j.status==='completed').length;return{est,act,completed,total:p.jobcards.length};}
+function itemEstMaterialTotal(p){return p.jobcards.reduce((a,b)=>a+(b.estMaterial||0),0);}
+function itemMaterialActual(p,itemNo){return p.materials.filter(m=>m.jobcard===itemNo).reduce((a,b)=>a+b.cost,0);}
+function itemEstPrice(item){return item.est*RATE+(item.estMaterial||0);}
+function itemActualCost(p,item){return item.act*RATE+itemMaterialActual(p,item.no);}
+function progressOf(p){if(!p.jobcards.length)return 0;const est=p.jobcards.reduce((a,b)=>a+b.est,0);if(!est)return 0;const done=p.jobcards.reduce((a,b)=>a+b.est*(b.status==='completed'?1:(b.progress||0)/100),0);return Math.round(done/est*100);}
+function actLabourHours(p){return p.hours.reduce((a,b)=>a+b.hours,0);}
+function actMaterialStore(p){return p.materials.filter(m=>m.source==='store').reduce((a,b)=>a+b.cost,0);}
+function actPurchaseReceived(p){return p.purchases.reduce((a,b)=>a+b.received,0);}
+function purchaseOrderedTotal(p){return p.purchases.filter(x=>x.status!=='cancelled').reduce((a,b)=>a+b.ordered,0);}
+function purchasePendingTotal(p){return p.purchases.filter(x=>x.status!=='cancelled').reduce((a,b)=>a+Math.max(0,b.ordered-b.received),0);}
+function costs(p){
+  const jt=jcTotals(p);
+  const estLabour=jt.est*RATE,estMaterial=itemEstMaterialTotal(p),estPurchased=p.estPurchaseCost,estOther=p.otherCostEst||0;
+  const totalEst=estLabour+estMaterial+estPurchased+estOther;
+  const quoted=p.quotedValue,estProfit=quoted-totalEst,estMargin=quoted?estProfit/quoted*100:0;
+  const aLabH=actLabourHours(p),actLabour=aLabH*RATE,actMaterial=actMaterialStore(p),actPurchase=actPurchaseReceived(p),actOther=p.otherCostAct||0;
+  const totalAct=actLabour+actMaterial+actPurchase+actOther;
+  const revenue=quoted,actProfit=revenue-totalAct,actMargin=revenue?actProfit/revenue*100:0;
+  return{estLabour,estMaterial,estPurchased,estOther,totalEst,quoted,estProfit,estMargin,aLabH,actLabour,actMaterial,actPurchase,actOther,totalAct,revenue,actProfit,actMargin};
+}
+function totalActualCost(p){return costs(p).totalAct;}
+function getWarnings(p){const t=T[LANG],w=[],c=costs(p),dl=daysBetween(p.deadline);
+  if(['completed','closed','cancelled'].includes(p.status))return w;
+  if(dl!==null){if(dl<0)w.push(t.warn_deadline_overdue.replace('{d}',Math.abs(dl)));else if(dl<=14)w.push(t.warn_deadline_approaching.replace('{d}',dl));}
+  const estH=jcTotals(p).est,estM=itemEstMaterialTotal(p);
+  if(estH&&c.aLabH>estH)w.push(t.warn_hours_exceeded.replace('{a}',c.aLabH).replace('{e}',estH));
+  if(estM&&c.actMaterial>estM)w.push(t.warn_material_exceeded.replace('{a}',fmt(c.actMaterial)).replace('{e}',fmt(estM)));
+  if(c.totalEst&&c.totalAct>c.totalEst)w.push(t.warn_budget_exceeded.replace('{a}',fmt(c.totalAct)).replace('{e}',fmt(c.totalEst)));
+  p.purchases.forEach(po=>{if(po.status!=='delivered'&&po.status!=='cancelled'&&daysBetween(po.expected)!==null&&daysBetween(po.expected)<0)w.push(t.warn_purchase_late.replace('{po}',po.po));});
+  return w;}
+
+function inspectionReports(p){return (p.documents&&p.documents["Inspection Reports"])||[];}
+function completeIssues(p){const t=T[LANG],iss=[];
+  const openJc=p.jobcards.filter(j=>j.status!=='completed');
+  if(openJc.length)iss.push(t.iss_open_jc.replace('{n}',openJc.length));
+  const undel=p.purchases.filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
+  if(undel.length)iss.push(t.iss_po_undelivered.replace('{n}',undel.length));
+  if(!inspectionReports(p).length && p.jobcards.length)iss.push(t.iss_report_missing);
+  return iss;}
+function closeIssues(p){const t=T[LANG],iss=[];
+  const openJc=p.jobcards.filter(j=>j.status!=='completed');
+  if(openJc.length)iss.push(t.iss_jc_not_complete.replace('{n}',openJc.length));
+  const undel=p.purchases.filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
+  if(undel.length)iss.push(t.iss_po_unresolved.replace('{n}',undel.length));
+  const unapproved=inspectionReports(p).filter(r=>r.status!=='current');
+  if(unapproved.length)iss.push(t.iss_report_unapproved.replace('{n}',unapproved.length));
+  return iss;}
+
+let LANG="en";
+const T={
+en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Projects",psub:"Central job container",
+ newproj:"+ New project",searchph:"Search project, number, customer, reference…",
+ f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
+ morefilters:"More filters",ff_customer:"Customer",ff_responsible:"Responsible",ff_type:"Project type",ff_from:"Deadline from",ff_to:"Deadline to",ff_clear:"Clear filters",ff_any:"— Any —",
+ th_no:"Project #",th_name:"Project name",th_customer:"Customer",th_ref:"Customer ref.",th_status:"Status",th_start:"Planned start",th_deadline:"Deadline",th_progress:"Progress",th_responsible:"Responsible",th_quoted:"Quoted value",th_actual:"Actual cost",
+ kpi_quoted:"Total quoted",kpi_actual:"Total actual cost",kpi_overdue:"Overdue",kpi_hold:"On hold",
+ emptylist:"No projects match your filters.",
+ np_title:"New project",np_edit_title:"Edit project",np_number:"Project number",np_name:"Project name",np_customer:"Customer",np_newcustomer:"+ New customer",np_ref:"Customer reference",np_po:"Customer PO number",np_quoted:"Quoted value (SEK)",np_desc:"Project description",np_notes:"Internal notes",np_type:"Project type",np_pm:"Project manager",np_workshop:"Workshop responsible",np_sales:"Sales responsible",np_start:"Planned start date",np_deadline:"Deadline",np_plannedcompletion:"Planned completion",np_save:"Save project",np_cancel:"Cancel",np_printoffer:"Print offer",
+ nc_title:"New customer",nc_name:"Customer name",nc_org:"Org. number",nc_contact:"Contact person",nc_save:"Add customer",nc_cancel:"Cancel",
+ tab_overview:"Overview",tab_jobcards:"Items",tab_hours:"Hours",tab_materials:"Materials",tab_purchases:"Purchases",tab_documents:"Documents",tab_reports:"Reports",tab_costs:"Costs",tab_activity:"Activity",
+ ov_status:"Status",ov_progress:"Progress",ov_time:"Time",ov_est:"Estimated",ov_used:"Used",ov_remaining:"Remaining",ov_material:"Material",ov_purchases:"Purchases",ov_ordered:"Ordered",ov_delivered:"Delivered",ov_pending:"Pending",ov_deadline:"Deadline",ov_daysremaining:"{d} days remaining",ov_daysoverdue:"{d} days overdue",ov_nodeadline:"No deadline set",ov_warnings:"Warnings",ov_nowarnings:"No warnings — everything on track.",ov_notes:"Pinned note",
+ jc_new:"+ Add item",jc_no:"Item #",jc_desc:"Work description",jc_assigned:"Assigned",jc_status:"Status",jc_est:"Est. hours",jc_act:"Actual hours",jc_progress:"Progress",jc_empty:"No items yet.",
+ h_date:"Date",h_worker:"Worker",h_jobcard:"Item",h_desc:"Work description",h_hours:"Hours",h_total:"Total",h_empty:"No hours logged yet.",
+ m_material:"Material",m_spec:"Specification",m_qty:"Quantity",m_source:"Source",m_jobcard:"Item",m_cost:"Cost",m_status:"Status",m_empty:"No materials recorded yet.",m_new:"+ Add material",mf_unit:"Unit",
+ pu_new:"+ Create purchase",pu_po:"Purchase order #",pu_supplier:"Supplier",pu_date:"Date",pu_items:"Items",pu_ordered:"Ordered value",pu_received:"Received value",pu_status:"Status",pu_expected:"Expected delivery",pu_empty:"No purchases yet.",
+ doc_add:"+ Add document",doc_rev:"Rev.",doc_date:"Date",doc_by:"Uploaded by",doc_status:"Status",doc_empty:"No documents yet.",
+ rp_add:"+ Add report",rp_no:"Report #",rp_type:"Report type",rp_date:"Date",rp_status:"Status",rp_by:"Created by",rp_approvedby:"Approved by",rp_empty:"No reports yet.",
+ c_estimated:"Estimated cost",c_actual:"Actual cost",c_labour:"Labour",c_material:"Material",c_purchased:"Purchased components",c_other:"Other costs",c_total:"Total cost",c_quoted:"Quoted value",c_revenue:"Revenue",c_profit:"Profit",c_margin:"Margin",c_itemrevenue:"Revenue by item",c_estprice:"Est. price",c_actcost:"Actual cost",
+ o_title:"OFFER",o_no:"Offer no",o_date:"Date",o_to:"To",o_desc:"Description",o_hrs:"Hrs",o_mat:"Material",o_amount:"Amount",o_subtotal:"Subtotal",o_vat:"VAT 25%",o_total:"Total due",o_valid:"Offer valid 30 days. Prices excl. VAT where not stated.",o_printbtn:"Print",o_close:"Close",
+ act_empty:"No activity yet.",note_empty:"No notes yet.",
+ a_edit:"Edit",a_createjc:"Create jobcard",a_adddoc:"Add document",a_createpo:"Create purchase",a_addnote:"Add note",a_more:"More",a_duplicate:"Duplicate project",a_hold:"Put on hold",a_resume:"Resume project",a_complete:"Complete project",a_close:"Close project",a_cancel:"Cancel project",a_reopen:"Reopen project",
+ st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
+ hold_title:"Put project on hold",hold_reason:"Hold reason",hold_comment:"Comment",hold_expected:"Expected resume date (optional)",hold_save:"Put on hold",
+ hr_material:"Waiting for Material",hr_customer:"Waiting for Customer",hr_drawing:"Waiting for Drawing",hr_approval:"Waiting for Approval",hr_breakdown:"Machine Breakdown",hr_external:"External Delay",hr_other:"Other",
+ resume_title:"Resume project",resume_tostatus:"Resume to status",resume_save:"Resume",
+ complete_title:"Complete project",complete_ok:"All checks passed. Mark this project as COMPLETED?",complete_issues_title:"Project cannot be completed without review",complete_goback:"Go back",complete_override:"Manager override",complete_override_reason:"Override reason (required)",complete_confirm:"Mark completed",
+ close_title:"Close project",close_ok:"All checks passed. Close this project?",close_issues_title:"Project cannot be closed",close_confirm:"Close project",
+ cancel_title:"Cancel project",cancel_reason:"Cancellation reason",cancel_save:"Cancel project",
+ reopen_title:"Reopen closed project",reopen_reason:"Reason (required)",reopen_tostatus:"Reopen to status",reopen_save:"Reopen",
+ dup_title:"Duplicate project",dup_body:"Creates a new project with the same type, description and jobcard structure. Actual hours, costs, reports, purchases and activity are NOT copied.",dup_confirm:"Duplicate",
+ note_title:"Add note",note_text:"Note",note_tag:"Classification",note_pin:"Pin to Overview",note_save:"Add note",
+ jc_modal_title:"Add item",jcf_desc:"Work description",jcf_assigned:"Assigned to",jcf_est:"Estimated hours",jcf_estmat:"Estimated material cost (SEK)",
+ doc_modal_title:"Add document",docf_folder:"Folder",docf_name:"Document name",docf_rev:"Revision",
+ po_modal_title:"Create purchase order",pof_supplier:"Supplier",pof_items:"Items",pof_ordered:"Ordered value (SEK)",pof_expected:"Expected delivery",
+ save_generic:"Save",cancel_generic:"Cancel",close_generic:"Close",edit_generic:"Edit",delete_generic:"Delete",confirm_delete:"Delete this — are you sure?",
+ readonly_note:"This project is CLOSED and read-only. Administrator can reopen it.",
+ warn_deadline_approaching:"Deadline approaching — {d} days remaining",warn_deadline_overdue:"Project overdue — {d} days past deadline",warn_hours_exceeded:"Estimated hours exceeded — {a}h used of {e}h estimated",warn_material_exceeded:"Material budget exceeded — {a} used of {e} estimated",warn_budget_exceeded:"Total budget exceeded — {a} used of {e} estimated",warn_purchase_late:"Purchase delivery late — {po}",
+ iss_open_jc:"{n} item(s) still not completed",iss_po_undelivered:"{n} purchase order(s) not delivered",iss_report_missing:"No reports have been created for this project",
+ iss_jc_not_complete:"{n} item(s) not COMPLETED",iss_po_unresolved:"{n} purchase order(s) still unresolved",iss_report_unapproved:"{n} report(s) not approved/signed",
+ st_hold_material:"Waiting for Material",st_hold_customer:"Waiting for Customer",st_hold_drawing:"Waiting for Drawing",st_hold_approval:"Waiting for Approval",st_hold_breakdown:"Machine Breakdown",st_hold_external:"External Delay",st_hold_other:"Other",
+ tag_general:"General",tag_customer:"Customer",tag_workshop:"Workshop",tag_quality:"Quality",tag_purchase:"Purchase",tag_important:"Important",
+ src_store:"Store",src_purchase:"Purchase",
+ ms_reserved:"Reserved",ms_issued:"Issued",ms_used:"Used",ms_returned:"Returned",
+ pos_draft:"Draft",pos_requested:"Requested",pos_ordered:"Ordered",pos_partdelivered:"Part delivered",pos_delivered:"Delivered",pos_cancelled:"Cancelled",
+ rps_draft:"Draft",rps_ready:"Ready",rps_approved:"Approved",rps_signed:"Signed",rps_superseded:"Superseded",
+ ds_current:"Current",ds_superseded:"Superseded",ds_archived:"Archived",
+ locale:"en-GB"},
+sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Projekt",psub:"Central jobbcontainer",
+ newproj:"+ Nytt projekt",searchph:"Sök projekt, nummer, kund, referens…",
+ f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
+ morefilters:"Fler filter",ff_customer:"Kund",ff_responsible:"Ansvarig",ff_type:"Projekttyp",ff_from:"Deadline från",ff_to:"Deadline till",ff_clear:"Rensa filter",ff_any:"— Alla —",
+ th_no:"Projekt-nr",th_name:"Projektnamn",th_customer:"Kund",th_ref:"Kundref.",th_status:"Status",th_start:"Planerad start",th_deadline:"Deadline",th_progress:"Framsteg",th_responsible:"Ansvarig",th_quoted:"Offertvärde",th_actual:"Verklig kostnad",
+ kpi_quoted:"Totalt offertvärde",kpi_actual:"Total verklig kostnad",kpi_overdue:"Försenade",kpi_hold:"Pausade",
+ emptylist:"Inga projekt matchar dina filter.",
+ np_title:"Nytt projekt",np_edit_title:"Redigera projekt",np_number:"Projektnummer",np_name:"Projektnamn",np_customer:"Kund",np_newcustomer:"+ Ny kund",np_ref:"Kundreferens",np_po:"Kundens ordernummer",np_quoted:"Offertvärde (SEK)",np_desc:"Projektbeskrivning",np_notes:"Interna anteckningar",np_type:"Projekttyp",np_pm:"Projektledare",np_workshop:"Verkstadsansvarig",np_sales:"Säljansvarig",np_start:"Planerat startdatum",np_deadline:"Deadline",np_plannedcompletion:"Planerat klart",np_save:"Spara projekt",np_cancel:"Avbryt",np_printoffer:"Skriv ut offert",
+ nc_title:"Ny kund",nc_name:"Kundnamn",nc_org:"Org.nr",nc_contact:"Kontaktperson",nc_save:"Lägg till kund",nc_cancel:"Avbryt",
+ tab_overview:"Översikt",tab_jobcards:"Poster",tab_hours:"Timmar",tab_materials:"Material",tab_purchases:"Inköp",tab_documents:"Dokument",tab_reports:"Rapporter",tab_costs:"Kostnader",tab_activity:"Aktivitet",
+ ov_status:"Status",ov_progress:"Framsteg",ov_time:"Tid",ov_est:"Uppskattat",ov_used:"Använt",ov_remaining:"Kvar",ov_material:"Material",ov_purchases:"Inköp",ov_ordered:"Beställt",ov_delivered:"Levererat",ov_pending:"Väntar",ov_deadline:"Deadline",ov_daysremaining:"{d} dagar kvar",ov_daysoverdue:"{d} dagar försenat",ov_nodeadline:"Ingen deadline satt",ov_warnings:"Varningar",ov_nowarnings:"Inga varningar — allt ligger rätt till.",ov_notes:"Fäst anteckning",
+ jc_new:"+ Lägg till post",jc_no:"Post-nr",jc_desc:"Arbetsbeskrivning",jc_assigned:"Tilldelad",jc_status:"Status",jc_est:"Est. timmar",jc_act:"Verkliga timmar",jc_progress:"Framsteg",jc_empty:"Inga poster ännu.",
+ h_date:"Datum",h_worker:"Person",h_jobcard:"Post",h_desc:"Arbetsbeskrivning",h_hours:"Timmar",h_total:"Totalt",h_empty:"Inga timmar registrerade ännu.",
+ m_material:"Material",m_spec:"Specifikation",m_qty:"Antal",m_source:"Källa",m_jobcard:"Post",m_cost:"Kostnad",m_status:"Status",m_empty:"Inget material registrerat ännu.",m_new:"+ Lägg till material",mf_unit:"Enhet",
+ pu_new:"+ Skapa inköp",pu_po:"Inköpsorder-nr",pu_supplier:"Leverantör",pu_date:"Datum",pu_items:"Artiklar",pu_ordered:"Beställt värde",pu_received:"Mottaget värde",pu_status:"Status",pu_expected:"Förväntad leverans",pu_empty:"Inga inköp ännu.",
+ doc_add:"+ Lägg till dokument",doc_rev:"Rev.",doc_date:"Datum",doc_by:"Uppladdad av",doc_status:"Status",doc_empty:"Inga dokument ännu.",
+ rp_add:"+ Lägg till rapport",rp_no:"Rapport-nr",rp_type:"Rapporttyp",rp_date:"Datum",rp_status:"Status",rp_by:"Skapad av",rp_approvedby:"Godkänd av",rp_empty:"Inga rapporter ännu.",
+ c_estimated:"Uppskattad kostnad",c_actual:"Verklig kostnad",c_labour:"Arbete",c_material:"Material",c_purchased:"Inköpta komponenter",c_other:"Övriga kostnader",c_total:"Total kostnad",c_quoted:"Offertvärde",c_revenue:"Intäkt",c_profit:"Vinst",c_margin:"Marginal",c_itemrevenue:"Intäkt per post",c_estprice:"Est. pris",c_actcost:"Verklig kostnad",
+ o_title:"OFFERT",o_no:"Offertnr",o_date:"Datum",o_to:"Till",o_desc:"Beskrivning",o_hrs:"Tim",o_mat:"Material",o_amount:"Belopp",o_subtotal:"Delsumma",o_vat:"Moms 25%",o_total:"Att betala",o_valid:"Offerten gäller i 30 dagar. Priser exkl. moms där ej annat anges.",o_printbtn:"Skriv ut",o_close:"Stäng",
+ act_empty:"Ingen aktivitet ännu.",note_empty:"Inga anteckningar ännu.",
+ a_edit:"Redigera",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",
+ st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",
+ hold_title:"Pausa projekt",hold_reason:"Anledning",hold_comment:"Kommentar",hold_expected:"Förväntat återupptagningsdatum (valfritt)",hold_save:"Pausa",
+ resume_title:"Återuppta projekt",resume_tostatus:"Återuppta till status",resume_save:"Återuppta",
+ complete_title:"Slutför projekt",complete_ok:"Alla kontroller godkända. Markera projektet som KLART?",complete_issues_title:"Projektet kan inte slutföras utan granskning",complete_goback:"Gå tillbaka",complete_override:"Chefsöverstyrning",complete_override_reason:"Anledning till överstyrning (krävs)",complete_confirm:"Markera klart",
+ close_title:"Stäng projekt",close_ok:"Alla kontroller godkända. Stäng projektet?",close_issues_title:"Projektet kan inte stängas",close_confirm:"Stäng projekt",
+ cancel_title:"Avbryt projekt",cancel_reason:"Anledning till avbrott",cancel_save:"Avbryt projekt",
+ reopen_title:"Återöppna stängt projekt",reopen_reason:"Anledning (krävs)",reopen_tostatus:"Återöppna till status",reopen_save:"Återöppna",
+ dup_title:"Duplicera projekt",dup_body:"Skapar ett nytt projekt med samma typ, beskrivning och jobbkortsstruktur. Verkliga timmar, kostnader, rapporter, inköp och aktivitet kopieras INTE.",dup_confirm:"Duplicera",
+ note_title:"Lägg till anteckning",note_text:"Anteckning",note_tag:"Klassificering",note_pin:"Fäst i Översikt",note_save:"Lägg till",
+ jc_modal_title:"Lägg till post",jcf_desc:"Arbetsbeskrivning",jcf_assigned:"Tilldelad till",jcf_est:"Uppskattade timmar",jcf_estmat:"Uppskattad materialkostnad (SEK)",
+ doc_modal_title:"Lägg till dokument",docf_folder:"Mapp",docf_name:"Dokumentnamn",docf_rev:"Revision",
+ po_modal_title:"Skapa inköpsorder",pof_supplier:"Leverantör",pof_items:"Artiklar",pof_ordered:"Beställt värde (SEK)",pof_expected:"Förväntad leverans",
+ save_generic:"Spara",cancel_generic:"Avbryt",close_generic:"Stäng",edit_generic:"Redigera",delete_generic:"Ta bort",confirm_delete:"Ta bort detta — är du säker?",
+ readonly_note:"Detta projekt är STÄNGT och skrivskyddat. Administratör kan återöppna det.",
+ warn_deadline_approaching:"Deadline närmar sig — {d} dagar kvar",warn_deadline_overdue:"Projekt försenat — {d} dagar över deadline",warn_hours_exceeded:"Uppskattade timmar överskridna — {a}h använt av {e}h uppskattat",warn_material_exceeded:"Materialbudget överskriden — {a} använt av {e} uppskattat",warn_budget_exceeded:"Total budget överskriden — {a} använt av {e} uppskattat",warn_purchase_late:"Sen inköpsleverans — {po}",
+ iss_open_jc:"{n} post(er) ej klara",iss_po_undelivered:"{n} inköpsorder ej levererade",iss_report_missing:"Inga rapporter har skapats för detta projekt",
+ iss_jc_not_complete:"{n} post(er) ej KLARA",iss_po_unresolved:"{n} inköpsorder fortfarande olösta",iss_report_unapproved:"{n} rapport(er) ej godkända/signerade",
+ st_hold_material:"Väntar på material",st_hold_customer:"Väntar på kund",st_hold_drawing:"Väntar på ritning",st_hold_approval:"Väntar på godkännande",st_hold_breakdown:"Maskinhaveri",st_hold_external:"Extern försening",st_hold_other:"Annat",
+ tag_general:"Allmänt",tag_customer:"Kund",tag_workshop:"Verkstad",tag_quality:"Kvalitet",tag_purchase:"Inköp",tag_important:"Viktigt",
+ src_store:"Lager",src_purchase:"Inköp",
+ ms_reserved:"Reserverat",ms_issued:"Uttaget",ms_used:"Använt",ms_returned:"Returnerat",
+ pos_draft:"Utkast",pos_requested:"Begärt",pos_ordered:"Beställt",pos_partdelivered:"Delvis levererat",pos_delivered:"Levererat",pos_cancelled:"Avbrutet",
+ rps_draft:"Utkast",rps_ready:"Klart",rps_approved:"Godkänt",rps_signed:"Signerat",rps_superseded:"Ersatt",
+ ds_current:"Aktuell",ds_superseded:"Ersatt",ds_archived:"Arkiverad",
+ locale:"sv-SE"},
+mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"Proekti",psub:"Centralen kontejner za raboti",
+ newproj:"+ Nov proekt",searchph:"Prebaraj proekt, broj, klient, referenca…",
+ f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
+ morefilters:"Povekje filtri",ff_customer:"Klient",ff_responsible:"Odgovoren",ff_type:"Tip proekt",ff_from:"Rok od",ff_to:"Rok do",ff_clear:"Isčisti filtri",ff_any:"— Site —",
+ th_no:"Proekt br.",th_name:"Ime na proekt",th_customer:"Klient",th_ref:"Referenca",th_status:"Status",th_start:"Planiran početok",th_deadline:"Rok",th_progress:"Napredok",th_responsible:"Odgovoren",th_quoted:"Ponudena vrednost",th_actual:"Realen trošok",
+ kpi_quoted:"Vkupno ponudeno",kpi_actual:"Vkupen realen trošok",kpi_overdue:"Docneti",kpi_hold:"Pauzirani",
+ emptylist:"Nema proekti što odgovaraat na filtrite.",
+ np_title:"Nov proekt",np_edit_title:"Uredi proekt",np_number:"Proekt broj",np_name:"Ime na proekt",np_customer:"Klient",np_newcustomer:"+ Nov klient",np_ref:"Referenca na klient",np_po:"Broj na narudžba na klient",np_quoted:"Ponudena vrednost (SEK)",np_desc:"Opis na proekt",np_notes:"Interni beleški",np_type:"Tip proekt",np_pm:"Menadžer na proekt",np_workshop:"Odgovoren za rabotilnica",np_sales:"Odgovoren za prodažba",np_start:"Planiran datum na početok",np_deadline:"Rok",np_plannedcompletion:"Planirano završuvanje",np_save:"Začuvaj proekt",np_cancel:"Otkaži",np_printoffer:"Pečati ponuda",
+ nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"Mat. broj",nc_contact:"Kontakt lice",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
+ tab_overview:"Pregled",tab_jobcards:"Stavki",tab_hours:"Časovi",tab_materials:"Materijali",tab_purchases:"Nabavki",tab_documents:"Dokumenti",tab_reports:"Izveštai",tab_costs:"Trošoci",tab_activity:"Aktivnost",
+ ov_status:"Status",ov_progress:"Napredok",ov_time:"Vreme",ov_est:"Proceneto",ov_used:"Iskoristeno",ov_remaining:"Preostanato",ov_material:"Materijal",ov_purchases:"Nabavki",ov_ordered:"Naračano",ov_delivered:"Isporačano",ov_pending:"Vo čekanje",ov_deadline:"Rok",ov_daysremaining:"{d} denovi preostanati",ov_daysoverdue:"{d} denovi docnenje",ov_nodeadline:"Nema postaven rok",ov_warnings:"Predupreduvanja",ov_nowarnings:"Nema predupreduvanja — se e vo red.",ov_notes:"Zakačena beleška",
+ jc_new:"+ Dodaj stavka",jc_no:"Stavka br.",jc_desc:"Opis na rabota",jc_assigned:"Zadolžen",jc_status:"Status",jc_est:"Proc. časovi",jc_act:"Realni časovi",jc_progress:"Napredok",jc_empty:"Sè uште nema stavki.",
+ h_date:"Datum",h_worker:"Rabotnik",h_jobcard:"Stavka",h_desc:"Opis na rabota",h_hours:"Časovi",h_total:"Vkupno",h_empty:"Sè uште nema zapišani časovi.",
+ m_material:"Materijal",m_spec:"Specifikacija",m_qty:"Količina",m_source:"Izvor",m_jobcard:"Stavka",m_cost:"Trošok",m_status:"Status",m_empty:"Sè uште nema zapišan materijal.",m_new:"+ Dodaj materijal",mf_unit:"Merna edinica",
+ pu_new:"+ Kreiraj nabavka",pu_po:"Nabavna narudžba br.",pu_supplier:"Dobavuvač",pu_date:"Datum",pu_items:"Artikli",pu_ordered:"Naračana vrednost",pu_received:"Primena vrednost",pu_status:"Status",pu_expected:"Očekuvana isporaka",pu_empty:"Sè uште nema nabavki.",
+ doc_add:"+ Dodaj dokument",doc_rev:"Rev.",doc_date:"Datum",doc_by:"Prikačeno od",doc_status:"Status",doc_empty:"Sè uште nema dokumenti.",
+ rp_add:"+ Dodaj izveštaj",rp_no:"Izveštaj br.",rp_type:"Tip izveštaj",rp_date:"Datum",rp_status:"Status",rp_by:"Kreiran od",rp_approvedby:"Odobren od",rp_empty:"Sè uште nema izveštai.",
+ c_estimated:"Proценет trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proценета cena",c_actcost:"Realen trošok",
+ o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Meѓuzbir",o_vat:"DDV 25%",o_total:"Za plaќaњe",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
+ act_empty:"Sè uште nema aktivnost.",note_empty:"Sè uште nema beleški.",
+ a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",
+ st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
+ hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",
+ resume_title:"Prodolži proekt",resume_tostatus:"Prodolži do status",resume_save:"Prodolži",
+ complete_title:"Završi proekt",complete_ok:"Site proverki se pomineti. Označi go proektot kako ZAVRŠEN?",complete_issues_title:"Proektot ne može da se završi bez proverka",complete_goback:"Vrati se",complete_override:"Menadžerska nadmoć",complete_override_reason:"Pričina za nadmoć (задолжително)",complete_confirm:"Označi zaвршено",
+ close_title:"Zatvori proekt",close_ok:"Site proverki se pomineti. Zatvori go proektot?",close_issues_title:"Proektot ne može da se zatvori",close_confirm:"Zatvori proekt",
+ cancel_title:"Otkaži proekt",cancel_reason:"Pričina za otkažuvanje",cancel_save:"Otkaži proekt",
+ reopen_title:"Reotvori zatvoren proekt",reopen_reason:"Pričina (задолжително)",reopen_tostatus:"Reotvori do status",reopen_save:"Reotvori",
+ dup_title:"Dupliciraj proekt",dup_body:"Kreira nov proekt so ist tip, opis i struktura na rabotni karti. Realnite časovi, trošoci, izveštai, nabavki i aktivnosta NE se kopiraat.",dup_confirm:"Dupliciraj",
+ note_title:"Dodaj beleška",note_text:"Beleška",note_tag:"Klasifikacija",note_pin:"Zakači vo Pregled",note_save:"Dodaj",
+ jc_modal_title:"Dodaj stavka",jcf_desc:"Opis na rabota",jcf_assigned:"Zadolžen na",jcf_est:"Proценети časovi",jcf_estmat:"Proценет trošok za materijal (SEK)",
+ doc_modal_title:"Dodaj dokument",docf_folder:"Papka",docf_name:"Ime na dokument",docf_rev:"Revizija",
+ po_modal_title:"Kreiraj nabavna narudžba",pof_supplier:"Dobavuvač",pof_items:"Artikli",pof_ordered:"Naračana vrednost (SEK)",pof_expected:"Očekuvana isporaka",
+ save_generic:"Začuvaj",cancel_generic:"Otkaži",close_generic:"Zatvori",edit_generic:"Uredi",delete_generic:"Izbriši",confirm_delete:"Izbriši go ova — sigurni ste?",
+ readonly_note:"Ovoj proekt e ZATVOREN i samo za čitanje. Administratorot može da go reotvori.",
+ warn_deadline_approaching:"Rokot se blizi — {d} denovi preostanati",warn_deadline_overdue:"Proektot docni — {d} denovi po rokot",warn_hours_exceeded:"Proценетите časovi se надминати — {a}h iskoristeni od {e}h proceneti",warn_material_exceeded:"Budžetot za materijal e надминат — {a} iskoristeno od {e} proceneto",warn_budget_exceeded:"Vkupniot budžet e надминат — {a} iskoristeno od {e} proceneto",warn_purchase_late:"Docna isporaka — {po}",
+ iss_open_jc:"{n} stavka/i sè uште не se завршени",iss_po_undelivered:"{n} nabavni narudžbi ne se isporačani",iss_report_missing:"Nema kreirano izveštai za ovoj proekt",
+ iss_jc_not_complete:"{n} stavka/i не se ЗАВРШЕНИ",iss_po_unresolved:"{n} nabavni narudžbi sè uште нерешени",iss_report_unapproved:"{n} izveštaj/i не se odobreni/potpišani",
+ st_hold_material:"Čeka materijal",st_hold_customer:"Čeka klient",st_hold_drawing:"Čeka crtež",st_hold_approval:"Čeka odobruvanje",st_hold_breakdown:"Kvar na mašina",st_hold_external:"Nadvorešno doцнenje",st_hold_other:"Drugo",
+ tag_general:"Opšto",tag_customer:"Klient",tag_workshop:"Rabotilnica",tag_quality:"Kvalitet",tag_purchase:"Nabavka",tag_important:"Važno",
+ src_store:"Magacin",src_purchase:"Nabavka",
+ ms_reserved:"Rezervirano",ms_issued:"Izdadeno",ms_used:"Iskoristeno",ms_returned:"Vrateno",
+ pos_draft:"Nacrt",pos_requested:"Baрано",pos_ordered:"Naračano",pos_partdelivered:"Delumno isporačano",pos_delivered:"Isporačano",pos_cancelled:"Otkažano",
+ rps_draft:"Nacrt",rps_ready:"Podgotveno",rps_approved:"Odobreno",rps_signed:"Potpišano",rps_superseded:"Zameneto",
+ ds_current:"Aktuelno",ds_superseded:"Zameneto",ds_archived:"Arhivirano",
+ locale:"mk"}
+};
+
+let VIEW="list",currentId=null,activeTab="overview",moreOpen=false;
+let listFilter="all",listQuery="",sortKey="no",sortDir=1;
+let listFilters={customer:"",responsible:"",type:"",from:"",to:""};
+const STATUS_ORDER=["draft","quotation","approved","planned","active","hold","completed","closed","cancelled"];
+
+function statusBadge(s){return `<span class="sbadge ${s}">${T[LANG]["st_"+s]}</span>`;}
+
+function renderList(){
+  const t=T[LANG];
+  let rows=PROJECTS.filter(p=>listFilter==="all"||p.status===listFilter);
+  if(listQuery){const q=listQuery.toLowerCase();rows=rows.filter(p=>p.no.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||custName(p.customerId).toLowerCase().includes(q)||(p.customerRef||"").toLowerCase().includes(q));}
+  if(listFilters.customer)rows=rows.filter(p=>String(p.customerId)===listFilters.customer);
+  if(listFilters.responsible)rows=rows.filter(p=>p.pm===listFilters.responsible||p.workshop===listFilters.responsible||p.sales===listFilters.responsible);
+  if(listFilters.type)rows=rows.filter(p=>p.types.includes(listFilters.type));
+  if(listFilters.from)rows=rows.filter(p=>p.deadline&&p.deadline>=listFilters.from);
+  if(listFilters.to)rows=rows.filter(p=>p.deadline&&p.deadline<=listFilters.to);
+  const valOf={no:p=>p.no,name:p=>p.name,customer:p=>custName(p.customerId),status:p=>p.status,start:p=>p.plannedStart||"",deadline:p=>p.deadline||"",progress:p=>progressOf(p),responsible:p=>p.pm,quoted:p=>p.quotedValue,actual:p=>totalActualCost(p)}[sortKey]||(p=>p.no);
+  rows=rows.slice().sort((a,b)=>{const av=valOf(a),bv=valOf(b);return (av>bv?1:av<bv?-1:0)*sortDir;});
+
+  const kQuoted=rows.reduce((a,p)=>a+p.quotedValue,0);
+  const kActual=rows.reduce((a,p)=>a+totalActualCost(p),0);
+  const kOverdue=rows.filter(p=>!['completed','closed','cancelled'].includes(p.status)&&daysBetween(p.deadline)!==null&&daysBetween(p.deadline)<0).length;
+  const kHold=rows.filter(p=>p.status==='hold').length;
+
+  const chips=["all",...STATUS_ORDER].map(s=>`<button data-f="${s}" class="${listFilter===s?'active':''}">${t["f_"+s]}</button>`).join("");
+  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${listFilters.customer==String(c.id)?'selected':''}>${c.name}</option>`).join("");
+  const respOpts=PEOPLE.map(n=>`<option value="${n}" ${listFilters.responsible===n?'selected':''}>${n}</option>`).join("");
+  const typeOpts=TYPES.map(x=>`<option value="${x}" ${listFilters.type===x?'selected':''}>${x}</option>`).join("");
+
+  const trs=rows.map(p=>{const prog=progressOf(p);const dl=daysBetween(p.deadline);const estH0=jcTotals(p).est;const over=estH0&&actLabourHours(p)>estH0;
+    return `<tr class="prow2" onclick="openProject(${p.id})">
+      <td class="pnum">${p.no}</td>
+      <td class="pname">${p.name}</td>
+      <td>${custName(p.customerId)}<div class="pcust2">${p.customerRef||""}</div></td>
+      <td>${p.customerRef||"—"}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td class="rnum">${fmtD(p.plannedStart)}</td>
+      <td class="rnum ${dl!==null&&dl<0&&!['completed','closed','cancelled'].includes(p.status)?'over':''}">${fmtD(p.deadline)}</td>
+      <td><div class="miniprog"><i class="${over?'over':''}" style="width:${prog}%"></i></div><div class="pcust2">${prog}%</div></td>
+      <td>${p.pm||"—"}</td>
+      <td class="rnum">${p.quotedValue?fmt(p.quotedValue):"—"}</td>
+      <td class="rnum">${fmt(totalActualCost(p))}</td>
+    </tr>`;}).join("");
+
+  $("listView").innerHTML=`
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl">${t.kpi_quoted}</div><div class="kv">${fmt(kQuoted)}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_actual}</div><div class="kv">${fmt(kActual)}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_overdue}</div><div class="kv ${kOverdue?'warn':''}">${kOverdue}</div></div>
+      <div class="kpi"><div class="kl">${t.kpi_hold}</div><div class="kv ${kHold?'warn':''}">${kHold}</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" data-i-ph="searchph" placeholder="${t.searchph}" value="${listQuery.replace(/"/g,'&quot;')}"></div>
+      <button class="tbtn primary" onclick="openNewProject()">${t.newproj}</button>
+    </div>
+    <div class="filters" id="filters">${chips}</div>
+    <div class="morewrap ${moreOpen?'open':''}" id="morewrap">
+      <button class="tbtn ghost2" id="moreToggle">${t.morefilters}</button>
+      <div class="morepanel">
+        <div><label>${t.ff_customer}</label><select id="ffCustomer"><option value="">${t.ff_any}</option>${custOpts}</select></div>
+        <div><label>${t.ff_responsible}</label><select id="ffResp"><option value="">${t.ff_any}</option>${respOpts}</select></div>
+        <div><label>${t.ff_type}</label><select id="ffType"><option value="">${t.ff_any}</option>${typeOpts}</select></div>
+        <div><label>${t.ff_from}</label><input type="date" id="ffFrom" value="${listFilters.from}"></div>
+        <div><label>${t.ff_to}</label><input type="date" id="ffTo" value="${listFilters.to}"></div>
+      </div>
+    </div>
+    <div class="ptable-wrap"><table class="ptable"><thead><tr>
+      <th data-k="no">${t.th_no}${sortArrow('no')}</th><th data-k="name">${t.th_name}${sortArrow('name')}</th><th data-k="customer">${t.th_customer}${sortArrow('customer')}</th>
+      <th>${t.th_ref}</th><th data-k="status">${t.th_status}${sortArrow('status')}</th><th data-k="start">${t.th_start}${sortArrow('start')}</th>
+      <th data-k="deadline">${t.th_deadline}${sortArrow('deadline')}</th><th data-k="progress">${t.th_progress}${sortArrow('progress')}</th>
+      <th data-k="responsible">${t.th_responsible}${sortArrow('responsible')}</th><th data-k="quoted">${t.th_quoted}${sortArrow('quoted')}</th><th data-k="actual">${t.th_actual}${sortArrow('actual')}</th>
+    </tr></thead><tbody>${trs||`<tr class="emptyrow"><td colspan="11">${t.emptylist}</td></tr>`}</tbody></table></div>`;
+
+  $("filters").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;listFilter=b.getAttribute('data-f');renderList();});
+  $("search").addEventListener('input',e=>{listQuery=e.target.value;renderList();$("search").focus();$("search").setSelectionRange(listQuery.length,listQuery.length);});
+  $("moreToggle").addEventListener('click',()=>{moreOpen=!moreOpen;renderList();});
+  if(moreOpen){
+    $("ffCustomer").addEventListener('change',e=>{listFilters.customer=e.target.value;renderList();});
+    $("ffResp").addEventListener('change',e=>{listFilters.responsible=e.target.value;renderList();});
+    $("ffType").addEventListener('change',e=>{listFilters.type=e.target.value;renderList();});
+    $("ffFrom").addEventListener('change',e=>{listFilters.from=e.target.value;renderList();});
+    $("ffTo").addEventListener('change',e=>{listFilters.to=e.target.value;renderList();});
   }
+  document.querySelectorAll('.ptable th[data-k]').forEach(th=>th.addEventListener('click',()=>{const k=th.getAttribute('data-k');if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}renderList();}));
+}
+function sortArrow(k){return sortKey===k?`<span class="sa">${sortDir===1?'▲':'▼'}</span>`:"";}
+function openProject(id){currentId=id;VIEW="detail";activeTab="overview";render();}
+function safeTab(){if(['hours','reports'].includes(activeTab))activeTab="overview";}
 
-  function renderDetail(){
-    const t=T[current];const d=$("pdetail");const p=PROJECTS.find(x=>x.no===selected);
-    if(!p){d.innerHTML=`<div class="empty"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg><span>${t.pick}</span></div>`;return;}
-    const {est,act,offer}=sums(p);
-    const items=p.items.map((it,idx)=>{const op=openItems[idx];const price=itemPrice(it);
-      return `<div class="item ${op?'open':''}">
-        <div class="ihead" onclick="toggleItem(${idx})">
-          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          <div><div class="iname">${it.n}</div><div class="itags"><span class="tag on">${t.tag_est}</span><span class="tag jc-${it.jc}">${t.j_head}: ${t["jc_"+it.jc]}</span></div></div>
-          <div class="ih">${it.est} ${t.hrs}<br><small>${t.d_est}</small></div>
-          <div class="ih"><span class="${it.act>it.est?'over':''}">${it.act} ${t.hrs}</span><br><small>${t.d_act}</small></div>
+function canHold(p){return['active','planned'].includes(p.status);}
+function canResume(p){return p.status==='hold';}
+function canComplete(p){return p.status==='active';}
+function canClose(p){return p.status==='completed';}
+function canCancel(p){return !['closed','cancelled','completed'].includes(p.status);}
+function canReopen(p){return p.status==='closed';}
+function isReadonly(p){return p.status==='closed';}
+
+function renderDetail(){
+  safeTab();
+  const t=T[LANG],p=getProject(currentId);if(!p){VIEW="list";render();return;}
+  const dl=daysBetween(p.deadline);const ro=isReadonly(p);
+  let dlLine=t.ov_nodeadline;
+  if(dl!==null)dlLine=dl<0?t.ov_daysoverdue.replace('{d}',Math.abs(dl)):t.ov_daysremaining.replace('{d}',dl);
+
+  const moreItems=[
+    ['duplicate',t.a_duplicate,false,true],
+    ['hold',t.a_hold,false,canHold(p)],
+    ['resume',t.a_resume,false,canResume(p)],
+    ['complete',t.a_complete,false,canComplete(p)],
+    ['close',t.a_close,false,canClose(p)],
+    ['cancel',t.a_cancel,true,canCancel(p)],
+    ['reopen',t.a_reopen,false,canReopen(p)]
+  ].filter(x=>x[3]).map(x=>`<button class="${x[2]?'danger2':''}" onclick="handleAction('${x[0]}')">${x[1]}</button>`).join("");
+
+  $("detailView").innerHTML=`
+    <div class="dethead">
+      <div class="dtop">
+        <div><div class="pno">${p.no}</div><h2>${p.name}</h2><div class="dcust">${custName(p.customerId)}${p.customerRef?' · '+p.customerRef:''}</div></div>
+        <div class="roactions">
+          <button class="tbtn" onclick="openEditProject()" ${ro?'disabled':''}>${t.a_edit}</button>
+          <button class="tbtn" onclick="printOffer(${p.id})">${t.np_printoffer}</button>
+          <button class="tbtn" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.a_createjc}</button>
+          <button class="tbtn" onclick="openDocForm()" ${ro?'disabled':''}>${t.a_adddoc}</button>
+          <button class="tbtn" onclick="openPoForm()" ${ro?'disabled':''}>${t.a_createpo}</button>
+          <button class="tbtn" onclick="openNoteForm()" ${ro?'disabled':''}>${t.a_addnote}</button>
+          <div class="more">
+            <button class="tbtn" id="moreBtn">${t.a_more} ▾</button>
+            <div class="moremenu" id="moreMenu">${moreItems}</div>
+          </div>
         </div>
-        <div class="isub">
-          <div class="scard"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>${t.e_head}</div>
-            <div class="line"><span class="lk">${t.e_material}</span><span>${fmt(it.mat)}</span></div>
-            <div class="line"><span class="lk">${t.e_labour}</span><span>${it.est} ${t.hrs} · ${fmt(it.est*RATE)}</span></div>
-            <div class="line tot"><span>${t.e_total}</span><span>${fmt(price)}</span></div>
-            <button class="ob" onclick="alert('Open estimation (demo)')">${t.open}</button></div>
-          <div class="scard"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg>${t.j_head}</div>
-            <div class="line"><span class="lk">${t.j_status}</span><span class="tag jc-${it.jc}" style="border:none;padding:0;background:none;">${t["jc_"+it.jc]}</span></div>
-            <div class="line"><span class="lk">${t.j_steps}</span><span>${it.steps}</span></div>
-            <button class="ob" onclick="alert('Open jobcard (demo)')">${t.open}</button></div>
-          <div class="scard"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.h_head}</div>
-            <div class="line"><span class="lk">${t.h_logged}</span><span class="${it.act>it.est?'over':''}">${it.act} ${t.hrs}</span></div>
-            <div class="line"><span class="lk">${t.d_est}</span><span>${it.est} ${t.hrs}</span></div>
-            <button class="ob" onclick="alert('Open in Hours (demo)')">${t.loghours}</button></div>
-        </div></div>`;}).join("");
-
-    d.innerHTML=`
-      <div class="dhead"><div><div class="pno">${p.no}</div><h2>${p.title}</h2></div><span class="badge-st st-${p.status}">${t["st_"+p.status]}</span></div>
-      <div class="facts">
-        <div class="fact"><div class="k">${t.d_customer}</div><div class="v">${p.customer}</div></div>
-        <div class="fact"><div class="k">${t.d_contact}</div><div class="v">${p.contact}</div></div>
-        <div class="fact"><div class="k">${t.d_machine}</div><div class="v">${p.machine}</div></div>
-        <div class="fact"><div class="k">${t.d_deadline}</div><div class="v">${p.deadline}</div></div>
-        <div class="fact"><div class="k">${t.d_est}</div><div class="v">${est} ${t.hrs}</div></div>
-        <div class="fact"><div class="k">${t.d_act}</div><div class="v" style="${act>est?'color:var(--warn)':''}">${act} ${t.hrs}</div></div>
       </div>
-      <div class="dactions">
-        <button class="tbtn primary" onclick="printOffer('${p.no}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${t.printoffer}</button>
-        <button class="tbtn" onclick="alert('Edit project (demo)')">${t.edit}</button>
+      <div class="dfacts">
+        <div class="df"><div class="k">${t.ov_status}</div><div class="v">${statusBadge(p.status)}</div></div>
+        <div class="df"><div class="k">${t.ov_progress}</div><div class="v">${progressOf(p)}%</div></div>
+        <div class="df"><div class="k">${t.ov_deadline}</div><div class="v">${fmtD(p.deadline)}</div></div>
+        <div class="df"><div class="k">${t.th_responsible}</div><div class="v">${p.pm||"—"}</div></div>
+        <div class="df"><div class="k">${t.th_quoted}</div><div class="v">${p.quotedValue?fmt(p.quotedValue):"—"}</div></div>
       </div>
-      <div class="items"><h3><span>${t.d_items}</span><span>${t.itotal}: ${fmt(offer)}</span></h3>${items}
-        <div class="itotal"><span class="lk">${t.itotal}</span><span class="lv">${fmt(offer)}</span></div></div>`;
+      ${ro?`<div class="roreadonly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${t.readonly_note}</div>`:""}
+    </div>
+    <div class="ptabs" id="ptabs">
+      ${["overview","jobcards","materials","purchases","documents","costs","activity"].map(tb=>`<button data-tab="${tb}" class="${activeTab===tb?'on':''}">${t["tab_"+tb]}</button>`).join("")}
+    </div>
+    <div class="tabpanel" id="tabpanel"></div>`;
+
+  $("ptabs").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;activeTab=b.getAttribute('data-tab');renderDetail();});
+  $("moreBtn").addEventListener('click',e=>{e.stopPropagation();$("moreMenu").classList.toggle('open');});
+  renderTab(p);
+}
+function renderTab(p){
+  const map={overview:renderOverview,jobcards:renderJobcards,materials:renderMaterials,purchases:renderPurchases,documents:renderDocuments,costs:renderCosts,activity:renderActivity};
+  (map[activeTab]||renderOverview)(p);
+}
+
+function renderOverview(p){
+  const t=T[LANG];const prog=progressOf(p);const jt=jcTotals(p);const c=costs(p);const dl=daysBetween(p.deadline);
+  const estM=itemEstMaterialTotal(p);
+  const over=jt.est&&c.aLabH>jt.est;
+  const warns=getWarnings(p);
+  const pinned=p.notes.find(n=>n.pinned);
+  let dlLine=t.ov_nodeadline;
+  if(dl!==null)dlLine=dl<0?t.ov_daysoverdue.replace('{d}',Math.abs(dl)):t.ov_daysremaining.replace('{d}',dl);
+
+  $("tabpanel").innerHTML=`
+    ${warns.length?`<div class="warnbox">${warns.map(w=>`<div class="wline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>${w}</div>`).join("")}</div>`:""}
+    ${pinned?`<div class="pinnote"><b>${t.ov_notes}</b>${pinned.text}</div>`:""}
+    <div class="ovgrid">
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.ov_progress}</h4>
+        <div class="ovbig">${prog}%</div><div class="ovbar"><i style="width:${prog}%"></i></div>
+        <div class="ovline"><span class="lk">${t.tab_jobcards}</span><span>${jt.completed} / ${jt.total}</span></div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="9"/></svg>${t.ov_time}</h4>
+        <div class="ovline"><span class="lk">${t.ov_est}</span><span>${jt.est} h</span></div>
+        <div class="ovline"><span class="lk">${t.ov_used}</span><span class="${over?'over':''}">${c.aLabH} h</span></div>
+        <div class="ovline"><span class="lk">${t.ov_remaining}</span><span>${Math.max(0,jt.est-c.aLabH)} h</span></div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/></svg>${t.ov_material}</h4>
+        <div class="ovline"><span class="lk">${t.ov_est}</span><span>${fmt(estM)}</span></div>
+        <div class="ovline"><span class="lk">${t.ov_used}</span><span class="${estM&&c.actMaterial>estM?'over':''}">${fmt(c.actMaterial)}</span></div></div>
+      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg>${t.ov_purchases}</h4>
+        <div class="ovline"><span class="lk">${t.ov_ordered}</span><span>${fmt(purchaseOrderedTotal(p))}</span></div>
+        <div class="ovline"><span class="lk">${t.ov_delivered}</span><span>${fmt(actPurchaseReceived(p))}</span></div>
+        <div class="ovline"><span class="lk">${t.ov_pending}</span><span>${fmt(purchasePendingTotal(p))}</span></div></div>
+    </div>
+    <div class="ovcard" style="max-width:340px;"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>${t.ov_deadline}</h4>
+      <div class="ovbig" style="font-size:16px;">${fmtD(p.deadline)}</div>
+      <div class="ovline" style="margin-top:8px;"><span class="${dl!==null&&dl<0?'over':''}">${dlLine}</span></div></div>`;
+}
+
+let openItemRows={};
+function renderJobcards(p){
+  const t=T[LANG],ro=isReadonly(p);
+  const rows=p.jobcards.map(j=>{
+    const open=openItemRows[j.no];
+    const price=itemEstPrice(j),cost=itemActualCost(p,j),matAct=itemMaterialActual(p,j.no),margin=price?((price-cost)/price*100):0;
+    return `<div class="folder ${open?'open':''}">
+      <div class="fh" onclick="toggleItemRow('${j.no}')">
+        <span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>${j.no} — ${j.desc}</span>
+        <span style="display:flex;align-items:center;gap:14px;"><span class="pcust2">${j.assigned}</span>${statusBadge(j.status)}<span class="rnum ${j.act>j.est?'over':''}">${j.act} / ${j.est} h</span></span>
+      </div>
+      <div class="fb"><table class="subtable" style="margin-top:6px;"><thead><tr><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.m_material}</th><th>${t.c_margin}</th></tr></thead>
+        <tbody><tr><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum">${fmt(matAct)} / ${fmt(j.estMaterial||0)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr></tbody></table>
+        ${ro?"":`<div class="rowactions"><button class="tbtn" onclick="event.stopPropagation();openJobcardForm('${j.no}')">${t.edit_generic}</button><button class="tbtn danger" onclick="event.stopPropagation();deleteJobcard('${j.no}')">${t.delete_generic}</button></div>`}</div>
+    </div>`;}).join("");
+  $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_jobcards}</h3><button class="tbtn primary" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.jc_new}</button></div>
+    ${rows||`<div style="text-align:center;color:var(--steel-400);padding:24px;">${t.jc_empty}</div>`}</div>`;
+}
+function toggleItemRow(no){openItemRows[no]=!openItemRows[no];renderJobcards(getProject(currentId));}
+
+
+function renderMaterials(p){
+  const t=T[LANG],ro=isReadonly(p);
+  const rows=p.materials.map((m,idx)=>`<tr><td>${m.name}<div class="pcust2">${m.spec}</div></td><td class="rnum">${m.qty} ${m.unit}</td><td><span class="smtag src-${m.source}">${t["src_"+m.source]}</span></td><td class="pnum">${m.jobcard||"—"}</td><td class="rnum">${fmt(m.cost)}</td><td>${t["ms_"+m.status]}</td>
+    <td>${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openMaterialForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deleteMaterial(${idx})">${t.delete_generic}</button></div>`}</td></tr>`).join("");
+  $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_materials}</h3><button class="tbtn primary" onclick="openMaterialForm()" ${ro?'disabled':''}>${t.m_new}</button></div>
+    <table class="subtable"><thead><tr><th>${t.m_material}</th><th>${t.m_qty}</th><th>${t.m_source}</th><th>${t.m_jobcard}</th><th>${t.m_cost}</th><th>${t.m_status}</th><th></th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="7" style="text-align:center;color:var(--steel-400);padding:24px;">${t.m_empty}</td></tr>`}</tbody></table></div>`;
+}
+
+function renderPurchases(p){
+  const t=T[LANG],ro=isReadonly(p);
+  const rows=p.purchases.map((po,idx)=>`<tr><td class="pnum">${po.po}</td><td>${po.supplier}</td><td class="rnum">${fmtD(po.date)}</td><td>${po.items}</td>
+    <td class="rnum">${fmt(po.ordered)}</td><td class="rnum">${fmt(po.received)}</td><td><span class="sbadge ${po.status==='delivered'?'completed':po.status==='cancelled'?'cancelled':'quotation'}">${t["pos_"+po.status]}</span></td><td class="rnum">${fmtD(po.expected)}</td>
+    <td>${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openPoForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deletePo(${idx})">${t.delete_generic}</button></div>`}</td></tr>`).join("");
+  $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_purchases}</h3><button class="tbtn primary" onclick="openPoForm()" ${ro?'disabled':''}>${t.pu_new}</button></div>
+    <table class="subtable"><thead><tr><th>${t.pu_po}</th><th>${t.pu_supplier}</th><th>${t.pu_date}</th><th>${t.pu_items}</th><th>${t.pu_ordered}</th><th>${t.pu_received}</th><th>${t.pu_status}</th><th>${t.pu_expected}</th><th></th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="9" style="text-align:center;color:var(--steel-400);padding:24px;">${t.pu_empty}</td></tr>`}</tbody></table></div>`;
+}
+
+let openFolders={};
+function renderDocuments(p){
+  const t=T[LANG],ro=isReadonly(p);
+  const folders=Object.keys(p.documents);
+  const body=folders.map(f=>{const docs=p.documents[f];const open=openFolders[f];
+    const rows=docs.map(d=>`<div class="docrow"><div class="dn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>${d.name}${d.rev!=="-"?`<span class="revtag">REV ${d.rev}</span>`:""}</div><div style="display:flex;align-items:center;gap:10px;"><span class="dmeta">${d.by} · ${fmtD(d.date)}</span><span class="dstat ${d.status}">${t["ds_"+d.status]}</span></div></div>`).join("");
+    return `<div class="folder ${open?'open':''}"><div class="fh" onclick="toggleFolder('${f}')"><span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg>${f}</span><span class="fc">${docs.length}</span></div><div class="fb">${rows}</div></div>`;}).join("");
+  $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_documents}</h3><button class="tbtn primary" onclick="openDocForm()" ${ro?'disabled':''}>${t.doc_add}</button></div>
+    ${folders.length?body:`<div style="text-align:center;color:var(--steel-400);padding:24px;">${t.doc_empty}</div>`}</div>`;
+}
+function toggleFolder(f){openFolders[f]=!openFolders[f];renderDocuments(getProject(currentId));}
+
+function renderCosts(p){
+  const t=T[LANG],c=costs(p),jt=jcTotals(p);
+  $("tabpanel").innerHTML=`<div class="costgrid">
+    <div class="costcol"><h4>${t.c_estimated}</h4>
+      <div class="costline"><span class="lk">${t.c_labour}</span><span>${jt.est} h × ${RATE} = ${fmt(c.estLabour)}</span></div>
+      <div class="costline"><span class="lk">${t.c_material}</span><span>${fmt(c.estMaterial)}</span></div>
+      <div class="costline"><span class="lk">${t.c_purchased}</span><span>${fmt(c.estPurchased)}</span></div>
+      <div class="costline"><span class="lk">${t.c_other}</span><span>${fmt(c.estOther)}</span></div>
+      <div class="costline tot"><span>${t.c_total}</span><span>${fmt(c.totalEst)}</span></div>
+      <div class="costline" style="margin-top:14px;"><span class="lk">${t.c_quoted}</span><span>${fmt(c.quoted)}</span></div>
+      <div class="costline profit ${c.estProfit<0?'neg':''}"><span>${t.c_profit}</span><span>${fmt(c.estProfit)}</span></div>
+      <div class="costline"><span class="lk">${t.c_margin}</span><span>${c.estMargin.toFixed(1)}%</span></div></div>
+    <div class="costcol"><h4>${t.c_actual}</h4>
+      <div class="costline"><span class="lk">${t.c_labour}</span><span>${c.aLabH} h × ${RATE} = ${fmt(c.actLabour)}</span></div>
+      <div class="costline"><span class="lk">${t.c_material}</span><span>${fmt(c.actMaterial)}</span></div>
+      <div class="costline"><span class="lk">${t.c_purchased}</span><span>${fmt(c.actPurchase)}</span></div>
+      <div class="costline"><span class="lk">${t.c_other}</span><span>${fmt(c.actOther)}</span></div>
+      <div class="costline tot"><span>${t.c_total}</span><span>${fmt(c.totalAct)}</span></div>
+      <div class="costline" style="margin-top:14px;"><span class="lk">${t.c_revenue}</span><span>${fmt(c.revenue)}</span></div>
+      <div class="costline profit ${c.actProfit<0?'neg':''}"><span>${t.c_profit}</span><span>${fmt(c.actProfit)}</span></div>
+      <div class="costline"><span class="lk">${t.c_margin}</span><span>${c.actMargin.toFixed(1)}%</span></div></div>
+  </div>
+  ${p.jobcards.length?`<div class="card2" style="margin-top:20px;"><div class="tabhead"><h3>${t.c_itemrevenue}</h3></div>
+    <table class="subtable"><thead><tr><th>${t.jc_desc}</th><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.c_margin}</th></tr></thead>
+    <tbody>${p.jobcards.map(j=>{const price=itemEstPrice(j),cost=itemActualCost(p,j),margin=price?((price-cost)/price*100):0;
+      return `<tr><td>${j.desc}<div class="pcust2">${j.no}</div></td><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr>`;}).join("")}</tbody></table></div>`:""}`;
+}
+
+function renderActivity(p){
+  const t=T[LANG],ro=isReadonly(p);
+  const notes=p.notes.map((n,idx)=>({n,idx})).reverse().map(({n,idx})=>`<div class="notecard ${n.pinned?'pinned':''}"><div class="nh"><span><b>${n.author}</b> · ${fmtD(n.date)}</span><span class="ntag">${t["tag_"+n.tag]}</span></div><p>${n.text}</p>
+    ${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openNoteForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deleteNote(${idx})">${t.delete_generic}</button></div>`}</div>`).join("");
+  const acts=p.activity.slice().reverse().map(a=>`<div class="actrow"><div class="adot"></div><div class="atime">${fmtD(a.date)} ${a.time}</div><div><span class="auser">${a.user}</span>${a.action}</div></div>`).join("");
+  $("tabpanel").innerHTML=`
+    <div class="card2" style="margin-bottom:18px;"><div class="tabhead"><h3>${t.a_addnote}</h3><button class="tbtn primary" onclick="openNoteForm()" ${ro?'disabled':''}>${t.a_addnote}</button></div>
+      ${notes||`<div style="text-align:center;color:var(--steel-400);padding:20px;">${t.note_empty}</div>`}</div>
+    <div class="card2"><div class="tabhead"><h3>${t.tab_activity}</h3></div>
+      ${acts||`<div style="text-align:center;color:var(--steel-400);padding:24px;">${t.act_empty}</div>`}</div>`;
+}
+
+function showModal(html){$("fcard").innerHTML=html;$("fov").classList.add('show');}
+function closeModal(){$("fov").classList.remove('show');$("fcard").innerHTML="";}
+$("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
+
+function printOffer(id){
+  const t=T[LANG],p=getProject(id);if(!p)return;
+  const VAT=0.25;let sub=0;
+  const rows=p.jobcards.map(j=>{const amt=itemEstPrice(j);sub+=amt;
+    return `<tr><td>${j.desc}</td><td class="n">${j.est}</td><td class="n">${fmt(j.estMaterial||0)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
+  const vat=sub*VAT,tot=sub+vat;const today=new Date("2026-08-25T12:00:00").toLocaleDateString(t.locale);
+  const cust=custObj(p.customerId);
+  $("sheet").innerHTML=`
+    <div class="oh"><div><div class="co">VARMAK AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se · Org.nr 559568-2468</div></div>
+      <div class="ot"><h2>${t.o_title}</h2><div class="om">${t.o_no}: ${p.no}-Q<br>${t.o_date}: ${today}</div></div></div>
+    <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${cust?cust.name:"—"}</b><br>${cust?cust.contact:""}</div></div>
+      <div style="text-align:right;"><div class="lbl">${t.ptitle}</div><div>${p.name}<br>${p.no}</div></div></div>
+    <table><thead><tr><th>${t.o_desc}</th><th class="n">${t.o_hrs}</th><th class="n">${t.o_mat}</th><th class="n">${t.o_amount}</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="4" style="text-align:center;color:#5b6b7d;">—</td></tr>`}</tbody>
+      <tfoot><tr><td colspan="3" class="n">${t.o_subtotal}</td><td class="n">${fmt(sub)}</td></tr>
+        <tr><td colspan="3" class="n">${t.o_vat}</td><td class="n">${fmt(vat)}</td></tr>
+        <tr class="grand"><td colspan="3" class="n">${t.o_total}</td><td class="n">${fmt(tot)}</td></tr></tfoot></table>
+    <div class="foot">${t.o_valid}</div>`;
+  $("offClose").textContent=t.o_close;
+  document.querySelector('.obar .pr').textContent=t.o_printbtn;
+  $("overlay").classList.add('show');
+}
+$("offClose").addEventListener('click',()=>$("overlay").classList.remove('show'));
+$("overlay").addEventListener('click',e=>{if(e.target===$("overlay"))$("overlay").classList.remove('show');});
+function pushActivity(p,action,user){p.activity.push({date:"2026-08-24",time:new Date().toTimeString().slice(0,5),user:user||"Aleksandar",action});}
+
+let editingId=null,newProjTypes=[];
+function openNewProject(){
+  editingId=null;newProjTypes=[];
+  buildProjectForm(T[LANG].np_title,{no:projNo_peek(),name:"",customerId:"",customerRef:"",poNumber:"",description:"",internalNotes:"",types:[],pm:"",workshop:"",sales:"",plannedStart:"",deadline:"",plannedCompletion:"",quotedValue:0});
+}
+function projNo_peek(){return "P-26-"+String(seqProject).padStart(4,'0');}
+function openEditProject(){
+  const p=getProject(currentId);editingId=p.id;newProjTypes=p.types.slice();
+  buildProjectForm(T[LANG].np_edit_title,{no:p.no,name:p.name,customerId:p.customerId,customerRef:p.customerRef,poNumber:p.poNumber,description:p.description,internalNotes:"",types:p.types,pm:p.pm,workshop:p.workshop,sales:p.sales,plannedStart:p.plannedStart,deadline:p.deadline,plannedCompletion:p.plannedCompletion,quotedValue:p.quotedValue});
+}
+function buildProjectForm(title,v){
+  const t=T[LANG];
+  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${String(v.customerId)===String(c.id)?'selected':''}>${c.name}</option>`).join("");
+  const peopleOpts=n=>PEOPLE.map(x=>`<option value="${x}" ${v[n]===x?'selected':''}>${x}</option>`).join("");
+  showModal(`<h2>${title}</h2>
+    <div class="frow2">
+      <div><label>${t.np_number}</label><input id="fNo" value="${v.no}" readonly></div>
+      <div><label>${t.np_name}</label><input id="fName" value="${v.name}"></div>
+    </div>
+    <div class="frow"><label>${t.np_customer}</label>
+      <select id="fCustomer"><option value="">—</option>${custOpts}</select>
+      <span class="fnewlink" id="fNewCustLink">${t.np_newcustomer}</span></div>
+    <div class="frow3">
+      <div><label>${t.np_ref}</label><input id="fRef" value="${v.customerRef}"></div>
+      <div><label>${t.np_po}</label><input id="fPo" value="${v.poNumber}"></div>
+      <div><label>${t.np_quoted}</label><input type="number" min="0" id="fQuoted" value="${v.quotedValue||0}"></div>
+    </div>
+    <div class="frow"><label>${t.np_desc}</label><textarea id="fDesc">${v.description}</textarea></div>
+    <div class="frow"><label>${t.np_notes}</label><textarea id="fNotes">${v.internalNotes}</textarea></div>
+    <div class="frow"><label>${t.np_type}</label><div class="mchips" id="fTypes">${TYPES.map(x=>`<span class="mchip ${newProjTypes.includes(x)?'on':''}" data-t="${x}">${x}</span>`).join("")}</div></div>
+    <div class="frow3">
+      <div><label>${t.np_pm}</label><select id="fPm"><option value="">—</option>${peopleOpts('pm')}</select></div>
+      <div><label>${t.np_workshop}</label><select id="fWorkshop"><option value="">—</option>${peopleOpts('workshop')}</select></div>
+      <div><label>${t.np_sales}</label><select id="fSales"><option value="">—</option>${peopleOpts('sales')}</select></div>
+    </div>
+    <div class="frow3">
+      <div><label>${t.np_start}</label><input type="date" id="fStart" value="${v.plannedStart}"></div>
+      <div><label>${t.np_deadline}</label><input type="date" id="fDeadline" value="${v.deadline}"></div>
+      <div><label>${t.np_plannedcompletion}</label><input type="date" id="fPlannedC" value="${v.plannedCompletion}"></div>
+    </div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.np_cancel}</button><button class="tbtn primary" onclick="submitProjectForm()">${t.np_save}</button></div>`);
+  $("fTypes").addEventListener('click',e=>{const c=e.target.closest('.mchip');if(!c)return;const x=c.getAttribute('data-t');
+    if(newProjTypes.includes(x)){newProjTypes=newProjTypes.filter(y=>y!==x);c.classList.remove('on');}else{newProjTypes.push(x);c.classList.add('on');}});
+  $("fNewCustLink").addEventListener('click',openNewCustomerMini);
+}
+function submitProjectForm(){
+  const t=T[LANG];
+  const name=$("fName").value.trim();if(!name)return;
+  const custId=parseInt($("fCustomer").value)||null;
+  const vals={name,customerId:custId,customerRef:$("fRef").value.trim(),poNumber:$("fPo").value.trim(),description:$("fDesc").value.trim(),
+    types:newProjTypes.slice(),pm:$("fPm").value,workshop:$("fWorkshop").value,sales:$("fSales").value,
+    plannedStart:$("fStart").value,deadline:$("fDeadline").value,plannedCompletion:$("fPlannedC").value,quotedValue:parseFloat($("fQuoted").value)||0};
+  if(editingId){
+    const p=getProject(editingId);Object.assign(p,vals);pushActivity(p,"Project edited");
+  }else{
+    const id=PROJECTS.length?Math.max(...PROJECTS.map(x=>x.id))+1:1;
+    const p={id,no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+      createdDate:"2026-08-24",actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+      jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
+    PROJECTS.unshift(p);pushActivity(p,"Project Created");
+    currentId=id;VIEW="detail";activeTab="overview";
   }
+  closeModal();render();
+}
+function openNewCustomerMini(){
+  const t=T[LANG];
+  showModal(`<h2>${t.nc_title}</h2>
+    <div class="frow"><label>${t.nc_name}</label><input id="ncName"></div>
+    <div class="frow2"><div><label>${t.nc_org}</label><input id="ncOrg"></div><div><label>${t.nc_contact}</label><input id="ncContact"></div></div>
+    <div class="fbtns"><button class="tbtn" onclick="cancelNewCustomer()">${t.nc_cancel}</button><button class="tbtn primary" onclick="submitNewCustomer()">${t.nc_save}</button></div>`);
+}
+let pendingProjectFormState=null;
+function cancelNewCustomer(){reopenProjectFormAfterCustomer(null);}
+function submitNewCustomer(){
+  const name=$("ncName").value.trim();if(!name)return;
+  const c={id:nextCustId++,name,org:$("ncOrg").value.trim(),contact:$("ncContact").value.trim()};
+  CUSTOMERS.push(c);reopenProjectFormAfterCustomer(c.id);
+}
+function reopenProjectFormAfterCustomer(newId){
+  const t=T[LANG];
+  const v=editingId?(()=>{const p=getProject(editingId);return{no:p.no,name:p.name,customerId:newId||p.customerId,customerRef:p.customerRef,poNumber:p.poNumber,description:p.description,internalNotes:"",types:p.types,pm:p.pm,workshop:p.workshop,sales:p.sales,plannedStart:p.plannedStart,deadline:p.deadline,plannedCompletion:p.plannedCompletion};})()
+    :{no:projNo_peek(),name:$("fName")?$("fName").value:"",customerId:newId||"",customerRef:"",poNumber:"",description:"",internalNotes:"",types:newProjTypes,pm:"",workshop:"",sales:"",plannedStart:"",deadline:"",plannedCompletion:""};
+  buildProjectForm(editingId?t.np_edit_title:t.np_title,v);
+}
 
-  function toggleItem(i){openItems[i]=!openItems[i];renderDetail();}
-
-  function printOffer(no){
-    const t=T[current];const p=PROJECTS.find(x=>x.no===no);if(!p)return;
-    let sub=0;const rows=p.items.map(it=>{const amt=itemPrice(it);sub+=amt;
-      return `<tr><td>${it.n}</td><td class="n">${it.est}</td><td class="n">${fmt(it.mat)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
-    const vat=sub*VAT, tot=sub+vat; const today=new Date().toLocaleDateString(t.locale);
-    $("sheet").innerHTML=`
-      <div class="oh"><div><div class="co">VARMAK AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se · Org.nr 559568-2468</div></div>
-        <div class="ot"><h2>${t.o_title}</h2><div class="om">${t.o_no}: ${p.no}-Q<br>${t.o_date}: ${today}</div></div></div>
-      <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${p.customer}</b><br>${p.contact}</div></div>
-        <div style="text-align:right;"><div class="lbl">${t.ptitle}</div><div>${p.title}<br>${p.machine}</div></div></div>
-      <table><thead><tr><th>${t.o_desc}</th><th class="n">${t.o_hrs}</th><th class="n">${t.o_mat}</th><th class="n">${t.o_amount}</th></tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="3" class="n">${t.o_subtotal}</td><td class="n">${fmt(sub)}</td></tr>
-          <tr><td colspan="3" class="n">${t.o_vat}</td><td class="n">${fmt(vat)}</td></tr>
-          <tr class="grand"><td colspan="3" class="n">${t.o_total}</td><td class="n">${fmt(tot)}</td></tr></tfoot></table>
-      <div class="foot">${t.o_valid}</div>`;
-    $("overlay").classList.add("show");
+let editJcNo=null;
+function openJobcardForm(no){
+  const t=T[LANG];editJcNo=no||null;
+  const p=getProject(currentId);const j=no?p.jobcards.find(x=>x.no===no):null;
+  showModal(`<h2>${t.jc_modal_title}</h2>
+    <div class="frow"><label>${t.jcf_desc}</label><input id="jcDesc" value="${j?j.desc:''}"></div>
+    <div class="frow2"><div><label>${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${PEOPLE.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${n}</option>`).join("")}</select></div>
+      <div><label>${t.jcf_est}</label><input type="number" step="0.5" min="0" id="jcEst" value="${j?j.est:0}"></div></div>
+    <div class="frow"><label>${t.jcf_estmat}</label><input type="number" step="1" min="0" id="jcEstMat" value="${j?(j.estMaterial||0):0}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitJobcard()">${t.save_generic}</button></div>`);
+}
+function submitJobcard(){
+  const desc=$("jcDesc").value.trim();if(!desc)return;
+  const p=getProject(currentId);
+  if(editJcNo){
+    const j=p.jobcards.find(x=>x.no===editJcNo);
+    Object.assign(j,{desc,assigned:$("jcAssigned").value,est:parseFloat($("jcEst").value)||0,estMaterial:parseFloat($("jcEstMat").value)||0});
+    pushActivity(p,"Item edited: "+desc);
+  }else{
+    p.jobcards.push({no:jcNo(),desc,assigned:$("jcAssigned").value,status:"planned",est:parseFloat($("jcEst").value)||0,act:0,progress:0,estMaterial:parseFloat($("jcEstMat").value)||0});
+    pushActivity(p,"Item created: "+desc);
   }
-  $("offClose").addEventListener('click',()=>$("overlay").classList.remove("show"));
-  $("overlay").addEventListener('click',e=>{if(e.target===$("overlay"))$("overlay").classList.remove("show");});
+  closeModal();activeTab="jobcards";render();
+}
+function deleteJobcard(no){
+  if(!confirm(T[LANG].confirm_delete))return;
+  const p=getProject(currentId);p.jobcards=p.jobcards.filter(x=>x.no!==no);
+  pushActivity(p,"Item deleted: "+no);render();
+}
+function openDocForm(){
+  const t=T[LANG];
+  const folders=["Drawings","Customer Documents","Material Certificates","Inspection Reports","Photos","Quality","WPS / Welding","Technical Documents","Purchase Documents","Other"];
+  showModal(`<h2>${t.doc_modal_title}</h2>
+    <div class="frow"><label>${t.docf_folder}</label><select id="docFolder">${folders.map(f=>`<option>${f}</option>`).join("")}</select></div>
+    <div class="frow2"><div><label>${t.docf_name}</label><input id="docName"></div><div><label>${t.docf_rev}</label><input id="docRev" value="-"></div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitDoc()">${t.save_generic}</button></div>`);
+}
+function submitDoc(){
+  const name=$("docName").value.trim();if(!name)return;
+  const p=getProject(currentId);const folder=$("docFolder").value,rev=$("docRev").value.trim()||"-";
+  if(!p.documents[folder])p.documents[folder]=[];
+  p.documents[folder].push({name,rev,date:"2026-08-24",by:"Aleksandar",status:"current"});
+  pushActivity(p,"Document added: "+name+" ("+folder+")");closeModal();activeTab="documents";render();
+}
+const MAT_STATUSES=["reserved","issued","used","returned"];
+let editMatIdx=null;
+function openMaterialForm(idx){
+  const t=T[LANG],p=getProject(currentId);editMatIdx=(idx!==undefined)?idx:null;
+  const m=editMatIdx!==null?p.materials[editMatIdx]:null;
+  const itemOpts=p.jobcards.map(j=>`<option value="${j.no}" ${m&&m.jobcard===j.no?'selected':''}>${j.no} — ${j.desc}</option>`).join("");
+  showModal(`<h2>${t.m_new}</h2>
+    <div class="frow2"><div><label>${t.m_material}</label><input id="matName" value="${m?m.name:''}"></div><div><label>${t.m_spec}</label><input id="matSpec" value="${m?m.spec:''}"></div></div>
+    <div class="frow3"><div><label>${t.m_qty}</label><input type="number" step="0.1" min="0" id="matQty" value="${m?m.qty:0}"></div>
+      <div><label>${t.mf_unit}</label><input id="matUnit" value="${m?m.unit:''}"></div>
+      <div><label>${t.m_cost}</label><input type="number" min="0" id="matCost" value="${m?m.cost:0}"></div></div>
+    <div class="frow2"><div><label>${t.m_source}</label><select id="matSource"><option value="store" ${m&&m.source==='store'?'selected':''}>${t.src_store}</option><option value="purchase" ${m&&m.source==='purchase'?'selected':''}>${t.src_purchase}</option></select></div>
+      <div><label>${t.m_status}</label><select id="matStatus">${MAT_STATUSES.map(s=>`<option value="${s}" ${m&&m.status===s?'selected':''}>${t["ms_"+s]}</option>`).join("")}</select></div></div>
+    <div class="frow"><label>${t.m_jobcard}</label><select id="matItem"><option value="">—</option>${itemOpts}</select></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitMaterial()">${t.save_generic}</button></div>`);
+}
+function submitMaterial(){
+  const name=$("matName").value.trim();if(!name)return;
+  const p=getProject(currentId);
+  const vals={name,spec:$("matSpec").value.trim(),qty:parseFloat($("matQty").value)||0,unit:$("matUnit").value.trim(),
+    source:$("matSource").value,status:$("matStatus").value,jobcard:$("matItem").value,cost:parseFloat($("matCost").value)||0};
+  if(editMatIdx!==null){Object.assign(p.materials[editMatIdx],vals);pushActivity(p,"Material edited: "+name);}
+  else{p.materials.push(vals);pushActivity(p,"Material added: "+name);}
+  closeModal();activeTab="materials";render();
+}
+function deleteMaterial(idx){
+  if(!confirm(T[LANG].confirm_delete))return;
+  const p=getProject(currentId);const name=p.materials[idx].name;p.materials.splice(idx,1);
+  pushActivity(p,"Material deleted: "+name);render();
+}
+const PO_STATUSES=["draft","requested","ordered","partdelivered","delivered","cancelled"];
+let editPoIdx=null;
+function openPoForm(idx){
+  const t=T[LANG],p=getProject(currentId);editPoIdx=(idx!==undefined)?idx:null;
+  const po=editPoIdx!==null?p.purchases[editPoIdx]:null;
+  showModal(`<h2>${t.po_modal_title}</h2>
+    <div class="frow2"><div><label>${t.pof_supplier}</label><input id="poSupplier" value="${po?po.supplier:''}"></div><div><label>${t.pof_ordered}</label><input type="number" min="0" id="poOrdered" value="${po?po.ordered:0}"></div></div>
+    <div class="frow"><label>${t.pof_items}</label><input id="poItems" value="${po?po.items:''}"></div>
+    <div class="frow2"><div><label>${t.pu_received}</label><input type="number" min="0" id="poReceived" value="${po?po.received:0}"></div>
+      <div><label>${t.pu_status}</label><select id="poStatus">${PO_STATUSES.map(s=>`<option value="${s}" ${po&&po.status===s?'selected':''}>${t["pos_"+s]}</option>`).join("")}</select></div></div>
+    <div class="frow"><label>${t.pof_expected}</label><input type="date" id="poExpected" value="${po?po.expected:''}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitPo()">${t.save_generic}</button></div>`);
+}
+function submitPo(){
+  const supplier=$("poSupplier").value.trim();if(!supplier)return;
+  const p=getProject(currentId);
+  const vals={supplier,items:$("poItems").value.trim(),ordered:parseFloat($("poOrdered").value)||0,received:parseFloat($("poReceived")?$("poReceived").value:0)||0,
+    status:$("poStatus")?$("poStatus").value:"ordered",expected:$("poExpected").value};
+  if(editPoIdx!==null){Object.assign(p.purchases[editPoIdx],vals);pushActivity(p,"Purchase order edited: "+supplier);}
+  else{p.purchases.push({po:poNo(),date:"2026-08-24",received:0,status:"ordered",...vals});pushActivity(p,"Purchase order created: "+supplier);}
+  closeModal();activeTab="purchases";render();
+}
+function deletePo(idx){
+  if(!confirm(T[LANG].confirm_delete))return;
+  const p=getProject(currentId);const supplier=p.purchases[idx].supplier;p.purchases.splice(idx,1);
+  pushActivity(p,"Purchase order deleted: "+supplier);render();
+}
+let editNoteIdx=null;
+function openNoteForm(idx){
+  const t=T[LANG],p=getProject(currentId);editNoteIdx=(idx!==undefined)?idx:null;
+  const n=editNoteIdx!==null?p.notes[editNoteIdx]:null;
+  showModal(`<h2>${t.note_title}</h2>
+    <div class="frow"><label>${t.note_text}</label><textarea id="noteText">${n?n.text:''}</textarea></div>
+    <div class="frow"><label>${t.note_tag}</label><select id="noteTag">${NOTE_TAGS.map(x=>`<option value="${x}" ${n&&n.tag===x?'selected':''}>${t["tag_"+x]}</option>`).join("")}</select></div>
+    <div class="frow"><label><input type="checkbox" id="notePin" ${n&&n.pinned?'checked':''} style="width:auto;display:inline-block;margin-right:7px;">${t.note_pin}</label></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitNote()">${t.note_save}</button></div>`);
+}
+function submitNote(){
+  const text=$("noteText").value.trim();if(!text)return;
+  const p=getProject(currentId);const tag=$("noteTag").value,pinned=$("notePin").checked;
+  if(pinned)p.notes.forEach(n=>n.pinned=false);
+  if(editNoteIdx!==null){Object.assign(p.notes[editNoteIdx],{text,tag,pinned});pushActivity(p,"Note edited ("+tag+")");}
+  else{p.notes.push({date:"2026-08-24",author:"Aleksandar",text,tag,pinned});pushActivity(p,"Note added ("+tag+")");}
+  closeModal();activeTab="activity";render();
+}
+function deleteNote(idx){
+  if(!confirm(T[LANG].confirm_delete))return;
+  const p=getProject(currentId);p.notes.splice(idx,1);
+  pushActivity(p,"Note deleted");render();
+}
 
-  function setLang(code){current=code;const t=T[code];
-    document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t[el.getAttribute('data-i')]);
-    document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
-    document.documentElement.lang=code==="mk"?"mk-Latn":code;
-    document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
-    var _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
-    renderList();renderDetail();tick();}
-  document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
-  $("filters").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;filter=b.getAttribute('data-f');document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('active',x===b));renderList();});
-  $("search").addEventListener('input',e=>{query=e.target.value;renderList();});
-  function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});try{$("date").textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
-  setLang("en");setInterval(tick,10000);
-  const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
-  (function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+function handleAction(kind){
+  $("moreMenu").classList.remove('open');
+  const p=getProject(currentId);
+  if(kind==='duplicate')return openDuplicateConfirm(p);
+  if(kind==='hold')return openHoldForm(p);
+  if(kind==='resume')return openResumeForm(p);
+  if(kind==='complete')return openCompleteFlow(p);
+  if(kind==='close')return openCloseFlow(p);
+  if(kind==='cancel')return openCancelForm(p);
+  if(kind==='reopen')return openReopenForm(p);
+}
+function openDuplicateConfirm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.dup_title}</h2><p class="fsub">${t.dup_body}</p>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doDuplicate(${p.id})">${t.dup_confirm}</button></div>`);
+}
+function doDuplicate(id){
+  const src=getProject(id);const newId=Math.max(...PROJECTS.map(x=>x.id))+1;
+  const dup={id:newId,no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
+    notes:[],types:src.types.slice(),pm:src.pm,workshop:src.workshop,sales:src.sales,
+    createdDate:"2026-08-24",plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
+    quotedValue:0,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
+    status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+    jobcards:src.jobcards.map(j=>({no:jcNo(),desc:j.desc,assigned:"",status:"planned",est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0})),
+    hours:[],materials:[],purchases:[],documents:{},activity:[{date:"2026-08-24",time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
+  PROJECTS.unshift(dup);closeModal();currentId=newId;activeTab="overview";render();
+}
+function openHoldForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.hold_title}</h2>
+    <div class="frow"><label>${t.hold_reason}</label><select id="hReason">${HOLD_REASONS.map(r=>`<option value="${r}">${t["st_hold_"+r]}</option>`).join("")}</select></div>
+    <div class="frow"><label>${t.hold_comment}</label><textarea id="hComment"></textarea></div>
+    <div class="frow"><label>${t.hold_expected}</label><input type="date" id="hExpected"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doHold(${p.id})">${t.hold_save}</button></div>`);
+}
+function doHold(id){
+  const p=getProject(id);p.status="hold";p.holdReason=$("hReason").value;p.holdComment=$("hComment").value;p.expectedResume=$("hExpected").value;
+  pushActivity(p,"Status changed → ON HOLD ("+T[LANG]["st_hold_"+p.holdReason]+")");closeModal();render();
+}
+function openResumeForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.resume_title}</h2>
+    <div class="frow"><label>${t.resume_tostatus}</label><select id="rStatus"><option value="active">${t.st_active}</option><option value="planned">${t.st_planned}</option></select></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doResume(${p.id})">${t.resume_save}</button></div>`);
+}
+function doResume(id){
+  const p=getProject(id);const to=$("rStatus").value;p.status=to;p.holdReason="";p.holdComment="";p.expectedResume="";
+  pushActivity(p,"Status changed: ON HOLD → "+to.toUpperCase());closeModal();render();
+}
+function openCompleteFlow(p){
+  const t=T[LANG];const issues=completeIssues(p);
+  if(!issues.length){
+    showModal(`<h2>${t.complete_title}</h2><p class="fsub">${t.complete_ok}</p>
+      <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doComplete(${p.id},false)">${t.complete_confirm}</button></div>`);
+  }else{
+    showModal(`<h2>${t.complete_issues_title}</h2><ul class="issuelist">${issues.map(i=>`<li>${i}</li>`).join("")}</ul>
+      <div class="frow"><label>${t.complete_override_reason}</label><textarea id="cOverrideReason"></textarea></div>
+      <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.complete_goback}</button><button class="tbtn danger" onclick="doComplete(${p.id},true)">${t.complete_override}</button></div>`);
+  }
+}
+function doComplete(id,override){
+  const p=getProject(id);
+  if(override){const reason=$("cOverrideReason").value.trim();if(!reason)return;pushActivity(p,"Manager override on completion: "+reason);}
+  p.status="completed";p.actualCompletion="2026-08-24";pushActivity(p,"Status changed → COMPLETED");closeModal();render();
+}
+function openCloseFlow(p){
+  const t=T[LANG];const issues=closeIssues(p);
+  if(!issues.length){
+    showModal(`<h2>${t.close_title}</h2><p class="fsub">${t.close_ok}</p>
+      <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doClose(${p.id})">${t.close_confirm}</button></div>`);
+  }else{
+    showModal(`<h2>${t.close_issues_title}</h2><ul class="issuelist">${issues.map(i=>`<li>${i}</li>`).join("")}</ul>
+      <div class="fbtns"><button class="tbtn primary" onclick="closeModal()">${t.close_generic}</button></div>`);
+  }
+}
+function doClose(id){
+  const p=getProject(id);p.status="closed";p.closedDate="2026-08-24";pushActivity(p,"Status changed → CLOSED");closeModal();render();
+}
+function openCancelForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.cancel_title}</h2>
+    <div class="frow"><label>${t.cancel_reason}</label><textarea id="cxReason"></textarea></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn danger" onclick="doCancel(${p.id})">${t.cancel_save}</button></div>`);
+}
+function doCancel(id){
+  const p=getProject(id);const reason=$("cxReason").value.trim();if(!reason)return;
+  p.status="cancelled";p.cancelReason=reason;pushActivity(p,"Status changed → CANCELLED: "+reason);closeModal();render();
+}
+function openReopenForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.reopen_title}</h2>
+    <div class="frow"><label>${t.reopen_reason}</label><textarea id="roReason"></textarea></div>
+    <div class="frow"><label>${t.reopen_tostatus}</label><select id="roStatus"><option value="active">${t.st_active}</option><option value="completed">${t.st_completed}</option></select></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doReopen(${p.id})">${t.reopen_save}</button></div>`);
+}
+function doReopen(id){
+  const p=getProject(id);const reason=$("roReason").value.trim();if(!reason)return;const to=$("roStatus").value;
+  p.status=to;p.closedDate="";pushActivity(p,"Reopened by Aleksandar → "+to.toUpperCase()+" — reason: "+reason);closeModal();render();
+}
+
+function render(){
+  const t=T[LANG];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
+  if(VIEW==="list"){
+    $("listView").style.display="";$("detailView").style.display="none";
+    $("backLbl").textContent=t.back_hub;$("backBtn").onclick=()=>{location.href="hub-desktop.html";};
+    renderList();
+  }else{
+    $("listView").style.display="none";$("detailView").style.display="";
+    $("backLbl").textContent=t.back_list;$("backBtn").onclick=()=>{VIEW="list";render();};
+    renderDetail();
+  }
+}
+
+function setLang(code){LANG=code;
+  document.documentElement.lang=code==="mk"?"mk-Latn":code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
+  render();tick();
+}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
+function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+setLang("en");setInterval(tick,10000);
+
+const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
+(function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+document.addEventListener('click',function(e){const mm=document.getElementById('moreMenu');if(mm&&mm.classList.contains('open')&&!mm.contains(e.target)&&e.target.id!=='moreBtn'){mm.classList.remove('open');}});
 </script>
 </body></html>
