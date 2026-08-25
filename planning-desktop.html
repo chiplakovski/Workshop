@@ -40,7 +40,7 @@
   .pheader .ic{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
   .pheader h1{font-family:'Sora';font-weight:700;font-size:21px;letter-spacing:-.01em;} .pheader p{font-size:12px;color:var(--steel-400);}
   .toptabs{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:3px;}
-  .toptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11.5px;letter-spacing:.02em;padding:9px 13px;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .toptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:9px 13px;cursor:pointer;white-space:nowrap;transition:.15s;}
   .toptabs button.on{background:rgba(74,144,255,.16);color:#cfe0ff;}
   .toptabs button:hover{color:var(--ice);}
   .hcontrols{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -65,8 +65,8 @@
   .subnav button{display:flex;align-items:center;gap:9px;background:transparent;border:1px solid transparent;color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 10px;cursor:pointer;text-align:left;transition:.14s;}
   .subnav button:hover{background:rgba(255,255,255,.03);}
   .subnav button.on{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.4);color:#cfe0ff;}
-  .subnav button .sic{width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.12);}
-  .subnav button .sic svg{width:14px;height:14px;color:var(--spark);}
+  .subnav button .sic{width:20px;height:20px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .subnav button .sic svg{width:18px;height:18px;}
   .subnav button .stxt{flex:1;} .subnav button .stxt b{display:block;font-weight:600;font-size:12.5px;}
   .subnav button .scount{font-family:'Sora';font-weight:700;font-size:12px;color:var(--steel-400);}
 
@@ -75,6 +75,10 @@
   .qsrow .qk{color:var(--steel-400);} .qsrow .qv{font-family:'Sora';font-weight:700;} .qsrow .qv.warn{color:var(--warn);} .qsrow .qv.ok{color:var(--ok);}
   .utilbar{height:7px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px;} .utilbar i{display:block;height:100%;background:var(--spark);}
   .utilbar.over i{background:var(--danger);}
+  .utilbar.tier-low i{background:var(--ok);}
+  .utilbar.tier-mid i{background:var(--warn);}
+  .utilbar.tier-high i{background:var(--danger);}
+  .rescav{width:22px;height:22px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:9.5px;color:#fff;background:var(--spark);margin-right:8px;}
 
   .legend{display:flex;flex-direction:column;gap:7px;}
   .legend .lrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--steel-300);}
@@ -83,15 +87,15 @@
   .ovcards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
   @media(max-width:900px){.ovcards{grid-template-columns:1fr;}}
   .ovcard2{background:rgba(255,255,255,.03);border:1px solid var(--line);padding:16px;display:flex;gap:13px;}
-  .ovcard2 .oic{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;}
-  .ovcard2 .oic svg{width:22px;height:22px;}
-  .ovcard2.ideas .oic{background:rgba(192,132,252,.15);} .ovcard2.ideas .oic svg{color:var(--idea);}
-  .ovcard2.existing .oic{background:rgba(74,144,255,.15);} .ovcard2.existing .oic svg{color:var(--spark);}
-  .ovcard2.future .oic{background:rgba(74,212,138,.15);} .ovcard2.future .oic svg{color:var(--ok);}
+  .ovcard2 .oic{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .ovcard2 .oic svg{width:26px;height:26px;}
+  .ovcard2.ideas .oic svg{color:var(--idea);}
+  .ovcard2.existing .oic svg{color:var(--spark);}
+  .ovcard2.future .oic svg{color:var(--ok);}
   .ovcard2 .otitle{display:flex;align-items:center;gap:8px;font-family:'Sora';font-weight:700;font-size:14px;margin-bottom:4px;}
   .ovcard2 .ocount{font-family:'Sora';font-size:11px;font-weight:700;color:var(--ice);background:rgba(255,255,255,.08);padding:1px 8px;}
   .ovcard2 .odesc{font-size:11.5px;color:var(--steel-400);margin-bottom:8px;line-height:1.4;}
-  .ovcard2 .ostat{font-size:11.5px;margin-bottom:3px;} .ovcard2 .ostat.warn{color:var(--warn);} .ovcard2 .ostat.ok{color:var(--ok);}
+  .ovcard2 .ostat{font-size:11.5px;margin-bottom:3px;} .ovcard2 .ostat.warn{color:var(--warn);} .ovcard2 .ostat.ok{color:var(--ok);} .ovcard2 .ostat.active{color:var(--spark);}
   .ovcard2 a{font-size:11.5px;color:var(--spark);text-decoration:none;cursor:pointer;} .ovcard2 a:hover{text-decoration:underline;}
 
   .ganttctrls{display:flex;align-items:center;gap:9px;flex:none;}
@@ -119,7 +123,9 @@
   .gname .gpct{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--steel-400);font-size:11px;flex:none;}
   .gname .gr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
   .gname .gr-date{width:46px;flex:none;color:var(--steel-400);font-size:10.5px;font-variant-numeric:tabular-nums;}
-  .gname .gr-prog{width:34px;flex:none;text-align:right;color:var(--steel-400);font-size:11px;font-variant-numeric:tabular-nums;}
+  .gname .gr-prog{width:64px;flex:none;display:flex;align-items:center;gap:5px;justify-content:flex-end;color:var(--steel-400);font-size:11px;font-variant-numeric:tabular-nums;}
+  .gname .gr-progbar{width:24px;height:4px;flex:none;background:rgba(255,255,255,.08);}
+  .gname .gr-progbar i{display:block;height:100%;background:var(--spark);}
   .gcolhead{flex:none;width:320px;padding-right:10px;display:flex;align-items:center;gap:6px;}
   .gcolhead span{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);font-weight:600;}
   .gcolhead .gch-name{flex:1;} .gcolhead .gch-date{width:46px;flex:none;} .gcolhead .gch-prog{width:34px;flex:none;text-align:right;}
@@ -140,13 +146,6 @@
   .glegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:11px;color:var(--steel-300);}
   .glegend .lg{display:flex;align-items:center;gap:6px;} .glegend .ldot{width:9px;height:9px;}
 
-  .pipelinelist{display:flex;flex-direction:column;gap:9px;}
-  .pipelinerow{padding:10px 12px;border:1px solid var(--line);cursor:pointer;transition:.14s;background:rgba(255,255,255,.015);}
-  .pipelinerow:hover{border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.05);}
-  .pl-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;}
-  .pl-top b{font-size:12.5px;line-height:1.3;}
-  .pl-bottom{display:flex;align-items:center;gap:9px;}
-  .pl-next{font-size:11px;color:var(--steel-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
   .idealist,.projlist,.futlist{display:flex;flex-direction:column;gap:8px;}
   .listcard{border:1px solid var(--line);padding:12px 14px;cursor:pointer;transition:.14s;background:rgba(255,255,255,.015);}
   .listcard:hover{border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.05);}
@@ -161,6 +160,23 @@
   .stagepill.future,.stagepill.probable{color:var(--spark);border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
   .stagepill.rejected,.stagepill.onhold{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
   .stagepill.tentative{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+  .stagetext{font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .stagetext.new{color:var(--steel-300);}
+  .stagetext.evaluation,.stagetext.concept{color:var(--idea);}
+  .stagetext.feasibility{color:var(--warn);}
+  .stagetext.approved,.stagetext.confirmed{color:var(--ok);}
+  .stagetext.future,.stagetext.probable{color:var(--spark);}
+  .stagetext.rejected,.stagetext.onhold{color:var(--danger);}
+  .stagetext.tentative{color:var(--steel-400);}
+
+  .pipetable{width:100%;border-collapse:collapse;table-layout:fixed;}
+  .pipetable th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--steel-400);padding:0 6px 8px;font-weight:600;}
+  .pipetable th:nth-child(2),.pipetable th:nth-child(3){width:70px;}
+  .pipetable td{padding:8px 6px;border-top:1px solid var(--line);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;}
+  .pipetable tr{cursor:pointer;}
+  .pipetable tr:hover td{background:rgba(74,144,255,.05);}
+  .pipetable td.ptname{font-weight:600;}
+  .pipetable td.ptscore{font-family:'Sora';font-weight:700;color:var(--ice);}
   .scorebadge{font-family:'Sora';font-weight:700;font-size:13px;color:var(--ok);flex:none;}
 
   .detailhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
@@ -196,6 +212,14 @@
   .evrow .msdiamond{width:9px;height:9px;flex:none;margin:5px 1px 0;transform:rotate(45deg);border:2px solid var(--navy-950);}
   .evrow b{font-size:12.5px;display:block;} .evrow span{font-size:11px;color:var(--steel-400);}
 
+  .upevents{display:flex;flex-direction:column;gap:2px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
+  .upevrow{display:flex;gap:9px;padding:7px 2px;cursor:pointer;transition:.14s;}
+  .upevrow:hover{background:rgba(255,255,255,.03);}
+  .upevrow .upevdot{width:8px;height:8px;flex:none;margin-top:5px;border-radius:2px;}
+  .upevrow .upevdate{font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--steel-400);margin-bottom:1px;}
+  .upevrow b{font-size:12px;display:block;font-weight:600;}
+  .upevrow span{font-size:11px;color:var(--steel-400);}
+
   .zoomtabs{display:flex;gap:4px;}
   .zoomtabs button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:11px;padding:6px 11px;cursor:pointer;}
   .zoomtabs button.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
@@ -208,6 +232,10 @@
   .wkrow .wkbar{flex:1;height:8px;background:rgba(255,255,255,.08);position:relative;overflow:visible;}
   .wkrow .wkbar i{display:block;height:100%;background:var(--spark);}
   .wkrow .wkbar.over i{background:var(--danger);}
+  .wkrow .wkbar.tier-low i{background:var(--ok);}
+  .wkrow .wkbar.tier-mid i{background:var(--warn);}
+  .wkrow .wkbar.tier-high i{background:var(--danger);}
+  .wkrow .wkavatar{width:24px;height:24px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:10px;color:#fff;background:var(--spark);}
   .wkrow .wkpct{width:42px;flex:none;text-align:right;font-family:'Sora';font-weight:700;font-size:12px;}
   .wkrow.overload .wkpct{color:var(--danger);}
   .warnbanner{display:flex;align-items:flex-start;gap:10px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.4);padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:#ffb3b3;}
@@ -433,6 +461,8 @@ function ideaScore(idea){
   const s=idea.scores;const vals=[s.market,s.profit,s.investment,s.difficulty,s.equipment,s.devtime,s.strategic];
   return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
+function utilTier(pct){return pct>=90?'tier-high':(pct>=70?'tier-mid':'tier-low');}
+function initials(name){return name.split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();}
 
 const STAGE_ORDER=["new","evaluation","feasibility","approved","future"];
 const IDEA_MACHINES_CAPACITY=MACHINES.map(m=>m.name);
@@ -604,13 +634,16 @@ function renderHeader(){
     <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${t[l]}</button>`).join("")}</div>
     <div class="hcontrols">
       <button class="tbtn small" onclick="gToday()">${t.today}</button>
+      <div class="daterange" style="padding:0;gap:0;">
+        <button onclick="gShiftRange(-2)" aria-label="Earlier" style="padding:8px 9px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span style="width:1px;align-self:stretch;background:var(--field-line);"></span>
+        <button onclick="gShiftRange(2)" aria-label="Later" style="padding:8px 9px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
       <div class="daterange">
-        <button onclick="gShiftRange(-2)" aria-label="Earlier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
         <span>${fmtShort(gRangeStart)} – ${fmtShort(gRangeEnd)}</span>
-        <button onclick="gShiftRange(2)" aria-label="Later"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--steel-400);"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
       </div>
-      ${activeTab!=='overview'?`<button class="tbtn small" onclick="setFilterOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>${t.filter}</button>`:''}
+      ${activeTab!=='overview'?`<button class="tbtn small" onclick="setFilterOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>${t.filter}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg></button>`:''}
       <button class="tbtn primary small" onclick="openNewForContext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.new}</button>
     </div>
   </div>`;
@@ -619,17 +652,16 @@ function renderHeader(){
 function renderLeft(){
   const t=T[LANG];const s=projStats();
   const subs=[
-    ["overview","sub_overview",null,`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>`],
-    ["ideas","sub_ideas",IDEAS.length,`<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/>`],
-    ["existing","sub_existing",activeProjects().length,`<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/>`],
-    ["future","sub_future",FUTURE.length,`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>`]
+    ["ideas","sub_ideas",IDEAS.length,"#f5a623",`<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/>`],
+    ["existing","sub_existing",activeProjects().length,"#f5a623",`<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/>`],
+    ["future","sub_future",FUTURE.length,"#4a90ff",`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>`]
   ];
   return `
     <div class="panel">
       <div class="phead"><h3>${t.submodules}</h3></div>
-      <div class="subnav">${subs.map(([k,l,c,ic])=>`<button class="${activeSub===k?'on':''}" onclick="setSub('${k}')">
-        <span class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg></span>
-        <span class="stxt"><b>${t[l]}</b></span>${c!==null?`<span class="scount">${c}</span>`:''}
+      <div class="subnav">${subs.map(([k,l,c,col,ic])=>`<button class="${activeSub===k?'on':''}" onclick="setSub('${k}')">
+        <span class="sic" style="color:${col};"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg></span>
+        <span class="stxt"><b>${t[l]}</b></span><span class="scount">${c}</span>
       </button>`).join("")}</div>
     </div>
     <div class="panel">
@@ -678,6 +710,7 @@ function openNewForContext(){
 }
 
 let gRangeStart=d("2026-08-18"),gRangeEnd=d("2026-12-12"),ganttTickDays=7;
+let todayLabelShown=false;
 function gShiftRange(weeks){gRangeStart=addDays(gRangeStart,weeks*7);gRangeEnd=addDays(gRangeEnd,weeks*7);renderAll();}
 function gToday(){gRangeStart=d("2026-08-18");gRangeEnd=d("2026-12-12");renderAll();}
 function gSetGranularity(v){ganttTickDays=parseInt(v);renderAll();}
@@ -718,7 +751,8 @@ function ganttPanelHead(title){
   </div>`;
 }
 function ganttRowLabel(name,start,end,progress){
-  return `<span class="gr-name">${name}</span><span class="gr-date">${fmtShort(start)}</span><span class="gr-date">${fmtShort(end)}</span><span class="gr-prog">${progress===null?'—':progress+'%'}</span>`;
+  const progHtml=progress===null?'—':`<span class="gr-progbar"><i style="width:${progress}%"></i></span>${progress}%`;
+  return `<span class="gr-name">${name}</span><span class="gr-date">${fmtShort(start)}</span><span class="gr-date">${fmtShort(end)}</span><span class="gr-prog">${progHtml}</span>`;
 }
 
 function ganttBarHtml(rangeStart,rangeEnd,start,end,status,progress,milestones,extraRight){
@@ -728,7 +762,11 @@ function ganttBarHtml(rangeStart,rangeEnd,start,end,status,progress,milestones,e
   const todayOffset=daysBetween(rangeStart,d("2026-08-25"))/totalDays*100;
   const msHtml=(milestones||[]).map(m=>{const mo=daysBetween(rangeStart,d(m.date))/totalDays*100;if(mo<0||mo>100)return'';
     return `<div class="gmilestone ${m.done?'done':'pending'}" style="left:${mo}%" title="${m.name} — ${m.date}"></div>`;}).join("");
-  const todayHtml=(todayOffset>=0&&todayOffset<=100)?`<div class="gtoday" style="left:${todayOffset}%"><span class="gtodaylbl">Today</span></div>`:'';
+  let todayHtml='';
+  if(todayOffset>=0&&todayOffset<=100){
+    const showLabel=!todayLabelShown;todayLabelShown=true;
+    todayHtml=`<div class="gtoday" style="left:${todayOffset}%">${showLabel?'<span class="gtodaylbl">Today</span>':''}</div>`;
+  }
   return `<div class="gtrack">${todayHtml}
     <div class="gbar st-${status}" style="left:${left}%;width:${width}%" title="${fmtISO(start)} → ${fmtISO(end)}">
       <div class="gfill"></div>${progress?`<div class="gprog" style="right:${100-progress}%"></div>`:''}
@@ -739,14 +777,14 @@ function renderGanttChart(compact){
   const t=T[LANG];
   const rows=[];
   if(ganttFilter.ideas&&IDEAS.length){
-    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_ideas.toUpperCase()}</div></div>`);
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>${t.sub_ideas.toUpperCase()}</div></div>`);
     IDEAS.slice(0,compact?3:IDEAS.length).forEach(idea=>{
       const start=d(idea.targetDate?addDaysISO(idea.targetDate,-30):"2026-08-01");const end=d(idea.targetDate);
       rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();">${ganttRowLabel(idea.name,start,end,null)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
     });
   }
   if(ganttFilter.existing&&activeProjects().length){
-    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_existing.toUpperCase()}</div></div>`);
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>${t.sub_existing.toUpperCase()}</div></div>`);
     activeProjects().forEach(p=>{
       const open=!!expandedProjects[p.no];
       const span=projectSpan(p);
@@ -767,7 +805,7 @@ function renderGanttChart(compact){
     });
   }
   if(ganttFilter.future&&FUTURE.length){
-    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_future.toUpperCase()}</div></div>`);
+    rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>${t.sub_future.toUpperCase()}</div></div>`);
     FUTURE.forEach(f=>{
       rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('future');selectedFutureId=${f.id};renderAll();">${ganttRowLabel(f.name,d(f.expectedStart),d(f.expectedFinish),0)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
     });
@@ -794,27 +832,29 @@ function renderOverviewCards(){
     <div class="ovcard2 ideas"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/></svg></div>
       <div style="flex:1;"><div class="otitle">${t.sub_ideas}<span class="ocount">${IDEAS.length}</span></div>
       <div class="odesc">${t.ov_ideas_desc}</div>
-      <div class="ostat">${ideasEval} in evaluation</div><div class="ostat ok">${ideasReady} ready for planning</div>
+      <div class="ostat warn">${ideasEval} in evaluation</div><div class="ostat ok">${ideasReady} ready for planning</div>
       <a onclick="setSub('ideas')">${t.open_ideas} →</a></div></div>
     <div class="ovcard2 existing"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg></div>
       <div style="flex:1;"><div class="otitle">${t.sub_existing}<span class="ocount">${activeProjects().length}</span></div>
       <div class="odesc">${t.ov_existing_desc}</div>
-      <div class="ostat">${inProg} in progress</div><div class="ostat warn">${onHold} with delays</div>
+      <div class="ostat active">${inProg} in progress</div><div class="ostat warn">${onHold} with delays</div>
       <a onclick="setSub('existing')">${t.open_projects} →</a></div></div>
     <div class="ovcard2 future"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg></div>
       <div style="flex:1;"><div class="otitle">${t.sub_future}<span class="ocount">${FUTURE.length}</span></div>
       <div class="odesc">${t.ov_future_desc}</div>
-      <div class="ostat">${futSched} scheduled</div><div class="ostat">${futWait} waiting for start date</div>
+      <div class="ostat active">${futSched} scheduled</div><div class="ostat">${futWait} waiting for start date</div>
       <a onclick="setSub('future')">${t.open_future} →</a></div></div>
   </div>`;
 }
 
 function renderBottomRow(){
   const t=T[LANG];
-  const pipeline=IDEAS.slice(0,4).map(i=>`<div class="pipelinerow" onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();">
-    <div class="pl-top"><b>${i.name}</b><span class="scorebadge">${ideaScore(i).toFixed(1)}</span></div>
-    <div class="pl-bottom"><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span><span class="pl-next">${i.nextAction}</span></div>
-  </div>`).join("");
+  const pipeline=IDEAS.slice(0,4).map(i=>`<tr onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();">
+    <td class="ptname" title="${i.name}">${i.name}</td>
+    <td><span class="stagetext ${i.stage}">${t["stg_"+i.stage]}</span></td>
+    <td class="ptscore">${ideaScore(i).toFixed(1)}</td>
+    <td title="${i.nextAction}">${i.nextAction}</td>
+  </tr>`).join("");
 
   const allMilestones=[];
   activeProjects().forEach(p=>p.milestones.forEach(m=>allMilestones.push({...m,proj:p.name})));
@@ -829,12 +869,12 @@ function renderBottomRow(){
   const grandH=inProgH+plannedH+futH;
   const pctIn=Math.round(inProgH/grandH*100),pctPl=Math.round(plannedH/grandH*100),pctFu=100-pctIn-pctPl;
 
-  const resHtml=EMPLOYEES.map(e=>`<tr><td>${e.name}<div class="gsub">${e.role}</div></td><td class="rnum">
-    <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><div class="utilbar ${e.util>100?'over':''}" style="width:60px;"><i style="width:${Math.min(100,e.util)}%"></i></div>${e.util}%</div></td></tr>`).join("");
+  const resHtml=EMPLOYEES.map(e=>`<tr><td><span class="rescav">${initials(e.name)}</span>${e.name}<div class="gsub">${e.role}</div></td><td class="rnum">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><div class="utilbar ${utilTier(e.util)} ${e.util>100?'over':''}" style="width:60px;"><i style="width:${Math.min(100,e.util)}%"></i></div>${e.util}%</div></td></tr>`).join("");
 
   return `<div class="fieldgrid" style="grid-template-columns:1.3fr 1fr 1fr 1.3fr;margin-bottom:0;">
     <div class="panel"><div class="phead"><h3>${t.pipeline}</h3><button class="tbtn small" onclick="openNewIdea()">${t.addidea}</button></div>
-      <div class="pipelinelist">${pipeline}</div>
+      <table class="pipetable"><thead><tr><th>Idea</th><th>Stage</th><th>Score</th><th>Next Step</th></tr></thead><tbody>${pipeline}</tbody></table>
       <div style="text-align:center;margin-top:10px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setSub('ideas')">${t.viewall} →</a></div></div>
     <div class="panel"><div class="phead"><h3>${t.upcoming_milestones}</h3></div>${msHtml}
       <div style="text-align:center;margin-top:8px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setTab('gantt')">${t.viewall} →</a></div></div>
@@ -901,6 +941,7 @@ function renderCalendarWidget(){
   const t=T[LANG];
   const cells=monthGrid(calMonth).slice(0,35);
   const dow=["M","T","W","T","F","S","S"];
+  const upcoming=CAL_EVENTS.filter(e=>e.date>="2026-08-25").sort((a,b)=>a.date<b.date?-1:1).slice(0,5);
   return `<div class="panel"><div class="phead"><h3>${t.tab_calendar}</h3></div>
     <div class="calnav"><h3>${calMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h3>
       <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button onclick="calNavMini(1)">›</button></div></div>
@@ -909,7 +950,12 @@ function renderCalendarWidget(){
       return `<div class="calday ${c.other?'other':''} ${isToday?'today':''} ${isSel?'sel':''}" style="min-height:auto;padding:6px 3px;" onclick="selectCalDate('${iso}')">
         <div class="cdnum">${c.date.getDate()}</div>${evs.slice(0,1).map(e=>`<span class="caldot" style="background:${EVENT_COLOR[e.type]};"></span>`).join("")}
       </div>`;}).join("")}
-    </div></div>`;
+    </div>
+    <div class="upevents">${upcoming.map(e=>`<div class="upevrow" onclick="selectCalDate('${e.date}')">
+      <span class="upevdot" style="background:${EVENT_COLOR[e.type]};"></span>
+      <div><div class="upevdate">${fmtShort(d(e.date))}</div><b>${e.title}</b><span>${e.sub}</span></div>
+    </div>`).join("")}</div>
+    </div>`;
 }
 function calNavMini(dir){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+dir,1);renderAll();}
 function selectCalDate(iso){calSelDate=iso;if(activeTab!=='calendar')setTab('calendar');else renderAll();}
@@ -961,12 +1007,12 @@ function renderWorkloadTab(){
   const warnHtml=overloaded.map(w=>`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
     <div><div>${t.warn_overload.replace('{h}',Math.round((w.util-100)/100*40)).replace('{w}',w.label.split(' (')[0])}</div>
     <div class="wsuggest">${t.suggest}</div></div></div>`).join("");
-  const empRows=EMPLOYEES.map(e=>`<div class="wkrow ${e.util>100?'overload':''}"><div class="wkname">${e.name}<span class="wkrole">${e.role}</span></div>
-    <div class="wkbar ${e.util>100?'over':''}"><i style="width:${Math.min(100,e.util)}%"></i></div><div class="wkpct">${e.util}%</div></div>`).join("");
+  const empRows=EMPLOYEES.map(e=>`<div class="wkrow ${e.util>100?'overload':''}"><span class="wkavatar">${initials(e.name)}</span><div class="wkname">${e.name}<span class="wkrole">${e.role}</span></div>
+    <div class="wkbar ${utilTier(e.util)} ${e.util>100?'over':''}"><i style="width:${Math.min(100,e.util)}%"></i></div><div class="wkpct">${e.util}%</div></div>`).join("");
   const machRows=MACHINES.map(m=>`<div class="wkrow ${m.util>100?'overload':''}"><div class="wkname">${m.name}</div>
-    <div class="wkbar ${m.util>100?'over':''}"><i style="width:${Math.min(100,m.util)}%"></i></div><div class="wkpct">${m.util}%</div></div>`).join("");
+    <div class="wkbar ${utilTier(m.util)} ${m.util>100?'over':''}"><i style="width:${Math.min(100,m.util)}%"></i></div><div class="wkpct">${m.util}%</div></div>`).join("");
   const wkRows=WEEKS.map(w=>`<div class="wkrow ${w.util>100?'overload':''}"><div class="wkname">${w.label}</div>
-    <div class="wkbar ${w.util>100?'over':''}"><i style="width:${Math.min(100,w.util)}%"></i></div><div class="wkpct">${w.util}%${w.util>100?' ⚠':''}</div></div>`).join("");
+    <div class="wkbar ${utilTier(w.util)} ${w.util>100?'over':''}"><i style="width:${Math.min(100,w.util)}%"></i></div><div class="wkpct">${w.util}%${w.util>100?' ⚠':''}</div></div>`).join("");
   return `${warnHtml}
     <div class="wkcols">
       <div class="panel"><div class="phead"><h3>${t.by_employee}</h3></div>${empRows}</div>
@@ -1152,6 +1198,7 @@ $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
 
 function renderAll(){
   const t=T[LANG];
+  todayLabelShown=false;
   let body;
   if(activeSub==='ideas')body=renderIdeasSub();
   else if(activeSub==='existing')body=renderExistingSub();
