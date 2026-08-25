@@ -5,20 +5,19 @@
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
     --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
-    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;
-    --st-draft:#8ea3c0;--st-quotation:#9db4d8;--st-approved:#4a90ff;--st-planned:#6fd1ff;--st-active:#4a90ff;--st-hold:#ffb057;--st-completed:#4ad48a;--st-closed:#b9c6da;--st-cancelled:#ff6b6b;}
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
   .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
-  .glow{position:absolute;left:50%;top:26%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  .glow{position:absolute;left:50%;top:22%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
   .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
-  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 40px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
   .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
   .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
@@ -32,86 +31,156 @@
   .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .wrap{position:relative;z-index:2;max-width:1360px;margin:0 auto;padding:26px 40px 90px;}
-  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .wrap{position:relative;z-index:2;max-width:1560px;margin:0 auto;padding:26px 36px 40px;}
+  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .ttl{display:flex;align-items:center;gap:11px;}
   .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
   .modhead h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
-  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
-  .search{position:relative;flex:1;min-width:220px;}
-  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--steel-400);}
-  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:14px;padding:11px 12px 11px 36px;outline:none;}
-  .search input:focus{border-color:var(--spark);}
-  .tbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:13px;padding:11px 15px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
   .tbtn:hover{border-color:var(--spark);color:var(--ice);}
   .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
   .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn.linklike{border:none;background:none;color:var(--spark);padding:0;font-size:11.5px;}
+  .tbtn.linklike:hover{color:var(--ice);}
 
-  .kpistrip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
-  .kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px 18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
-  .kpi .kl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:7px;}
-  .kpi .kv{font-family:'Sora';font-size:22px;font-weight:600;} .kpi .kv.warn{color:var(--warn);}
-  @media(max-width:760px){.kpistrip{grid-template-columns:1fr 1fr;}}
+  .crmgrid{display:grid;grid-template-columns:328px 1fr 340px;gap:18px;align-items:start;}
+  @media(max-width:1300px){.crmgrid{grid-template-columns:1fr;}}
+  .col{display:flex;flex-direction:column;gap:18px;}
+  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
+  .panel .phead h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
 
-  .ptable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);}
-  .ptable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px;}
-  .ptable th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:11px 12px;white-space:nowrap;}
-  .ptable td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;}
-  .ptable tr.prow2{cursor:pointer;transition:.14s;}
-  .ptable tr.prow2:hover{background:rgba(74,144,255,.07);}
-  .ptable tr:last-child td{border-bottom:none;}
-  .pnum{font-family:'Sora';font-weight:600;color:var(--steel-300);font-size:12px;white-space:nowrap;}
-  .pname{font-weight:600;} .pcust2{color:var(--steel-400);font-size:11.5px;}
-  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .search{position:relative;flex:1;}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+  .search input:focus{border-color:var(--spark);}
+  .listtoolbar{display:flex;gap:8px;margin-bottom:12px;}
 
-  .sbadge{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;font-weight:600;white-space:nowrap;border:1px solid;}
-  .sbadge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
-  .sbadge.draft{color:var(--st-draft);border-color:rgba(142,163,192,.4);background:rgba(142,163,192,.1);}
-  .sbadge.quotation{color:var(--st-quotation);border-color:rgba(157,180,216,.4);background:rgba(157,180,216,.12);}
-  .sbadge.approved{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
-  .sbadge.planned{color:var(--st-planned);border-color:rgba(111,209,255,.4);background:rgba(111,209,255,.1);}
-  .sbadge.active{color:#cfe0ff;border-color:rgba(74,144,255,.55);background:rgba(74,144,255,.18);}
-  .sbadge.hold{color:var(--st-hold);border-color:rgba(255,176,87,.45);background:rgba(255,176,87,.12);}
-  .sbadge.completed{color:var(--st-completed);border-color:rgba(74,212,138,.45);background:rgba(74,212,138,.12);}
-  .sbadge.closed{color:var(--st-closed);border-color:rgba(185,198,218,.35);background:rgba(185,198,218,.08);}
-  .sbadge.cancelled{color:var(--st-cancelled);border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.12);}
+  .segtabs{display:flex;gap:6px;margin-bottom:12px;}
+  .segtabs button{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:11px;padding:7px 6px;cursor:pointer;transition:.15s;}
+  .segtabs button.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
 
-  .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:20px;}
-  .dhead h2{font-family:'Sora';font-weight:600;font-size:22px;} .dhead .pnum{font-size:13px;margin-top:4px;display:inline-block;}
-  .dfacts{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:22px;}
-  .dfacts .df .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;} .dfacts .df .v{font-size:14px;font-weight:600;}
+  .custlist{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;margin:-4px;padding:4px;}
+  .custrow{display:flex;align-items:center;gap:10px;padding:9px;border:1px solid transparent;cursor:pointer;transition:.14s;}
+  .custrow:hover{background:rgba(255,255,255,.03);}
+  .custrow.sel{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.45);}
+  .avc{flex:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .avc.big{width:64px;height:64px;border-radius:10px;font-size:19px;}
+  .crname{font-size:13px;font-weight:600;} .crcity{font-size:11px;color:var(--steel-400);}
+  .statusdot{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;white-space:nowrap;flex:none;margin-left:auto;}
+  .statusdot::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .statusdot.active{color:var(--ok);} .statusdot.inactive{color:var(--warn);}
 
-  .ovgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
-  .ovcard{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;}
-  .ovcard h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
-  .ovcard h4 svg{width:14px;height:14px;color:var(--spark);}
-  .ovbig{font-family:'Sora';font-size:24px;font-weight:600;} .ovbig.warn{color:var(--warn);}
-  @media(max-width:1050px){.ovgrid{grid-template-columns:1fr 1fr;} .dfacts{gap:16px;}}
+  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:11px;color:var(--steel-400);}
+  .pager .pnav{display:flex;gap:5px;}
+  .pager button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);width:24px;height:24px;cursor:pointer;font-size:11px;}
+  .pager button.cur{background:rgba(74,144,255,.18);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .pager button:disabled{opacity:.35;cursor:not-allowed;}
 
-  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;}
-  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:12px;letter-spacing:.03em;text-transform:uppercase;padding:12px 15px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px;}
+  .sumgrid .sl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
+  .sumgrid .sv{font-family:'Sora';font-size:19px;font-weight:600;} .sumgrid .sv.ok{color:var(--ok);}
+
+  .dhead2{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;}
+  .dhead2 .idn{display:flex;gap:14px;align-items:flex-start;}
+  .dhead2 h2{font-family:'Sora';font-weight:600;font-size:21px;margin-bottom:5px;}
+  .cstatus{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;}
+  .cstatus::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .cstatus.active{color:var(--ok);} .cstatus.inactive{color:var(--warn);}
+
+  .factcols{display:flex;gap:40px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+  .ifacts{display:flex;flex-direction:column;gap:9px;}
+  .ifact{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--steel-300);}
+  .ifact svg{flex:none;width:14px;height:14px;color:var(--steel-400);}
+  .ifact a{color:var(--spark);text-decoration:none;} .ifact a:hover{text-decoration:underline;}
+  .kvcols{display:flex;gap:30px;flex-wrap:wrap;}
+  .kv .k{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
+  .kv .v{font-size:13.5px;font-weight:600;} .kv{margin-bottom:12px;}
+
+  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11.5px;letter-spacing:.03em;text-transform:uppercase;padding:11px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
   .ptabs button:hover{color:var(--ice);}
   .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
-  .tabpanel{min-height:220px;}
-  .card2{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;}
-  .tabhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-  .tabhead h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);}
+  .tabpanel{min-height:160px;}
+
+  .addrgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+  .addrcard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:15px;}
+  .addrcard h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--spark);margin-bottom:9px;}
+  .addrcard div.al{font-size:13px;color:var(--steel-300);line-height:1.6;}
+  @media(max-width:700px){.addrgrid{grid-template-columns:1fr;}}
+
+  .infolist{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:4px 15px;}
+  .irow{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .irow:last-child{border-bottom:none;}
+  .irow .ik{color:var(--steel-400);flex:none;} .irow .iv{text-align:right;font-weight:500;}
+
+  .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .stbl th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap;}
+  .stbl td{padding:10px;border-bottom:1px solid var(--line);}
+  .stbl tr:last-child td{border-bottom:none;}
+  .stbl tr.click{cursor:pointer;} .stbl tr.click:hover{background:rgba(74,144,255,.06);}
+  .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .pnum2{font-family:'Sora';font-weight:600;color:var(--steel-300);font-size:12px;}
+  .empty3{text-align:center;color:var(--steel-400);padding:26px;font-size:12.5px;}
+
+  .tagpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;font-weight:600;white-space:nowrap;border:1px solid;}
+  .tagpill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .tagpill.g{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
+  .tagpill.b{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .tagpill.w{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+  .tagpill.r{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
+  .tagpill.n{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+  .statusword{font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .statusword.g{color:var(--ok);} .statusword.b{color:var(--spark);} .statusword.w{color:var(--warn);}
+
+  .ccard{border:1px solid var(--line);padding:12px;margin-bottom:10px;position:relative;}
+  .ccard:last-child{margin-bottom:0;}
+  .crow1{display:flex;align-items:flex-start;gap:10px;}
+  .ccard .primary-badge{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--spark);border:1px solid rgba(74,144,255,.4);background:rgba(74,144,255,.12);padding:2px 7px;margin-left:7px;}
+  .ccard .crole{font-size:11.5px;color:var(--steel-400);margin:3px 0 6px;}
+  .ccard .cmeta{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--steel-300);}
+  .ccard .cmeta a{color:inherit;text-decoration:none;} .ccard .cmeta a:hover{color:var(--ice);}
+  .ciconbtns{display:flex;gap:6px;margin-left:auto;flex:none;}
+  .ciconbtns a{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--field-line);color:var(--steel-300);text-decoration:none;transition:.15s;}
+  .ciconbtns a:hover{border-color:var(--spark);color:var(--ice);}
+
+  .projrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .projrow:last-child{border-bottom:none;}
+  .projrow .pn{display:flex;flex-direction:column;} .projrow .pn b{font-weight:600;}
+
+  .notecard{font-size:12.5px;color:var(--steel-300);line-height:1.55;}
+  .notecard .nd{color:var(--steel-400);font-size:11px;margin-bottom:4px;}
+  .notecard .na{color:var(--steel-400);font-size:11px;margin-top:6px;}
+
+  .docrow2{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .docrow2:last-child{border-bottom:none;}
+  .dicon{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:8.5px;color:#fff;}
+  .dicon.pdf{background:#c0392b;} .dicon.doc{background:#2c6bd6;} .dicon.xls{background:#1f9d55;}
+  .docrow2 .dn{flex:1;font-weight:500;} .docrow2 .dd{color:var(--steel-400);font-size:11px;white-space:nowrap;}
+  .docrow2 a{color:var(--steel-400);display:flex;} .docrow2 a:hover{color:var(--ice);}
+
+  .actionbar{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:22px;}
+  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:11.5px;padding:16px 8px;cursor:pointer;transition:.16s;}
+  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(74,144,255,.07);transform:translateY(-2px);}
+  .actionbar button svg{width:19px;height:19px;color:var(--spark);}
+  @media(max-width:1300px){.actionbar{grid-template-columns:repeat(4,1fr);}}
+  @media(max-width:640px){.actionbar{grid-template-columns:repeat(2,1fr);}}
 
   .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
   .fov.show{display:flex;}
   .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:480px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
   .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
   .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
-  .fcard .frow{margin-bottom:14px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
-  .fcard input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
-  .fcard input:focus{border-color:var(--spark);}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus{border-color:var(--spark);}
+  .fcard textarea{min-height:60px;resize:vertical;}
   .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
-
-  .empty2{text-align:center;color:var(--steel-400);padding:34px;font-size:13px;}
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -120,9 +189,6 @@
   .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
-
-  @media(min-width:1800px){.wrap{max-width:1760px;padding:34px 60px 100px;} .topfull{padding:32px 60px 0;} .modhead h1{font-size:26px;}}
-  @media(min-width:2600px){.wrap{max-width:2300px;padding:48px 90px 130px;} .topfull{padding:46px 90px 0;} .modhead h1{font-size:34px;} .modhead .ic{width:54px;height:54px;}}
 </style></head><body>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -134,13 +200,12 @@
 
 <div class="wrap">
   <div class="modhead">
-    <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
+    <button class="back" id="backBtn" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div><h1 data-i="ctitle">Customers</h1><p data-i="csub">Contacts & accounts</p></div></div>
   </div>
 
-  <div id="listView"></div>
-  <div id="detailView" style="display:none;"></div>
+  <div id="app"></div>
 </div>
 
 <div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
@@ -153,20 +218,83 @@
 <script>
 const $=id=>document.getElementById(id);
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
-function fmtD(d){return d?d:"—";}
+function initials(name){return name.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
 
 let CUSTOMERS=[
-  {id:1,name:"Sanus Glutenfri AB",org:"559812-4471",contact:"Per Nilsson",email:"per@sanusglutenfri.se"},
-  {id:2,name:"Schröder Nordic",org:"556234-9012",contact:"Anna Berg",email:"anna@schroder.se"},
-  {id:3,name:"Lund Konditori",org:"559045-1123",contact:"Sofia L.",email:"sofia@lundkond.se"},
-  {id:4,name:"Helsingborg Foods",org:"556678-3345",contact:"Erik S.",email:"erik@hbgfoods.se"},
-  {id:5,name:"Malmö Livs",org:"559211-7789",contact:"Karim A.",email:"info@malmolivs.se"},
-  {id:6,name:"Ystad Bageri",org:"556990-2201",contact:"Nina H.",email:"nina@ystadbageri.se"},
-  {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se"}
+  {id:1,name:"Sanus Glutenfri AB",city:"Landskrona",country:"Sweden",status:"active",org:"559812-4471",
+    email:"info@sanusglutenfri.se",phone:"+46 42 123 45 67",website:"www.sanusglutenfri.se",
+    since:"2024-11-02",terms:"30 days",credit:150000,currency:"SEK",industry:"Food Production",ctype:"Company",
+    vat:"SE559812447101",preferred:"Email",pricelist:"Standard Price List",remarks:"Reliable payer, prefers email updates.",
+    billing:["Sanus Glutenfri AB","Att: Purchasing","Industrigatan 8","261 42 Landskrona","Sweden"],
+    contacts:[{name:"Per Nilsson",role:"Purchasing Manager",primary:true,email:"per@sanusglutenfri.se",phone:"+46 70 123 45 67"}],
+    quotes:[{no:"Q-2026-011",date:"2026-08-05",value:92000,status:"accepted"}],
+    invoices:[{no:"INV-2026-034",date:"2026-08-18",value:46000,status:"paid"},{no:"INV-2026-041",date:"2026-09-08",value:46000,status:"pending"}],
+    notes:[{date:"2026-08-15",author:"Aleksandar",text:"Confirmed guard color RAL 7035 for the conveyor project."}],
+    documents:[{name:"Company Profile.pdf",type:"pdf",date:"2024-11-02"},{name:"Framework Agreement.docx",type:"doc",date:"2024-11-10"}]},
+  {id:2,name:"Schröder Nordic",city:"Helsingborg",country:"Sweden",status:"active",org:"556234-9012",
+    email:"info@schroder.se",phone:"+46 42 987 65 43",website:"www.schroder.se",
+    since:"2025-03-20",terms:"30 days",credit:300000,currency:"SEK",industry:"Industrial Machinery",ctype:"Company",
+    vat:"SE556234901201",preferred:"Email",pricelist:"Standard Price List",remarks:"Large retrofit projects, slower approval cycle.",
+    billing:["Schröder Nordic","Verkstadsvägen 22","254 33 Helsingborg","Sweden"],
+    contacts:[{name:"Anna Berg",role:"Technical Manager",primary:true,email:"anna@schroder.se",phone:"+46 70 234 56 78"},
+      {name:"Marcus Lind",role:"Procurement",primary:false,email:"marcus@schroder.se",phone:"+46 70 234 56 79"}],
+    quotes:[{no:"Q-2026-014",date:"2026-08-14",value:145000,status:"sent"},{no:"Q-2026-018",date:"2026-08-24",value:31000,status:"accepted"}],
+    invoices:[],
+    notes:[{date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final retrofit scope."}],
+    documents:[{name:"Specification Draft.pdf",type:"pdf",date:"2026-08-14"}]},
+  {id:3,name:"Lund Konditori",city:"Lund",country:"Sweden",status:"inactive",org:"559045-1123",
+    email:"info@lundkonditori.se",phone:"+46 46 111 22 33",website:"www.lundkonditori.se",
+    since:"2026-08-22",terms:"15 days",credit:30000,currency:"SEK",industry:"Bakery & Café",ctype:"Company",
+    vat:"SE559045112301",preferred:"Phone",pricelist:"Standard Price List",remarks:"Preliminary inquiry only, no confirmed order yet.",
+    billing:["Lund Konditori","Storgatan 4","222 22 Lund","Sweden"],
+    contacts:[{name:"Sofia L.",role:"Owner",primary:true,email:"sofia@lundkond.se",phone:"+46 70 345 67 89"}],
+    quotes:[{no:"Q-2026-020",date:"2026-08-22",value:16000,status:"sent"}],
+    invoices:[],
+    notes:[{date:"2026-08-22",author:"Aleksandar",text:"Preliminary gearbox service quote sent, awaiting decision."}],
+    documents:[]},
+  {id:4,name:"Helsingborg Foods",city:"Helsingborg",country:"Sweden",status:"active",org:"556678-3345",
+    email:"info@hbgfoods.se",phone:"+46 42 555 12 34",website:"www.hbgfoods.se",
+    since:"2025-01-15",terms:"30 days",credit:120000,currency:"SEK",industry:"Food Packaging",ctype:"Company",
+    vat:"SE556678334501",preferred:"Email",pricelist:"Standard Price List",remarks:"Long term partner. Good payment history.",
+    billing:["Helsingborg Foods","Emballagevägen 9","254 66 Helsingborg","Sweden"],
+    contacts:[{name:"Erik S.",role:"Plant Manager",primary:true,email:"erik@hbgfoods.se",phone:"+46 70 456 78 90"}],
+    quotes:[{no:"Q-2026-002",date:"2026-05-28",value:58000,status:"accepted"}],
+    invoices:[{no:"INV-2026-009",date:"2026-06-21",value:58000,status:"paid"}],
+    notes:[{date:"2026-06-20",author:"Aleksandar",text:"Guard fabrication completed and installed on schedule."}],
+    documents:[{name:"Completion Report.pdf",type:"pdf",date:"2026-06-20"},{name:"Company Profile.pdf",type:"pdf",date:"2025-01-15"}]},
+  {id:5,name:"Malmö Livs",city:"Malmö",country:"Sweden",status:"active",org:"559211-7789",
+    email:"info@malmolivs.se",phone:"+46 40 222 33 44",website:"www.malmolivs.se",
+    since:"2025-06-10",terms:"30 days",credit:60000,currency:"SEK",industry:"Grocery Retail",ctype:"Company",
+    vat:"SE559211778901",preferred:"Phone",pricelist:"Standard Price List",remarks:"Multiple service call-outs, fast approvals.",
+    billing:["Malmö Livs","Saluhallen 3","211 34 Malmö","Sweden"],
+    contacts:[{name:"Karim A.",role:"Facilities Manager",primary:true,email:"info@malmolivs.se",phone:"+46 70 567 89 01"}],
+    quotes:[{no:"Q-2026-005",date:"2026-08-05",value:16500,status:"accepted"},{no:"Q-2026-019",date:"2026-08-20",value:14000,status:"accepted"}],
+    invoices:[{no:"INV-2026-012",date:"2026-08-19",value:16500,status:"paid"}],
+    notes:[{date:"2026-08-19",author:"Marko",text:"Bearing replacement completed same day as inspection."}],
+    documents:[{name:"Inspection Report.pdf",type:"pdf",date:"2026-08-18"}]},
+  {id:6,name:"Ystad Bageri",city:"Ystad",country:"Sweden",status:"active",org:"556990-2201",
+    email:"info@ystadbageri.se",phone:"+46 411 66 77 88",website:"www.ystadbageri.se",
+    since:"2025-09-01",terms:"30 days",credit:50000,currency:"SEK",industry:"Bakery",ctype:"Company",
+    vat:"SE556990220101",preferred:"Email",pricelist:"Standard Price List",remarks:"Currently on hold pending supplier part.",
+    billing:["Ystad Bageri","Bagerigatan 2","271 41 Ystad","Sweden"],
+    contacts:[{name:"Nina H.",role:"Owner",primary:true,email:"nina@ystadbageri.se",phone:"+46 70 678 90 12"}],
+    quotes:[{no:"Q-2026-013",date:"2026-08-12",value:24000,status:"accepted"}],
+    invoices:[],
+    notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit, resume expected Sept 1."}],
+    documents:[]},
+  {id:7,name:"Trelleborg Snacks",city:"Trelleborg",country:"Sweden",status:"inactive",org:"559333-6654",
+    email:"info@trelleborgsnacks.se",phone:"+46 410 44 55 66",website:"www.trelleborgsnacks.se",
+    since:"2026-07-20",terms:"30 days",credit:0,currency:"SEK",industry:"Snack Food Manufacturing",ctype:"Company",
+    vat:"SE559333665401",preferred:"Email",pricelist:"Standard Price List",remarks:"Investment postponed, project cancelled.",
+    billing:["Trelleborg Snacks","Fabriksgatan 15","231 62 Trelleborg","Sweden"],
+    contacts:[{name:"Jonas P.",role:"Operations Manager",primary:true,email:"jonas@trelleborgsnacks.se",phone:"+46 70 789 01 23"}],
+    quotes:[{no:"Q-2026-007",date:"2026-07-20",value:210000,status:"expired"}],
+    invoices:[],
+    notes:[{date:"2026-08-05",author:"Aleksandar",text:"Customer postponed investment — packing line extension cancelled."}],
+    documents:[]}
 ];
 let nextCustId=8;
 
-// mirrors projects-desktop.html's PROJECTS (trimmed to the fields this screen needs)
 const PROJECTS=[
   {no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,status:"active",quotedValue:92000,deadline:"2026-09-10"},
   {no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,status:"quotation",quotedValue:145000,deadline:"2026-09-20"},
@@ -179,175 +307,392 @@ const PROJECTS=[
   {no:"P-26-0009",name:"HMI Upgrade",customerId:2,status:"planned",quotedValue:31000,deadline:"2026-09-18"}
 ];
 const OPEN_STATUSES=["quotation","approved","planned","active","hold"];
+const STATUS_CLASS={draft:"n",quotation:"b",approved:"b",planned:"b",active:"b",hold:"w",completed:"g",closed:"n",cancelled:"r"};
+const STATUS_WORD_CLASS={active:"b",completed:"g","in production":"b",hold:"w"};
 
 const T={
-  en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Customers",ctitle:"Customers",csub:"Contacts & accounts",
-    searchph:"Search name, org. number, contact…",newcust:"+ New customer",
-    kpi_customers:"Customers",kpi_quoted:"Total quoted value",kpi_open:"Open projects",kpi_hold:"On hold",
-    th_name:"Customer",th_org:"Org. number",th_contact:"Contact",th_projects:"Projects",th_quoted:"Quoted value",th_status:"Latest status",
-    empty:"No customers match your search.",
-    tab_overview:"Overview",tab_projects:"Projects",
-    ov_projects:"Projects",ov_quoted:"Total quoted",ov_open:"Open",ov_realized:"Realized (completed + closed)",
-    d_contact:"Contact person",d_email:"Email",d_org:"Org. number",
-    proj_th_no:"Project #",proj_th_name:"Project name",proj_th_status:"Status",proj_th_quoted:"Quoted value",proj_th_deadline:"Deadline",proj_empty:"No projects for this customer yet.",
-    nc_title:"New customer",nc_name:"Customer name",nc_org:"Org. number",nc_contact:"Contact person",nc_email:"Email",nc_save:"Add customer",nc_cancel:"Cancel",
-    st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",st_none:"—",
+  en:{role:"Admin",logout:"Log out",back_hub:"Hub",ctitle:"Customers",csub:"Contacts & accounts",
+    p_list:"Customer List",p_summary:"Customer Summary",p_details:"Customer Details",p_contacts:"Contact Persons",p_recent:"Recent Projects",p_notes:"Latest Notes",p_docs:"Documents",
+    searchph:"Search customers…",newcust:"New Customer",addcontact:"+ Add Contact",viewall:"View All",addnote:"+ Add Note",upload:"Upload",editcust:"Edit Customer",
+    f_all:"All",f_active:"Active",f_inactive:"Inactive",
+    showing:"Showing {a} to {b} of {n}",
+    sum_total:"Total Customers",sum_active:"Active Customers",sum_progress:"Projects in Progress",sum_revenue:"Total Revenue (YTD)",
+    since:"Customer Since",terms:"Payment Terms",credit:"Credit Limit",currency:"Currency",
+    tab_overview:"Overview",tab_contacts:"Contacts",tab_projects:"Projects",tab_quotes:"Quotes",tab_invoices:"Invoices",tab_notes:"Notes",
+    billing:"Billing Address",shipping:"Shipping Address",custinfo:"Customer Information",
+    industry:"Industry",ctype:"Customer Type",vat:"VAT Number",preferred:"Preferred Contact",pricelist:"Price List",remarks:"Remarks",
+    th_no:"No.",th_name:"Name",th_status:"Status",th_value:"Value",th_deadline:"Deadline",th_date:"Date",
+    empty_contacts:"No contacts yet.",empty_projects:"No projects for this customer yet.",empty_quotes:"No quotes yet.",empty_invoices:"No invoices yet.",empty_notes:"No notes yet.",empty_docs:"No documents yet.",
+    active_customer:"Active Customer",inactive_customer:"Inactive Customer",primary:"Primary",
+    st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
+    qs_sent:"Sent",qs_accepted:"Accepted",qs_expired:"Expired",is_paid:"Paid",is_pending:"Pending",is_overdue:"Overdue",
+    act_newcust:"New Customer",act_newquote:"New Quote",act_newproj:"New Project",act_newinv:"New Invoice",act_newnote:"New Note",act_upload:"Upload Document",act_report:"Customer Report",
+    nc_title:"New Customer",nc_edit_title:"Edit Customer",nc_name:"Customer name",nc_city:"City",nc_org:"Org. number",nc_email:"Email",nc_phone:"Phone",nc_website:"Website",nc_status:"Status",nc_save:"Save",nc_cancel:"Cancel",
+    ac_title:"Add Contact",ac_name:"Name",ac_role:"Role",ac_email:"Email",ac_phone:"Phone",ac_primary:"Set as primary contact",ac_save:"Add contact",
+    an_title:"Add Note",an_text:"Note",an_save:"Add note",
+    ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
+    nq_title:"New Quote",nq_value:"Value (SEK)",nq_save:"Add quote",
+    ni_title:"New Invoice",ni_value:"Value (SEK)",ni_save:"Add invoice",
     locale:"en-GB"},
-  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Kunder",ctitle:"Kunder",csub:"Kontakter & konton",
-    searchph:"Sök namn, org.nr, kontakt…",newcust:"+ Ny kund",
-    kpi_customers:"Kunder",kpi_quoted:"Totalt offertvärde",kpi_open:"Öppna projekt",kpi_hold:"Pausade",
-    th_name:"Kund",th_org:"Org.nr",th_contact:"Kontakt",th_projects:"Projekt",th_quoted:"Offertvärde",th_status:"Senaste status",
-    empty:"Inga kunder matchar din sökning.",
-    tab_overview:"Översikt",tab_projects:"Projekt",
-    ov_projects:"Projekt",ov_quoted:"Totalt offertvärde",ov_open:"Öppna",ov_realized:"Realiserat (klart + stängt)",
-    d_contact:"Kontaktperson",d_email:"E-post",d_org:"Org.nr",
-    proj_th_no:"Projekt-nr",proj_th_name:"Projektnamn",proj_th_status:"Status",proj_th_quoted:"Offertvärde",proj_th_deadline:"Deadline",proj_empty:"Inga projekt för denna kund ännu.",
-    nc_title:"Ny kund",nc_name:"Kundnamn",nc_org:"Org.nr",nc_contact:"Kontaktperson",nc_email:"E-post",nc_save:"Lägg till kund",nc_cancel:"Avbryt",
-    st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänd",st_planned:"Planerad",st_active:"Aktiv",st_hold:"Pausad",st_completed:"Klar",st_closed:"Stängd",st_cancelled:"Avbruten",st_none:"—",
+  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
+    p_list:"Kundlista",p_summary:"Kundöversikt",p_details:"Kunduppgifter",p_contacts:"Kontaktpersoner",p_recent:"Senaste projekt",p_notes:"Senaste anteckningar",p_docs:"Dokument",
+    searchph:"Sök kunder…",newcust:"Ny kund",addcontact:"+ Lägg till kontakt",viewall:"Visa alla",addnote:"+ Lägg till anteckning",upload:"Ladda upp",editcust:"Redigera kund",
+    f_all:"Alla",f_active:"Aktiva",f_inactive:"Inaktiva",
+    showing:"Visar {a} till {b} av {n}",
+    sum_total:"Totalt antal kunder",sum_active:"Aktiva kunder",sum_progress:"Pågående projekt",sum_revenue:"Total intäkt (i år)",
+    since:"Kund sedan",terms:"Betalningsvillkor",credit:"Kreditgräns",currency:"Valuta",
+    tab_overview:"Översikt",tab_contacts:"Kontakter",tab_projects:"Projekt",tab_quotes:"Offerter",tab_invoices:"Fakturor",tab_notes:"Anteckningar",
+    billing:"Fakturaadress",shipping:"Leveransadress",custinfo:"Kundinformation",
+    industry:"Bransch",ctype:"Kundtyp",vat:"Momsregistreringsnr",preferred:"Föredragen kontakt",pricelist:"Prislista",remarks:"Anmärkningar",
+    th_no:"Nr",th_name:"Namn",th_status:"Status",th_value:"Värde",th_deadline:"Deadline",th_date:"Datum",
+    empty_contacts:"Inga kontakter ännu.",empty_projects:"Inga projekt för denna kund ännu.",empty_quotes:"Inga offerter ännu.",empty_invoices:"Inga fakturor ännu.",empty_notes:"Inga anteckningar ännu.",empty_docs:"Inga dokument ännu.",
+    active_customer:"Aktiv kund",inactive_customer:"Inaktiv kund",primary:"Primär",
+    st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänd",st_planned:"Planerad",st_active:"Aktiv",st_hold:"Pausad",st_completed:"Klar",st_closed:"Stängd",st_cancelled:"Avbruten",
+    qs_sent:"Skickad",qs_accepted:"Accepterad",qs_expired:"Utgången",is_paid:"Betald",is_pending:"Väntande",is_overdue:"Försenad",
+    act_newcust:"Ny kund",act_newquote:"Ny offert",act_newproj:"Nytt projekt",act_newinv:"Ny faktura",act_newnote:"Ny anteckning",act_upload:"Ladda upp dokument",act_report:"Kundrapport",
+    nc_title:"Ny kund",nc_edit_title:"Redigera kund",nc_name:"Kundnamn",nc_city:"Stad",nc_org:"Org.nr",nc_email:"E-post",nc_phone:"Telefon",nc_website:"Webbplats",nc_status:"Status",nc_save:"Spara",nc_cancel:"Avbryt",
+    ac_title:"Lägg till kontakt",ac_name:"Namn",ac_role:"Roll",ac_email:"E-post",ac_phone:"Telefon",ac_primary:"Ange som primär kontakt",ac_save:"Lägg till kontakt",
+    an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
+    ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
+    nq_title:"Ny offert",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
+    ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_save:"Lägg till faktura",
     locale:"sv-SE"},
-  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",back_list:"Klienti",ctitle:"Klienti",csub:"Kontakti i smetki",
-    searchph:"Prebaraj ime, EMBS, kontakt…",newcust:"+ Nov klient",
-    kpi_customers:"Klienti",kpi_quoted:"Vkupno ponudena vrednost",kpi_open:"Otvoreni proekti",kpi_hold:"Pauzirani",
-    th_name:"Klient",th_org:"EMBS",th_contact:"Kontakt",th_projects:"Proekti",th_quoted:"Ponudena vrednost",th_status:"Posleden status",
-    empty:"Nema klienti što odgovaraat na baraњeto.",
-    tab_overview:"Pregled",tab_projects:"Proekti",
-    ov_projects:"Proekti",ov_quoted:"Vkupno ponudeno",ov_open:"Otvoreni",ov_realized:"Realizirano (završeno + zatvoreno)",
-    d_contact:"Kontakt lice",d_email:"E-pošta",d_org:"EMBS",
-    proj_th_no:"Proekt br.",proj_th_name:"Ime na proekt",proj_th_status:"Status",proj_th_quoted:"Ponudena vrednost",proj_th_deadline:"Rok",proj_empty:"Sè uште nema proekti za ovoj klient.",
-    nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"EMBS",nc_contact:"Kontakt lice",nc_email:"E-pošta",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
-    st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",st_none:"—",
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",ctitle:"Klienti",csub:"Kontakti i smetki",
+    p_list:"Lista na klienti",p_summary:"Pregled na klienti",p_details:"Detali za klient",p_contacts:"Kontakt lica",p_recent:"Posledni proekti",p_notes:"Posledni beleški",p_docs:"Dokumenti",
+    searchph:"Prebaraj klienti…",newcust:"Nov klient",addcontact:"+ Dodaj kontakt",viewall:"Vidi gi site",addnote:"+ Dodaj beleška",upload:"Otpremi",editcust:"Uredi klient",
+    f_all:"Site",f_active:"Aktivni",f_inactive:"Neaktivni",
+    showing:"Prikažani {a} do {b} od {n}",
+    sum_total:"Vkupno klienti",sum_active:"Aktivni klienti",sum_progress:"Proekti vo tek",sum_revenue:"Vkupen prihod (ovaa godina)",
+    since:"Klient od",terms:"Uslovi za plaќaњe",credit:"Kreditno ograničuvanje",currency:"Valuta",
+    tab_overview:"Pregled",tab_contacts:"Kontakti",tab_projects:"Proekti",tab_quotes:"Ponudi",tab_invoices:"Fakturi",tab_notes:"Beleški",
+    billing:"Adresa za faktura",shipping:"Adresa za dostava",custinfo:"Informacii za klient",
+    industry:"Industrija",ctype:"Tip na klient",vat:"DDV broj",preferred:"Preferiran kontakt",pricelist:"Cenovnik",remarks:"Zabeleški",
+    th_no:"Br.",th_name:"Ime",th_status:"Status",th_value:"Vrednost",th_deadline:"Rok",th_date:"Datum",
+    empty_contacts:"Sè uште nema kontakti.",empty_projects:"Sè uште nema proekti za ovoj klient.",empty_quotes:"Sè uште nema ponudi.",empty_invoices:"Sè uште nema fakturi.",empty_notes:"Sè uште nema beleški.",empty_docs:"Sè uште nema dokumenti.",
+    active_customer:"Aktiven klient",inactive_customer:"Neaktiven klient",primary:"Primaren",
+    st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
+    qs_sent:"Ispratena",qs_accepted:"Prifatena",qs_expired:"Istekla",is_paid:"Platena",is_pending:"Vo čekaњe",is_overdue:"Docnета",
+    act_newcust:"Nov klient",act_newquote:"Nova ponuda",act_newproj:"Nov proekt",act_newinv:"Nova faktura",act_newnote:"Nova beleška",act_upload:"Otpremi dokument",act_report:"Izveštaj za klient",
+    nc_title:"Nov klient",nc_edit_title:"Uredi klient",nc_name:"Ime na klient",nc_city:"Grad",nc_org:"EMBS",nc_email:"E-pošta",nc_phone:"Telefon",nc_website:"Veb-strana",nc_status:"Status",nc_save:"Začuvaj",nc_cancel:"Otkaži",
+    ac_title:"Dodaj kontakt",ac_name:"Ime",ac_role:"Uloga",ac_email:"E-pošta",ac_phone:"Telefon",ac_primary:"Postavi kako primaren kontakt",ac_save:"Dodaj kontakt",
+    an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
+    ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
+    nq_title:"Nova ponuda",nq_value:"Vrednost (SEK)",nq_save:"Dodaj ponuda",
+    ni_title:"Nova faktura",ni_value:"Vrednost (SEK)",ni_save:"Dodaj faktura",
     locale:"mk"}
 };
 
-let LANG="en",VIEW="list",currentId=null,activeTab="overview",query="";
+let LANG="en",selectedId=2,activeTab="overview",query="",filterStatus="all";
 
+function getCust(id){return CUSTOMERS.find(c=>c.id===id);}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
 function custStats(id){const ps=custProjects(id);
-  const quoted=ps.reduce((a,b)=>a+b.quotedValue,0);
   const open=ps.filter(p=>OPEN_STATUSES.includes(p.status)).length;
   const realized=ps.filter(p=>p.status==='completed'||p.status==='closed').reduce((a,b)=>a+b.quotedValue,0);
-  const latest=ps[ps.length-1];
-  return{count:ps.length,quoted,open,realized,latestStatus:latest?latest.status:null};}
-function statusBadge(s){const t=T[LANG];if(!s)return `<span class="sbadge draft">${t.st_none}</span>`;return `<span class="sbadge ${s}">${t["st_"+s]}</span>`;}
+  return{count:ps.length,open,realized};}
+function statusBadge(s){const t=T[LANG];return `<span class="tagpill ${STATUS_CLASS[s]||'n'}">${t["st_"+s]||s}</span>`;}
+function fmtD(d){return d||"—";}
 
-function renderList(){
+function renderLeft(){
   const t=T[LANG];
-  const kQuoted=CUSTOMERS.reduce((a,c)=>a+custStats(c.id).quoted,0);
-  const kOpen=PROJECTS.filter(p=>OPEN_STATUSES.includes(p.status)).length;
-  const kHold=CUSTOMERS.filter(c=>custProjects(c.id).some(p=>p.status==='hold')).length;
-
   const q=query.trim().toLowerCase();
-  const rows=CUSTOMERS.filter(c=>!q||c.name.toLowerCase().includes(q)||c.org.toLowerCase().includes(q)||c.contact.toLowerCase().includes(q))
-    .sort((a,b)=>custStats(b.id).quoted-custStats(a.id).quoted);
+  let rows=CUSTOMERS.filter(c=>filterStatus==='all'||c.status===filterStatus)
+    .filter(c=>!q||c.name.toLowerCase().includes(q)||c.city.toLowerCase().includes(q)||c.org.includes(q));
 
-  const trs=rows.map(c=>{const s=custStats(c.id);
-    return `<tr class="prow2" onclick="openCustomer(${c.id})">
-      <td><div class="pname">${c.name}</div></td>
-      <td class="pnum">${c.org}</td>
-      <td><div>${c.contact}</div><div class="pcust2">${c.email}</div></td>
-      <td class="rnum">${s.count}</td>
-      <td class="rnum">${fmt(s.quoted)}</td>
-      <td>${statusBadge(s.latestStatus)}</td>
-    </tr>`;}).join("");
+  const activeCount=CUSTOMERS.filter(c=>c.status==='active').length;
+  const inactiveCount=CUSTOMERS.filter(c=>c.status==='inactive').length;
 
-  $("listView").innerHTML=`
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl">${t.kpi_customers}</div><div class="kv">${CUSTOMERS.length}</div></div>
-      <div class="kpi"><div class="kl">${t.kpi_quoted}</div><div class="kv">${fmt(kQuoted)}</div></div>
-      <div class="kpi"><div class="kl">${t.kpi_open}</div><div class="kv">${kOpen}</div></div>
-      <div class="kpi"><div class="kl">${t.kpi_hold}</div><div class="kv ${kHold?'warn':''}">${kHold}</div></div>
+  const custRows=rows.map(c=>`<div class="custrow ${c.id===selectedId?'sel':''}" onclick="selectCustomer(${c.id})">
+      <div class="avc">${initials(c.name)}</div>
+      <div><div class="crname">${c.name}</div><div class="crcity">${c.city}, ${c.country}</div></div>
+      <span class="statusdot ${c.status}">${c.status==='active'?t.f_active:t.f_inactive}</span>
+    </div>`).join("");
+
+  const kProgress=PROJECTS.filter(p=>OPEN_STATUSES.includes(p.status)).length;
+  const kRevenue=CUSTOMERS.reduce((a,c)=>a+custStats(c.id).realized,0);
+
+  return `
+    <div class="panel">
+      <div class="phead"><h3>${t.p_list}</h3></div>
+      <div class="listtoolbar">
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
+        <button class="tbtn primary small" onclick="openNewCustomer()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newcust}</button>
+      </div>
+      <div class="segtabs">
+        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${CUSTOMERS.length})</button>
+        <button class="${filterStatus==='active'?'on':''}" onclick="setFilter('active')">${t.f_active} (${activeCount})</button>
+        <button class="${filterStatus==='inactive'?'on':''}" onclick="setFilter('inactive')">${t.f_inactive} (${inactiveCount})</button>
+      </div>
+      <div class="custlist">${custRows||`<div class="empty3">${t.empty_projects}</div>`}</div>
+      <div class="pager"><span>${t.showing.replace('{a}','1').replace('{b}',rows.length).replace('{n}',rows.length)}</span>
+        <div class="pnav"><button disabled>‹</button><button class="cur">1</button><button disabled>›</button></div></div>
     </div>
-    <div class="toolbar">
-      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
-      <button class="tbtn primary" onclick="openNewCustomer()">${t.newcust}</button>
-    </div>
-    <div class="ptable-wrap"><table class="ptable"><thead><tr>
-      <th>${t.th_name}</th><th>${t.th_org}</th><th>${t.th_contact}</th><th>${t.th_projects}</th><th>${t.th_quoted}</th><th>${t.th_status}</th>
-    </tr></thead><tbody>${trs||`<tr><td colspan="6" class="empty2">${t.empty}</td></tr>`}</tbody></table></div>`;
-  $("search").addEventListener('input',e=>{query=e.target.value;renderList();});
+    <div class="panel">
+      <div class="phead"><h3>${t.p_summary}</h3></div>
+      <div class="sumgrid">
+        <div><div class="sl">${t.sum_total}</div><div class="sv">${CUSTOMERS.length}</div></div>
+        <div><div class="sl">${t.sum_active}</div><div class="sv ok">${activeCount}</div></div>
+        <div><div class="sl">${t.sum_progress}</div><div class="sv">${kProgress}</div></div>
+        <div><div class="sl">${t.sum_revenue}</div><div class="sv">${fmt(kRevenue)}</div></div>
+      </div>
+    </div>`;
 }
 
-function openCustomer(id){currentId=id;VIEW="detail";activeTab="overview";render();}
-
-function renderDetail(){
-  const t=T[LANG];const c=CUSTOMERS.find(x=>x.id===currentId);if(!c)return;
-  const s=custStats(c.id);
-  $("detailView").innerHTML=`
-    <div class="dhead">
-      <div><h2>${c.name}</h2><span class="pnum">${t.d_org}: ${c.org}</span></div>
-    </div>
-    <div class="ovgrid">
-      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg>${t.ov_projects}</h4><div class="ovbig">${s.count}</div></div>
-      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>${t.ov_quoted}</h4><div class="ovbig">${fmt(s.quoted)}</div></div>
-      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.ov_open}</h4><div class="ovbig ${s.open?'warn':''}">${s.open}</div></div>
-      <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${t.ov_realized}</h4><div class="ovbig">${fmt(s.realized)}</div></div>
-    </div>
-    <div class="ptabs">
-      <button data-tab="overview" class="${activeTab==='overview'?'on':''}">${t.tab_overview}</button>
-      <button data-tab="projects" class="${activeTab==='projects'?'on':''}">${t.tab_projects}</button>
-    </div>
-    <div class="tabpanel" id="tabpanel"></div>`;
-  document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>{activeTab=b.getAttribute('data-tab');renderDetail();}));
-  renderTab(c);
+function renderMiddle(c){
+  const t=T[LANG];
+  const tabs=["overview","contacts","projects","quotes","invoices","notes"];
+  const counts={overview:null,contacts:c.contacts.length,projects:custProjects(c.id).length,quotes:c.quotes.length,invoices:c.invoices.length,notes:c.notes.length};
+  return `
+    <div class="panel">
+      <div class="dhead2">
+        <div class="idn">
+          <div class="avc big">${initials(c.name)}</div>
+          <div><h2>${c.name}</h2><span class="cstatus ${c.status}">${c.status==='active'?t.active_customer:t.inactive_customer}</span></div>
+        </div>
+        <button class="tbtn" onclick="openEditCustomer(${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${t.editcust}</button>
+      </div>
+      <div class="factcols">
+        <div class="ifacts">
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${c.city}, ${c.country}</div>
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>${t.vat.split(' ')[0]}: ${c.org}</div>
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg><a href="mailto:${c.email}">${c.email}</a></div>
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg><a href="tel:${c.phone}">${c.phone}</a></div>
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><a href="https://${c.website}" target="_blank" rel="noopener">${c.website}</a></div>
+        </div>
+        <div class="kvcols">
+          <div class="kv"><div class="k">${t.since}</div><div class="v">${c.since}</div></div>
+          <div class="kv"><div class="k">${t.terms}</div><div class="v">${c.terms}</div></div>
+          <div class="kv"><div class="k">${t.credit}</div><div class="v">${fmt(c.credit)}</div></div>
+          <div class="kv"><div class="k">${t.currency}</div><div class="v">${c.currency}</div></div>
+        </div>
+      </div>
+      <div class="ptabs">${tabs.map(tb=>`<button data-tab="${tb}" class="${activeTab===tb?'on':''}">${t["tab_"+tb]}${counts[tb]!==null?` (${counts[tb]})`:''}</button>`).join("")}</div>
+      <div class="tabpanel" id="tabpanel"></div>
+    </div>`;
 }
 
 function renderTab(c){
   const t=T[LANG];
-  if(activeTab==='projects'){
+  if(activeTab==='overview'){
+    $("tabpanel").innerHTML=`
+      <div class="addrgrid">
+        <div class="addrcard"><h4>${t.billing}</h4><div class="al">${c.billing.join("<br>")}</div></div>
+        <div class="addrcard"><h4>${t.shipping}</h4><div class="al">${c.billing.join("<br>")}</div></div>
+      </div>
+      <div class="infolist">
+        <div class="irow"><span class="ik">${t.industry}</span><span class="iv">${c.industry}</span></div>
+        <div class="irow"><span class="ik">${t.ctype}</span><span class="iv">${c.ctype}</span></div>
+        <div class="irow"><span class="ik">${t.vat}</span><span class="iv">${c.vat}</span></div>
+        <div class="irow"><span class="ik">${t.preferred}</span><span class="iv">${c.preferred}</span></div>
+        <div class="irow"><span class="ik">${t.pricelist}</span><span class="iv">${c.pricelist}</span></div>
+        <div class="irow"><span class="ik">${t.remarks}</span><span class="iv">${c.remarks}</span></div>
+      </div>`;
+  }else if(activeTab==='contacts'){
+    $("tabpanel").innerHTML=c.contacts.map(p=>contactCardHtml(p)).join("")||`<div class="empty3">${t.empty_contacts}</div>`;
+  }else if(activeTab==='projects'){
     const ps=custProjects(c.id);
-    const rows=ps.map(p=>`<tr class="prow2" onclick="location.href='projects-desktop.html'">
-      <td class="pnum">${p.no}</td><td class="pname">${p.name}</td><td>${statusBadge(p.status)}</td>
-      <td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${fmtD(p.deadline)}</td></tr>`).join("");
-    $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_projects}</h3></div>
-      <div class="ptable-wrap"><table class="ptable"><thead><tr><th>${t.proj_th_no}</th><th>${t.proj_th_name}</th><th>${t.proj_th_status}</th><th>${t.proj_th_quoted}</th><th>${t.proj_th_deadline}</th></tr></thead>
-      <tbody>${rows||`<tr><td colspan="5" class="empty2">${t.proj_empty}</td></tr>`}</tbody></table></div></div>`;
-  }else{
-    $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_overview}</h3></div>
-      <div class="dfacts" style="margin-bottom:0;">
-        <div class="df"><div class="k">${t.d_org}</div><div class="v">${c.org}</div></div>
-        <div class="df"><div class="k">${t.d_contact}</div><div class="v">${c.contact}</div></div>
-        <div class="df"><div class="k">${t.d_email}</div><div class="v">${c.email}</div></div>
-      </div></div>`;
+    const rows=ps.map(p=>`<tr class="click" onclick="location.href='projects-desktop.html'"><td class="pnum2">${p.no}</td><td>${p.name}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${fmtD(p.deadline)}</td></tr>`).join("");
+    $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_name}</th><th>${t.th_status}</th><th>${t.th_value}</th><th>${t.th_deadline}</th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="empty3">${t.empty_projects}</td></tr>`}</tbody></table>`;
+  }else if(activeTab==='quotes'){
+    const rows=c.quotes.map(q=>`<tr><td class="pnum2">${q.no}</td><td class="rnum">${fmtD(q.date)}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
+    $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_quotes}</td></tr>`}</tbody></table>`;
+  }else if(activeTab==='invoices'){
+    const rows=c.invoices.map(iv=>`<tr><td class="pnum2">${iv.no}</td><td class="rnum">${fmtD(iv.date)}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]}</span></td></tr>`).join("");
+    $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_invoices}</td></tr>`}</tbody></table>`;
+  }else if(activeTab==='notes'){
+    $("tabpanel").innerHTML=c.notes.slice().reverse().map(n=>`<div class="ccard"><div class="notecard"><div class="nd">${n.date}</div>${n.text}<div class="na">— ${n.author}</div></div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`;
   }
+  document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>{activeTab=b.getAttribute('data-tab');renderAll();}));
 }
+
+function contactCardHtml(p){
+  const t=T[LANG];
+  return `<div class="ccard"><div class="crow1">
+    <div class="avc">${initials(p.name)}</div>
+    <div style="flex:1;"><span style="font-weight:600;font-size:13px;">${p.name}</span>${p.primary?`<span class="primary-badge">${t.primary}</span>`:''}
+      <div class="crole">${p.role}</div>
+      <div class="cmeta"><span>${p.email}</span><span>${p.phone}</span></div></div>
+    <div class="ciconbtns">
+      <a href="mailto:${p.email}" aria-label="Email"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg></a>
+      <a href="tel:${p.phone}" aria-label="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg></a>
+    </div></div></div>`;
+}
+
+function statusWordHtml(s){
+  const t=T[LANG];const cls=STATUS_CLASS[s]==='g'?'g':STATUS_CLASS[s]==='w'?'w':'b';
+  return `<span class="statusword ${cls}">${t["st_"+s]}</span>`;
+}
+
+function renderRight(c){
+  const t=T[LANG];
+  const ps=custProjects(c.id).slice(0,4);
+  const lastNote=c.notes[c.notes.length-1];
+  return `
+    <div class="panel">
+      <div class="phead"><h3>${t.p_contacts}</h3><button class="tbtn small" onclick="openAddContact(${c.id})">${t.addcontact}</button></div>
+      ${c.contacts.map(p=>contactCardHtml(p)).join("")||`<div class="empty3">${t.empty_contacts}</div>`}
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.p_recent}</h3><button class="tbtn linklike" onclick="activeTab='projects';renderAll();">${t.viewall}</button></div>
+      ${ps.map(p=>`<div class="projrow"><div class="pn"><b>${p.no}</b><span style="color:var(--steel-400);">${p.name}</span></div>${statusWordHtml(p.status)}</div>`).join("")||`<div class="empty3">${t.empty_projects}</div>`}
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.p_notes}</h3><button class="tbtn small" onclick="openAddNote(${c.id})">${t.addnote}</button></div>
+      ${lastNote?`<div class="notecard"><div class="nd">${lastNote.date} — ${lastNote.text}</div><div class="na">– ${lastNote.author}</div></div>`:`<div class="empty3">${t.empty_notes}</div>`}
+    </div>
+    <div class="panel">
+      <div class="phead"><h3>${t.p_docs}</h3><button class="tbtn small" onclick="openUpload(${c.id})">${t.upload}</button></div>
+      ${c.documents.map(d=>`<div class="docrow2"><div class="dicon ${d.type}">${d.type.toUpperCase()}</div><div class="dn">${d.name}</div><div class="dd">${d.date}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
+    </div>`;
+}
+
+function renderActionBar(c){
+  const t=T[LANG];
+  return `<div class="actionbar">
+    <button onclick="openNewCustomer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>${t.act_newcust}</button>
+    <button onclick="openNewQuote(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5"/><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 13h6M9 17h4"/></svg>${t.act_newquote}</button>
+    <button onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 15h3"/></svg>${t.act_newproj}</button>
+    <button onclick="openNewInvoice(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9 12h6M9 16h6"/></svg>${t.act_newinv}</button>
+    <button onclick="openAddNote(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${t.act_newnote}</button>
+    <button onclick="openUpload(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 16H7a3 3 0 0 1-3-1.1z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></svg>${t.act_upload}</button>
+    <button onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>${t.act_report}</button>
+  </div>`;
+}
+
+function renderAll(){
+  const t=T[LANG];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
+  const c=getCust(selectedId)||CUSTOMERS[0];selectedId=c.id;
+  $("app").innerHTML=`<div class="crmgrid">
+    <div class="col">${renderLeft()}</div>
+    <div class="col">${renderMiddle(c)}</div>
+    <div class="col">${renderRight(c)}</div>
+  </div>${renderActionBar(c)}`;
+  $("search").addEventListener('input',e=>{query=e.target.value;renderAll();});
+  renderTab(c);
+}
+
+function selectCustomer(id){selectedId=id;activeTab='overview';renderAll();}
+function setFilter(f){filterStatus=f;renderAll();}
+
+function closeModal(){$("fov").classList.remove("show");}
+$("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
 
 function openNewCustomer(){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.csub}</p>
     <div class="frow"><label>${t.nc_name}</label><input id="ncName"></div>
-    <div class="frow"><label>${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div>
-    <div class="frow"><label>${t.nc_contact}</label><input id="ncContact"></div>
-    <div class="frow"><label>${t.nc_email}</label><input id="ncEmail" type="email"></div>
+    <div class="frow2"><div><label>${t.nc_city}</label><input id="ncCity"></div><div><label>${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div></div>
+    <div class="frow2"><div><label>${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label>${t.nc_phone}</label><input id="ncPhone"></div></div>
+    <div class="frow"><label>${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
-function closeModal(){$("fov").classList.remove("show");}
 function saveNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;
-  CUSTOMERS.push({id:nextCustId++,name,org:$("ncOrg").value.trim()||"—",contact:$("ncContact").value.trim()||"—",email:$("ncEmail").value.trim()||"—"});
-  closeModal();renderList();
+  CUSTOMERS.push({id:nextCustId++,name,city:$("ncCity").value.trim()||"—",country:"Sweden",status:"active",
+    org:$("ncOrg").value.trim()||"—",email:$("ncEmail").value.trim()||"—",phone:$("ncPhone").value.trim()||"—",
+    website:$("ncWebsite").value.trim()||"—",since:new Date().toISOString().slice(0,10),terms:"30 days",credit:0,currency:"SEK",
+    industry:"—",ctype:"Company",vat:"—",preferred:"Email",pricelist:"Standard Price List",remarks:"",
+    billing:[name,"—","Sweden"],contacts:[],quotes:[],invoices:[],notes:[],documents:[]});
+  closeModal();selectedId=nextCustId-1;renderAll();
 }
-$("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
 
-function render(){
+function openEditCustomer(id){
+  const t=T[LANG];const c=getCust(id);
+  $("fcard").innerHTML=`<h2>${t.nc_edit_title}</h2><p class="fsub">${c.name}</p>
+    <div class="frow"><label>${t.nc_name}</label><input id="ecName" value="${c.name}"></div>
+    <div class="frow2"><div><label>${t.nc_city}</label><input id="ecCity" value="${c.city}"></div>
+      <div><label>${t.nc_status}</label><select id="ecStatus"><option value="active" ${c.status==='active'?'selected':''}>${t.f_active}</option><option value="inactive" ${c.status==='inactive'?'selected':''}>${t.f_inactive}</option></select></div></div>
+    <div class="frow2"><div><label>${t.nc_email}</label><input id="ecEmail" value="${c.email}"></div><div><label>${t.nc_phone}</label><input id="ecPhone" value="${c.phone}"></div></div>
+    <div class="frow"><label>${t.nc_website}</label><input id="ecWebsite" value="${c.website}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditCustomer(${id})">${t.nc_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveEditCustomer(id){
+  const c=getCust(id);
+  c.name=$("ecName").value.trim()||c.name;c.city=$("ecCity").value.trim()||c.city;c.status=$("ecStatus").value;
+  c.email=$("ecEmail").value.trim()||c.email;c.phone=$("ecPhone").value.trim()||c.phone;c.website=$("ecWebsite").value.trim()||c.website;
+  closeModal();renderAll();
+}
+
+function openAddContact(id){
   const t=T[LANG];
-  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
-  if(VIEW==="list"){
-    $("listView").style.display="";$("detailView").style.display="none";
-    $("backLbl").textContent=t.back_hub;$("backBtn").onclick=()=>{location.href="hub-desktop.html";};
-    renderList();
-  }else{
-    $("listView").style.display="none";$("detailView").style.display="";
-    $("backLbl").textContent=t.back_list;$("backBtn").onclick=()=>{VIEW="list";render();};
-    renderDetail();
-  }
+  $("fcard").innerHTML=`<h2>${t.ac_title}</h2><p class="fsub">${getCust(id).name}</p>
+    <div class="frow"><label>${t.ac_name}</label><input id="acName"></div>
+    <div class="frow"><label>${t.ac_role}</label><input id="acRole"></div>
+    <div class="frow2"><div><label>${t.ac_email}</label><input id="acEmail" type="email"></div><div><label>${t.ac_phone}</label><input id="acPhone"></div></div>
+    <div class="frow"><label><input type="checkbox" id="acPrimary" style="width:auto;display:inline-block;margin-right:7px;">${t.ac_primary}</label></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddContact(${id})">${t.ac_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveAddContact(id){
+  const name=$("acName").value.trim();if(!name)return;
+  const c=getCust(id);const primary=$("acPrimary").checked;
+  if(primary)c.contacts.forEach(p=>p.primary=false);
+  c.contacts.push({name,role:$("acRole").value.trim()||"—",primary,email:$("acEmail").value.trim()||"—",phone:$("acPhone").value.trim()||"—"});
+  closeModal();renderAll();
+}
+
+function openAddNote(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.an_title}</h2><p class="fsub">${getCust(id).name}</p>
+    <div class="frow"><label>${t.an_text}</label><textarea id="anText"></textarea></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${t.an_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveAddNote(id){
+  const text=$("anText").value.trim();if(!text)return;
+  getCust(id).notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar",text});
+  closeModal();renderAll();
+}
+
+function openUpload(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${getCust(id).name}</p>
+    <div class="frow"><label>${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUpload(${id})">${t.ud_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveUpload(id){
+  const name=$("udName").value.trim();if(!name)return;
+  const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc';
+  getCust(id).documents.push({name,type,date:new Date().toISOString().slice(0,10)});
+  closeModal();renderAll();
+}
+
+function openNewQuote(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.nq_title}</h2><p class="fsub">${getCust(id).name}</p>
+    <div class="frow"><label>${t.nq_value}</label><input id="nqValue" type="number"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewQuote(${id})">${t.nq_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveNewQuote(id){
+  const value=parseFloat($("nqValue").value)||0;
+  const c=getCust(id);const no="Q-2026-0"+(20+c.quotes.length+1);
+  c.quotes.push({no,date:new Date().toISOString().slice(0,10),value,status:"sent"});
+  closeModal();activeTab='quotes';renderAll();
+}
+function openNewInvoice(id){
+  const t=T[LANG];
+  $("fcard").innerHTML=`<h2>${t.ni_title}</h2><p class="fsub">${getCust(id).name}</p>
+    <div class="frow"><label>${t.ni_value}</label><input id="niValue" type="number"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewInvoice(${id})">${t.ni_save}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveNewInvoice(id){
+  const value=parseFloat($("niValue").value)||0;
+  const c=getCust(id);const no="INV-2026-0"+(40+c.invoices.length+1);
+  c.invoices.push({no,date:new Date().toISOString().slice(0,10),value,status:"pending"});
+  closeModal();activeTab='invoices';renderAll();
 }
 
 function setLang(code){LANG=code;
   document.documentElement.lang=code==="mk"?"mk-Latn":code;
   document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
   const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();
-  render();tick();
+  renderAll();tick();
 }
 document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
 function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
