@@ -5,7 +5,7 @@
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
     --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
-    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;}
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#f5a623;--hold:#e2685f;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
@@ -94,9 +94,15 @@
   .ovcard2 .ostat{font-size:11.5px;margin-bottom:3px;} .ovcard2 .ostat.warn{color:var(--warn);} .ovcard2 .ostat.ok{color:var(--ok);}
   .ovcard2 a{font-size:11.5px;color:var(--spark);text-decoration:none;cursor:pointer;} .ovcard2 a:hover{text-decoration:underline;}
 
+  .ganttctrls{display:flex;align-items:center;gap:9px;flex:none;}
+  .iconbtn{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);cursor:pointer;}
+  .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .gzlbl{font-size:10.5px;color:var(--steel-400);white-space:nowrap;}
+  .gzoomslider{width:90px;accent-color:var(--spark);}
+  .grandrop{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:11.5px;padding:5px 8px;cursor:pointer;}
   .gwrap{overflow-x:auto;}
   .gantthead{display:flex;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px;position:sticky;top:0;}
-  .gcolfixed{flex:none;width:280px;padding-right:10px;}
+  .gcolfixed{flex:none;width:320px;padding-right:10px;}
   .gtimeline{flex:1;position:relative;min-width:640px;}
   .gmonths{display:flex;font-size:10px;color:var(--steel-400);text-transform:uppercase;letter-spacing:.04em;position:relative;height:16px;}
   .gticks{display:flex;font-size:10px;color:var(--steel-400);position:relative;height:16px;font-variant-numeric:tabular-nums;}
@@ -106,17 +112,23 @@
   .grow.grouprow{background:rgba(74,144,255,.05);font-family:'Sora';font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ff;min-height:28px;cursor:default;}
   .grow.taskrow{background:rgba(255,255,255,.015);}
   .grow:hover:not(.grouprow){background:rgba(255,255,255,.025);}
-  .gname{flex:none;width:280px;padding-right:10px;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .gname{flex:none;width:320px;padding-right:10px;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;}
   .gname .chev{width:10px;height:10px;color:var(--steel-400);transition:transform .15s;flex:none;}
   .gname.open .chev{transform:rotate(90deg);}
   .gname b{font-weight:600;} .gname .gsub{color:var(--steel-400);font-size:10.5px;}
   .gname .gpct{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--steel-400);font-size:11px;flex:none;}
+  .gname .gr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+  .gname .gr-date{width:46px;flex:none;color:var(--steel-400);font-size:10.5px;font-variant-numeric:tabular-nums;}
+  .gname .gr-prog{width:34px;flex:none;text-align:right;color:var(--steel-400);font-size:11px;font-variant-numeric:tabular-nums;}
+  .gcolhead{flex:none;width:320px;padding-right:10px;display:flex;align-items:center;gap:6px;}
+  .gcolhead span{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);font-weight:600;}
+  .gcolhead .gch-name{flex:1;} .gcolhead .gch-date{width:46px;flex:none;} .gcolhead .gch-prog{width:34px;flex:none;text-align:right;}
   .gtrack{flex:1;position:relative;height:34px;min-width:640px;}
   .gbar{position:absolute;top:8px;height:18px;border-radius:1px;overflow:hidden;cursor:pointer;}
   .gbar .gfill{position:absolute;inset:0;}
   .gbar .gprog{position:absolute;inset:0 auto 0 0;background:rgba(255,255,255,.28);}
   .gbar.st-idea .gfill{background:var(--idea);} .gbar.st-planned .gfill{background:var(--steel-400);}
-  .gbar.st-active .gfill{background:var(--spark);} .gbar.st-hold .gfill{background:var(--warn);}
+  .gbar.st-active .gfill{background:var(--spark);} .gbar.st-hold .gfill{background:var(--hold);}
   .gbar.st-completed .gfill{background:var(--ok);} .gbar.st-future .gfill{background:rgba(74,212,138,.5);}
   .gmilestone{position:absolute;top:11px;width:11px;height:11px;background:#fff;transform:translateX(-50%) rotate(45deg);border:2px solid var(--navy-950);z-index:2;cursor:pointer;}
   .gmilestone.done{background:var(--ok);} .gmilestone.pending{background:var(--warn);}
@@ -181,6 +193,7 @@
   .dayevents{display:flex;flex-direction:column;gap:8px;}
   .evrow{display:flex;gap:9px;padding:9px;border:1px solid var(--line);background:rgba(255,255,255,.02);}
   .evrow .edot{width:8px;height:8px;flex:none;margin-top:4px;border-radius:2px;}
+  .evrow .msdiamond{width:9px;height:9px;flex:none;margin:5px 1px 0;transform:rotate(45deg);border:2px solid var(--navy-950);}
   .evrow b{font-size:12.5px;display:block;} .evrow span{font-size:11px;color:var(--steel-400);}
 
   .zoomtabs{display:flex;gap:4px;}
@@ -443,7 +456,8 @@ const T={
     ov_existing_desc:"Active projects in production and ongoing work.",
     ov_future_desc:"Projects planned for the future.",
     open_ideas:"Open ideas",open_projects:"Open projects",open_future:"Open future projects",
-    gantt_title:"Gantt Chart — All Projects",
+    gantt_title:"Gantt Chart — All Projects",gc_project:"Project / Task",gc_start:"Start",gc_end:"End",gc_progress:"Progress",
+    zoomlbl:"Zoom",gran_day:"Day",gran_week:"Week",gran_month:"Month",
     pipeline:"New Ideas Pipeline",addidea:"+ Add Idea",viewall:"View All",
     th_idea:"Idea",th_stage:"Stage",th_score:"Score",th_next:"Next Step",
     upcoming_milestones:"Upcoming Milestones",task_overview:"Task Overview",totalhours:"Total Hours",
@@ -487,7 +501,8 @@ const T={
     ov_existing_desc:"Aktiva projekt i produktion och pågående arbete.",
     ov_future_desc:"Projekt planerade för framtiden.",
     open_ideas:"Öppna idéer",open_projects:"Öppna projekt",open_future:"Öppna framtida projekt",
-    gantt_title:"Gantt-schema — Alla projekt",
+    gantt_title:"Gantt-schema — Alla projekt",gc_project:"Projekt / Uppgift",gc_start:"Start",gc_end:"Slut",gc_progress:"Framsteg",
+    zoomlbl:"Zoom",gran_day:"Dag",gran_week:"Vecka",gran_month:"Månad",
     pipeline:"Idépipeline",addidea:"+ Lägg till idé",viewall:"Visa alla",
     th_idea:"Idé",th_stage:"Steg",th_score:"Poäng",th_next:"Nästa steg",
     upcoming_milestones:"Kommande milstolpar",task_overview:"Uppgiftsöversikt",totalhours:"Totalt timmar",
@@ -531,7 +546,8 @@ const T={
     ov_existing_desc:"Aktivni proekti vo proizvodstvo i tekovna rabota.",
     ov_future_desc:"Proekti planirani za idnina.",
     open_ideas:"Otvori idei",open_projects:"Otvori proekti",open_future:"Otvori idni proekti",
-    gantt_title:"Gant dijagram — Site proekti",
+    gantt_title:"Gant dijagram — Site proekti",gc_project:"Proekt / Zadača",gc_start:"Početok",gc_end:"Kraj",gc_progress:"Napredok",
+    zoomlbl:"Zum",gran_day:"Den",gran_week:"Nedela",gran_month:"Mesec",
     pipeline:"Pipeline na idei",addidea:"+ Dodaj ideja",viewall:"Vidi gi site",
     th_idea:"Ideja",th_stage:"Faza",th_score:"Ocenka",th_next:"Sleden čekor",
     upcoming_milestones:"Idni prekretnici",task_overview:"Pregled na zadači",totalhours:"Vkupno časovi",
@@ -587,6 +603,13 @@ function renderHeader(){
       <div><h1>${t.ptitle}</h1><p>${t.psub}</p></div></div>
     <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${t[l]}</button>`).join("")}</div>
     <div class="hcontrols">
+      <button class="tbtn small" onclick="gToday()">${t.today}</button>
+      <div class="daterange">
+        <button onclick="gShiftRange(-2)" aria-label="Earlier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span>${fmtShort(gRangeStart)} – ${fmtShort(gRangeEnd)}</span>
+        <button onclick="gShiftRange(2)" aria-label="Later"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--steel-400);"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+      </div>
       ${activeTab!=='overview'?`<button class="tbtn small" onclick="setFilterOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>${t.filter}</button>`:''}
       <button class="tbtn primary small" onclick="openNewForContext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.new}</button>
     </div>
@@ -627,7 +650,7 @@ function renderLeft(){
         <div class="lrow"><span class="ldot" style="background:var(--idea);"></span>${t.leg_idea}</div>
         <div class="lrow"><span class="ldot" style="background:var(--steel-400);"></span>${t.leg_planned}</div>
         <div class="lrow"><span class="ldot" style="background:var(--spark);"></span>${t.leg_inprogress}</div>
-        <div class="lrow"><span class="ldot" style="background:var(--warn);"></span>${t.leg_hold}</div>
+        <div class="lrow"><span class="ldot" style="background:var(--hold);"></span>${t.leg_hold}</div>
         <div class="lrow"><span class="ldot" style="background:var(--ok);"></span>${t.leg_completed}</div>
         <div class="lrow"><span class="ldot" style="background:var(--danger);"></span>${t.leg_overdue}</div>
       </div>
@@ -654,11 +677,14 @@ function openNewForContext(){
   if(activeSub==='future')openNewFuture();else openNewIdea();
 }
 
-let gRangeStart=d("2026-08-18"),gRangeEnd=d("2026-12-12");
+let gRangeStart=d("2026-08-18"),gRangeEnd=d("2026-12-12"),ganttTickDays=7;
 function gShiftRange(weeks){gRangeStart=addDays(gRangeStart,weeks*7);gRangeEnd=addDays(gRangeEnd,weeks*7);renderAll();}
 function gToday(){gRangeStart=d("2026-08-18");gRangeEnd=d("2026-12-12");renderAll();}
+function gSetGranularity(v){ganttTickDays=parseInt(v);renderAll();}
+function gSetZoomSpan(days){const mid=new Date((gRangeStart.getTime()+gRangeEnd.getTime())/2);gRangeStart=addDays(mid,-days/2);gRangeEnd=addDays(mid,days/2);renderAll();}
 
-function ganttHeaderHtml(rangeStart,rangeEnd){
+function ganttHeaderHtml(rangeStart,rangeEnd,showColHead){
+  const t=T[LANG];
   const totalDays=daysBetween(rangeStart,rangeEnd);
   const months=[];let cur=new Date(rangeStart.getFullYear(),rangeStart.getMonth(),1);
   while(cur<rangeEnd){const next=new Date(cur.getFullYear(),cur.getMonth()+1,1);
@@ -666,12 +692,33 @@ function ganttHeaderHtml(rangeStart,rangeEnd){
     const left=daysBetween(rangeStart,segStart)/totalDays*100;
     months.push({label:cur.toLocaleDateString('en-GB',{month:'short',year:'numeric'}),left});
     cur=next;}
+  const tickStep=ganttTickDays;
   const ticks=[];let td=new Date(rangeStart);
-  while(td<rangeEnd){ticks.push({label:td.getDate(),left:daysBetween(rangeStart,td)/totalDays*100});td=addDays(td,7);}
-  return `<div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline">
+  while(td<rangeEnd){ticks.push({label:td.getDate(),left:daysBetween(rangeStart,td)/totalDays*100});td=addDays(td,tickStep);}
+  const colhead=showColHead?`<div class="gcolhead"><span class="gch-name">${t.gc_project}</span><span class="gch-date">${t.gc_start}</span><span class="gch-date">${t.gc_end}</span><span class="gch-prog">${t.gc_progress}</span></div>`:`<div class="gcolfixed"></div>`;
+  return `<div class="gantthead">${colhead}<div class="gtimeline">
     <div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div>
     <div class="gticks">${ticks.map(tk=>`<span class="gtick" style="left:${tk.left}%">${tk.label}</span>`).join("")}</div>
   </div></div>`;
+}
+function ganttPanelHead(title){
+  const t=T[LANG];
+  return `<div class="phead"><h3>${title}</h3>
+    <div class="ganttctrls">
+      <span class="gzlbl">${t.zoomlbl}</span>
+      <input type="range" min="30" max="365" value="${daysBetween(gRangeStart,gRangeEnd)}" class="gzoomslider" oninput="gSetZoomSpan(parseInt(this.value))">
+      <select class="grandrop" onchange="gSetGranularity(this.value)">
+        <option value="1" ${ganttTickDays===1?'selected':''}>${t.gran_day}</option>
+        <option value="7" ${ganttTickDays===7?'selected':''}>${t.gran_week}</option>
+        <option value="30" ${ganttTickDays===30?'selected':''}>${t.gran_month}</option>
+      </select>
+      <button class="iconbtn" onclick="setTab('gantt')" aria-label="Expand" title="Open full Gantt Chart tab"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+      <button class="iconbtn" onclick="setFilterOpen()" aria-label="More options" title="${t.filter}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+    </div>
+  </div>`;
+}
+function ganttRowLabel(name,start,end,progress){
+  return `<span class="gr-name">${name}</span><span class="gr-date">${fmtShort(start)}</span><span class="gr-date">${fmtShort(end)}</span><span class="gr-prog">${progress===null?'—':progress+'%'}</span>`;
 }
 
 function ganttBarHtml(rangeStart,rangeEnd,start,end,status,progress,milestones,extraRight){
@@ -695,7 +742,7 @@ function renderGanttChart(compact){
     rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_ideas.toUpperCase()}</div></div>`);
     IDEAS.slice(0,compact?3:IDEAS.length).forEach(idea=>{
       const start=d(idea.targetDate?addDaysISO(idea.targetDate,-30):"2026-08-01");const end=d(idea.targetDate);
-      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();"><b>${idea.name}</b></div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
+      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();">${ganttRowLabel(idea.name,start,end,null)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
     });
   }
   if(ganttFilter.existing&&activeProjects().length){
@@ -706,7 +753,7 @@ function renderGanttChart(compact){
       const status=p.phase==='completed'?'completed':(p.phase==='production'&&p.problems.length?'hold':(p.progress>0?'active':'planned'));
       rows.push(`<div class="grow taskrow"><div class="gname ${open?'open':''}" onclick="toggleExpand('${p.no}')">
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg>
-        <b>${p.name}</b><span class="gpct">${p.progress}%</span></div>${ganttBarHtml(gRangeStart,gRangeEnd,span.start,span.end,status,p.progress,p.milestones)}</div>`);
+        ${ganttRowLabel(p.name,span.start,span.end,p.progress)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,span.start,span.end,status,p.progress,p.milestones)}</div>`);
       if(open){
         const sched=scheduleProject(p);
         p.tasks.forEach(tk=>{
@@ -722,15 +769,15 @@ function renderGanttChart(compact){
   if(ganttFilter.future&&FUTURE.length){
     rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;">${t.sub_future.toUpperCase()}</div></div>`);
     FUTURE.forEach(f=>{
-      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('future');selectedFutureId=${f.id};renderAll();"><b>${f.name}</b></div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
+      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('future');selectedFutureId=${f.id};renderAll();">${ganttRowLabel(f.name,d(f.expectedStart),d(f.expectedFinish),0)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
     });
   }
-  return `<div class="gwrap">${ganttHeaderHtml(gRangeStart,gRangeEnd)}<div>${rows.join("")}</div></div>
+  return `<div class="gwrap">${ganttHeaderHtml(gRangeStart,gRangeEnd,true)}<div>${rows.join("")}</div></div>
     <div class="glegend">
       <div class="lg"><span class="ldot" style="background:var(--idea);"></span>${t.leg_idea}</div>
       <div class="lg"><span class="ldot" style="background:var(--steel-400);"></span>${t.leg_planned}</div>
       <div class="lg"><span class="ldot" style="background:var(--spark);"></span>${t.leg_inprogress}</div>
-      <div class="lg"><span class="ldot" style="background:var(--warn);"></span>${t.leg_hold}</div>
+      <div class="lg"><span class="ldot" style="background:var(--hold);"></span>${t.leg_hold}</div>
       <div class="lg"><span class="ldot" style="background:var(--ok);"></span>${t.leg_completed}</div>
       <div class="lg"><span style="width:9px;height:9px;background:#fff;transform:rotate(45deg);display:inline-block;"></span>Milestone</div>
     </div>`;
@@ -772,7 +819,7 @@ function renderBottomRow(){
   const allMilestones=[];
   activeProjects().forEach(p=>p.milestones.forEach(m=>allMilestones.push({...m,proj:p.name})));
   allMilestones.sort((a,b)=>a.date.localeCompare(b.date));
-  const msHtml=allMilestones.slice(0,4).map(m=>`<div class="evrow"><span class="edot" style="background:${m.done?'var(--ok)':'var(--warn)'};"></span>
+  const msHtml=allMilestones.slice(0,4).map(m=>`<div class="evrow"><span class="msdiamond" style="background:${m.done?'var(--ok)':'var(--warn)'};"></span>
     <div><b>${fmtShort(d(m.date))} — ${m.name}</b><span>${m.proj}</span></div></div>`).join("")||`<div class="empty3">—</div>`;
 
   const totalH=projStats().plannedHours;
@@ -830,7 +877,7 @@ function renderOverviewTab(){
   const t=T[LANG];
   return `${renderOverviewCards()}
     <div class="maingrid" style="grid-template-columns:1fr 320px;margin-bottom:16px;">
-      <div class="panel"><div class="phead"><h3>${t.gantt_title}</h3></div>${renderGanttChart(true)}</div>
+      <div class="panel">${ganttPanelHead(t.gantt_title)}${renderGanttChart(true)}</div>
       ${renderCalendarWidget()}
     </div>
     ${renderBottomRow()}
@@ -930,7 +977,7 @@ function renderWorkloadTab(){
 
 function renderGanttTab(){
   const t=T[LANG];
-  return `<div class="panel"><div class="phead"><h3>${t.gantt_title}</h3></div>${renderGanttChart(false)}</div>`;
+  return `<div class="panel">${ganttPanelHead(t.gantt_title)}${renderGanttChart(false)}</div>`;
 }
 
 function stagePillsRow(idea){
