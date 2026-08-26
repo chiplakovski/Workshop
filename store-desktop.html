@@ -17,7 +17,7 @@
 .panel,.forms>*{min-width:0}.fields{grid-template-columns:repeat(3,minmax(0,1fr))}.field,.field input,.field select{min-width:0}.actions{flex-wrap:wrap}
 </style>
 </head>
-<body><div class="app">
+<body><style>.top .clock,.sidebar .user{display:none!important}</style><div class="app">
 <aside class="sidebar"><div class="brand"><div class="cube">◇</div><div><h1>STORE</h1><p data-i="subtitle">Inventory & parts</p></div></div>
 <nav class="nav" id="nav"><button class="on" data-view="inventory"><i>▣</i><span data-i="overview">Inventory Overview</span></button><button data-view="receiving"><i>⇩</i><span data-i="receiving">Receiving Materials</span></button><button data-view="issuing"><i>⇧</i><span data-i="issue">Issue to Project</span></button><button data-view="reservations"><i>⌁</i><span data-i="reservations">Reservations / Allocations</span></button><button data-view="movements"><i>◇</i><span data-i="movements">Stock Movements</span></button><button data-view="locations"><i>▤</i><span data-i="locations">Locations & Bins</span></button><button data-view="reorder"><i>!</i><span data-i="lowstock">Low Stock / Reorder</span></button><button data-view="stockcount"><i>✓</i><span>Stock Count</span></button><button data-view="scanhistory"><i>⌗</i><span data-i="scan">Scan History</span></button><button data-view="traceability"><i>◫</i><span>Certificates / Traceability</span></button><button data-view="offcuts"><i>◩</i><span>Offcuts / Remnants</span></button></nav>
 <div class="sidebox"><h4 data-i="quick">Quick search</h4><input id="sideSearch" data-i-ph="search" placeholder="Search items, code, barcode..."></div>
