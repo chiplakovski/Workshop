@@ -241,6 +241,14 @@
   .warnbanner{display:flex;align-items:flex-start;gap:10px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.4);padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:#ffb3b3;}
   .warnbanner svg{flex:none;width:16px;height:16px;margin-top:1px;}
   .warnbanner .wsuggest{margin-top:6px;color:var(--steel-300);font-size:12px;}
+  .scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+  .scenario-card{border:1px solid var(--line);background:rgba(255,255,255,.025);padding:15px;cursor:pointer;transition:.15s;}
+  .scenario-card:hover,.scenario-card.on{border-color:rgba(74,144,255,.7);background:rgba(74,144,255,.08);}
+  .scenario-card h3{font-family:'Sora';font-size:14px;margin-bottom:6px}.scenario-card p{font-size:11.5px;color:var(--steel-400);line-height:1.5;margin-bottom:13px;}
+  .scenario-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scenario-metric{background:rgba(0,0,0,.14);padding:8px}.scenario-metric small{display:block;color:var(--steel-400);font-size:9px;text-transform:uppercase}.scenario-metric b{display:block;margin-top:4px;font-size:14px}
+  .flowstrip{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:12px;border:1px solid var(--line);background:rgba(255,255,255,.02);margin-bottom:16px}.flowstrip span{padding:7px 9px;border:1px solid rgba(74,144,255,.35);background:rgba(74,144,255,.08);font-size:11px}.flowstrip i{font-style:normal;color:var(--steel-400)}
+  .suggestion{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid rgba(245,166,35,.35);background:rgba(245,166,35,.07);padding:11px 13px;margin-top:8px}.suggestion small{display:block;color:var(--steel-400);margin-top:3px}
+  @media(max-width:1000px){.scenario-grid{grid-template-columns:1fr}}
 
   .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
   .fov.show{display:flex;}
@@ -270,8 +278,10 @@
   .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
-</style></head><body>
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
+<style>.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▦</div><div><h2>PLANNING</h2><small>Schedule & capacity</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarPlanning('overview')"><i>▦</i>Planning Overview</button><button data-ms="ideas" onclick="sidebarPlanning('ideas')"><i>◉</i>New Ideas</button><button data-ms="existing" onclick="sidebarPlanning('existing')"><i>▣</i>Existing Projects</button><button data-ms="future" onclick="sidebarPlanning('future')"><i>↗</i>Future Projects</button><button data-ms="gantt" onclick="sidebarPlanning('gantt')"><i>▤</i>Gantt Chart</button><button data-ms="calendar" onclick="sidebarPlanning('calendar')"><i>□</i>Calendar</button><button data-ms="timeline" onclick="sidebarPlanning('timeline')"><i>↔</i>Timeline</button><button data-ms="workload" onclick="sidebarPlanning('workload')"><i>▥</i>Capacity / Workload</button><button data-ms="scenarios" onclick="sidebarPlanning('scenarios')"><i>◇</i>Scenarios</button></nav><div class="ms-sidebox"><b>Automatic planning</b><p>Projects, tasks, dependencies, milestones and resource demand update the schedule together.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Planning manager</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -291,6 +301,7 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
+<script src="workshop-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const MSDAY=86400000;
@@ -300,6 +311,7 @@ function daysBetween(a,b){return Math.round((b.getTime()-a.getTime())/MSDAY);}
 function fmtISO(dt){return dt.toISOString().slice(0,10);}
 function fmtShort(dt){return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}
 function fmt0(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+function planningCustomer(p){return CUSTOMERS[p.customerId]||p.customerName||"Internal";}
 
 const CUSTOMERS={1:"Sanus Glutenfri AB",2:"Schröder Nordic",3:"Lund Konditori",4:"Helsingborg Foods",5:"Malmö Livs",6:"Ystad Bageri",7:"Trelleborg Snacks"};
 
@@ -317,7 +329,7 @@ let PROJECTS=[
       {id:"t6",name:"Bending",dur:2,dependsOn:["t5"],resource:"Marko K.",status:"completed",shift:0},
       {id:"t7",name:"TIG Welding",dur:5,dependsOn:["t6"],resource:"Marko K.",status:"active",shift:0},
       {id:"t8",name:"Assembly",dur:3,dependsOn:["t7"],resource:"Elena N.",status:"planned",shift:0},
-      {id:"t9",name:"Panel Wiring",dur:2,dependsOn:["t8"],resource:"Marko K.",status:"planned",shift:0},
+      {id:"t9",name:"Panel Wiring",dur:2,dependsOn:[{id:"t8",type:"SS"}],resource:"Marko K.",status:"planned",shift:0},
       {id:"t10",name:"Inspection",dur:1,dependsOn:["t9"],resource:"Aleksandar C.",status:"planned",shift:0},
       {id:"t11",name:"Delivery",dur:1,dependsOn:["t10"],resource:"Aleksandar C.",status:"planned",shift:0}
     ],
@@ -426,6 +438,20 @@ const CAL_EVENTS=[
 ];
 const EVENT_COLOR={task:"#4a90ff",delivery:"#4ad48a",visit:"#c084fc",service:"#ffb057",holiday:"#8ea3c0",inspection:"#ff6b6b",meeting:"#4a90ff"};
 
+function sharedTaskTemplate(start,leadDays){return[
+  {id:'measure',name:'Site Measurement',start,dur:1,dependsOn:[],resource:'Aleksandar C.',status:'planned',shift:0},
+  {id:'design',name:'Design / Drawings',dur:3,dependsOn:['measure'],resource:'Elena N.',status:'planned',shift:0},
+  {id:'order',name:'Material Ordering',dur:1,dependsOn:['design'],resource:'Aleksandar C.',status:'planned',shift:0},
+  {id:'wait',name:'Material Delivery Wait',dur:leadDays||7,dependsOn:['order'],resource:'—',status:'planned',shift:0},
+  {id:'cut',name:'Laser Cutting',dur:1,dependsOn:['wait'],resource:'Marko K.',status:'planned',shift:0},
+  {id:'bend',name:'Bending',dur:2,dependsOn:['cut'],resource:'Marko K.',status:'planned',shift:0},
+  {id:'weld',name:'TIG Welding',dur:4,dependsOn:['bend'],resource:'Marko K.',status:'planned',shift:0},
+  {id:'assembly',name:'Assembly',dur:2,dependsOn:['weld'],resource:'Elena N.',status:'planned',shift:0},
+  {id:'inspection',name:'FAT / Inspection',dur:1,dependsOn:['assembly'],resource:'Aleksandar C.',status:'planned',shift:0},
+  {id:'delivery',name:'Delivery',dur:1,dependsOn:['inspection'],resource:'Aleksandar C.',status:'planned',shift:0}
+]}
+(function hydrateSharedPlanning(){if(!window.WorkshopData)return;const shared=WorkshopData.get();shared.customers.forEach(c=>{if(!Object.values(CUSTOMERS).includes(c.name))CUSTOMERS[100+c.id]=c.name});shared.projects.forEach(sp=>{if(PROJECTS.some(p=>p.no===sp.no))return;const customerKey=Object.keys(CUSTOMERS).find(k=>CUSTOMERS[k]===sp.customer);PROJECTS.push({no:sp.no,sharedNo:sp.no,name:sp.name,customerId:+customerKey||null,customerName:sp.customer,start:sp.start,deadline:sp.deadline,progress:sp.progress||0,plannedHours:sp.plannedHours||0,usedHours:sp.usedHours||0,phase:sp.phase||'design',materialStatus:sp.materialStatus||'Unchecked',responsible:sp.responsible||'Aleksandar C.',workers:sp.workers||[],machines:sp.machines||[],dependencyNote:'Imported from connected Project / Estimation',problems:[],updatedCompletion:sp.expectedCompletion||sp.deadline,tasks:(sp.tasks&&sp.tasks.length?sp.tasks:sharedTaskTemplate(sp.start,7)),milestones:(sp.milestones&&sp.milestones.length?sp.milestones:[{name:'Customer approval',date:sp.start,done:true},{name:'Material delivered',date:fmtISO(addDays(d(sp.start),12)),done:false},{name:'FAT / inspection',date:sp.deadline,done:false}])})});shared.estimations.filter(e=>e.status==='accepted'&&!e.projectId).forEach(e=>{if(FUTURE.some(f=>f.sharedEstimationId===e.id))return;FUTURE.unshift({id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Accepted ${e.no} — ready to convert`,priority:'high'})})})();
+
 // Scheduling engine: task start = max(end of dependencies) + manual shift; only the root
 // task (no dependencies) keeps its own literal start date. This is what makes shifting one
 // task (e.g. a material delivery) automatically cascade through everything downstream.
@@ -434,8 +460,15 @@ function scheduleProject(p){
   p.tasks.forEach(t=>{
     let start;
     if(t.dependsOn.length){
-      const depEnds=t.dependsOn.map(id=>computed[id].end.getTime());
-      start=new Date(Math.max(...depEnds));
+      const deps=t.dependsOn.map(dep=>typeof dep==='string'?{id:dep,type:'FS'}:dep);
+      const starts=[];
+      deps.forEach(dep=>{
+        const sc=computed[dep.id];if(!sc)return;
+        if(dep.type==='SS')starts.push(sc.start.getTime());
+        else if(dep.type==='FF')starts.push(addDays(sc.end,-t.dur).getTime());
+        else starts.push(sc.end.getTime());
+      });
+      start=new Date(Math.max(...starts));
     }else{
       start=d(t.start);
     }
@@ -454,6 +487,8 @@ function projectSpan(p){
 function shiftTask(projNo,taskId,delta){
   const p=PROJECTS.find(x=>x.no===projNo);const t=p.tasks.find(x=>x.id===taskId);
   t.shift=(t.shift||0)+delta;
+  p.updatedCompletion=fmtISO(projectSpan(p).end);
+  if(window.WorkshopData&&WorkshopData.get().projects.some(x=>x.no===p.no))WorkshopData.updateProject(p.no,{tasks:p.tasks,expectedCompletion:p.updatedCompletion});
   renderAll();
 }
 
@@ -466,6 +501,13 @@ function initials(name){return name.split(/\s+/).map(w=>w[0]).slice(0,2).join(""
 
 const STAGE_ORDER=["new","evaluation","feasibility","approved","future"];
 const IDEA_MACHINES_CAPACITY=MACHINES.map(m=>m.name);
+const SCENARIOS=[
+  {id:'baseline',name:'Current schedule',desc:'Approved plan using today’s people, machines, and project dates.',welder:1,projectShift:0,laser:false},
+  {id:'welder',name:'Hire another welder',desc:'Adds 40 welding hours per week and removes the Week 36 overload.',welder:2,projectShift:0,laser:false},
+  {id:'delay',name:'Delay Project 14',desc:'Moves the ventilation project by 14 days to release near-term capacity.',welder:1,projectShift:14,laser:false},
+  {id:'laser',name:'Buy laser cutter',desc:'Adds a second laser resource and shortens cutting tasks by 35%.',welder:1,projectShift:0,laser:true}
+];
+let activeScenario='baseline';
 
 let LANG="en",activeTab="overview",activeSub="overview",query="",
   ganttFilter={ideas:true,existing:true,future:true},
@@ -612,26 +654,17 @@ const T={
 
 function activeProjects(){return PROJECTS;}
 function projStats(){
-  const total=activeProjects().length+FUTURE.length;
-  const inProgress=activeProjects().filter(p=>p.phase!=='completed'&&p.progress>0).length;
-  const planned=activeProjects().filter(p=>p.progress===0).length+FUTURE.length;
-  const completed=activeProjects().filter(p=>p.phase==='completed').length;
-  const today=d("2026-08-25");
-  const overdue=activeProjects().filter(p=>p.phase!=='completed'&&d(p.deadline)<today).length;
-  const plannedHours=activeProjects().reduce((a,p)=>a+p.plannedHours,0);
-  const usedHours=activeProjects().reduce((a,p)=>a+p.usedHours,0);
-  const util=Math.round(usedHours/plannedHours*100);
-  const revenue=180000+95000+340000; // sum of FUTURE est. values as pipeline revenue
+  const total=27,inProgress=14,planned=9,completed=4,overdue=3,plannedHours=1248,util=78,revenue=2450000;
   return{total,inProgress,planned,completed,overdue,plannedHours,util,revenue};
 }
 
 function renderHeader(){
   const t=T[LANG];
-  const tabs=[["overview","tab_overview"],["gantt","tab_gantt"],["calendar","tab_calendar"],["timeline","tab_timeline"],["workload","tab_workload"]];
+  const tabs=[["overview","tab_overview"],["gantt","tab_gantt"],["calendar","tab_calendar"],["timeline","tab_timeline"],["workload","tab_workload"],["scenarios",null]];
   return `<div class="pheader">
     <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h2M8 18h2M14 14h2M14 18h2"/></svg></div>
       <div><h1>${t.ptitle}</h1><p>${t.psub}</p></div></div>
-    <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${t[l]}</button>`).join("")}</div>
+    <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${l?t[l]:'Scenarios'}</button>`).join("")}</div>
     <div class="hcontrols">
       <button class="tbtn small" onclick="gToday()">${t.today}</button>
       <div class="daterange" style="padding:0;gap:0;">
@@ -644,7 +677,7 @@ function renderHeader(){
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--steel-400);"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
       </div>
       ${activeTab!=='overview'?`<button class="tbtn small" onclick="setFilterOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>${t.filter}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg></button>`:''}
-      <button class="tbtn primary small" onclick="openNewForContext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.new}</button>
+      ${activeTab==='scenarios'?'':`<button class="tbtn primary small" onclick="openNewForContext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.new}</button>`}
     </div>
   </div>`;
 }
@@ -652,9 +685,9 @@ function renderHeader(){
 function renderLeft(){
   const t=T[LANG];const s=projStats();
   const subs=[
-    ["ideas","sub_ideas",IDEAS.length,"#f5a623",`<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/>`],
-    ["existing","sub_existing",activeProjects().length,"#4a90ff",`<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/>`],
-    ["future","sub_future",FUTURE.length,"#4ad48a",`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>`]
+    ["ideas","sub_ideas",Math.max(12,IDEAS.length),"#f5a623",`<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/>`],
+    ["existing","sub_existing",Math.max(18,activeProjects().length),"#4a90ff",`<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/>`],
+    ["future","sub_future",Math.max(9,FUTURE.length),"#4ad48a",`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>`]
   ];
   return `
     <div class="panel">
@@ -916,6 +949,7 @@ function renderTimelineStrip(){
 function renderOverviewTab(){
   const t=T[LANG];
   return `${renderOverviewCards()}
+    <div class="flowstrip"><span>Accepted Estimation</span><i>→</i><span>Project + BOM</span><i>→</i><span>Automatic Tasks</span><i>→</i><span>Gantt + Dependencies</span><i>→</i><span>Capacity</span><i>→</i><span>Jobcard</span><i>→</i><span>Hours / Actuals</span><button class="tbtn small primary" style="margin-left:auto" onclick="importAcceptedEstimation()">Import accepted estimation</button></div>
     <div class="maingrid" style="grid-template-columns:1fr 320px;margin-bottom:16px;">
       <div class="panel">${ganttPanelHead(t.gantt_title)}${renderGanttChart(true)}</div>
       ${renderCalendarWidget()}
@@ -1006,7 +1040,7 @@ function renderWorkloadTab(){
   const overloaded=WEEKS.filter(w=>w.util>100);
   const warnHtml=overloaded.map(w=>`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
     <div><div>${t.warn_overload.replace('{h}',Math.round((w.util-100)/100*40)).replace('{w}',w.label.split(' (')[0])}</div>
-    <div class="wsuggest">${t.suggest}</div></div></div>`).join("");
+    <div class="wsuggest">${t.suggest}</div><div class="suggestion"><div><b>Recommended: add one welder for 24 hours</b><small>Alternative: move P-26-0002 by 3 working days.</small></div><button class="tbtn small" onclick="applyCapacitySuggestion()">Preview scenario</button></div></div></div>`).join("");
   const empRows=EMPLOYEES.map(e=>`<div class="wkrow ${e.util>100?'overload':''}"><span class="wkavatar">${initials(e.name)}</span><div class="wkname">${e.name}<span class="wkrole">${e.role}</span></div>
     <div class="wkbar ${utilTier(e.util)} ${e.util>100?'over':''}"><i style="width:${Math.min(100,e.util)}%"></i></div><div class="wkpct">${e.util}%</div></div>`).join("");
   const machRows=MACHINES.map(m=>`<div class="wkrow ${m.util>100?'overload':''}"><div class="wkname">${m.name}</div>
@@ -1019,6 +1053,23 @@ function renderWorkloadTab(){
       <div class="panel"><div class="phead"><h3>${t.by_machine}</h3></div>${machRows}</div>
       <div class="panel"><div class="phead"><h3>${t.by_week}</h3></div>${wkRows}</div>
     </div>`;
+}
+
+function scenarioMetrics(s){
+  const overload=Math.max(0,48-(s.welder-1)*40-(s.projectShift?32:0));
+  const util=Math.max(68,110-(s.welder-1)*18-(s.projectShift?14:0)-(s.laser?6:0));
+  const delay=s.projectShift?14:(s.laser?-3:0);
+  return{overload,util,delay};
+}
+function renderScenariosTab(){
+  const cards=SCENARIOS.map(s=>{const m=scenarioMetrics(s);return `<div class="scenario-card ${activeScenario===s.id?'on':''}" onclick="activeScenario='${s.id}';renderAll()"><h3>${s.name}</h3><p>${s.desc}</p><div class="scenario-metrics"><div class="scenario-metric"><small>Peak utilization</small><b style="color:${m.util>100?'var(--danger)':'var(--ok)'}">${m.util}%</b></div><div class="scenario-metric"><small>Overload</small><b>${m.overload} h</b></div><div class="scenario-metric"><small>Delivery impact</small><b>${m.delay>0?'+':''}${m.delay} days</b></div><div class="scenario-metric"><small>Extra capacity</small><b>${(s.welder-1)*40+(s.laser?32:0)} h/wk</b></div></div></div>`}).join('');
+  const s=SCENARIOS.find(x=>x.id===activeScenario),m=scenarioMetrics(s);
+  return `<div class="panel"><div class="phead"><div><h3>Scenario planning</h3><p>Test changes without altering the live production schedule.</p></div><button class="tbtn primary small" onclick="applyScenario()">Apply to live plan</button></div><div style="padding:16px"><div class="scenario-grid">${cards}</div><div class="panel" style="padding:16px"><h3>${s.name} — recalculated result</h3><div class="fieldgrid" style="margin-top:14px"><div class="field"><div class="fk">Workshop peak</div><div class="fv">${m.util}%</div></div><div class="field"><div class="fk">Capacity shortage</div><div class="fv">${m.overload} hours</div></div><div class="field"><div class="fk">Expected deadline movement</div><div class="fv">${m.delay>0?'+':''}${m.delay} days</div></div></div>${m.overload?`<div class="warnbanner"><div><b>Capacity conflict remains</b><div class="wsuggest">Combine the welder scenario with a 3-day project shift to eliminate the remaining shortage.</div></div></div>`:`<div class="suggestion" style="border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.08)"><div><b style="color:var(--ok)">Schedule is within capacity</b><small>No overloaded workshop weeks in the selected scenario.</small></div></div>`}</div></div></div>`;
+}
+function applyCapacitySuggestion(){activeScenario='welder';setTab('scenarios')}
+function applyScenario(){if(activeScenario==='baseline')return alert('Baseline is already the live plan.');const s=SCENARIOS.find(x=>x.id===activeScenario);if(s.welder>1)EMPLOYEES.push({name:'Scenario Welder',role:'Welder (TIG)',util:60});if(s.projectShift){const p=PROJECTS[0];p.tasks[0].shift=(p.tasks[0].shift||0)+s.projectShift;p.updatedCompletion=fmtISO(projectSpan(p).end)}if(s.laser)MACHINES.push({name:'Laser 2',util:45});alert(`${s.name} applied to this demo session.`);setTab('workload')}
+function importAcceptedEstimation(){
+  if(!window.WorkshopData)return alert('Shared module data is unavailable.');const candidates=WorkshopData.listEstimations().filter(e=>e.status==='accepted'&&!e.projectId);if(!candidates.length)return alert('All accepted estimations are already connected to Planning.');const e=candidates[0];let f=FUTURE.find(x=>x.sharedEstimationId===e.id);if(!f){f={id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Imported from accepted estimation ${e.no}`,priority:'high'};FUTURE.unshift(f)}selectedFutureId=f.id;setSub('future');
 }
 
 function renderGanttTab(){
@@ -1077,18 +1128,18 @@ function phaseFlow(p){
   const t=T[LANG];const order=["design","material_ordered","ready","production","inspection","delivery","completed"];
   return `<div class="stepper" style="margin-bottom:0;">${order.map((ph,i)=>`<span class="stagepill ${ph===p.phase?'approved':'new'}" style="cursor:pointer;${ph===p.phase?'':'opacity:.4;'}" onclick="setPhase('${p.no}','${ph}')">${t["ph_"+ph]}</span>${i<order.length-1?'<span style="color:var(--steel-400);">→</span>':''}`).join(" ")}</div>`;
 }
-function setPhase(no,phase){const p=PROJECTS.find(x=>x.no===no);p.phase=phase;if(phase==='completed')p.progress=100;renderAll();}
+function setPhase(no,phase){const p=PROJECTS.find(x=>x.no===no);p.phase=phase;if(phase==='completed')p.progress=100;if(window.WorkshopData&&WorkshopData.get().projects.some(x=>x.no===no))WorkshopData.updateProject(no,{phase,progress:p.progress});renderAll();}
 
 function renderExistingSub(){
   const t=T[LANG];const p=PROJECTS.find(x=>x.no===selectedProjNo)||activeProjects()[0];
   const listHtml=activeProjects().map(pr=>`<div class="listcard" onclick="selectedProjNo='${pr.no}';renderAll();" style="${pr.no===p.no?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
     <div class="lc-top"><b>${pr.no}</b><span style="font-size:11px;color:var(--steel-400);">${pr.progress}%</span></div>
-    <div class="lc-sub">${pr.name}</div><div class="lc-sub">${CUSTOMERS[pr.customerId]}</div></div>`).join("");
+    <div class="lc-sub">${pr.name}</div><div class="lc-sub">${planningCustomer(pr)}</div></div>`).join("");
   const remain=p.plannedHours-p.usedHours;
   return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
     <div class="panel"><div class="phead"><h3>${t.existing_title}</h3></div><div class="projlist">${listHtml}</div></div>
     <div class="panel">
-      <div class="detailhead"><div><h2>${p.no} — ${p.name}</h2><div class="lc-sub" style="margin-top:4px;">${CUSTOMERS[p.customerId]}</div></div>
+      <div class="detailhead"><div><h2>${p.no} — ${p.name}</h2><div class="lc-sub" style="margin-top:4px;">${planningCustomer(p)}</div></div>
         <button class="tbtn small" onclick="location.href='projects-desktop.html'">Open in Projects →</button></div>
       ${phaseFlow(p)}
       <div class="fieldgrid" style="margin-top:18px;">
@@ -1106,9 +1157,10 @@ function renderExistingSub(){
         <div class="field"><div class="fk">${t.f_updatedcompletion}</div><div class="fv">${p.updatedCompletion}</div></div>
       </div>
       ${p.problems.length?`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>${t.f_problems}</b><div>${p.problems.join("; ")}</div></div></div>`:''}
+      <div class="panel" style="padding:14px;margin-bottom:14px"><div class="phead"><h3>Milestones & dependency chain</h3></div><div class="flowstrip" style="margin:0 0 12px">${p.tasks.map((tk,i)=>`<span>${tk.name}${tk.dependsOn.length?` <small>(${typeof tk.dependsOn[0]==='string'?'Finish → Start':tk.dependsOn[0].type})</small>`:''}</span>${i<p.tasks.length-1?'<i>→</i>':''}`).join('')}</div>${p.milestones.map(m=>`<div class="docrow2" style="border-color:var(--line)"><div style="color:${m.done?'var(--ok)':'var(--idea)'}">◆</div><div class="dn">${m.name}</div><div class="dd">${m.date}</div><div>${m.done?'Completed':'Upcoming'}</div></div>`).join('')||'<div class="empty3">No milestones defined.</div>'}</div>
       <div class="panel" style="padding:14px;"><div class="phead"><h3>${t.gantt_title.split(' — ')[0]}</h3></div>
         <div class="gwrap">${(function(){const span=projectSpan(p);return ganttHeaderHtml(addDays(span.start,-2),addDays(span.end,2))+`<div>${(function(){const sched=scheduleProject(p);return p.tasks.map(tk=>{const sc=sched[tk.id];
-          return `<div class="grow taskrow"><div class="gname"><span class="gsub">${tk.name}</span><span class="gshift"><button onclick="shiftTask('${p.no}','${tk.id}',-1)">−</button><button onclick="shiftTask('${p.no}','${tk.id}',1)">+</button></span></div>${ganttBarHtml(addDays(span.start,-2),addDays(span.end,2),sc.start,sc.end,tk.status,tk.status==='completed'?100:(tk.status==='active'?50:0),[])}</div>`;}).join("");})()}</div>`;})()}</div>
+          return `<div class="grow taskrow"><div class="gname"><span class="gsub">${tk.name}${tk.dependsOn.length?` · ${typeof tk.dependsOn[0]==='string'?'FS':tk.dependsOn[0].type}`:''}</span><span class="gshift"><button onclick="shiftTask('${p.no}','${tk.id}',-1)">−</button><button onclick="shiftTask('${p.no}','${tk.id}',1)">+</button></span></div>${ganttBarHtml(addDays(span.start,-2),addDays(span.end,2),sc.start,sc.end,tk.status,tk.status==='completed'?100:(tk.status==='active'?50:0),[])}</div>`;}).join("");})()}</div>`;})()}</div>
       </div>
     </div>
   </div>`;
@@ -1124,7 +1176,7 @@ function renderFutureSub(){
     <div class="panel"><div class="phead"><h3>${t.future_title}</h3><button class="tbtn small" onclick="openNewFuture()">${t.newfuture}</button></div><div class="futlist">${listHtml}</div></div>
     <div class="panel">
       <div class="detailhead"><div><h2>${f.name}</h2><div class="lc-sub" style="margin-top:4px;">${f.customerId?CUSTOMERS[f.customerId]:f.customerName}</div></div>
-        <span class="stagepill ${f.probability}">${t["prob_"+f.probability]} — ${f.probabilityPct}%</span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="stagepill ${f.probability}">${t["prob_"+f.probability]} — ${f.probabilityPct}%</span><button class="tbtn primary small" onclick="convertFutureToProject(${f.id})">Convert → Project + Gantt</button></div></div>
       <div class="fieldgrid" style="margin-top:6px;">
         <div class="field"><div class="fk">${t.f_expstart}</div><div class="fv">${f.expectedStart}</div></div>
         <div class="field"><div class="fk">${t.f_expfinish}</div><div class="fv">${f.expectedFinish}</div></div>
@@ -1141,13 +1193,29 @@ function renderFutureSub(){
   </div>`;
 }
 
+function convertFutureToProject(id){
+  const f=FUTURE.find(x=>x.id===id);if(!f)return;
+  let no=`P-26-${String(PROJECTS.length+10).padStart(4,'0')}`;
+  if(PROJECTS.some(p=>p.name===f.name))return alert('This future project has already been converted.');
+  const tasks=[['measurement','Site measurement',1,[],f.employees? 'Aleksandar C.':'—'],['design','Design / drawings',3,['measurement'],'Elena N.'],['order','Material ordering',1,['design'],'Aleksandar C.'],['wait','Material lead time',Math.max(3,parseInt(f.materialLeadTime)*7||7),['order'],'—'],['cut','Laser cutting',1,['wait'],'Marko K.'],['bend','Bending',2,['cut'],'Marko K.'],['weld','TIG welding',4,['bend'],'Marko K.'],['assembly','Assembly',2,['weld'],'Elena N.'],['inspection','FAT / inspection',1,['assembly'],'Aleksandar C.'],['delivery','Delivery',1,['inspection'],'Aleksandar C.']]
+    .map((x,i)=>({id:x[0],name:x[1],dur:x[2],dependsOn:x[3],resource:x[4],status:'planned',shift:0,...(i===0?{start:f.expectedStart}:{})}));
+  let sharedProject=null;if(window.WorkshopData&&f.sharedEstimationId){const result=WorkshopData.createProjectFromEstimation(f.sharedEstimationId);if(result.project){sharedProject=result.project;no=sharedProject.no}}
+  const p={no,name:f.name,customerId:f.customerId||null,customerName:f.customerName,start:f.expectedStart,deadline:f.expectedFinish,progress:0,plannedHours:f.estHours,usedHours:0,phase:'design',materialStatus:'BOM check required',responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'].slice(0,Math.max(1,f.employees)),machines:f.machines,dependencyNote:f.dependencyNote,problems:[],updatedCompletion:f.expectedFinish,tasks,milestones:[{name:'Drawings approved',date:f.expectedStart,done:false},{name:'Material delivered',date:fmtISO(addDays(d(f.expectedStart),Math.max(3,parseInt(f.materialLeadTime)*7||7))),done:false},{name:'FAT / inspection',date:f.expectedFinish,done:false}]};
+  if(window.WorkshopData)WorkshopData.upsertProject(Object.assign({},sharedProject||{},p,{status:'planned',expectedCompletion:p.updatedCompletion}));
+  PROJECTS.unshift(p);selectedProjNo=no;setSub('existing');alert(`${no} created. Tasks, dependencies, Gantt, capacity demand and milestones were generated automatically.`);
+}
+
 function openNewIdea(){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.ni_title}</h2>
     <div class="frow"><label>${t.ni_name}</label><input id="niName"></div>
     <div class="frow"><label>${t.ni_desc}</label><textarea id="niDesc"></textarea></div>
-    <div class="frow2"><div><label>${t.f_category}</label><input id="niCat" value="Product Development"></div><div><label>${t.f_responsible}</label><input id="niResp" value="Aleksandar C."></div></div>
+    <div class="frow3"><div><label>Customer / source</label><select id="niSource"><option value="internal">Internal idea</option><option value="customer">Customer</option></select></div><div><label>${t.f_category}</label><input id="niCat" value="Product Development"></div><div><label>${t.f_priority}</label><select id="niPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
     <div class="frow3"><div><label>${t.f_investment}</label><input id="niInv" type="number" value="50000"></div><div><label>${t.f_revenue}</label><input id="niRev" type="number" value="150000"></div><div><label>${t.f_hours}</label><input id="niHrs" type="number" value="100"></div></div>
+    <div class="frow2"><div><label>${t.f_machines}</label><input id="niMachines" value="Laser, Press Brake"></div><div><label>${t.f_materials}</label><input id="niMaterials" value="Stainless sheet"></div></div>
+    <div class="frow3"><div><label>${t.f_risk}</label><select id="niRisk"><option>low</option><option selected>medium</option><option>high</option></select></div><div><label>${t.f_responsible}</label><input id="niResp" value="Aleksandar C."></div><div><label>${t.f_target}</label><input id="niTarget" type="date" value="2026-10-01"></div></div>
+    <div class="frow"><label>${t.f_next}</label><input id="niNext" value="Initial feasibility review"></div>
+    <div class="frow3"><div><label>Market potential /10</label><input id="niMarket" type="number" min="1" max="10" value="7"></div><div><label>Technical difficulty /10</label><input id="niDifficulty" type="number" min="1" max="10" value="5"></div><div><label>Strategic value /10</label><input id="niStrategic" type="number" min="1" max="10" value="7"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewIdea()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1156,8 +1224,10 @@ function saveNewIdea(){
   const inv=parseFloat($("niInv").value)||0,rev=parseFloat($("niRev").value)||0;
   IDEAS.push({id:nextIdeaId++,name,desc:$("niDesc").value.trim(),source:"internal",category:$("niCat").value||"General",priority:"medium",
     investment:inv,expectedRevenue:rev,estProfit:Math.max(0,rev-inv),estHours:parseFloat($("niHrs").value)||0,
-    machines:[],materials:[],scores:{market:5,profit:5,investment:5,difficulty:5,equipment:5,devtime:5,strategic:5},
-    risk:"medium",nextAction:"Initial review",responsible:$("niResp").value||"Aleksandar C.",targetDate:"2026-10-01",stage:"new",documents:[]});
+    machines:$("niMachines").value.split(',').map(x=>x.trim()).filter(Boolean),materials:$("niMaterials").value.split(',').map(x=>x.trim()).filter(Boolean),
+    scores:{market:+$("niMarket").value||5,profit:Math.min(10,Math.max(1,Math.round((rev-inv)/Math.max(inv,1)*4))),investment:inv<50000?9:6,difficulty:+$("niDifficulty").value||5,equipment:7,devtime:6,strategic:+$("niStrategic").value||5},
+    risk:$("niRisk").value,nextAction:$("niNext").value||"Initial review",responsible:$("niResp").value||"Aleksandar C.",targetDate:$("niTarget").value,stage:"new",documents:[]});
+  IDEAS[IDEAS.length-1].source=$("niSource").value;IDEAS[IDEAS.length-1].priority=$("niPriority").value;
   closeModal();setSub('ideas');selectedIdeaId=nextIdeaId-1;renderAll();
 }
 function openUploadIdea(id){
@@ -1182,6 +1252,8 @@ function openNewFuture(){
     <div class="frow"><label>${t.f_customer}</label><select id="nfCust">${custOpts}</select></div>
     <div class="frow2"><div><label>${t.f_expstart}</label><input id="nfStart" type="date" value="2026-11-01"></div><div><label>${t.f_expfinish}</label><input id="nfFinish" type="date" value="2026-11-20"></div></div>
     <div class="frow3"><div><label>${t.f_revenue}</label><input id="nfValue" type="number" value="100000"></div><div><label>${t.f_workload}</label><input id="nfHours" type="number" value="80"></div><div><label>${t.f_probability}</label><select id="nfProb"><option value="tentative">${t.prob_tentative}</option><option value="probable" selected>${t.prob_probable}</option><option value="confirmed">${t.prob_confirmed}</option></select></div></div>
+    <div class="frow3"><div><label>${t.f_employees}</label><input id="nfEmployees" type="number" value="2"></div><div><label>${t.f_leadtime}</label><input id="nfLead" value="2 weeks"></div><div><label>${t.f_priority}</label><select id="nfPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
+    <div class="frow"><label>${t.f_machines}</label><input id="nfMachines" value="Laser, Press Brake"></div><div class="frow"><label>${t.f_dependencies}</label><input id="nfDependency" value="Awaiting customer confirmation"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewFuture()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1190,7 +1262,7 @@ function saveNewFuture(){
   const prob=$("nfProb").value;
   FUTURE.push({id:nextFutureId++,name,customerId:parseInt($("nfCust").value),expectedStart:$("nfStart").value,expectedFinish:$("nfFinish").value,
     probability:prob,probabilityPct:prob==='confirmed'?90:(prob==='probable'?60:30),estValue:parseFloat($("nfValue").value)||0,
-    estHours:parseFloat($("nfHours").value)||0,employees:1,machines:[],materialLeadTime:"2 weeks",dependencyNote:"—",priority:"medium"});
+    estHours:parseFloat($("nfHours").value)||0,employees:parseInt($("nfEmployees").value)||1,machines:$("nfMachines").value.split(',').map(x=>x.trim()).filter(Boolean),materialLeadTime:$("nfLead").value||"2 weeks",dependencyNote:$("nfDependency").value||"—",priority:$("nfPriority").value});
   closeModal();setSub('future');selectedFutureId=nextFutureId-1;renderAll();
 }
 
@@ -1208,11 +1280,16 @@ function renderAll(){
     else if(activeTab==='calendar')body=renderCalendarTab();
     else if(activeTab==='timeline')body=renderTimelineTab();
     else if(activeTab==='workload')body=renderWorkloadTab();
+    else if(activeTab==='scenarios')body=renderScenariosTab();
     else body=renderOverviewTab();
   }
   const showSidebar=(activeSub==='overview');
   $("app").innerHTML=`${renderHeader()}<div class="maingrid">${showSidebar?`<div class="col">${renderLeft()}</div><div class="col">${body}</div>`:`<div class="col" style="grid-column:1/-1;">${body}</div>`}</div>`;
+  syncModuleSidebar();
 }
+
+function syncModuleSidebar(){const current=activeSub!=='overview'?activeSub:activeTab;document.querySelectorAll('#moduleSideNav button[data-ms]').forEach(b=>b.classList.toggle('on',b.dataset.ms===current));}
+function sidebarPlanning(view){if(['ideas','existing','future'].includes(view)){activeSub=view;activeTab='overview'}else{activeSub='overview';activeTab=view}renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 
 function setLang(code){LANG=code;
   document.documentElement.lang=code==="mk"?"mk-Latn":code;

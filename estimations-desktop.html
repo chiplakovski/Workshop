@@ -68,7 +68,7 @@
   .segtabs button.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
 
   .estlist{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow-y:auto;margin:-4px;padding:4px;}
-  .estrow{padding:10px 11px;border:1px solid var(--line);cursor:pointer;transition:.14s;}
+  .estrow{display:block;width:100%;padding:10px 11px;border:1px solid var(--line);cursor:pointer;transition:.14s;text-align:left;color:inherit;background:transparent;font:inherit;}
   .estrow:hover{background:rgba(255,255,255,.03);}
   .estrow.sel{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.45);}
   .estrow .er1{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
@@ -248,8 +248,10 @@
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
 
   @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;} }
-</style></head><body>
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
+<style>.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button><button onclick="openNewEst()"><i>＋</i>New Estimation</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -275,6 +277,7 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
+<script src="workshop-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
@@ -289,6 +292,7 @@ const CUSTOMERS={
   6:{name:"Ystad Bageri",city:"Ystad",address:"Bagerigatan 2, 271 41 Ystad, Sweden",contact:"Nina H.",email:"nina@ystadbageri.se",phone:"+46 70 678 90 12",org:"556990-2201",status:"active"},
   7:{name:"Trelleborg Snacks",city:"Trelleborg",address:"Fabriksgatan 15, 231 62 Trelleborg, Sweden",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se",phone:"+46 70 789 01 23",org:"559333-6654",status:"inactive"}
 };
+if(window.WorkshopData){const marine=WorkshopData.get().customers.find(c=>c.name==='MarineVent AB');if(marine)CUSTOMERS[8]={name:marine.name,city:marine.city,address:(marine.billing||[]).join(', '),contact:(marine.contacts&&marine.contacts[0]?marine.contacts[0].name:'—'),email:marine.email,phone:marine.phone,org:marine.org,status:marine.status}}
 const PROJECTS={
   "P-26-0001":{name:"Bakery Conveyor Modification",type:"Stainless Fabrication & Installation",status:"active"},
   "P-26-0002":{name:"Folding Machine Retrofit",type:"Machine Retrofit",status:"quotation"},
@@ -435,6 +439,7 @@ let ESTIMATIONS=[
     history:[{date:"2026-08-24",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-24",action:"Sent to customer for review",by:"Aleksandar C."}],notes:[]}
 ];
 let nextEstId=10;
+(function hydrateSharedEstimations(){if(!window.WorkshopData)return;const shared=WorkshopData.get();shared.estimations.forEach(se=>{if(ESTIMATIONS.some(e=>e.no===se.no))return;const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=Number(Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===se.customer))||8;ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:null,projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:'4–5 weeks',paymentTerms:'30 days',priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',reference:'—',createdBy:'Aleksandar C.',overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(se.sellingPrice||20000),options:[],exclusions:[],terms:'Prices valid for 30 days.',documents:[],history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:[],revision:se.revision||0,sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});nextEstId=Math.max(nextEstId,se.id+1)});ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)})})();
 
 const STAGES=["draft","review","sent","accepted"];
 function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
@@ -544,6 +549,7 @@ const T={
 let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,activeOptTab="base";
 
 function getEst(id){return ESTIMATIONS.find(e=>e.id===id);}
+function syncEstimation(e,reason){if(!window.WorkshopData||!e)return null;const c=CUSTOMERS[e.customerId],shared=WorkshopData.get(),sc=shared.customers.find(x=>x.name===c.name),tot=computeTotals(e);const payload={id:e.sharedId,no:e.no,customerId:sc?sc.id:null,customer:c.name,title:e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no,status:e.status,revision:e.revision||0,created:e.created,validUntil:e.validUntil,currency:e.currency,estimatedMaterial:tot.materialCost,estimatedLabour:tot.labourCost,estimatedMachine:tot.machineCost,estimatedOther:tot.subCost+tot.consumableCost+tot.logisticsCost+tot.otherCost,totalCost:tot.totalInternalCost,sellingPrice:tot.sellingPrice,plannedHours:e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0),machines:e.machines||flatLines(e).filter(x=>x.category==='machine').map(x=>x.desc),deliveryTarget:e.deliveryTarget||e.validUntil,bom:e.sharedBom||[]};const saved=WorkshopData.upsertEstimation(payload);e.sharedId=saved.id;if(reason){WorkshopData.updateEstimation(saved.id,{},reason);e.revision=(e.revision||0)+1;e.history.push({date:new Date().toISOString().slice(0,10),action:`Revision ${e.revision}: ${reason}`,by:'Aleksandar C.'})}return saved}
 function stageIndex(status){if(status==='declined'||status==='expired')return 3;return STAGES.indexOf(status);}
 
 function lineTotal(it){return it.qty*it.sell*(1-(it.disc||0)/100);}
@@ -603,7 +609,7 @@ function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st
 function renderLeft(){
   const t=T[LANG];
   const q=query.trim().toLowerCase();
-  let rows=ESTIMATIONS.filter(e=>filterStatus==='all'||e.status===filterStatus)
+  let rows=ESTIMATIONS.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
     .filter(e=>{const c=CUSTOMERS[e.customerId];return !q||e.no.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);})
     .sort((a,b)=>b.created.localeCompare(a.created));
 
@@ -613,11 +619,11 @@ function renderLeft(){
   const valueByStatus=st=>ESTIMATIONS.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
 
   const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
-    return `<div class="estrow ${e.id===selectedId?'sel':''}" onclick="selectEst(${e.id})">
+    return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-est-id="${e.id}">
       <div class="er1"><span class="eno">${e.no}</span>${statusPill(e.status)}</div>
       <div class="ecust">${c.name}</div>
       <div class="er2"><span class="eval">${fmt0(tot.grandTotal)}</span></div>
-    </div>`;}).join("");
+    </button>`;}).join("");
 
   return `
     <div class="panel">
@@ -657,7 +663,7 @@ function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
 function setFilter(f){filterStatus=f;renderAll();}
 
 function renderMiddle(e){
-  const t=T[LANG];const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo];
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo]||{name:e.projectTitle||'Project from '+e.no,type:'Estimated project',status:e.projectNo?'planned':'not converted'};
   const stages=[{k:"draft",lbl:t.st_draft},{k:"review",lbl:t.st_review},{k:"sent",lbl:t.st_sent},{k:"accepted",lbl:t.st_accepted},{k:"declined",lbl:t.st_declined},{k:"expired",lbl:t.st_expired}];
   const curIdx=STAGES.indexOf(e.status);
   const stepsHtml=stages.map((s,i)=>{
@@ -783,6 +789,7 @@ function renderRight(e){
       <div class="pricerow"><span class="pk">${t.ps_tax}</span><span class="pv">${fmt(tot.taxTotal)}</span></div>
       <div class="pricerow grand"><span class="pk">${t.ps_total}</span><span class="pv">${fmt(tot.grandTotal)}</span></div>
     </div>
+    ${actualComparisonHtml(e,tot)}
     <div class="panel">
       <div class="phead"><h3>${t.cost_breakdown}</h3><button class="iconbtn" style="width:28px;height:28px;" onclick="openPricingSettings(${e.id})" aria-label="Pricing settings"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button></div>
       <div class="costrow"><span class="ck">${t.cb_material}</span><span>${fmt0(tot.materialCost)}</span></div>
@@ -810,7 +817,7 @@ function renderRight(e){
       ${e.documents.map(d=>`<div class="docrow2"><div class="dicon ${d.type}">${d.type.toUpperCase()}</div><div class="dn">${d.name}</div><div class="dd">${d.date}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
     </div>
     <div class="panel">
-      <div class="phead"><h3>${t.history}</h3></div>
+      <div class="phead"><h3>Revision History · Rev ${e.revision||0}</h3><button class="tbtn small" onclick="openRevision(${e.id})">New revision</button></div>
       ${e.history.slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${h.date}</div><div><div class="haction">${h.action}</div><div class="hby">by ${h.by}</div></div></div>`).join("")||`<div class="empty3">${t.empty_hist}</div>`}
     </div>
     <div class="panel">
@@ -819,12 +826,16 @@ function renderRight(e){
     </div>`;
 }
 
+function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const shared=WorkshopData.get(),se=shared.estimations.find(x=>x.id===e.sharedId||x.no===e.no),p=se&&shared.projects.find(x=>x.id===se.projectId);if(!p)return'';const actualMat=p.actualMaterialCost||Math.round(tot.materialCost*.92),actualHours=p.usedHours||0,planned=e.plannedHours||p.plannedHours||0;return `<div class="panel"><div class="phead"><h3>Estimated vs Actual</h3><span class="stpill ${p.status==='completed'?'accepted':'sent'}">${p.no}</span></div><div class="costrow"><span class="ck">Material cost</span><span>${fmt0(tot.materialCost)} → <b>${fmt0(actualMat)}</b></span></div><div class="costrow"><span class="ck">Labour hours</span><span>${planned} h → <b>${actualHours} h</b></span></div><div class="costrow final"><span>Current variance</span><span style="color:${actualMat>tot.materialCost?'var(--danger)':'var(--ok)'}">${actualMat>tot.materialCost?'+':''}${fmt0(actualMat-tot.materialCost)}</span></div></div>`}
+function openRevision(id){const e=getEst(id);$("fcard").innerHTML=`<h2>Create Revision ${Number(e.revision||0)+1}</h2><p class="fsub">${e.no}</p><div class="frow"><label>Reason for change</label><textarea id="revReason" placeholder="Customer change, material update, scope revision..."></textarea></div><div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="saveRevision(${id})">Create revision</button></div>`;$("fov").classList.add("show")}
+function saveRevision(id){const reason=$("revReason").value.trim();if(!reason)return;syncEstimation(getEst(id),reason);closeModal();renderAll()}
+
 function renderActionBar(e){
   const t=T[LANG];
   return `<div class="actionbar">
     <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${t.act_preview}</button>
     <button onclick="sendEmail(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${t.act_email}</button>
-    <button onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${t.act_open}</button>
+    <button onclick="${e.projectNo?"location.href='projects-desktop.html'":`openConvertEst(${e.id})`}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${e.projectNo?t.act_open:t.act_convert}</button>
     <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${t.act_duplicate}</button>
     <button onclick="exportExcel(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${t.act_export}</button>
     <button class="danger" onclick="deleteEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${t.act_delete}</button>
@@ -840,8 +851,13 @@ function renderAll(){
     <div class="col">${renderMiddle(e)}</div>
     <div class="col">${renderRight(e)}</div>
   </div>${renderActionBar(e)}`;
+  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectEst(Number(row.dataset.estId))));
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
+  syncModuleSidebar();
 }
+
+function syncModuleSidebar(){document.querySelectorAll('#moduleSideNav button[data-ms]').forEach(b=>b.classList.toggle('on',b.dataset.ms===filterStatus));}
+function sidebarEstimate(filter){filterStatus=filter;renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 
 function setOptTab(id){activeOptTab=id;renderAll();}
 
@@ -851,6 +867,7 @@ function setStage(id,stage){
   if(!confirm(t.confirm_stage.replace('{s}',t["st_"+stage])))return;
   e.status=stage;
   e.history.push({date:new Date().toISOString().slice(0,10),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
+  syncEstimation(e);
   renderAll();
 }
 
@@ -876,7 +893,7 @@ function saveNewEst(){
     priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
     overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(20000),options:[],exclusions:[],terms:"Prices valid for 30 days.",
     documents:[],history:[{date:new Date().toISOString().slice(0,10),action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]});
-  closeModal();selectedId=nextEstId-1;renderAll();
+  const created=getEst(nextEstId-1);syncEstimation(created);closeModal();selectedId=nextEstId-1;renderAll();
 }
 
 function openEditEst(id){
@@ -887,8 +904,11 @@ function openEditEst(id){
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditEst(${id})">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
+function openConvertEst(id){const e=getEst(id),tot=computeTotals(e);$("fcard").innerHTML=`<h2>Convert to Project</h2><p class="fsub">${e.no} · ${CUSTOMERS[e.customerId].name}</p><div class="fnote">This will reuse the customer, BOM, estimated hours, machines, selling price and delivery target in Projects, Planning and Store.</div><div class="frow"><label>Project title</label><input id="cpTitle" value="${e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no}"></div><div class="frow2"><div><label>Planned hours</label><input id="cpHours" type="number" value="${e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0)}"></div><div><label>Delivery target</label><input id="cpDate" type="date" value="${e.deliveryTarget||e.validUntil}"></div></div><div class="frow"><label>Estimated project value</label><input value="${Math.round(tot.sellingPrice)} SEK" disabled></div><div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="confirmConvertEst(${id})">Create connected project</button></div>`;$("fov").classList.add("show")}
+function confirmConvertEst(id){const e=getEst(id);e.status='accepted';e.plannedHours=+$('cpHours').value||0;e.deliveryTarget=$('cpDate').value||e.validUntil;const saved=syncEstimation(e,'Accepted and converted to project');WorkshopData.updateEstimation(saved.id,{title:$('cpTitle').value||saved.title,plannedHours:e.plannedHours,deliveryTarget:e.deliveryTarget});const result=WorkshopData.createProjectFromEstimation(saved.id);if(result.error)return;e.projectNo=result.project.no;PROJECTS[e.projectNo]={name:result.project.name,type:'Generated from estimation',status:'planned'};e.history.push({date:new Date().toISOString().slice(0,10),action:`Converted to ${e.projectNo}`,by:'Aleksandar C.'});closeModal();renderAll()}
 function saveEditEst(id){
   const e=getEst(id);e.reference=$("eeRef").value;e.validUntil=$("eeValid").value||e.validUntil;e.deliveryTime=$("eeDelivery").value;e.paymentTerms=$("eeTerms").value;
+  syncEstimation(e,'Commercial information updated');
   closeModal();renderAll();
 }
 
@@ -903,6 +923,7 @@ function openPricingSettings(id){
 }
 function savePricingSettings(id){
   const e=getEst(id);e.overheadPct=parseFloat($("psOverhead").value)||0;e.contingencyPct=parseFloat($("psContingency").value)||0;e.discount=parseFloat($("psDiscount").value)||0;
+  syncEstimation(e,'Pricing settings updated');
   closeModal();renderAll();
 }
 
@@ -919,6 +940,7 @@ function saveAddWorkItem(id){
   const e=getEst(id);
   e.workItems.push({no:$("awNo").value.trim(),desc,lines:[]});
   e.history.push({date:new Date().toISOString().slice(0,10),action:`Work item added: ${desc}`,by:"Aleksandar C."});
+  syncEstimation(e,'Work item added');
   closeModal();renderAll();
 }
 
@@ -941,6 +963,7 @@ function saveAddLine(id,idx){
   wi.lines.push({desc,category:$("aiCat").value,qty:parseFloat($("aiQty").value)||1,unit:$("aiUnit").value||"pcs",
     cost:parseFloat($("aiCost").value)||0,sell:parseFloat($("aiSell").value)||0,disc:0,tax:25});
   e.history.push({date:new Date().toISOString().slice(0,10),action:`Item added to ${wi.desc}: ${desc}`,by:"Aleksandar C."});
+  syncEstimation(e,'Cost item added');
   closeModal();renderAll();
 }
 
@@ -955,6 +978,7 @@ function openEditText(id,field){
 function saveEditText(id,field){
   const e=getEst(id);const val=$("etText").value;
   if(field==='exclusions')e.exclusions=val.split("\n").map(s=>s.trim()).filter(Boolean);else e.terms=val;
+  syncEstimation(e,'Terms or exclusions updated');
   closeModal();renderAll();
 }
 

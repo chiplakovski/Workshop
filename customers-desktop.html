@@ -189,8 +189,10 @@
   .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
-</style></head><body>
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
+<style>.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2>CUSTOMERS</h2><small>Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i>Customer Overview</button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i>Contacts</button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i>Projects</button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i>Estimations / Quotes</button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i>Invoices</button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i>Notes & Documents</button><button onclick="openNewCustomer()"><i>＋</i>New Customer</button></nav><div class="ms-sidebox"><b>Shared customer record</b><p>Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Customer manager</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -215,6 +217,7 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
+<script src="workshop-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
@@ -306,6 +309,14 @@ const PROJECTS=[
   {no:"P-26-0008",name:"Bearing Replacement",customerId:5,status:"approved",quotedValue:14000,deadline:"2026-09-15"},
   {no:"P-26-0009",name:"HMI Upgrade",customerId:2,status:"planned",quotedValue:31000,deadline:"2026-09-18"}
 ];
+// Pull shared records into the Customer UI while preserving this screen's richer demo set.
+(function hydrateSharedCustomers(){
+  if(!window.WorkshopData)return;const shared=WorkshopData.get();
+  shared.customers.forEach(sc=>{if(CUSTOMERS.some(c=>c.name===sc.name))return;const id=nextCustId++;
+    CUSTOMERS.push({id,sharedId:sc.id,name:sc.name,city:sc.city||"—",country:sc.country||"Sweden",status:sc.status||"active",org:sc.org||"—",email:sc.email||"—",phone:sc.phone||"—",website:sc.website||"—",since:sc.since||new Date().toISOString().slice(0,10),terms:sc.terms||"30 days",credit:sc.credit||0,currency:sc.currency||"SEK",industry:sc.industry||"—",ctype:sc.type||"Company",vat:sc.vat||"—",preferred:sc.preferred||"Email",pricelist:sc.priceList||"Standard Price List",deliveryTerms:sc.deliveryTerms||"—",discountAgreement:sc.discountAgreement||"—",remarks:sc.remarks||"",billing:sc.billing||[sc.name,"—"],shipping:sc.shipping||sc.billing||[sc.name,"—"],contacts:sc.contacts||[],quotes:shared.estimations.filter(e=>e.customerId===sc.id).map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status})),invoices:[],notes:sc.notes||[],documents:sc.documents||[]});
+  });
+  shared.projects.forEach(sp=>{const c=CUSTOMERS.find(x=>x.name===sp.customer);if(c&&!PROJECTS.some(p=>p.no===sp.no))PROJECTS.push({no:sp.no,name:sp.name,customerId:c.id,status:sp.status,quotedValue:(shared.estimations.find(e=>e.id===sp.estimationId)||{}).sellingPrice||0,deadline:sp.deadline})});
+})();
 const OPEN_STATUSES=["quotation","approved","planned","active","hold"];
 const STATUS_CLASS={draft:"n",quotation:"b",approved:"b",planned:"b",active:"b",hold:"w",completed:"g",closed:"n",cancelled:"r"};
 const STATUS_WORD_CLASS={active:"b",completed:"g","in production":"b",hold:"w"};
@@ -385,6 +396,7 @@ const T={
 let LANG="en",selectedId=2,activeTab="overview",query="",filterStatus="all";
 
 function getCust(id){return CUSTOMERS.find(c=>c.id===id);}
+function syncCustomer(c){if(!window.WorkshopData||!c)return;WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents})}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
 function custStats(id){const ps=custProjects(id);
   const open=ps.filter(p=>OPEN_STATUSES.includes(p.status)).length;
@@ -477,7 +489,7 @@ function renderTab(c){
     $("tabpanel").innerHTML=`
       <div class="addrgrid">
         <div class="addrcard"><h4>${t.billing}</h4><div class="al">${c.billing.join("<br>")}</div></div>
-        <div class="addrcard"><h4>${t.shipping}</h4><div class="al">${c.billing.join("<br>")}</div></div>
+        <div class="addrcard"><h4>${t.shipping}</h4><div class="al">${(c.shipping||c.billing).join("<br>")}</div></div>
       </div>
       <div class="infolist">
         <div class="irow"><span class="ik">${t.industry}</span><span class="iv">${c.industry}</span></div>
@@ -485,6 +497,8 @@ function renderTab(c){
         <div class="irow"><span class="ik">${t.vat}</span><span class="iv">${c.vat}</span></div>
         <div class="irow"><span class="ik">${t.preferred}</span><span class="iv">${c.preferred}</span></div>
         <div class="irow"><span class="ik">${t.pricelist}</span><span class="iv">${c.pricelist}</span></div>
+        <div class="irow"><span class="ik">Delivery Terms</span><span class="iv">${c.deliveryTerms||"—"}</span></div>
+        <div class="irow"><span class="ik">Discount Agreement</span><span class="iv">${c.discountAgreement||"—"}</span></div>
         <div class="irow"><span class="ik">${t.remarks}</span><span class="iv">${c.remarks}</span></div>
       </div>`;
   }else if(activeTab==='contacts'){
@@ -570,9 +584,12 @@ function renderAll(){
   </div>${renderActionBar(c)}`;
   $("search").addEventListener('input',e=>{query=e.target.value;renderAll();});
   renderTab(c);
+  syncModuleSidebar();
 }
 
 function selectCustomer(id){selectedId=id;activeTab='overview';renderAll();}
+function syncModuleSidebar(){document.querySelectorAll('#moduleSideNav button[data-ms]').forEach(b=>b.classList.toggle('on',b.dataset.ms===activeTab));}
+function sidebarCustomer(tab){activeTab=tab;renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 function setFilter(f){filterStatus=f;renderAll();}
 
 function closeModal(){$("fov").classList.remove("show");}
@@ -585,16 +602,22 @@ function openNewCustomer(){
     <div class="frow2"><div><label>${t.nc_city}</label><input id="ncCity"></div><div><label>${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div></div>
     <div class="frow2"><div><label>${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label>${t.nc_phone}</label><input id="ncPhone"></div></div>
     <div class="frow"><label>${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
+    <div class="frow2"><div><label>VAT Number</label><input id="ncVat"></div><div><label>Industry</label><input id="ncIndustry"></div></div>
+    <div class="frow2"><div><label>Payment Terms</label><input id="ncTerms" value="30 days"></div><div><label>Credit Limit (SEK)</label><input id="ncCredit" type="number" value="0"></div></div>
+    <div class="frow2"><div><label>Delivery Terms</label><input id="ncDelivery" value="EXW Marieholm"></div><div><label>Discount Agreement</label><input id="ncDiscount" value="0%"></div></div>
+    <div class="frow"><label>Billing Address</label><textarea id="ncBilling" placeholder="Company&#10;Street&#10;Postcode City&#10;Sweden"></textarea></div>
+    <div class="frow"><label>Shipping Address</label><textarea id="ncShipping" placeholder="Leave empty to reuse billing address"></textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;
-  CUSTOMERS.push({id:nextCustId++,name,city:$("ncCity").value.trim()||"—",country:"Sweden",status:"active",
+  const billing=$("ncBilling").value.trim().split(/\n+/).filter(Boolean),shipping=$("ncShipping").value.trim().split(/\n+/).filter(Boolean);
+  const created={id:nextCustId++,name,city:$("ncCity").value.trim()||"—",country:"Sweden",status:"active",
     org:$("ncOrg").value.trim()||"—",email:$("ncEmail").value.trim()||"—",phone:$("ncPhone").value.trim()||"—",
-    website:$("ncWebsite").value.trim()||"—",since:new Date().toISOString().slice(0,10),terms:"30 days",credit:0,currency:"SEK",
-    industry:"—",ctype:"Company",vat:"—",preferred:"Email",pricelist:"Standard Price List",remarks:"",
-    billing:[name,"—","Sweden"],contacts:[],quotes:[],invoices:[],notes:[],documents:[]});
+    website:$("ncWebsite").value.trim()||"—",since:new Date().toISOString().slice(0,10),terms:$("ncTerms").value||"30 days",credit:+$("ncCredit").value||0,currency:"SEK",
+    industry:$("ncIndustry").value||"—",ctype:"Company",vat:$("ncVat").value||"—",preferred:"Email",pricelist:"Standard Price List",deliveryTerms:$("ncDelivery").value||"—",discountAgreement:$("ncDiscount").value||"—",remarks:"",
+    billing:billing.length?billing:[name,"—","Sweden"],shipping:shipping.length?shipping:(billing.length?billing:[name,"—","Sweden"]),contacts:[],quotes:[],invoices:[],notes:[],documents:[]};CUSTOMERS.push(created);syncCustomer(created);
   closeModal();selectedId=nextCustId-1;renderAll();
 }
 
@@ -606,6 +629,8 @@ function openEditCustomer(id){
       <div><label>${t.nc_status}</label><select id="ecStatus"><option value="active" ${c.status==='active'?'selected':''}>${t.f_active}</option><option value="inactive" ${c.status==='inactive'?'selected':''}>${t.f_inactive}</option></select></div></div>
     <div class="frow2"><div><label>${t.nc_email}</label><input id="ecEmail" value="${c.email}"></div><div><label>${t.nc_phone}</label><input id="ecPhone" value="${c.phone}"></div></div>
     <div class="frow"><label>${t.nc_website}</label><input id="ecWebsite" value="${c.website}"></div>
+    <div class="frow2"><div><label>Payment Terms</label><input id="ecTerms" value="${c.terms}"></div><div><label>Credit Limit</label><input id="ecCredit" type="number" value="${c.credit}"></div></div>
+    <div class="frow2"><div><label>Delivery Terms</label><input id="ecDelivery" value="${c.deliveryTerms||'—'}"></div><div><label>Discount Agreement</label><input id="ecDiscount" value="${c.discountAgreement||'—'}"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditCustomer(${id})">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -613,6 +638,7 @@ function saveEditCustomer(id){
   const c=getCust(id);
   c.name=$("ecName").value.trim()||c.name;c.city=$("ecCity").value.trim()||c.city;c.status=$("ecStatus").value;
   c.email=$("ecEmail").value.trim()||c.email;c.phone=$("ecPhone").value.trim()||c.phone;c.website=$("ecWebsite").value.trim()||c.website;
+  c.terms=$("ecTerms").value||c.terms;c.credit=+$("ecCredit").value||0;c.deliveryTerms=$("ecDelivery").value||"—";c.discountAgreement=$("ecDiscount").value||"—";syncCustomer(c);
   closeModal();renderAll();
 }
 
@@ -631,6 +657,7 @@ function saveAddContact(id){
   const c=getCust(id);const primary=$("acPrimary").checked;
   if(primary)c.contacts.forEach(p=>p.primary=false);
   c.contacts.push({name,role:$("acRole").value.trim()||"—",primary,email:$("acEmail").value.trim()||"—",phone:$("acPhone").value.trim()||"—"});
+  syncCustomer(c);
   closeModal();renderAll();
 }
 
@@ -643,7 +670,7 @@ function openAddNote(id){
 }
 function saveAddNote(id){
   const text=$("anText").value.trim();if(!text)return;
-  getCust(id).notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar",text});
+  const c=getCust(id);c.notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar",text});syncCustomer(c);
   closeModal();renderAll();
 }
 
@@ -657,7 +684,7 @@ function openUpload(id){
 function saveUpload(id){
   const name=$("udName").value.trim();if(!name)return;
   const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc';
-  getCust(id).documents.push({name,type,date:new Date().toISOString().slice(0,10)});
+  const c=getCust(id);c.documents.push({name,type,date:new Date().toISOString().slice(0,10)});syncCustomer(c);
   closeModal();renderAll();
 }
 
