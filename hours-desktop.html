@@ -155,33 +155,33 @@
   <div class="card cardgrid">
     <div class="col">
     <div class="row">
-      <label data-i="project">Select Project</label>
+      <label for="project" data-i="project">Select Project</label>
       <select class="fld" id="project"><option value="">—</option></select>
     </div>
     <div class="row">
-      <div class="itemhead"><label data-i="item">Select Item</label>
+      <div class="itemhead"><label for="item" data-i="item">Select Item</label>
         <span class="est" id="estChip" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-i="est">Est.</span> <b id="estVal">—</b></span>
       </div>
       <select class="fld" id="item"><option value="">—</option></select>
     </div>
     <div class="row grid-hd">
-      <div><label data-i="hours">Enter Hours</label><input class="fld" id="hours" type="number" step="0.25" min="0" placeholder="0.00"></div>
-      <div><label data-i="date">Date</label><input class="fld" id="date2" type="date"></div>
+      <div><label for="hours" data-i="hours">Enter Hours</label><input class="fld" id="hours" type="number" step="0.25" min="0" placeholder="0.00"></div>
+      <div><label for="date2" data-i="date">Date</label><input class="fld" id="date2" type="date"></div>
     </div>
     <div class="row">
-      <label data-i="intcost">Equipment used</label>
+      <label for="equipList" data-i="intcost">Equipment used</label>
       <div id="equipList"></div>
       <button type="button" class="addeq" id="addEq"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addeq">Add equipment</span></button>
     </div>
     <div class="row">
-      <label data-i="matlabel">Material used</label>
+      <label for="matList" data-i="matlabel">Material used</label>
       <div id="matList"></div>
       <button type="button" class="addeq" id="addMat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addmat">Add material</span></button>
     </div>
 </div>
     <div class="colr">
     <div class="row notes-row">
-      <label data-i="notes">Notes</label>
+      <label for="notes" data-i="notes">Notes</label>
       <textarea class="fld" id="notes" data-i-ph="notesph" placeholder="What was done…"></textarea>
     </div>
     <div class="row actions">
@@ -190,8 +190,8 @@
       <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i="teamtalk">Share to team feed</span></div>
     </div>
     <div class="save">
-      <button class="btn-primary" data-i="savebtn" onclick="alert('Saved (demo)')">Save entry</button>
-      <button class="btn-ghost" data-i="savenew" onclick="alert('Saved + new (demo)')">Save &amp; new</button>
+      <button type="button" class="btn-primary" data-i="savebtn" id="saveEntry">Save entry</button>
+      <button type="button" class="btn-ghost" data-i="savenew" id="saveNewEntry">Save &amp; new</button>
     </div>
 </div>
   </div>
@@ -219,7 +219,7 @@
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </button>
 </div>
-<script>
+<script src="workshop-data.js"></script><script>
   const DATA={
     "P-2401 · Bakery line — Åhus":[{n:"Frame weldment",est:14},{n:"Conveyor guard",est:6},{n:"Drive mount plate",est:3.5}],
     "P-2402 · Folding machine retrofit":[{n:"Panel wiring",est:20},{n:"HMI bracket",est:2},{n:"Safety cover",est:5}],
@@ -250,14 +250,14 @@
     const sel=document.createElement('select');sel.className='fld eqsel';const ph=document.createElement('option');ph.value='';ph.textContent=t.eqph;sel.appendChild(ph);
     EQUIP.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
     const hrs=document.createElement('input');hrs.className='fld eqhrs';hrs.type='number';hrs.step='0.25';hrs.min='0';hrs.placeholder=t.hrs;
-    const del=document.createElement('button');del.type='button';del.className='eqdel';del.textContent='×';del.onclick=()=>row.remove();
+    const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove equipment');del.textContent='×';del.onclick=()=>row.remove();
     row.append(sel,hrs,del);equipList.appendChild(row);}
   document.getElementById('addEq').addEventListener('click',addEqRow);
   const matList=document.getElementById('matList');
   function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
     const name=document.createElement('input');name.className='fld matname';name.type='text';name.placeholder=t.matph;
     const qty=document.createElement('input');qty.className='fld matqty';qty.type='number';qty.step='0.1';qty.min='0';qty.placeholder=t.qty;
-    const del=document.createElement('button');del.type='button';del.className='eqdel';del.textContent='×';del.onclick=()=>row.remove();
+    const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove material');del.textContent='×';del.onclick=()=>row.remove();
     row.append(name,qty,del);matList.appendChild(row);}
   document.getElementById('addMat').addEventListener('click',addMatRow);
   function refreshEqLang(){const t=T[current];document.querySelectorAll('.eqsel').forEach(s=>{if(s.options[0])s.options[0].textContent=t.eqph;});document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
@@ -266,6 +266,9 @@
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   document.getElementById('date2').valueAsDate=new Date();
   setLang("en");setInterval(tick,10000);addEqRow();addMatRow();
+  function collectHours(){return {project:proj.value,item:item.value,hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({name:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.name||x.hours),materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)};}
+  function saveHours(reset){const entry=collectHours();const hours=Number(entry.hours);if(!entry.project||!entry.item||!Number.isFinite(hours)||hours<=0){alert('Select a project and item, then enter hours greater than zero.');return false;}const result=window.WorkshopData?.logHours(entry);if(result?.error){alert(result.error);return false;}alert('Hours entry saved.');if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}return true;}
+  document.getElementById('saveEntry').addEventListener('click',()=>saveHours(false));document.getElementById('saveNewEntry').addEventListener('click',()=>saveHours(true));
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 

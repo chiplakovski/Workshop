@@ -268,7 +268,7 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script>
+<script src="workshop-data.js"></script><script>
 const RATE=450;
 const $=id=>document.getElementById(id);
 
@@ -281,6 +281,11 @@ let CUSTOMERS=[
   {id:6,name:"Ystad Bageri",org:"556990-2201",contact:"Nina H. · nina@ystadbageri.se"},
   {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P. · jonas@trelleborgsnacks.se"}
 ];
+
+const PROJECTS_KEY='varmak.projects.ui.v1';
+try{const stored=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');if(Array.isArray(stored)&&stored.length)PROJECTS=stored;}catch(e){}
+function persistProjects(){localStorage.setItem(PROJECTS_KEY,JSON.stringify(PROJECTS));}
+function syncSharedProject(p){if(window.WorkshopData?.upsertProject)WorkshopData.upsertProject({id:p.id,no:p.no,name:p.name,customerId:p.customerId,customer:custName(p.customerId),status:p.status,deadline:p.deadline,plannedHours:p.estLabourHours||0,usedHours:p.hours.reduce((sum,h)=>sum+(Number(h.hours)||0),0)});}
 let nextCustId=8;
 const PEOPLE=["Aleksandar","Marko","Elena","Sofia","Erik"];
 const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Service","Stainless Steel","Aluminium","Carbon Steel","Piping","CNC Cutting","Electrical","Assembly","Maintenance","Other"];
@@ -992,16 +997,16 @@ function submitProjectForm(){
     types:newProjTypes.slice(),pm:$("fPm").value,workshop:$("fWorkshop").value,sales:$("fSales").value,
     plannedStart:$("fStart").value,deadline:$("fDeadline").value,plannedCompletion:$("fPlannedC").value,quotedValue:parseFloat($("fQuoted").value)||0};
   if(editingId){
-    const p=getProject(editingId);Object.assign(p,vals);pushActivity(p,"Project edited");
+    const p=getProject(editingId);Object.assign(p,vals);pushActivity(p,"Project edited");syncSharedProject(p);
   }else{
     const id=PROJECTS.length?Math.max(...PROJECTS.map(x=>x.id))+1:1;
     const p={id,no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
       createdDate:"2026-08-24",actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
       jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
-    PROJECTS.unshift(p);pushActivity(p,"Project Created");
+    PROJECTS.unshift(p);pushActivity(p,"Project Created");syncSharedProject(p);
     currentId=id;VIEW="detail";activeTab="overview";
   }
-  closeModal();render();
+  persistProjects();closeModal();render();
 }
 function openNewCustomerMini(){
   const t=T[LANG];
@@ -1250,6 +1255,7 @@ function doReopen(id){
 }
 
 function render(){
+  persistProjects();
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
   if(VIEW==="list"){
