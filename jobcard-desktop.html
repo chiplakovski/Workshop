@@ -1,0 +1,1578 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Jobcards</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;overflow-x:hidden;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:18%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.16),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 40px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:22px 30px 46px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
+  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;justify-content:space-between;}
+  .modhead .ttl{display:flex;align-items:center;gap:12px;}
+  .modhead .ic{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .modhead h1{font-family:'Sora';font-weight:700;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn.danger{border-color:rgba(255,107,107,.4);color:#ffb3b3;}
+  .tbtn.danger:hover{border-color:var(--danger);color:#fff;background:rgba(255,107,107,.1);}
+  .tbtn:disabled{opacity:.35;cursor:not-allowed;}
+  .tbtn svg{flex:none;width:13px;height:13px;}
+  .toggrp{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:3px;}
+  .toggrp button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .toggrp button.on{background:rgba(74,144,255,.16);color:#cfe0ff;}
+  .toggrp button:hover{color:var(--ice);}
+
+  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin-bottom:16px;}
+  .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .panel .phead h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+  .panel .phead .phsub{font-size:11px;color:var(--steel-400);}
+
+  .kpigrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  @media(max-width:1300px){.kpigrid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.kpigrid{grid-template-columns:1fr;}}
+  .kpi-card{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px;cursor:pointer;transition:.15s;}
+  .kpi-card:hover{border-color:rgba(74,144,255,.5);}
+  .kpi-label{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;}
+  .kpi-value{font-family:'Sora';font-weight:700;font-size:26px;}
+  .kpi-value.warn{color:var(--warn);} .kpi-value.danger{color:var(--danger);} .kpi-value.ok{color:var(--ok);}
+
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .filterbar select,.filterbar input[type=text],.filterbar input[type=date]{background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:12px;padding:8px 10px;outline:none;}
+  .filterbar select:focus,.filterbar input:focus{border-color:var(--spark);}
+  .search{position:relative;flex:1;min-width:180px;}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+  .search input:focus{border-color:var(--spark);}
+  .morewrap{margin-bottom:14px;}
+  .morepanel{display:none;grid-template-columns:repeat(4,1fr);gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:14px;margin-top:8px;}
+  .morewrap.open .morepanel{display:grid;}
+  @media(max-width:900px){.morepanel{grid-template-columns:1fr 1fr;}}
+  .morepanel label{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
+  .morepanel select,.morepanel input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:12.5px;padding:8px 9px;outline:none;}
+
+  .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .stbl th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap;cursor:default;}
+  .stbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .stbl tr:last-child td{border-bottom:none;}
+  .stbl tr.click{cursor:pointer;} .stbl tr.click:hover{background:rgba(74,144,255,.06);}
+  .tblwrap{overflow-x:auto;}
+  .empty3{text-align:center;color:var(--steel-400);padding:26px;font-size:12.5px;}
+  .jcnum{font-family:'Sora';font-weight:600;color:var(--steel-300);font-size:12px;white-space:nowrap;}
+  .miniprog{width:70px;height:5px;background:rgba(255,255,255,.08);overflow:hidden;} .miniprog i{display:block;height:100%;background:var(--spark);}
+
+  .tagpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;font-weight:600;white-space:nowrap;border:1px solid;}
+  .tagpill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .tagpill.g{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
+  .tagpill.b{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .tagpill.w{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+  .tagpill.r{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
+  .tagpill.n{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+  .tagpill.p{color:var(--idea);border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12);}
+  .prio{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+  .prio.high{background:var(--danger);} .prio.medium{background:var(--warn);} .prio.low{background:var(--steel-400);}
+
+  /* detail header */
+  .dethead{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:22px 24px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
+  .dethead .dtop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .dethead .jno{font-family:'Sora';font-size:12px;color:var(--steel-300);letter-spacing:.04em;} .dethead h2{font-family:'Sora';font-weight:600;font-size:21px;margin-top:3px;}
+  .dethead .dcust{font-size:12.5px;color:var(--steel-400);margin-top:3px;}
+  .dfacts{display:flex;gap:26px;flex-wrap:wrap;}
+  .dfacts .df .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;} .dfacts .df .v{font-size:13.5px;font-weight:600;}
+  .roactions{display:flex;gap:8px;flex-wrap:wrap;}
+  .roactions .more{position:relative;}
+  .moremenu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:rgba(7,26,51,.98);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.5);z-index:50;}
+  .moremenu.open{display:block;}
+  .moremenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:11px 14px;cursor:pointer;}
+  .moremenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .moremenu button.danger2:hover{background:rgba(255,107,107,.12);color:#ffb3b3;}
+  .lockbanner{display:flex;align-items:center;gap:10px;background:rgba(255,176,87,.1);border:1px solid rgba(255,176,87,.4);color:var(--warn);font-size:12px;padding:10px 13px;margin-bottom:16px;}
+  .lockbanner svg{flex:none;} .lockbanner button{margin-left:auto;}
+
+  .stepper{display:flex;align-items:center;margin:16px 0 4px;overflow-x:auto;padding-bottom:2px;}
+  .step{display:flex;align-items:center;gap:8px;flex:none;cursor:pointer;padding:6px 4px;border:none;background:none;}
+  .step .sdot{width:22px;height:22px;border-radius:50%;border:2px solid var(--field-line);display:flex;align-items:center;justify-content:center;color:var(--steel-400);flex:none;transition:.15s;font-size:11px;}
+  .step .slabel{font-size:11.5px;font-weight:600;color:var(--steel-400);white-space:nowrap;}
+  .step.done .sdot{border-color:var(--ok);background:rgba(74,212,138,.15);color:var(--ok);}
+  .step.done .slabel{color:var(--steel-300);}
+  .step.current .sdot{border-color:var(--spark);background:var(--spark);color:#fff;box-shadow:0 0 0 4px rgba(74,144,255,.18);}
+  .step.current .slabel{color:var(--ice);}
+  .step.sidebranch .sdot{border-color:var(--warn);background:var(--warn);color:#1c1200;box-shadow:0 0 0 4px rgba(255,176,87,.18);}
+  .step.sidebranch .slabel{color:#ffd0b0;}
+  .stepline{width:30px;height:1px;background:var(--field-line);flex:none;}
+
+  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11.5px;letter-spacing:.03em;text-transform:uppercase;padding:11px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .ptabs button:hover{color:var(--ice);}
+  .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
+  .tabpanel{min-height:200px;}
+
+  .ovgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+  @media(max-width:1100px){.ovgrid{grid-template-columns:repeat(2,1fr);}}
+  .ovcard{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px;}
+  .ovcard h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:10px;}
+  .ovline{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;} .ovline .lk{color:var(--steel-400);}
+  .ovbar{height:6px;background:rgba(255,255,255,.08);overflow:hidden;margin:4px 0 8px;} .ovbar i{display:block;height:100%;background:var(--spark);}
+  .ovbig{font-family:'Sora';font-size:22px;font-weight:600;}
+
+  .opcard{border:1px solid var(--line);padding:13px 15px;margin-bottom:10px;background:rgba(255,255,255,.02);}
+  .opcard.active{border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);}
+  .opcard .oph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .opcard .opn{font-family:'Sora';font-weight:700;font-size:12.5px;} .opcard .opdesc{font-size:13px;font-weight:600;margin-top:2px;}
+  .opcard .opinstr{font-size:12px;color:var(--steel-300);margin:6px 0;line-height:1.5;}
+  .opcard .opmeta{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--steel-400);margin-top:6px;}
+  .opcard .opmeta b{color:var(--steel-300);font-weight:600;}
+  .opactions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .opactions button{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-size:11px;padding:5px 9px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:5px;}
+  .opactions button:hover{border-color:var(--spark);color:var(--ice);}
+  .opactions button svg{width:11px;height:11px;}
+  .opdep{font-size:10.5px;color:var(--steel-400);}
+
+  .mchips{display:flex;flex-wrap:wrap;gap:7px;}
+  .mchip{display:inline-flex;align-items:center;padding:7px 11px;border:1px solid var(--field-line);color:var(--steel-300);font-size:11.5px;cursor:pointer;transition:.14s;-webkit-user-select:none;user-select:none;}
+  .mchip.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+
+  .notecard{border:1px solid var(--line);padding:12px 14px;margin-bottom:10px;background:rgba(255,255,255,.02);}
+  .notecard .nh{display:flex;justify-content:space-between;font-size:11px;color:var(--steel-400);margin-bottom:6px;}
+  .notecard .ntag{font-size:9px;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line);margin-left:7px;}
+  .notecard p{font-size:12.5px;color:var(--steel-300);line-height:1.5;}
+
+  .actrow{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:12.5px;}
+  .actrow:first-child{border-top:none;}
+  .actrow .adot{width:7px;height:7px;border-radius:50%;background:var(--spark);margin-top:5px;flex:none;}
+  .actrow .atime{color:var(--steel-400);font-size:11px;white-space:nowrap;width:126px;flex:none;}
+  .actrow .auser{font-weight:600;margin-right:4px;}
+
+  .rowactions2{display:flex;gap:6px;flex-wrap:wrap;}
+  .iconbtn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);cursor:pointer;transition:.15s;}
+  .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .iconbtn svg{width:14px;height:14px;}
+
+  .scanbox{height:70px;border:1px dashed rgba(74,144,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--steel-400);margin-bottom:12px;background:rgba(74,144,255,.04);font-size:11px;}
+  .scanbox b{display:block;color:var(--ice);margin-top:4px;font-size:12px;}
+
+  .fielderr{border-color:var(--danger)!important;}
+  .errmsg{font-size:11px;color:var(--danger);margin-top:-10px;margin-bottom:12px;}
+
+  .actionbar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:20px;}
+  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:11.5px;padding:16px 8px;cursor:pointer;transition:.16s;}
+  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(74,144,255,.07);transform:translateY(-2px);}
+  .actionbar button svg{width:19px;height:19px;color:var(--spark);}
+  @media(max-width:1400px){.actionbar{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:640px){.actionbar{grid-template-columns:repeat(2,1fr);}}
+
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:600px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard.wide{width:800px;}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  @media(max-width:560px){.fcard .frow2,.fcard .frow3{grid-template-columns:1fr;}}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus,.fcard textarea:focus{border-color:var(--spark);}
+  .fcard textarea{min-height:64px;resize:vertical;}
+  .fcard .checkrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--steel-300);}
+  .fcard .checkrow input{width:auto;}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .fcard .fnote{font-size:11.5px;color:var(--steel-400);margin-top:-6px;margin-bottom:14px;}
+  .issuelist{list-style:none;margin:14px 0;} .issuelist li{font-size:12.5px;color:#ffd0b0;padding:8px 0 8px 22px;position:relative;border-top:1px solid var(--line);}
+  .issuelist li:first-child{border-top:none;}
+  .issuelist li::before{content:"!";position:absolute;left:0;top:8px;width:15px;height:15px;border-radius:50%;background:rgba(255,176,87,.18);border:1px solid rgba(255,176,87,.5);color:var(--warn);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+  /* print sheet */
+  .overlay{position:fixed;inset:0;z-index:95;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .overlay.show{display:flex;}
+  .sheet{background:#fff;color:#14202e;width:800px;max-width:100%;padding:44px 50px;font-size:12.5px;line-height:1.5;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+  .sheet .oh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #013179;padding-bottom:16px;margin-bottom:20px;}
+  .sheet .oh .co{font-family:'Sora';font-weight:700;font-size:19px;color:#013179;letter-spacing:.04em;} .sheet .oh .cm{font-size:11px;color:#5b6b7d;margin-top:4px;line-height:1.5;}
+  .sheet .oh .ot{text-align:right;} .sheet .oh .ot h2{font-family:'Sora';font-size:20px;color:#14202e;} .sheet .oh .ot .om{font-size:11px;color:#5b6b7d;margin-top:4px;}
+  .sheet .oto{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;font-size:12px;}
+  .sheet .lbl{color:#5b6b7d;text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;margin-bottom:3px;}
+  .sheet h3{font-family:'Sora';font-size:12.5px;color:#013179;text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px;border-bottom:1px solid #cdd6e0;padding-bottom:5px;}
+  .sheet table{width:100%;border-collapse:collapse;margin-bottom:10px;} .sheet th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6b7d;border-bottom:1.5px solid #cdd6e0;padding:6px 5px;}
+  .sheet td{padding:7px 5px;border-bottom:1px solid #e6ebf1;vertical-align:top;}
+  .sheet .signrow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px;}
+  .sheet .signbox{border-top:1px solid #333;padding-top:6px;font-size:10.5px;}
+  .sheet .signbox b{display:block;margin-bottom:24px;}
+  .obar{display:flex;gap:10px;justify-content:flex-end;width:800px;max-width:100%;margin-bottom:12px;}
+  .obar button{font-family:'Sora';font-weight:600;font-size:13px;padding:11px 18px;cursor:pointer;border:none;}
+  .obar .pr{background:#2c6bd6;color:#fff;} .obar .cl{background:rgba(255,255,255,.1);color:#e8f0fb;border:1px solid var(--field-line);}
+  @media print{body *{visibility:hidden;} .overlay,.overlay *{visibility:visible;} .overlay{position:absolute;inset:0;background:#fff;padding:0;display:block;} .sheet{box-shadow:none;width:100%;} .obar{display:none;}
+    .sheet table{page-break-inside:auto;} .sheet tr{page-break-inside:avoid;} .sheet .psec{page-break-inside:avoid;}}
+
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+@media(max-width:768px){.wrap{padding:16px 16px 40px;} .dfacts{gap:16px;}}
+@media(max-width:480px){.fcard{padding:22px 18px;} .modhead h1{font-size:19px;} .dethead{padding:16px;}}
+@media(max-width:900px){.ovsplit{grid-template-columns:1fr!important;}}
+.barrow2{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--steel-300);}
+.barrow2:last-child{border-bottom:none;}
+</style></head><body>
+<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<aside class="module-sidebar">
+  <div class="ms-brand"><div class="ms-icon">&#9635;</div><div><h2>JOBCARDS</h2><small data-i="msub_short">Work orders</small></div></div>
+  <nav class="module-side-nav" id="moduleSideNav">
+    <button class="on" data-ms="overview" onclick="setView('overview')"><i>&#9638;</i><span data-i="nav_overview">Overview</span></button>
+    <button data-ms="all" onclick="setView('all')"><i>&#9776;</i><span data-i="nav_all">All Jobcards</span></button>
+    <button data-ms="ready" onclick="setView('ready')"><i>&#9673;</i><span data-i="nav_ready">Ready to Start</span></button>
+    <button data-ms="inprogress" onclick="setView('inprogress')"><i>&#9654;</i><span data-i="nav_inprogress">In Progress</span></button>
+    <button data-ms="blocked" onclick="setView('blocked')"><i>&#9208;</i><span data-i="nav_blocked">Paused / Blocked</span></button>
+    <button data-ms="inspection" onclick="setView('inspection')"><i>&#9906;</i><span data-i="nav_inspection">Inspection Required</span></button>
+    <button data-ms="completed" onclick="setView('completed')"><i>&#10003;</i><span data-i="nav_completed">Completed</span></button>
+    <button data-ms="archived" onclick="setView('archived')"><i>&#9636;</i><span data-i="nav_archived">Archived</span></button>
+    <button onclick="openNewJobcardMenu()"><i>&#65291;</i><span data-i="nav_newjc">New Jobcard</span></button>
+  </nav>
+  <div class="ms-sidebox"><b data-i="sbox_t">Connected workflow</b><p data-i="sbox_p">Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.</p></div>
+  <div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="role">Admin</small></div></div>
+</aside>
+
+<div class="topfull"><div class="topbar">
+  <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+  <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+</div></div>
+
+<div class="wrap">
+  <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+  <div class="modhead">
+    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
+      <div><h1 data-i="mtitle">Jobcards</h1><p data-i="msub">Workshop production orders</p></div></div>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+<div class="overlay" id="overlay"><div><div class="obar"><button class="cl" onclick="$('overlay').classList.remove('show')" id="ovClose"></button><button class="pr" onclick="window.print()" id="ovPrint"></button></div><div class="sheet" id="sheet"></div></div></div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<script src="workshop-data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(n*100)/100;}
+function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE');}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+function isBlank(v){return v===undefined||v===null||String(v).trim()==='';}
+function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
+function isPositiveNumber(v){const n=Number(v);return Number.isFinite(n)&&n>0;}
+function clearAllFieldErrors(){document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));document.querySelectorAll('#fcard .errmsg').forEach(el=>{el.style.display='none';el.textContent='';});}
+function showFieldError(fieldId,errId,msg){const f=$(fieldId),err=$(errId);if(f){f.classList.add('fielderr');f.focus();}if(err){err.textContent=msg;err.style.display='block';}}
+function toast(msg,kind){
+  let box=$('toastBox');
+  if(!box){box=document.createElement('div');box.id='toastBox';box.style.cssText='position:fixed;right:18px;top:18px;z-index:120;display:flex;flex-direction:column;gap:8px;';document.body.appendChild(box);}
+  const el=document.createElement('div');
+  el.style.cssText=`font-family:'Inter';font-size:12.5px;padding:11px 16px;max-width:320px;box-shadow:0 14px 34px rgba(0,0,0,.45);border:1px solid ${kind==='error'?'rgba(255,107,107,.5)':'rgba(74,144,255,.4)'};background:rgba(9,23,45,.98);color:${kind==='error'?'#ffb3b3':'#e8f0fb'};`;
+  el.textContent=msg;box.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
+}
+
+// ── shared data layer: WorkshopData is the ONLY browser-persistence layer used by this module ──
+if(!window.WorkshopData){document.write('<p style="color:#ffb3b3;padding:40px;font-family:sans-serif;">workshop-data.js failed to load.</p>');}
+let SHARED=WorkshopData.get();
+let JOBCARDS=WorkshopData.listJobcards();
+function refreshShared(){SHARED=WorkshopData.get();JOBCARDS=WorkshopData.listJobcards();}
+function custById(id){return SHARED.customers.find(c=>c.id===id);}
+function custName(id){const c=custById(id);return c?c.name:'—';}
+function projByNo(no){return SHARED.projects.find(p=>p.no===no);}
+function getJC(idOrNo){return JOBCARDS.find(j=>j.id===idOrNo||j.no===idOrNo);}
+function invByCode(code){return SHARED.inventory.find(x=>x.code===code);}
+const OWNER_OPTIONS=['Aleksandar C.','Elena N.','Marko K.'];
+
+// ── status workflow metadata ──
+// Draft → Released → Ready → In Progress → Inspection → Completed → Closed, with Paused/Blocked/Cancelled
+// as side-statuses and Archived as a terminal action from Completed/Closed/Cancelled.
+// Frontend enforcement only — the future backend must repeat every one of these checks server-side.
+const MAIN_STAGES=['draft','released','ready','in-progress','inspection','completed','closed'];
+const SIDE_STATUSES=['paused','blocked','cancelled','archived'];
+const ALLOWED_TRANSITIONS={
+  draft:['released','cancelled'],
+  released:['ready','draft','paused','blocked','cancelled'],
+  ready:['in-progress','released','paused','blocked','cancelled'],
+  'in-progress':['inspection','paused','blocked'],
+  inspection:['completed','in-progress','paused','blocked'],
+  completed:['closed'],
+  closed:[],
+  paused:[],// resumed explicitly back to the status recorded in resumeStatus
+  blocked:[],
+  cancelled:[],
+  archived:[]
+};
+function isLocked(j){return['completed','closed','archived','cancelled'].includes(j.status);}
+function isPaused(j){return j.status==='paused'||j.status==='blocked';}
+
+function hasAtLeastOneOperation(j){return(j.operations||[]).length>0;}
+function requiredOperationsComplete(j){return(j.operations||[]).filter(o=>o.status!=='skipped').every(o=>o.status==='completed');}
+function mandatoryInspectionsPassed(j){return(j.inspections||[]).filter(i=>i.requirement==='required').every(i=>i.status==='passed'||i.status==='passed-comment');}
+function failedInspections(j){return(j.inspections||[]).filter(i=>i.requirement==='required'&&(i.status==='rework'||i.status==='rejected'));}
+function pendingInspections(j){return(j.inspections||[]).filter(i=>i.requirement==='required'&&i.status==='pending');}
+function materialsShort(j){return(j.materials||[]).some(m=>m.status==='shortage'||m.status==='substitute');}
+function jcHoursLogged(j){return(j.operations||[]).reduce((a,o)=>a+(Number(o.loggedHours)||0),0);}
+function jcProgress(j){const total=(j.operations||[]).length;if(!total)return j.progress||0;const done=(j.operations||[]).filter(o=>o.status==='completed').length;return Math.round(done/total*100);}
+function daysUntil(iso){if(!iso)return null;return Math.round((new Date(iso+'T00:00:00')-TODAY)/86400000);}
+const TODAY=new Date('2026-08-28T09:00:00');
+
+const T={
+en:{
+  locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Jobcards",msub:"Workshop production orders",msub_short:"Work orders",
+  sbox_t:"Connected workflow",sbox_p:"Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.",
+  nav_overview:"Overview",nav_all:"All Jobcards",nav_ready:"Ready to Start",nav_inprogress:"In Progress",nav_blocked:"Paused / Blocked",nav_inspection:"Inspection Required",nav_completed:"Completed",nav_archived:"Archived",nav_newjc:"New Jobcard",
+  kpi_open:"Total open jobcards",kpi_ready:"Ready to start",kpi_inprogress:"In progress",kpi_blocked:"Blocked",kpi_waitmat:"Waiting for material",kpi_waitinsp:"Waiting for inspection",kpi_completedweek:"Completed this week",kpi_overdue:"Overdue jobcards",
+  ov_priority_t:"Today's Priority Work",ov_recent_t:"Recently Updated",ov_matshortage_t:"Material Shortage Warnings",ov_waitinsp_t:"Waiting for Inspection",ov_workload_t:"Worker & Machine Workload",ov_deadlines_t:"Upcoming Deadlines",
+  th_jcno:"Jobcard #",th_project:"Project #",th_customer:"Customer",th_title:"Job title",th_item:"Item / assembly",th_operation:"Current operation",th_responsible:"Responsible",th_workers:"Workers",th_plannedhours:"Planned h",th_loggedhours:"Logged h",th_plannedstart:"Planned start",th_deadline:"Deadline",th_material:"Material",th_progress:"Progress",th_priority:"Priority",th_status:"Status",th_actions:"Actions",
+  f_status:"Status",f_project:"Project",f_customer:"Customer",f_responsible:"Responsible",f_worker:"Worker",f_machine:"Machine",f_priority:"Priority",f_plannedstart:"Planned start",f_deadline:"Deadline",f_material:"Material readiness",f_inspection:"Inspection status",
+  filt_all:"All",filt_allstatus:"All statuses",filt_allprojects:"All projects",filt_allcustomers:"All customers",filt_allresp:"All responsible",filt_allworkers:"All workers",filt_allmachines:"All machines",filt_allpriorities:"All priorities",filt_allmaterial:"All material states",filt_allinspection:"All inspection states",
+  morefilters:"More filters",clearfilters:"Clear filters",searchph:"Search jobcards, projects, customers…",
+  wt_fabrication:"Fabrication",wt_repair:"Repair",wt_modification:"Modification",wt_assembly:"Assembly",wt_installation:"Installation",wt_welding:"Welding",wt_cutting:"Cutting",wt_machining:"Machining",wt_maintenance:"Maintenance",wt_inspection:"Inspection",wt_other:"Other",
+  pr_high:"High",pr_medium:"Medium",pr_low:"Low",
+  loc_workshop:"Workshop",loc_site:"Site work",
+  st_draft:"Draft",st_released:"Released",st_ready:"Ready","st_in-progress":"In Progress",st_inspection:"Inspection",st_completed:"Completed",st_closed:"Closed",st_paused:"Paused",st_blocked:"Blocked",st_cancelled:"Cancelled",st_archived:"Archived",
+  ji_jcno:"Jobcard number",ji_project:"Project number",ji_customer:"Customer",ji_title:"Job title",ji_item:"Item / assembly name",ji_qty:"Quantity",ji_revision:"Revision",ji_drawingno:"Drawing number",ji_worktype:"Work type",ji_location:"Workshop or site work",ji_priority:"Priority",ji_responsible:"Responsible supervisor",ji_workers:"Assigned workers",ji_plannedstart:"Planned start",ji_plannedcompletion:"Planned completion",ji_actualstart:"Actual start",ji_actualcompletion:"Actual completion",ji_plannedhours:"Planned hours",ji_loggedhours:"Logged hours",ji_progress:"Progress",ji_status:"Current status",ji_materialready:"Material readiness",ji_inspectionreq:"Inspection requirement",ji_deliverytarget:"Delivery target",ji_none:"— None —",ji_required:"Required",ji_notrequired:"Not required",
+  tab_info:"Job Information",tab_operations:"Operations",tab_documents:"Drawings & Documents",tab_materials:"Materials",tab_workers:"Workers & Hours",tab_machines:"Machines & Equipment",tab_quality:"Quality & Inspection",tab_notes:"Notes & Problems",tab_activity:"Activity History",
+  op_add:"Add operation",op_edit:"Edit",op_duplicate:"Duplicate",op_delete:"Delete",op_moveup:"Move up",op_movedown:"Move down",op_start:"Start",op_pause:"Pause",op_resume:"Resume",op_complete:"Complete",
+  op_no:"Operation #",op_desc:"Description",op_instructions:"Work instructions",op_worker:"Assigned worker",op_machine:"Required machine",op_plannedhours:"Planned hours",op_loggedhours:"Logged hours",op_plannedstart:"Planned start",op_actualstart:"Actual start",op_actualcompletion:"Actual completion",op_status:"Status",op_dependency:"Depends on",op_inspectioncheckpoint:"Inspection checkpoint",op_notes:"Worker notes",op_attachments:"Attachments reference",op_empty:"No operations yet — add the first production step.",op_active_badge:"Active",
+  ops_pending:"Pending",ops_inprogress:"In progress",ops_paused:"Paused",ops_completed:"Completed",ops_skipped:"Skipped",
+  mat_code:"Item code",mat_desc:"Material description",mat_spec:"Specification",mat_grade:"Grade",mat_dim:"Dimension",mat_required:"Required qty",mat_reserved:"Reserved",mat_issued:"Issued",mat_remaining:"Remaining",mat_unit:"Unit",mat_location:"Store location",mat_heat:"Batch / heat #",mat_cert:"Certificate ref.",mat_status:"Material status",mat_empty:"No materials linked yet.",mat_reserve:"Reserve",mat_issue:"Issue",mat_return:"Return unused",mat_scrap:"Record scrap",mat_addoffcut:"Add offcut",mat_scan:"Scan barcode",mat_add:"Add material line",doc_add:"Add document reference",
+  ms_notchecked:"Not checked",ms_available:"Available",ms_partial:"Partially available",ms_reserved:"Reserved",ms_issued:"Issued",ms_shortage:"Shortage",ms_substitute:"Substitute approval required",
+  wh_assigned:"Assigned workers",wh_role:"Role",wh_plannedhours:"Planned h",wh_loggedhours:"Logged h",wh_remaining:"Remaining h",wh_activeop:"Active operation",wh_lastentry:"Last time entry",wh_logtime:"Log time",wh_empty:"No workers assigned yet.",wh_entries_t:"Recent time entries",wh_entries_empty:"No time entries yet.",
+  mc_required:"Required machine",mc_assigned:"Assigned",mc_availability:"Availability",mc_status:"Machine status",mc_plannedusage:"Planned usage (h)",mc_actualusage:"Actual usage (h)",mc_operator:"Operator",mc_preusecheck:"Pre-use check",mc_maintenance:"Maintenance warning",mc_empty:"No machines linked yet.",mc_add:"Add machine",
+  pu_pending:"Pending",pu_passed:"Passed",pu_flagged:"Flagged",
+  q_type:"Inspection type",q_inspector:"Responsible inspector",q_requirement:"Required or optional",q_status:"Status",q_date:"Date",q_result:"Result",q_comments:"Comments",q_relatedop:"Related operation",q_reference:"Document / report reference",q_add:"Add inspection",q_edit:"Update inspection",q_empty:"No inspection checkpoints yet.",
+  it_dimensional:"Dimensional inspection",it_visualweld:"Visual weld inspection","it_ndt-required":"NDT required","it_material-cert":"Material certificate check","it_drawing-revision":"Drawing revision check",it_final:"Final inspection",it_customer:"Customer inspection","it_test-report":"Test report",
+  req_required:"Required",req_optional:"Optional",
+  is_pending:"Pending",is_passed:"Passed","is_passed-comment":"Passed with comment",is_rework:"Rework required",is_rejected:"Rejected",
+  note_add:"Add note",note_type:"Type",note_text:"Note",note_empty:"No notes or problems recorded yet.",
+  nt_general:"General note",nt_worker:"Worker note",nt_supervisor:"Supervisor instruction","nt_material-problem":"Material problem","nt_drawing-problem":"Drawing problem","nt_machine-problem":"Machine problem","nt_quality-issue":"Quality issue","nt_safety-issue":"Safety issue","nt_delay-reason":"Delay reason",
+  act_empty:"No activity yet.",by_word:"by",
+  nc_pick_t:"New Jobcard",nc_pick_sub:"Choose how to start this jobcard.",nc_blank:"Blank jobcard",nc_blank_sub:"Start from an empty jobcard and fill in every detail manually.",nc_fromproject:"From an existing project",nc_fromproject_sub:"Reuse the project's customer, delivery target, BOM, planned hours and machines.",nc_frombom:"From a project BOM item",nc_frombom_sub:"Scope the jobcard to a single material line from a project's bill of materials.",
+  nc_title:"New Jobcard",nc_edit_title:"Edit Jobcard",nc_save:"Save",nc_cancel:"Cancel",nc_create:"Create",
+  a_edit:"Edit",a_print:"Print Jobcard",a_duplicate:"Duplicate",a_more:"More",a_start:"Start work",a_pause:"Pause",a_resume:"Resume",a_block:"Mark blocked",a_complete:"Mark completed",a_close:"Close jobcard",a_cancel:"Cancel jobcard",a_reopen:"Reopen",a_archive:"Archive",a_release:"Release",a_ready:"Mark ready",a_inspection:"Send to inspection",
+  m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
+  f_reason:"Reason",f_comment:"Comment",f_resumestatus:"Resume to status",f_overridereason:"Override reason (required)",f_hours:"Hours",f_qty:"Quantity",f_date:"Date",f_worker:"Worker",f_barcode:"Barcode / QR value",f_destination:"Destination",
+  confirm_delete_op:"Delete operation \"{n}\"?",confirm_delete_mat:"Delete material line \"{n}\"?",confirm_status:"Move this jobcard to \"{s}\"?",confirm_archive:"Archive jobcard {no}? It will be hidden from the active lists but kept for record-keeping.",confirm_complete_override:"Complete this jobcard anyway using a manager override?",
+  err_required:"This field is required.",err_qty:"Quantity must be greater than zero.",err_hours:"Hours must be greater than zero.",err_date:"Please enter a valid date.",err_negative:"This value cannot be negative.",
+  demo_scan:"Barcode scan — demo. Manual entry only, no camera or physical scanner is connected.",demo_upload:"Attachment reference — demo. No file is actually stored.",
+  issue_no_operations:"This jobcard has no operations yet — add at least one before releasing.",issue_no_responsible:"No responsible supervisor is assigned yet.",issue_material_short:"One or more materials are short — check availability before starting.",issue_operations_open:"{n} operation(s) are not yet completed.",issue_inspections_pending:"{n} required inspection(s) are still pending.",issue_inspections_failed:"{n} required inspection(s) failed or need rework.",
+  lockbanner:"This jobcard is {status} and read-only. Reopen it to make changes.",locked_msg:"Jobcard {no} is {status} and read-only.",
+  transition_blocked:"Cannot move from \"{a}\" to \"{b}\" directly.",complete_issues_title:"This jobcard cannot be completed yet",complete_goback:"Go back",complete_override_btn:"Complete with manager override",
+  matready_notchecked:"Not checked",matready_ready:"Ready",matready_partial:"Partial",matready_shortage:"Shortage",
+  pr_header_no:"Jobcard",pr_header_rev:"Rev",pr_customer:"Customer",pr_project:"Project",pr_drawing:"Drawing",pr_worktype:"Work type",pr_qty:"Quantity",pr_operations:"Operations & Work Instructions",pr_materials:"Materials",pr_workers:"Assigned Workers",pr_machines:"Machines",pr_inspections:"Quality & Inspection Checkpoints",pr_notes:"Notes",pr_signoff_worker:"Worker",pr_signoff_supervisor:"Supervisor",pr_signoff_inspector:"Inspector",pr_signoff_date:"Completion date",pr_close:"Close",pr_print:"Print",
+  empty_jclist:"No jobcards match these filters.",empty_select:"Select a jobcard from the list to see details.",
+  chart_none:"No data yet."
+},
+sv:{
+  locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Jobbkort",msub:"Verkstadens tillverkningsorder",msub_short:"Arbetsorder",
+  sbox_t:"Kopplat arbetsflöde",sbox_p:"Jobbkort skapas från accepterade, planerade projekt och för tillbaka timmar och materialförbrukning till den delade verkstadsdatan.",
+  nav_overview:"Översikt",nav_all:"Alla jobbkort",nav_ready:"Redo att starta",nav_inprogress:"Pågående",nav_blocked:"Pausade / Blockerade",nav_inspection:"Kräver besiktning",nav_completed:"Klara",nav_archived:"Arkiverade",nav_newjc:"Nytt jobbkort",
+  kpi_open:"Totalt öppna jobbkort",kpi_ready:"Redo att starta",kpi_inprogress:"Pågående",kpi_blocked:"Blockerade",kpi_waitmat:"Väntar på material",kpi_waitinsp:"Väntar på besiktning",kpi_completedweek:"Klara denna vecka",kpi_overdue:"Försenade jobbkort",
+  ov_priority_t:"Dagens prioriterade arbete",ov_recent_t:"Senast uppdaterade",ov_matshortage_t:"Materialbrist — varningar",ov_waitinsp_t:"Väntar på besiktning",ov_workload_t:"Beläggning — personal & maskiner",ov_deadlines_t:"Kommande deadlines",
+  th_jcno:"Jobbkort #",th_project:"Projekt #",th_customer:"Kund",th_title:"Jobbtitel",th_item:"Artikel / enhet",th_operation:"Nuvarande moment",th_responsible:"Ansvarig",th_workers:"Personal",th_plannedhours:"Plan. tim",th_loggedhours:"Logg. tim",th_plannedstart:"Planerad start",th_deadline:"Deadline",th_material:"Material",th_progress:"Framsteg",th_priority:"Prioritet",th_status:"Status",th_actions:"Åtgärder",
+  f_status:"Status",f_project:"Projekt",f_customer:"Kund",f_responsible:"Ansvarig",f_worker:"Personal",f_machine:"Maskin",f_priority:"Prioritet",f_plannedstart:"Planerad start",f_deadline:"Deadline",f_material:"Materialstatus",f_inspection:"Besiktningsstatus",
+  filt_all:"Alla",filt_allstatus:"Alla statusar",filt_allprojects:"Alla projekt",filt_allcustomers:"Alla kunder",filt_allresp:"Alla ansvariga",filt_allworkers:"All personal",filt_allmachines:"Alla maskiner",filt_allpriorities:"Alla prioriteter",filt_allmaterial:"Alla materialstatusar",filt_allinspection:"Alla besiktningsstatusar",
+  morefilters:"Fler filter",clearfilters:"Rensa filter",searchph:"Sök jobbkort, projekt, kund…",
+  wt_fabrication:"Tillverkning",wt_repair:"Reparation",wt_modification:"Modifiering",wt_assembly:"Montering",wt_installation:"Installation",wt_welding:"Svetsning",wt_cutting:"Skärning",wt_machining:"Bearbetning",wt_maintenance:"Underhåll",wt_inspection:"Besiktning",wt_other:"Övrigt",
+  pr_high:"Hög",pr_medium:"Medel",pr_low:"Låg",
+  loc_workshop:"Verkstad",loc_site:"Platsarbete",
+  st_draft:"Utkast",st_released:"Utfärdat",st_ready:"Redo","st_in-progress":"Pågående",st_inspection:"Besiktning",st_completed:"Klart",st_closed:"Stängt",st_paused:"Pausat",st_blocked:"Blockerat",st_cancelled:"Avbrutet",st_archived:"Arkiverat",
+  ji_jcno:"Jobbkortsnummer",ji_project:"Projektnummer",ji_customer:"Kund",ji_title:"Jobbtitel",ji_item:"Artikel- / enhetsnamn",ji_qty:"Antal",ji_revision:"Revision",ji_drawingno:"Ritningsnummer",ji_worktype:"Arbetstyp",ji_location:"Verkstad eller platsarbete",ji_priority:"Prioritet",ji_responsible:"Ansvarig arbetsledare",ji_workers:"Tilldelad personal",ji_plannedstart:"Planerad start",ji_plannedcompletion:"Planerat klart",ji_actualstart:"Verklig start",ji_actualcompletion:"Verkligt klart",ji_plannedhours:"Planerade timmar",ji_loggedhours:"Loggade timmar",ji_progress:"Framsteg",ji_status:"Aktuell status",ji_materialready:"Materialstatus",ji_inspectionreq:"Besiktningskrav",ji_deliverytarget:"Leveransmål",ji_none:"— Ingen —",ji_required:"Krävs",ji_notrequired:"Krävs ej",
+  tab_info:"Jobbinformation",tab_operations:"Moment",tab_documents:"Ritningar & dokument",tab_materials:"Material",tab_workers:"Personal & timmar",tab_machines:"Maskiner & utrustning",tab_quality:"Kvalitet & besiktning",tab_notes:"Anteckningar & problem",tab_activity:"Aktivitetshistorik",
+  op_add:"Lägg till moment",op_edit:"Redigera",op_duplicate:"Duplicera",op_delete:"Ta bort",op_moveup:"Flytta upp",op_movedown:"Flytta ner",op_start:"Starta",op_pause:"Pausa",op_resume:"Återuppta",op_complete:"Slutför",
+  op_no:"Moment #",op_desc:"Beskrivning",op_instructions:"Arbetsinstruktion",op_worker:"Tilldelad personal",op_machine:"Krävd maskin",op_plannedhours:"Planerade timmar",op_loggedhours:"Loggade timmar",op_plannedstart:"Planerad start",op_actualstart:"Verklig start",op_actualcompletion:"Verkligt klart",op_status:"Status",op_dependency:"Beror på",op_inspectioncheckpoint:"Besiktningspunkt",op_notes:"Anteckningar från personal",op_attachments:"Bilaga-referens",op_empty:"Inga moment ännu — lägg till det första tillverkningssteget.",op_active_badge:"Aktivt",
+  ops_pending:"Väntar",ops_inprogress:"Pågår",ops_paused:"Pausat",ops_completed:"Klart",ops_skipped:"Överhoppat",
+  mat_code:"Artikelkod",mat_desc:"Materialbeskrivning",mat_spec:"Specifikation",mat_grade:"Kvalitet",mat_dim:"Dimension",mat_required:"Behov",mat_reserved:"Reserverat",mat_issued:"Uttaget",mat_remaining:"Kvarstår",mat_unit:"Enhet",mat_location:"Lagerplats",mat_heat:"Sats- / smältnummer",mat_cert:"Certifikatreferens",mat_status:"Materialstatus",mat_empty:"Inget material kopplat ännu.",mat_reserve:"Reservera",mat_issue:"Ta ut",mat_return:"Returnera oanvänt",mat_scrap:"Registrera skrot",mat_addoffcut:"Lägg till restbit",mat_scan:"Skanna streckkod",mat_add:"Lägg till materialrad",doc_add:"Lägg till dokumentreferens",
+  ms_notchecked:"Ej kontrollerat",ms_available:"Tillgängligt",ms_partial:"Delvis tillgängligt",ms_reserved:"Reserverat",ms_issued:"Uttaget",ms_shortage:"Brist",ms_substitute:"Kräver ersättningsgodkännande",
+  wh_assigned:"Tilldelad personal",wh_role:"Roll",wh_plannedhours:"Plan. tim",wh_loggedhours:"Logg. tim",wh_remaining:"Kvar. tim",wh_activeop:"Aktivt moment",wh_lastentry:"Senaste tidregistrering",wh_logtime:"Registrera tid",wh_empty:"Ingen personal tilldelad ännu.",wh_entries_t:"Senaste tidregistreringar",wh_entries_empty:"Inga tidregistreringar ännu.",
+  mc_required:"Krävd maskin",mc_assigned:"Tilldelad",mc_availability:"Tillgänglighet",mc_status:"Maskinstatus",mc_plannedusage:"Planerad användning (tim)",mc_actualusage:"Verklig användning (tim)",mc_operator:"Operatör",mc_preusecheck:"Förkontroll",mc_maintenance:"Underhållsvarning",mc_empty:"Ingen maskin kopplad ännu.",mc_add:"Lägg till maskin",
+  pu_pending:"Väntar",pu_passed:"Godkänd",pu_flagged:"Flaggad",
+  q_type:"Besiktningstyp",q_inspector:"Ansvarig besiktningsman",q_requirement:"Obligatorisk eller valfri",q_status:"Status",q_date:"Datum",q_result:"Resultat",q_comments:"Kommentarer",q_relatedop:"Relaterat moment",q_reference:"Dokument- / rapportreferens",q_add:"Lägg till besiktning",q_edit:"Uppdatera besiktning",q_empty:"Inga besiktningspunkter ännu.",
+  it_dimensional:"Måttbesiktning",it_visualweld:"Visuell svetsbesiktning","it_ndt-required":"OFP krävs","it_material-cert":"Materialcertifikatkontroll","it_drawing-revision":"Ritningsrevisionskontroll",it_final:"Slutbesiktning",it_customer:"Kundbesiktning","it_test-report":"Testrapport",
+  req_required:"Obligatorisk",req_optional:"Valfri",
+  is_pending:"Väntar",is_passed:"Godkänd","is_passed-comment":"Godkänd med kommentar",is_rework:"Omarbete krävs",is_rejected:"Underkänd",
+  note_add:"Lägg till anteckning",note_type:"Typ",note_text:"Anteckning",note_empty:"Inga anteckningar eller problem registrerade ännu.",
+  nt_general:"Allmän anteckning",nt_worker:"Personalanteckning",nt_supervisor:"Instruktion från arbetsledare","nt_material-problem":"Materialproblem","nt_drawing-problem":"Ritningsproblem","nt_machine-problem":"Maskinproblem","nt_quality-issue":"Kvalitetsproblem","nt_safety-issue":"Säkerhetsproblem","nt_delay-reason":"Förseningsorsak",
+  act_empty:"Ingen aktivitet ännu.",by_word:"av",
+  nc_pick_t:"Nytt jobbkort",nc_pick_sub:"Välj hur detta jobbkort ska skapas.",nc_blank:"Tomt jobbkort",nc_blank_sub:"Starta från ett tomt jobbkort och fyll i allt manuellt.",nc_fromproject:"Från ett befintligt projekt",nc_fromproject_sub:"Återanvänd projektets kund, leveransmål, materialbehov, planerade timmar och maskiner.",nc_frombom:"Från en materialrad i projektet",nc_frombom_sub:"Begränsa jobbkortet till en enskild materialrad från projektets materialspecifikation.",
+  nc_title:"Nytt jobbkort",nc_edit_title:"Redigera jobbkort",nc_save:"Spara",nc_cancel:"Avbryt",nc_create:"Skapa",
+  a_edit:"Redigera",a_print:"Skriv ut jobbkort",a_duplicate:"Duplicera",a_more:"Mer",a_start:"Starta arbete",a_pause:"Pausa",a_resume:"Återuppta",a_block:"Markera blockerat",a_complete:"Markera klart",a_close:"Stäng jobbkort",a_cancel:"Avbryt jobbkort",a_reopen:"Återöppna",a_archive:"Arkivera",a_release:"Utfärda",a_ready:"Markera redo",a_inspection:"Skicka till besiktning",
+  m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
+  f_reason:"Anledning",f_comment:"Kommentar",f_resumestatus:"Återuppta till status",f_overridereason:"Anledning till överstyrning (krävs)",f_hours:"Timmar",f_qty:"Antal",f_date:"Datum",f_worker:"Personal",f_barcode:"Streckkod / QR-värde",f_destination:"Destination",
+  confirm_delete_op:"Ta bort momentet \"{n}\"?",confirm_delete_mat:"Ta bort materialraden \"{n}\"?",confirm_status:"Flytta detta jobbkort till \"{s}\"?",confirm_archive:"Arkivera jobbkort {no}? Det döljs från aktiva listor men behålls för spårbarhet.",confirm_complete_override:"Slutför detta jobbkort ändå med chefsöverstyrning?",
+  err_required:"Detta fält är obligatoriskt.",err_qty:"Antal måste vara större än noll.",err_hours:"Timmar måste vara större än noll.",err_date:"Ange ett giltigt datum.",err_negative:"Detta värde kan inte vara negativt.",
+  demo_scan:"Streckkodsskanning — demo. Endast manuell inmatning, ingen kamera eller fysisk skanner är ansluten.",demo_upload:"Bilagereferens — demo. Ingen fil sparas i verkligheten.",
+  issue_no_operations:"Detta jobbkort har inga moment ännu — lägg till minst ett innan det utfärdas.",issue_no_responsible:"Ingen ansvarig arbetsledare är tilldelad ännu.",issue_material_short:"Ett eller flera material har brist — kontrollera tillgänglighet innan start.",issue_operations_open:"{n} moment är ännu inte klara.",issue_inspections_pending:"{n} obligatoriska besiktningar väntar fortfarande.",issue_inspections_failed:"{n} obligatoriska besiktningar underkändes eller kräver omarbete.",
+  lockbanner:"Detta jobbkort är {status} och skrivskyddat. Återöppna det för att göra ändringar.",locked_msg:"Jobbkort {no} är {status} och skrivskyddat.",
+  transition_blocked:"Kan inte flytta från \"{a}\" till \"{b}\" direkt.",complete_issues_title:"Detta jobbkort kan inte slutföras ännu",complete_goback:"Gå tillbaka",complete_override_btn:"Slutför med chefsöverstyrning",
+  matready_notchecked:"Ej kontrollerat",matready_ready:"Redo",matready_partial:"Delvis",matready_shortage:"Brist",
+  pr_header_no:"Jobbkort",pr_header_rev:"Rev",pr_customer:"Kund",pr_project:"Projekt",pr_drawing:"Ritning",pr_worktype:"Arbetstyp",pr_qty:"Antal",pr_operations:"Moment & arbetsinstruktioner",pr_materials:"Material",pr_workers:"Tilldelad personal",pr_machines:"Maskiner",pr_inspections:"Kvalitets- och besiktningspunkter",pr_notes:"Anteckningar",pr_signoff_worker:"Personal",pr_signoff_supervisor:"Arbetsledare",pr_signoff_inspector:"Besiktningsman",pr_signoff_date:"Datum klart",pr_close:"Stäng",pr_print:"Skriv ut",
+  empty_jclist:"Inga jobbkort matchar dessa filter.",empty_select:"Välj ett jobbkort i listan för att se detaljer.",
+  chart_none:"Ingen data ännu."
+},
+mk:{
+  locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Rabotni kartoni",msub:"Rabotni nalozi za rabotilnicata",msub_short:"Rabotni nalozi",
+  sbox_t:"Poврзан tek na rabota",sbox_p:"Rabotnite kartoni se izdavaat od prifateni, planirani proekti i gi vraќaat časovite i upotrebata na materijal vo споделените podatoci.",
+  nav_overview:"Pregled",nav_all:"Site rabotni kartoni",nav_ready:"Podgotveni za početok",nav_inprogress:"Vo tek",nav_blocked:"Pauzirani / Blokirani",nav_inspection:"Baraat inspekcija",nav_completed:"Završeni",nav_archived:"Arhivirani",nav_newjc:"Nov raboten karton",
+  kpi_open:"Vkupno otvoreni kartoni",kpi_ready:"Podgotveni za početok",kpi_inprogress:"Vo tek",kpi_blocked:"Blokirani",kpi_waitmat:"Čekaat materijal",kpi_waitinsp:"Čekaat inspekcija",kpi_completedweek:"Završeni ovaa nedela",kpi_overdue:"Docnети kartoni",
+  ov_priority_t:"Prioritetna rabota za denes",ov_recent_t:"Poslední ažurirani",ov_matshortage_t:"Predupreduvaña za nedostig na materijal",ov_waitinsp_t:"Čekaat inspekcija",ov_workload_t:"Optovaruvañe — rabotnici i mašini",ov_deadlines_t:"Idni rokovi",
+  th_jcno:"Karton br.",th_project:"Proekt br.",th_customer:"Klient",th_title:"Naslov na rabota",th_item:"Artikl / sklop",th_operation:"Tekovna operacija",th_responsible:"Odgovoren",th_workers:"Rabotnici",th_plannedhours:"Plan. časovi",th_loggedhours:"Zapiš. časovi",th_plannedstart:"Planiran početok",th_deadline:"Rok",th_material:"Materijal",th_progress:"Napredok",th_priority:"Prioritet",th_status:"Status",th_actions:"Akcii",
+  f_status:"Status",f_project:"Proekt",f_customer:"Klient",f_responsible:"Odgovoren",f_worker:"Rabotnik",f_machine:"Mašina",f_priority:"Prioritet",f_plannedstart:"Planiran početok",f_deadline:"Rok",f_material:"Podgotvenost na materijal",f_inspection:"Status na inspekcija",
+  filt_all:"Site",filt_allstatus:"Site statusi",filt_allprojects:"Site proekti",filt_allcustomers:"Site klienti",filt_allresp:"Site odgovorni",filt_allworkers:"Site rabotnici",filt_allmachines:"Site mašini",filt_allpriorities:"Site prioriteti",filt_allmaterial:"Site statusi na materijal",filt_allinspection:"Site statusi na inspekcija",
+  morefilters:"Poveќe filtri",clearfilters:"Isčisti filtri",searchph:"Pretraži kartoni, proekti, klienti…",
+  wt_fabrication:"Izработка",wt_repair:"Popravka",wt_modification:"Modifikacija",wt_assembly:"Montaža",wt_installation:"Instalacija",wt_welding:"Zavaruvañe",wt_cutting:"Sečeñe",wt_machining:"Mašinska obrabotka",wt_maintenance:"Održuvañe",wt_inspection:"Inspekcija",wt_other:"Drugo",
+  pr_high:"Visok",pr_medium:"Sreden",pr_low:"Nizok",
+  loc_workshop:"Rabotilnica",loc_site:"Teren",
+  st_draft:"Nacrt",st_released:"Izdaden",st_ready:"Podgotven","st_in-progress":"Vo tek",st_inspection:"Inspekcija",st_completed:"Završen",st_closed:"Zatvoren",st_paused:"Pauziran",st_blocked:"Blokiran",st_cancelled:"Otkažan",st_archived:"Arhiviran",
+  ji_jcno:"Broj na karton",ji_project:"Broj na proekt",ji_customer:"Klient",ji_title:"Naslov na rabota",ji_item:"Ime na artikl / sklop",ji_qty:"Količina",ji_revision:"Revizija",ji_drawingno:"Broj na crtež",ji_worktype:"Tip na rabota",ji_location:"Rabotilnica ili teren",ji_priority:"Prioritet",ji_responsible:"Odgovoren nadzornik",ji_workers:"Zadolženi rabotnici",ji_plannedstart:"Planiran početok",ji_plannedcompletion:"Planirano zavrшuvañe",ji_actualstart:"Realen početok",ji_actualcompletion:"Realno zavrшuvañe",ji_plannedhours:"Planirani časovi",ji_loggedhours:"Zapišani časovi",ji_progress:"Napredok",ji_status:"Tekoven status",ji_materialready:"Podgotvenost na materijal",ji_inspectionreq:"Baraña za inspekcija",ji_deliverytarget:"Cel za isporaka",ji_none:"— Nikoj —",ji_required:"Se bara",ji_notrequired:"Ne se bara",
+  tab_info:"Informacii za rabota",tab_operations:"Operacii",tab_documents:"Crteži i dokumenti",tab_materials:"Materijali",tab_workers:"Rabotnici i časovi",tab_machines:"Mašini i oprema",tab_quality:"Kvalitet i inspekcija",tab_notes:"Beleški i problemi",tab_activity:"Istorija na aktivnosti",
+  op_add:"Dodaj operacija",op_edit:"Uredi",op_duplicate:"Dupliciraj",op_delete:"Izbriši",op_moveup:"Premesti nagore",op_movedown:"Premesti nadolu",op_start:"Started",op_pause:"Pauziraj",op_resume:"Prodolži",op_complete:"Završi",
+  op_no:"Operacija br.",op_desc:"Opis",op_instructions:"Rabotni instrukcii",op_worker:"Zadolžen rabotnik",op_machine:"Baрана mašina",op_plannedhours:"Planirani časovi",op_loggedhours:"Zapišani časovi",op_plannedstart:"Planiran početok",op_actualstart:"Realen početok",op_actualcompletion:"Realno zavrшuvañe",op_status:"Status",op_dependency:"Zavisi od",op_inspectioncheckpoint:"Точка за inspekcija",op_notes:"Beleški od rabotnik",op_attachments:"Referenca za prilog",op_empty:"Sè uште nema operacii — dodaj go prviot proizводен čekor.",op_active_badge:"Aktivna",
+  ops_pending:"Vo čekañe",ops_inprogress:"Vo tek",ops_paused:"Pauzirana",ops_completed:"Završena",ops_skipped:"Prescocena",
+  mat_code:"Šifra na artikl",mat_desc:"Opis na materijal",mat_spec:"Specifikacija",mat_grade:"Kvalitet",mat_dim:"Dimenzija",mat_required:"Potrebna kol.",mat_reserved:"Rezervirano",mat_issued:"Izdadeno",mat_remaining:"Preostanato",mat_unit:"Edinica",mat_location:"Lokacija vo magacin",mat_heat:"Broj na šarža",mat_cert:"Referenca na certifikat",mat_status:"Status na materijal",mat_empty:"Sè uште nema poврзан materijal.",mat_reserve:"Rezerviraj",mat_issue:"Izdadi",mat_return:"Vrati neupotrebeno",mat_scrap:"Zapiši otpad",mat_addoffcut:"Dodaj otsečok",mat_scan:"Skeniraj barkod",mat_add:"Dodaj red na materijal",doc_add:"Dodaj referenca na dokument",
+  ms_notchecked:"Neprovereno",ms_available:"Dostapno",ms_partial:"Delumno dostapno",ms_reserved:"Rezervirano",ms_issued:"Izdadeno",ms_shortage:"Nedostig",ms_substitute:"Bara odobruvañe za zamena",
+  wh_assigned:"Zadolženi rabotnici",wh_role:"Uloga",wh_plannedhours:"Plan. časovi",wh_loggedhours:"Zapiš. časovi",wh_remaining:"Preostanati časovi",wh_activeop:"Aktivna operacija",wh_lastentry:"Posledna evidencija na vreme",wh_logtime:"Zapiši vreme",wh_empty:"Sè uште nema zadolženi rabotnici.",wh_entries_t:"Posledni evidencii na vreme",wh_entries_empty:"Sè uште nema evidencii na vreme.",
+  mc_required:"Baрана mašina",mc_assigned:"Zadolžena",mc_availability:"Dostapnost",mc_status:"Status na mašina",mc_plannedusage:"Planirana upotreba (č)",mc_actualusage:"Realna upotreba (č)",mc_operator:"Operator",mc_preusecheck:"Proverka pred upotreba",mc_maintenance:"Predupreduvañe za servis",mc_empty:"Sè uште nema poврзана mašina.",mc_add:"Dodaj mašina",
+  pu_pending:"Vo čekañe",pu_passed:"Poминато",pu_flagged:"Označeno",
+  q_type:"Tip na inspekcija",q_inspector:"Odgovoren inspektor",q_requirement:"Zadolžitelna ili opciona",q_status:"Status",q_date:"Datum",q_result:"Rezultat",q_comments:"Komentari",q_relatedop:"Poврзана operacija",q_reference:"Referenca na dokument / izveštaj",q_add:"Dodaj inspekcija",q_edit:"Ažuriraj inspekcija",q_empty:"Sè uште nema точки za inspekcija.",
+  it_dimensional:"Dimenzionalna inspekcija",it_visualweld:"Vizuelna inspekcija na zavar","it_ndt-required":"Se bara NDT","it_material-cert":"Proverka na certifikat za materijal","it_drawing-revision":"Proverka na revizija na crtež",it_final:"Zavrшна inspekcija",it_customer:"Inspekcija od klient","it_test-report":"Izveštaj od testiraње",
+  req_required:"Zadolžitelna",req_optional:"Opciona",
+  is_pending:"Vo čekañe",is_passed:"Poминато","is_passed-comment":"Poминато so komentar",is_rework:"Se bara doработка",is_rejected:"Odbieno",
+  note_add:"Dodaj beleška",note_type:"Tip",note_text:"Beleška",note_empty:"Sè uште nema zapišani beleški ili problemi.",
+  nt_general:"Opšta beleška",nt_worker:"Beleška od rabotnik",nt_supervisor:"Instrukcija od nadzornik","nt_material-problem":"Problem so materijal","nt_drawing-problem":"Problem so crtež","nt_machine-problem":"Problem so mašina","nt_quality-issue":"Problem so kvalitet","nt_safety-issue":"Bezbednosen problem","nt_delay-reason":"Pričina za docneñe",
+  act_empty:"Sè uште nema aktivnost.",by_word:"od",
+  nc_pick_t:"Nov raboten karton",nc_pick_sub:"Izberi kako da se kreira ovoj karton.",nc_blank:"Prazen karton",nc_blank_sub:"Počni od prazen karton i pополни sè rakoпisno.",nc_fromproject:"Od postoен proekt",nc_fromproject_sub:"Prezemi go klientot, celta za isporaka, spisokot na materijali, planiranite časovi i mašinite od proektot.",nc_frombom:"Od stavka od spisokot na materijali",nc_frombom_sub:"Ограничи go kartonot na eden materijalen red od spisokot na materijali na proektot.",
+  nc_title:"Nov raboten karton",nc_edit_title:"Uredi raboten karton",nc_save:"Začuvaj",nc_cancel:"Otkaži",nc_create:"Kreiraj",
+  a_edit:"Uredi",a_print:"Pečati karton",a_duplicate:"Dupliciraj",a_more:"Poveќe",a_start:"Започни rabota",a_pause:"Pauziraj",a_resume:"Prodolži",a_block:"Označi kako blokiran",a_complete:"Označi kako završen",a_close:"Zatvori karton",a_cancel:"Otkaži karton",a_reopen:"Povторно otvori",a_archive:"Arhiviraj",a_release:"Izdadi",a_ready:"Označi kako podgotven",a_inspection:"Isprati na inspekcija",
+  m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
+  f_reason:"Pričina",f_comment:"Komentar",f_resumestatus:"Prodolži do status",f_overridereason:"Pričina za overriding (se bara)",f_hours:"Časovi",f_qty:"Količina",f_date:"Datum",f_worker:"Rabotnik",f_barcode:"Barkod / QR vrednost",f_destination:"Destinacija",
+  confirm_delete_op:"Izbriši ja operacijata \"{n}\"?",confirm_delete_mat:"Izbriši go redot na materijal \"{n}\"?",confirm_status:"Premesti go ovoj karton vo \"{s}\"?",confirm_archive:"Arhiviraj go kartonot {no}? Ke bide skrien od aktivnite listi no se čuva za evidencija.",confirm_complete_override:"Sepak da se završi ovoj karton so upravuvačko overriding?",
+  err_required:"Ова poле е задолжително.",err_qty:"Količinata mora da bide pogolema od nula.",err_hours:"Časovite mora da bidat pogolemi od nula.",err_date:"Vnesi validen datum.",err_negative:"Ovaa vrednost ne može da bide negativna.",
+  demo_scan:"Skeniraње barkod — demo. Samo rakoпisen внес, nikakva kamera ili fizički skener не e поврзан.",demo_upload:"Referenca za prilog — demo. Nikakov fajl не se začuvuva vo realnost.",
+  issue_no_operations:"Ovoj karton sè uште nema operacii — dodaj barem edna pred da se izdade.",issue_no_responsible:"Sè uште nema zadolžen odgovoren nadzornik.",issue_material_short:"Eden ili poveќe materijali imaat nedostig — proveri dostapnost pred početok.",issue_operations_open:"{n} operacii sè uште ne se završeni.",issue_inspections_pending:"{n} zadolžitelni inspekcii sè uште čekaat.",issue_inspections_failed:"{n} zadolžitelni inspekcii ne poминaa ili baraat doработка.",
+  lockbanner:"Ovoj karton e {status} i e samo za čitanje. Povторно otvori go za да napraviš izmeni.",locked_msg:"Kartonot {no} e {status} i e samo za čitanje.",
+  transition_blocked:"Ne može da se premine od \"{a}\" vo \"{b}\" direktno.",complete_issues_title:"Ovoj karton sè uште ne može da se završi",complete_goback:"Vrati se nazad",complete_override_btn:"Završi so upravuvačko overriding",
+  matready_notchecked:"Neprovereno",matready_ready:"Podgotveno",matready_partial:"Delumno",matready_shortage:"Nedostig",
+  pr_header_no:"Raboten karton",pr_header_rev:"Rev",pr_customer:"Klient",pr_project:"Proekt",pr_drawing:"Crtež",pr_worktype:"Tip na rabota",pr_qty:"Količina",pr_operations:"Operacii i rabotni instrukcii",pr_materials:"Materijali",pr_workers:"Zadolženi rabotnici",pr_machines:"Mašini",pr_inspections:"Točki za kvalitet i inspekcija",pr_notes:"Beleški",pr_signoff_worker:"Rabotnik",pr_signoff_supervisor:"Nadzornik",pr_signoff_inspector:"Inspektor",pr_signoff_date:"Datum na zavrшuvañe",pr_close:"Zatvori",pr_print:"Pečati",
+  empty_jclist:"Nema kartoni koi odgovaraat na ovie filtri.",empty_select:"Izberi karton od listata za да vidiš detali.",
+  chart_none:"Sè uште nema podatoci."
+}
+};
+let LANG='en';
+function t(){return T[LANG];}
+function tpl(str,vals){return str.replace(/\{(\w+)\}/g,(m,k)=>(vals[k]!==undefined?vals[k]:m));}
+
+// ── shared form field builders (match the fov/fcard modal pattern used across the app) ──
+function field(id,label,value,type){type=type||'text';return `<div><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${esc(value??'')}"></div>`;}
+function fieldSelect(id,label,options,selected){return `<div><label for="${id}">${label}</label><select id="${id}">${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
+function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}</label><textarea id="${id}">${esc(value??'')}</textarea></div>`;}
+function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]??k}));}
+function ownerOptions(){return OWNER_OPTIONS.map(n=>({v:n,l:n}));}
+function projectOptions(includeNone){const opts=SHARED.projects.map(p=>({v:p.no,l:`${p.no} — ${p.name}`}));return includeNone?[{v:'',l:t().ji_none}].concat(opts):opts;}
+
+// ── view / filter state ──
+let VIEW='overview';
+let selectedJcId=null,detailTab='info';
+let jcQuery='',jcFilterStatus='all',jcFilterProject='all',jcFilterCustomer='all',jcFilterResp='all',jcFilterWorker='all',jcFilterMachine='all',jcFilterPriority='all',jcFilterMaterial='all',jcFilterInspection='all',moreFiltersOpen=false;
+let currentModal=null;
+
+function openModal(html,wide){$('fcard').className='fcard'+(wide?' wide':'');$('fcard').innerHTML=html;$('fov').classList.add('show');currentModal=true;
+  const first=$('fcard').querySelector('input,select,textarea,button');if(first)first.focus();}
+function closeModal(){$('fov').classList.remove('show');$('fcard').innerHTML='';currentModal=null;}
+$('fov').addEventListener('click',e=>{if(e.target.id==='fov')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(currentModal)closeModal();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));}});
+
+function fmtDate(iso){if(!iso)return '—';try{const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(t().locale||'en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return iso;}}
+function followupClass(iso){if(!iso)return '';const n=daysUntil(iso);if(n===null)return '';if(n<0)return 'r';if(n<=3)return 'w';return '';}
+
+// ── chrome: clock, language switcher, embers ──
+function tick(){const n=new Date();$('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$('date').textContent=n.toLocaleDateString((t().locale||'en-GB'),{weekday:'short',day:'numeric',month:'short'});}catch(e){$('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+function setLang(code){LANG=code;
+  document.querySelectorAll('[data-i]').forEach(el=>{const key=el.getAttribute('data-i');if(T[code][key]!==undefined)el.textContent=T[code][key];});
+  document.documentElement.lang=code==='mk'?'mk-Latn':code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const cur=$('langcur');if(cur)cur.textContent=code.toUpperCase();
+  tick();renderApp();}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));const l=$('langc');if(l)l.classList.remove('open');}));
+(function(){const lc=$('langc'),lt=$('langtoggle');if(lt){lt.addEventListener('click',e=>{e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',e=>{if(!lc.contains(e.target))lc.classList.remove('open');document.querySelectorAll('.moremenu.open').forEach(m=>{if(!m.contains(e.target))m.classList.remove('open');});});}})();
+setInterval(tick,10000);
+(function(){const box=$('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce&&box){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}})();
+
+function setView(v){VIEW=v;document.querySelectorAll('.module-side-nav button[data-ms]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-ms')===v));renderApp();window.scrollTo({top:0,behavior:'auto'});}
+
+// ═══════════════ OVERVIEW ═══════════════
+function activeJobcards(){return JOBCARDS.filter(j=>!j.archived&&!['completed','closed','cancelled'].includes(j.status));}
+function overdueJobcards(){return activeJobcards().filter(j=>{const n=daysUntil(j.plannedCompletion);return n!==null&&n<0;});}
+function completedThisWeek(){return JOBCARDS.filter(j=>{if(!['completed','closed'].includes(j.status)||!j.actualCompletion)return false;const n=daysUntil(j.actualCompletion);return n!==null&&n>=-7&&n<=0;});}
+function waitingForMaterial(){return activeJobcards().filter(j=>materialsShort(j)||j.materialReadiness==='shortage'||j.materialReadiness==='partial');}
+function waitingForInspection(){return JOBCARDS.filter(j=>!j.archived&&(j.status==='inspection'||(!['completed','closed','cancelled'].includes(j.status)&&pendingInspections(j).length>0)));}
+
+function kpiData(){
+  const open=activeJobcards();
+  return{
+    open:open.length,
+    ready:JOBCARDS.filter(j=>!j.archived&&j.status==='ready').length,
+    inprogress:JOBCARDS.filter(j=>!j.archived&&j.status==='in-progress').length,
+    blocked:JOBCARDS.filter(j=>!j.archived&&isPaused(j)).length,
+    waitmat:waitingForMaterial().length,
+    waitinsp:waitingForInspection().length,
+    completedweek:completedThisWeek().length,
+    overdue:overdueJobcards().length
+  };
+}
+function renderKPIGrid(){
+  const k=kpiData();const tt=t();
+  const cards=[
+    ['kpi_open',k.open,'',()=>setView('all')],
+    ['kpi_ready',k.ready,'ok',()=>setView('ready')],
+    ['kpi_inprogress',k.inprogress,'',()=>setView('inprogress')],
+    ['kpi_blocked',k.blocked,k.blocked>0?'warn':'',()=>setView('blocked')],
+    ['kpi_waitmat',k.waitmat,k.waitmat>0?'warn':'',()=>setView('all')],
+    ['kpi_waitinsp',k.waitinsp,k.waitinsp>0?'warn':'',()=>setView('inspection')],
+    ['kpi_completedweek',k.completedweek,'ok',()=>setView('completed')],
+    ['kpi_overdue',k.overdue,k.overdue>0?'danger':'',()=>setView('all')]
+  ];
+  window._kpiActions=cards.map(c=>c[3]);
+  return `<div class="kpigrid">${cards.map((c,i)=>`<div class="kpi-card" onclick="_kpiActions[${i}]()"><div class="kpi-label">${esc(tt[c[0]])}</div><div class="kpi-value ${c[2]}">${c[1]}</div></div>`).join('')}</div>`;
+}
+
+function priorityScore(j){const order={high:0,medium:1,low:2};const overdueBonus=daysUntil(j.plannedCompletion)!==null&&daysUntil(j.plannedCompletion)<0?-10:0;return (order[j.priority]??1)+overdueBonus;}
+function renderPriorityWork(){
+  const tt=t();const rows=activeJobcards().sort((a,b)=>priorityScore(a)-priorityScore(b)).slice(0,6);
+  if(!rows.length)return `<div class="empty3">${esc(tt.empty_jclist)}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.th_jcno)}</th><th>${esc(tt.th_title)}</th><th>${esc(tt.th_customer)}</th><th>${esc(tt.th_priority)}</th><th>${esc(tt.th_status)}</th><th>${esc(tt.th_deadline)}</th></tr></thead><tbody>
+    ${rows.map(j=>`<tr class="click" tabindex="0" onclick="openJcDetail(${j.id})"><td><b>${esc(j.no)}</b></td><td>${esc(j.title)}</td><td>${esc(custName(j.customerId))}</td><td><span class="prio ${esc(j.priority)}"></span>${esc(tt['pr_'+j.priority])}</td><td>${statusPill(j.status)}</td><td class="${followupClass(j.plannedCompletion)==='r'?'tagpill r':''}">${fmtDate(j.plannedCompletion)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function renderRecentlyUpdated(){
+  const tt=t();
+  const rows=JOBCARDS.filter(j=>!j.archived).map(j=>({j,last:(j.activity&&j.activity[0])||null})).filter(x=>x.last).sort((a,b)=>(b.last.date+((b.last.time)||'')).localeCompare(a.last.date+((a.last.time)||''))).slice(0,6);
+  if(!rows.length)return `<div class="empty3">${esc(tt.chart_none)}</div>`;
+  return rows.map(({j,last})=>`<div class="actrow"><div class="adot"></div><div><div><b>${esc(j.no)}</b> — ${esc(j.title)}</div><div style="color:var(--steel-400);font-size:11px;margin-top:2px;">${esc(last.action)} · ${esc(last.by||'')} · ${fmtDate(last.date)}</div></div></div>`).join('');
+}
+function renderMaterialShortages(){
+  const tt=t();const rows=waitingForMaterial().slice(0,6);
+  if(!rows.length)return `<div class="empty3">${esc(tt.chart_none)}</div>`;
+  return rows.map(j=>{const shorts=(j.materials||[]).filter(m=>m.status==='shortage'||m.status==='substitute');
+    return `<div class="actrow"><div class="adot" style="background:var(--warn);"></div><div><div><b>${esc(j.no)}</b> — ${esc(j.title)}</div><div style="color:var(--steel-400);font-size:11px;margin-top:2px;">${shorts.map(m=>esc(m.description)).join(', ')||esc(tt.ms_shortage)}</div></div></div>`;}).join('');
+}
+function renderWaitingInspection(){
+  const tt=t();const rows=waitingForInspection().slice(0,6);
+  if(!rows.length)return `<div class="empty3">${esc(tt.chart_none)}</div>`;
+  return rows.map(j=>{const n=pendingInspections(j).length;
+    return `<div class="actrow"><div class="adot" style="background:var(--idea);"></div><div><div><b>${esc(j.no)}</b> — ${esc(j.title)}</div><div style="color:var(--steel-400);font-size:11px;margin-top:2px;">${n} ${esc(tt.q_type).toLowerCase()} · ${statusPill(j.status)}</div></div></div>`;}).join('');
+}
+function renderWorkload(){
+  const tt=t();
+  const byWorker={};activeJobcards().forEach(j=>(j.operations||[]).forEach(o=>{if(!o.worker)return;byWorker[o.worker]=byWorker[o.worker]||{planned:0,logged:0};byWorker[o.worker].planned+=Number(o.plannedHours)||0;byWorker[o.worker].logged+=Number(o.loggedHours)||0;}));
+  const byMachine={};activeJobcards().forEach(j=>(j.operations||[]).forEach(o=>{if(!o.machine)return;byMachine[o.machine]=byMachine[o.machine]||0;byMachine[o.machine]+=Number(o.plannedHours)||0;}));
+  const workerRows=Object.entries(byWorker).map(([w,v])=>`<div class="barrow2"><span>${esc(w)}</span><span>${v.logged}h / ${v.planned}h</span></div>`).join('')||`<div class="empty3">${esc(tt.chart_none)}</div>`;
+  const machineRows=Object.entries(byMachine).map(([m,h])=>`<div class="barrow2"><span>${esc(m)}</span><span>${h}h</span></div>`).join('')||`<div class="empty3">${esc(tt.chart_none)}</div>`;
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><div><h4 style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;">${esc(tt.wh_assigned)}</h4>${workerRows}</div><div><h4 style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;">${esc(tt.mc_required)}</h4>${machineRows}</div></div>`;
+}
+function renderUpcomingDeadlines(){
+  const tt=t();const rows=activeJobcards().filter(j=>j.plannedCompletion).sort((a,b)=>a.plannedCompletion.localeCompare(b.plannedCompletion)).slice(0,6);
+  if(!rows.length)return `<div class="empty3">${esc(tt.chart_none)}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.th_jcno)}</th><th>${esc(tt.th_title)}</th><th>${esc(tt.th_deadline)}</th><th>${esc(tt.th_status)}</th></tr></thead><tbody>
+    ${rows.map(j=>`<tr class="click" tabindex="0" onclick="openJcDetail(${j.id})"><td><b>${esc(j.no)}</b></td><td>${esc(j.title)}</td><td class="${followupClass(j.plannedCompletion)==='r'?'tagpill r':(followupClass(j.plannedCompletion)==='w'?'tagpill w':'')}">${fmtDate(j.plannedCompletion)}</td><td>${statusPill(j.status)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function renderOverview(){
+  const tt=t();
+  return `${renderKPIGrid()}
+  <div class="panel"><div class="phead"><h3>${esc(tt.ov_priority_t)}</h3></div>${renderPriorityWork()}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="ovsplit">
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${esc(tt.ov_recent_t)}</h3></div>${renderRecentlyUpdated()}</div>
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${esc(tt.ov_matshortage_t)}</h3></div>${renderMaterialShortages()}</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;" class="ovsplit">
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${esc(tt.ov_waitinsp_t)}</h3></div>${renderWaitingInspection()}</div>
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${esc(tt.ov_deadlines_t)}</h3></div>${renderUpcomingDeadlines()}</div>
+  </div>
+  <div class="panel" style="margin-top:16px;"><div class="phead"><h3>${esc(tt.ov_workload_t)}</h3></div>${renderWorkload()}</div>`;
+}
+function statusPill(s){const tt=t();const cls=STATUS_CLASS[s]||'n';return `<span class="tagpill ${cls}">${esc(tt['st_'+s]||s)}</span>`;}
+const STATUS_CLASS={draft:'n',released:'b',ready:'b','in-progress':'b',inspection:'p',completed:'g',closed:'g',paused:'w',blocked:'r',cancelled:'r',archived:'n'};
+
+// ═══════════════ JOBCARD LIST (All / Ready / In Progress / Blocked / Inspection / Completed / Archived) ═══════════════
+const VIEW_TITLES={all:'nav_all',ready:'nav_ready',inprogress:'nav_inprogress',blocked:'nav_blocked',inspection:'nav_inspection',completed:'nav_completed',archived:'nav_archived'};
+const VIEW_BASE_FILTER={
+  all:j=>!j.archived,
+  ready:j=>!j.archived&&j.status==='ready',
+  inprogress:j=>!j.archived&&j.status==='in-progress',
+  blocked:j=>!j.archived&&isPaused(j),
+  inspection:j=>!j.archived&&(j.status==='inspection'||(!['completed','closed','cancelled'].includes(j.status)&&pendingInspections(j).length>0)),
+  completed:j=>!j.archived&&['completed','closed'].includes(j.status),
+  archived:j=>!!j.archived
+};
+function currentOperation(j){const ops=j.operations||[];return ops.find(o=>o.status==='in-progress')||ops.find(o=>o.status==='pending')||ops[ops.length-1]||null;}
+function jcMaterialStatus(j){if(!j.materials||!j.materials.length)return j.materialReadiness||'not-checked';if(j.materials.some(m=>m.status==='shortage'))return'shortage';if(j.materials.some(m=>m.status==='substitute'))return'substitute';if(j.materials.every(m=>m.status==='issued'))return'issued';if(j.materials.some(m=>m.status==='partial'))return'partial';if(j.materials.every(m=>m.status==='available'||m.status==='reserved'))return'available';return'not-checked';}
+
+function filteredJobcards(){
+  const base=VIEW_BASE_FILTER[VIEW]||(()=>true);
+  const q=jcQuery.trim().toLowerCase();
+  return JOBCARDS.filter(base)
+    .filter(j=>jcFilterStatus==='all'||j.status===jcFilterStatus)
+    .filter(j=>jcFilterProject==='all'||j.projectNo===jcFilterProject)
+    .filter(j=>jcFilterCustomer==='all'||String(j.customerId)===jcFilterCustomer)
+    .filter(j=>jcFilterResp==='all'||j.responsible===jcFilterResp)
+    .filter(j=>jcFilterWorker==='all'||(j.workers||[]).includes(jcFilterWorker))
+    .filter(j=>jcFilterMachine==='all'||(j.machines||[]).some(m=>m.name===jcFilterMachine))
+    .filter(j=>jcFilterPriority==='all'||j.priority===jcFilterPriority)
+    .filter(j=>jcFilterMaterial==='all'||jcMaterialStatus(j)===jcFilterMaterial)
+    .filter(j=>jcFilterInspection==='all'||(jcFilterInspection==='pending'?pendingInspections(j).length>0:jcFilterInspection==='failed'?failedInspections(j).length>0:jcFilterInspection==='clear'?mandatoryInspectionsPassed(j):true))
+    .filter(j=>!q||j.no.toLowerCase().includes(q)||j.title.toLowerCase().includes(q)||(j.projectNo||'').toLowerCase().includes(q)||custName(j.customerId).toLowerCase().includes(q))
+    .sort((a,b)=>(b.plannedStart||'').localeCompare(a.plannedStart||''));
+}
+function allWorkersList(){const s=new Set();JOBCARDS.forEach(j=>(j.workers||[]).forEach(w=>s.add(w)));return[...s];}
+function allMachinesList(){const s=new Set();JOBCARDS.forEach(j=>(j.machines||[]).forEach(m=>s.add(m.name)));return[...s];}
+
+function renderList(){
+  const tt=t();const rows=filteredJobcards();
+  const title=VIEW==='all'?tt.nav_all:tt[VIEW_TITLES[VIEW]];
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(title)}</h3><button class="tbtn primary small" onclick="openNewJobcardMenu()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(tt.nav_newjc)}</button></div>
+    <div class="filterbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="jcSearch" type="text" placeholder="${esc(tt.searchph)}" value="${esc(jcQuery)}"></div>
+      <select onchange="jcFilterStatus=this.value;renderApp();"><option value="all" ${jcFilterStatus==='all'?'selected':''}>${esc(tt.filt_allstatus)}</option>${MAIN_STAGES.concat(SIDE_STATUSES).map(s=>`<option value="${s}" ${jcFilterStatus===s?'selected':''}>${esc(tt['st_'+s])}</option>`).join('')}</select>
+      <select onchange="jcFilterPriority=this.value;renderApp();"><option value="all" ${jcFilterPriority==='all'?'selected':''}>${esc(tt.filt_allpriorities)}</option>${['high','medium','low'].map(p=>`<option value="${p}" ${jcFilterPriority===p?'selected':''}>${esc(tt['pr_'+p])}</option>`).join('')}</select>
+      <button class="tbtn small" onclick="moreFiltersOpen=!moreFiltersOpen;renderApp();">${esc(tt.morefilters)}</button>
+      <button class="tbtn small" onclick="clearJcFilters();">${esc(tt.clearfilters)}</button>
+    </div>
+    <div class="morewrap ${moreFiltersOpen?'open':''}"><div class="morepanel">
+      <div><label>${esc(tt.f_project)}</label><select onchange="jcFilterProject=this.value;renderApp();"><option value="all" ${jcFilterProject==='all'?'selected':''}>${esc(tt.filt_allprojects)}</option>${SHARED.projects.map(p=>`<option value="${esc(p.no)}" ${jcFilterProject===p.no?'selected':''}>${esc(p.no)}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_customer)}</label><select onchange="jcFilterCustomer=this.value;renderApp();"><option value="all" ${jcFilterCustomer==='all'?'selected':''}>${esc(tt.filt_allcustomers)}</option>${SHARED.customers.map(c=>`<option value="${c.id}" ${jcFilterCustomer===String(c.id)?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_responsible)}</label><select onchange="jcFilterResp=this.value;renderApp();"><option value="all" ${jcFilterResp==='all'?'selected':''}>${esc(tt.filt_allresp)}</option>${OWNER_OPTIONS.map(o=>`<option value="${esc(o)}" ${jcFilterResp===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_worker)}</label><select onchange="jcFilterWorker=this.value;renderApp();"><option value="all" ${jcFilterWorker==='all'?'selected':''}>${esc(tt.filt_allworkers)}</option>${allWorkersList().map(w=>`<option value="${esc(w)}" ${jcFilterWorker===w?'selected':''}>${esc(w)}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_machine)}</label><select onchange="jcFilterMachine=this.value;renderApp();"><option value="all" ${jcFilterMachine==='all'?'selected':''}>${esc(tt.filt_allmachines)}</option>${allMachinesList().map(m=>`<option value="${esc(m)}" ${jcFilterMachine===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_material)}</label><select onchange="jcFilterMaterial=this.value;renderApp();"><option value="all" ${jcFilterMaterial==='all'?'selected':''}>${esc(tt.filt_allmaterial)}</option>${['not-checked','available','partial','reserved','issued','shortage','substitute'].map(m=>`<option value="${m}" ${jcFilterMaterial===m?'selected':''}>${esc(tt['ms_'+m.replace('-','')])}</option>`).join('')}</select></div>
+      <div><label>${esc(tt.f_inspection)}</label><select onchange="jcFilterInspection=this.value;renderApp();"><option value="all" ${jcFilterInspection==='all'?'selected':''}>${esc(tt.filt_allinspection)}</option><option value="pending" ${jcFilterInspection==='pending'?'selected':''}>${esc(tt.is_pending)}</option><option value="failed" ${jcFilterInspection==='failed'?'selected':''}>${esc(tt.is_rejected)}</option><option value="clear" ${jcFilterInspection==='clear'?'selected':''}>${esc(tt.is_passed)}</option></select></div>
+    </div></div>
+    ${renderJcTable(rows)}
+  </div>`;
+}
+function clearJcFilters(){jcQuery='';jcFilterStatus='all';jcFilterProject='all';jcFilterCustomer='all';jcFilterResp='all';jcFilterWorker='all';jcFilterMachine='all';jcFilterPriority='all';jcFilterMaterial='all';jcFilterInspection='all';renderApp();}
+function attachList(){const s=$('jcSearch');if(s)s.addEventListener('input',e=>{jcQuery=e.target.value;renderApp();});}
+
+function renderJcTable(rows){
+  const tt=t();if(!rows.length)return `<div class="empty3">${esc(tt.empty_jclist)}</div>`;
+  return `<div class="tblwrap"><table class="stbl" style="min-width:1500px;"><thead><tr>
+    <th>${esc(tt.th_jcno)}</th><th>${esc(tt.th_project)}</th><th>${esc(tt.th_customer)}</th><th>${esc(tt.th_title)}</th><th>${esc(tt.th_item)}</th>
+    <th>${esc(tt.th_operation)}</th><th>${esc(tt.th_responsible)}</th><th>${esc(tt.th_workers)}</th><th class="n">${esc(tt.th_plannedhours)}</th><th class="n">${esc(tt.th_loggedhours)}</th>
+    <th>${esc(tt.th_plannedstart)}</th><th>${esc(tt.th_deadline)}</th><th>${esc(tt.th_material)}</th><th>${esc(tt.th_progress)}</th><th>${esc(tt.th_priority)}</th><th>${esc(tt.th_status)}</th>
+  </tr></thead><tbody>
+    ${rows.map(j=>{const op=currentOperation(j);const matSt=jcMaterialStatus(j);const prog=jcProgress(j);
+      return `<tr class="click" tabindex="0" onclick="openJcDetail(${j.id})">
+      <td class="jcnum">${esc(j.no)}</td><td class="jcnum">${esc(j.projectNo)||'—'}</td><td>${esc(custName(j.customerId))}</td><td><b>${esc(j.title)}</b></td><td>${esc(j.item)||'—'}</td>
+      <td>${op?esc(op.desc):'—'}</td><td>${esc(j.responsible)||'—'}</td><td>${(j.workers||[]).map(esc).join(', ')||'—'}</td>
+      <td class="n">${esc(j.plannedHours||0)}</td><td class="n">${jcHoursLogged(j)}</td>
+      <td class="${followupClass(j.plannedStart)==='r'&&!['completed','closed'].includes(j.status)?'tagpill r':''}">${fmtDate(j.plannedStart)}</td>
+      <td class="${followupClass(j.plannedCompletion)==='r'&&!['completed','closed'].includes(j.status)?'tagpill r':(followupClass(j.plannedCompletion)==='w'?'tagpill w':'')}">${fmtDate(j.plannedCompletion)}</td>
+      <td><span class="tagpill ${matSt==='shortage'||matSt==='substitute'?'r':(matSt==='partial'?'w':(matSt==='not-checked'?'n':'g'))}">${esc(tt['ms_'+matSt.replace('-','')]||matSt)}</span></td>
+      <td><div class="miniprog"><i style="width:${prog}%;"></i></div><span style="font-size:10.5px;color:var(--steel-400);">${prog}%</span></td>
+      <td><span class="prio ${esc(j.priority)}"></span>${esc(tt['pr_'+j.priority])}</td>
+      <td>${statusPill(j.status)}</td>
+    </tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+
+// ═══════════════ JOBCARD DETAIL ═══════════════
+function openJcDetail(id){selectedJcId=id;detailTab='info';VIEW='detail';renderApp();window.scrollTo({top:0,behavior:'auto'});}
+function setDetailTab(tabName){detailTab=tabName;renderApp();}
+
+function renderDetail(){
+  const tt=t();const j=getJC(selectedJcId);
+  if(!j)return `<div class="empty3">${esc(tt.empty_select)}</div>`;
+  const locked=isLocked(j);
+  const stagesShown=MAIN_STAGES.map(s=>({k:s,lbl:tt['st_'+s]}));
+  const curMainIdx=MAIN_STAGES.indexOf(j.status);
+  const onSideBranch=SIDE_STATUSES.includes(j.status);
+  const stepsHtml=stagesShown.map((s,i)=>{
+    let cls='';
+    if(!onSideBranch&&s.k===j.status)cls='current';
+    else if(curMainIdx>=0&&i<curMainIdx)cls='done';
+    else if(onSideBranch&&i<=MAIN_STAGES.indexOf(j._resumeStatus||'draft'))cls='done';
+    return `<button class="step ${cls}" onclick="requestStatusChange(${j.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${esc(s.lbl)}</span></button>${i<stagesShown.length-1?'<span class="stepline"></span>':''}`;
+  }).join('')+(onSideBranch?`<span class="stepline"></span><button class="step sidebranch current"><span class="sdot">!</span><span class="slabel">${esc(tt['st_'+j.status])}</span></button>`:'');
+
+  return `
+    ${locked?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${tpl(esc(tt.lockbanner),{status:esc(tt['st_'+j.status])})}${j.status!=='cancelled'?`<button class="tbtn small" onclick="openReopen(${j.id})">${esc(tt.a_reopen)}</button>`:''}</div>`:''}
+    <div class="dethead">
+      <div class="dtop">
+        <div><div class="jno">${esc(j.no)} · ${esc(j.projectNo)||'—'}</div><h2>${esc(j.title)}</h2><div class="dcust">${esc(custName(j.customerId))}</div></div>
+        <div class="roactions">
+          <button class="tbtn" onclick="openJcForm(${j.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(tt.a_edit)}</button>
+          <button class="tbtn primary" onclick="printJobcard(${j.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(tt.a_print)}</button>
+          <div class="more"><button class="tbtn" onclick="event.stopPropagation();this.nextElementSibling.classList.toggle('open');">${esc(tt.a_more)} ▾</button>
+            <div class="moremenu">
+              <button onclick="duplicateJc(${j.id})">${esc(tt.a_duplicate)}</button>
+              ${!locked&&!isPaused(j)?`<button onclick="openPauseBlock(${j.id},'paused')">${esc(tt.a_pause)}</button><button onclick="openPauseBlock(${j.id},'blocked')">${esc(tt.a_block)}</button>`:''}
+              ${isPaused(j)?`<button onclick="openResume(${j.id})">${esc(tt.a_resume)}</button>`:''}
+              ${j.status==='completed'?`<button onclick="requestStatusChange(${j.id},'closed')">${esc(tt.a_close)}</button>`:''}
+              ${['completed','closed'].includes(j.status)&&!j.archived?`<button onclick="archiveJc(${j.id})">${esc(tt.a_archive)}</button>`:''}
+              ${['draft','released','ready'].includes(j.status)?`<button class="danger2" onclick="openCancel(${j.id})">${esc(tt.a_cancel)}</button>`:''}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dfacts">
+        <div class="df"><div class="k">${esc(tt.ji_status)}</div><div class="v">${statusPill(j.status)}</div></div>
+        <div class="df"><div class="k">${esc(tt.ji_priority)}</div><div class="v"><span class="prio ${esc(j.priority)}"></span>${esc(tt['pr_'+j.priority])}</div></div>
+        <div class="df"><div class="k">${esc(tt.ji_responsible)}</div><div class="v">${esc(j.responsible)||'—'}</div></div>
+        <div class="df"><div class="k">${esc(tt.ji_progress)}</div><div class="v">${jcProgress(j)}%</div></div>
+        <div class="df"><div class="k">${esc(tt.ji_plannedhours)} / ${esc(tt.ji_loggedhours)}</div><div class="v">${esc(j.plannedHours||0)}h / ${jcHoursLogged(j)}h</div></div>
+        <div class="df"><div class="k">${esc(tt.ji_deliverytarget)}</div><div class="v">${fmtDate(j.deliveryTarget)}</div></div>
+      </div>
+      <div class="stepper">${stepsHtml}</div>
+    </div>
+
+    <div class="ptabs">
+      ${['info','operations','documents','materials','workers','machines','quality','notes','activity'].map(tb=>`<button data-tab="${tb}" class="${detailTab===tb?'on':''}" onclick="setDetailTab('${tb}')">${esc(tt['tab_'+tb])}</button>`).join('')}
+    </div>
+    <div class="tabpanel" id="tabpanel">${renderDetailTab(j)}</div>`;
+}
+function renderDetailTab(j){
+  const map={info:renderTabInfo,operations:renderTabOperations,documents:renderTabDocuments,materials:renderTabMaterials,workers:renderTabWorkers,machines:renderTabMachines,quality:renderTabQuality,notes:renderTabNotes,activity:renderTabActivity};
+  return (map[detailTab]||renderTabInfo)(j);
+}
+
+function renderTabInfo(j){
+  const tt=t();const locked=isLocked(j);
+  return `<div class="card2-like panel">
+    <div class="ovgrid">
+      <div class="ovcard"><h4>${esc(tt.ji_jcno)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_jcno)}</span><span><b>${esc(j.no)}</b></span></div><div class="ovline"><span class="lk">${esc(tt.ji_revision)}</span><span>${esc(j.revision||0)}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_drawingno)}</span><span>${esc(j.drawingNo)||'—'}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_project)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_project)}</span><span><b>${esc(j.projectNo)||'—'}</b></span></div><div class="ovline"><span class="lk">${esc(tt.ji_customer)}</span><span>${esc(custName(j.customerId))}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_deliverytarget)}</span><span>${fmtDate(j.deliveryTarget)}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_item)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_item)}</span><span>${esc(j.item)||'—'}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_qty)}</span><span>${esc(j.quantity||1)}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_worktype)}</span><span>${esc(tt['wt_'+j.workType]||j.workType)}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_progress)}</h4><div class="ovbar"><i style="width:${jcProgress(j)}%;"></i></div><div class="ovbig">${jcProgress(j)}%</div><div style="font-size:11px;color:var(--steel-400);">${jcHoursLogged(j)}h / ${esc(j.plannedHours||0)}h</div></div>
+    </div>
+    <div class="ovgrid">
+      <div class="ovcard"><h4>${esc(tt.ji_location)}</h4><div class="ovline"><span>${esc(tt['loc_'+j.location]||j.location)}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_plannedstart)} / ${esc(tt.ji_plannedcompletion)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_plannedstart)}</span><span>${fmtDate(j.plannedStart)}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_plannedcompletion)}</span><span>${fmtDate(j.plannedCompletion)}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_actualstart)} / ${esc(tt.ji_actualcompletion)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_actualstart)}</span><span>${fmtDate(j.actualStart)}</span></div><div class="ovline"><span class="lk">${esc(tt.ji_actualcompletion)}</span><span>${fmtDate(j.actualCompletion)}</span></div></div>
+      <div class="ovcard"><h4>${esc(tt.ji_materialready)} / ${esc(tt.ji_inspectionreq)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_materialready)}</span><span><span class="tagpill ${jcMaterialStatus(j)==='shortage'?'r':(jcMaterialStatus(j)==='partial'?'w':'g')}">${esc(tt['ms_'+jcMaterialStatus(j).replace('-','')])}</span></span></div><div class="ovline"><span class="lk">${esc(tt.ji_inspectionreq)}</span><span>${j.inspectionRequired?esc(tt.ji_required):esc(tt.ji_notrequired)}</span></div></div>
+    </div>
+    <div class="ovcard" style="margin-bottom:16px;"><h4>${esc(tt.ji_responsible)} / ${esc(tt.ji_workers)}</h4><div class="ovline"><span class="lk">${esc(tt.ji_responsible)}</span><span><b>${esc(j.responsible)||'—'}</b></span></div><div class="ovline"><span class="lk">${esc(tt.ji_workers)}</span><span>${(j.workers||[]).map(esc).join(', ')||'—'}</span></div></div>
+    ${!locked?`<button class="tbtn" onclick="openJcForm(${j.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(tt.a_edit)}</button>`:''}
+  </div>`;
+}
+
+// ── Operations ──
+const OP_STATUSES=['pending','in-progress','paused','completed','skipped'];
+function canStartOp(j,op){if(!op.dependency)return true;const dep=(j.operations||[]).find(o=>o.id===op.dependency);return!dep||dep.status==='completed'||dep.status==='skipped';}
+function canCompleteOp(op){return !isBlank(op.worker)||isPositiveNumber(Number(op.loggedHours));}
+
+function renderTabOperations(j){
+  const tt=t();const locked=isLocked(j);const ops=j.operations||[];
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_operations)}</h3>${!locked?`<button class="tbtn primary small" onclick="openOpForm(${j.id})">+ ${esc(tt.op_add)}</button>`:''}</div>
+    ${ops.length?ops.map((op,idx)=>renderOpCard(j,op,idx,ops.length,locked)).join(''):`<div class="empty3">${esc(tt.op_empty)}</div>`}
+  </div>`;
+}
+function renderOpCard(j,op,idx,total,locked){
+  const tt=t();const dep=op.dependency?(j.operations||[]).find(o=>o.id===op.dependency):null;
+  const startable=canStartOp(j,op);
+  return `<div class="opcard ${op.status==='in-progress'?'active':''}">
+    <div class="oph"><div><span class="opn">${esc(tt.op_no)} ${idx+1}</span> <span class="tagpill ${op.status==='completed'?'g':(op.status==='in-progress'?'b':(op.status==='paused'?'w':(op.status==='skipped'?'n':'n')))}">${esc(tt['ops_'+op.status.replace('-','')])}</span>${op.inspectionCheckpoint?`<span class="tagpill p">${esc(tt.op_inspectioncheckpoint)}</span>`:''}
+      <div class="opdesc">${esc(op.desc)}</div></div></div>
+    ${op.instructions?`<div class="opinstr">${esc(op.instructions)}</div>`:''}
+    <div class="opmeta">
+      <span>${esc(tt.op_worker)}: <b>${esc(op.worker)||'—'}</b></span>
+      <span>${esc(tt.op_machine)}: <b>${esc(op.machine)||'—'}</b></span>
+      <span>${esc(tt.op_plannedhours)}: <b>${esc(op.plannedHours||0)}h</b></span>
+      <span>${esc(tt.op_loggedhours)}: <b>${esc(op.loggedHours||0)}h</b></span>
+      ${op.plannedStart?`<span>${esc(tt.op_plannedstart)}: <b>${fmtDate(op.plannedStart)}</b></span>`:''}
+      ${dep?`<span class="opdep">${esc(tt.op_dependency)}: ${esc(dep.desc)}</span>`:''}
+    </div>
+    ${op.notes?`<div class="opinstr" style="color:var(--steel-400);">“${esc(op.notes)}”</div>`:''}
+    ${!locked?`<div class="opactions">
+      ${op.status==='pending'?`<button ${startable?'':'disabled'} onclick="setOpStatus(${j.id},${op.id},'in-progress')" title="${startable?'':esc(tt.op_dependency)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`:''}
+      ${op.status==='in-progress'?`<button onclick="setOpStatus(${j.id},${op.id},'paused')">${esc(tt.op_pause)}</button><button onclick="attemptCompleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${esc(tt.op_complete)}</button>`:''}
+      ${op.status==='paused'?`<button onclick="setOpStatus(${j.id},${op.id},'in-progress')">${esc(tt.op_resume)}</button>`:''}
+      <button onclick="openOpForm(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(tt.op_edit)}</button>
+      <button onclick="duplicateOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(tt.op_duplicate)}</button>
+      <button ${idx===0?'disabled':''} onclick="moveOp(${j.id},${op.id},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>${esc(tt.op_moveup)}</button>
+      <button ${idx===total-1?'disabled':''} onclick="moveOp(${j.id},${op.id},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>${esc(tt.op_movedown)}</button>
+      <button onclick="deleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(tt.op_delete)}</button>
+    </div>`:''}
+  </div>`;
+}
+function openOpForm(jcId,opId){
+  const tt=t();const j=getJC(jcId);if(isLocked(j))return;
+  const op=opId?j.operations.find(o=>o.id===opId):null;
+  const others=(j.operations||[]).filter(o=>o.id!==opId);
+  $('fcard').className='fcard wide';
+  $('fcard').innerHTML=`<h2>${op?esc(tt.m_editop):esc(tt.m_addop)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow"><label>${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
+    <div id="opDescErr" class="errmsg" style="display:none;"></div>
+    <div class="frow"><label>${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
+    <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!OWNER_OPTIONS.includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
+      ${field('opMachine',tt.op_machine,op?op.machine:'')}
+      ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
+    <div class="frow3">${field('opPlannedHours',tt.op_plannedhours,op?op.plannedHours:0,'number')}
+      ${field('opLoggedHours',tt.op_loggedhours,op?op.loggedHours:0,'number')}
+      ${field('opPlannedStart',tt.op_plannedstart,op?op.plannedStart:'','date')}</div>
+    <div class="frow2">${fieldSelect('opDependency',tt.op_dependency,[{v:'',l:tt.ji_none}].concat(others.map(o=>({v:o.id,l:o.desc}))),op?op.dependency:'')}
+      <div class="checkrow" style="align-items:flex-end;padding-bottom:9px;"><input type="checkbox" id="opInspection" ${op&&op.inspectionCheckpoint?'checked':''}><label for="opInspection" style="margin:0;">${esc(tt.op_inspectioncheckpoint)}</label></div></div>
+    <div class="frow"><label>${esc(tt.op_notes)}</label><textarea id="opNotes">${esc(op?op.notes:'')}</textarea></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveOpForm(${jcId}${op?','+op.id:''})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveOpForm(jcId,opId){
+  const tt=t();clearAllFieldErrors();const j=getJC(jcId);
+  const desc=$('opDesc').value.trim();
+  if(!desc){showFieldError('opDesc','opDescErr',tt.err_required);return;}
+  const plannedHours=Number($('opPlannedHours').value)||0,loggedHours=Number($('opLoggedHours').value)||0;
+  if(!isNonNegNumber(plannedHours)||!isNonNegNumber(loggedHours)){toast(tt.err_negative,'error');return;}
+  const payload={desc,instructions:$('opInstr').value.trim(),worker:$('opWorker').value,machine:$('opMachine').value.trim(),
+    status:$('opStatus').value,plannedHours,loggedHours,plannedStart:$('opPlannedStart').value||null,
+    dependency:$('opDependency').value?Number($('opDependency').value):null,inspectionCheckpoint:$('opInspection').checked,notes:$('opNotes').value.trim()};
+  if(opId){WorkshopData.updateJobcardOperation(jcId,opId,payload);WorkshopData.recordJobcardActivity(jcId,{action:`Operation updated: ${desc}`});}
+  else{WorkshopData.addJobcardOperation(jcId,Object.assign({no:(j.operations||[]).length+1,actualStart:null,actualCompletion:null,attachments:''},payload));WorkshopData.recordJobcardActivity(jcId,{action:`Operation added: ${desc}`});}
+  refreshShared();closeModal();renderApp();
+}
+function duplicateOp(jcId,opId){
+  const j=getJC(jcId);if(isLocked(j))return;const op=j.operations.find(o=>o.id===opId);if(!op)return;
+  const copy=Object.assign({},op,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null});delete copy.id;
+  const added=WorkshopData.addJobcardOperation(jcId,copy);
+  refreshShared();const jj=getJC(jcId);const idx=jj.operations.findIndex(o=>o.id===op.id);const newIdx=jj.operations.findIndex(o=>o.id===added.id);
+  if(newIdx>-1&&idx>-1){const arr=jj.operations;const [item]=arr.splice(newIdx,1);arr.splice(idx+1,0,item);WorkshopData.updateJobcard(jcId,{operations:arr});}
+  WorkshopData.recordJobcardActivity(jcId,{action:`Operation duplicated: ${op.desc}`});
+  refreshShared();renderApp();
+}
+function deleteOp(jcId,opId){
+  const tt=t();const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
+  if(!confirm(tpl(tt.confirm_delete_op,{n:op.desc})))return;
+  const arr=j.operations.filter(o=>o.id!==opId);
+  WorkshopData.updateJobcard(jcId,{operations:arr});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Operation removed: ${op.desc}`});
+  refreshShared();renderApp();
+}
+function moveOp(jcId,opId,dir){
+  const j=getJC(jcId);const arr=j.operations.slice();const idx=arr.findIndex(o=>o.id===opId);const to=idx+dir;
+  if(to<0||to>=arr.length)return;const tmp=arr[idx];arr[idx]=arr[to];arr[to]=tmp;
+  WorkshopData.updateJobcard(jcId,{operations:arr});refreshShared();renderApp();
+}
+function setOpStatus(jcId,opId,status){
+  const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
+  const patch={status};const dt=todayISO();
+  if(status==='in-progress'&&!op.actualStart)patch.actualStart=dt;
+  WorkshopData.updateJobcardOperation(jcId,opId,patch);
+  WorkshopData.recordJobcardActivity(jcId,{action:`Operation ${status==='in-progress'?'started':status}: ${op.desc}`});
+  refreshShared();renderApp();
+}
+function attemptCompleteOp(jcId,opId){
+  const tt=t();const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
+  if(!canCompleteOp(op)){toast(tt.err_required+' ('+tt.op_worker+' / '+tt.op_loggedhours+')','error');return;}
+  WorkshopData.updateJobcardOperation(jcId,opId,{status:'completed',actualCompletion:todayISO()});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Operation completed: ${op.desc}`});
+  refreshShared();renderApp();
+}
+
+// ── Drawings & Documents ──
+function renderTabDocuments(j){
+  const tt=t();const locked=isLocked(j);
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_documents)}</h3>${!locked?`<button class="tbtn primary small" onclick="openAddDoc(${j.id})">+ ${esc(tt.doc_add)}</button>`:''}</div>
+    ${(j.documents||[]).length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.mat_desc)}</th><th>${esc(tt.q_date)}</th></tr></thead><tbody>
+      ${j.documents.map(d=>`<tr><td><b>${esc(d.name)}</b></td><td>${fmtDate(d.date)}</td></tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty3">${esc(tt.mat_empty)}</div>`}
+    <div class="disclaimer2" style="margin-top:12px;">${esc(tt.demo_upload)}</div>
+  </div>`;
+}
+function openAddDoc(jcId){
+  const tt=t();
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.tab_documents)}</h2><p class="fsub">${esc(tt.demo_upload)}</p>
+    <div class="frow">${field('docName','Name','')}</div>
+    <div id="docErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddDoc(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveAddDoc(jcId){
+  const tt=t();clearAllFieldErrors();const name=$('docName').value.trim();
+  if(!name){showFieldError('docName','docErr',tt.err_required);return;}
+  const j=getJC(jcId);const docs=(j.documents||[]).concat([{name,date:todayISO()}]);
+  WorkshopData.updateJobcard(jcId,{documents:docs});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Document reference added: ${name}`});
+  refreshShared();closeModal();renderApp();
+}
+
+// ── Materials (connects to shared Store/inventory data) ──
+const MAT_STATUSES=['not-checked','available','partial','reserved','issued','shortage','substitute'];
+function renderTabMaterials(j){
+  const tt=t();const locked=isLocked(j);const mats=j.materials||[];
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_materials)}</h3>${!locked?`<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="tbtn small" onclick="openScanBarcode(${j.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M7 5v14M11 5v14M17 5v14"/></svg>${esc(tt.mat_scan)}</button><button class="tbtn small" onclick="openAddOffcut(${j.id})">${esc(tt.mat_addoffcut)}</button><button class="tbtn primary small" onclick="openMatForm(${j.id})">+ ${esc(tt.mat_add)}</button></div>`:''}</div>
+    ${mats.length?`<div class="tblwrap"><table class="stbl"><thead><tr>
+      <th>${esc(tt.mat_code)}</th><th>${esc(tt.mat_desc)}</th><th>${esc(tt.mat_grade)}</th><th>${esc(tt.mat_dim)}</th>
+      <th class="n">${esc(tt.mat_required)}</th><th class="n">${esc(tt.mat_reserved)}</th><th class="n">${esc(tt.mat_issued)}</th><th class="n">${esc(tt.mat_remaining)}</th>
+      <th>${esc(tt.mat_location)}</th><th>${esc(tt.mat_heat)}</th><th>${esc(tt.mat_status)}</th>${!locked?`<th>${esc(tt.th_actions)}</th>`:''}
+    </tr></thead><tbody>
+      ${mats.map((m,idx)=>{const remaining=Math.max(0,(Number(m.required)||0)-(Number(m.issued)||0));
+        return `<tr><td class="jcnum">${esc(m.code)||'—'}</td><td>${esc(m.description)}</td><td>${esc(m.grade)||'—'}</td><td>${esc(m.dimension)||'—'}</td>
+        <td class="n">${esc(m.required||0)} ${esc(m.unit)||''}</td><td class="n">${esc(m.reserved||0)}</td><td class="n">${esc(m.issued||0)}</td><td class="n">${remaining}</td>
+        <td>${esc(m.location)||'—'}</td><td>${esc(m.heat)||'—'}</td>
+        <td><span class="tagpill ${m.status==='shortage'||m.status==='substitute'?'r':(m.status==='partial'?'w':(m.status==='not-checked'?'n':'g'))}">${esc(tt['ms_'+String(m.status||'not-checked').replace('-','')])}</span></td>
+        ${!locked?`<td class="rowactions2">
+          <button class="iconbtn" title="${esc(tt.mat_reserve)}" onclick="openMatOp(${j.id},${idx},'reserve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/></svg></button>
+          <button class="iconbtn" title="${esc(tt.mat_issue)}" onclick="openMatOp(${j.id},${idx},'issue')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+          <button class="iconbtn" title="${esc(tt.mat_return)}" onclick="openMatOp(${j.id},${idx},'return')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4M5 10h9a5 5 0 0 1 0 10h-1"/></svg></button>
+          <button class="iconbtn" title="${esc(tt.mat_scrap)}" onclick="openMatOp(${j.id},${idx},'scrap')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+          <button class="iconbtn" title="${esc(tt.op_delete)}" onclick="deleteMatLine(${j.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </td>`:''}
+      </tr>`;}).join('')}
+    </tbody></table></div>`:`<div class="empty3">${esc(tt.mat_empty)}</div>`}
+  </div>`;
+}
+function openMatForm(jcId){
+  const tt=t();
+  $('fcard').className='fcard wide';
+  const invOpts=[{v:'',l:tt.ji_none}].concat(SHARED.inventory.map(i=>({v:i.code,l:`${i.code} — ${i.description}`})));
+  $('fcard').innerHTML=`<h2>${esc(tt.m_addmat)}</h2><p class="fsub">${esc(getJC(jcId).no)}</p>
+    <div class="frow">${fieldSelect('matCode',tt.mat_code,invOpts,'')}</div>
+    <div class="frow">${field('matDesc',tt.mat_desc,'')}</div>
+    <div id="matDescErr" class="errmsg" style="display:none;"></div>
+    <div class="frow3">${field('matGrade',tt.mat_grade,'')}${field('matDim',tt.mat_dim,'')}${field('matUnit',tt.mat_unit,'EA')}</div>
+    <div class="frow2">${field('matRequired',tt.mat_required,1,'number')}${fieldSelect('matStatus',tt.mat_status,optList(MAT_STATUSES,'ms_'),'not-checked')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveMatForm(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fcard').querySelector('#matCode').addEventListener('change',e=>{const inv=invByCode(e.target.value);if(inv){$('matDesc').value=inv.description;$('matGrade').value=inv.grade||'';$('matDim').value=inv.dimensions||'';$('matUnit').value=inv.unit||'EA';}});
+  $('fov').classList.add('show');
+}
+function saveMatForm(jcId){
+  const tt=t();clearAllFieldErrors();const desc=$('matDesc').value.trim();
+  if(!desc){showFieldError('matDesc','matDescErr',tt.err_required);return;}
+  const required=Number($('matRequired').value);
+  if(!isPositiveNumber(required)){toast(tt.err_qty,'error');return;}
+  const code=$('matCode').value,inv=invByCode(code);
+  const line={code,description:desc,spec:inv?inv.grade:'',grade:$('matGrade').value.trim(),dimension:$('matDim').value.trim(),
+    required,reserved:0,issued:0,unit:$('matUnit').value.trim()||'EA',location:inv?inv.location:'',heat:inv?inv.heat:'',certificate:inv?inv.certificate:null,status:$('matStatus').value};
+  const j=getJC(jcId);const mats=(j.materials||[]).concat([line]);
+  WorkshopData.updateJobcard(jcId,{materials:mats});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Material line added: ${desc}`});
+  refreshShared();closeModal();renderApp();
+}
+function deleteMatLine(jcId,idx){
+  const tt=t();const j=getJC(jcId);const m=j.materials[idx];if(!m)return;
+  if(!confirm(tpl(tt.confirm_delete_mat,{n:m.description})))return;
+  const mats=j.materials.filter((x,i)=>i!==idx);
+  WorkshopData.updateJobcard(jcId,{materials:mats});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Material line removed: ${m.description}`});
+  refreshShared();renderApp();
+}
+// Reserve / Issue / Return / Scrap all go through the real shared Store functions (WorkshopData.reserveItem /
+// issue / move) against shared inventory + the linked project's BOM, then mirror the result onto this
+// jobcard's own material line so the two stay consistent.
+function openMatOp(jcId,idx,kind){
+  const tt=t();const j=getJC(jcId);const m=j.materials[idx];if(!m)return;
+  const titles={reserve:tt.m_reservemat,issue:tt.m_issuemat,return:tt.m_returnmat,scrap:tt.m_scrapmat};
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(titles[kind])}</h2><p class="fsub">${esc(m.description)} · ${esc(m.code)||''}</p>
+    <div class="frow">${field('matOpQty',tt.f_qty,kind==='issue'?Math.max(0,(m.required||0)-(m.issued||0)):1,'number')}</div>
+    <div id="matOpErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="commitMatOp(${jcId},${idx},'${kind}')">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function commitMatOp(jcId,idx,kind){
+  const tt=t();clearAllFieldErrors();const j=getJC(jcId);const m=j.materials[idx];if(!m)return;
+  const qty=Number($('matOpQty').value);
+  if(!isPositiveNumber(qty)){showFieldError('matOpQty','matOpErr',tt.err_qty);return;}
+  if(!m.code){toast(tt.err_required,'error');return;}
+  let result;
+  if(kind==='reserve')result=WorkshopData.reserveItem({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
+  else if(kind==='issue')result=WorkshopData.issue({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
+  else if(kind==='return')result=WorkshopData.move({action:'RETURN',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
+  else if(kind==='scrap')result=WorkshopData.move({action:'SCRAP',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
+  if(result&&result.error){toast(result.error,'error');return;}
+  if(kind==='reserve')m.reserved=(Number(m.reserved)||0)+(result.reserved||qty);
+  if(kind==='issue'){m.issued=(Number(m.issued)||0)+qty;m.reserved=Math.max(0,(Number(m.reserved)||0)-qty);}
+  if(kind==='return')m.issued=Math.max(0,(Number(m.issued)||0)-qty);
+  const remaining=Math.max(0,(Number(m.required)||0)-(Number(m.issued)||0));
+  m.status=m.issued>=m.required&&m.required>0?'issued':(m.reserved>0||m.issued>0?'partial':m.status);
+  WorkshopData.updateJobcard(jcId,{materials:j.materials});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Material ${kind}: ${qty} ${m.unit||''} ${m.description}`});
+  refreshShared();closeModal();renderApp();
+  toast(`${tt['m_'+(kind==='reserve'?'reservemat':kind==='issue'?'issuemat':kind==='return'?'returnmat':'scrapmat')]}: ${qty} ${m.unit||''}`,'ok');
+}
+// Barcode / QR "scan" is a frontend demonstration: manual input only, resolved through the shared
+// barcode links already used by the Store module. No camera or physical scanner is connected.
+function openScanBarcode(jcId){
+  const tt=t();
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.m_scan)}</h2><p class="fsub">${esc(tt.demo_scan)}</p>
+    <div class="frow">${field('scanValue',tt.f_barcode,'')}</div>
+    <div id="scanErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="commitScan(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function commitScan(jcId){
+  const tt=t();clearAllFieldErrors();const code=$('scanValue').value.trim();
+  if(!code){showFieldError('scanValue','scanErr',tt.err_required);return;}
+  const resolved=WorkshopData.resolveBarcode(code);
+  if(!resolved){toast(tt.err_required,'error');return;}
+  const inv=invByCode(resolved);
+  const j=getJC(jcId);const existing=(j.materials||[]).find(m=>m.code===resolved);
+  if(existing){toast(`${resolved} — ${inv?inv.description:''}`,'ok');closeModal();return;}
+  const mats=(j.materials||[]).concat([{code:resolved,description:inv?inv.description:resolved,spec:inv?inv.grade:'',grade:inv?inv.grade:'',dimension:inv?inv.dimensions:'',required:1,reserved:0,issued:0,unit:inv?inv.unit:'EA',location:inv?inv.location:'',heat:inv?inv.heat:'',certificate:inv?inv.certificate:null,status:'not-checked'}]);
+  WorkshopData.updateJobcard(jcId,{materials:mats});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Barcode scanned (demo): ${code} → ${resolved}`});
+  refreshShared();closeModal();renderApp();
+}
+function openAddOffcut(jcId){
+  const tt=t();const j=getJC(jcId);
+  $('fcard').className='fcard';
+  const invOpts=SHARED.inventory.map(i=>({v:i.code,l:`${i.code} — ${i.description}`}));
+  $('fcard').innerHTML=`<h2>${esc(tt.m_offcut)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow">${fieldSelect('offcutCode',tt.mat_code,invOpts,invOpts[0]?invOpts[0].v:'')}</div>
+    <div class="frow2">${field('offcutDim','Dimensions','600 × 420 mm')}${field('offcutLoc',tt.mat_location,'O1-01-01')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveOffcut(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveOffcut(jcId){
+  const j=getJC(jcId);const code=$('offcutCode').value,inv=invByCode(code);
+  WorkshopData.addOffcut({materialCode:code,description:(inv?inv.description:code)+' offcut',grade:inv?inv.grade:'',dimensions:$('offcutDim').value.trim(),location:$('offcutLoc').value.trim()||'O1-01-01',sourceProject:j.projectNo});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Offcut registered from ${code}`});
+  refreshShared();closeModal();renderApp();
+  toast(t().m_offcut,'ok');
+}
+
+// ── Workers & Hours ──
+const WORKER_ROLES={'Aleksandar C.':'Supervisor','Elena N.':'Welder / Fabricator','Marko K.':'Fabricator'};
+function workerStats(j,worker){const ops=(j.operations||[]).filter(o=>o.worker===worker);const planned=ops.reduce((a,o)=>a+(Number(o.plannedHours)||0),0),logged=ops.reduce((a,o)=>a+(Number(o.loggedHours)||0),0);
+  const active=ops.find(o=>o.status==='in-progress');
+  const entries=(SHARED.hours||[]).filter(h=>h.jobcard===j.no&&h.worker===worker).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return{planned,logged,remaining:Math.max(0,planned-logged),active,last:entries[0]||null};}
+function renderTabWorkers(j){
+  const tt=t();const locked=isLocked(j);const workers=j.workers||[];
+  const entries=(SHARED.hours||[]).filter(h=>h.jobcard===j.no).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10);
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.wh_assigned)}</h3>${!locked?`<div style="display:flex;gap:8px;"><button class="tbtn small" onclick="openAssignWorker(${j.id})">+ ${esc(tt.ji_workers)}</button><button class="tbtn primary small" onclick="openLogTime(${j.id})">${esc(tt.wh_logtime)}</button></div>`:''}</div>
+    ${workers.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.ji_workers)}</th><th>${esc(tt.wh_role)}</th><th class="n">${esc(tt.wh_plannedhours)}</th><th class="n">${esc(tt.wh_loggedhours)}</th><th class="n">${esc(tt.wh_remaining)}</th><th>${esc(tt.wh_activeop)}</th><th>${esc(tt.wh_lastentry)}</th></tr></thead><tbody>
+      ${workers.map(w=>{const s=workerStats(j,w);return `<tr><td><b>${esc(w)}</b></td><td>${esc(WORKER_ROLES[w]||'—')}</td><td class="n">${s.planned}</td><td class="n">${s.logged}</td><td class="n">${s.remaining}</td><td>${s.active?esc(s.active.desc):'—'}</td><td>${s.last?fmtDate(s.last.date):'—'}</td></tr>`;}).join('')}
+    </tbody></table></div>`:`<div class="empty3">${esc(tt.wh_empty)}</div>`}
+  </div>
+  <div class="panel"><div class="phead"><h3>${esc(tt.wh_entries_t)}</h3></div>
+    ${entries.length?entries.map(h=>`<div class="actrow"><div class="adot"></div><div><div><b>${esc(h.worker||'')}</b> — ${esc(h.desc||h.item||'')} <span style="color:var(--steel-400);">(${esc(h.hours)}h)</span></div><div style="color:var(--steel-400);font-size:11px;margin-top:2px;">${fmtDate(h.date)}${h.notes?' · '+esc(h.notes):''}</div></div></div>`).join(''):`<div class="empty3">${esc(tt.wh_entries_empty)}</div>`}
+  </div>`;
+}
+function openAssignWorker(jcId){
+  const tt=t();const j=getJC(jcId);
+  const all=[...new Set(OWNER_OPTIONS.concat(j.workers||[]))];
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.ji_workers)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow"><div class="mchips" id="workerChips">${all.map(w=>`<div class="mchip ${((j.workers||[]).includes(w))?'on':''}" data-w="${esc(w)}" onclick="this.classList.toggle('on')">${esc(w)}</div>`).join('')}</div></div>
+    <div class="frow">${field('workerCustom','+ '+tt.f_worker,'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveAssignWorker(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveAssignWorker(jcId){
+  const j=getJC(jcId);const picked=[...$('fcard').querySelectorAll('#workerChips .mchip.on')].map(el=>el.dataset.w);
+  const custom=$('workerCustom').value.trim();if(custom)picked.push(custom);
+  const unique=[...new Set(picked)];
+  WorkshopData.updateJobcard(jcId,{workers:unique});
+  unique.filter(w=>!(j.workers||[]).includes(w)).forEach(w=>WorkshopData.recordJobcardActivity(jcId,{action:`Worker assigned: ${w}`}));
+  refreshShared();closeModal();renderApp();
+}
+function openLogTime(jcId){
+  const tt=t();const j=getJC(jcId);
+  const opOpts=(j.operations||[]).map(o=>({v:o.id,l:o.desc}));
+  const workerOpts=(j.workers.length?j.workers:OWNER_OPTIONS).map(w=>({v:w,l:w}));
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.wh_logtime)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow2">${fieldSelect('logOp',tt.op_desc,opOpts,opOpts[0]?opOpts[0].v:'')}${fieldSelect('logWorker',tt.f_worker,workerOpts,workerOpts[0]?workerOpts[0].v:'')}</div>
+    <div class="frow2">${field('logDate',tt.f_date,todayISO(),'date')}${field('logHours',tt.f_hours,1,'number')}</div>
+    <div id="logErr" class="errmsg" style="display:none;"></div>
+    <div class="frow">${field('logMachine',tt.op_machine,'')}</div>
+    <div class="frow">${fieldTextarea('logNotes',tt.op_notes,'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveLogTime(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveLogTime(jcId){
+  const tt=t();clearAllFieldErrors();const hours=Number($('logHours').value);
+  if(!isPositiveNumber(hours)){showFieldError('logHours','logErr',tt.err_hours);return;}
+  const date=$('logDate').value;if(isBlank(date)){showFieldError('logDate','logErr',tt.err_date);return;}
+  const j=getJC(jcId);const opId=Number($('logOp').value);const op=(j.operations||[]).find(o=>o.id===opId);
+  const worker=$('logWorker').value,machine=$('logMachine').value.trim(),notes=$('logNotes').value.trim();
+  const result=WorkshopData.logHours({project:j.projectNo,jobcard:j.no,item:op?op.desc:j.title,operation:op?op.desc:'',worker,hours,date,notes,equipment:machine?[{name:machine,hours}]:[]});
+  if(result&&result.error){toast(result.error,'error');return;}
+  if(op){WorkshopData.updateJobcardOperation(jcId,opId,{loggedHours:(Number(op.loggedHours)||0)+hours});}
+  WorkshopData.recordJobcardActivity(jcId,{action:`${hours}h logged by ${worker}${op?' on '+op.desc:''}`});
+  refreshShared();closeModal();renderApp();
+}
+
+// ── Machines & Equipment (lightweight — not a full Equipment module) ──
+function renderTabMachines(j){
+  const tt=t();const locked=isLocked(j);const machines=j.machines||[];
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_machines)}</h3>${!locked?`<button class="tbtn primary small" onclick="openMachineForm(${j.id})">+ ${esc(tt.mc_add)}</button>`:''}</div>
+    ${machines.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.mc_required)}</th><th>${esc(tt.mc_status)}</th><th class="n">${esc(tt.mc_plannedusage)}</th><th class="n">${esc(tt.mc_actualusage)}</th><th>${esc(tt.mc_operator)}</th><th>${esc(tt.mc_preusecheck)}</th><th>${esc(tt.mc_maintenance)}</th></tr></thead><tbody>
+      ${machines.map((m,idx)=>`<tr><td><b>${esc(m.name)}</b></td><td><span class="tagpill ${m.status==='available'?'g':(m.status==='reserved'?'b':'w')}">${esc(m.status)}</span></td><td class="n">${esc(m.plannedUsage||0)}</td><td class="n">${esc(m.actualUsage||0)}</td><td>${esc(m.operator)||'—'}</td>
+        <td>${!locked?`<button class="tbtn small" onclick="toggleMachineCheck(${j.id},${idx})">${esc(tt['pu_'+(m.preUseCheck==='passed'?'passed':'pending')])}</button>`:esc(tt['pu_'+(m.preUseCheck==='passed'?'passed':'pending')])}</td>
+        <td>${m.maintenanceWarning?`<span class="tagpill r">${esc(tt.mc_maintenance)}</span>`:(!locked?`<button class="tbtn small" onclick="toggleMachineWarning(${j.id},${idx})">${esc(tt.pu_flagged)}?</button>`:'—')}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty3">${esc(tt.mc_empty)}</div>`}
+  </div>`;
+}
+function openMachineForm(jcId){
+  const tt=t();
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2>
+    <div class="frow">${field('mcName',tt.mc_required,'')}</div>
+    <div id="mcErr" class="errmsg" style="display:none;"></div>
+    <div class="frow2">${field('mcPlanned',tt.mc_plannedusage,0,'number')}${field('mcOperator',tt.mc_operator,'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveMachine(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveMachine(jcId){
+  const tt=t();clearAllFieldErrors();const name=$('mcName').value.trim();
+  if(!name){showFieldError('mcName','mcErr',tt.err_required);return;}
+  const j=getJC(jcId);const machines=(j.machines||[]).concat([{name,assigned:true,status:'available',plannedUsage:Number($('mcPlanned').value)||0,actualUsage:0,operator:$('mcOperator').value.trim(),preUseCheck:'pending',maintenanceWarning:false}]);
+  WorkshopData.updateJobcard(jcId,{machines});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Machine added: ${name}`});
+  refreshShared();closeModal();renderApp();
+}
+function toggleMachineCheck(jcId,idx){const j=getJC(jcId);const m=j.machines[idx];m.preUseCheck=m.preUseCheck==='passed'?'pending':'passed';WorkshopData.updateJobcard(jcId,{machines:j.machines});WorkshopData.recordJobcardActivity(jcId,{action:`Pre-use check ${m.preUseCheck} for ${m.name}`});refreshShared();renderApp();}
+function toggleMachineWarning(jcId,idx){const j=getJC(jcId);const m=j.machines[idx];m.maintenanceWarning=!m.maintenanceWarning;WorkshopData.updateJobcard(jcId,{machines:j.machines});WorkshopData.recordJobcardActivity(jcId,{action:`Maintenance warning ${m.maintenanceWarning?'raised':'cleared'} for ${m.name}`});refreshShared();renderApp();}
+
+// ── Quality & Inspection ──
+const INSPECTION_TYPES=['dimensional','visualweld','ndt-required','material-cert','drawing-revision','final','customer','test-report'];
+const INSPECTION_RESULTS=['pending','passed','passed-comment','rework','rejected'];
+function renderTabQuality(j){
+  const tt=t();const locked=isLocked(j);const insp=j.inspections||[];
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_quality)}</h3>${!locked?`<button class="tbtn primary small" onclick="openInspForm(${j.id})">+ ${esc(tt.q_add)}</button>`:''}</div>
+    ${insp.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.q_type)}</th><th>${esc(tt.q_inspector)}</th><th>${esc(tt.q_requirement)}</th><th>${esc(tt.q_status)}</th><th>${esc(tt.q_date)}</th><th>${esc(tt.q_comments)}</th><th>${esc(tt.th_actions)}</th></tr></thead><tbody>
+      ${insp.map(i=>`<tr><td><b>${esc(tt['it_'+i.type]||i.type)}</b></td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['req_'+i.requirement])}</td>
+        <td><span class="tagpill ${i.status==='passed'||i.status==='passed-comment'?'g':(i.status==='rework'||i.status==='rejected'?'r':'n')}">${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</span></td>
+        <td>${fmtDate(i.date)}</td><td>${esc(i.comments)||'—'}</td>
+        <td>${!locked?`<button class="tbtn small" onclick="openInspForm(${j.id},${i.id})">${esc(tt.q_edit)}</button>`:''}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty3">${esc(tt.q_empty)}</div>`}
+  </div>`;
+}
+function openInspForm(jcId,inspId){
+  const tt=t();const j=getJC(jcId);const insp=inspId?j.inspections.find(i=>i.id===inspId):null;
+  const opOpts=[{v:'',l:tt.ji_none}].concat((j.operations||[]).map(o=>({v:o.id,l:o.desc})));
+  $('fcard').className='fcard wide';
+  $('fcard').innerHTML=`<h2>${insp?esc(tt.m_editinsp):esc(tt.m_addinsp)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow2">${fieldSelect('qType',tt.q_type,optList(INSPECTION_TYPES,'it_'),insp?insp.type:'dimensional')}${fieldSelect('qRequirement',tt.q_requirement,[{v:'required',l:tt.req_required},{v:'optional',l:tt.req_optional}],insp?insp.requirement:'required')}</div>
+    <div class="frow2">${field('qInspector',tt.q_inspector,insp?insp.inspector:'Aleksandar C.')}${field('qDate',tt.q_date,insp?insp.date:'','date')}</div>
+    <div class="frow2">${fieldSelect('qResult',tt.q_result,optList(INSPECTION_RESULTS,'is_'),insp?insp.status:'pending')}${fieldSelect('qOperation',tt.q_relatedop,opOpts,insp?insp.relatedOperation:'')}</div>
+    <div class="frow">${field('qReference',tt.q_reference,insp?insp.reference:'')}</div>
+    <div class="frow">${fieldTextarea('qComments',tt.q_comments,insp?insp.comments:'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveInspForm(${jcId}${insp?','+insp.id:''})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveInspForm(jcId,inspId){
+  const payload={type:$('qType').value,requirement:$('qRequirement').value,inspector:$('qInspector').value.trim(),
+    date:$('qDate').value||null,status:$('qResult').value,result:$('qResult').value,
+    relatedOperation:$('qOperation').value?Number($('qOperation').value):null,reference:$('qReference').value.trim(),comments:$('qComments').value.trim()};
+  if(inspId){WorkshopData.updateJobcardInspection(jcId,inspId,payload);WorkshopData.recordJobcardActivity(jcId,{action:`Inspection updated: ${tt_label(payload.type)} → ${payload.status}`});}
+  else{WorkshopData.addJobcardInspection(jcId,payload);WorkshopData.recordJobcardActivity(jcId,{action:`Inspection added: ${tt_label(payload.type)}`});}
+  refreshShared();closeModal();renderApp();
+}
+function tt_label(type){return T[LANG]['it_'+type]||type;}
+
+// ── Notes & Problems ──
+const NOTE_TYPES=['general','worker','supervisor','material-problem','drawing-problem','machine-problem','quality-issue','safety-issue','delay-reason'];
+function renderTabNotes(j){
+  const tt=t();
+  return `<div class="panel">
+    <div class="phead"><h3>${esc(tt.tab_notes)}</h3><button class="tbtn primary small" onclick="openNoteForm(${j.id})">+ ${esc(tt.note_add)}</button></div>
+    ${(j.notes||[]).length?j.notes.map(n=>`<div class="notecard"><div class="nh"><span>${fmtDate(n.date)} ${esc(n.time)||''} — <b style="color:var(--steel-300);">${esc(n.author)}</b></span><span class="ntag">${esc(tt['nt_'+n.type]||n.type)}</span></div><p>${esc(n.text)}</p></div>`).join(''):`<div class="empty3">${esc(tt.note_empty)}</div>`}
+  </div>`;
+}
+function openNoteForm(jcId){
+  const tt=t();
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.note_add)}</h2><p class="fsub">${esc(getJC(jcId).no)}</p>
+    <div class="frow">${fieldSelect('noteType',tt.note_type,optList(NOTE_TYPES,'nt_'),'general')}</div>
+    <div class="frow">${fieldTextarea('noteText',tt.note_text,'')}</div>
+    <div id="noteErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveNoteForm(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveNoteForm(jcId){
+  const tt=t();clearAllFieldErrors();const text=$('noteText').value.trim();
+  if(!text){showFieldError('noteText','noteErr',tt.err_required);return;}
+  WorkshopData.addJobcardNote(jcId,{author:'Aleksandar C.',type:$('noteType').value,text});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Note added: ${tt['nt_'+$('noteType').value]}`});
+  refreshShared();closeModal();renderApp();
+}
+
+// ═══════════════ STATUS WORKFLOW ═══════════════
+// Frontend enforcement only — the future backend must repeat every one of these checks server-side.
+function requestStatusChange(id,stage){
+  // Note: no blanket isLocked() guard here. isLocked() gates ordinary editing (job info, operations,
+  // materials, etc.) but the status engine's own ALLOWED_TRANSITIONS map is what must decide whether a
+  // transition is possible — that's what still lets a Completed jobcard move on to Closed.
+  const tt=t();const j=getJC(id);if(!j||j.status===stage)return;
+  const allowed=ALLOWED_TRANSITIONS[j.status]||[];
+  if(!allowed.includes(stage)){toast(tpl(tt.transition_blocked,{a:tt['st_'+j.status],b:tt['st_'+stage]}),'error');return;}
+  if(stage==='released'&&!hasAtLeastOneOperation(j)){toast(tt.issue_no_operations,'error');return;}
+  if(stage==='ready'){
+    if(isBlank(j.responsible)){toast(tt.issue_no_responsible,'error');return;}
+    if(materialsShort(j))toast(tt.issue_material_short,'error');
+  }
+  if(stage==='completed'){openCompleteCheck(id);return;}
+  if(!confirm(tpl(tt.confirm_status,{s:tt['st_'+stage]})))return;
+  applyStatusChange(id,stage);
+}
+function applyStatusChange(id,stage,extra){
+  const tt=t();const j=getJC(id);const patch=Object.assign({status:stage},extra||{});
+  if(stage==='in-progress'&&!j.actualStart)patch.actualStart=todayISO();
+  WorkshopData.updateJobcard(id,patch);
+  WorkshopData.recordJobcardActivity(id,{action:`Status changed to ${tt['st_'+stage]}`});
+  refreshShared();renderApp();
+}
+function openCompleteCheck(id){
+  const tt=t();const j=getJC(id);
+  const issues=[];
+  if(!requiredOperationsComplete(j)){const n=(j.operations||[]).filter(o=>o.status!=='completed'&&o.status!=='skipped').length;issues.push(tpl(tt.issue_operations_open,{n}));}
+  const pend=pendingInspections(j).length;if(pend)issues.push(tpl(tt.issue_inspections_pending,{n:pend}));
+  const failed=failedInspections(j).length;if(failed)issues.push(tpl(tt.issue_inspections_failed,{n:failed}));
+  if(!issues.length){if(!confirm(tpl(tt.confirm_status,{s:tt.st_completed})))return;applyStatusChange(id,'completed',{actualCompletion:todayISO()});return;}
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.complete_issues_title)}</h2><p class="fsub">${esc(j.no)}</p>
+    <ul class="issuelist">${issues.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
+    <div class="frow">${fieldTextarea('overrideReason',tt.f_overridereason,'')}</div>
+    <div id="overrideErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.complete_goback)}</button><button class="tbtn primary" onclick="confirmOverrideComplete(${id})">${esc(tt.complete_override_btn)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function confirmOverrideComplete(id){
+  const tt=t();clearAllFieldErrors();const reason=$('overrideReason').value.trim();
+  if(!reason){showFieldError('overrideReason','overrideErr',tt.err_required);return;}
+  if(!confirm(tt.confirm_complete_override))return;
+  applyStatusChange(id,'completed',{actualCompletion:todayISO()});
+  WorkshopData.recordJobcardActivity(id,{action:`Completed with manager override: ${reason}`});
+  refreshShared();closeModal();renderApp();
+}
+function openPauseBlock(id,stage){
+  const tt=t();const j=getJC(id);
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${stage==='paused'?esc(tt.m_pause_t):esc(tt.m_block_t)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow">${fieldTextarea('pbReason',tt.f_reason,'')}</div>
+    <div id="pbErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="savePauseBlock(${id},'${stage}')">${stage==='paused'?esc(tt.a_pause):esc(tt.a_block)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function savePauseBlock(id,stage){
+  const tt=t();clearAllFieldErrors();const reason=$('pbReason').value.trim();
+  if(!reason){showFieldError('pbReason','pbErr',tt.err_required);return;}
+  const j=getJC(id);
+  WorkshopData.updateJobcard(id,{status:stage,_resumeStatus:j.status});
+  WorkshopData.recordJobcardActivity(id,{action:`${tt['st_'+stage]}: ${reason}`});
+  refreshShared();closeModal();renderApp();
+}
+function openResume(id){
+  const tt=t();const j=getJC(id);const resumeTo=j._resumeStatus||'ready';
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.m_resume_t)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow">${fieldSelect('resumeStatus',tt.f_resumestatus,MAIN_STAGES.slice(0,5).map(s=>({v:s,l:tt['st_'+s]})),resumeTo)}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveResume(${id})">${esc(tt.a_resume)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveResume(id){
+  const tt=t();const stage=$('resumeStatus').value;
+  applyStatusChange(id,stage);
+  closeModal();
+}
+function openCancel(id){
+  const tt=t();const j=getJC(id);
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.m_cancel_t)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow">${fieldTextarea('cancelReason',tt.f_reason,'')}</div>
+    <div id="cancelErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn danger" onclick="saveCancel(${id})">${esc(tt.a_cancel)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveCancel(id){
+  const tt=t();clearAllFieldErrors();const reason=$('cancelReason').value.trim();
+  if(!reason){showFieldError('cancelReason','cancelErr',tt.err_required);return;}
+  WorkshopData.updateJobcard(id,{status:'cancelled'});
+  WorkshopData.recordJobcardActivity(id,{action:`Cancelled: ${reason}`});
+  refreshShared();closeModal();renderApp();
+}
+function openReopen(id){
+  const tt=t();const j=getJC(id);
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.m_reopen_t)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="frow">${fieldTextarea('reopenReason',tt.f_reason,'')}</div>
+    <div id="reopenErr" class="errmsg" style="display:none;"></div>
+    <div class="frow">${fieldSelect('reopenStatus',tt.f_resumestatus,['in-progress','ready','released'].map(s=>({v:s,l:tt['st_'+s]})),'in-progress')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveReopen(${id})">${esc(tt.a_reopen)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveReopen(id){
+  const tt=t();clearAllFieldErrors();const reason=$('reopenReason').value.trim();
+  if(!reason){showFieldError('reopenReason','reopenErr',tt.err_required);return;}
+  const stage=$('reopenStatus').value;
+  WorkshopData.updateJobcard(id,{status:stage,actualCompletion:null});
+  WorkshopData.recordJobcardActivity(id,{action:`Reopened to ${tt['st_'+stage]}: ${reason}`});
+  refreshShared();closeModal();renderApp();
+}
+function archiveJc(id){
+  const tt=t();const j=getJC(id);
+  if(!confirm(tpl(tt.confirm_archive,{no:j.no})))return;
+  WorkshopData.archiveJobcard(id);
+  WorkshopData.recordJobcardActivity(id,{action:'Archived'});
+  refreshShared();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));
+  setView('archived');
+}
+
+// ═══════════════ CREATE / EDIT / DUPLICATE ═══════════════
+const WORK_TYPES=['fabrication','repair','modification','assembly','installation','welding','cutting','machining','maintenance','inspection','other'];
+// Numbering is always owned by WorkshopData.upsertJobcard() — never invented client-side.
+
+function openNewJobcardMenu(){
+  const tt=t();
+  $('fcard').className='fcard wide';
+  $('fcard').innerHTML=`<h2>${esc(tt.nc_pick_t)}</h2><p class="fsub">${esc(tt.nc_pick_sub)}</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="tbtn" style="justify-content:flex-start;flex-direction:column;align-items:flex-start;padding:14px 16px;gap:4px;" onclick="closeModal();openJcForm();"><b style="font-family:'Sora';">${esc(tt.nc_blank)}</b><span style="font-weight:400;color:var(--steel-400);font-size:11.5px;">${esc(tt.nc_blank_sub)}</span></button>
+      <button class="tbtn" style="justify-content:flex-start;flex-direction:column;align-items:flex-start;padding:14px 16px;gap:4px;" onclick="openFromProjectForm();"><b style="font-family:'Sora';">${esc(tt.nc_fromproject)}</b><span style="font-weight:400;color:var(--steel-400);font-size:11.5px;">${esc(tt.nc_fromproject_sub)}</span></button>
+      <button class="tbtn" style="justify-content:flex-start;flex-direction:column;align-items:flex-start;padding:14px 16px;gap:4px;" onclick="openFromBomForm();"><b style="font-family:'Sora';">${esc(tt.nc_frombom)}</b><span style="font-weight:400;color:var(--steel-400);font-size:11.5px;">${esc(tt.nc_frombom_sub)}</span></button>
+    </div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button></div>`;
+  $('fov').classList.add('show');
+}
+
+function openJcForm(id){
+  const tt=t();const j=id?getJC(id):null;if(j&&isLocked(j))return;
+  $('fcard').className='fcard wide';
+  $('fcard').innerHTML=`<h2>${j?esc(tt.nc_edit_title):esc(tt.nc_title)}</h2><p class="fsub">${j?esc(j.no):esc(tt.msub)}</p>
+    <div class="frow2">${fieldSelect('jfCustomer',tt.ji_customer,SHARED.customers.map(c=>({v:c.id,l:c.name})),j?j.customerId:(SHARED.customers[0]?SHARED.customers[0].id:''))}${fieldSelect('jfProject',tt.ji_project,projectOptions(true),j?j.projectNo:'')}</div>
+    <div class="frow"><label>${esc(tt.ji_title)}</label><input id="jfTitle" value="${esc(j?j.title:'')}"></div>
+    <div id="jfTitleErr" class="errmsg" style="display:none;"></div>
+    <div class="frow2">${field('jfItem',tt.ji_item,j?j.item:'')}${field('jfQty',tt.ji_qty,j?j.quantity:1,'number')}</div>
+    <div class="frow2">${field('jfRevision',tt.ji_revision,j?j.revision:0,'number')}${field('jfDrawing',tt.ji_drawingno,j?j.drawingNo:'')}</div>
+    <div class="frow3">${fieldSelect('jfWorktype',tt.ji_worktype,optList(WORK_TYPES,'wt_'),j?j.workType:'fabrication')}${fieldSelect('jfLocation',tt.ji_location,[{v:'workshop',l:tt.loc_workshop},{v:'site',l:tt.loc_site}],j?j.location:'workshop')}${fieldSelect('jfPriority',tt.ji_priority,[{v:'high',l:tt.pr_high},{v:'medium',l:tt.pr_medium},{v:'low',l:tt.pr_low}],j?j.priority:'medium')}</div>
+    <div class="frow2">${fieldSelect('jfResponsible',tt.ji_responsible,[{v:'',l:tt.ji_none}].concat(ownerOptions()),j?j.responsible:'Aleksandar C.')}${field('jfDelivery',tt.ji_deliverytarget,j?j.deliveryTarget:'','date')}</div>
+    <div class="frow3">${field('jfStart',tt.ji_plannedstart,j?j.plannedStart:todayISO(),'date')}${field('jfCompletion',tt.ji_plannedcompletion,j?j.plannedCompletion:'','date')}${field('jfPlannedHours',tt.ji_plannedhours,j?j.plannedHours:0,'number')}</div>
+    <div id="jfDateErr" class="errmsg" style="display:none;"></div>
+    <div class="frow checkrow"><input type="checkbox" id="jfInspectionReq" ${!j||j.inspectionRequired?'checked':''}><label for="jfInspectionReq" style="margin:0;">${esc(tt.ji_inspectionreq)}</label></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveJcForm(${id?id:'null'})">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveJcForm(id){
+  const tt=t();clearAllFieldErrors();const title=$('jfTitle').value.trim();
+  if(!title){showFieldError('jfTitle','jfTitleErr',tt.err_required);return;}
+  const start=$('jfStart').value,completion=$('jfCompletion').value;
+  if(start&&completion&&completion<start){showFieldError('jfCompletion','jfDateErr',tt.err_date);return;}
+  const qty=Number($('jfQty').value),plannedHours=Number($('jfPlannedHours').value);
+  if(!isPositiveNumber(qty)){toast(tt.err_qty,'error');return;}
+  if(!isNonNegNumber(plannedHours)){toast(tt.err_negative,'error');return;}
+  const customerId=Number($('jfCustomer').value),projectNo=$('jfProject').value||null;
+  const payload={customerId,customer:custName(customerId),projectNo,title,item:$('jfItem').value.trim(),quantity:qty,
+    revision:Number($('jfRevision').value)||0,drawingNo:$('jfDrawing').value.trim(),workType:$('jfWorktype').value,location:$('jfLocation').value,
+    priority:$('jfPriority').value,responsible:$('jfResponsible').value,deliveryTarget:$('jfDelivery').value||null,
+    plannedStart:start||null,plannedCompletion:completion||null,plannedHours,inspectionRequired:$('jfInspectionReq').checked};
+  if(id){const proj=projectNo?projByNo(projectNo):null;payload.projectId=proj?proj.id:null;
+    WorkshopData.updateJobcard(id,payload);WorkshopData.recordJobcardActivity(id,{action:'Job information updated'});
+    refreshShared();closeModal();renderApp();return;}
+  const proj=projectNo?projByNo(projectNo):null;
+  const created=WorkshopData.upsertJobcard(Object.assign({projectId:proj?proj.id:null,status:'draft',progress:0,materialReadiness:'not-checked',
+    actualStart:null,actualCompletion:null,created:todayISO(),createdBy:'Aleksandar C.',archived:false},payload));
+  WorkshopData.recordJobcardActivity(created.id,{action:'Jobcard created (Draft)'});
+  refreshShared();closeModal();openJcDetail(created.id);
+}
+
+// "From an existing project" — reuses the project's customer, delivery target, BOM, planned hours,
+// machines and responsible person. No commercial/selling information is copied — none exists on the
+// shared project record to begin with.
+function openFromProjectForm(){
+  const tt=t();
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.nc_fromproject)}</h2><p class="fsub">${esc(tt.nc_fromproject_sub)}</p>
+    <div class="frow">${fieldSelect('fpProject',tt.ji_project,projectOptions(false),SHARED.projects[0]?SHARED.projects[0].no:'')}</div>
+    <div class="frow">${field('fpTitle',tt.ji_title,'')}</div>
+    <div id="fpErr" class="errmsg" style="display:none;"></div>
+    <div class="frow3">${fieldSelect('fpWorktype',tt.ji_worktype,optList(WORK_TYPES,'wt_'),'fabrication')}${fieldSelect('fpPriority',tt.ji_priority,[{v:'high',l:tt.pr_high},{v:'medium',l:tt.pr_medium},{v:'low',l:tt.pr_low}],'medium')}${field('fpStart',tt.ji_plannedstart,todayISO(),'date')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveFromProject()">${esc(tt.nc_create)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveFromProject(){
+  const tt=t();clearAllFieldErrors();const projNo=$('fpProject').value,proj=projByNo(projNo);
+  if(!proj){toast(tt.err_required,'error');return;}
+  const title=$('fpTitle').value.trim()||proj.name;
+  const materials=(proj.bom||[]).map(b=>({code:b.code,description:b.description,spec:'',grade:'',dimension:'',required:b.required,reserved:b.reserved||0,issued:b.issued||0,unit:b.unit,location:(invByCode(b.code)||{}).location||'',heat:(invByCode(b.code)||{}).heat||'',certificate:(invByCode(b.code)||{}).certificate||null,status:(b.issued>=b.required&&b.required>0)?'issued':((b.reserved||0)>0?'reserved':'not-checked')}));
+  const machines=(proj.machines||[]).map(name=>({name,assigned:true,status:'available',plannedUsage:0,actualUsage:0,operator:'',preUseCheck:'pending',maintenanceWarning:false}));
+  const created=WorkshopData.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:proj.customerId,customer:proj.customer,title,
+    item:proj.name,quantity:1,revision:0,drawingNo:'',workType:$('fpWorktype').value,location:'workshop',priority:$('fpPriority').value,
+    responsible:proj.responsible||'Aleksandar C.',workers:(proj.workers||[]).slice(),plannedStart:$('fpStart').value||todayISO(),
+    plannedCompletion:proj.expectedCompletion||proj.deadline||null,actualStart:null,actualCompletion:null,plannedHours:proj.plannedHours||0,
+    progress:0,status:'draft',materialReadiness:proj.materialStatus==='ready'?'available':(proj.materialStatus||'not-checked'),
+    inspectionRequired:true,deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
+    materials,machines,operations:[],inspections:[],notes:[],documents:[]});
+  WorkshopData.recordJobcardActivity(created.id,{action:`Jobcard created from project ${proj.no}`});
+  refreshShared();closeModal();openJcDetail(created.id);
+}
+
+// "From a project BOM item" — scopes the jobcard to a single material line.
+function openFromBomForm(){
+  const tt=t();const defaultProj=SHARED.projects[0];
+  $('fcard').className='fcard';
+  const bomOpts=(p=>p?(p.bom||[]).map(b=>({v:b.code,l:`${b.code} — ${b.description}`})):[])(defaultProj);
+  $('fcard').innerHTML=`<h2>${esc(tt.nc_frombom)}</h2><p class="fsub">${esc(tt.nc_frombom_sub)}</p>
+    <div class="frow">${fieldSelect('fbProject',tt.ji_project,projectOptions(false),defaultProj?defaultProj.no:'')}</div>
+    <div class="frow">${fieldSelect('fbItem',tt.mat_code,bomOpts,bomOpts[0]?bomOpts[0].v:'')}</div>
+    <div id="fbErr" class="errmsg" style="display:none;"></div>
+    <div class="frow3">${fieldSelect('fbWorktype',tt.ji_worktype,optList(WORK_TYPES,'wt_'),'fabrication')}${fieldSelect('fbPriority',tt.ji_priority,[{v:'high',l:tt.pr_high},{v:'medium',l:tt.pr_medium},{v:'low',l:tt.pr_low}],'medium')}${field('fbStart',tt.ji_plannedstart,todayISO(),'date')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveFromBom()">${esc(tt.nc_create)}</button></div>`;
+  $('fcard').querySelector('#fbProject').addEventListener('change',e=>{const p=projByNo(e.target.value);const opts=p?(p.bom||[]):[];$('fbItem').innerHTML=opts.map(b=>`<option value="${esc(b.code)}">${esc(b.code)} — ${esc(b.description)}</option>`).join('');});
+  $('fov').classList.add('show');
+}
+function saveFromBom(){
+  const tt=t();clearAllFieldErrors();const projNo=$('fbProject').value,proj=projByNo(projNo);
+  if(!proj){toast(tt.err_required,'error');return;}
+  const line=(proj.bom||[]).find(b=>b.code===$('fbItem').value);
+  if(!line){showFieldError('fbItem','fbErr',tt.err_required);return;}
+  const inv=invByCode(line.code);
+  const created=WorkshopData.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:proj.customerId,customer:proj.customer,
+    title:line.description,item:line.description,quantity:1,revision:0,drawingNo:'',workType:$('fbWorktype').value,location:'workshop',
+    priority:$('fbPriority').value,responsible:proj.responsible||'Aleksandar C.',workers:[],plannedStart:$('fbStart').value||todayISO(),
+    plannedCompletion:proj.expectedCompletion||proj.deadline||null,actualStart:null,actualCompletion:null,plannedHours:0,progress:0,status:'draft',
+    materialReadiness:(line.issued>=line.required&&line.required>0)?'issued':'not-checked',inspectionRequired:true,
+    deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
+    materials:[{code:line.code,description:line.description,spec:inv?inv.grade:'',grade:inv?inv.grade:'',dimension:inv?inv.dimensions:'',required:line.required,reserved:line.reserved||0,issued:line.issued||0,unit:line.unit,location:inv?inv.location:'',heat:inv?inv.heat:'',certificate:inv?inv.certificate:null,status:'not-checked'}],
+    machines:[],operations:[],inspections:[],notes:[],documents:[]});
+  WorkshopData.recordJobcardActivity(created.id,{action:`Jobcard created from BOM item ${line.code} on ${proj.no}`});
+  refreshShared();closeModal();openJcDetail(created.id);
+}
+
+// Duplicate: deep-cloned commercial/operational content, a brand-new id and number (assigned by
+// WorkshopData.upsertJobcard), reset status/dates/progress/hours/history. The original is never touched.
+function duplicateJc(id){
+  const tt=t();const src=getJC(id);if(!src)return;
+  const copy=JSON.parse(JSON.stringify(src));
+  delete copy.id;delete copy.no;delete copy._resumeStatus;
+  copy.status='draft';copy.progress=0;copy.actualStart=null;copy.actualCompletion=null;copy.archived=false;
+  copy.created=todayISO();copy.createdBy='Aleksandar C.';
+  copy.operations=(copy.operations||[]).map(o=>Object.assign({},o,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null}));
+  copy.materials=(copy.materials||[]).map(m=>Object.assign({},m,{reserved:0,issued:0,status:'not-checked'}));
+  copy.machines=(copy.machines||[]).map(m=>Object.assign({},m,{actualUsage:0,preUseCheck:'pending',maintenanceWarning:false}));
+  copy.inspections=(copy.inspections||[]).map(i=>Object.assign({},i,{status:'pending',result:'pending',date:null,comments:''}));
+  copy.notes=[];copy.documents=(src.documents||[]).slice();
+  copy.activity=[];
+  const created=WorkshopData.upsertJobcard(copy);
+  WorkshopData.recordJobcardActivity(created.id,{action:`Duplicated from ${src.no}`});
+  refreshShared();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));
+  toast(tpl('{a} → {b}',{a:src.no,b:created.no}),'ok');
+  openJcDetail(created.id);
+}
+
+// ═══════════════ PRINT VIEW ═══════════════
+// Customer/commercial figures never existed on the jobcard model to begin with — only operational,
+// workshop-facing information is ever shown here.
+function printJobcard(id){
+  const tt=t();const j=getJC(id);if(!j)return;
+  const cust=custById(j.customerId);
+  const opsRows=(j.operations||[]).map((o,i)=>`<tr><td>${i+1}</td><td><b>${esc(o.desc)}</b>${o.instructions?`<br><span style="color:#5b6b7d;">${esc(o.instructions)}</span>`:''}</td><td>${esc(o.worker)||'—'}</td><td>${esc(o.machine)||'—'}</td><td>${esc(o.plannedHours||0)}h</td><td>${esc(tt['ops_'+o.status.replace('-','')])}</td></tr>`).join('')||`<tr><td colspan="6">${esc(tt.op_empty)}</td></tr>`;
+  const matRows=(j.materials||[]).map(m=>`<tr><td>${esc(m.code)||'—'}</td><td>${esc(m.description)}</td><td>${esc(m.grade)||'—'}</td><td>${esc(m.dimension)||'—'}</td><td>${esc(m.required||0)} ${esc(m.unit)||''}</td><td>${esc(m.heat)||'—'}</td></tr>`).join('')||`<tr><td colspan="6">${esc(tt.mat_empty)}</td></tr>`;
+  const inspRows=(j.inspections||[]).map(i=>`<tr><td>${esc(tt['it_'+i.type]||i.type)}</td><td>${esc(tt['req_'+i.requirement])}</td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</td><td>${esc(i.comments)||'—'}</td></tr>`).join('')||`<tr><td colspan="5">${esc(tt.q_empty)}</td></tr>`;
+  $('sheet').innerHTML=`
+    <div class="oh"><div><div class="co">Varmak AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</div></div>
+      <div class="ot"><h2>${esc(tt.pr_header_no)} ${esc(j.no)}</h2><div class="om">${esc(tt.pr_header_rev)} ${esc(j.revision||0)} · ${esc(tt['st_'+j.status])}</div></div></div>
+    <div class="oto">
+      <div><div class="lbl">${esc(tt.pr_customer)}</div>${esc(cust?cust.name:'—')}<br><div class="lbl" style="margin-top:8px;">${esc(tt.pr_project)}</div>${esc(j.projectNo)||'—'}</div>
+      <div><div class="lbl">${esc(tt.pr_drawing)}</div>${esc(j.drawingNo)||'—'}<br><div class="lbl" style="margin-top:8px;">${esc(tt.pr_worktype)} / ${esc(tt.pr_qty)}</div>${esc(tt['wt_'+j.workType]||j.workType)} · ${esc(j.quantity||1)}</div>
+    </div>
+    <p><b>${esc(j.title)}</b>${j.item?' — '+esc(j.item):''}</p>
+    <div class="oto" style="margin-top:10px;">
+      <div><div class="lbl">${esc(tt.ji_plannedstart)} / ${esc(tt.ji_plannedcompletion)}</div>${fmtDate(j.plannedStart)} → ${fmtDate(j.plannedCompletion)}</div>
+      <div><div class="lbl">${esc(tt.ji_deliverytarget)}</div>${fmtDate(j.deliveryTarget)}</div>
+    </div>
+    <div class="psec"><h3>${esc(tt.pr_operations)}</h3><table><thead><tr><th>#</th><th>${esc(tt.op_desc)}</th><th>${esc(tt.op_worker)}</th><th>${esc(tt.op_machine)}</th><th>${esc(tt.op_plannedhours)}</th><th>${esc(tt.op_status)}</th></tr></thead><tbody>${opsRows}</tbody></table></div>
+    <div class="psec"><h3>${esc(tt.pr_materials)}</h3><table><thead><tr><th>${esc(tt.mat_code)}</th><th>${esc(tt.mat_desc)}</th><th>${esc(tt.mat_grade)}</th><th>${esc(tt.mat_dim)}</th><th>${esc(tt.mat_required)}</th><th>${esc(tt.mat_heat)}</th></tr></thead><tbody>${matRows}</tbody></table></div>
+    <div class="psec"><h3>${esc(tt.pr_workers)} / ${esc(tt.pr_machines)}</h3><p>${(j.workers||[]).map(esc).join(', ')||'—'}<br>${(j.machines||[]).map(m=>esc(m.name)).join(', ')||'—'}</p></div>
+    <div class="psec"><h3>${esc(tt.pr_inspections)}</h3><table><thead><tr><th>${esc(tt.q_type)}</th><th>${esc(tt.q_requirement)}</th><th>${esc(tt.q_inspector)}</th><th>${esc(tt.q_status)}</th><th>${esc(tt.q_comments)}</th></tr></thead><tbody>${inspRows}</tbody></table></div>
+    ${(j.notes||[]).length?`<div class="psec"><h3>${esc(tt.pr_notes)}</h3>${j.notes.map(n=>`<p>${fmtDate(n.date)} — <b>${esc(n.author)}</b>: ${esc(n.text)}</p>`).join('')}</div>`:''}
+    <div class="signrow">
+      <div class="signbox"><b></b>${esc(tt.pr_signoff_worker)}</div>
+      <div class="signbox"><b></b>${esc(tt.pr_signoff_supervisor)}</div>
+      <div class="signbox"><b></b>${esc(tt.pr_signoff_inspector)}</div>
+      <div class="signbox"><b></b>${esc(tt.pr_signoff_date)}</div>
+    </div>`;
+  $('ovClose').textContent=tt.pr_close;$('ovPrint').textContent=tt.pr_print;
+  $('overlay').classList.add('show');
+}
+
+// ── Activity History ──
+function renderTabActivity(j){
+  const tt=t();
+  return `<div class="panel"><div class="phead"><h3>${esc(tt.tab_activity)}</h3></div>
+    ${(j.activity||[]).length?j.activity.map(a=>`<div class="actrow"><div class="atime">${fmtDate(a.date)} ${esc(a.time)||''}</div><div><span class="auser">${esc(a.by||'')}</span>${esc(a.action)}</div></div>`).join(''):`<div class="empty3">${esc(tt.act_empty)}</div>`}
+  </div>`;
+}
+
+// ═══════════════ APP DISPATCH ═══════════════
+const VIEWS={
+  overview:{render:renderOverview},
+  all:{render:renderList,attach:attachList},
+  ready:{render:renderList,attach:attachList},
+  inprogress:{render:renderList,attach:attachList},
+  blocked:{render:renderList,attach:attachList},
+  inspection:{render:renderList,attach:attachList},
+  completed:{render:renderList,attach:attachList},
+  archived:{render:renderList,attach:attachList},
+  detail:{render:renderDetail}
+};
+function renderApp(){
+  refreshShared();
+  const v=VIEWS[VIEW]||VIEWS.overview;
+  $('app').innerHTML=v.render();
+  if(v.attach)v.attach();
+}
+
+setLang('en');
+</script>
+</body></html>
+
