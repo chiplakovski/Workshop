@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Varmak — Equipment / Machines</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy-950:#04101f; --navy-900:#071a33; --navy-800:#0a2447; --navy-brand:#013179;
+      --steel-400:#8ea3c0; --steel-300:#b9c6da; --spark:#4a90ff; --ice:#e8f0fb;
+      --line:rgba(142,163,192,0.16); --field:rgba(255,255,255,0.045); --field-line:rgba(185,198,218,0.24);
+      --ok:#4ad48a; --warn:#ffb057; --danger:#ff6b6b; --cyan:#7dd3fc; --purple:#c084fc;
+      --panel:rgba(255,255,255,0.033); --panel-strong:rgba(12,23,41,0.96);
+    }
+
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; }
+    body {
+      font-family:'Inter',system-ui,sans-serif; color:var(--ice); background:var(--navy-950);
+      min-height:100vh; overflow-x:hidden;
+    }
+    button, input, select, textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+      outline:2px solid var(--spark); outline-offset:2px;
+    }
+    .bg { position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--navy-950); }
+    .bg::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(120% 70% at 82% 0%, rgba(1,49,121,0.5), transparent 55%),
+        radial-gradient(80% 60% at 10% 100%, rgba(10,36,71,0.6), transparent 60%),
+        linear-gradient(160deg, var(--navy-950), var(--navy-900) 60%, var(--navy-950));
+    }
+    .grid {
+      position:absolute; inset:0; opacity:0.28; pointer-events:none;
+      background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size:60px 60px;
+      -webkit-mask-image:radial-gradient(circle at 55% 4%, #000 25%, transparent 82%);
+      mask-image:radial-gradient(circle at 55% 4%, #000 25%, transparent 82%);
+    }
+    .glow { position:absolute; left:50%; top:20%; width:540px; height:540px; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(74,144,255,0.16), transparent 62%); filter:blur(10px); }
+    @media (prefers-reduced-motion:reduce){ .glow { animation:none; } }
+
+    .app-shell { position:relative; z-index:2; display:grid; grid-template-columns:230px minmax(0,1fr); min-height:100vh; }
+    .module-sidebar {
+      background:linear-gradient(180deg, rgba(5,22,38,0.98), rgba(4,19,36,0.97));
+      border-right:1px solid rgba(74,144,255,0.22);
+      padding:18px 14px 14px; display:flex; flex-direction:column;
+      min-height:100vh; position:sticky; top:0;
+    }
+    .side-brand { display:flex; align-items:center; gap:10px; padding:2px 4px 18px; }
+    .side-brand .logo { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(142,163,192,0.5); color:var(--spark); background:rgba(74,144,255,.08); font-family:'Sora'; font-weight:700; }
+    .side-brand h2 { margin:0; font-size:15px; font-family:'Sora'; letter-spacing:.08em; }
+    .side-brand small { display:block; color:var(--steel-400); font-size:10px; margin-top:2px; }
+    .nav-list { display:grid; gap:5px; }
+    .nav-item {
+      display:flex; align-items:center; gap:10px; width:100%; min-height:40px; padding:9px 10px; background:transparent; border:0; border-left:2px solid transparent; text-align:left; color:var(--steel-300); font-weight:500; font-size:12.5px; transition:all .15s ease;
+    }
+    .nav-item:hover, .nav-item.active { color:var(--ice); background:rgba(31,91,164,.35); border-left-color:var(--spark); }
+    .nav-item .dot { width:16px; text-align:center; color:#8ab5ec; font-size:13px; }
+    .side-panel {
+      margin-top:18px; background:rgba(10,24,43,0.7); border:1px solid var(--line); padding:12px;
+    }
+    .side-panel-title { display:block; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#d8e8ff; margin-bottom:8px; }
+    .side-panel p { margin:0; color:var(--steel-400); line-height:1.5; font-size:11px; }
+    .side-user { margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+    .avatar { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:linear-gradient(135deg, #2c6bd6, #0a2447); border:1px solid rgba(185,198,218,0.2); font-size:11px; font-family:'Sora'; font-weight:700; }
+    .side-user strong { display:block; font-size:12px; }
+    .side-user small { color:var(--steel-400); font-size:10px; }
+
+    .module-main { padding:20px 28px 42px; }
+    .main-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:18px; }
+    .main-head .left { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .back-btn {
+      display:flex; align-items:center; gap:8px; background:transparent; border:1px solid var(--field-line); color:var(--steel-300); padding:8px 12px; font-size:12px; transition:all .15s ease;
+    }
+    .back-btn:hover { border-color:var(--spark); color:var(--ice); }
+    .head-title h1 { margin:0; font-size:24px; font-family:'Sora'; letter-spacing:-0.02em; }
+    .head-title p { margin:6px 0 0; color:var(--steel-400); font-size:12px; }
+    .header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .lang-wrap { position:relative; }
+    .lang-button {
+      display:flex; align-items:center; gap:7px; background:rgba(7,26,51,.8); border:1px solid var(--field-line); color:var(--steel-300); padding:8px 12px; font-size:12px; min-width:118px; justify-content:space-between;
+    }
+    .lang-menu {
+      position:absolute; right:0; top:calc(100% + 6px); min-width:160px; background:rgba(7,26,51,.96); border:1px solid var(--line); box-shadow:0 16px 40px rgba(0,0,0,.45); opacity:0; visibility:hidden; transform:translateY(6px); transition:all .15s ease; z-index:20;
+    }
+    .lang-wrap.open .lang-menu { opacity:1; visibility:visible; transform:translateY(0); }
+    .lang-menu button { display:block; width:100%; text-align:left; background:transparent; border:0; color:var(--steel-300); padding:10px 12px; font-size:13px; }
+    .lang-menu button:hover, .lang-menu button.active { background:rgba(74,144,255,.12); color:var(--ice); }
+    .clock { color:var(--steel-400); font-size:12px; font-variant-numeric:tabular-nums; }
+    .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .primary-btn, .secondary-btn, .danger-btn {
+      border:1px solid var(--field-line); background:rgba(255,255,255,.03); color:var(--steel-300); padding:9px 12px; font-size:12px; font-weight:600; transition:all .15s ease;
+    }
+    .primary-btn { background:linear-gradient(180deg,#2c6bd6,#013179); border:none; color:#fff; }
+    .primary-btn:hover { box-shadow:0 12px 28px rgba(44,107,214,.32); }
+    .secondary-btn:hover { border-color:var(--spark); color:var(--ice); }
+    .danger-btn { border-color:rgba(255,107,107,.5); color:#ffb3b3; }
+    .danger-btn:hover { background:rgba(255,107,107,.08); color:#fff; }
+
+    .view { display:none; }
+    .view.active { display:block; }
+
+    .kpi-grid {
+      display:grid; grid-template-columns:repeat(4, minmax(170px, 1fr)); gap:12px; margin-bottom:18px;
+    }
+    .kpi-card {
+      background:var(--panel); border:1px solid var(--line); padding:14px 16px; min-height:112px;
+    }
+    .kpi-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--steel-400); margin-bottom:8px; }
+    .kpi-value { font-family:'Sora'; font-weight:700; font-size:30px; line-height:1.1; }
+    .kpi-value.warn { color:var(--warn); }
+    .kpi-value.danger { color:var(--danger); }
+    .kpi-value.ok { color:var(--ok); }
+    .kpi-sub { font-size:11px; color:var(--steel-400); margin-top:6px; }
+
+    .dashboard-grid {
+      display:grid; grid-template-columns:1.2fr 0.8fr; gap:14px; margin-bottom:18px;
+    }
+    .panel {
+      background:var(--panel); border:1px solid var(--line); padding:14px 16px;
+    }
+    .panel-header {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;
+    }
+    .panel-header h3 {
+      margin:0; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--spark); font-weight:700;
+    }
+    .panel-header small { color:var(--steel-400); font-size:11px; }
+
+    .risk-list, .simple-list { display:grid; gap:8px; }
+    .risk-item, .simple-row {
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-top:1px solid var(--line);
+    }
+    .risk-item:first-child, .simple-row:first-child { border-top:none; }
+    .risk-main { min-width:0; }
+    .risk-name { font-weight:600; font-size:13px; } .risk-meta { color:var(--steel-400); font-size:11px; margin-top:2px; }
+    .risk-pill { padding:4px 8px; font-size:9px; letter-spacing:.06em; text-transform:uppercase; border:1px solid; white-space:nowrap; }
+    .risk-pill.warn { color:var(--warn); border-color:rgba(255,176,87,.5); background:rgba(255,176,87,.12); }
+    .risk-pill.danger { color:var(--danger); border-color:rgba(255,107,107,.5); background:rgba(255,107,107,.1); }
+    .risk-pill.ok { color:var(--ok); border-color:rgba(74,212,138,.5); background:rgba(74,212,138,.1); }
+
+    .chart-panel .chart, .mini-chart { width:100%; height:180px; }
+    .chart-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+    .chart-card { background:rgba(255,255,255,.02); border:1px solid var(--line); padding:10px 12px; }
+    .chart-card h4 { margin:0 0 10px; font-size:11px; letter-spacing:.08em; color:var(--steel-400); text-transform:uppercase; }
+    .bar-chart { display:flex; align-items:flex-end; height:130px; gap:10px; }
+    .bar-col { flex:1; display:flex; align-items:flex-end; justify-content:center; }
+    .bar-col .bar { width:100%; max-width:42px; background:linear-gradient(180deg, var(--spark), rgba(74,144,255,.3)); border:1px solid rgba(74,144,255,.5); }
+    .bar-col .label { display:block; text-align:center; font-size:10px; color:var(--steel-400); margin-top:8px; }
+    .ring-wrap { display:flex; align-items:center; justify-content:center; }
+    .ring-wrap svg { width:100%; max-width:190px; height:160px; }
+
+    .list-controls {
+      display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center;
+    }
+    .search-box { position:relative; flex:1 1 220px; }
+    .search-box input {
+      width:100%; background:var(--field); border:1px solid var(--field-line); color:var(--ice); padding:9px 10px 9px 34px; min-height:38px;
+    }
+    .search-box svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--steel-400); }
+    select, input[type="date"], input[type="number"], input[type="text"], textarea {
+      min-height:38px; background:var(--field); border:1px solid var(--field-line); color:var(--ice); padding:8px 10px;
+    }
+    .control { min-width:150px; }
+    .sort-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); background:rgba(255,255,255,.02); }
+    table { width:100%; min-width:1100px; border-collapse:collapse; }
+    th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); font-size:12px; }
+    th { font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--steel-400); background:rgba(255,255,255,.03); }
+    tbody tr:hover { background:rgba(74,144,255,.05); }
+    .td-link { color:var(--spark); cursor:pointer; font-weight:600; }
+    .status-pill {
+      display:inline-flex; align-items:center; gap:6px; padding:4px 8px; font-size:9px; letter-spacing:.06em; text-transform:uppercase; border:1px solid; white-space:nowrap; font-weight:700;
+    }
+    .status-pill.available { color:var(--ok); border-color:rgba(74,212,138,.5); background:rgba(74,212,138,.12); }
+    .status-pill.in-use { color:var(--cyan); border-color:rgba(125,211,252,.5); background:rgba(125,211,252,.12); }
+    .status-pill.maintenance-due, .status-pill.under-maintenance { color:var(--warn); border-color:rgba(255,176,87,.5); background:rgba(255,176,87,.1); }
+    .status-pill.out-of-service, .status-pill.quarantined, .status-pill.retired { color:var(--danger); border-color:rgba(255,107,107,.5); background:rgba(255,107,107,.08); }
+    .status-pill.inspection-required { color:var(--purple); border-color:rgba(192,132,252,.5); background:rgba(192,132,252,.12); }
+    .status-pill.reserved { color:#d8e8ff; border-color:rgba(142,163,192,.5); background:rgba(142,163,192,.08); }
+    .empty-state { text-align:center; color:var(--steel-400); padding:22px 16px; font-size:13px; }
+
+    .notice { border:1px solid rgba(255,176,87,.5); background:rgba(255,176,87,.08); color:#ffd9a6; padding:12px 14px; font-size:12px; line-height:1.6; margin-bottom:16px; }
+
+    .form-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:10px; letter-spacing:.08em; color:var(--steel-400); text-transform:uppercase; }
+    .field textarea { resize:vertical; min-height:90px; }
+    .field.full { grid-column:1 / -1; }
+    .inline-error { color:var(--danger); font-size:11px; min-height:14px; }
+    .error-summary { padding:10px 12px; border:1px solid rgba(255,107,107,.5); background:rgba(255,107,107,.08); color:#ffb3b3; font-size:12px; display:none; }
+    .error-summary.show { display:block; }
+    .subheader { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .subheader h3 { margin:0; font-family:'Sora'; font-size:18px; }
+
+    .detail-modal, .scanner-modal { position:fixed; inset:0; background:rgba(2,8,15,.76); display:none; align-items:flex-start; justify-content:center; z-index:60; padding:28px 20px; overflow:auto; }
+    .detail-modal.show, .scanner-modal.show { display:flex; }
+    .detail-panel { width:min(1100px, 100%); background:rgba(9,23,45,.98); border:1px solid var(--line); box-shadow:0 26px 80px rgba(0,0,0,.6); }
+    .detail-header { background:rgba(255,255,255,.025); border-bottom:1px solid var(--line); padding:20px 22px; }
+    .detail-header-row { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+    .detail-header h2 { margin:0; font-family:'Sora'; font-size:22px; }
+    .detail-meta { color:var(--steel-400); font-size:12px; margin-top:6px; }
+    .detail-fast { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .tag { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid rgba(142,163,192,.4); color:var(--steel-300); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+    .tag.warn { border-color:rgba(255,176,87,.5); color:var(--warn); background:rgba(255,176,87,.1); }
+    .tag.ok { border-color:rgba(74,212,138,.4); color:var(--ok); background:rgba(74,212,138,.1); }
+    .detail-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .detail-body { padding:18px 22px 22px; }
+    .detail-tabs { display:flex; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin-bottom:18px; }
+    .tab-button { background:transparent; border:0; border-bottom:2px solid transparent; padding:10px 12px; color:var(--steel-400); font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+    .tab-button.active { color:var(--ice); border-bottom-color:var(--spark); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .detail-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
+    .detail-field { background:rgba(255,255,255,.02); border:1px solid var(--line); padding:10px 12px; }
+    .detail-field .label { font-size:10px; letter-spacing:.08em; color:var(--steel-400); text-transform:uppercase; }
+    .detail-field .value { margin-top:6px; font-size:13px; color:var(--ice); }
+    .list-box { background:rgba(255,255,255,.02); border:1px solid var(--line); padding:10px 12px; }
+    .list-box table { width:100%; border-collapse:collapse; min-width:0; }
+    .list-box td, .list-box th { padding:8px 6px; font-size:12px; border-bottom:1px solid var(--line); }
+    .list-box th { color:var(--steel-400); text-transform:uppercase; font-size:9px; letter-spacing:.08em; }
+    .list-box tbody tr:last-child td { border-bottom:none; }
+    .modal-close { background:transparent; border:1px solid var(--field-line); color:var(--steel-300); padding:8px 12px; }
+    .modal-close:hover { border-color:var(--spark); color:var(--ice); }
+    .service-note { border:1px solid rgba(255,176,87,.4); background:rgba(255,176,87,.08); color:#ffd29d; padding:10px 12px; font-size:12px; }
+
+    .scanner-box { width:min(620px,100%); background:rgba(9,23,45,.98); border:1px solid var(--line); padding:22px 22px 18px; }
+    .scanner-box h3 { margin:0 0 10px; font-family:'Sora'; font-size:20px; }
+    .scanner-box .demo-note { color:var(--steel-400); font-size:12px; margin-bottom:14px; }
+    .scan-input { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .scan-input input { flex:1 1 260px; }
+    .scan-area { height:90px; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(74,144,255,.7); background:rgba(74,144,255,.05); color:var(--steel-400); margin-bottom:12px; font-size:11px; }
+    .scan-result { background:rgba(255,255,255,.02); border:1px solid var(--line); padding:10px 12px; margin-top:12px; }
+
+    @media (max-width:1080px) {
+      .app-shell { grid-template-columns:1fr; }
+      .module-sidebar { min-height:auto; position:relative; border-right:none; border-bottom:1px solid rgba(74,144,255,.22); }
+      .module-main { padding:18px 20px 42px; }
+      .kpi-grid { grid-template-columns:repeat(2,minmax(170px,1fr)); }
+    }
+    @media (max-width:700px) {
+      .kpi-grid, .dashboard-grid, .detail-grid, .form-grid { grid-template-columns:1fr; }
+      .main-head { flex-direction:column; }
+      .header-actions { width:100%; justify-content:flex-start; }
+      .toolbar { justify-content:flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"><div class="grid"></div><div class="glow"></div></div>
+
+  <div class="app-shell">
+    <aside class="module-sidebar">
+      <div class="side-brand">
+        <div class="logo">◇</div>
+        <div>
+          <h2>EQUIPMENT</h2>
+          <small data-i="sidebarSubtitle">Machines & assets</small>
+        </div>
+      </div>
+
+      <nav class="nav-list" id="navList">
+        <button class="nav-item active" data-view="overview"><span class="dot">▣</span><span data-i="navOverview">Overview</span></button>
+        <button class="nav-item" data-view="all"><span class="dot">▤</span><span data-i="navAll">All Equipment</span></button>
+        <button class="nav-item" data-view="available"><span class="dot">●</span><span data-i="navAvailable">Available</span></button>
+        <button class="nav-item" data-view="in-use"><span class="dot">◉</span><span data-i="navInUse">In Use</span></button>
+        <button class="nav-item" data-view="maintenance-due"><span class="dot">⚠</span><span data-i="navMaintenanceDue">Maintenance Due</span></button>
+        <button class="nav-item" data-view="out-of-service"><span class="dot">■</span><span data-i="navOutOfService">Out of Service</span></button>
+        <button class="nav-item" data-view="inspections"><span class="dot">✓</span><span data-i="navInspections">Inspections</span></button>
+        <button class="nav-item" data-view="maintenance"><span class="dot">⚙</span><span data-i="navMaintenance">Maintenance</span></button>
+        <button class="nav-item" data-view="certifications"><span class="dot">▣</span><span data-i="navCertifications">Certifications</span></button>
+        <button class="nav-item" data-view="calibration"><span class="dot">◌</span><span data-i="navCalibration">Calibration</span></button>
+        <button class="nav-item" data-view="documents"><span class="dot">☰</span><span data-i="navDocuments">Documents</span></button>
+        <button class="nav-item" data-view="new-equipment"><span class="dot">＋</span><span data-i="navNewEquipment">New Equipment</span></button>
+      </nav>
+
+      <div class="side-panel">
+        <span class="side-panel-title" data-i="workflowTitle">Connected Workflow</span>
+        <p data-i="workflowText">Equipment can be assigned to projects, jobcards and operations, while operating hours, inspections, maintenance and downtime contribute to shared workshop records.</p>
+      </div>
+
+      <div class="side-user">
+        <div class="avatar">AK</div>
+        <div>
+          <strong>Aleksandar</strong>
+          <small data-i="roleBadge">Admin</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="module-main">
+      <header class="main-head">
+        <div class="left">
+          <button class="back-btn" id="backToHub" type="button">← <span data-i="backToHub">Back to Hub</span></button>
+          <div class="head-title">
+            <h1 data-i="pageTitle">Equipment / Machines</h1>
+            <p data-i="pageSubtitle">Workshop asset register</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="clock" id="clock">—</div>
+          <div class="lang-wrap" id="langWrap">
+            <button class="lang-button" id="langToggle" type="button" aria-label="Language selector">
+              <span>🌐</span>
+              <span id="langCurrent">EN</span>
+              <span>▾</span>
+            </button>
+            <div class="lang-menu" id="langMenu">
+              <button type="button" data-lang="en" class="active">English</button>
+              <button type="button" data-lang="sv">Svenska</button>
+              <button type="button" data-lang="mk">Македонски</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="notice" data-i="prototypeNotice">
+        This prototype demonstrates workflow and validation. Production safety controls, permissions, audit logging and regulatory records require the future secured backend.
+      </div>
+
+      <section id="view-overview" class="view active">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 data-i="urgentTitle">Equipment requiring immediate attention</h3>
+              <small id="urgentCount"></small>
+            </div>
+            <div class="risk-list" id="urgentList"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h3 data-i="maintenanceSoonTitle">Maintenance due soon</h3>
+              <small id="maintenanceSoonCount"></small>
+            </div>
+            <div class="simple-list" id="maintenanceSoonList"></div>
+          </div>
+        </div>
+
+        <div class="chart-panel panel">
+          <div class="panel-header">
+            <h3 data-i="chartTitle">Equipment overview</h3>
+            <small data-i="chartSubtitle">Live status summary</small>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h4 data-i="statusChartTitle">Equipment by status</h4>
+              <div class="bar-chart" id="statusChart"></div>
+            </div>
+            <div class="chart-card">
+              <h4 data-i="categoryChartTitle">Equipment by category</h4>
+              <div class="bar-chart" id="categoryChart"></div>
+            </div>
+            <div class="chart-card">
+              <h4 data-i="downtimeChartTitle">Monthly downtime</h4>
+              <div class="chart" id="downtimeChart"></div>
+            </div>
+            <div class="chart-card">
+              <h4 data-i="maintenancePlanChartTitle">Planned vs completed maintenance</h4>
+              <div class="ring-wrap" id="maintenanceRing"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-all" class="view">
+        <div class="toolbar">
+          <button class="primary-btn" type="button" id="newEquipmentBtn" data-i="newEquipmentBtn">+ New equipment</button>
+          <button class="secondary-btn" type="button" id="openScannerBtn" data-i="demoScannerBtn">Demo scanner</button>
+          <button class="secondary-btn" type="button" id="printReportBtn" data-i="printSummaryBtn">Print summary</button>
+        </div>
+        <div class="panel">
+          <div class="list-controls">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"></circle><path d="M16 16l5 5"></path></svg>
+              <input id="searchBox" type="text" data-i-placeholder="searchPlaceholder" placeholder="Search equipment..." />
+            </div>
+            <select id="categoryFilter" class="control"></select>
+            <select id="statusFilter" class="control"></select>
+            <select id="locationFilter" class="control"></select>
+            <select id="responsibleFilter" class="control"></select>
+            <select id="projectFilter" class="control"></select>
+            <select id="maintenanceFilter" class="control"></select>
+            <select id="inspectionFilter" class="control"></select>
+            <select id="certFilter" class="control"></select>
+            <div class="sort-row">
+              <select id="sortSelect" class="control">
+                <option value="equipmentId" data-i="sortEquipmentId">Equipment ID</option>
+                <option value="name" data-i="sortName">Name</option>
+                <option value="category" data-i="sortCategory">Category</option>
+                <option value="status" data-i="sortStatus">Status</option>
+                <option value="maintenance" data-i="sortMaintenance">Next maintenance</option>
+                <option value="inspection" data-i="sortInspection">Next inspection</option>
+                <option value="hours" data-i="sortHours">Operating hours</option>
+                <option value="activity" data-i="sortActivity">Last activity</option>
+              </select>
+              <button class="secondary-btn" type="button" id="clearFiltersBtn" data-i="clearFiltersBtn">Clear filters</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i="colId">Equipment ID</th>
+                  <th data-i="colName">Name</th>
+                  <th data-i="colCategory">Category</th>
+                  <th data-i="colManufacturer">Manufacturer</th>
+                  <th data-i="colModel">Model</th>
+                  <th data-i="colSerial">Serial</th>
+                  <th data-i="colStatus">Status</th>
+                  <th data-i="colLocation">Location</th>
+                  <th data-i="colAssignment">Assignment</th>
+                  <th data-i="colPerson">Responsible</th>
+                  <th data-i="colMaintenance">Next maintenance</th>
+                  <th data-i="colInspection">Next inspection</th>
+                  <th data-i="colSafety">Warnings</th>
+                  <th data-i="colHours">Operating hours</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-new-equipment" class="view">
+        <div class="panel">
+          <div class="subheader">
+            <h3 data-i="newEquipmentHeading">New equipment</h3>
+            <button class="secondary-btn" type="button" id="newEquipmentCancel" data-i="cancelBtn">Back to register</button>
+          </div>
+          <div class="error-summary" id="equipmentFormErrors" aria-live="polite"></div>
+          <form id="equipmentForm" novalidate>
+            <div class="form-grid">
+              <div class="field">
+                <label for="eqId" data-i="fieldEqId">Equipment ID</label>
+                <input id="eqId" name="equipmentId" required />
+                <div class="inline-error" data-error-for="equipmentId"></div>
+              </div>
+              <div class="field">
+                <label for="eqName" data-i="fieldEqName">Name</label>
+                <input id="eqName" name="name" required />
+                <div class="inline-error" data-error-for="name"></div>
+              </div>
+              <div class="field">
+                <label for="eqCategory" data-i="fieldEqCategory">Category</label>
+                <select id="eqCategory" name="category" required></select>
+                <div class="inline-error" data-error-for="category"></div>
+              </div>
+              <div class="field">
+                <label for="eqStatus" data-i="fieldEqStatus">Status</label>
+                <select id="eqStatus" name="status" required></select>
+                <div class="inline-error" data-error-for="status"></div>
+              </div>
+              <div class="field">
+                <label for="eqLocation" data-i="fieldEqLocation">Location</label>
+                <input id="eqLocation" name="currentLocation" required />
+                <div class="inline-error" data-error-for="currentLocation"></div>
+              </div>
+              <div class="field">
+                <label for="eqResponsible" data-i="fieldEqResponsible">Responsible person</label>
+                <input id="eqResponsible" name="responsiblePerson" required />
+                <div class="inline-error" data-error-for="responsiblePerson"></div>
+              </div>
+              <div class="field">
+                <label for="eqManufacturer" data-i="fieldEqManufacturer">Manufacturer</label>
+                <input id="eqManufacturer" name="manufacturer" />
+              </div>
+              <div class="field">
+                <label for="eqModel" data-i="fieldEqModel">Model</label>
+                <input id="eqModel" name="model" />
+              </div>
+              <div class="field">
+                <label for="eqSerial" data-i="fieldEqSerial">Serial number</label>
+                <input id="eqSerial" name="serial" />
+              </div>
+              <div class="field">
+                <label for="eqAsset" data-i="fieldEqAsset">Asset number</label>
+                <input id="eqAsset" name="assetNumber" />
+              </div>
+              <div class="field">
+                <label for="eqYear" data-i="fieldEqYear">Year</label>
+                <input id="eqYear" name="yearOfManufacture" type="number" />
+              </div>
+              <div class="field">
+                <label for="eqPurchaseDate" data-i="fieldEqPurchaseDate">Purchase date</label>
+                <input id="eqPurchaseDate" name="purchaseDate" type="date" />
+              </div>
+              <div class="field">
+                <label for="eqPurchaseSupplier" data-i="fieldEqPurchaseSupplier">Supplier</label>
+                <input id="eqPurchaseSupplier" name="purchaseSupplier" />
+              </div>
+              <div class="field">
+                <label for="eqPurchasePrice" data-i="fieldEqPurchasePrice">Purchase price</label>
+                <input id="eqPurchasePrice" name="purchasePrice" type="number" min="0" step="0.01" />
+                <div class="inline-error" data-error-for="purchasePrice"></div>
+              </div>
+              <div class="field">
+                <label for="eqWarranty" data-i="fieldEqWarranty">Warranty expiry</label>
+                <input id="eqWarranty" name="warrantyExpiry" type="date" />
+              </div>
+              <div class="field">
+                <label for="eqHomeLocation" data-i="fieldEqHomeLocation">Home location</label>
+                <input id="eqHomeLocation" name="homeLocation" />
+              </div>
+              <div class="field">
+                <label for="eqDepartment" data-i="fieldEqDepartment">Department</label>
+                <input id="eqDepartment" name="department" />
+              </div>
+              <div class="field">
+                <label for="eqCondition" data-i="fieldEqCondition">Condition</label>
+                <input id="eqCondition" name="condition" />
+              </div>
+              <div class="field">
+                <label for="eqCriticality" data-i="fieldEqCriticality">Criticality</label>
+                <select id="eqCriticality" name="criticality">
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="eqHours" data-i="fieldEqHours">Operating hour meter</label>
+                <input id="eqHours" name="operatingHourMeter" type="number" min="0" step="1" value="0" />
+                <div class="inline-error" data-error-for="operatingHourMeter"></div>
+              </div>
+              <div class="field">
+                <label for="eqServiceInterval" data-i="fieldEqServiceInterval">Service interval</label>
+                <input id="eqServiceInterval" name="serviceInterval" type="number" min="0" step="1" value="0" />
+              </div>
+              <div class="field">
+                <label for="eqMaintDate" data-i="fieldEqMaintDate">Maintenance date</label>
+                <input id="eqMaintDate" name="maintenanceDate" type="date" />
+                <div class="inline-error" data-error-for="maintenanceDate"></div>
+              </div>
+              <div class="field">
+                <label for="eqInspectionDate" data-i="fieldEqInspectionDate">Inspection date</label>
+                <input id="eqInspectionDate" name="inspectionDate" type="date" />
+              </div>
+              <div class="field">
+                <label for="eqCertExp" data-i="fieldEqCertExp">Certification expiry</label>
+                <input id="eqCertExp" name="certificationExpiry" type="date" />
+              </div>
+              <div class="field">
+                <label for="eqCalDate" data-i="fieldEqCalDate">Calibration date</label>
+                <input id="eqCalDate" name="calibrationDate" type="date" />
+              </div>
+              <div class="field full">
+                <label for="eqDescription" data-i="fieldEqDescription">Description</label>
+                <textarea id="eqDescription" name="description"></textarea>
+              </div>
+              <div class="field full">
+                <label for="eqNotes" data-i="fieldEqNotes">Notes</label>
+                <textarea id="eqNotes" name="notes"></textarea>
+              </div>
+            </div>
+            <div class="toolbar" style="margin-top:18px;">
+              <button class="primary-btn" type="submit" data-i="saveEquipmentBtn">Save equipment</button>
+              <button class="secondary-btn" type="button" id="resetFormBtn" data-i="resetFormBtn">Reset form</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="detail-modal" id="detailModal" aria-hidden="true">
+    <div class="detail-panel">
+      <div class="detail-header">
+        <div class="detail-header-row">
+          <div>
+            <div class="tag" id="detailStatusTag">Available</div>
+            <h2 id="detailEquipmentName">Equipment</h2>
+            <div class="detail-meta" id="detailMeta">Equipment ID · Category</div>
+          </div>
+          <div class="detail-actions">
+            <button class="secondary-btn" type="button" id="detailReserveBtn" data-i="reserveAction">Reserve</button>
+            <button class="secondary-btn" type="button" id="detailAssignBtn" data-i="assignAction">Assign</button>
+            <button class="secondary-btn" type="button" id="detailReturnBtn" data-i="returnAction">Return</button>
+            <button class="modal-close" type="button" id="detailCloseBtn">Close</button>
+          </div>
+        </div>
+        <div class="detail-fast" id="detailFastFacts"></div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-tabs" id="detailTabs">
+          <button class="tab-button active" type="button" data-tab="general">General</button>
+          <button class="tab-button" type="button" data-tab="assignments">Assignments</button>
+          <button class="tab-button" type="button" data-tab="usage">Usage</button>
+          <button class="tab-button" type="button" data-tab="inspections">Inspections</button>
+          <button class="tab-button" type="button" data-tab="maintenance">Maintenance</button>
+          <button class="tab-button" type="button" data-tab="safety">Safety</button>
+          <button class="tab-button" type="button" data-tab="certifications">Certifications</button>
+          <button class="tab-button" type="button" data-tab="calibration">Calibration</button>
+          <button class="tab-button" type="button" data-tab="costs">Costs</button>
+          <button class="tab-button" type="button" data-tab="documents">Documents</button>
+          <button class="tab-button" type="button" data-tab="notes">Notes</button>
+          <button class="tab-button" type="button" data-tab="activity">Activity</button>
+        </div>
+        <div id="detailTabContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scanner-modal" id="scannerModal" aria-hidden="true">
+    <div class="scanner-box">
+      <h3 data-i="scannerTitle">Demo scanner</h3>
+      <div class="demo-note" data-i="scannerNote">Demo scanner – camera and hardware scanning require a future integration.</div>
+      <div class="scan-input">
+        <input id="scanValue" type="text" placeholder="Scan or enter QR/barcode value" />
+        <button class="primary-btn" type="button" id="scanLookupBtn" data-i="scanLookupBtn">Find equipment</button>
+      </div>
+      <div class="scan-area" data-i="scannerArea">Manual demo scan area</div>
+      <div class="scan-result" id="scanResult"></div>
+      <div class="toolbar" style="margin-top:16px;">
+        <button class="secondary-btn" type="button" id="scannerCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="workshop-data.js"></script>
+  <script src="workshop-forms.js"></script>
+  <script>
+    (function () {
+      const translations = {
+        en: {
+          sidebarSubtitle: 'Machines & assets',
+          navOverview: 'Overview', navAll: 'All Equipment', navAvailable: 'Available', navInUse: 'In Use', navMaintenanceDue: 'Maintenance Due',
+          navOutOfService: 'Out of Service', navInspections: 'Inspections', navMaintenance: 'Maintenance', navCertifications: 'Certifications',
+          navCalibration: 'Calibration', navDocuments: 'Documents', navNewEquipment: 'New Equipment',
+          workflowTitle: 'Connected Workflow', workflowText: 'Equipment can be assigned to projects, jobcards and operations, while operating hours, inspections, maintenance and downtime contribute to shared workshop records.',
+          roleBadge: 'Admin', backToHub: 'Back to Hub', pageTitle: 'Equipment / Machines', pageSubtitle: 'Workshop asset register',
+          prototypeNotice: 'This prototype demonstrates workflow and validation. Production safety controls, permissions, audit logging and regulatory records require the future secured backend.',
+          urgentTitle: 'Equipment requiring immediate attention', maintenanceSoonTitle: 'Maintenance due soon',
+          statusChartTitle: 'Equipment by status', categoryChartTitle: 'Equipment by category', downtimeChartTitle: 'Monthly downtime',
+          maintenancePlanChartTitle: 'Planned vs completed maintenance', chartTitle: 'Equipment overview', chartSubtitle: 'Live status summary',
+          searchPlaceholder: 'Search equipment...', newEquipmentBtn: '+ New equipment', demoScannerBtn: 'Demo scanner', printSummaryBtn: 'Print summary',
+          clearFiltersBtn: 'Clear filters', sortEquipmentId: 'Equipment ID', sortName: 'Name', sortCategory: 'Category', sortStatus: 'Status',
+          sortMaintenance: 'Next maintenance', sortInspection: 'Next inspection', sortHours: 'Operating hours', sortActivity: 'Last activity',
+          colId: 'Equipment ID', colName: 'Name', colCategory: 'Category', colManufacturer: 'Manufacturer', colModel: 'Model', colSerial: 'Serial', colStatus: 'Status',
+          colLocation: 'Location', colAssignment: 'Assignment', colPerson: 'Responsible', colMaintenance: 'Next maintenance', colInspection: 'Next inspection',
+          colSafety: 'Warnings', colHours: 'Operating hours', newEquipmentHeading: 'New equipment', cancelBtn: 'Back to register',
+          fieldEqId: 'Equipment ID', fieldEqName: 'Name', fieldEqCategory: 'Category', fieldEqStatus: 'Status', fieldEqLocation: 'Location', fieldEqResponsible: 'Responsible person',
+          fieldEqManufacturer: 'Manufacturer', fieldEqModel: 'Model', fieldEqSerial: 'Serial number', fieldEqAsset: 'Asset number', fieldEqYear: 'Year',
+          fieldEqPurchaseDate: 'Purchase date', fieldEqPurchaseSupplier: 'Supplier', fieldEqPurchasePrice: 'Purchase price', fieldEqWarranty: 'Warranty expiry',
+          fieldEqHomeLocation: 'Home location', fieldEqDepartment: 'Department', fieldEqCondition: 'Condition', fieldEqCriticality: 'Criticality',
+          fieldEqHours: 'Operating hour meter', fieldEqServiceInterval: 'Service interval', fieldEqMaintDate: 'Maintenance date', fieldEqInspectionDate: 'Inspection date',
+          fieldEqCertExp: 'Certification expiry', fieldEqCalDate: 'Calibration date', fieldEqDescription: 'Description', fieldEqNotes: 'Notes',
+          saveEquipmentBtn: 'Save equipment', resetFormBtn: 'Reset form', reserveAction: 'Reserve', assignAction: 'Assign', returnAction: 'Return',
+          scannerTitle: 'Demo scanner', scannerNote: 'Demo scanner – camera and hardware scanning require a future integration.', scannerArea: 'Manual demo scan area',
+          scanLookupBtn: 'Find equipment',
+          formErrorsTitle: 'Please fix the following fields:'
+        },
+        sv: {
+          sidebarSubtitle: 'Maskiner & tillgångar',
+          navOverview: 'Översikt', navAll: 'All utrustning', navAvailable: 'Tillgänglig', navInUse: 'I användning', navMaintenanceDue: 'Underhåll förfaller',
+          navOutOfService: 'Ej i drift', navInspections: 'Inspektioner', navMaintenance: 'Underhåll', navCertifications: 'Certifikat',
+          navCalibration: 'Kalibrering', navDocuments: 'Dokument', navNewEquipment: 'Ny utrustning',
+          workflowTitle: 'Kopplat arbetsflöde', workflowText: 'Utrustning kan tilldelas projekt, jobbkort och operationer, medan drifttimmar, inspektioner, underhåll och driftstopp bidrar till delade verkstadsregister.',
+          roleBadge: 'Admin', backToHub: 'Tillbaka till hubben', pageTitle: 'Utrustning / Maskiner', pageSubtitle: 'Verkstadstillgångar',
+          prototypeNotice: 'Denna prototyp visar arbetsflöde och validering. Produktionssäkerhetskontroller, behörigheter, revisionsloggning och regulatoriska register kräver framtida säkra backend.',
+          urgentTitle: 'Utrustning som kräver omedelbar uppmärksamhet', maintenanceSoonTitle: 'Underhåll förfaller snart',
+          statusChartTitle: 'Utrustning efter status', categoryChartTitle: 'Utrustning efter kategori', downtimeChartTitle: 'Månatligt driftstopp',
+          maintenancePlanChartTitle: 'Planerat vs slutfört underhåll', chartTitle: 'Utrustningsöversikt', chartSubtitle: 'Live statusöversikt',
+          searchPlaceholder: 'Sök utrustning...', newEquipmentBtn: '+ Ny utrustning', demoScannerBtn: 'Demo-skanner', printSummaryBtn: 'Skriv ut översikt',
+          clearFiltersBtn: 'Rensa filter', sortEquipmentId: 'Utrustnings-ID', sortName: 'Namn', sortCategory: 'Kategori', sortStatus: 'Status',
+          sortMaintenance: 'Nästa underhåll', sortInspection: 'Nästa inspektion', sortHours: 'Drifttimmar', sortActivity: 'Senaste aktivitet',
+          colId: 'Utrustnings-ID', colName: 'Namn', colCategory: 'Kategori', colManufacturer: 'Tillverkare', colModel: 'Modell', colSerial: 'Serienummer', colStatus: 'Status',
+          colLocation: 'Plats', colAssignment: 'Tilldelning', colPerson: 'Ansvarig', colMaintenance: 'Nästa underhåll', colInspection: 'Nästa inspektion',
+          colSafety: 'Varningar', colHours: 'Drifttimmar', newEquipmentHeading: 'Ny utrustning', cancelBtn: 'Tillbaka till register',
+          fieldEqId: 'Utrustnings-ID', fieldEqName: 'Namn', fieldEqCategory: 'Kategori', fieldEqStatus: 'Status', fieldEqLocation: 'Plats', fieldEqResponsible: 'Ansvarig person',
+          fieldEqManufacturer: 'Tillverkare', fieldEqModel: 'Modell', fieldEqSerial: 'Serienummer', fieldEqAsset: 'Tillgångsnummer', fieldEqYear: 'År', fieldEqPurchaseDate: 'Inköpsdatum',
+          fieldEqPurchaseSupplier: 'Leverantör', fieldEqPurchasePrice: 'Inköpspris', fieldEqWarranty: 'Garanti utgång', fieldEqHomeLocation: 'Hemplats', fieldEqDepartment: 'Avdelning',
+          fieldEqCondition: 'Tillstånd', fieldEqCriticality: 'Kritikalitet', fieldEqHours: 'Drifttimmätare', fieldEqServiceInterval: 'Serviceintervall', fieldEqMaintDate: 'Underhållsdatum',
+          fieldEqInspectionDate: 'Inspektionsdatum', fieldEqCertExp: 'Certifikat utgång', fieldEqCalDate: 'Kalibreringsdatum', fieldEqDescription: 'Beskrivning', fieldEqNotes: 'Anteckningar',
+          saveEquipmentBtn: 'Spara utrustning', resetFormBtn: 'Återställ formulär', reserveAction: 'Reservera', assignAction: 'Tilldela', returnAction: 'Återlämna',
+          scannerTitle: 'Demo-skanner', scannerNote: 'Demo-skanner – kamera och hårdvaruskanning kräver framtida integration.', scannerArea: 'Manuell demo-skanningsyta', scanLookupBtn: 'Hitta utrustning',
+          formErrorsTitle: 'Rätta följande fält:'
+        },
+        mk: {
+          sidebarSubtitle: 'Машини & средства',
+          navOverview: 'Преглед', navAll: 'Сите средства', navAvailable: 'Достапни', navInUse: 'Во употреба', navMaintenanceDue: 'Потребно одржување',
+          navOutOfService: 'Надвор од употреба', navInspections: 'Инспекции', navMaintenance: 'Одржување', navCertifications: 'Сертификати',
+          navCalibration: 'Калибрација', navDocuments: 'Документи', navNewEquipment: 'Ново средство',
+          workflowTitle: 'Поврзан работен тек', workflowText: 'Опремата може да се доделува на проекти, работни карти и операции, додека оперативните часови, инспекциите, одржувањето и прекините придонесуваат во заеднички записи на работилницата.',
+          roleBadge: 'Админ', backToHub: 'Назад кон хабот', pageTitle: 'Опрема / Машини', pageSubtitle: 'Регистар на средства',
+          prototypeNotice: 'Оваа прототипна верзија ги прикажува работните текови и проверките. Контролите за безбедност, дозволите, евиденцијата и регулаторните записи бараат идно безбедно backend.',
+          urgentTitle: 'Опрема што бара веднаш внимание', maintenanceSoonTitle: 'Одржување наскоро',
+          statusChartTitle: 'Опрема по статус', categoryChartTitle: 'Опрема по категорија', downtimeChartTitle: 'Месечни прекини',
+          maintenancePlanChartTitle: 'Планско vs завршено одржување', chartTitle: 'Преглед на опремата', chartSubtitle: 'Активен статусен преглед',
+          searchPlaceholder: 'Пребарувај опрема...', newEquipmentBtn: '+ Нова опрема', demoScannerBtn: 'Демо скенер', printSummaryBtn: 'Печати преглед',
+          clearFiltersBtn: 'Исчисти филтри', sortEquipmentId: 'ID на опрема', sortName: 'Име', sortCategory: 'Категорија', sortStatus: 'Статус',
+          sortMaintenance: 'Следно одржување', sortInspection: 'Следна инспекција', sortHours: 'Работни часови', sortActivity: 'Последна активност',
+          colId: 'ID на опрема', colName: 'Име', colCategory: 'Категорија', colManufacturer: 'Производител', colModel: 'Модел', colSerial: 'Сериен број', colStatus: 'Статус',
+          colLocation: 'Локација', colAssignment: 'Доделување', colPerson: 'Одговорно лице', colMaintenance: 'Следно одржување', colInspection: 'Следна инспекција',
+          colSafety: 'Предупредувања', colHours: 'Работни часови', newEquipmentHeading: 'Нова опрема', cancelBtn: 'Назад кон регистарот',
+          fieldEqId: 'ID на опрема', fieldEqName: 'Име', fieldEqCategory: 'Категорија', fieldEqStatus: 'Статус', fieldEqLocation: 'Локација', fieldEqResponsible: 'Одговорно лице',
+          fieldEqManufacturer: 'Производител', fieldEqModel: 'Модел', fieldEqSerial: 'Сериен број', fieldEqAsset: 'Број на средство', fieldEqYear: 'Година', fieldEqPurchaseDate: 'Датум на купување',
+          fieldEqPurchaseSupplier: 'Добавувач', fieldEqPurchasePrice: 'Цена на купување', fieldEqWarranty: 'Истекување на гаранција', fieldEqHomeLocation: 'Постојана локација', fieldEqDepartment: 'Оддел',
+          fieldEqCondition: 'Состојба', fieldEqCriticality: 'Критичност', fieldEqHours: 'Метар на работни часови', fieldEqServiceInterval: 'Интервал на сервис', fieldEqMaintDate: 'Датум на одржување',
+          fieldEqInspectionDate: 'Датум на инспекција', fieldEqCertExp: 'Истекување на сертификат', fieldEqCalDate: 'Датум на калибрација', fieldEqDescription: 'Опис', fieldEqNotes: 'Белешки',
+          saveEquipmentBtn: 'Зачувај опрема', resetFormBtn: 'Ресетирај формулар', reserveAction: 'Резервирај', assignAction: 'Додели', returnAction: 'Врати',
+          scannerTitle: 'Демо скенер', scannerNote: 'Демо скенер – камерата и хардверското скенирање бараат надворешна интеграција.', scannerArea: 'Рачна зона за демо скенирање', scanLookupBtn: 'Пронајди опрема',
+          formErrorsTitle: 'Исправете ги следниве полиња:'
+        }
+      };
+
+      const state = {
+        currentView: 'overview',
+        selectedTab: 'general',
+        language: 'en',
+        currentId: null,
+        filters: {
+          search: '', category: 'all', status: 'all', location: 'all', responsible: 'all', project: 'all', maintenance: 'all', inspection: 'all', certification: 'all', sort: 'equipmentId'
+        }
+      };
+
+      const categories = [
+        'Welding Machine','Cutting Equipment','CNC Machine','Workshop Machine','Lifting Equipment','Compressor','Hand Tool','Power Tool','Measuring Instrument','Vehicle','Forklift','Mobile Equipment','Safety Equipment','Other'
+      ];
+
+      const statuses = ['Available','Reserved','In Use','Maintenance Due','Under Maintenance','Inspection Required','Out of Service','Quarantined','Retired'];
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
+      }
+
+      function isoToDate(value) {
+        if (!value) return null;
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      function daysUntil(value) {
+        const date = isoToDate(value);
+        if (!date) return null;
+        const diff = date.getTime() - new Date().getTime();
+        return Math.ceil(diff / 86400000);
+      }
+
+      function shortDate(value) {
+        if (!value) return '—';
+        const d = isoToDate(value);
+        return d ? d.toLocaleDateString(state.language === 'en' ? 'en-GB' : state.language === 'sv' ? 'sv-SE' : 'mk-MK', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      }
+
+      function formatNumber(value) {
+        const num = Number(value) || 0;
+        return new Intl.NumberFormat(state.language === 'sv' ? 'sv-SE' : state.language === 'mk' ? 'mk-MK' : 'en-US').format(num);
+      }
+
+      function statusClass(status) {
+        const key = String(status || '').toLowerCase().replace(/[^a-z]+/g, '-');
+        return key === 'in-use' ? 'in-use' : key === 'available' ? 'available' : key === 'out-of-service' || key === 'quarantined' || key === 'retired' ? 'out-of-service' : key === 'under-maintenance' || key === 'maintenance-due' ? 'maintenance-due' : key === 'inspection-required' ? 'inspection-required' : key === 'reserved' ? 'reserved' : 'available';
+      }
+
+      function getEquipment() {
+        if (window.WorkshopData && typeof window.WorkshopData.getEquipment === 'function') {
+          return window.WorkshopData.getEquipment();
+        }
+        return [];
+      }
+
+      function getProjects() {
+        if (window.WorkshopData && typeof window.WorkshopData.listProjects === 'function') {
+          return window.WorkshopData.listProjects();
+        }
+        return [];
+      }
+
+      function getJobcards() {
+        if (window.WorkshopData && typeof window.WorkshopData.listJobcards === 'function') {
+          return window.WorkshopData.listJobcards();
+        }
+        return [];
+      }
+
+      function getLanguageText(key) {
+        const lang = translations[state.language] || translations.en;
+        return lang[key] || translations.en[key] || key;
+      }
+
+      function applyLanguage() {
+        document.documentElement.lang = state.language;
+        document.querySelectorAll('[data-i]').forEach((el) => {
+          const key = el.getAttribute('data-i');
+          if (translations[state.language] && translations[state.language][key]) {
+            el.textContent = translations[state.language][key];
+          }
+        });
+        document.querySelectorAll('[data-i-placeholder]').forEach((el) => {
+          const key = el.getAttribute('data-i-placeholder');
+          const value = getLanguageText(key);
+          if (value) el.setAttribute('placeholder', value);
+        });
+        const langCurrent = document.getElementById('langCurrent');
+        if (langCurrent) langCurrent.textContent = state.language.toUpperCase();
+        document.querySelectorAll('#langMenu button').forEach((button) => {
+          button.classList.toggle('active', button.getAttribute('data-lang') === state.language);
+        });
+        renderAll();
+      }
+
+      function refreshClock() {
+        const clock = document.getElementById('clock');
+        if (!clock) return;
+        const now = new Date();
+        clock.textContent = now.toLocaleTimeString(state.language === 'sv' ? 'sv-SE' : state.language === 'mk' ? 'mk-MK' : 'en-US', { hour:'2-digit', minute:'2-digit' });
+      }
+
+      function renderKpis() {
+        const equipment = getEquipment();
+        const total = equipment.length;
+        const available = equipment.filter((item) => item.status === 'Available').length;
+        const inUse = equipment.filter((item) => item.status === 'In Use').length;
+        const maintenanceDue = equipment.filter((item) => item.status === 'Maintenance Due' || item.status === 'Under Maintenance').length;
+        const outOfService = equipment.filter((item) => ['Out of Service','Quarantined','Retired'].includes(item.status)).length;
+        const inspectionsDue = equipment.filter((item) => {
+          const d = daysUntil(item.inspectionDate);
+          return d !== null && d <= 30;
+        }).length;
+        const certsExpiring = equipment.filter((item) => {
+          const arr = Array.isArray(item.certifications) && item.certifications.length ? item.certifications : [{ expiryDate: item.certificationExpiry }];
+          return arr.some((cert) => {
+            const expiryDate = cert.expiryDate || cert.expiresOn || item.certificationExpiry;
+            const d = daysUntil(expiryDate);
+            return d !== null && d <= 60;
+          });
+        }).length;
+        const safetyIssues = equipment.filter((item) => (item.safetyWarnings || []).length > 0).length;
+        const downtime = equipment.reduce((sum, item) => sum + (Array.isArray(item.downtimeRecords) ? item.downtimeRecords.reduce((acc, entry) => acc + (Number(entry.totalDowntimeHours) || 0), 0) : 0), 0);
+
+        const kpis = [
+          { label:'Total Equipment', value: total, tone:'ok' },
+          { label:'Available', value: available, tone:'ok' },
+          { label:'Currently In Use', value: inUse, tone:'ok' },
+          { label:'Maintenance Due', value: maintenanceDue, tone:'warn' },
+          { label:'Out of Service', value: outOfService, tone:'danger' },
+          { label:'Inspections Due', value: inspectionsDue, tone:'warn' },
+          { label:'Certifications Expiring', value: certsExpiring, tone:'warn' },
+          { label:'Open Safety Issues', value: safetyIssues, tone:'danger' },
+          { label:'Total Downtime This Month', value: `${formatNumber(downtime)}h`, tone:'warn' }
+        ];
+
+        const grid = document.getElementById('kpiGrid');
+        if (!grid) return;
+        grid.innerHTML = kpis.map((kpi) => `
+          <div class="kpi-card">
+            <div class="kpi-label">${escapeHtml(kpi.label)}</div>
+            <div class="kpi-value ${kpi.tone}">${escapeHtml(String(kpi.value))}</div>
+            <div class="kpi-sub">${escapeHtml('Live demo data')}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderAlerts() {
+        const equipment = getEquipment();
+        const urgent = equipment.filter((item) => {
+          const warnings = item.safetyWarnings || [];
+          const due = daysUntil(item.maintenanceDate); const inspect = daysUntil(item.inspectionDate);
+          return warnings.length || item.status === 'Out of Service' || item.status === 'Quarantined' || item.status === 'Under Maintenance' || (due !== null && due <= 7) || (inspect !== null && inspect <= 14);
+        }).slice(0,4);
+
+        const urgentList = document.getElementById('urgentList');
+        if (urgentList) {
+          urgentList.innerHTML = urgent.length ? urgent.map((item) => `
+            <div class="risk-item">
+              <div class="risk-main">
+                <div class="risk-name">${escapeHtml(item.name)}</div>
+                <div class="risk-meta">${escapeHtml(item.equipmentId)} · ${escapeHtml(item.currentLocation)} · ${escapeHtml(item.status)}</div>
+              </div>
+              <span class="risk-pill ${item.status === 'Out of Service' || item.status === 'Quarantined' ? 'danger' : 'warn'}">${escapeHtml((item.safetyWarnings && item.safetyWarnings[0]) || item.status)}</span>
+            </div>
+          `).join('') : '<div class="empty-state">No immediate attention required.</div>';
+        }
+
+        const maintenanceSoon = equipment.filter((item) => {
+          const d = daysUntil(item.maintenanceDate);
+          return d !== null && d <= 30 && item.status !== 'Retired';
+        }).slice(0,4);
+        const maintenanceSoonList = document.getElementById('maintenanceSoonList');
+        if (maintenanceSoonList) {
+          maintenanceSoonList.innerHTML = maintenanceSoon.length ? maintenanceSoon.map((item) => `
+            <div class="simple-row">
+              <div>
+                <div class="risk-name">${escapeHtml(item.name)}</div>
+                <div class="risk-meta">${escapeHtml(item.equipmentId)} · ${escapeHtml(item.currentLocation)}</div>
+              </div>
+              <span class="risk-pill warn">${escapeHtml(String(daysUntil(item.maintenanceDate)) + 'd')}</span>
+            </div>
+          `).join('') : '<div class="empty-state">No upcoming maintenance.</div>';
+        }
+      }
+
+      function buildStatusChart() {
+        const equipment = getEquipment();
+        const labels = statuses;
+        const counts = labels.map((status) => equipment.filter((item) => item.status === status).length);
+        const max = Math.max(...counts, 1);
+        const container = document.getElementById('statusChart');
+        if (!container) return;
+        container.innerHTML = labels.map((label, index) => `
+          <div class="bar-col">
+            <div class="bar" style="height:${Math.max(16, (counts[index] / max) * 100)}%"></div>
+            <span class="label">${escapeHtml(label.slice(0, 4))}</span>
+          </div>
+        `).join('');
+      }
+
+      function buildCategoryChart() {
+        const equipment = getEquipment();
+        const map = {};
+        equipment.forEach((item) => {
+          map[item.category] = (map[item.category] || 0) + 1;
+        });
+        const entries = Object.entries(map).slice(0, 6);
+        const max = Math.max(...entries.map(([, count]) => count), 1);
+        const container = document.getElementById('categoryChart');
+        if (!container) return;
+        container.innerHTML = entries.map(([label, count]) => `
+          <div class="bar-col">
+            <div class="bar" style="height:${Math.max(18, (count / max) * 100)}%;background:linear-gradient(180deg, #7dd3fc, rgba(125,211,252,.35));"></div>
+            <span class="label">${escapeHtml(label.slice(0, 4))}</span>
+          </div>
+        `).join('');
+      }
+
+      function buildDowntimeChart() {
+        const container = document.getElementById('downtimeChart');
+        if (!container) return;
+        const months = ['Jan','Feb','Mar','Apr','May','Jun'];
+        const values = [12, 18, 14, 22, 16, 10];
+        const max = Math.max(...values, 1);
+        container.innerHTML = `
+          <svg width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="none">
+            <g fill="none" stroke="rgba(185,198,218,0.2)">
+              <line x1="36" y1="20" x2="300" y2="20"></line>
+              <line x1="36" y1="60" x2="300" y2="60"></line>
+              <line x1="36" y1="100" x2="300" y2="100"></line>
+              <line x1="36" y1="140" x2="300" y2="140"></line>
+            </g>
+            <g fill="none" stroke="var(--spark)" stroke-width="2">
+              <path d="M36 130 L90 90 L150 112 L210 80 L260 96 L300 52" stroke="rgba(74,144,255,0.9)"></path>
+            </g>
+            ${values.map((value, idx) => `
+              <g>
+                <circle cx="${36 + idx * 50}" cy="${160 - (value / max) * 118}" r="4" fill="var(--spark)"></circle>
+                <text x="${36 + idx * 50}" y="155" text-anchor="middle" font-size="10" fill="rgba(184,198,218,0.75)">${months[idx]}</text>
+              </g>
+            `).join('')}
+          </svg>
+        `;
+      }
+
+      function buildMaintenanceRing() {
+        const container = document.getElementById('maintenanceRing');
+        if (!container) return;
+        const equipment = getEquipment();
+        const planned = equipment.filter((item) => !!item.maintenanceDate).length;
+        const completed = equipment.filter((item) => (item.maintenance || []).length > 0).length;
+        const total = Math.max(1, planned + completed);
+        const plannedPct = Math.round((planned / total) * 100);
+        const completedPct = Math.round((completed / total) * 100);
+
+        container.innerHTML = `
+          <svg viewBox="0 0 220 160" aria-label="maintenance ring">
+            <circle cx="110" cy="90" r="54" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16"></circle>
+            <circle cx="110" cy="90" r="54" fill="none" stroke="var(--spark)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${2 * Math.PI * 54}" stroke-dashoffset="${2 * Math.PI * 54 * (1 - plannedPct / 100)}" transform="rotate(-90 110 90)"></circle>
+            <circle cx="110" cy="90" r="54" fill="none" stroke="var(--ok)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${2 * Math.PI * 54}" stroke-dashoffset="${2 * Math.PI * 54 * (1 - completedPct / 100)}" transform="rotate(-90 110 90)" opacity="0.7"></circle>
+          </svg>
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Sora'; font-size:28px; font-weight:700;">${plannedPct}%</div>
+        `;
+      }
+
+      function renderOverview() {
+        renderKpis();
+        renderAlerts();
+        buildStatusChart();
+        buildCategoryChart();
+        buildDowntimeChart();
+        buildMaintenanceRing();
+      }
+
+      function buildFilterOptions() {
+        const equipment = getEquipment();
+        const categoriesList = ['all', ...new Set(equipment.map((item) => item.category).filter(Boolean))];
+        const statusesList = ['all', ...new Set(equipment.map((item) => item.status).filter(Boolean))];
+        const locationsList = ['all', ...new Set(equipment.map((item) => item.currentLocation).filter(Boolean))];
+        const responsibleList = ['all', ...new Set(equipment.map((item) => item.responsiblePerson).filter(Boolean))];
+        const projectList = ['all', ...new Set(equipment.map((item) => item.assignedProject).filter(Boolean))];
+
+        const fill = (id, values, labelKey) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.innerHTML = values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value === 'all' ? getLanguageText(labelKey) : value)}</option>`).join('');
+        };
+
+        fill('categoryFilter', categoriesList, 'allCategories');
+        fill('statusFilter', statusesList, 'allStatuses');
+        fill('locationFilter', locationsList, 'allLocations');
+        fill('responsibleFilter', responsibleList, 'allResponsible');
+        fill('projectFilter', projectList, 'allProjects');
+
+        const maintenanceStateOptions = ['all', 'due-soon', 'overdue', 'ok'];
+        const inspectionStateOptions = ['all', 'due-soon', 'overdue', 'ok'];
+        const certStateOptions = ['all', 'expiring', 'expired', 'ok'];
+
+        const maintenanceFilter = document.getElementById('maintenanceFilter');
+        if (maintenanceFilter) maintenanceFilter.innerHTML = maintenanceStateOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value === 'all' ? 'Maintenance state' : value)}</option>`).join('');
+        const inspectionFilter = document.getElementById('inspectionFilter');
+        if (inspectionFilter) inspectionFilter.innerHTML = inspectionStateOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value === 'all' ? 'Inspection state' : value)}</option>`).join('');
+        const certFilter = document.getElementById('certFilter');
+        if (certFilter) certFilter.innerHTML = certStateOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value === 'all' ? 'Certification state' : value)}</option>`).join('');
+
+        document.getElementById('categoryFilter').value = state.filters.category;
+        document.getElementById('statusFilter').value = state.filters.status;
+        document.getElementById('locationFilter').value = state.filters.location;
+        document.getElementById('responsibleFilter').value = state.filters.responsible;
+        document.getElementById('projectFilter').value = state.filters.project;
+        document.getElementById('maintenanceFilter').value = state.filters.maintenance;
+        document.getElementById('inspectionFilter').value = state.filters.inspection;
+        document.getElementById('certFilter').value = state.filters.certification;
+        document.getElementById('sortSelect').value = state.filters.sort;
+      }
+
+      function getVisibleEquipment() {
+        const equipment = getEquipment();
+        const search = state.filters.search.trim().toLowerCase();
+        const filtered = equipment.filter((item) => {
+          const text = [item.equipmentId, item.name, item.category, item.manufacturer, item.model, item.serial, item.currentLocation, item.assignedProject, item.responsiblePerson].join(' ').toLowerCase();
+          const matchesSearch = !search || text.includes(search);
+          const matchesCategory = state.filters.category === 'all' || item.category === state.filters.category;
+          const matchesStatus = state.filters.status === 'all' || item.status === state.filters.status;
+          const matchesLocation = state.filters.location === 'all' || item.currentLocation === state.filters.location;
+          const matchesResponsible = state.filters.responsible === 'all' || item.responsiblePerson === state.filters.responsible;
+          const matchesProject = state.filters.project === 'all' || item.assignedProject === state.filters.project;
+
+          const maintenanceDays = daysUntil(item.maintenanceDate);
+          const inspectionDays = daysUntil(item.inspectionDate);
+          const certDays = Math.min(...[(item.certificationExpiry ? daysUntil(item.certificationExpiry) : Infinity), ...((item.certifications || []).map((cert) => daysUntil(cert.expiryDate || cert.expiresOn || cert.expiry))).filter((value) => value !== null && Number.isFinite(value))]);
+          const maintenanceMatch = state.filters.maintenance === 'all' || (
+            state.filters.maintenance === 'due-soon' && maintenanceDays !== null && maintenanceDays <= 30
+          ) || (state.filters.maintenance === 'overdue' && maintenanceDays !== null && maintenanceDays < 0) || (state.filters.maintenance === 'ok' && (maintenanceDays === null || maintenanceDays > 30));
+          const inspectionMatch = state.filters.inspection === 'all' || (
+            state.filters.inspection === 'due-soon' && inspectionDays !== null && inspectionDays <= 30
+          ) || (state.filters.inspection === 'overdue' && inspectionDays !== null && inspectionDays < 0) || (state.filters.inspection === 'ok' && (inspectionDays === null || inspectionDays > 30));
+          const certMatch = state.filters.certification === 'all' || (
+            state.filters.certification === 'expiring' && Number.isFinite(certDays) && certDays <= 60
+          ) || (state.filters.certification === 'expired' && Number.isFinite(certDays) && certDays < 0) || (state.filters.certification === 'ok' && (!Number.isFinite(certDays) || certDays > 60));
+
+          return matchesSearch && matchesCategory && matchesStatus && matchesLocation && matchesResponsible && matchesProject && maintenanceMatch && inspectionMatch && certMatch;
+        });
+
+        switch (state.filters.sort) {
+          case 'name': filtered.sort((a, b) => a.name.localeCompare(b.name)); break;
+          case 'category': filtered.sort((a, b) => a.category.localeCompare(b.category)); break;
+          case 'status': filtered.sort((a, b) => a.status.localeCompare(b.status)); break;
+          case 'maintenance': filtered.sort((a, b) => (daysUntil(a.maintenanceDate) ?? 999999) - (daysUntil(b.maintenanceDate) ?? 999999)); break;
+          case 'inspection': filtered.sort((a, b) => (daysUntil(a.inspectionDate) ?? 999999) - (daysUntil(b.inspectionDate) ?? 999999)); break;
+          case 'hours': filtered.sort((a, b) => Number(b.operatingHourMeter || 0) - Number(a.operatingHourMeter || 0)); break;
+          case 'activity': filtered.sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0)); break;
+          default: filtered.sort((a, b) => a.equipmentId.localeCompare(b.equipmentId));
+        }
+
+        return filtered;
+      }
+
+      function renderEquipmentList() {
+        const rows = getVisibleEquipment();
+        const tbody = document.getElementById('equipmentTableBody');
+        if (!tbody) return;
+
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">No matching equipment found. Try clearing filters or adding a new record.</div></td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rows.map((item) => {
+          const cert = (Array.isArray(item.certifications) && item.certifications.length) ? item.certifications[0] : { expiryDate: item.certificationExpiry };
+          const warnText = (item.safetyWarnings || []).length ? item.safetyWarnings.join(', ') : '—';
+          const status = escapeHtml(item.status || 'Available');
+          const assignment = item.assignedProject || item.assignedJobcard ? `${item.assignedProject || '—'} / ${item.assignedJobcard || '—'}` : '—';
+          const maintenance = item.maintenanceDate ? shortDate(item.maintenanceDate) : '—';
+          const inspection = item.inspectionDate ? shortDate(item.inspectionDate) : '—';
+          return `
+            <tr>
+              <td><span class="td-link" data-open-equipment="${escapeHtml(item.equipmentId)}">${escapeHtml(item.equipmentId)}</span></td>
+              <td>${escapeHtml(item.name)}</td>
+              <td>${escapeHtml(item.category)}</td>
+              <td>${escapeHtml(item.manufacturer || '—')}</td>
+              <td>${escapeHtml(item.model || '—')}</td>
+              <td>${escapeHtml(item.serial || '—')}</td>
+              <td><span class="status-pill ${statusClass(item.status)}">${status}</span></td>
+              <td>${escapeHtml(item.currentLocation || '—')}</td>
+              <td>${escapeHtml(assignment)}</td>
+              <td>${escapeHtml(item.responsiblePerson || '—')}</td>
+              <td>${escapeHtml(maintenance)}</td>
+              <td>${escapeHtml(inspection)}</td>
+              <td>${escapeHtml(warnText)}</td>
+              <td>${formatNumber(item.operatingHourMeter || 0)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.querySelectorAll('[data-open-equipment]').forEach((button) => {
+          button.addEventListener('click', () => openEquipmentDetail(button.getAttribute('data-open-equipment')));
+        });
+      }
+
+      function currentEquipmentData() {
+        return getEquipment().find((item) => item.equipmentId === state.currentId || item.id === state.currentId) || null;
+      }
+
+      function renderDetailTabs() {
+        const item = currentEquipmentData();
+        if (!item) return;
+        const detailTabContent = document.getElementById('detailTabContent');
+        if (!detailTabContent) return;
+
+        const general = `
+          <div class="detail-grid">
+            <div class="detail-field"><div class="label">Equipment ID</div><div class="value">${escapeHtml(item.equipmentId)}</div></div>
+            <div class="detail-field"><div class="label">Asset number</div><div class="value">${escapeHtml(item.assetNumber || '—')}</div></div>
+            <div class="detail-field"><div class="label">Name</div><div class="value">${escapeHtml(item.name)}</div></div>
+            <div class="detail-field"><div class="label">Description</div><div class="value">${escapeHtml(item.description || '—')}</div></div>
+            <div class="detail-field"><div class="label">Category</div><div class="value">${escapeHtml(item.category)}</div></div>
+            <div class="detail-field"><div class="label">Manufacturer</div><div class="value">${escapeHtml(item.manufacturer || '—')}</div></div>
+            <div class="detail-field"><div class="label">Model</div><div class="value">${escapeHtml(item.model || '—')}</div></div>
+            <div class="detail-field"><div class="label">Serial number</div><div class="value">${escapeHtml(item.serial || '—')}</div></div>
+            <div class="detail-field"><div class="label">Year of manufacture</div><div class="value">${escapeHtml(item.yearOfManufacture || '—')}</div></div>
+            <div class="detail-field"><div class="label">Purchase date</div><div class="value">${escapeHtml(shortDate(item.purchaseDate))}</div></div>
+            <div class="detail-field"><div class="label">Purchase supplier</div><div class="value">${escapeHtml(item.purchaseSupplier || '—')}</div></div>
+            <div class="detail-field"><div class="label">Purchase price</div><div class="value">${escapeHtml(item.purchasePrice ? `${formatNumber(item.purchasePrice)} SEK` : '—')}</div></div>
+            <div class="detail-field"><div class="label">Warranty expiry</div><div class="value">${escapeHtml(shortDate(item.warrantyExpiry))}</div></div>
+            <div class="detail-field"><div class="label">Current location</div><div class="value">${escapeHtml(item.currentLocation || '—')}</div></div>
+            <div class="detail-field"><div class="label">Home location</div><div class="value">${escapeHtml(item.homeLocation || item.currentLocation || '—')}</div></div>
+            <div class="detail-field"><div class="label">Department</div><div class="value">${escapeHtml(item.department || '—')}</div></div>
+            <div class="detail-field"><div class="label">Responsible person</div><div class="value">${escapeHtml(item.responsiblePerson || '—')}</div></div>
+            <div class="detail-field"><div class="label">Condition</div><div class="value">${escapeHtml(item.condition || '—')}</div></div>
+            <div class="detail-field"><div class="label">Criticality</div><div class="value">${escapeHtml(item.criticality || '—')}</div></div>
+            <div class="detail-field"><div class="label">QR/barcode value</div><div class="value">${escapeHtml(item.qrCode || '—')}</div></div>
+            <div class="detail-field"><div class="label">Operating hour meter</div><div class="value">${formatNumber(item.operatingHourMeter || 0)}</div></div>
+            <div class="detail-field"><div class="label">Service interval</div><div class="value">${escapeHtml(item.serviceInterval || '—')}</div></div>
+            <div class="detail-field"><div class="label">Notes</div><div class="value">${escapeHtml(item.notes || '—')}</div></div>
+          </div>
+        `;
+
+        const assignments = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Project</th><th>Jobcard</th><th>Worker</th><th>Status</th><th>Assignment date</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>${escapeHtml(item.assignedProject || '—')}</td>
+                  <td>${escapeHtml(item.assignedJobcard || '—')}</td>
+                  <td>${escapeHtml(item.operator || '—')}</td>
+                  <td><span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+                  <td>${escapeHtml(shortDate(new Date().toISOString()))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const usage = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Project</th><th>Worker</th><th>Start</th><th>End</th><th>Hours</th><th>Meter</th></tr></thead>
+              <tbody>
+                ${(item.usageHistory || []).length ? (item.usageHistory.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.project || '—')}</td>
+                    <td>${escapeHtml(entry.worker || '—')}</td>
+                    <td>${escapeHtml(shortDate(entry.startTime || new Date().toISOString()))}</td>
+                    <td>${escapeHtml(shortDate(entry.stopTime || new Date().toISOString()))}</td>
+                    <td>${escapeHtml(String(entry.duration || 0))}</td>
+                    <td>${escapeHtml(String(entry.meterAfter || item.operatingHourMeter || 0))}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="6">No usage history recorded.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const inspections = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Type</th><th>Inspector</th><th>Planned</th><th>Result</th><th>Findings</th></tr></thead>
+              <tbody>
+                ${(item.inspections || []).length ? (item.inspections.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.type || 'Inspection')}</td>
+                    <td>${escapeHtml(entry.inspector || '—')}</td>
+                    <td>${escapeHtml(entry.plannedDate || '—')}</td>
+                    <td>${escapeHtml(entry.result || '—')}</td>
+                    <td>${escapeHtml(entry.findings || '—')}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="5">No inspection records yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const maintenance = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Due</th><th>Status</th></tr></thead>
+              <tbody>
+                ${(item.maintenance || []).length ? (item.maintenance.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.id || '—')}</td>
+                    <td>${escapeHtml(entry.type || 'Service')}</td>
+                    <td>${escapeHtml(entry.priority || 'Medium')}</td>
+                    <td>${escapeHtml(entry.plannedStart ? shortDate(entry.plannedStart) : '—')}</td>
+                    <td>${escapeHtml(entry.status || 'Reported')}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="5">No maintenance records yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const safety = `
+          <div class="service-note">
+            ${escapeHtml((item.safetyWarnings || []).length ? item.safetyWarnings.join(' · ') : 'No active safety issues recorded.')}
+          </div>
+        `;
+
+        const certs = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Type</th><th>Number</th><th>Issued by</th><th>Expiry</th><th>Status</th></tr></thead>
+              <tbody>
+                ${(item.certifications || []).length ? (item.certifications.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.type || 'Certificate')}</td>
+                    <td>${escapeHtml(entry.certificateNumber || entry.number || '—')}</td>
+                    <td>${escapeHtml(entry.issuedBy || '—')}</td>
+                    <td>${escapeHtml(shortDate(entry.expiryDate || item.certificationExpiry))}</td>
+                    <td>${escapeHtml(entry.status || 'Valid')}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="5">No certification records found.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const calibration = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Provider</th><th>Last calibration</th><th>Next calibration</th><th>Certificate</th><th>Status</th></tr></thead>
+              <tbody>
+                ${(item.calibrations || []).length ? (item.calibrations.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.provider || '—')}</td>
+                    <td>${escapeHtml(shortDate(entry.lastCalibrationDate || item.calibrationDate))}</td>
+                    <td>${escapeHtml(shortDate(entry.nextCalibrationDate || item.calibrationDate))}</td>
+                    <td>${escapeHtml(entry.certificateNumber || '—')}</td>
+                    <td>${escapeHtml(entry.status || 'Valid')}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="5">No calibration records found.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const costs = `
+          <div class="detail-grid">
+            <div class="detail-field"><div class="label">Purchase cost</div><div class="value">${escapeHtml(item.purchasePrice ? `${formatNumber(item.purchasePrice)} SEK` : '—')}</div></div>
+            <div class="detail-field"><div class="label">Maintenance cost</div><div class="value">${escapeHtml('—')}</div></div>
+            <div class="detail-field"><div class="label">Spare parts cost</div><div class="value">${escapeHtml('—')}</div></div>
+            <div class="detail-field"><div class="label">External service cost</div><div class="value">${escapeHtml('—')}</div></div>
+            <div class="detail-field"><div class="label">Estimated hourly machine rate</div><div class="value">${escapeHtml('—')}</div></div>
+            <div class="detail-field"><div class="label">Energy/fuel cost</div><div class="value">${escapeHtml('—')}</div></div>
+          </div>
+          <div class="service-note" style="margin-top:12px;">Financial details are demo-only administrator information. The future backend will enforce real permissions.</div>
+        `;
+
+        const documents = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Name</th><th>Type</th><th>Revision</th><th>Date</th><th>Related record</th></tr></thead>
+              <tbody>
+                <tr><td>Manual</td><td>Operator document</td><td>1</td><td>${escapeHtml(shortDate(new Date().toISOString()))}</td><td>${escapeHtml(item.equipmentId)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const notes = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Type</th><th>Author</th><th>Created</th><th>Text</th></tr></thead>
+              <tbody>
+                ${(item.notesLog || []).length ? (item.notesLog.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(entry.type || 'General')}</td>
+                    <td>${escapeHtml(entry.author || 'Aleksandar C.')}</td>
+                    <td>${escapeHtml(shortDate(entry.timestamp || new Date().toISOString()))}</td>
+                    <td>${escapeHtml(entry.text || '')}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="4">No notes recorded.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const activity = `
+          <div class="list-box">
+            <table>
+              <thead><tr><th>Timestamp</th><th>Action</th><th>User</th><th>Reference</th></tr></thead>
+              <tbody>
+                ${(item.activity || []).length ? (item.activity.map((entry) => `
+                  <tr>
+                    <td>${escapeHtml(shortDate(entry.timestamp || new Date().toISOString()))}</td>
+                    <td>${escapeHtml(entry.action || 'Activity')}</td>
+                    <td>${escapeHtml(entry.user || 'Aleksandar C.')}</td>
+                    <td>${escapeHtml(entry.reference || item.equipmentId)}</td>
+                  </tr>
+                `)).join('') : '<tr><td colspan="4">No activity logged.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        const tabs = {
+          general, assignments, usage, inspections, maintenance, safety, certifications: certs, calibration, costs, documents, notes, activity
+        };
+
+        detailTabContent.innerHTML = tabs[state.selectedTab] || general;
+
+        document.querySelectorAll('.tab-button').forEach((button) => {
+          button.classList.toggle('active', button.getAttribute('data-tab') === state.selectedTab);
+        });
+      }
+
+      function openEquipmentDetail(id) {
+        const item = getEquipment().find((entry) => entry.equipmentId === id || entry.id === id);
+        if (!item) return;
+        state.currentId = item.equipmentId;
+        const modal = document.getElementById('detailModal');
+        const nameEl = document.getElementById('detailEquipmentName');
+        const metaEl = document.getElementById('detailMeta');
+        const tagEl = document.getElementById('detailStatusTag');
+        const factsEl = document.getElementById('detailFastFacts');
+
+        if (nameEl) nameEl.textContent = item.name;
+        if (metaEl) metaEl.textContent = `${item.equipmentId} · ${item.category}`;
+        if (tagEl) {
+          tagEl.textContent = item.status;
+          tagEl.className = `tag ${item.status === 'Out of Service' || item.status === 'Quarantined' || item.status === 'Retired' ? 'warn' : item.status === 'Available' ? 'ok' : ''}`;
+        }
+        if (factsEl) {
+          factsEl.innerHTML = `
+            <span class="tag">Location: ${escapeHtml(item.currentLocation || '—')}</span>
+            <span class="tag">Assignment: ${escapeHtml(item.assignedProject || item.assignedJobcard || 'Unassigned')}</span>
+            <span class="tag">Owner: ${escapeHtml(item.responsiblePerson || '—')}</span>
+            <span class="tag ${item.safetyWarnings && item.safetyWarnings.length ? 'warn' : 'ok'}">Safety: ${escapeHtml((item.safetyWarnings || []).length ? item.safetyWarnings[0] : 'Clear')}</span>
+          `;
+        }
+        if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        renderDetailTabs();
+      }
+
+      function closeEquipmentDetail() {
+        const modal = document.getElementById('detailModal');
+        if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      function bindNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach((button) => {
+          button.addEventListener('click', () => {
+            navItems.forEach((btn) => btn.classList.toggle('active', btn === button));
+            state.currentView = button.getAttribute('data-view');
+            document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === `view-${state.currentView}` || (state.currentView === 'all' && view.id === 'view-all')));
+            if (state.currentView === 'new-equipment') { document.getElementById('equipmentForm')?.reset(); }
+            if (state.currentView === 'all') renderEquipmentList();
+          });
+        });
+      }
+
+      function bindListActions() {
+        const searchBox = document.getElementById('searchBox');
+        if (searchBox) {
+          searchBox.addEventListener('input', (event) => {
+            state.filters.search = event.target.value;
+            renderEquipmentList();
+          });
+        }
+        ['categoryFilter','statusFilter','locationFilter','responsibleFilter','projectFilter','maintenanceFilter','inspectionFilter','certFilter','sortSelect'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', (event) => {
+            if (id === 'sortSelect') state.filters.sort = event.target.value;
+            else state.filters[id.replace('Filter','').replace(/([A-Z])/g, (m) => m === m.toUpperCase() ? `_${m.toLowerCase()}` : m).replace(/^_/, '')] = event.target.value;
+            renderEquipmentList();
+          });
+        });
+
+        document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
+          state.filters = { search:'', category:'all', status:'all', location:'all', responsible:'all', project:'all', maintenance:'all', inspection:'all', certification:'all', sort:'equipmentId' };
+          const els = ['searchBox','categoryFilter','statusFilter','locationFilter','responsibleFilter','projectFilter','maintenanceFilter','inspectionFilter','certFilter','sortSelect'];
+          els.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+              if (el.tagName === 'INPUT') el.value = '';
+              else el.value = state.filters[id === 'sortSelect' ? 'sort' : id.replace('Filter','')];
+            }
+          });
+          document.getElementById('searchBox').value = '';
+          document.getElementById('sortSelect').value = 'equipmentId';
+          renderEquipmentList();
+        });
+      }
+
+      function setCurrentView(name) {
+        state.currentView = name;
+        document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.getAttribute('data-view') === name));
+        document.querySelectorAll('.view').forEach((view) => {
+          view.classList.toggle('active', view.id === `view-${name}`);
+        });
+      }
+
+      function openScanner() {
+        const modal = document.getElementById('scannerModal');
+        if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+      }
+
+      function closeScanner() {
+        const modal = document.getElementById('scannerModal');
+        if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      function bindDemoScanner() {
+        document.getElementById('openScannerBtn')?.addEventListener('click', openScanner);
+        document.getElementById('scannerCloseBtn')?.addEventListener('click', closeScanner);
+        document.getElementById('scanLookupBtn')?.addEventListener('click', () => {
+          const value = document.getElementById('scanValue').value.trim();
+          const item = getEquipment().find((entry) => entry.equipmentId === value || entry.qrCode === value || entry.serial === value);
+          const result = document.getElementById('scanResult');
+          if (!item) {
+            result.innerHTML = '<strong>No equipment matched.</strong> Demo only — add a known QR code, serial number or equipment ID.';
+            return;
+          }
+          result.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.equipmentId)} · ${escapeHtml(item.status)} · ${escapeHtml(item.currentLocation)}`;
+          openEquipmentDetail(item.equipmentId);
+        });
+      }
+
+      function validateForm() {
+        const form = document.getElementById('equipmentForm');
+        const errors = [];
+        const fields = new Map();
+        const entries = new FormData(form);
+        entries.forEach((value, key) => {
+          if (key === 'purchasePrice' && Number(value) < 0) errors.push('Purchase price cannot be negative');
+          if (key === 'operatingHourMeter' && Number(value) < 0) errors.push('Operating hours cannot be negative');
+          if (key === 'maintenanceDate' && entries.get('purchaseDate') && value && entries.get('purchaseDate') > value) errors.push('Maintenance date before purchase date');
+          if (key === 'warrantyExpiry' && entries.get('purchaseDate') && value && entries.get('purchaseDate') > value) errors.push('Warranty expiry before purchase date');
+        });
+
+        ['equipmentId', 'name', 'category', 'status', 'currentLocation', 'responsiblePerson'].forEach((fieldName) => {
+          const val = form.querySelector(`[name="${fieldName}"]`)?.value?.trim();
+          if (!val) errors.push(`${fieldName} is required`);
+        });
+
+        const duplicate = getEquipment().some((item) => item.equipmentId === form.querySelector('[name="equipmentId"]').value.trim());
+        if (duplicate) errors.push('Duplicate equipment ID');
+
+        const purchaseDate = form.querySelector('[name="purchaseDate"]').value;
+        const maintenanceDate = form.querySelector('[name="maintenanceDate"]').value;
+        if (purchaseDate && maintenanceDate && new Date(maintenanceDate) < new Date(purchaseDate)) errors.push('Maintenance date before purchase date');
+
+        const price = Number(form.querySelector('[name="purchasePrice"]').value || 0);
+        if (price < 0) errors.push('Negative costs are not allowed');
+
+        const hours = Number(form.querySelector('[name="operatingHourMeter"]').value || 0);
+        if (hours < 0) errors.push('Operating hours cannot be negative');
+
+        const summary = document.getElementById('equipmentFormErrors');
+        if (summary) {
+          summary.innerHTML = errors.length ? `${getLanguageText('formErrorsTitle')}<ul>${errors.map((err) => `<li>${escapeHtml(err)}</li>`).join('')}</ul>` : '';
+          summary.classList.toggle('show', !!errors.length);
+        }
+        return errors.length === 0;
+      }
+
+      function loadNewEquipmentDefaults() {
+        const form = document.getElementById('equipmentForm');
+        if (!form) return;
+        form.querySelector('[name="status"]').value = 'Available';
+        form.querySelector('[name="criticality"]').value = 'Medium';
+      }
+
+      function initFormOptions() {
+        const categorySelect = document.getElementById('eqCategory');
+        if (categorySelect) {
+          categorySelect.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+        }
+        const statusSelect = document.getElementById('eqStatus');
+        if (statusSelect) {
+          statusSelect.innerHTML = statuses.map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`).join('');
+        }
+      }
+
+      function submitEquipmentForm(event) {
+        event.preventDefault();
+        if (!validateForm()) return;
+        const form = event.target;
+        const data = Object.fromEntries(new FormData(form).entries());
+        const payload = {
+          equipmentId: data.equipmentId,
+          name: data.name,
+          category: data.category,
+          status: data.status,
+          currentLocation: data.currentLocation,
+          responsiblePerson: data.responsiblePerson,
+          manufacturer: data.manufacturer,
+          model: data.model,
+          serial: data.serial,
+          assetNumber: data.assetNumber,
+          yearOfManufacture: Number(data.yearOfManufacture || new Date().getFullYear()),
+          purchaseDate: data.purchaseDate,
+          purchaseSupplier: data.purchaseSupplier,
+          purchasePrice: Number(data.purchasePrice || 0),
+          warrantyExpiry: data.warrantyExpiry,
+          homeLocation: data.homeLocation,
+          department: data.department,
+          condition: data.condition,
+          criticality: data.criticality,
+          operatingHourMeter: Number(data.operatingHourMeter || 0),
+          serviceInterval: Number(data.serviceInterval || 0),
+          maintenanceDate: data.maintenanceDate,
+          inspectionDate: data.inspectionDate,
+          certificationExpiry: data.certificationExpiry,
+          calibrationDate: data.calibrationDate,
+          description: data.description,
+          notes: data.notes,
+          safetyWarnings: [],
+          qrCode: `EQ-${Date.now().toString().slice(-6)}`,
+          lastActivity: new Date().toISOString()
+        };
+
+        const created = WorkshopData.createEquipment(payload);
+        if (created && created.error) {
+          const summary = document.getElementById('equipmentFormErrors');
+          summary.innerHTML = `<ul><li>${escapeHtml(created.error)}</li></ul>`;
+          summary.classList.add('show');
+          return;
+        }
+
+        form.reset();
+        loadNewEquipmentDefaults();
+        setCurrentView('all');
+        renderAll();
+      }
+
+      function bindFormControls() {
+        document.getElementById('equipmentForm')?.addEventListener('submit', submitEquipmentForm);
+        document.getElementById('newEquipmentBtn')?.addEventListener('click', () => setCurrentView('new-equipment'));
+        document.getElementById('newEquipmentCancel')?.addEventListener('click', () => setCurrentView('all'));
+        document.getElementById('backToHub')?.addEventListener('click', () => { window.location.href = 'hub-desktop.html'; });
+        document.getElementById('detailCloseBtn')?.addEventListener('click', closeEquipmentDetail);
+        document.getElementById('detailReserveBtn')?.addEventListener('click', () => {
+          const current = currentEquipmentData();
+          if (!current) return;
+          WorkshopData.changeEquipmentStatus(current.equipmentId, 'Reserved');
+          renderAll();
+          closeEquipmentDetail();
+        });
+        document.getElementById('detailAssignBtn')?.addEventListener('click', () => {
+          const current = currentEquipmentData();
+          if (!current) return;
+          if (['Out of Service','Quarantined','Under Maintenance','Retired'].includes(current.status)) {
+            alert('This equipment cannot be assigned while blocked by a safety or maintenance state.');
+            return;
+          }
+          WorkshopData.assignEquipment(current.equipmentId, { project: getProjects()[0]?.no || 'P-2026-014', jobcard: getJobcards()[0]?.no || 'JC-2026-0001', location: current.currentLocation, worker: current.responsiblePerson || 'Aleksandar C.', assignedBy: 'Aleksandar C.' });
+          renderAll();
+          closeEquipmentDetail();
+        });
+        document.getElementById('detailReturnBtn')?.addEventListener('click', () => {
+          const current = currentEquipmentData();
+          if (!current) return;
+          WorkshopData.returnEquipment(current.equipmentId, { location: current.homeLocation || current.currentLocation, user: 'Aleksandar C.' });
+          renderAll();
+          closeEquipmentDetail();
+        });
+        document.getElementById('resetFormBtn')?.addEventListener('click', () => {
+          document.getElementById('equipmentForm').reset();
+          loadNewEquipmentDefaults();
+        });
+        document.getElementById('printReportBtn')?.addEventListener('click', () => {
+          const equipment = getVisibleEquipment();
+          const html = `
+            <html><head><style>body{font-family:Arial,sans-serif;color:#14202e;padding:20px;} h1{color:#013179;} table{width:100%;border-collapse:collapse;margin-top:12px;} th,td{border-bottom:1px solid #dfe7f3;padding:6px;text-align:left;} .muted{color:#5b6b7d;}</style></head><body>
+              <h1>Varmak Equipment Summary</h1>
+              <div class="muted">Generated ${new Date().toLocaleString()}</div>
+              <table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Location</th><th>Responsible</th></tr></thead><tbody>${equipment.map((item) => `<tr><td>${escapeHtml(item.equipmentId)}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.status)}</td><td>${escapeHtml(item.currentLocation || '—')}</td><td>${escapeHtml(item.responsiblePerson || '—')}</td></tr>`).join('')}</tbody></table>
+            </body></html>
+          `;
+          const printWindow = window.open('', '_blank', 'width=950,height=800');
+          printWindow.document.write(html);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+        });
+      }
+
+      function initLanguage() {
+        const langMenu = document.getElementById('langMenu');
+        document.getElementById('langToggle')?.addEventListener('click', () => {
+          const wrap = document.getElementById('langWrap');
+          wrap.classList.toggle('open');
+        });
+        document.addEventListener('click', (event) => {
+          const wrap = document.getElementById('langWrap');
+          if (wrap && !wrap.contains(event.target)) wrap.classList.remove('open');
+        });
+        langMenu?.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.language = button.getAttribute('data-lang');
+            applyLanguage();
+            document.getElementById('langWrap').classList.remove('open');
+            refreshClock();
+          });
+        });
+      }
+
+      function renderAll() {
+        renderOverview();
+        buildFilterOptions();
+        renderEquipmentList();
+      }
+
+      function init() {
+        initFormOptions();
+        loadNewEquipmentDefaults();
+        bindNavigation();
+        bindListActions();
+        bindFormControls();
+        bindDemoScanner();
+        initLanguage();
+        applyLanguage();
+        refreshClock();
+        setInterval(refreshClock, 60000);
+        document.querySelectorAll('.tab-button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.selectedTab = button.getAttribute('data-tab');
+            renderDetailTabs();
+          });
+        });
+        document.querySelectorAll('[data-open-equipment]').forEach((button) => button.addEventListener('click', () => openEquipmentDetail(button.getAttribute('data-open-equipment'))));
+      }
+
+      // Make sure the module works even when the data is empty or older browser data is present.
+      if (window.WorkshopData && typeof window.WorkshopData.ensureDemoEquipment === 'function') {
+        window.WorkshopData.ensureDemoEquipment();
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>
