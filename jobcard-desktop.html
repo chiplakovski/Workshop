@@ -1223,16 +1223,16 @@ function tt_label(type){return T[LANG]['it_'+type]||type;}
 // ── Notes & Problems ──
 const NOTE_TYPES=['general','worker','supervisor','material-problem','drawing-problem','machine-problem','quality-issue','safety-issue','delay-reason'];
 function renderTabNotes(j){
-  const tt=t();
+  const tt=t();const locked=isLocked(j);
   return `<div class="panel">
-    <div class="phead"><h3>${esc(tt.tab_notes)}</h3><button class="tbtn primary small" onclick="openNoteForm(${j.id})">+ ${esc(tt.note_add)}</button></div>
+    <div class="phead"><h3>${esc(tt.tab_notes)}</h3>${!locked?`<button class="tbtn primary small" onclick="openNoteForm(${j.id})">+ ${esc(tt.note_add)}</button>`:''}</div>
     ${(j.notes||[]).length?j.notes.map(n=>`<div class="notecard"><div class="nh"><span>${fmtDate(n.date)} ${esc(n.time)||''} — <b style="color:var(--steel-300);">${esc(n.author)}</b></span><span class="ntag">${esc(tt['nt_'+n.type]||n.type)}</span></div><p>${esc(n.text)}</p></div>`).join(''):`<div class="empty3">${esc(tt.note_empty)}</div>`}
   </div>`;
 }
 function openNoteForm(jcId){
-  const tt=t();
+  const tt=t();const j=getJC(jcId);if(!j||isLocked(j)){if(j)toast(tpl(tt.locked_msg,{no:j.no,status:tt['st_'+j.status]}),'error');return;}
   $('fcard').className='fcard';
-  $('fcard').innerHTML=`<h2>${esc(tt.note_add)}</h2><p class="fsub">${esc(getJC(jcId).no)}</p>
+  $('fcard').innerHTML=`<h2>${esc(tt.note_add)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldSelect('noteType',tt.note_type,optList(NOTE_TYPES,'nt_'),'general')}</div>
     <div class="frow">${fieldTextarea('noteText',tt.note_text,'')}</div>
     <div id="noteErr" class="errmsg" style="display:none;"></div>
@@ -1282,18 +1282,8 @@ function openCompleteCheck(id){
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.complete_issues_title)}</h2><p class="fsub">${esc(j.no)}</p>
     <ul class="issuelist">${issues.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
-    <div class="frow">${fieldTextarea('overrideReason',tt.f_overridereason,'')}</div>
-    <div id="overrideErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.complete_goback)}</button><button class="tbtn primary" onclick="confirmOverrideComplete(${id})">${esc(tt.complete_override_btn)}</button></div>`;
+    <div class="fbtns"><button class="tbtn primary" onclick="closeModal()">${esc(tt.complete_goback)}</button></div>`;
   $('fov').classList.add('show');
-}
-function confirmOverrideComplete(id){
-  const tt=t();clearAllFieldErrors();const reason=$('overrideReason').value.trim();
-  if(!reason){showFieldError('overrideReason','overrideErr',tt.err_required);return;}
-  if(!confirm(tt.confirm_complete_override))return;
-  applyStatusChange(id,'completed',{actualCompletion:todayISO()});
-  WorkshopData.recordJobcardActivity(id,{action:`Completed with manager override: ${reason}`});
-  refreshShared();closeModal();renderApp();
 }
 function openPauseBlock(id,stage){
   const tt=t();const j=getJC(id);
@@ -1575,4 +1565,3 @@ function renderApp(){
 setLang('en');
 </script>
 </body></html>
-
