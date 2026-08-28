@@ -50,7 +50,10 @@
 
   .crmgrid{display:grid;grid-template-columns:300px 1fr 320px;gap:16px;align-items:start;}
   @media(max-width:1400px){.crmgrid{grid-template-columns:1fr;}}
-  .col{display:flex;flex-direction:column;gap:16px;}
+  /* min-width:0 lets a grid track shrink below its content's intrinsic width (the wide items table)
+     so .itable-wrap's own overflow-x:auto can scroll internally instead of forcing the whole page wider. */
+  .col{display:flex;flex-direction:column;gap:16px;min-width:0;}
+  body{overflow-x:hidden;}
   .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
   .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;gap:10px;}
   .panel .phead h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
@@ -146,11 +149,31 @@
   .costtoggle input{accent-color:var(--spark);}
 
   .opttabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .opttab{display:flex;align-items:center;gap:7px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:8px 12px;cursor:pointer;transition:.15s;}
+  .opttab{display:flex;align-items:center;gap:10px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:8px 12px;transition:.15s;}
   .opttab.on{border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.12);color:#cfe0ff;}
-  .opttab input{accent-color:var(--spark);pointer-events:none;}
+  .opttab.included{border-color:rgba(74,212,138,.5);}
+  .opttab.combined{background:rgba(74,212,138,.1);border-color:rgba(74,212,138,.4);color:var(--ok);font-weight:600;}
+  .opttab input{accent-color:var(--spark);}
   .opttab .odelta{font-variant-numeric:tabular-nums;font-weight:600;color:var(--steel-400);}
-  .opttab.on .odelta{color:var(--ok);}
+  .opttab.on .odelta,.opttab.included .odelta{color:var(--ok);}
+  .opttab .optinc{display:flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);cursor:pointer;border-left:1px solid var(--field-line);padding-left:9px;}
+  .opttab.included .optinc{color:var(--ok);}
+  .lockbanner{display:flex;align-items:center;gap:10px;background:rgba(255,176,87,.1);border:1px solid rgba(255,176,87,.4);color:var(--warn);font-size:12px;padding:10px 13px;margin-bottom:16px;}
+  .lockbanner svg{flex:none;}
+  .lockbanner button{margin-left:auto;}
+  .revbadge{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);background:rgba(255,255,255,.05);border:1px solid var(--field-line);padding:3px 8px;}
+  .fielderr{border-color:var(--danger)!important;}
+  .errmsg{font-size:11px;color:var(--danger);margin-top:-10px;margin-bottom:12px;}
+  .rowactions2{display:flex;gap:4px;margin-left:8px;}
+  .rowactions2 button{background:none;border:none;color:var(--steel-400);cursor:pointer;padding:2px;display:inline-flex;}
+  .rowactions2 button:hover{color:var(--ice);}
+  .rowactions2 svg{width:12px;height:12px;}
+  .wiactions{display:inline-flex;gap:4px;margin-left:8px;}
+  .wiactions button{background:none;border:none;color:var(--steel-400);cursor:pointer;padding:2px;display:inline-flex;vertical-align:middle;}
+  .wiactions button:hover{color:var(--ice);}
+  .wiactions svg{width:12px;height:12px;}
+  .previewrow td{opacity:.72;font-style:italic;}
+  .disclaimer2{font-size:10.5px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);}
 
   .itable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);margin-bottom:18px;}
   .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;}
@@ -247,11 +270,13 @@
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
 
-  @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;} }
+  @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;}
+    #printSheet table{page-break-inside:auto;} #printSheet tr{page-break-inside:avoid;page-break-after:auto;} #printSheet .psection{page-break-inside:avoid;} }
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2 data-i="sb_title">ESTIMATIONS</h2><small data-i="esub">Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i><span data-i="sb_overview">Estimation Overview</span></button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i><span data-i="sb_drafts">Drafts</span></button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i><span data-i="st_review">In Review</span></button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i><span data-i="f_sent">Sent</span></button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i><span data-i="f_accepted">Accepted</span></button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i><span data-i="sb_declined_expired">Declined / Expired</span></button><button onclick="openNewEst()"><i>＋</i><span data-i="newest">New Estimation</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Connected workflow</b><p data-i="sb_workflow_desc">Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Estimator</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button><button onclick="openNewEst()"><i>＋</i>New Estimation</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -277,12 +302,49 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
+<script src="workshop-data.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
-function fmt0(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+// ── security: reusable HTML-escaping helper, applied to every dynamic value inserted through innerHTML ──
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+// ── central money-rounding helper: every displayed/stored monetary value passes through here so results are consistent to 2 decimals ──
+function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(n*100)/100;}
+function fmt(n){return money(n).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
+function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE')+" kr";}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+// ── inline validation helpers: mark the offending field, show a translated message beside it, focus it ──
+function clearAllFieldErrors(){
+  document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));
+  document.querySelectorAll('#fcard .errmsg').forEach(el=>{el.style.display='none';el.textContent='';});
+}
+function showFieldError(fieldId,errId,msg){
+  const f=$(fieldId),err=$(errId);
+  if(f){f.classList.add('fielderr');f.focus();}
+  if(err){err.textContent=msg;err.style.display='block';}
+}
+function isBlank(v){return v===undefined||v===null||String(v).trim()==='';}
+function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
+function isPositiveNumber(v){const n=Number(v);return Number.isFinite(n)&&n>0;}
+function isPercent(v){const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100;}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+// ── dynamic estimation numbering: derives the year from the given date (or today) instead of hard-coding it ──
+function nextEstNumber(dateStr){
+  const year=(dateStr?new Date(dateStr):new Date()).getFullYear();
+  const prefix=`EST-${year}-`;
+  const sharedNos=(window.WorkshopData?WorkshopData.get().estimations.map(x=>x.no):[]);
+  const known=new Set([...ESTIMATIONS.map(x=>x.no),...sharedNos]);
+  let n=1;while(known.has(prefix+String(n).padStart(3,'0')))n++;
+  return prefix+String(n).padStart(3,'0');
+}
+// ── lightweight toast for demo-labelled and status messages (replaces silent no-ops / raw alert() where a translated message is needed) ──
+function toast(msg,kind){
+  let box=$('toastBox');
+  if(!box){box=document.createElement('div');box.id='toastBox';box.style.cssText='position:fixed;right:18px;top:18px;z-index:120;display:flex;flex-direction:column;gap:8px;';document.body.appendChild(box);}
+  const el=document.createElement('div');
+  el.style.cssText=`font-family:'Inter';font-size:12.5px;padding:11px 16px;max-width:320px;box-shadow:0 14px 34px rgba(0,0,0,.45);border:1px solid ${kind==='error'?'rgba(255,107,107,.5)':'rgba(74,144,255,.4)'};background:rgba(9,23,45,.98);color:${kind==='error'?'#ffb3b3':'#e8f0fb'};`;
+  el.textContent=msg;box.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
+}
 
 const CUSTOMERS={
   1:{name:"Sanus Glutenfri AB",city:"Landskrona",address:"Industrigatan 8, 261 42 Landskrona, Sweden",contact:"Per Nilsson",email:"per@sanusglutenfri.se",phone:"+46 70 123 45 67",org:"559812-4471",status:"active"},
@@ -371,7 +433,8 @@ let ESTIMATIONS=[
       ]}
     ],
     options:[
-      {id:1,name:"316L Stainless Upgrade",included:false,intoWorkItem:"JC-26-0041",lines:[
+      {id:1,name:"316L Stainless Upgrade",included:false,intoWorkItem:"JC-26-0041",
+        replacesDesc:["Steel Sheet 3mm (S235JR)","Square Tube 40x40x3mm (S235JR)"],lines:[
         {desc:"Steel Sheet 3mm (AISI 316L) — upgrade from S235JR",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:980,sell:1340,disc:0,tax:25},
         {desc:"Square Tube 40x40x3mm (AISI 316L) — upgrade",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:210,sell:290,disc:0,tax:25}
       ]},
@@ -440,7 +503,62 @@ let ESTIMATIONS=[
     history:[{date:"2026-08-24",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-24",action:"Sent to customer for review",by:"Aleksandar C."}],notes:[]}
 ];
 let nextEstId=10;
-(function hydrateSharedEstimations(){if(!window.WorkshopData)return;const shared=WorkshopData.get();shared.estimations.forEach(se=>{if(ESTIMATIONS.some(e=>e.no===se.no))return;const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=Number(Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===se.customer))||8;ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:null,projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:'4–5 weeks',paymentTerms:'30 days',priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',reference:'—',createdBy:'Aleksandar C.',overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(se.sellingPrice||20000),options:[],exclusions:[],terms:'Prices valid for 30 days.',documents:[],history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:[],revision:se.revision||0,sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});nextEstId=Math.max(nextEstId,se.id+1)});ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)})})();
+// ── backfill new Phase-1 fields on the seed data so older records behave consistently with newly created ones ──
+(function normalizeSeedEstimations(){
+  ESTIMATIONS.forEach(e=>{
+    if(e.estimator===undefined)e.estimator=e.createdBy||'Aleksandar C.';
+    if(e.opportunityRef===undefined)e.opportunityRef='';
+    if(e.customerRfq===undefined)e.customerRfq=e.reference&&e.reference!=='—'?e.reference:'';
+    if(e.requestedDelivery===undefined)e.requestedDelivery=e.deliveryTarget||'';
+    if(e.revisionSnapshots===undefined)e.revisionSnapshots=[];
+    if(e.revision===undefined)e.revision=0;
+    (e.options||[]).forEach(o=>{if(o.included===undefined)o.included=false;});
+  });
+})();
+// Reads every field this module itself persists back from WorkshopData, so notes, documents, work items,
+// options, terms, exclusions and status all survive a page refresh — for BOTH the hardcoded seed estimates
+// (which re-run their literal JS object on every load) and estimates created purely in this session.
+(function hydrateSharedEstimations(){
+  if(!window.WorkshopData)return;
+  const shared=WorkshopData.get();
+  shared.estimations.forEach(se=>{
+    const existing=ESTIMATIONS.find(e=>e.no===se.no);
+    if(existing){
+      // A record with this number already exists locally (seed data or this session) — this shared
+      // record is what WE last saved for it (syncEstimation always writes the full field set below),
+      // so adopt it verbatim rather than rebuilding anything from an invented value.
+      existing.sharedId=se.id;existing.status=se.status;existing.revision=se.revision||0;
+      existing.created=se.created;existing.validUntil=se.validUntil;existing.currency=se.currency||existing.currency;
+      if(Array.isArray(se.workItems))existing.workItems=se.workItems;
+      if(Array.isArray(se.options))existing.options=se.options;
+      if(se.terms!==undefined)existing.terms=se.terms;
+      if(Array.isArray(se.exclusions))existing.exclusions=se.exclusions;
+      if(Array.isArray(se.notes))existing.notes=se.notes;
+      if(Array.isArray(se.documents))existing.documents=se.documents;
+      if(se.overheadPct!==undefined)existing.overheadPct=se.overheadPct;
+      if(se.contingencyPct!==undefined)existing.contingencyPct=se.contingencyPct;
+      if(se.discount!==undefined)existing.discount=se.discount;
+      if(se.reference!==undefined)existing.reference=se.reference;
+      if(se.customerRfq!==undefined)existing.customerRfq=se.customerRfq;
+      if(se.opportunityRef!==undefined)existing.opportunityRef=se.opportunityRef;
+      if(se.requestedDelivery!==undefined)existing.requestedDelivery=se.requestedDelivery;
+      if(se.estimator!==undefined)existing.estimator=se.estimator;
+      if(se.projectNo!==undefined)existing.projectNo=se.projectNo;
+      if(Array.isArray(se.history)&&se.history.length)existing.history=se.history;
+      if(Array.isArray(se.revisionSnapshots))existing.revisionSnapshots=se.revisionSnapshots;
+      if(se.archived!==undefined)existing.archived=se.archived;
+      return;
+    }
+    // Genuinely new shared estimation this module has never seen locally (e.g. created from another
+    // module such as Planning). Hydrate directly from its own real fields — never from an invented value.
+    const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=Number(Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===se.customer))||8;
+    const hasDetail=Array.isArray(se.bom)&&se.bom.length>0;
+    const workItems=hasDetail?[{no:'',desc:'Bill of Materials',lines:se.bom.map(b=>({desc:b.description||b.code,category:'material',qty:Number(b.qty)||1,unit:b.unit||'EA',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25}))}]:[{no:'',desc:'Work items',lines:[]}];
+    ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:null,projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:'4–5 weeks',paymentTerms:'30 days',priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',reference:'—',customerRfq:'',opportunityRef:'',requestedDelivery:se.deliveryTarget||'',createdBy:'Aleksandar C.',estimator:'Aleksandar C.',overheadPct:8,contingencyPct:5,discount:0,workItems,options:[],exclusions:[],terms:'Prices valid for 30 days.',documents:[],history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:[],revision:se.revision||0,revisionSnapshots:[],sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});
+    nextEstId=Math.max(nextEstId,se.id+1);
+  });
+  ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)});
+})();
 
 const STAGES=["draft","review","sent","accepted"];
 function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
@@ -478,8 +596,41 @@ const T={
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
     pricing_title:"Pricing settings",pricing_note:"Overhead and contingency are applied to total direct cost and reduce gross profit — they are not added to the customer price.",
     confirm_delete:"Delete this estimation? This cannot be undone.",confirm_stage:"Move this estimation to \"{s}\"?",
-    sb_title:"ESTIMATIONS",sb_overview:"Estimation Overview",sb_drafts:"Drafts",sb_declined_expired:"Declined / Expired",
-    sb_workflow_title:"Connected workflow",sb_workflow_desc:"Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.",sb_role:"Estimator",
+    locked_msg:"Estimation {no} is Accepted, Declined or Expired and is read-only. Create a new revision to edit it.",
+    locked_banner:"This estimation is read-only. Create a new revision to make changes.",
+    act_newrevision:"New revision",rev_short:"Rev",
+    not_converted:"Not yet converted to project",not_converted_hint:"A project can be created once this estimation is Accepted.",
+    convert_requires_accepted:"Convert to Project is only available once the estimation is Accepted.",
+    active_word:"Active",inactive_word:"Inactive",vat_org:"VAT/Org",
+    ei_oppref:"Opportunity / enquiry reference",ei_rfq:"Customer RFQ / reference",ei_reqdelivery:"Requested delivery date",ei_estimator:"Responsible estimator",
+    opt_included_title:"Include this option in the customer offer",opt_combined:"Combined selected options",
+    preview_only:"Preview only — not included",waste_word:"waste",cost_word:"cost",
+    act_editwi:"Edit work item",act_moveup:"Move up",act_movedown:"Move down",act_deletewi:"Delete work item",
+    act_editline:"Edit line",act_dupline:"Duplicate line",act_delline:"Delete line",
+    th_margin_sek:"Margin (SEK)",th_margin_pct:"Margin %",empty_items:"No items yet — add a work item to get started.",
+    err_required:"This field is required.",internal_cost:"Internal cost",waste_pct_material:"Waste % (material lines only)",
+    err_qty:"Quantity must be greater than zero.",err_sell:"Selling price cannot be negative.",err_cost:"Internal cost cannot be negative.",
+    err_disc:"Discount must be between 0% and 100%.",err_tax:"Tax must be between 0% and 100%.",
+    confirm_delete_wi:"Delete the empty work item \"{n}\"?",confirm_delete_line:"Delete the line \"{n}\"?",
+    err_date:"Please enter a valid date.",err_date_order:"Valid-until date cannot be before the estimation date.",
+    convert_title:"Convert to Project",convert_note:"This will reuse the customer, BOM, estimated hours, machines, selling price and delivery target in Projects, Planning and Store.",
+    convert_projtitle:"Project title",convert_hours:"Planned hours",convert_delivery:"Delivery target",convert_value:"Estimated project value",convert_create:"Create connected project",
+    confirm_convert:"Convert {no} to a connected project? This cannot be undone.",
+    discount_max:"max",err_overhead:"Overhead cannot be negative.",err_contingency:"Contingency cannot be negative.",err_discount:"Discount must be between 0 and the selling subtotal.",
+    demo_upload:"File upload — demo. No file is actually stored.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
+    confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
+    demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Excel export — demo — {no}.xlsx (no file is actually generated).",
+    pr_desc:"Description",pr_qty:"Qty",pr_unit:"Unit",pr_price:"Price",pr_total:"Total",pr_optional:"Optional Items",pr_estimate:"Estimation",
+    pr_customer:"Customer",pr_details:"Estimation Details",pr_scope:"Scope",pr_base:"Base Offer",pr_vat:"VAT",pr_delivery:"Delivery",
+    pr_signature_customer:"Customer acceptance / signature",pr_signature_varmak:"Varmak AB",
+    actual_vs_est:"Estimated vs Actual",actual_hours:"Labour hours",actual_variance:"Current variance",by_word:"by",
+    rev_create_title:"Create Revision",rev_reason:"Reason for change",rev_reason_ph:"Customer change, material update, scope revision…",
+    rev_create_btn:"Create revision",confirm_revision:"Create a new revision of {no}? The current content will be preserved as a snapshot and the estimation will return to Draft.",
+    transition_blocked:"Cannot move from \"{a}\" to \"{b}\" directly.",err_needs_line:"Add at least one valid cost line before sending this estimation.",
+    ne_none:"— None —",ne_title:"Estimate title",ne_title_ph:"e.g. Ventilation duct system",ne_startmethod:"Starting method",
+    ne_blank:"Blank estimate",ne_tpl_fab:"Standard fabrication template",ne_tpl_repair:"Repair / service template",ne_tpl_install:"Installation template",
+    ne_template_note:"Template starting values are for demonstration only and must be reviewed before this estimation is sent.",
+    act_archive:"Archive",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
     searchph:"Sök kalkyler…",newest:"Ny kalkyl",
@@ -513,10 +664,43 @@ const T={
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
     pricing_title:"Prisinställningar",pricing_note:"Omkostnader och osäkerhetsmarginal appliceras på total direktkostnad och minskar bruttovinsten — de läggs inte till kundpriset.",
     confirm_delete:"Ta bort denna kalkyl? Detta kan inte ångras.",confirm_stage:"Flytta denna kalkyl till \"{s}\"?",
-    sb_title:"KALKYLER",sb_overview:"Kalkylöversikt",sb_drafts:"Utkast",sb_declined_expired:"Nekad / Utgången",
-    sb_workflow_title:"Kopplat arbetsflöde",sb_workflow_desc:"Accepterade kalkyler omvandlas till projekt med kund, materialspecifikation, timmar, maskiner och leveransmål.",sb_role:"Kalkylator",
+    locked_msg:"Kalkyl {no} är accepterad, nekad eller utgången och är skrivskyddad. Skapa en ny revision för att redigera.",
+    locked_banner:"Denna kalkyl är skrivskyddad. Skapa en ny revision för att göra ändringar.",
+    act_newrevision:"Ny revision",rev_short:"Rev",
+    not_converted:"Ännu inte konverterad till projekt",not_converted_hint:"Ett projekt kan skapas när kalkylen är accepterad.",
+    convert_requires_accepted:"Konvertera till projekt är endast tillgängligt när kalkylen är accepterad.",
+    active_word:"Aktiv",inactive_word:"Inaktiv",vat_org:"Momsreg.nr/Org.nr",
+    ei_oppref:"Affärsmöjlighet / förfrågningsreferens",ei_rfq:"Kundens referens / förfrågan",ei_reqdelivery:"Önskat leveransdatum",ei_estimator:"Ansvarig kalkylator",
+    opt_included_title:"Inkludera detta tillval i kunderbjudandet",opt_combined:"Kombinerade valda tillval",
+    preview_only:"Endast förhandsvisning — ej inkluderad",waste_word:"spill",cost_word:"kostnad",
+    act_editwi:"Redigera arbetsmoment",act_moveup:"Flytta upp",act_movedown:"Flytta ner",act_deletewi:"Ta bort arbetsmoment",
+    act_editline:"Redigera rad",act_dupline:"Duplicera rad",act_delline:"Ta bort rad",
+    th_margin_sek:"Marginal (SEK)",th_margin_pct:"Marginal %",empty_items:"Inga poster ännu — lägg till ett arbetsmoment för att komma igång.",
+    err_required:"Detta fält är obligatoriskt.",internal_cost:"Intern kostnad",waste_pct_material:"Spill % (endast materialrader)",
+    err_qty:"Antal måste vara större än noll.",err_sell:"Försäljningspris kan inte vara negativt.",err_cost:"Intern kostnad kan inte vara negativ.",
+    err_disc:"Rabatt måste vara mellan 0% och 100%.",err_tax:"Moms måste vara mellan 0% och 100%.",
+    confirm_delete_wi:"Ta bort det tomma arbetsmomentet \"{n}\"?",confirm_delete_line:"Ta bort raden \"{n}\"?",
+    err_date:"Ange ett giltigt datum.",err_date_order:"Giltigt-till-datum kan inte vara före kalkyldatumet.",
+    convert_title:"Konvertera till projekt",convert_note:"Detta återanvänder kund, materialspecifikation, uppskattade timmar, maskiner, försäljningspris och leveransmål i Projekt, Planering och Lager.",
+    convert_projtitle:"Projekttitel",convert_hours:"Planerade timmar",convert_delivery:"Leveransmål",convert_value:"Uppskattat projektvärde",convert_create:"Skapa kopplat projekt",
+    confirm_convert:"Konvertera {no} till ett kopplat projekt? Detta kan inte ångras.",
+    discount_max:"max",err_overhead:"Omkostnader kan inte vara negativa.",err_contingency:"Osäkerhetsmarginal kan inte vara negativ.",err_discount:"Rabatten måste vara mellan 0 och delsumman.",
+    demo_upload:"Filuppladdning — demo. Ingen fil sparas i verkligheten.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
+    confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
+    demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Excel-export — demo — {no}.xlsx (ingen fil skapas i verkligheten).",
+    pr_desc:"Beskrivning",pr_qty:"Antal",pr_unit:"Enhet",pr_price:"Pris",pr_total:"Summa",pr_optional:"Tillval",pr_estimate:"Kalkyl",
+    pr_customer:"Kund",pr_details:"Kalkyldetaljer",pr_scope:"Omfattning",pr_base:"Grunderbjudande",pr_vat:"Moms",pr_delivery:"Leverans",
+    pr_signature_customer:"Kundens godkännande / underskrift",pr_signature_varmak:"Varmak AB",
+    actual_vs_est:"Uppskattat vs Faktiskt",actual_hours:"Arbetstimmar",actual_variance:"Aktuell avvikelse",by_word:"av",
+    rev_create_title:"Skapa revision",rev_reason:"Anledning till ändring",rev_reason_ph:"Kundändring, materialuppdatering, omfattningsändring…",
+    rev_create_btn:"Skapa revision",confirm_revision:"Skapa en ny revision av {no}? Nuvarande innehåll bevaras som en ögonblicksbild och kalkylen återgår till Utkast.",
+    transition_blocked:"Kan inte flytta från \"{a}\" till \"{b}\" direkt.",err_needs_line:"Lägg till minst en giltig kostnadsrad innan denna kalkyl skickas.",
+    ne_none:"— Ingen —",ne_title:"Kalkyltitel",ne_title_ph:"t.ex. Ventilationskanalsystem",ne_startmethod:"Startmetod",
+    ne_blank:"Tomt kalkylunderlag",ne_tpl_fab:"Standardmall för tillverkning",ne_tpl_repair:"Mall för reparation/service",ne_tpl_install:"Mall för installation",
+    ne_template_note:"Mallens startvärden är endast för demonstration och måste granskas innan kalkylen skickas.",
+    act_archive:"Arkivera",
     locale:"sv-SE"},
-  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",etitle:"Kalkulacii",esub:"Ponudi i trošoci",
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
     searchph:"Prebaraj kalkulacii…",newest:"Nova kalkulacija",
     f_all:"Site",f_draft:"Nacrt",f_sent:"Ispratena",f_accepted:"Prifatena",f_declined:"Odbiena",
     p_list:"Lista na kalkulacii",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
@@ -526,112 +710,220 @@ const T={
     m_created:"Kreirana",m_valid:"Važi do",m_customer:"Klient",m_project:"Proekt",m_createdby:"Kreiral",
     c_customer:"Klient",c_estinfo:"Info za kalkulacija",c_project:"Proekt",
     ei_number:"Broj na kalkulacija",ei_ref:"Referenca / PO",ei_date:"Datum",ei_valid:"Važi do",ei_currency:"Valuta",
-    ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plakjanje",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
+    ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plaќaњe",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
     pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
     items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addworkitem:"Dodaj rabotna stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
     wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",
     th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
-    subtotal_section:"Megjuzbir",
+    subtotal_section:"Meѓuzbir",
     cat_material:"Materijal",cat_labour:"Rabota",cat_machine:"Mašina",cat_subcontractor:"Podizveduvač",cat_consumable:"Potrošen materijal",cat_logistics:"Transport",cat_other:"Drugo",
     base_offer:"Osnovna ponuda",option:"Opcija",include:"vkluči",
-    terms_title:"Uslovi",excl_title:"Isklučuvanja i pretpostavki",edit_short:"Uredi",
-    price_summary:"Pregled na cena",ps_subtotal:"Megjuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",
-    cost_breakdown:"Raspredelba na trošoci",cb_material:"Trošok za materijal",cb_labour:"Trošok za rabota",cb_machine:"Trošok za mašini",cb_sub:"Trošok za podizveduvač",
-    cb_consumable:"Potrošen materijal",cb_logistics:"Transport",cb_other:"Drug trošok",cb_direct:"Vkupen direkten trošok",cb_overhead:"Režiski trošoci",cb_contingency:"Rezerva za nesigurnost",
+    terms_title:"Uslovi",excl_title:"Isklučuvaњa i pretpostavki",edit_short:"Uredi",
+    price_summary:"Pregled na cena",ps_subtotal:"Meѓuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",
+    cost_breakdown:"Raspredelba na troшoci",cb_material:"Trošok za materijal",cb_labour:"Trošok za rabota",cb_machine:"Trošok za mašini",cb_sub:"Trošok za podizveduvač",
+    cb_consumable:"Potroшen materijal",cb_logistics:"Transport",cb_other:"Drug trošok",cb_direct:"Vkupen direkten trošok",cb_overhead:"Režiski troшoci",cb_contingency:"Rezerva za nesigurnost",
     cb_internal:"Vkupna interna cena",cb_selling:"Prodažna cena",cb_profit:"Bruto profit",cb_margin:"Marža %",
     mk_material:"Marža na materijal",mk_labour:"Marža na rabota",mk_sub:"Marža na podizveduvač",
     documents:"Dokumenti",upload:"Otpremi",history:"Istorija",notes:"Beleški",addnote:"+ Dodaj beleška",
-    empty_docs:"Sè ušte nema dokumenti.",empty_notes:"Sè ušte nema beleški.",empty_hist:"Sè ušte nema istorija.",
+    empty_docs:"Sè uште nema dokumenti.",empty_notes:"Sè uште nema beleški.",empty_hist:"Sè uште nema istorija.",
     act_preview:"Pregled na PDF",act_email:"Isprati po e-pošta",act_convert:"Konvertiraj vo proekt",act_open:"Otvori proekt",act_duplicate:"Dupliciraj",act_export:"Izvezi vo Excel",act_delete:"Izbriši",
     nc_title:"Nova kalkulacija",nc_customer:"Klient",nc_project:"Referenca na proekt",nc_valid:"Važi do",nc_save:"Kreiraj",nc_cancel:"Otkaži",
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
-    pricing_title:"Cenovni podesuvanja",pricing_note:"Režiskite trošoci i rezervata se primenuvaat na vkupniot direkten trošok i go namaluvaat bruto profitot — ne se dodavaat na cenata za klientot.",
+    pricing_title:"Cenovni podesuvaњa",pricing_note:"Režiskite troшoci i rezervata se primenuvaat na vkupniot direkten trošok i go namaluvaat bruto profitot — ne se dodavaat na cenata za klientot.",
     confirm_delete:"Izbriši ja ovaa kalkulacija? Ova ne može da se vrati.",confirm_stage:"Premesti ja ovaa kalkulacija vo \"{s}\"?",
-    sb_title:"KALKULACII",sb_overview:"Pregled na kalkulacii",sb_drafts:"Nacrti",sb_declined_expired:"Odbiena / Istekla",
-    sb_workflow_title:"Povrzan tek na rabota",sb_workflow_desc:"Prifatenite kalkulacii se konvertiraat vo proekti so klient, spisok na materijali (BOM), časovi, mašini i rok za isporaka.",sb_role:"Procenuvač",
+    locked_msg:"Kalkulacijata {no} e prifatena, odbiena ili istekla i e samo za čitanje. Kreiraj nova revizija za da ja urediš.",
+    locked_banner:"Ovaa kalkulacija e samo za čitanje. Kreiraj nova revizija za da napraviš izmeni.",
+    act_newrevision:"Nova revizija",rev_short:"Rev",
+    not_converted:"Sè ušte ne е konvertirana vo proekt",not_converted_hint:"Proekt može da se kreira откако kalkulacijata ke bide prifatena.",
+    convert_requires_accepted:"Konvertiraj vo proekt e dostapno samo koga kalkulacijata e prifatena.",
+    active_word:"Aktiven",inactive_word:"Neaktiven",vat_org:"DDV/EMBS",
+    ei_oppref:"Referenca na prilika / barañe",ei_rfq:"Referenca / barañe od klientot",ei_reqdelivery:"Baran datum na isporaka",ei_estimator:"Odgovoren kalkulant",
+    opt_included_title:"Vkluči ja ovaa opcija vo ponudata za klientot",opt_combined:"Kombinirani izbrani opcii",
+    preview_only:"Samo pregled — ne e vklučeno",waste_word:"otpad",cost_word:"cena",
+    act_editwi:"Uredi rabotna stavka",act_moveup:"Premesti nagore",act_movedown:"Premesti nadolu",act_deletewi:"Izbriši rabotna stavka",
+    act_editline:"Uredi red",act_dupline:"Dupliciraj red",act_delline:"Izbriši red",
+    th_margin_sek:"Marža (SEK)",th_margin_pct:"Marža %",empty_items:"Sè ušte nema stavki — dodaj rabotna stavka za да počneš.",
+    err_required:"Ова poле е задолжително.",internal_cost:"Interna cena",waste_pct_material:"Otpad % (samo za materijalni redovi)",
+    err_qty:"Količinata mora da bide pogolema od nula.",err_sell:"Prodažnata cena ne može da bide negativna.",err_cost:"Internata cena ne može da bide negativna.",
+    err_disc:"Popustot mora da bide pomeѓu 0% i 100%.",err_tax:"DDV mora da bide pomeѓu 0% i 100%.",
+    confirm_delete_wi:"Izbriši ja praznata rabotna stavka \"{n}\"?",confirm_delete_line:"Izbriši go redot \"{n}\"?",
+    err_date:"Vnesi validen datum.",err_date_order:"Datumot \"važi do\" ne može da bide pred datumot na kalkulacijata.",
+    convert_title:"Konvertiraj vo proekt",convert_note:"Ova ke gi prezeme klientot, specifikacijata na materijali, procenetite časovi, mašinite, prodažnata cena i celta za isporaka vo Proekti, Planiranje i Magacin.",
+    convert_projtitle:"Naslov na proekt",convert_hours:"Planirani časovi",convert_delivery:"Cel za isporaka",convert_value:"Procenета vrednost na proektot",convert_create:"Kreiraj poврзан proekt",
+    confirm_convert:"Konvertiraj {no} vo poврзан proekt? Ova ne može da se vrati.",
+    discount_max:"maks",err_overhead:"Režiskite troшoci ne možat da bidat negativni.",err_contingency:"Rezervata za nesigurnost ne može da bide negativna.",err_discount:"Popustot mora da bide pomeѓu 0 i meѓuzbirot.",
+    demo_upload:"Otpremaњe fajl — demo. Nikakov fajl не se začuvuva vo realnost.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
+    confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
+    demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Excel izvoz — demo — {no}.xlsx (nikakov fajl не se generira vo realnost).",
+    pr_desc:"Opis",pr_qty:"Kol.",pr_unit:"Edinica",pr_price:"Cena",pr_total:"Vkupno",pr_optional:"Opcionalni stavki",pr_estimate:"Kalkulacija",
+    pr_customer:"Klient",pr_details:"Detali za kalkulacija",pr_scope:"Opseg",pr_base:"Osnovna ponuda",pr_vat:"DDV",pr_delivery:"Isporaka",
+    pr_signature_customer:"Prifaќaњe / potpis od klient",pr_signature_varmak:"Varmak AB",
+    actual_vs_est:"Proceneto vs Realno",actual_hours:"Rabotni časovi",actual_variance:"Tekovna razlika",by_word:"od",
+    rev_create_title:"Kreiraj revizija",rev_reason:"Pričina za izmena",rev_reason_ph:"Izmena od klient, ažuriraњe na materijal, izmena na opseg…",
+    rev_create_btn:"Kreiraj revizija",confirm_revision:"Kreiraj nova revizija na {no}? Tekovnata sodržina ke bide začuvana kako snimka, a kalkulacijata ke se vrati vo Nacrt.",
+    transition_blocked:"Ne može da se premine od \"{a}\" vo \"{b}\" direktno.",err_needs_line:"Dodaj barem eden validen trošočen red pred da ja ispratiš ovaa kalkulacija.",
+    ne_none:"— Nikoj —",ne_title:"Naslov na kalkulacija",ne_title_ph:"pr. Sistem za ventilacioni kanali",ne_startmethod:"Metod za početok",
+    ne_blank:"Prazna kalkulacija",ne_tpl_fab:"Standarden šablon za izработка",ne_tpl_repair:"Šablon za popravka/servis",ne_tpl_install:"Šablon za instalacija",
+    ne_template_note:"Početните vrednosti od šablonot se samo za demonstracija i mora da bidat proverени pred da se isprati ovaa kalkulacija.",
+    act_archive:"Arhiviraj",
     locale:"mk"}
 };
 
 let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,activeOptTab="base";
 
 function getEst(id){return ESTIMATIONS.find(e=>e.id===id);}
-function syncEstimation(e,reason){if(!window.WorkshopData||!e)return null;const c=CUSTOMERS[e.customerId],shared=WorkshopData.get(),sc=shared.customers.find(x=>x.name===c.name),tot=computeTotals(e);const payload={id:e.sharedId,no:e.no,customerId:sc?sc.id:null,customer:c.name,title:e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no,status:e.status,revision:e.revision||0,created:e.created,validUntil:e.validUntil,currency:e.currency,estimatedMaterial:tot.materialCost,estimatedLabour:tot.labourCost,estimatedMachine:tot.machineCost,estimatedOther:tot.subCost+tot.consumableCost+tot.logisticsCost+tot.otherCost,totalCost:tot.totalInternalCost,sellingPrice:tot.sellingPrice,plannedHours:e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0),machines:e.machines||flatLines(e).filter(x=>x.category==='machine').map(x=>x.desc),deliveryTarget:e.deliveryTarget||e.validUntil,bom:e.sharedBom||[]};const saved=WorkshopData.upsertEstimation(payload);e.sharedId=saved.id;if(reason){WorkshopData.updateEstimation(saved.id,{},reason);e.revision=(e.revision||0)+1;e.history.push({date:new Date().toISOString().slice(0,10),action:`Revision ${e.revision}: ${reason}`,by:'Aleksandar C.'})}return saved}
+// Pushes the full current state of an estimate into WorkshopData (the one shared browser-data layer).
+// IMPORTANT: this function never changes the revision number itself — see createRevision() for the single,
+// dedicated place a revision is ever incremented, so calling this repeatedly (on every routine save) can
+// never double-count a revision the way the old code did via WorkshopData.updateEstimation(...,reason).
+function syncEstimation(e){
+  if(!window.WorkshopData||!e)return null;
+  const c=CUSTOMERS[e.customerId],shared=WorkshopData.get(),sc=shared.customers.find(x=>x.name===c.name),tot=computeTotals(e);
+  const payload={id:e.sharedId,no:e.no,customerId:sc?sc.id:null,customer:c.name,title:e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no,
+    status:e.status,revision:e.revision||0,created:e.created,validUntil:e.validUntil,currency:e.currency,
+    estimatedMaterial:tot.materialCost,estimatedLabour:tot.labourCost,estimatedMachine:tot.machineCost,
+    estimatedOther:tot.subCost+tot.consumableCost+tot.logisticsCost+tot.otherCost,totalCost:tot.totalInternalCost,sellingPrice:tot.sellingPrice,
+    plannedHours:e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0),
+    machines:e.machines||flatLines(e).filter(x=>x.category==='machine').map(x=>x.desc),
+    deliveryTarget:e.deliveryTarget||e.validUntil,bom:e.sharedBom||[],
+    // additional Phase-1 fields so nothing entered in this module disappears on refresh:
+    workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,notes:e.notes,documents:e.documents,
+    overheadPct:e.overheadPct,contingencyPct:e.contingencyPct,discount:e.discount,reference:e.reference,
+    customerRfq:e.customerRfq,opportunityRef:e.opportunityRef,requestedDelivery:e.requestedDelivery,estimator:e.estimator,
+    projectNo:e.projectNo,history:e.history,revisionSnapshots:e.revisionSnapshots,archived:!!e.archived};
+  const saved=WorkshopData.upsertEstimation(payload);
+  e.sharedId=saved.id;
+  return saved;
+}
 function stageIndex(status){if(status==='declined'||status==='expired')return 3;return STAGES.indexOf(status);}
 
-function lineTotal(it){return it.qty*it.sell*(1-(it.disc||0)/100);}
-function lineTax(it){return lineTotal(it)*(it.tax||0)/100;}
-function lineCostTotal(it){return it.qty*it.cost;}
+// ─────────────────────────────────────────────────────────────────────────
+// CALCULATION ENGINE — frontend prototype only.
+// The rules below (waste handling, discount sequencing, VAT base) are the
+// functional specification a future backend calculation engine must
+// reproduce exactly; keep this block as the single source of truth for how
+// a line, a work item and a whole estimate are priced.
+// ─────────────────────────────────────────────────────────────────────────
 
+// A line's sell total is qty × unit sell price, reduced by the line discount (0–100%, clamped defensively).
+function lineTotal(it){
+  const qty=Math.max(0,Number(it.qty)||0),sell=Math.max(0,Number(it.sell)||0),disc=Math.min(100,Math.max(0,Number(it.disc)||0));
+  return money(qty*sell*(1-disc/100));
+}
+// Tax (VAT) on a single line is computed on that line's already-discounted sell total.
+// The estimate-level discount is applied later, proportionally, in computeTotals() — see note there.
+function lineTax(it){const tax=Math.min(100,Math.max(0,Number(it.tax)||0));return money(lineTotal(it)*tax/100);}
+// Internal cost: for MATERIAL lines, waste% inflates the quantity actually consumed (offcuts, kerf, spoilage).
+// Non-material categories (labour, machine, subcontractor, consumable, logistics, other) ignore waste entirely.
+function lineCostTotal(it){
+  const qty=Math.max(0,Number(it.qty)||0),cost=Math.max(0,Number(it.cost)||0);
+  const waste=it.category==='material'?Math.max(0,Number(it.waste)||0):0;
+  return money(qty*cost*(1+waste/100));
+}
+function lineSellCostDelta(it){return money(lineTotal(it)-lineCostTotal(it));}
+
+// Base (saved) items = every work item's lines, plus the lines of every OPTION that is marked
+// as "included in customer offer". Replacement options (option.replacesDesc) drop the base line(s)
+// they replace so the material is never charged twice — see requirement on double-counting.
+function baseAndIncludedLines(e){
+  const replaced=new Set();
+  (e.options||[]).filter(o=>o.included&&Array.isArray(o.replacesDesc)).forEach(o=>o.replacesDesc.forEach(d=>replaced.add(o.intoWorkItem+'|'+d)));
+  const base=e.workItems.flatMap(wi=>wi.lines.filter(l=>!replaced.has(wi.no+'|'+l.desc)));
+  const includedOptLines=(e.options||[]).filter(o=>o.included).flatMap(o=>o.lines.map(l=>Object.assign({},l,{fromOption:o.name,optionId:o.id})));
+  return base.concat(includedOptLines);
+}
+// Display-only merge used to PREVIEW an option in the items table without ever touching the saved totals.
+// activeOptTab selects which option (if any) is temporarily shown; computeTotals() never reads this state.
 function mergedWorkItems(e){
-  const wis=e.workItems.map(wi=>({no:wi.no,desc:wi.desc,lines:wi.lines.slice()}));
+  const replaced=new Set();
+  (e.options||[]).filter(o=>o.included&&Array.isArray(o.replacesDesc)).forEach(o=>o.replacesDesc.forEach(d=>replaced.add(o.intoWorkItem+'|'+d)));
+  const wis=e.workItems.map(wi=>({no:wi.no,desc:wi.desc,lines:wi.lines.filter(l=>!replaced.has(wi.no+'|'+l.desc))}));
+  (e.options||[]).filter(o=>o.included).forEach(opt=>{
+    const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name,optionId:opt.id}));
+    wis.push({no:"",desc:opt.name,lines:optLines,isOption:true});
+  });
   if(activeOptTab!=="base"){
-    const opt=e.options.find(o=>o.id===activeOptTab);
-    if(opt){
-      const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name}));
-      const target=wis.find(wi=>wi.no&&wi.no===opt.intoWorkItem);
-      if(target)target.lines=target.lines.concat(optLines);
-      else wis.push({no:"",desc:opt.name,lines:optLines});
+    const opt=(e.options||[]).find(o=>o.id===activeOptTab);
+    if(opt&&!opt.included){
+      const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name,optionId:opt.id,previewOnly:true}));
+      wis.push({no:"",desc:opt.name,lines:optLines,isOption:true,previewOnly:true});
     }
   }
   return wis;
 }
-function flatLines(e){return mergedWorkItems(e).flatMap(wi=>wi.lines);}
+function flatLines(e){return baseAndIncludedLines(e);}
 
 function computeTotals(e){
-  const items=flatLines(e);
+  const items=baseAndIncludedLines(e);
   const bySection={};
   items.forEach(it=>{const s=it.category;bySection[s]=(bySection[s]||0)+lineTotal(it);});
-  const sellSubtotal=items.reduce((a,b)=>a+lineTotal(b),0);
-  const preDiscountTax=items.reduce((a,b)=>a+lineTax(b),0);
-  const discount=e.discount||0;
-  const netSubtotal=sellSubtotal-discount;
-  // Tax must be computed on the discounted (net) subtotal, not the pre-discount total.
-  // Scale the per-line tax proportionally so mixed tax rates across lines are preserved.
-  const taxTotal=sellSubtotal>0?preDiscountTax*(netSubtotal/sellSubtotal):0;
-  const grandTotal=netSubtotal+taxTotal;
+  const sellSubtotal=money(items.reduce((a,b)=>a+lineTotal(b),0));
 
-  const costOf=cat=>items.filter(it=>it.category===cat).reduce((a,b)=>a+lineCostTotal(b),0);
-  const sellOf=cat=>items.filter(it=>it.category===cat).reduce((a,b)=>a+lineTotal(b),0);
+  // Estimate-level discount can never exceed the sell subtotal (no negative net price).
+  const discount=Math.max(0,Math.min(Number(e.discount)||0,sellSubtotal));
+
+  // VAT must be calculated AFTER line discounts (already applied in lineTotal) and AFTER the
+  // estimate-level discount. The estimate-level discount is spread across lines proportionally
+  // to each line's share of the subtotal, so VAT is charged on the true net base — not on the
+  // pre-discount subtotal. This mirrors how the future backend must compute VAT.
+  const discountRatio=sellSubtotal>0?discount/sellSubtotal:0;
+  const taxTotal=money(items.reduce((a,b)=>{
+    const lineNet=lineTotal(b)*(1-discountRatio);
+    const tax=Math.min(100,Math.max(0,Number(b.tax)||0));
+    return a+lineNet*tax/100;
+  },0));
+
+  const netSubtotal=money(sellSubtotal-discount);
+  const grandTotal=money(netSubtotal+taxTotal);
+
+  const costOf=cat=>money(items.filter(it=>it.category===cat).reduce((a,b)=>a+lineCostTotal(b),0));
+  const sellOf=cat=>money(items.filter(it=>it.category===cat).reduce((a,b)=>a+lineTotal(b),0));
   const materialCost=costOf('material'),labourCost=costOf('labour'),machineCost=costOf('machine'),subCost=costOf('subcontractor'),
     consumableCost=costOf('consumable'),logisticsCost=costOf('logistics'),otherCost=costOf('other');
-  const totalDirectCost=materialCost+labourCost+machineCost+subCost+consumableCost+logisticsCost+otherCost;
-  const overhead=totalDirectCost*(e.overheadPct||0)/100;
-  const contingency=totalDirectCost*(e.contingencyPct||0)/100;
-  const totalInternalCost=totalDirectCost+overhead+contingency;
+  const totalDirectCost=money(materialCost+labourCost+machineCost+subCost+consumableCost+logisticsCost+otherCost);
+  const overheadPct=Math.max(0,Number(e.overheadPct)||0),contingencyPct=Math.max(0,Number(e.contingencyPct)||0);
+  const overhead=money(totalDirectCost*overheadPct/100);
+  const contingency=money(totalDirectCost*contingencyPct/100);
+  const totalInternalCost=money(totalDirectCost+overhead+contingency);
   const sellingPrice=sellSubtotal;
-  const grossProfit=(sellingPrice-discount)-totalInternalCost;
-  const margin=sellingPrice?grossProfit/(sellingPrice-discount)*100:0;
+  const netSellingPrice=netSubtotal;
+  const grossProfit=money(netSellingPrice-totalInternalCost);
+  // Margin must never be Infinity/NaN: guard the zero-price case explicitly.
+  const margin=netSellingPrice>0?money(grossProfit/netSellingPrice*100):0;
 
   const matSell=sellOf('material'),labSell=sellOf('labour'),subSell=sellOf('subcontractor');
-  const matMarkup=materialCost?((matSell-materialCost)/materialCost*100):0;
-  const labMargin=labourCost?((labSell-labourCost)/labourCost*100):0;
-  const subMarkup=subCost?((subSell-subCost)/subCost*100):0;
+  const matMarkup=materialCost>0?money((matSell-materialCost)/materialCost*100):0;
+  const labMargin=labourCost>0?money((labSell-labourCost)/labourCost*100):0;
+  const subMarkup=subCost>0?money((subSell-subCost)/subCost*100):0;
 
   return{items,bySection,sellSubtotal,taxTotal,discount,netSubtotal,grandTotal,
     materialCost,labourCost,machineCost,subCost,consumableCost,logisticsCost,otherCost,
-    totalDirectCost,overhead,contingency,totalInternalCost,sellingPrice,grossProfit,margin,
+    totalDirectCost,overhead,contingency,totalInternalCost,sellingPrice,netSellingPrice,grossProfit,margin,
     matMarkup,labMargin,subMarkup};
 }
+function marginLabel(tot){return tot.netSellingPrice>0?tot.margin.toFixed(1)+'%':'—';}
+function combinedOptionsValue(e){return money((e.options||[]).filter(o=>o.included).reduce((a,o)=>a+optionDelta(e,o),0));}
 
 function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st_"+s]}</span>`;}
 
 function renderLeft(){
   const t=T[LANG];
   const q=query.trim().toLowerCase();
-  let rows=ESTIMATIONS.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
+  const active=ESTIMATIONS.filter(e=>!e.archived);
+  let rows=active.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
     .filter(e=>{const c=CUSTOMERS[e.customerId];return !q||e.no.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);})
     .sort((a,b)=>b.created.localeCompare(a.created));
 
   const counts={draft:0,sent:0,accepted:0,declined:0};
-  ESTIMATIONS.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
-  const totalValue=ESTIMATIONS.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
-  const valueByStatus=st=>ESTIMATIONS.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
+  const totalValue=active.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  const valueByStatus=st=>active.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
 
   const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
     return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-est-id="${e.id}">
-      <div class="er1"><span class="eno">${e.no}</span>${statusPill(e.status)}</div>
-      <div class="ecust">${c.name}</div>
+      <div class="er1"><span class="eno">${esc(e.no)}</span>${statusPill(e.status)}</div>
+      <div class="ecust">${esc(c.name)}</div>
       <div class="er2"><span class="eval">${fmt0(tot.grandTotal)}</span></div>
     </button>`;}).join("");
 
@@ -639,11 +931,11 @@ function renderLeft(){
     <div class="panel">
       <div class="phead"><h3>${t.p_list}</h3></div>
       <div class="listtoolbar">
-        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" value="${esc(query)}"></div>
       </div>
       <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewEst()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newest}</button>
       <div class="segtabs">
-        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${ESTIMATIONS.length})</button>
+        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${active.length})</button>
         <button class="${filterStatus==='draft'?'on':''}" onclick="setFilter('draft')">${t.f_draft} (${counts.draft})</button>
         <button class="${filterStatus==='sent'?'on':''}" onclick="setFilter('sent')">${t.f_sent} (${counts.sent})</button>
         <button class="${filterStatus==='accepted'?'on':''}" onclick="setFilter('accepted')">${t.f_accepted} (${counts.accepted})</button>
@@ -656,7 +948,7 @@ function renderLeft(){
     <div class="panel">
       <div class="phead"><h3>${t.p_summary}</h3></div>
       <div class="sumgrid2">
-        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${ESTIMATIONS.length}</div></div>
+        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${active.length}</div></div>
           <div style="text-align:right;"><div class="sl">${t.sum_value}</div><div class="sv">${fmt0(totalValue)}</div></div></div>
         <div class="sumbystatus">
           <div class="ss"><div class="sl">${t.f_draft}</div><div class="sv draft">${counts.draft}</div><div class="ssub">${fmt0(valueByStatus('draft'))}</div></div>
@@ -667,13 +959,19 @@ function renderLeft(){
       </div>
     </div>`;
 }
-function computeTotalsQuiet(e){const savedTab=activeOptTab;activeOptTab="base";const r=computeTotals(e);activeOptTab=savedTab;return r;}
+// computeTotals() no longer depends on the option-preview tab (previewing never touches saved totals), so this is now a plain alias kept for call-site compatibility.
+function computeTotalsQuiet(e){return computeTotals(e);}
 
 function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
 function setFilter(f){filterStatus=f;renderAll();}
 
+// A locked estimate (accepted / declined / expired) cannot be edited directly — a revision must be created first.
+function isLocked(e){return e.status==='accepted'||e.status==='declined'||e.status==='expired';}
+function guardEdit(e){if(!isLocked(e))return true;toast(T[LANG].locked_msg.replace('{no}',e.no),'error');return false;}
+
 function renderMiddle(e){
-  const t=T[LANG];const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo]||{name:e.projectTitle||'Project from '+e.no,type:'Estimated project',status:e.projectNo?'planned':'not converted'};
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const converted=!!e.projectNo;
+  const p=converted?(PROJECTS[e.projectNo]||{name:e.projectTitle||'Project from '+e.no,type:'Estimated project',status:'planned'}):null;
   const stages=[{k:"draft",lbl:t.st_draft},{k:"review",lbl:t.st_review},{k:"sent",lbl:t.st_sent},{k:"accepted",lbl:t.st_accepted},{k:"declined",lbl:t.st_declined},{k:"expired",lbl:t.st_expired}];
   const curIdx=STAGES.indexOf(e.status);
   const stepsHtml=stages.map((s,i)=>{
@@ -681,181 +979,312 @@ function renderMiddle(e){
     if(s.k===e.status)cls="current"+(s.k==='declined'||s.k==='expired'?' declined':'');
     else if(i<3 && curIdx>=0 && i<curIdx)cls="done";
     else if(i<3 && (e.status==='accepted'||e.status==='declined'||e.status==='expired'))cls="done";
-    return `<button class="step ${cls}" onclick="setStage(${e.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${s.lbl}</span></button>${i<stages.length-1?'<span class="stepline"></span>':''}`;
+    return `<button class="step ${cls}" onclick="requestStageChange(${e.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${esc(s.lbl)}</span></button>${i<stages.length-1?'<span class="stepline"></span>':''}`;
   }).join("");
 
   return `
     <div class="panel">
+      ${isLocked(e)?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.locked_banner)}<button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>`:''}
       <div class="dhead3">
-        <div class="idn"><h2>${e.no}</h2>${statusPill(e.status)}</div>
+        <div class="idn"><h2>${esc(e.no)}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span></div>
         <div class="dbtns">
-          <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${t.edit}</button>
-          <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${t.duplicate}</button>
-          <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${t.print}</button>
+          <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
+          <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.duplicate)}</button>
+          <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.print)}</button>
         </div>
       </div>
       <div class="metarow">
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${t.m_created}</div><div class="mv">${e.created}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${t.m_valid}</div><div class="mv">${e.validUntil}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><div><div class="mk">${t.m_customer}</div><div class="mv">${c.name}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg><div><div class="mk">${t.m_project}</div><div class="mv">${e.projectNo}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><div class="mk">${t.m_createdby}</div><div class="mv">${e.createdBy}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${esc(t.m_created)}</div><div class="mv">${esc(e.created)}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${esc(t.m_valid)}</div><div class="mv">${esc(e.validUntil)}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><div><div class="mk">${esc(t.m_customer)}</div><div class="mv">${esc(c.name)}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg><div><div class="mk">${esc(t.m_project)}</div><div class="mv">${converted?esc(e.projectNo):esc(t.not_converted)}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><div class="mk">${esc(t.m_createdby)}</div><div class="mv">${esc(e.estimator||e.createdBy)}</div></div></div>
       </div>
       <div class="stepper">${stepsHtml}</div>
 
       <div class="infocard3">
-        <div class="icard"><div class="ich"><h4>${t.c_customer}</h4></div>
-          <div class="ilead">${c.name}</div><div class="istatus">${c.status==='active'?'Active':'Inactive'}</div>
-          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${c.address}</div>
-          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${c.contact}</div>
-          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg>${c.email}</div>
-          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg>${c.phone}</div>
-          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>VAT/Org: ${c.org}</div>
+        <div class="icard"><div class="ich"><h4>${esc(t.c_customer)}</h4></div>
+          <div class="ilead">${esc(c.name)}</div><div class="istatus">${c.status==='active'?esc(t.active_word):esc(t.inactive_word)}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(c.address)}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${esc(c.contact)}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg>${esc(c.email)}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg>${esc(c.phone)}</div>
+          <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>${esc(t.vat_org)}: ${esc(c.org)}</div>
         </div>
-        <div class="icard"><div class="ich"><h4>${t.c_estinfo}</h4></div>
-          <div class="irow2"><span class="ik">${t.ei_number}</span><span class="iv">${e.no}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_ref}</span><span class="iv">${e.reference}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_date}</span><span class="iv">${e.created}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_valid}</span><span class="iv">${e.validUntil}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_currency}</span><span class="iv">${e.currency}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_delivery}</span><span class="iv">${e.deliveryTime}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_terms}</span><span class="iv">${e.paymentTerms}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_pricelist}</span><span class="iv">${e.priceList}</span></div>
-          <div class="irow2"><span class="ik">${t.ei_incoterms}</span><span class="iv">${e.incoterms}</span></div>
+        <div class="icard"><div class="ich"><h4>${esc(t.c_estinfo)}</h4></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_number)}</span><span class="iv">${esc(e.no)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_oppref)}</span><span class="iv">${esc(e.opportunityRef)||'—'}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_rfq)}</span><span class="iv">${esc(e.customerRfq)||'—'}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_date)}</span><span class="iv">${esc(e.created)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_valid)}</span><span class="iv">${esc(e.validUntil)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_reqdelivery)}</span><span class="iv">${esc(e.requestedDelivery)||'—'}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_currency)}</span><span class="iv">${esc(e.currency)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_delivery)}</span><span class="iv">${esc(e.deliveryTime)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_terms)}</span><span class="iv">${esc(e.paymentTerms)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_pricelist)}</span><span class="iv">${esc(e.priceList)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_incoterms)}</span><span class="iv">${esc(e.incoterms)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_estimator)}</span><span class="iv">${esc(e.estimator||e.createdBy)}</span></div>
         </div>
-        <div class="icard"><div class="ich"><h4>${t.c_project}</h4></div>
-          <div class="ilead">${p.name}</div><div class="istatus">${p.status}</div>
-          <div class="irow2"><span class="ik">${t.pj_location}</span><span class="iv">${c.city}, Sweden</span></div>
-          <div class="irow2"><span class="ik">${t.pj_type}</span><span class="iv">${p.type}</span></div>
-          <div class="irow2"><span class="ik">${t.pj_contact}</span><span class="iv">${c.contact}</span></div>
-          <div class="irow2"><span class="ik">${t.pj_status}</span><span class="iv">${p.status}</span></div>
-          <div style="margin-top:12px;"><button class="tbtn small" style="width:100%;justify-content:center;" onclick="location.href='projects-desktop.html'">${t.pj_open}</button></div>
+        <div class="icard"><div class="ich"><h4>${esc(t.c_project)}</h4></div>
+          ${converted?`<div class="ilead">${esc(p.name)}</div><div class="istatus">${esc(p.status)}</div>
+          <div class="irow2"><span class="ik">${esc(t.pj_location)}</span><span class="iv">${esc(c.city)}, Sweden</span></div>
+          <div class="irow2"><span class="ik">${esc(t.pj_type)}</span><span class="iv">${esc(p.type)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.pj_contact)}</span><span class="iv">${esc(c.contact)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.pj_status)}</span><span class="iv">${esc(p.status)}</span></div>
+          <div style="margin-top:12px;"><button class="tbtn small" style="width:100%;justify-content:center;" onclick="location.href='projects-desktop.html'">${esc(t.pj_open)}</button></div>`
+          :`<div class="ilead" style="color:var(--steel-400);font-size:12.5px;font-weight:500;">${esc(t.not_converted)}</div>
+          <p style="font-size:11.5px;color:var(--steel-400);line-height:1.5;margin-top:6px;">${esc(t.not_converted_hint)}</p>
+          ${e.status==='accepted'?`<div style="margin-top:12px;"><button class="tbtn primary small" style="width:100%;justify-content:center;" onclick="openConvertEst(${e.id})">${esc(t.act_convert)}</button></div>`:`<div style="margin-top:12px;font-size:11px;color:var(--steel-400);">${esc(t.convert_requires_accepted)}</div>`}`}
         </div>
       </div>
 
       <div class="itemshead">
-        <h3>${t.items}</h3>
+        <h3>${esc(t.items)}</h3>
         <div class="itemsactions">
-          <label class="costtoggle"><input type="checkbox" ${showCost?'checked':''} onchange="showCost=this.checked;renderAll();">${t.showcost}</label>
-          <button class="tbtn small" onclick="openAddWorkItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.addworkitem}</button>
+          <label class="costtoggle"><input type="checkbox" ${showCost?'checked':''} onchange="showCost=this.checked;renderAll();">${esc(t.showcost)}</label>
+          <button class="tbtn small" onclick="openAddWorkItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(t.addworkitem)}</button>
         </div>
       </div>
-      ${e.options.length?`<div class="opttabs">
-        <div class="opttab ${activeOptTab==='base'?'on':''}" onclick="setOptTab('base')">${t.base_offer}</div>
-        ${e.options.map(o=>{const d=optionDelta(e,o);return `<div class="opttab ${activeOptTab===o.id?'on':''}" onclick="setOptTab(${o.id})"><input type="checkbox" ${activeOptTab===o.id?'checked':''} readonly>${t.option} — ${o.name}<span class="odelta">+${fmt0(d)}</span></div>`;}).join("")}
-      </div>`:''}
+      ${(e.options||[]).length?renderOptionTabs(e):''}
       ${renderItemsTable(e)}
 
-      <div class="tccard"><div class="ich"><h4>${t.terms_title}</h4><button class="tbtn small" onclick="openEditText(${e.id},'terms')">${t.edit_short}</button></div><p>${esc(e.terms)}</p></div>
-      <div class="tccard"><div class="ich"><h4>${t.excl_title}</h4><button class="tbtn small" onclick="openEditText(${e.id},'exclusions')">${t.edit_short}</button></div><ul>${e.exclusions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="tccard"><div class="ich"><h4>${esc(t.terms_title)}</h4><button class="tbtn small" onclick="openEditText(${e.id},'terms')">${esc(t.edit_short)}</button></div><p>${esc(e.terms)}</p></div>
+      <div class="tccard"><div class="ich"><h4>${esc(t.excl_title)}</h4><button class="tbtn small" onclick="openEditText(${e.id},'exclusions')">${esc(t.edit_short)}</button></div><ul>${(e.exclusions||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
     </div>`;
 }
 
-function optionDelta(e,opt){return opt.lines.reduce((a,it)=>a+lineTotal(it),0);}
+// ── options: Base Offer stays separate; each option has an independent "included" toggle and a preview tab.
+// Previewing (activeOptTab) only changes what the items table displays — computeTotals() always reflects
+// Base + every option currently marked included, so previewing never silently changes the saved quotation.
+function renderOptionTabs(e){
+  const t=T[LANG];
+  const combined=combinedOptionsValue(e);
+  return `<div class="opttabs">
+    <div class="opttab ${activeOptTab==='base'?'on':''}" onclick="setOptTab('base')">${esc(t.base_offer)}</div>
+    ${e.options.map(o=>{const d=optionDelta(e,o);
+      return `<div class="opttab ${activeOptTab===o.id?'on':''} ${o.included?'included':''}">
+        <span onclick="setOptTab(${o.id})" style="display:flex;align-items:center;gap:7px;cursor:pointer;">${esc(t.option)} — ${esc(o.name)}<span class="odelta">+${fmt0(d)}</span></span>
+        <label class="optinc" title="${esc(t.opt_included_title)}" onclick="event.stopPropagation();"><input type="checkbox" ${o.included?'checked':''} onchange="toggleOptionIncluded(${e.id},${o.id},this.checked)">${esc(t.include)}</label>
+      </div>`;}).join("")}
+    ${combined>0?`<div class="opttab combined" style="cursor:default;">${esc(t.opt_combined)}<span class="odelta">+${fmt0(combined)}</span></div>`:''}
+  </div>`;
+}
+
+function optionDelta(e,opt){return money(opt.lines.reduce((a,it)=>a+lineTotal(it),0));}
+function toggleOptionIncluded(estId,optId,included){
+  const e=getEst(estId);if(!guardEdit(e))return;
+  const opt=(e.options||[]).find(o=>o.id===optId);if(!opt)return;
+  opt.included=included;
+  e.history.push({date:todayISO(),action:(included?'Option included in offer: ':'Option removed from offer: ')+opt.name,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
 
 function renderItemsTable(e){
-  const t=T[LANG];
+  const t=T[LANG];const locked=isLocked(e);
   const workItems=mergedWorkItems(e);
   let rows="";let n=1;
   workItems.forEach((wi,idx)=>{
-    if(!wi.lines.length)return;
-    const canAddHere=idx<e.workItems.length;
-    rows+=`<tr class="sectionrow"><td colspan="${showCost?9:7}">${n}. ${esc(wi.desc).toUpperCase()}${wi.no?` <span style="opacity:.6;font-weight:600;">(${esc(wi.no)})</span>`:''}</td></tr>`;
+    const isBaseWorkItem=idx<e.workItems.length;
+    if(!wi.lines.length&&!isBaseWorkItem)return;
+    const nf=locked?'':'';
+    rows+=`<tr class="sectionrow"><td colspan="${showCost?10:8}">${n}. ${esc(wi.desc.toUpperCase())}${wi.no?` <span style="opacity:.6;font-weight:600;">(${esc(wi.no)})</span>`:''}${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}
+      ${isBaseWorkItem&&!locked?`<span class="wiactions">
+        <button title="${esc(t.act_editwi)}" onclick="openEditWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+        <button title="${esc(t.act_moveup)}" ${idx===0?'disabled':''} onclick="moveWorkItem(${e.id},${idx},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        <button title="${esc(t.act_movedown)}" ${idx===e.workItems.length-1?'disabled':''} onclick="moveWorkItem(${e.id},${idx},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+        ${wi.lines.length===0?`<button title="${esc(t.act_deletewi)}" onclick="deleteWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>`:''}
+      </span>`:''}
+    </td></tr>`;
     let sIdx=1;let sectionSell=0;
-    wi.lines.forEach(it=>{
+    wi.lines.forEach((it,lIdx)=>{
       const tot=lineTotal(it);sectionSell+=tot;
       const isOpt=it.fromOption;
-      rows+=`<tr class="${isOpt?'optrow':''}">
+      const editable=isBaseWorkItem&&!isOpt&&!locked;
+      rows+=`<tr class="${isOpt?'optrow':''} ${it.previewOnly?'previewrow':''}">
         <td class="rnum">${n}.${sIdx++}</td>
-        <td><span class="grip">⠿⠿</span><span class="idesc">${esc(it.desc)}</span><span class="cattag cat-${it.category}">${catLabel(it.category)}</span>${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${esc(it.fromOption)}</span>`:''}
-          ${it.weight?`<span class="isub">${it.weight} kg${it.waste?` · ${it.waste}% waste`:''}</span>`:''}
+        <td><span class="idesc">${esc(it.desc)}</span><span class="cattag cat-${esc(it.category)}">${esc(catLabel(it.category))}</span>${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${esc(it.fromOption)}</span>`:''}${it.previewOnly?`<span class="subtag">${esc(t.preview_only)}</span>`:''}
+          ${it.weight?`<span class="isub">${esc(it.weight)} kg${it.waste?` · ${esc(it.waste)}% ${esc(t.waste_word)}`:''}</span>`:''}
+          ${editable?`<span class="rowactions2">
+            <button title="${esc(t.act_editline)}" onclick="openEditLine(${e.id},${idx},${lIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+            <button title="${esc(t.act_dupline)}" onclick="duplicateLine(${e.id},${idx},${lIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+            <button title="${esc(t.act_moveup)}" ${lIdx===0?'disabled':''} onclick="moveLine(${e.id},${idx},${lIdx},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+            <button title="${esc(t.act_movedown)}" ${lIdx===wi.lines.length-1?'disabled':''} onclick="moveLine(${e.id},${idx},${lIdx},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+            <button title="${esc(t.act_delline)}" onclick="deleteLine(${e.id},${idx},${lIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+          </span>`:''}
         </td>
-        <td class="rnum">${it.qty}</td>
+        <td class="rnum">${esc(it.qty)}</td>
         <td>${esc(it.unit)}</td>
-        <td class="rnum">${it.sell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}${showCost?`<span class="costsub">cost ${it.cost.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:''}</td>
+        <td class="rnum">${it.sell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}${showCost?`<span class="costsub">${esc(t.cost_word)} ${it.cost.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:''}</td>
         <td class="rnum">${it.disc||0}</td>
         <td class="rnum">${it.tax||0}</td>
-        ${showCost?`<td class="rnum">${((it.sell-it.cost)*it.qty).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
+        ${showCost?`<td class="rnum">${lineSellCostDelta(it).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
         <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?8:6)}" style="text-align:right;">${t.subtotal_section} — ${esc(wi.desc)}${canAddHere?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${t.addline}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}" style="text-align:right;">${esc(t.subtotal_section)} — ${esc(wi.desc)}${isBaseWorkItem&&!locked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
   return `<div class="itable-wrap"><table class="itable"><thead><tr>
-    <th>${t.th_no}</th><th>${t.th_item}</th><th class="n">${t.th_qty}</th><th>${t.th_unit}</th><th class="n">${t.th_price}</th><th class="n">${t.th_disc}</th><th class="n">${t.th_tax}</th>
-    ${showCost?`<th class="n">Margin (SEK)</th><th class="n">Margin %</th>`:''}
-    <th class="n">${t.th_total}</th>
-  </tr></thead><tbody>${rows}</tbody></table></div>`;
+    <th>${esc(t.th_no)}</th><th>${esc(t.th_item)}</th><th class="n">${esc(t.th_qty)}</th><th>${esc(t.th_unit)}</th><th class="n">${esc(t.th_price)}</th><th class="n">${esc(t.th_disc)}</th><th class="n">${esc(t.th_tax)}</th>
+    ${showCost?`<th class="n">${esc(t.th_margin_sek)}</th><th class="n">${esc(t.th_margin_pct)}</th>`:''}
+    <th class="n">${esc(t.th_total)}</th>
+  </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?10:8}" class="empty3">${esc(t.empty_items)}</td></tr>`}</tbody></table></div>`;
+}
+
+// ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
+function moveWorkItem(id,idx,dir){
+  const e=getEst(id);if(!guardEdit(e))return;
+  const to=idx+dir;if(to<0||to>=e.workItems.length)return;
+  const tmp=e.workItems[idx];e.workItems[idx]=e.workItems[to];e.workItems[to]=tmp;
+  syncEstimation(e);renderAll();
+}
+function deleteWorkItem(id,idx){
+  const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[idx];if(!wi||wi.lines.length)return;
+  if(!confirm(T[LANG].confirm_delete_wi.replace('{n}',wi.desc)))return;
+  e.workItems.splice(idx,1);
+  e.history.push({date:todayISO(),action:'Work item removed: '+wi.desc,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
+function openEditWorkItem(id,idx){
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[idx];if(!wi)return;
+  $("fcard").innerHTML=`<h2>${esc(t.act_editwi)}</h2>
+    <div class="frow"><label>${esc(t.wi_no)}</label><input id="ewNo" value="${esc(wi.no)}"></div>
+    <div class="frow"><label>${esc(t.wi_desc)}</label><input id="ewDesc" value="${esc(wi.desc)}"></div>
+    <div id="ewErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditWorkItem(${id},${idx})">${esc(t.nc_save)}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveEditWorkItem(id,idx){
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const desc=$("ewDesc").value.trim();
+  if(!desc){showFieldError('ewDesc','ewErr',t.err_required);return;}
+  const wi=e.workItems[idx];wi.no=$("ewNo").value.trim();wi.desc=desc;
+  e.history.push({date:todayISO(),action:'Work item renamed to: '+desc,by:'Aleksandar C.'});
+  syncEstimation(e);closeModal();renderAll();
+}
+function duplicateLine(id,wiIdx,lIdx){
+  const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
+  wi.lines.splice(lIdx+1,0,JSON.parse(JSON.stringify(line)));
+  e.history.push({date:todayISO(),action:'Line duplicated: '+line.desc,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
+function deleteLine(id,wiIdx,lIdx){
+  const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
+  if(!confirm(T[LANG].confirm_delete_line.replace('{n}',line.desc)))return;
+  wi.lines.splice(lIdx,1);
+  e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
+function moveLine(id,wiIdx,lIdx,dir){
+  const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[wiIdx];const to=lIdx+dir;if(to<0||to>=wi.lines.length)return;
+  const tmp=wi.lines[lIdx];wi.lines[lIdx]=wi.lines[to];wi.lines[to]=tmp;
+  syncEstimation(e);renderAll();
 }
 
 function renderRight(e){
-  const t=T[LANG];const tot=computeTotals(e);
+  const t=T[LANG];const tot=computeTotals(e);const locked=isLocked(e);const combined=combinedOptionsValue(e);
   return `
     <div class="panel">
-      <div class="phead"><h3>${t.price_summary}</h3></div>
-      <div class="pricerow"><span class="pk">${t.ps_subtotal}</span><span class="pv">${fmt(tot.sellSubtotal)}</span></div>
-      <div class="pricerow"><span class="pk">${t.ps_discount}</span><span class="pv">${fmt(tot.discount)}</span></div>
-      <div class="pricerow"><span class="pk">${t.ps_tax}</span><span class="pv">${fmt(tot.taxTotal)}</span></div>
-      <div class="pricerow grand"><span class="pk">${t.ps_total}</span><span class="pv">${fmt(tot.grandTotal)}</span></div>
+      <div class="phead"><h3>${esc(t.price_summary)}</h3></div>
+      <div class="pricerow"><span class="pk">${esc(t.ps_subtotal)}</span><span class="pv">${fmt(tot.sellSubtotal)}</span></div>
+      ${combined>0?`<div class="pricerow"><span class="pk">${esc(t.opt_combined)}</span><span class="pv" style="color:var(--ok);">+${fmt(combined)}</span></div>`:''}
+      <div class="pricerow"><span class="pk">${esc(t.ps_discount)}</span><span class="pv">−${fmt(tot.discount)}</span></div>
+      <div class="pricerow"><span class="pk">${esc(t.ps_tax)}</span><span class="pv">${fmt(tot.taxTotal)}</span></div>
+      <div class="pricerow grand"><span class="pk">${esc(t.ps_total)}</span><span class="pv">${fmt(tot.grandTotal)}</span></div>
     </div>
     ${actualComparisonHtml(e,tot)}
     <div class="panel">
-      <div class="phead"><h3>${t.cost_breakdown}</h3><button class="iconbtn" style="width:28px;height:28px;" onclick="openPricingSettings(${e.id})" aria-label="Pricing settings"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button></div>
-      <div class="costrow"><span class="ck">${t.cb_material}</span><span>${fmt0(tot.materialCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_labour}</span><span>${fmt0(tot.labourCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_machine}</span><span>${fmt0(tot.machineCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_sub}</span><span>${fmt0(tot.subCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_consumable}</span><span>${fmt0(tot.consumableCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_logistics}</span><span>${fmt0(tot.logisticsCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_other}</span><span>${fmt0(tot.otherCost)}</span></div>
-      <div class="costrow sub"><span>${t.cb_direct}</span><span>${fmt0(tot.totalDirectCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_overhead} (${e.overheadPct}%)</span><span>${fmt0(tot.overhead)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_contingency} (${e.contingencyPct}%)</span><span>${fmt0(tot.contingency)}</span></div>
-      <div class="costrow final"><span>${t.cb_internal}</span><span>${fmt0(tot.totalInternalCost)}</span></div>
-      <div class="costrow"><span class="ck">${t.cb_selling}</span><span>${fmt0(tot.sellingPrice)}</span></div>
-      <div class="costrow profit"><span>${t.cb_profit}</span><span>${fmt0(tot.grossProfit)}</span></div>
-      <div class="costrow margin"><span>${t.cb_margin}</span><span>${tot.margin.toFixed(1)}%</span></div>
+      <div class="phead"><h3>${esc(t.cost_breakdown)}</h3><button class="iconbtn" style="width:28px;height:28px;" onclick="openPricingSettings(${e.id})" aria-label="${esc(t.pricing_title)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_material)}</span><span>${fmt0(tot.materialCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_labour)}</span><span>${fmt0(tot.labourCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_machine)}</span><span>${fmt0(tot.machineCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_sub)}</span><span>${fmt0(tot.subCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_consumable)}</span><span>${fmt0(tot.consumableCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_logistics)}</span><span>${fmt0(tot.logisticsCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_other)}</span><span>${fmt0(tot.otherCost)}</span></div>
+      <div class="costrow sub"><span>${esc(t.cb_direct)}</span><span>${fmt0(tot.totalDirectCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_overhead)} (${e.overheadPct}%)</span><span>${fmt0(tot.overhead)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_contingency)} (${e.contingencyPct}%)</span><span>${fmt0(tot.contingency)}</span></div>
+      <div class="costrow final"><span>${esc(t.cb_internal)}</span><span>${fmt0(tot.totalInternalCost)}</span></div>
+      <div class="costrow"><span class="ck">${esc(t.cb_selling)}</span><span>${fmt0(tot.sellingPrice)}</span></div>
+      <div class="costrow profit"><span>${esc(t.cb_profit)}</span><span>${fmt0(tot.grossProfit)}</span></div>
+      <div class="costrow margin"><span>${esc(t.cb_margin)}</span><span>${marginLabel(tot)}</span></div>
       <div class="markupby">
-        <div class="mb"><div class="ml">${t.mk_material}</div><div class="mv">${tot.matMarkup.toFixed(0)}%</div></div>
-        <div class="mb"><div class="ml">${t.mk_labour}</div><div class="mv">${tot.labMargin.toFixed(0)}%</div></div>
-        <div class="mb"><div class="ml">${t.mk_sub}</div><div class="mv">${tot.subCost?tot.subMarkup.toFixed(0):'—'}%</div></div>
+        <div class="mb"><div class="ml">${esc(t.mk_material)}</div><div class="mv">${tot.matMarkup.toFixed(0)}%</div></div>
+        <div class="mb"><div class="ml">${esc(t.mk_labour)}</div><div class="mv">${tot.labMargin.toFixed(0)}%</div></div>
+        <div class="mb"><div class="ml">${esc(t.mk_sub)}</div><div class="mv">${tot.subCost?tot.subMarkup.toFixed(0):'—'}%</div></div>
       </div>
     </div>
     <div class="panel">
-      <div class="phead"><h3>${t.documents}</h3><button class="tbtn small" onclick="openUpload(${e.id})">${t.upload}</button></div>
-      ${e.documents.map(d=>`<div class="docrow2"><div class="dicon ${d.type}">${d.type.toUpperCase()}</div><div class="dn">${esc(d.name)}</div><div class="dd">${d.date}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
+      <div class="phead"><h3>${esc(t.documents)}</h3><button class="tbtn small" onclick="openUpload(${e.id})">${esc(t.upload)}</button></div>
+      ${(e.documents||[]).map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${esc(t.empty_docs)}</div>`}
+      <div class="disclaimer2">${esc(t.demo_upload)}</div>
     </div>
     <div class="panel">
-      <div class="phead"><h3>Revision History · Rev ${e.revision||0}</h3><button class="tbtn small" onclick="openRevision(${e.id})">New revision</button></div>
-      ${e.history.slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${h.date}</div><div><div class="haction">${esc(h.action)}</div><div class="hby">by ${esc(h.by)}</div></div></div>`).join("")||`<div class="empty3">${t.empty_hist}</div>`}
+      <div class="phead"><h3>${esc(t.history)} · ${esc(t.rev_short)} ${e.revision||0}</h3><button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>
+      ${(e.history||[]).slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${esc(h.date)}${h.time?' '+esc(h.time):''}</div><div><div class="haction">${esc(h.action)}</div><div class="hby">${esc(t.by_word)} ${esc(h.by)}</div></div></div>`).join("")||`<div class="empty3">${esc(t.empty_hist)}</div>`}
     </div>
     <div class="panel">
-      <div class="phead"><h3>${t.notes}</h3><button class="tbtn small" onclick="openAddNote(${e.id})">${t.addnote}</button></div>
-      ${e.notes.slice().reverse().map(n=>`<div class="notecard"><b>${n.date}</b> — ${esc(n.text)}<div style="color:var(--steel-400);margin-top:4px;">– ${esc(n.author)}</div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`}
+      <div class="phead"><h3>${esc(t.notes)}</h3><button class="tbtn small" onclick="openAddNote(${e.id})">${esc(t.addnote)}</button></div>
+      ${(e.notes||[]).slice().reverse().map(n=>`<div class="notecard"><b>${esc(n.date)}</b> — ${esc(n.text)}<div style="color:var(--steel-400);margin-top:4px;">– ${esc(n.author)}</div></div>`).join("")||`<div class="empty3">${esc(t.empty_notes)}</div>`}
     </div>`;
 }
 
-function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const shared=WorkshopData.get(),se=shared.estimations.find(x=>x.id===e.sharedId||x.no===e.no),p=se&&shared.projects.find(x=>x.id===se.projectId);if(!p)return'';const actualMat=p.actualMaterialCost||Math.round(tot.materialCost*.92),actualHours=p.usedHours||0,planned=e.plannedHours||p.plannedHours||0;return `<div class="panel"><div class="phead"><h3>Estimated vs Actual</h3><span class="stpill ${p.status==='completed'?'accepted':'sent'}">${p.no}</span></div><div class="costrow"><span class="ck">Material cost</span><span>${fmt0(tot.materialCost)} → <b>${fmt0(actualMat)}</b></span></div><div class="costrow"><span class="ck">Labour hours</span><span>${planned} h → <b>${actualHours} h</b></span></div><div class="costrow final"><span>Current variance</span><span style="color:${actualMat>tot.materialCost?'var(--danger)':'var(--ok)'}">${actualMat>tot.materialCost?'+':''}${fmt0(actualMat-tot.materialCost)}</span></div></div>`}
-function openRevision(id){const e=getEst(id);$("fcard").innerHTML=`<h2>Create Revision ${Number(e.revision||0)+1}</h2><p class="fsub">${e.no}</p><div class="frow"><label for="revReason">Reason for change</label><textarea id="revReason" placeholder="Customer change, material update, scope revision..."></textarea></div><div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="saveRevision(${id})">Create revision</button></div>`;$("fov").classList.add("show")}
-function saveRevision(id){const reason=$("revReason").value.trim();if(!reason)return;syncEstimation(getEst(id),reason);closeModal();renderAll()}
+function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const t=T[LANG];const shared=WorkshopData.get(),se=shared.estimations.find(x=>x.id===e.sharedId||x.no===e.no),p=se&&shared.projects.find(x=>x.id===se.projectId);if(!p)return'';const actualMat=p.actualMaterialCost||money(tot.materialCost*.92),actualHours=p.usedHours||0,planned=e.plannedHours||p.plannedHours||0;return `<div class="panel"><div class="phead"><h3>${esc(t.actual_vs_est)}</h3><span class="stpill ${p.status==='completed'?'accepted':'sent'}">${esc(p.no)}</span></div><div class="costrow"><span class="ck">${esc(t.cb_material)}</span><span>${fmt0(tot.materialCost)} → <b>${fmt0(actualMat)}</b></span></div><div class="costrow"><span class="ck">${esc(t.actual_hours)}</span><span>${esc(planned)} h → <b>${esc(actualHours)} h</b></span></div><div class="costrow final"><span>${esc(t.actual_variance)}</span><span style="color:${actualMat>tot.materialCost?'var(--danger)':'var(--ok)'}">${actualMat>tot.materialCost?'+':''}${fmt0(actualMat-tot.materialCost)}</span></div></div>`}
+
+// Creates exactly one new revision: an immutable deep-copy snapshot of the previous revision is preserved,
+// the revision number is incremented once, and the estimate returns to Draft so it can be edited again.
+// This is the ONLY place e.revision is ever incremented — routine saves (syncEstimation) never touch it.
+function openRevision(id){
+  const t=T[LANG];const e=getEst(id);
+  $("fcard").innerHTML=`<h2>${esc(t.rev_create_title)} ${Number(e.revision||0)+1}</h2><p class="fsub">${esc(e.no)}</p>
+    <div class="frow"><label>${esc(t.rev_reason)}</label><textarea id="revReason" placeholder="${esc(t.rev_reason_ph)}"></textarea></div>
+    <div id="revErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveRevision(${id})">${esc(t.rev_create_btn)}</button></div>`;
+  $("fov").classList.add("show");
+}
+function saveRevision(id){
+  const t=T[LANG];clearAllFieldErrors();const reason=$("revReason").value.trim();
+  if(!reason){showFieldError('revReason','revErr',t.err_required);return;}
+  const e=getEst(id);
+  if(!confirm(t.confirm_revision.replace('{no}',e.no)))return;
+  createRevision(e,reason);
+  closeModal();renderAll();
+}
+function createRevision(e,reason){
+  const snapshot=JSON.parse(JSON.stringify({workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,
+    overheadPct:e.overheadPct,contingencyPct:e.contingencyPct,discount:e.discount,status:e.status,revision:e.revision||0,
+    savedAt:todayISO()}));
+  e.revisionSnapshots=e.revisionSnapshots||[];
+  e.revisionSnapshots.push(snapshot);
+  e.revision=(e.revision||0)+1;
+  e.status=(e.status==='sent'||e.status==='accepted'||e.status==='declined'||e.status==='expired')?'draft':e.status;
+  e.history.push({date:todayISO(),time:nowTime(),action:`Revision ${e.revision} created: ${reason}`,by:'Aleksandar C.'});
+  syncEstimation(e);
+  return e;
+}
 
 function renderActionBar(e){
-  const t=T[LANG];
+  const t=T[LANG];const converted=!!e.projectNo;
   return `<div class="actionbar">
-    <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${t.act_preview}</button>
-    <button onclick="sendEmail(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${t.act_email}</button>
-    <button onclick="${e.projectNo?"location.href='projects-desktop.html'":`openConvertEst(${e.id})`}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${e.projectNo?t.act_open:t.act_convert}</button>
-    <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${t.act_duplicate}</button>
-    <button onclick="exportExcel(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${t.act_export}</button>
-    <button class="danger" onclick="deleteEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${t.act_delete}</button>
+    <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${esc(t.act_preview)}</button>
+    <button onclick="sendEmail(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
+    <button onclick="${converted?"location.href='projects-desktop.html'":`openConvertEst(${e.id})`}" ${!converted&&e.status!=='accepted'?`title="${esc(t.convert_requires_accepted)}"`:''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${converted?esc(t.act_open):esc(t.act_convert)}</button>
+    <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.act_duplicate)}</button>
+    <button onclick="exportExcel(${e.id})" title="${esc(t.demo_export).replace('{no}',e.no)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${esc(t.act_export)}</button>
+    <button class="danger" onclick="deleteEst(${e.id})">${converted?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>${esc(t.act_archive)}`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(t.act_delete)}`}</button>
   </div>`;
 }
 
 function renderAll(){
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
-  let e=getEst(selectedId);if(!e){e=ESTIMATIONS[0];selectedId=e.id;}
+  let e=getEst(selectedId);if(!e||e.archived){e=ESTIMATIONS.find(x=>!x.archived)||ESTIMATIONS[0];selectedId=e.id;}
   $("app").innerHTML=`<div class="crmgrid">
     <div class="col">${renderLeft()}</div>
     <div class="col">${renderMiddle(e)}</div>
@@ -871,12 +1300,24 @@ function sidebarEstimate(filter){filterStatus=filter;renderAll();window.scrollTo
 
 function setOptTab(id){activeOptTab=id;renderAll();}
 
-function setStage(id,stage){
-  const e=getEst(id);if(e.status===stage)return;
-  const t=T[LANG];
+// ─────────────────────────────────────────────────────────────────────────
+// STATUS WORKFLOW — frontend enforcement only. The future backend must
+// enforce these exact same transition and precondition rules server-side.
+//   Draft → Internal Review → Sent → Accepted
+//   From Sent, also: Declined · Expired · (Revision requested, via createRevision)
+// A Draft can never jump straight to Accepted, and Sent requires ≥1 valid cost line.
+// ─────────────────────────────────────────────────────────────────────────
+const ALLOWED_TRANSITIONS={draft:['review','sent'],review:['draft','sent'],sent:['accepted','declined','expired','review'],accepted:[],declined:[],expired:[]};
+function hasValidCostLine(e){return e.workItems.some(wi=>wi.lines.some(l=>!isBlank(l.desc)&&isPositiveNumber(l.qty)&&isNonNegNumber(l.sell)));}
+function requestStageChange(id,stage){
+  const t=T[LANG];const e=getEst(id);if(!e||e.status===stage)return;
+  if(isLocked(e)){toast(t.locked_msg.replace('{no}',e.no),'error');return;}
+  const allowed=ALLOWED_TRANSITIONS[e.status]||[];
+  if(!allowed.includes(stage)){toast(t.transition_blocked.replace('{a}',t['st_'+e.status]).replace('{b}',t['st_'+stage]),'error');return;}
+  if(stage==='sent'&&!hasValidCostLine(e)){toast(t.err_needs_line,'error');return;}
   if(!confirm(t.confirm_stage.replace('{s}',t["st_"+stage])))return;
   e.status=stage;
-  e.history.push({date:new Date().toISOString().slice(0,10),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
+  e.history.push({date:todayISO(),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
   syncEstimation(e);
   renderAll();
 }
@@ -884,172 +1325,380 @@ function setStage(id,stage){
 function closeModal(){$("fov").classList.remove("show");}
 $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
 
+// Starting-method templates: structure and category placeholders only, all costs/prices start at zero —
+// never an invented monetary figure. Anything other than Blank gets a visible "review before sending" note.
+function templateBlank(){return [];}
+function templateFabrication(){return [
+  {no:'',desc:'Fabrication & Materials',lines:[
+    {desc:'Steel sheet / plate (specify grade)',category:'material',qty:1,unit:'m²',weight:0,waste:5,cost:0,sell:0,disc:0,tax:25},
+    {desc:'Cutting & forming',category:'machine',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
+    {desc:'Welding & assembly',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]},
+  {no:'',desc:'Installation',lines:[
+    {desc:'On-site installation',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
+    {desc:'Delivery',category:'logistics',qty:1,unit:'trip',cost:0,sell:0,disc:0,tax:25}]}];}
+function templateRepair(){return [
+  {no:'',desc:'Diagnosis & Repair',lines:[
+    {desc:'Site visit / diagnosis',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
+    {desc:'Replacement parts (specify)',category:'material',qty:1,unit:'pcs',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
+    {desc:'Repair labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
+function templateInstallation(){return [
+  {no:'',desc:'Installation',lines:[
+    {desc:'Equipment / materials supplied',category:'material',qty:1,unit:'set',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
+    {desc:'Installation labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
+    {desc:'Commissioning & handover',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
+const START_TEMPLATES={blank:templateBlank,fabrication:templateFabrication,repair:templateRepair,installation:templateInstallation};
+
 function openNewEst(){
   const t=T[LANG];
-  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${CUSTOMERS[id].name}</option>`).join("");
-  const projOpts=Object.keys(PROJECTS).map(no=>`<option value="${no}">${no} — ${PROJECTS[no].name}</option>`).join("");
-  $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.esub}</p>
-    <div class="frow"><label for="neCustomer">${t.nc_customer}</label><select id="neCustomer">${custOpts}</select></div>
-    <div class="frow"><label for="neProject">${t.nc_project}</label><select id="neProject">${projOpts}</select></div>
-    <div class="frow"><label for="neValid">${t.nc_valid}</label><input id="neValid" type="date"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewEst()">${t.nc_save}</button></div>`;
+  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${esc(CUSTOMERS[id].name)}</option>`).join("");
+  const projOpts=`<option value="">${esc(t.ne_none)}</option>`+Object.keys(PROJECTS).map(no=>`<option value="${no}">${esc(no)} — ${esc(PROJECTS[no].name)}</option>`).join("");
+  const today=todayISO();
+  $("fcard").innerHTML=`<h2>${esc(t.nc_title)}</h2><p class="fsub">${esc(t.esub)}</p>
+    <div class="frow2"><div><label>${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label>${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
+    <div id="neErr1" class="errmsg" style="display:none;"></div>
+    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label>${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label>${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
+    <div class="frow3"><div><label>${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label>${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label>${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
+    <div id="neErr2" class="errmsg" style="display:none;"></div>
+    <div class="frow3"><div><label>${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label>${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label>${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
+    <div class="frow"><label>${esc(t.ne_startmethod)}</label><select id="neTemplate">
+      <option value="blank" selected>${esc(t.ne_blank)}</option>
+      <option value="fabrication">${esc(t.ne_tpl_fab)}</option>
+      <option value="repair">${esc(t.ne_tpl_repair)}</option>
+      <option value="installation">${esc(t.ne_tpl_install)}</option>
+    </select></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveNewEst()">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
 }
+function ownerOptionsHtml(){return ['Aleksandar C.','Elena N.','Marko K.'].map(n=>`<option>${esc(n)}</option>`).join('');}
 function saveNewEst(){
-  const customerId=parseInt($("neCustomer").value);const projectNo=$("neProject").value;
-  const no="EST-26-0"+String(nextEstId).padStart(2,'0');
-  ESTIMATIONS.push({id:nextEstId++,no,customerId,projectNo,status:"draft",created:new Date().toISOString().slice(0,10),
-    validUntil:$("neValid").value||new Date().toISOString().slice(0,10),currency:"SEK",deliveryTime:"—",paymentTerms:"30 days",
-    priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(20000),options:[],exclusions:[],terms:"Prices valid for 30 days.",
-    documents:[],history:[{date:new Date().toISOString().slice(0,10),action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]});
-  const created=getEst(nextEstId-1);syncEstimation(created);closeModal();selectedId=nextEstId-1;renderAll();
+  const t=T[LANG];clearAllFieldErrors();
+  const title=$("neTitle").value.trim();
+  if(!title){showFieldError('neTitle','neErr1',t.err_required);return;}
+  const created=$("neCreated").value||todayISO(),validUntil=$("neValid").value;
+  if(isBlank(validUntil)){showFieldError('neValid','neErr2',t.err_date);return;}
+  if(validUntil<created){showFieldError('neValid','neErr2',t.err_date_order);return;}
+  const customerId=parseInt($("neCustomer").value);const projectNo=$("neProject").value||null;
+  const templateKey=$("neTemplate").value;const isBlankTpl=templateKey==='blank';
+  const no=nextEstNumber(created);
+  const rec={id:nextEstId++,no,customerId,projectNo,projectTitle:title,status:"draft",created,validUntil,
+    requestedDelivery:$("neReqDelivery").value||'',opportunityRef:$("neOppRef").value.trim(),customerRfq:$("neRfq").value.trim(),
+    currency:$("neCurrency").value,deliveryTime:$("neDelivery").value.trim()||"—",paymentTerms:$("neTerms").value.trim()||"30 days",
+    priceList:"Standard Price List 2026",incoterms:$("neIncoterms").value.trim()||"EXW Marieholm",reference:"—",
+    createdBy:"Aleksandar C.",estimator:$("neEstimator").value,
+    overheadPct:8,contingencyPct:5,discount:0,workItems:(START_TEMPLATES[templateKey]||templateBlank)(),options:[],
+    exclusions:[],terms:"Prices valid for 30 days.",documents:[],revision:0,revisionSnapshots:[],
+    history:[{date:created,action:"Estimation created (Rev 0)",by:"Aleksandar C."}],
+    notes:isBlankTpl?[]:[{date:created,author:'Aleksandar C.',text:t.ne_template_note}]};
+  ESTIMATIONS.push(rec);
+  syncEstimation(rec);closeModal();selectedId=rec.id;renderAll();
 }
 
 function openEditEst(id){
-  const t=T[LANG];const e=getEst(id);
-  $("fcard").innerHTML=`<h2>${t.edit} — ${e.no}</h2>
-    <div class="frow2"><div><label for="eeRef">${t.ei_ref}</label><input id="eeRef" value="${esc(e.reference)}"></div><div><label for="eeValid">${t.ei_valid}</label><input id="eeValid" type="date" value="${e.validUntil}"></div></div>
-    <div class="frow2"><div><label for="eeDelivery">${t.ei_delivery}</label><input id="eeDelivery" value="${esc(e.deliveryTime)}"></div><div><label for="eeTerms">${t.ei_terms}</label><input id="eeTerms" value="${esc(e.paymentTerms)}"></div></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditEst(${id})">${t.nc_save}</button></div>`;
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.no)}</h2>
+    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="eeOppRef" value="${esc(e.opportunityRef)}"></div><div><label>${esc(t.ei_rfq)}</label><input id="eeRfq" value="${esc(e.customerRfq)}"></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_valid)}</label><input id="eeValid" type="date" value="${esc(e.validUntil)}"></div><div><label>${esc(t.ei_reqdelivery)}</label><input id="eeReqDelivery" type="date" value="${esc(e.requestedDelivery)}"></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_delivery)}</label><input id="eeDelivery" value="${esc(e.deliveryTime)}"></div><div><label>${esc(t.ei_terms)}</label><input id="eeTerms" value="${esc(e.paymentTerms)}"></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_incoterms)}</label><input id="eeIncoterms" value="${esc(e.incoterms)}"></div><div><label>${esc(t.ei_estimator)}</label><input id="eeEstimator" value="${esc(e.estimator||e.createdBy)}"></div></div>
+    <div id="eeErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditEst(${id})">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
 }
-function openConvertEst(id){const e=getEst(id),tot=computeTotals(e);$("fcard").innerHTML=`<h2>Convert to Project</h2><p class="fsub">${e.no} · ${esc(CUSTOMERS[e.customerId].name)}</p><div class="fnote">This will reuse the customer, BOM, estimated hours, machines, selling price and delivery target in Projects, Planning and Store.</div><div class="frow"><label for="cpTitle">Project title</label><input id="cpTitle" value="${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no)}"></div><div class="frow2"><div><label for="cpHours">Planned hours</label><input id="cpHours" type="number" value="${e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0)}"></div><div><label for="cpDate">Delivery target</label><input id="cpDate" type="date" value="${e.deliveryTarget||e.validUntil}"></div></div><div class="frow"><label for="cpValue">Estimated project value</label><input id="cpValue" value="${Math.round(tot.sellingPrice)} SEK" disabled></div><div class="fbtns"><button class="tbtn" onclick="closeModal()">Cancel</button><button class="tbtn primary" onclick="confirmConvertEst(${id})">Create connected project</button></div>`;$("fov").classList.add("show")}
-function confirmConvertEst(id){const e=getEst(id);e.status='accepted';e.plannedHours=+$('cpHours').value||0;e.deliveryTarget=$('cpDate').value||e.validUntil;const saved=syncEstimation(e,'Accepted and converted to project');WorkshopData.updateEstimation(saved.id,{title:$('cpTitle').value||saved.title,plannedHours:e.plannedHours,deliveryTarget:e.deliveryTarget});const result=WorkshopData.createProjectFromEstimation(saved.id);if(result.error)return;e.projectNo=result.project.no;PROJECTS[e.projectNo]={name:result.project.name,type:'Generated from estimation',status:'planned'};e.history.push({date:new Date().toISOString().slice(0,10),action:`Converted to ${e.projectNo}`,by:'Aleksandar C.'});closeModal();renderAll()}
 function saveEditEst(id){
-  const e=getEst(id);e.reference=$("eeRef").value;e.validUntil=$("eeValid").value||e.validUntil;e.deliveryTime=$("eeDelivery").value;e.paymentTerms=$("eeTerms").value;
-  syncEstimation(e,'Commercial information updated');
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const validUntil=$("eeValid").value;
+  if(isBlank(validUntil)){showFieldError('eeValid','eeErr',t.err_date);return;}
+  e.opportunityRef=$("eeOppRef").value.trim();e.customerRfq=$("eeRfq").value.trim();
+  e.validUntil=validUntil;e.requestedDelivery=$("eeReqDelivery").value||e.requestedDelivery;
+  e.deliveryTime=$("eeDelivery").value.trim();e.paymentTerms=$("eeTerms").value.trim();
+  e.incoterms=$("eeIncoterms").value.trim();e.estimator=$("eeEstimator").value.trim()||e.estimator;
+  e.history.push({date:todayISO(),action:'Commercial information updated',by:'Aleksandar C.'});
+  syncEstimation(e);
+  closeModal();renderAll();
+}
+
+// Converting to a project is only permitted once the estimate is Accepted — enforced both by hiding the
+// action elsewhere in the UI and by refusing to open this form otherwise (frontend enforcement only;
+// the future backend must repeat this same check server-side).
+function openConvertEst(id){
+  const t=T[LANG];const e=getEst(id);
+  if(e.status!=='accepted'){toast(t.convert_requires_accepted,'error');return;}
+  const tot=computeTotals(e);
+  $("fcard").innerHTML=`<h2>${esc(t.convert_title)}</h2><p class="fsub">${esc(e.no)} · ${esc(CUSTOMERS[e.customerId].name)}</p>
+    <div class="fnote">${esc(t.convert_note)}</div>
+    <div class="frow"><label>${esc(t.convert_projtitle)}</label><input id="cpTitle" value="${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no)}"></div>
+    <div class="frow2"><div><label>${esc(t.convert_hours)}</label><input id="cpHours" type="number" min="0" value="${esc(e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0))}"></div><div><label>${esc(t.convert_delivery)}</label><input id="cpDate" type="date" value="${esc(e.deliveryTarget||e.validUntil)}"></div></div>
+    <div class="frow"><label>${esc(t.convert_value)}</label><input value="${fmt0(tot.sellingPrice)}" disabled></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="confirmConvertEst(${id})">${esc(t.convert_create)}</button></div>`;
+  $("fov").classList.add("show");
+}
+function confirmConvertEst(id){
+  const t=T[LANG];const e=getEst(id);
+  if(e.status!=='accepted'){toast(t.convert_requires_accepted,'error');closeModal();return;}
+  if(!confirm(t.confirm_convert.replace('{no}',e.no)))return;
+  e.plannedHours=+$('cpHours').value||0;e.deliveryTarget=$('cpDate').value||e.validUntil;e.projectTitle=$('cpTitle').value.trim()||e.projectTitle;
+  const saved=syncEstimation(e);
+  const result=WorkshopData.createProjectFromEstimation(saved.id);
+  if(result.error){toast(result.error,'error');return;}
+  e.projectNo=result.project.no;PROJECTS[e.projectNo]={name:result.project.name,type:'Generated from estimation',status:'planned'};
+  e.history.push({date:todayISO(),action:`Converted to ${e.projectNo}`,by:'Aleksandar C.'});
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
 function openPricingSettings(id){
-  const t=T[LANG];const e=getEst(id);
-  $("fcard").innerHTML=`<h2>${t.pricing_title}</h2><p class="fsub">${e.no}</p>
-    <p class="fnote">${t.pricing_note}</p>
-    <div class="frow2"><div><label for="psOverhead">${t.cb_overhead} %</label><input id="psOverhead" type="number" value="${e.overheadPct}"></div><div><label for="psContingency">${t.cb_contingency} %</label><input id="psContingency" type="number" value="${e.contingencyPct}"></div></div>
-    <div class="frow"><label for="psDiscount">${t.ps_discount} (SEK)</label><input id="psDiscount" type="number" value="${e.discount}"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="savePricingSettings(${id})">${t.nc_save}</button></div>`;
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  const tot=computeTotals(e);
+  $("fcard").innerHTML=`<h2>${esc(t.pricing_title)}</h2><p class="fsub">${esc(e.no)}</p>
+    <p class="fnote">${esc(t.pricing_note)}</p>
+    <div class="frow2"><div><label>${esc(t.cb_overhead)} %</label><input id="psOverhead" type="number" min="0" step="any" value="${esc(e.overheadPct)}"></div><div><label>${esc(t.cb_contingency)} %</label><input id="psContingency" type="number" min="0" step="any" value="${esc(e.contingencyPct)}"></div></div>
+    <div class="frow"><label>${esc(t.ps_discount)} (SEK, ${esc(t.discount_max)} ${fmt0(tot.sellSubtotal)})</label><input id="psDiscount" type="number" min="0" max="${tot.sellSubtotal}" step="any" value="${esc(e.discount)}"></div>
+    <div id="psErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="savePricingSettings(${id})">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
 }
 function savePricingSettings(id){
-  const e=getEst(id);e.overheadPct=parseFloat($("psOverhead").value)||0;e.contingencyPct=parseFloat($("psContingency").value)||0;e.discount=parseFloat($("psDiscount").value)||0;
-  syncEstimation(e,'Pricing settings updated');
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const overhead=parseFloat($("psOverhead").value),contingency=parseFloat($("psContingency").value),discount=parseFloat($("psDiscount").value);
+  if(!isNonNegNumber(overhead)){showFieldError('psOverhead','psErr',t.err_overhead);return;}
+  if(!isNonNegNumber(contingency)){showFieldError('psContingency','psErr',t.err_contingency);return;}
+  const subtotal=computeTotals(e).sellSubtotal;
+  if(!isNonNegNumber(discount)||discount>subtotal){showFieldError('psDiscount','psErr',t.err_discount);return;}
+  e.overheadPct=overhead;e.contingencyPct=contingency;e.discount=discount;
+  e.history.push({date:todayISO(),action:'Pricing settings updated',by:'Aleksandar C.'});
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
 function openAddWorkItem(id){
-  const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.addworkitem}</h2><p class="fsub">${getEst(id).no}</p>
-    <div class="frow"><label for="awNo">${t.wi_no}</label><input id="awNo" placeholder="JC-26-00XX"></div>
-    <div class="frow"><label for="awDesc">${t.wi_desc}</label><input id="awDesc"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddWorkItem(${id})">${t.addworkitem}</button></div>`;
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  $("fcard").innerHTML=`<h2>${esc(t.addworkitem)}</h2><p class="fsub">${esc(e.no)}</p>
+    <div class="frow"><label>${esc(t.wi_no)}</label><input id="awNo" placeholder="JC-2026-00XX"></div>
+    <div class="frow"><label>${esc(t.wi_desc)}</label><input id="awDesc"></div>
+    <div id="awErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddWorkItem(${id})">${esc(t.addworkitem)}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveAddWorkItem(id){
-  const desc=$("awDesc").value.trim();if(!desc)return;
-  const e=getEst(id);
+  const t=T[LANG];clearAllFieldErrors();const desc=$("awDesc").value.trim();
+  if(!desc){showFieldError('awDesc','awErr',t.err_required);return;}
+  const e=getEst(id);if(!guardEdit(e))return;
   e.workItems.push({no:$("awNo").value.trim(),desc,lines:[]});
-  syncEstimation(e,`Work item added: ${desc}`);
+  e.history.push({date:todayISO(),action:`Work item added: ${desc}`,by:"Aleksandar C."});
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
-function openAddLine(id,idx){
-  const t=T[LANG];const wi=getEst(id).workItems[idx];
-  $("fcard").innerHTML=`<h2>${t.addline}</h2><p class="fsub">${esc(wi.desc)}</p>
-    <div class="frow"><label for="aiDesc">${t.th_item}</label><input id="aiDesc"></div>
-    <div class="frow"><label for="aiCat">${t.th_category}</label><select id="aiCat">
-      <option value="material">${catLabel('material')}</option><option value="labour">${catLabel('labour')}</option><option value="machine">${catLabel('machine')}</option>
-      <option value="subcontractor">${catLabel('subcontractor')}</option><option value="consumable">${catLabel('consumable')}</option><option value="logistics">${catLabel('logistics')}</option><option value="other">${catLabel('other')}</option>
-    </select></div>
-    <div class="frow3"><div><label for="aiQty">${t.th_qty}</label><input id="aiQty" type="number" value="1"></div><div><label for="aiUnit">${t.th_unit}</label><input id="aiUnit" value="pcs"></div><div><label for="aiSell">${t.th_price}</label><input id="aiSell" type="number" value="0"></div></div>
-    <div class="frow"><label for="aiCost">Internal cost</label><input id="aiCost" type="number" value="0"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddLine(${id},${idx})">${t.addline}</button></div>`;
+// Add and Edit share one form. lIdx is omitted for "add a new line", or the index of the line being edited.
+function openLineForm(id,wiIdx,lIdx){
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[wiIdx];if(!wi)return;
+  const editing=lIdx!==undefined&&lIdx!==null;
+  const line=editing?wi.lines[lIdx]:{desc:'',category:'material',qty:1,unit:'pcs',cost:0,sell:0,disc:0,tax:25,waste:0};
+  const cats=['material','labour','machine','subcontractor','consumable','logistics','other'];
+  $("fcard").innerHTML=`<h2>${editing?esc(t.act_editline):esc(t.addline)}</h2><p class="fsub">${esc(wi.desc)}</p>
+    <div class="frow"><label>${esc(t.th_item)}</label><input id="aiDesc" value="${esc(line.desc)}"></div>
+    <div id="aiDescErr" class="errmsg" style="display:none;"></div>
+    <div class="frow"><label>${esc(t.th_category)}</label><select id="aiCat">${cats.map(c=>`<option value="${c}" ${line.category===c?'selected':''}>${esc(catLabel(c))}</option>`).join('')}</select></div>
+    <div class="frow3"><div><label>${esc(t.th_qty)}</label><input id="aiQty" type="number" min="0.0001" step="any" value="${esc(line.qty)}"></div><div><label>${esc(t.th_unit)}</label><input id="aiUnit" value="${esc(line.unit)}"></div><div><label>${esc(t.th_price)}</label><input id="aiSell" type="number" min="0" step="any" value="${esc(line.sell)}"></div></div>
+    <div id="aiNumErr" class="errmsg" style="display:none;"></div>
+    <div class="frow3"><div><label>${esc(t.internal_cost)}</label><input id="aiCost" type="number" min="0" step="any" value="${esc(line.cost)}"></div><div><label>${esc(t.th_disc)}</label><input id="aiDisc" type="number" min="0" max="100" step="any" value="${esc(line.disc||0)}"></div><div><label>${esc(t.th_tax)}</label><input id="aiTax" type="number" min="0" max="100" step="any" value="${esc(line.tax!==undefined?line.tax:25)}"></div></div>
+    <div class="frow"><label>${esc(t.waste_pct_material)}</label><input id="aiWaste" type="number" min="0" max="100" step="any" value="${esc(line.waste||0)}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveLineForm(${id},${wiIdx}${editing?','+lIdx:''})">${editing?esc(t.nc_save):esc(t.addline)}</button></div>`;
   $("fov").classList.add("show");
 }
-function saveAddLine(id,idx){
-  const desc=$("aiDesc").value.trim();if(!desc)return;
-  const e=getEst(id);const wi=e.workItems[idx];if(!wi)return;
-  wi.lines.push({desc,category:$("aiCat").value,qty:parseFloat($("aiQty").value)||1,unit:$("aiUnit").value||"pcs",
-    cost:parseFloat($("aiCost").value)||0,sell:parseFloat($("aiSell").value)||0,disc:0,tax:25});
-  syncEstimation(e,`Item added to ${wi.desc}: ${desc}`);
+function openAddLine(id,idx){openLineForm(id,idx);}
+function openEditLine(id,wiIdx,lIdx){openLineForm(id,wiIdx,lIdx);}
+function saveLineForm(id,wiIdx,lIdx){
+  const t=T[LANG];clearAllFieldErrors();
+  const e=getEst(id);if(!guardEdit(e))return;
+  const wi=e.workItems[wiIdx];if(!wi)return;
+  const editing=lIdx!==undefined&&lIdx!==null;
+  const desc=$("aiDesc").value.trim();
+  if(!desc){showFieldError('aiDesc','aiDescErr',t.err_required);return;}
+  const qty=parseFloat($("aiQty").value),sell=parseFloat($("aiSell").value),cost=parseFloat($("aiCost").value),
+    disc=parseFloat($("aiDisc").value),tax=parseFloat($("aiTax").value),waste=parseFloat($("aiWaste").value)||0;
+  if(!isPositiveNumber(qty)){showFieldError('aiQty','aiNumErr',t.err_qty);return;}
+  if(!isNonNegNumber(sell)){showFieldError('aiSell','aiNumErr',t.err_sell);return;}
+  if(!isNonNegNumber(cost)){showFieldError('aiCost','aiNumErr',t.err_cost);return;}
+  if(!isPercent(disc)){showFieldError('aiDisc','aiNumErr',t.err_disc);return;}
+  if(!isPercent(tax)){showFieldError('aiTax','aiNumErr',t.err_tax);return;}
+  const category=$("aiCat").value;
+  const payload={desc,category,qty,unit:$("aiUnit").value.trim()||"pcs",cost,sell,disc,tax,waste:category==='material'?Math.max(0,Math.min(100,waste)):0};
+  if(editing){Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:"Aleksandar C."});}
+  else{wi.lines.push(payload);e.history.push({date:todayISO(),action:`Item added to ${wi.desc}: ${desc}`,by:"Aleksandar C."});}
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
 function openEditText(id,field){
-  const t=T[LANG];const e=getEst(id);
+  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   const isExcl=field==='exclusions';
-  $("fcard").innerHTML=`<h2>${isExcl?t.excl_title:t.terms_title}</h2>
-    <div class="frow"><textarea id="etText" style="min-height:120px;">${isExcl?esc(e.exclusions.join("\n")):esc(e.terms)}</textarea></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditText(${id},'${field}')">${t.nc_save}</button></div>`;
+  $("fcard").innerHTML=`<h2>${isExcl?esc(t.excl_title):esc(t.terms_title)}</h2>
+    <div class="frow"><textarea id="etText" style="min-height:120px;"></textarea></div>
+    <div id="etErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditText(${id},'${field}')">${esc(t.nc_save)}</button></div>`;
+  // Set the textarea's value via direct DOM assignment rather than interpolating into innerHTML.
+  $("etText").value=isExcl?(e.exclusions||[]).join("\n"):e.terms;
   $("fov").classList.add("show");
 }
 function saveEditText(id,field){
-  const e=getEst(id);const val=$("etText").value;
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const val=$("etText").value;
+  if(isBlank(val)){showFieldError('etText','etErr',t.err_required);return;}
   if(field==='exclusions')e.exclusions=val.split("\n").map(s=>s.trim()).filter(Boolean);else e.terms=val;
-  syncEstimation(e,'Terms or exclusions updated');
+  e.history.push({date:todayISO(),action:(field==='exclusions'?'Exclusions updated':'Terms updated'),by:'Aleksandar C.'});
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
 function openAddNote(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.an_title}</h2><p class="fsub">${getEst(id).no}</p>
-    <div class="frow"><label for="anText">${t.an_text}</label><textarea id="anText"></textarea></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${t.an_save}</button></div>`;
+  $("fcard").innerHTML=`<h2>${esc(t.an_title)}</h2><p class="fsub">${esc(getEst(id).no)}</p>
+    <div class="frow"><label>${esc(t.an_text)}</label><textarea id="anText"></textarea></div>
+    <div id="anErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${esc(t.an_save)}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveAddNote(id){
-  const text=$("anText").value.trim();if(!text)return;
-  getEst(id).notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar",text});
+  const t=T[LANG];clearAllFieldErrors();const text=$("anText").value.trim();
+  if(!text){showFieldError('anText','anErr',t.err_required);return;}
+  const e=getEst(id);e.notes.push({date:todayISO(),author:"Aleksandar C.",text});
+  syncEstimation(e);
   closeModal();renderAll();
 }
 
+// File upload is a frontend demonstration only — no file is actually read, stored or transmitted.
 function openUpload(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${getEst(id).no}</p>
-    <div class="frow"><label for="udName">${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUpload(${id})">${t.ud_save}</button></div>`;
+  $("fcard").innerHTML=`<h2>${esc(t.ud_title)}</h2><p class="fsub">${esc(getEst(id).no)} · ${esc(t.demo_upload)}</p>
+    <div class="frow"><label>${esc(t.ud_name)}</label><input id="udName" placeholder="Document.pdf"></div>
+    <div id="udErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveUpload(${id})">${esc(t.ud_save)}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveUpload(id){
-  const name=$("udName").value.trim();if(!name)return;
+  const t=T[LANG];clearAllFieldErrors();const name=$("udName").value.trim();
+  if(!name){showFieldError('udName','udErr',t.err_required);return;}
   const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':(ext==='zip')?'zip':'doc';
-  const e=getEst(id);e.documents.push({name,type,date:new Date().toISOString().slice(0,10)});
-  e.history.push({date:new Date().toISOString().slice(0,10),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
+  const e=getEst(id);e.documents.push({name,type,date:todayISO()});
+  e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
+  syncEstimation(e);
   closeModal();renderAll();
+  toast(t.demo_upload,'ok');
 }
 
+// Duplicating creates a genuinely independent estimate: deep-cloned commercial/cost content, a brand-new
+// local id and estimation number, no shared/project linkage, reset status/revision/dates/history. The
+// original estimate is never touched.
 function duplicateEst(id){
   const src=getEst(id);
   const copy=JSON.parse(JSON.stringify(src));
-  copy.id=nextEstId++;copy.no="EST-26-0"+String(nextEstId-1).padStart(2,'0');copy.status="draft";
-  copy.created=new Date().toISOString().slice(0,10);
-  copy.history=[{date:copy.created,action:`Duplicated from ${src.no}`,by:"Aleksandar C."}];
-  ESTIMATIONS.push(copy);selectedId=copy.id;renderAll();
+  const created=todayISO();
+  copy.id=nextEstId++;
+  copy.no=nextEstNumber(created);
+  delete copy.sharedId;                 // never overwrite the original shared estimation
+  copy.projectNo=null;copy.projectTitle=null;copy.deliveryTarget=null;
+  copy.status="draft";
+  copy.revision=0;copy.revisionSnapshots=[];
+  copy.created=created;
+  copy.validUntil=addDaysISO(created,30);
+  copy.documents=[];                    // do not copy uploaded customer-specific documents by default
+  copy.notes=[];
+  copy.history=[{date:created,action:`Duplicated from ${src.no}`,by:"Aleksandar C."}];
+  ESTIMATIONS.push(copy);
+  selectedId=copy.id;
+  syncEstimation(copy);                 // saved as a new, separate shared estimation — the original is untouched
+  renderAll();
+  toast(T[LANG].duplicate_toast.replace('{a}',src.no).replace('{b}',copy.no),'ok');
 }
+function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00");d2.setDate(d2.getDate()+days);return d2.toISOString().slice(0,10);}
+
+// An estimate linked to a project cannot be safely deleted (the project still references it) — offer
+// Archive instead and explain why. Unlinked estimates can be deleted after confirmation.
 function deleteEst(id){
-  const t=T[LANG];if(!confirm(t.confirm_delete))return;
-  const e=getEst(id);
-  if(window.WorkshopData&&e)WorkshopData.deleteEstimation(e.sharedId||e.no);
-  ESTIMATIONS=ESTIMATIONS.filter(e=>e.id!==id);
+  const t=T[LANG];const e=getEst(id);if(!e)return;
+  if(e.projectNo){
+    if(!confirm(t.confirm_archive.replace('{no}',e.no).replace('{p}',e.projectNo)))return;
+    e.archived=true;
+    e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:'Aleksandar C.'});
+    syncEstimation(e);
+    if(selectedId===id){const visible=ESTIMATIONS.filter(x=>x.id!==id&&!x.archived);selectedId=visible.length?visible[0].id:null;}
+    renderAll();
+    return;
+  }
+  if(!confirm(t.confirm_delete))return;
+  ESTIMATIONS=ESTIMATIONS.filter(x=>x.id!==id);
   if(selectedId===id)selectedId=ESTIMATIONS.length?ESTIMATIONS[0].id:null;
   renderAll();
 }
+// Email sending is a frontend demonstration only (opens the OS mail client via mailto:) — no message is
+// actually transmitted and no email service is called.
 function sendEmail(id){
-  const e=getEst(id);const c=CUSTOMERS[e.customerId];
-  location.href=`mailto:${c.email}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
+  const t=T[LANG];const e=getEst(id);const c=CUSTOMERS[e.customerId];
+  toast(t.demo_email,'ok');
+  location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
 }
-function exportExcel(id){alert("Export to Excel (demo) — "+getEst(id).no+".xlsx");}
+// Excel export is a frontend demonstration only — no file is generated.
+function exportExcel(id){toast(T[LANG].demo_export.replace('{no}',getEst(id).no),'ok');}
 function printEst(id){selectedId=id;renderPrintSheet(getEst(id));window.print();}
 
+// Customer-facing print preview. Intentionally excludes internal cost, overhead, contingency, profit and
+// margin — only the base-offer / included-options split and the customer-facing totals are shown.
+function printRows(items){
+  return items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.desc)}</td><td style="text-align:right;">${esc(it.qty)}</td><td>${esc(it.unit)}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
+}
 function renderPrintSheet(e){
   const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);
-  const items=flatLines(e);
-  const rows=items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.desc)}</td><td style="text-align:right;">${it.qty}</td><td>${esc(it.unit)}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
-  $("printSheet").innerHTML=`<h1 style="font-family:sans-serif;">Varmak AB — Estimation ${e.no}</h1>
-    <p>${esc(c.name)}, ${esc(c.address)}</p><p>Date: ${e.created} · Valid until: ${e.validUntil}</p>
-    <table style="width:100%;border-collapse:collapse;margin-top:16px;" border="1" cellpadding="6"><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-    <p style="margin-top:16px;">Subtotal: ${tot.sellSubtotal.toFixed(2)} SEK<br>Tax: ${tot.taxTotal.toFixed(2)} SEK<br><b>Total: ${tot.grandTotal.toFixed(2)} SEK</b></p>
-    <p style="margin-top:16px;">${esc(e.terms)}</p>`;
+  const baseItems=e.workItems.flatMap(wi=>wi.lines);
+  const includedOptions=(e.options||[]).filter(o=>o.included);
+  const th=`<tr><th>#</th><th>${esc(t.pr_desc)}</th><th style="text-align:right;">${esc(t.pr_qty)}</th><th>${esc(t.pr_unit)}</th><th style="text-align:right;">${esc(t.pr_price)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr>`;
+  const optionSections=includedOptions.map(o=>`
+    <h3 style="font-family:sans-serif;margin-top:18px;">${esc(t.pr_optional)} — ${esc(o.name)}</h3>
+    <table class="psection" style="width:100%;border-collapse:collapse;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${printRows(o.lines)}</tbody></table>`).join("");
+  $("printSheet").innerHTML=`
+    <h1 style="font-family:sans-serif;">Varmak AB</h1>
+    <p style="font-family:sans-serif;color:#555;">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</p>
+    <h2 style="font-family:sans-serif;margin-top:14px;">${esc(t.pr_estimate)} ${esc(e.no)} — ${esc(t.rev_short)} ${e.revision||0}</h2>
+    <table style="width:100%;margin-top:10px;font-family:sans-serif;font-size:13px;"><tr>
+      <td style="vertical-align:top;width:50%;">
+        <b>${esc(t.pr_customer)}</b><br>${esc(c.name)}<br>${esc(c.address)}<br>${esc(c.contact)} · ${esc(c.email)} · ${esc(c.phone)}
+      </td>
+      <td style="vertical-align:top;">
+        <b>${esc(t.pr_details)}</b><br>
+        ${esc(t.ei_date)}: ${esc(e.created)}<br>${esc(t.ei_valid)}: ${esc(e.validUntil)}<br>
+        ${esc(t.ei_rfq)}: ${esc(e.customerRfq)||'—'}<br>${esc(t.ei_delivery)}: ${esc(e.deliveryTime)}<br>
+        ${esc(t.ei_terms)}: ${esc(e.paymentTerms)}<br>${esc(t.ei_incoterms)}: ${esc(e.incoterms)}
+      </td>
+    </tr></table>
+    <p style="font-family:sans-serif;margin-top:12px;"><b>${esc(t.pr_scope)}:</b> ${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no)}</p>
+
+    <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.pr_base)}</h3>
+    <table class="psection" style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:12.5px;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${printRows(baseItems)}</tbody></table>
+    ${optionSections}
+
+    <table style="width:100%;margin-top:16px;font-family:sans-serif;font-size:13px;"><tr><td style="width:60%;"></td><td>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_subtotal)}</span><span>${tot.sellSubtotal.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_discount)}</span><span>${tot.discount.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.pr_vat)}</span><span>${tot.taxTotal.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #333;margin-top:6px;padding-top:6px;"><span>${esc(t.ps_total)}</span><span>${tot.grandTotal.toFixed(2)} ${esc(e.currency)}</span></div>
+    </td></tr></table>
+
+    <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.pr_delivery)}</h3>
+    <p style="font-family:sans-serif;font-size:12.5px;">${esc(t.ei_delivery)}: ${esc(e.deliveryTime)} · ${esc(t.ei_reqdelivery)}: ${esc(e.requestedDelivery)||'—'}</p>
+
+    <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.terms_title)}</h3>
+    <p style="font-family:sans-serif;font-size:12.5px;white-space:pre-line;">${esc(e.terms)}</p>
+
+    <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.excl_title)}</h3>
+    <ul style="font-family:sans-serif;font-size:12.5px;">${(e.exclusions||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+
+    <div class="psection" style="margin-top:30px;font-family:sans-serif;font-size:12.5px;display:flex;gap:60px;">
+      <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_customer)}<br><br>_______________________</div>
+      <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_varmak)}<br><br>_______________________</div>
+    </div>`;
 }
 
 function setLang(code){LANG=code;

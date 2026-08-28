@@ -43,6 +43,12 @@
   .tile .art{position:absolute;right:-6%;bottom:-9%;width:52%;max-width:110px;height:auto;color:var(--steel-400);opacity:.42;pointer-events:none;z-index:0;
     -webkit-mask-image:linear-gradient(135deg,transparent 12%,#000 80%);mask-image:linear-gradient(135deg,transparent 12%,#000 80%);}
   .tile .ic,.tile>div:not(.art){position:relative;z-index:1;}
+  .tile-stack{display:grid;grid-template-rows:1fr 1fr;gap:8px;min-height:118px;}
+  .tile-stack .tile{min-height:0;padding:10px 11px;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;}
+  .tile-stack .tile .ic{width:32px;height:32px;flex:none;}
+  .tile-stack .tile .art{display:none;}
+  .tile-stack .tile h3{font-size:11.5px;}
+  .tile-stack .tile p{font-size:9px;}
 
   .teamtalk{position:relative;display:flex;flex-direction:column;min-height:270px;overflow:hidden;background:rgba(255,255,255,.035);border:1px solid var(--line);}
   .ttart{position:absolute;right:-5%;bottom:-3%;width:46%;max-width:150px;height:auto;color:var(--steel-400);opacity:.38;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(135deg,transparent 22%,#000 88%);mask-image:linear-gradient(135deg,transparent 22%,#000 88%);}
@@ -95,7 +101,7 @@
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
         <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='projects-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='jobcard-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="28" y="26" width="54" height="70"/><rect x="45" y="19" width="20" height="13"/><path d="M38 50h34M38 63h34"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
         <div><h3 data-i="m_jobcard">Jobcard</h3><p data-i="c_jobcard">Work orders</p></div>
@@ -115,7 +121,7 @@
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
         <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='store-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='purchasing-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="46" cy="102" r="8"/><circle cx="88" cy="102" r="8"/><path d="M14 20h12l14 62h48a10 10 0 0 0 10-8l10-38H30"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg></div>
         <div><h3 data-i="m_purchasing">Purchasing</h3><p data-i="c_purchasing">Purchase orders</p></div>
@@ -125,7 +131,7 @@
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
         <div><h3 data-i="m_suppliers">Suppliers</h3><p data-i="c_suppliers">Vendor directory</p></div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='projects-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='documents-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M34 14h36l24 24v68H34z"/><path d="M70 14v24h24"/><path d="M48 60h36M48 76h36"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 12h5M10 16h5"/></svg></div>
         <div><h3 data-i="m_documents">Documents</h3><p data-i="c_documents">Files & templates</p></div>
@@ -140,10 +146,10 @@
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
         <div><h3 data-i="m_equipment">Equipment / Machines</h3><p data-i="c_equipment">Machines & maintenance</p></div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='customers-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='marketing-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 52v16a10 10 0 0 0 10 10h6l40 20V22L32 42h-6a10 10 0 0 0-10 10z"/><path d="M88 40a26 26 0 0 1 0 40"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
-        <div><h3 data-i="m_marketing">Marketing</h3><p data-i="c_marketing">Campaigns & content</p></div>
+        <div><h3 data-i="m_marketing">Marketing</h3><p data-i="c_marketing">Leads, campaigns & growth</p></div>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='projects-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M60 12l40 18v28c0 26-18 46-40 52-22-6-40-26-40-52V30z"/><path d="M42 60l13 13 23-23"/></svg></div>
@@ -179,6 +185,16 @@
 </div>
 
 <script>
+  function combineModuleTiles(){
+    [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning'],['m_store','m_purchasing','Store and purchasing']].forEach(([firstKey,secondKey,label])=>{
+      const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');
+      const second=document.querySelector(`[data-i="${secondKey}"]`)?.closest('.tile');
+      if(!first||!second||first.parentElement.classList.contains('tile-stack'))return;
+      const stack=document.createElement('div');stack.className='tile-stack';stack.setAttribute('aria-label',label);
+      first.parentElement.insertBefore(stack,first);stack.append(first,second);
+    });
+  }
+  combineModuleTiles();
   const T={
     sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
@@ -187,7 +203,7 @@
       m_store:"Lager",c_store:"Inventarie & delar",m_purchasing:"Inköp",c_purchasing:"Inköpsordrar",
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
       m_reports:"Rapporter",c_reports:"Besiktning & test",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhåll",
-      m_marketing:"Marknadsföring",c_marketing:"Kampanjer & innehåll",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
+      m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
     en:{role:"Admin",logout:"Log out",welcome:"Choose a module",welcomesub:"Full access · all workshop tools",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
@@ -196,7 +212,7 @@
       m_store:"Store",c_store:"Inventory & parts",m_purchasing:"Purchasing",c_purchasing:"Purchase orders",
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
       m_reports:"Reports",c_reports:"Inspection & test",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
-      m_marketing:"Marketing",c_marketing:"Campaigns & content",m_quality:"Quality",c_quality:"Inspections & defects",
+      m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
     mk:{role:"Admin",logout:"Odjavi se",welcome:"Izberi modul",welcomesub:"Poln pristap · site alatki",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
@@ -205,7 +221,7 @@
       m_store:"Magacin",c_store:"Inventar i delovi",m_purchasing:"Nabavki",c_purchasing:"Nabavni nalozi",
       m_suppliers:"Dobavuvači",c_suppliers:"Registar na dobavuvači",m_documents:"Dokumenti",c_documents:"Datoteki i šabloni",
       m_reports:"Izveštai",c_reports:"Inspekcija i test",m_equipment:"Oprema / Mašini",c_equipment:"Mašini i održuvanje",
-      m_marketing:"Marketing",c_marketing:"Kampanji i sodržina",m_quality:"Kvalitet",c_quality:"Inspekcii i defekti",
+      m_marketing:"Marketing",c_marketing:"Potencijalni klienti, kampanji i razvoj",m_quality:"Kvalitet",c_quality:"Inspekcii i defekti",
       m_team:"Tim-feed",c_team:"Vnatrešen kanal",ttph:"Napiši do timot…",locale:"mk"}
   };
   let current="en";
