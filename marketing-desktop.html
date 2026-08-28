@@ -1,0 +1,1344 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Varmak — Marketing</title><style>
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
+  .glow{position:absolute;left:50%;top:16%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.14),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
+  @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
+
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 40px 0;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .who{display:flex;align-items:center;gap:8px;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+
+  .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:22px 30px 46px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
+  .back:hover{border-color:var(--spark);color:var(--ice);}
+  .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;justify-content:space-between;}
+  .modhead .ttl{display:flex;align-items:center;gap:12px;}
+  .modhead .ic{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .modhead h1{font-family:'Sora';font-weight:700;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .tbtn svg{flex:none;width:13px;height:13px;}
+  .toggrp{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:3px;}
+  .toggrp button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .toggrp button.on{background:rgba(74,144,255,.16);color:#cfe0ff;}
+  .toggrp button:hover{color:var(--ice);}
+
+  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin-bottom:16px;}
+  .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .panel .phead h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+  .panel .phead .phsub{font-size:11px;color:var(--steel-400);}
+
+  .kpigrid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px;}
+  @media(max-width:1400px){.kpigrid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:700px){.kpigrid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:460px){.kpigrid{grid-template-columns:1fr;}}
+  .kpi-card{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px;}
+  .kpi-label{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;}
+  .kpi-value{font-family:'Sora';font-weight:700;font-size:24px;margin-bottom:6px;}
+  .kpi-trend{font-size:11px;display:flex;align-items:center;gap:4px;}
+  .kpi-trend.up{color:var(--ok);} .kpi-trend.down{color:var(--danger);} .kpi-trend.flat{color:var(--steel-400);}
+
+  .funnel{display:flex;flex-direction:column;gap:8px;}
+  .funnel-row{display:grid;grid-template-columns:140px 1fr 150px;align-items:center;gap:12px;font-size:12px;}
+  @media(max-width:700px){.funnel-row{grid-template-columns:100px 1fr;} .funnel-meta{grid-column:1/-1;text-align:left!important;}}
+  .funnel-name{color:var(--steel-300);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .funnel-track{background:rgba(255,255,255,.06);height:22px;position:relative;overflow:hidden;}
+  .funnel-fill{height:100%;background:linear-gradient(90deg,#2c6bd6,var(--spark));display:flex;align-items:center;padding-left:8px;font-size:10.5px;font-weight:600;color:#fff;white-space:nowrap;min-width:2px;}
+  .funnel-meta{text-align:right;color:var(--steel-400);white-space:nowrap;}
+
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .filterbar select,.filterbar input[type=text]{background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:12px;padding:8px 10px;outline:none;}
+  .filterbar select:focus,.filterbar input:focus{border-color:var(--spark);}
+  .search{position:relative;flex:1;min-width:160px;}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+  .search input:focus{border-color:var(--spark);}
+
+  .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .stbl th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap;}
+  .stbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .stbl tr:last-child td{border-bottom:none;}
+  .stbl tr.click{cursor:pointer;} .stbl tr.click:hover{background:rgba(74,144,255,.06);}
+  .tblwrap{overflow-x:auto;}
+  .empty3{text-align:center;color:var(--steel-400);padding:26px;font-size:12.5px;}
+
+  .tagpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;font-weight:600;white-space:nowrap;border:1px solid;}
+  .tagpill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .tagpill.g{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
+  .tagpill.b{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
+  .tagpill.w{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
+  .tagpill.r{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
+  .tagpill.n{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
+  .tagpill.p{color:var(--idea);border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12);}
+
+  .rowactions{display:flex;gap:6px;flex-wrap:wrap;}
+  .iconbtn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);cursor:pointer;transition:.15s;}
+  .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .iconbtn svg{width:14px;height:14px;}
+
+  .leadgrid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start;}
+  @media(max-width:1200px){.leadgrid{grid-template-columns:1fr;}}
+  .rowlist{display:flex;flex-direction:column;gap:4px;max-height:640px;overflow-y:auto;margin:-4px;padding:4px;}
+  .leadrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid transparent;cursor:pointer;transition:.14s;}
+  .leadrow:hover{background:rgba(255,255,255,.03);}
+  .leadrow.sel{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.45);}
+  .avc{flex:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .lrname{font-size:12.5px;font-weight:600;} .lrsub{font-size:10.5px;color:var(--steel-400);}
+  .lrmeta{margin-left:auto;text-align:right;flex:none;}
+  .lrval{font-family:'Sora';font-weight:700;font-size:12px;}
+
+  .dhead2{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+  .dhead2 h2{font-family:'Sora';font-weight:600;font-size:20px;margin-bottom:5px;}
+  .dhead2 .dsub{font-size:12px;color:var(--steel-400);}
+  .factcols{display:flex;gap:36px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+  .ifacts{display:flex;flex-direction:column;gap:8px;}
+  .ifact{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--steel-300);}
+  .ifact svg{flex:none;width:14px;height:14px;color:var(--steel-400);}
+  .ifact a{color:var(--spark);text-decoration:none;} .ifact a:hover{text-decoration:underline;}
+  .kvcols{display:flex;gap:26px;flex-wrap:wrap;}
+  .kv .k{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
+  .kv .v{font-size:13px;font-weight:600;} .kv{margin-bottom:12px;}
+
+  .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:10px 13px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .ptabs button:hover{color:var(--ice);}
+  .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
+
+  .actionbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:20px;}
+  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:7px;background:rgba(255,255,255,.03);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:11px;padding:14px 6px;cursor:pointer;transition:.16s;text-align:center;}
+  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(74,144,255,.07);transform:translateY(-2px);}
+  .actionbar button svg{width:17px;height:17px;color:var(--spark);}
+
+  .timeline{display:flex;flex-direction:column;gap:12px;}
+  .tlrow{display:flex;gap:10px;font-size:12.5px;}
+  .tldot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--spark);margin-top:5px;}
+  .tlbody .tld{color:var(--steel-400);font-size:11px;} .tlbody .tlt{color:var(--steel-300);line-height:1.5;}
+
+  .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:240px;gap:12px;overflow-x:auto;padding-bottom:8px;}
+  .kcol{background:rgba(255,255,255,.025);border:1px solid var(--line);display:flex;flex-direction:column;min-height:120px;}
+  .kcol-head{padding:10px 12px;border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--steel-300);display:flex;justify-content:space-between;}
+  .kcol-body{padding:8px;display:flex;flex-direction:column;gap:8px;}
+  .kcard{background:rgba(255,255,255,.04);border:1px solid var(--field-line);padding:10px;cursor:pointer;transition:.15s;font-size:11.5px;}
+  .kcard:hover{border-color:var(--spark);background:rgba(74,144,255,.08);}
+  .kcard b{display:block;font-size:12px;margin-bottom:3px;}
+  .kcard .kval{font-family:'Sora';font-weight:700;color:var(--spark);margin-top:6px;}
+  .kcard .kmeta{color:var(--steel-400);font-size:10.5px;}
+
+  .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .ccard2{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;cursor:pointer;transition:.15s;}
+  .ccard2:hover{border-color:rgba(74,144,255,.5);}
+  .ccard2 h4{font-family:'Sora';font-size:14px;margin-bottom:4px;}
+  .ccard2 .csub{font-size:11px;color:var(--steel-400);margin-bottom:10px;}
+  .ccmetrics{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:10px 0;}
+  .ccmetrics .cm{font-size:11px;} .ccmetrics .cm b{display:block;font-family:'Sora';font-size:14px;font-weight:700;}
+  .progbar{height:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px;}
+  .progbar i{display:block;height:100%;background:var(--spark);}
+  .progbar.over i{background:var(--danger);}
+
+  .barchart{display:flex;flex-direction:column;gap:9px;}
+  .barrow{display:grid;grid-template-columns:110px 1fr 60px;align-items:center;gap:10px;font-size:11.5px;}
+  @media(max-width:600px){.barrow{grid-template-columns:80px 1fr 44px;}}
+  .barrow .btrack{background:rgba(255,255,255,.06);height:14px;position:relative;overflow:hidden;}
+  .barrow .bfill{height:100%;background:var(--spark);}
+  .barrow .bval{text-align:right;color:var(--steel-400);}
+
+  .urgent-ok{color:var(--steel-300);} .urgent-warn{color:var(--warn);font-weight:600;} .urgent-danger{color:var(--danger);font-weight:700;}
+  .rowwarn{box-shadow:inset 3px 0 0 var(--warn);} .rowdanger{box-shadow:inset 3px 0 0 var(--danger);}
+
+  .fuitem{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .fuitem:last-child{border-bottom:none;}
+  .fuinfo{flex:1;min-width:180px;} .fuinfo b{font-size:12.5px;} .fuinfo .fud{font-size:11px;color:var(--steel-400);margin-top:2px;}
+  .fuactions{display:flex;gap:6px;flex-wrap:wrap;}
+
+  .insight-card{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .insight-card:last-child{border-bottom:none;}
+  .insight-ic{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(192,132,252,.14);box-shadow:inset 0 0 0 1px rgba(192,132,252,.35);color:var(--idea);}
+  .insight-body b{font-size:12.5px;display:block;margin-bottom:2px;}
+  .insight-body p{font-size:12px;color:var(--steel-300);line-height:1.5;}
+  .disclaimer{font-size:10.5px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+
+  .segrow{display:flex;flex-direction:column;gap:8px;}
+  .calmonth{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .caldow{font-size:9.5px;text-align:center;color:var(--steel-400);letter-spacing:.05em;text-transform:uppercase;}
+  .calcell{min-height:64px;background:rgba(255,255,255,.025);border:1px solid var(--line);padding:5px;font-size:10px;position:relative;}
+  .calcell.pad{background:transparent;border-color:transparent;}
+  .calcell .cd{color:var(--steel-400);margin-bottom:3px;}
+  .caldot{display:block;background:rgba(74,144,255,.18);border-left:2px solid var(--spark);color:#cfe0ff;padding:2px 4px;margin-bottom:2px;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov.show{display:flex;}
+  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:560px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard.wide{width:760px;}
+  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
+  .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+  @media(max-width:560px){.fcard .frow2,.fcard .frow3{grid-template-columns:1fr;}}
+  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input:focus,.fcard select:focus,.fcard textarea:focus{border-color:var(--spark);}
+  .fcard textarea{min-height:64px;resize:vertical;}
+  .fcard .checkrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--steel-300);}
+  .fcard .checkrow input{width:auto;}
+  .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .fcard .noteitem{border-bottom:1px solid var(--line);padding:8px 0;font-size:12px;color:var(--steel-300);}
+  .convertbox{background:rgba(74,144,255,.08);border:1px solid rgba(74,144,255,.3);padding:12px;font-size:12px;color:var(--steel-300);margin-bottom:14px;line-height:1.6;}
+
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+@media(max-width:768px){.wrap{padding:16px 16px 40px;} .factcols,.kvcols{gap:18px;}}
+@media(max-width:480px){.fcard{padding:22px 18px;} .modhead h1{font-size:19px;}}
+@media(max-width:900px){.ovsplit{grid-template-columns:1fr!important;}}
+</style></head><body>
+<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+
+<aside class="module-sidebar">
+  <div class="ms-brand"><div class="ms-icon">&#9650;</div><div><h2>MARKETING</h2><small data-i="msub_short">Leads &amp; growth</small></div></div>
+  <nav class="module-side-nav" id="moduleSideNav">
+    <button class="on" data-ms="overview" onclick="setView('overview')"><i>&#9638;</i><span data-i="nav_overview">Marketing Overview</span></button>
+    <button data-ms="leads" onclick="setView('leads')"><i>&#9673;</i><span data-i="nav_leads">Leads</span></button>
+    <button data-ms="opportunities" onclick="setView('opportunities')"><i>&#9670;</i><span data-i="nav_opportunities">Opportunities</span></button>
+    <button data-ms="tenders" onclick="setView('tenders')"><i>&#9636;</i><span data-i="nav_tenders">Tenders / RFQs</span></button>
+    <button data-ms="campaigns" onclick="setView('campaigns')"><i>&#10022;</i><span data-i="nav_campaigns">Campaigns</span></button>
+    <button data-ms="content" onclick="setView('content')"><i>&#9639;</i><span data-i="nav_content">Content Calendar</span></button>
+    <button data-ms="casestudies" onclick="setView('casestudies')"><i>&#10070;</i><span data-i="nav_casestudies">Case Studies</span></button>
+    <button data-ms="segments" onclick="setView('segments')"><i>&#9645;</i><span data-i="nav_segments">Audience Segments</span></button>
+    <button data-ms="analytics" onclick="setView('analytics')"><i>&#9641;</i><span data-i="nav_analytics">Analytics</span></button>
+    <button onclick="openLeadForm()"><i>&#65291;</i><span data-i="nav_newlead">New Lead</span></button>
+  </nav>
+  <div class="ms-sidebox"><b data-i="sbox_t">Shared pipeline</b><p data-i="sbox_p">Leads move from first contact through Estimation into Projects. Customers and estimates are read from the shared workshop data.</p></div>
+  <div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="role">Admin</small></div></div>
+</aside>
+
+<div class="topfull"><div class="topbar">
+  <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
+  <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
+    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+</div></div>
+
+<div class="wrap">
+  <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+  <div class="modhead">
+    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
+      <div><h1 data-i="mtitle">Marketing &amp; Sales</h1><p data-i="msub">Leads, campaigns &amp; business growth</p></div></div>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<script src="workshop-data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+function initials(name){return String(name||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
+function d(s){return s?new Date(s+"T00:00:00"):null;}
+function daysBetween(a,b){return Math.round((b-a)/86400000);}
+const TODAY=new Date('2026-08-28T09:00:00');
+
+// ── shared data (read-only) from window.WorkshopData ──
+const SHARED=(window.WorkshopData?WorkshopData.get():{customers:[],estimations:[],projects:[]});
+function sharedCustomer(id){return SHARED.customers.find(c=>c.id===id)||null;}
+function sharedEstimation(no){return SHARED.estimations.find(e=>e.no===no)||null;}
+
+// ── demonstration data (page-level, in-memory only) ──
+let LEADS=[
+  {id:1,no:'LD-2026-041',company:'Nordic Bageri Group',contact:'Sofia Lindqvist',email:'sofia.lindqvist@nordicbageri.se',phone:'+46 70 112 34 56',country:'Sweden',city:'Malmö',industry:'Food-production equipment',size:'50-200',source:'referral',service:'Stainless proofing racks & conveyor line',value:145000,priority:'high',status:'qualified',owner:'Elena N.',created:'2026-08-05',lastContact:'2026-08-22',nextFollowUp:'2026-08-29',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
+    notes:[{date:'2026-08-22',author:'Elena N.',text:'Wants a site visit before committing to spec — scheduling for next week.'}],
+    activity:[{date:'2026-08-05',type:'created',text:'Lead created from referral by Sanus Glutenfri.'},{date:'2026-08-11',type:'call',text:'Introductory call, discussed proofing capacity needs.'},{date:'2026-08-22',type:'qualify',text:'Marked as qualified — budget and timeline confirmed.'}]},
+  {id:2,no:'LD-2026-042',company:'Öresund Marine Service',contact:'Henrik Dahl',email:'henrik.dahl@oresundmarine.se',phone:'+46 70 223 45 67',country:'Sweden',city:'Malmö',industry:'Marine and shipyard work',size:'20-50',source:'website',service:'Deck fabrication & welding',value:320000,priority:'high',status:'new',owner:'Marko K.',created:'2026-08-24',lastContact:'2026-08-24',nextFollowUp:'2026-08-31',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:5,
+    notes:[],
+    activity:[{date:'2026-08-24',type:'created',text:'Submitted enquiry form on website about deck fabrication capacity.'}]},
+  {id:3,no:'LD-2026-043',company:'Ventia HVAC Syd',contact:'Camilla Ek',email:'camilla.ek@ventiahvac.se',phone:'+46 70 334 56 78',country:'Sweden',city:'Lund',industry:'Ventilation and HVAC fabrication',size:'10-50',source:'linkedin',service:'Ventilation duct fabrication',value:98000,priority:'medium',status:'qualified',owner:'Aleksandar C.',created:'2026-08-14',lastContact:'2026-08-25',nextFollowUp:'2026-09-01',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:6,
+    notes:[{date:'2026-08-25',author:'Aleksandar C.',text:'Requested drawings before RFQ — sending duct layout templates.'}],
+    activity:[{date:'2026-08-14',type:'created',text:'Lead created from LinkedIn campaign click.'},{date:'2026-08-19',type:'email',text:'Sent capability overview and past duct projects.'},{date:'2026-08-25',type:'qualify',text:'Qualified — confirmed project scope and rough budget.'}]},
+  {id:4,no:'LD-2026-044',company:'Kranfors Verkstad',contact:'Jonas Berg',email:'jonas.berg@kranforsverkstad.se',phone:'+46 70 445 67 89',country:'Sweden',city:'Kristianstad',industry:'Machinery repair',size:'1-10',source:'phone',service:'Gearbox & machinery repair',value:42000,priority:'medium',status:'qualified',owner:'Marko K.',created:'2026-08-10',lastContact:'2026-08-20',nextFollowUp:'2026-08-27',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:7,
+    notes:[],
+    activity:[{date:'2026-08-10',type:'created',text:'Called in about a broken gearbox on their press line.'},{date:'2026-08-20',type:'qualify',text:'Qualified — sent for RFQ preparation.'}]},
+  {id:5,no:'LD-2026-045',company:'Sydstål Prototyping',contact:'Lina Holm',email:'lina.holm@sydstalproto.se',phone:'+46 70 556 78 90',country:'Sweden',city:'Malmö',industry:'Custom equipment and prototypes',size:'1-10',source:'tender',service:'Prototype fabrication',value:210000,priority:'high',status:'qualified',owner:'Aleksandar C.',created:'2026-07-28',lastContact:'2026-08-21',nextFollowUp:'2026-09-02',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:1,
+    notes:[{date:'2026-08-21',author:'Aleksandar C.',text:'Private RFQ received (RFQ-2026-014) — preparing estimate.'}],
+    activity:[{date:'2026-07-28',type:'created',text:'Lead created from tender portal notification.'},{date:'2026-08-05',type:'call',text:'Scoping call — reviewed prototype drawings.'},{date:'2026-08-21',type:'qualify',text:'Qualified and RFQ logged for bid.'}]},
+  {id:6,no:'LD-2026-046',company:'Fabriksservice Syd AB',contact:'Erik Palm',email:'erik.palm@fabriksservice.se',phone:'+46 70 667 89 01',country:'Sweden',city:'Helsingborg',industry:'Industrial maintenance',size:'10-50',source:'existing',service:'Planned maintenance contract',value:76000,priority:'medium',status:'contacted',owner:'Elena N.',created:'2026-08-18',lastContact:'2026-08-26',nextFollowUp:'2026-08-25',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
+    notes:[],
+    activity:[{date:'2026-08-18',type:'created',text:'Existing contact expanded scope enquiry to full maintenance contract.'},{date:'2026-08-26',type:'email',text:'Sent maintenance contract outline and reference sites.'}]},
+  {id:7,no:'LD-2026-047',company:'Nordvent Installation AB',contact:'Michael Sørensen',email:'michael.sorensen@nordvent.dk',phone:'+45 22 778 90 12',country:'Denmark',city:'Copenhagen',industry:'Welding and installation',size:'50-200',source:'linkedin',service:'Welding & installation framework agreement',value:156000,priority:'high',status:'qualified',owner:'Aleksandar C.',created:'2026-07-15',lastContact:'2026-08-23',nextFollowUp:'2026-08-28',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:8,
+    notes:[{date:'2026-08-23',author:'Aleksandar C.',text:'In negotiation on framework pricing — competitor also bidding.'}],
+    activity:[{date:'2026-07-15',type:'created',text:'Connected via LinkedIn after case study share.'},{date:'2026-08-01',type:'call',text:'Discussed cross-border installation logistics.'},{date:'2026-08-23',type:'qualify',text:'Qualified — moved to negotiation stage.'}]},
+  {id:8,no:'LD-2026-048',company:'Sanus Rostfri AB',contact:'Peter Nyström',email:'peter.nystrom@sanusrostfri.se',phone:'+46 70 889 01 23',country:'Sweden',city:'Landskrona',industry:'Stainless-steel fabrication',size:'10-50',source:'email',service:'Stainless tank fabrication',value:118000,priority:'medium',status:'contacted',owner:'Elena N.',created:'2026-08-20',lastContact:'2026-08-27',nextFollowUp:'2026-09-03',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
+    notes:[],
+    activity:[{date:'2026-08-20',type:'created',text:'Direct email enquiry about stainless tank fabrication.'},{date:'2026-08-27',type:'email',text:'Sent stainless grade options and lead time estimate.'}]},
+  {id:9,no:'LD-2026-049',company:'Ystad Konditori Grupp',contact:'Anna Svensson',email:'anna.svensson@ystadkonditori.se',phone:'+46 70 990 12 34',country:'Sweden',city:'Ystad',industry:'Food-production equipment',size:'1-10',source:'referral',service:'Bakery rack expansion',value:18000,priority:'low',status:'disqualified',owner:'Marko K.',created:'2026-07-30',lastContact:'2026-08-12',nextFollowUp:null,commPref:'Phone',dnc:true,linkedCustomerId:null,linkedOpportunityId:null,
+    notes:[{date:'2026-08-12',author:'Marko K.',text:'Budget far below minimum project size — disqualified. Asked not to be contacted again this year.'}],
+    activity:[{date:'2026-07-30',type:'created',text:'Referral from Ystad Bageri.'},{date:'2026-08-12',type:'disqualify',text:'Disqualified — budget too small, do-not-contact requested.'}]},
+  {id:10,no:'LD-2026-050',company:'MarineVent AB',contact:'Per Bengtsson',email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77',country:'Sweden',city:'Malmö',industry:'Marine and shipyard work',size:'50-200',source:'existing',service:'Ventilation duct system',value:198000,priority:'high',status:'converted',owner:'Aleksandar C.',created:'2026-08-14',lastContact:'2026-08-18',nextFollowUp:null,commPref:'Email',dnc:false,linkedCustomerId:1,linkedOpportunityId:3,
+    notes:[{date:'2026-08-18',author:'Aleksandar C.',text:'Converted to existing customer record — project already in production.'}],
+    activity:[{date:'2026-08-14',type:'created',text:'Repeat enquiry from existing customer contact.'},{date:'2026-08-18',type:'convert',text:'Converted to customer — linked to MarineVent AB (C-001).'}]}
+];
+let nextLeadId=11,nextLeadNo=51;
+
+const STAGES=['discovery','qualified','rfq','preparing','quotesent','negotiation','won','lost'];
+let OPPORTUNITIES=[
+  {id:1,no:'OPP-2026-101',company:'Sydstål Prototyping',contact:'Lina Holm',leadId:5,customerId:null,title:'Prototype Fabrication Programme',services:['Prototype fabrication','CNC machining'],scope:'Series of 3 prototype enclosures for a robotics application, stainless frame with CNC-machined panels.',industry:'Custom equipment and prototypes',value:210000,probability:60,stage:'preparing',expectedDecision:'2026-09-15',requiredDelivery:'2026-10-30',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Finalize BOM and issue estimate',followUpDate:'2026-09-02',
+    activity:[{date:'2026-07-28',text:'Opportunity created from qualified lead.'},{date:'2026-08-21',text:'RFQ-2026-014 received, moved to Preparing Estimate.'}]},
+  {id:2,no:'OPP-2026-102',company:'MarineVent AB',contact:'Lena Mårtensson',leadId:null,customerId:1,title:'Ventilation Upgrade Package',services:['Ventilation fabrication'],scope:'Upgrade package for existing ventilation duct system, additional filtration stage.',industry:'Marine / Ventilation Systems',value:28503,probability:55,stage:'quotesent',expectedDecision:'2026-09-10',requiredDelivery:'2026-10-15',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:'EST-2026-023',linkedProjectNo:null,nextAction:'Follow up on quote EST-2026-023',followUpDate:'2026-09-01',
+    activity:[{date:'2026-08-22',text:'Quotation EST-2026-023 sent to customer.'}]},
+  {id:3,no:'OPP-2026-103',company:'MarineVent AB',contact:'Per Bengtsson',leadId:10,customerId:1,title:'Ventilation Duct System',services:['Fabrication','Welding','Installation'],scope:'Full ventilation duct system for vessel retrofit.',industry:'Marine / Ventilation Systems',value:198000,probability:100,stage:'won',expectedDecision:'2026-08-18',requiredDelivery:'2026-11-12',competitor:'',decisionReason:'Best technical fit and delivery time.',owner:'Aleksandar C.',linkedEstimateNo:'EST-2026-018',linkedProjectNo:'P-2026-014',nextAction:'Monitor production progress',followUpDate:null,
+    activity:[{date:'2026-08-14',text:'Estimate EST-2026-018 accepted.'},{date:'2026-08-15',text:'Project P-2026-014 created and moved into production.'}]},
+  {id:4,no:'OPP-2026-104',company:'Sanus Glutenfri AB',contact:'Per Nilsson',leadId:null,customerId:2,title:'Stainless Platform Extension',services:['Fabrication','Installation'],scope:'Extension of stainless platform for food safety compliance.',industry:'Food Production',value:138000,probability:100,stage:'won',expectedDecision:'2026-08-24',requiredDelivery:'2026-11-28',competitor:'',decisionReason:'Existing supplier relationship and fast turnaround.',owner:'Elena N.',linkedEstimateNo:'EST-2026-024',linkedProjectNo:null,nextAction:'Convert estimate to project',followUpDate:null,
+    activity:[{date:'2026-08-24',text:'Estimate EST-2026-024 accepted by customer.'}]},
+  {id:5,no:'OPP-2026-105',company:'Öresund Marine Service',contact:'Henrik Dahl',leadId:2,customerId:null,title:'Deck Fabrication & Welding',services:['Fabrication','Welding'],scope:'Steel deck sections and railings for a service vessel refit.',industry:'Marine and shipyard work',value:320000,probability:20,stage:'discovery',expectedDecision:'2026-10-01',requiredDelivery:'2026-12-01',competitor:'Sydsvensk Svets AB',decisionReason:'',owner:'Marko K.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Arrange site visit to scope deck works',followUpDate:null,
+    activity:[{date:'2026-08-24',text:'Opportunity opened from new website lead.'}]},
+  {id:6,no:'OPP-2026-106',company:'Ventia HVAC Syd',contact:'Camilla Ek',leadId:3,customerId:null,title:'Ventilation Duct Fabrication',services:['Ventilation fabrication'],scope:'Ductwork fabrication for a new production hall.',industry:'Ventilation and HVAC fabrication',value:98000,probability:35,stage:'qualified',expectedDecision:'2026-09-20',requiredDelivery:'2026-11-05',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Prepare RFQ documents once drawings confirmed',followUpDate:'2026-09-04',
+    activity:[{date:'2026-08-25',text:'Lead qualified, opportunity opened.'}]},
+  {id:7,no:'OPP-2026-107',company:'Kranfors Verkstad',contact:'Jonas Berg',leadId:4,customerId:null,title:'Gearbox & Machinery Repair Contract',services:['Machinery repair'],scope:'Repair and preventive service contract for press line gearboxes.',industry:'Machinery repair',value:42000,probability:45,stage:'rfq',expectedDecision:'2026-09-05',requiredDelivery:'2026-09-25',competitor:'',decisionReason:'',owner:'Marko K.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Prepare estimate from RFQ scope',followUpDate:'2026-08-26',
+    activity:[{date:'2026-08-20',text:'RFQ received for gearbox repair.'}]},
+  {id:8,no:'OPP-2026-108',company:'Nordvent Installation AB',contact:'Michael Sørensen',leadId:7,customerId:null,title:'Welding & Installation Framework Agreement',services:['Welding','Installation'],scope:'Multi-site framework agreement for welding and installation call-outs.',industry:'Welding and installation',value:156000,probability:70,stage:'negotiation',expectedDecision:'2026-09-08',requiredDelivery:'2026-10-01',competitor:'Baltic Weld Partners',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Finalize framework pricing tiers',followUpDate:'2026-08-31',
+    activity:[{date:'2026-08-23',text:'Entered negotiation on framework pricing.'}]},
+  {id:9,no:'OPP-2026-109',company:'Schröder Nordic',contact:'Anna Berg',leadId:null,customerId:3,title:'Machinery Retrofit Inquiry',services:['Retrofit'],scope:'Retrofit of folding machine line — postponed by customer.',industry:'Industrial Machinery',value:85000,probability:0,stage:'lost',expectedDecision:'2026-08-10',requiredDelivery:'',competitor:'',decisionReason:'Customer reallocated budget to another site.',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Re-engage in Q1 2027',followUpDate:null,
+    activity:[{date:'2026-07-20',text:'Retrofit inquiry opened.'},{date:'2026-08-10',text:'Marked lost — budget reallocated.'}]}
+];
+let nextOppId=10,nextOppNo=110;
+
+let TENDERS=[
+  {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
+  {id:2,ref:'RFQ-2026-012',company:'Copenhagen–Malmö Ferry Terminal',source:'Direct RFQ',description:'Steel platform and railing fabrication for terminal upgrade.',industry:'Marine and shipyard work',deadline:'2026-09-20',value:610000,requirements:'Marine-grade steel certification, on-site installation capability.',documents:['Drawings_RevB.pdf'],responsible:'Marko K.',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-10'},
+  {id:3,ref:'RFQ-2026-013',company:'Landskrona Kommun',source:'Public tender',description:'Steel structure maintenance for municipal recreation facilities.',industry:'Industrial maintenance',deadline:'2026-08-30',value:95000,requirements:'Municipal supplier registration, safety inspection certificate.',documents:['Kommun_Tender.pdf'],responsible:'Elena N.',bidDecision:'bid',status:'submitted',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-08-29'},
+  {id:4,ref:'RFQ-2026-014',company:'Sydstål Prototyping',source:'Private RFQ',description:'Prototype fabrication programme, 3 enclosure units.',industry:'Custom equipment and prototypes',deadline:'2026-09-10',value:210000,requirements:'CNC machining capability, NDA required.',documents:['NDA_Sydstal.pdf','Concept_Drawings.pdf'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:1,linkedEstimateNo:null,reminderDate:'2026-09-05'},
+  {id:5,ref:'RFQ-2026-015',company:'Nordic Frys AB',source:'Direct RFQ',description:'Stainless freezer room fabrication and cold-chain fittings.',industry:'Food-production equipment',deadline:'2026-10-05',value:275000,requirements:'Food-grade stainless certification.',documents:[],responsible:'Elena N.',bidDecision:'no-bid',status:'declined',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:null}
+];
+let nextTenderId=6;
+
+let CAMPAIGNS=[
+  {id:1,name:'Stainless Solutions for Food Producers',objective:'Generate qualified leads among food-production and bakery companies in Skåne.',targetIndustries:['Food-production equipment','Stainless-steel fabrication'],targetServices:['Fabrication','Installation'],segment:'Food-production companies',channels:['LinkedIn','Email','Trade fair'],start:'2026-06-01',end:'2026-09-30',budget:45000,spend:31200,owner:'Elena N.',status:'active',leads:14,qualified:6,estimates:4,wonValue:138000,
+    activity:[{date:'2026-08-10',text:'Trade fair follow-up emails sent to 22 contacts.'}]},
+  {id:2,name:'Workshop Repair & Maintenance Services',objective:'Drive service call-outs and maintenance contracts from local industrial sites.',targetIndustries:['Industrial maintenance','Machinery repair'],targetServices:['Repair','Maintenance contracts'],segment:'Property and facility maintenance',channels:['Google Ads','Referral programme'],start:'2026-05-15',end:'2026-09-15',budget:25000,spend:24100,owner:'Marko K.',status:'active',leads:22,qualified:5,estimates:3,wonValue:42000,
+    activity:[{date:'2026-08-05',text:'Referral programme generated 4 new leads this week.'}]},
+  {id:3,name:'Marine Steel & Welding Services',objective:'Build pipeline with marine and shipyard operators in the Öresund region.',targetIndustries:['Marine and shipyard work','Welding and installation'],targetServices:['Welding','Fabrication'],segment:'Marine and shipyard companies',channels:['LinkedIn','Direct email','Port trade show'],start:'2026-07-01',end:'2026-10-31',budget:60000,spend:58900,owner:'Aleksandar C.',status:'active',leads:9,qualified:4,estimates:2,wonValue:0,
+    activity:[{date:'2026-08-18',text:'Port trade show — 9 new contacts collected.'}]},
+  {id:4,name:'Custom Machinery & Prototype Fabrication',objective:'Position Varmak for prototype and custom-equipment RFQs.',targetIndustries:['Custom equipment and prototypes','Ventilation and HVAC fabrication'],targetServices:['CNC machining','Prototype fabrication'],segment:'Industrial manufacturers',channels:['Website','LinkedIn'],start:'2026-03-01',end:'2026-08-15',budget:30000,spend:30000,owner:'Elena N.',status:'completed',leads:11,qualified:5,estimates:3,wonValue:0,
+    activity:[{date:'2026-08-15',text:'Campaign closed — 3 estimates still in active pipeline.'}]}
+];
+let nextCampaignId=5;
+
+let CONTENT=[
+  {id:1,title:'Ventilation Duct System — Marine Vessel Retrofit',channel:'Website',type:'Project case study',campaignId:3,owner:'Aleksandar C.',date:'2026-08-05',status:'published',audience:'Marine and shipyard companies',cta:'Request a fabrication quote'},
+  {id:2,title:'5 Signs Your Ductwork Needs Fabrication, Not Repair',channel:'LinkedIn',type:'Technical article',campaignId:1,owner:'Elena N.',date:'2026-08-12',status:'published',audience:'Food-production companies',cta:'Book a site assessment'},
+  {id:3,title:'Workshop Update: New Press Brake Online',channel:'Website',type:'Workshop update',campaignId:null,owner:'Marko K.',date:'2026-08-20',status:'published',audience:'Existing customers',cta:'See our capability list'},
+  {id:4,title:'Stainless Platform Extension — Food Safety Compliance',channel:'Website',type:'Project case study',campaignId:1,owner:'Elena N.',date:'2026-08-29',status:'scheduled',audience:'Food-production companies',cta:'Talk to our team'},
+  {id:5,title:'Maintenance Contracts: What to Expect in Year One',channel:'Customer email',type:'Customer email',campaignId:2,owner:'Marko K.',date:'2026-09-02',status:'approved',audience:'Property and facility maintenance',cta:'Schedule a walkthrough'},
+  {id:6,title:'Introducing Our Prototype Fabrication Service',channel:'LinkedIn',type:'Product introduction',campaignId:4,owner:'Elena N.',date:'2026-09-04',status:'review',audience:'Industrial manufacturers',cta:'Send us your drawings'},
+  {id:7,title:'Behind the Weld: Marine Steel Fabrication Standards',channel:'LinkedIn',type:'Technical article',campaignId:3,owner:'Aleksandar C.',date:'2026-09-09',status:'draft',audience:'Marine and shipyard companies',cta:'Connect with our team'},
+  {id:8,title:'Bakery Equipment Service Post',channel:'Website',type:'Service post',campaignId:1,owner:'Elena N.',date:'2026-09-12',status:'draft',audience:'Bakeries',cta:'Get a service quote'},
+  {id:9,title:'HVAC Fabrication Capability Overview',channel:'Website content',type:'Website content',campaignId:4,owner:'Aleksandar C.',date:'2026-09-15',status:'review',audience:'HVAC and ventilation companies',cta:'Request capability sheet'},
+  {id:10,title:'Framework Agreements: Welding & Installation',channel:'LinkedIn',type:'Service post',campaignId:null,owner:'Aleksandar C.',date:'2026-09-18',status:'draft',audience:'High-value prospects',cta:'Discuss a framework agreement'}
+];
+let nextContentId=11;
+
+let CASESTUDIES=[
+  {id:1,title:'Ventilation Duct System — Marine Vessel Retrofit',customer:'MarineVent AB',industry:'Marine / Ventilation Systems',problem:'Ageing ventilation ducting on a service vessel failed inspection and needed full replacement within a tight dry-dock window.',solution:'Designed and fabricated a complete duct system offsite, pre-fitted for rapid installation during the vessel\'s scheduled dry-dock period.',materials:'AISI 304 stainless sheet, square tube framing, TIG-welded joints.',result:'System installed 2 days ahead of the dry-dock deadline with zero rework.',services:['Fabrication','Welding','Installation'],permission:true,status:'published',channels:['Website','LinkedIn']},
+  {id:2,title:'Stainless Platform Extension for Food Safety Compliance',customer:'Sanus Glutenfri AB',industry:'Food Production',problem:'Production line expansion required an additional stainless platform meeting strict food-safety hygiene standards.',solution:'Fabricated and installed a food-grade stainless steel platform with rounded welds and washable surfaces to meet hygiene audit requirements.',materials:'AISI 304 stainless sheet and tube.',result:'Passed food-safety audit on first inspection; line capacity increased by 30%.',services:['Fabrication','Installation'],permission:true,status:'published',channels:['Website']},
+  {id:3,title:'Emergency Gearbox Overhaul — 48 Hour Turnaround',customer:'Confidential — industrial manufacturer',industry:'Industrial Machinery',problem:'Unplanned gearbox failure on a critical production line threatened a multi-day stoppage.',solution:'Mobilised a repair team within hours, sourced replacement bearings overnight, and completed the overhaul on site.',materials:'OEM bearing set, replacement seals.',result:'Line back in production within 48 hours of the initial call.',services:['Machinery repair'],permission:false,status:'draft',channels:[]},
+  {id:4,title:'Custom Prototype Enclosure for Robotics Startup',customer:'Confidential — prototype client',industry:'Custom equipment and prototypes',problem:'Early-stage robotics company needed a small batch of precision enclosures without committing to full production tooling.',solution:'Combined CNC machining with hand-finished stainless fabrication to deliver 3 prototype units to spec.',materials:'Stainless sheet, CNC-machined aluminium panels.',result:'Client secured Series A funding using the prototype units in investor demos.',services:['Prototype fabrication','CNC machining'],permission:true,status:'review',channels:['Website']},
+  {id:5,title:'Bakery Conveyor Modification',customer:'Malmö bakery group',industry:'Food Production',problem:'Existing conveyor layout created a bottleneck during peak baking hours.',solution:'Redesigned and modified the conveyor path, adding a stainless incline section to improve throughput.',materials:'Stainless steel tube and sheet, food-grade conveyor belting.',result:'Peak-hour throughput increased by 18% with no line downtime during install.',services:['Fabrication','Installation'],permission:true,status:'published',channels:['Website','LinkedIn']}
+];
+let nextCaseId=6;
+
+let SEGMENTS=[
+  {id:1,name:'Food-production companies',size:34,activeOpp:3,engagement:'high',pipelineValue:353000},
+  {id:2,name:'Bakeries',size:21,activeOpp:1,engagement:'medium',pipelineValue:145000},
+  {id:3,name:'Marine and shipyard companies',size:18,activeOpp:2,engagement:'high',pipelineValue:476000},
+  {id:4,name:'Industrial manufacturers',size:46,activeOpp:2,engagement:'medium',pipelineValue:127000},
+  {id:5,name:'Property and facility maintenance',size:29,activeOpp:1,engagement:'low',pipelineValue:76000},
+  {id:6,name:'HVAC and ventilation companies',size:15,activeOpp:2,engagement:'medium',pipelineValue:526000},
+  {id:7,name:'Existing customers',size:3,activeOpp:2,engagement:'high',pipelineValue:166503},
+  {id:8,name:'Inactive customers',size:4,activeOpp:0,engagement:'low',pipelineValue:0},
+  {id:9,name:'High-value prospects',size:12,activeOpp:4,engagement:'high',pipelineValue:964000}
+];
+
+function getLead(id){return LEADS.find(l=>l.id===id);}
+function getOpp(id){return OPPORTUNITIES.find(o=>o.id===id);}
+function getCampaign(id){return CAMPAIGNS.find(c=>c.id===id);}
+function oppsForLead(leadId){return OPPORTUNITIES.filter(o=>o.leadId===leadId);}
+
+const PRIORITY_CLASS={high:'r',medium:'w',low:'n'};
+const LEAD_STATUS_CLASS={new:'b',contacted:'w',qualified:'g',disqualified:'n',converted:'g'};
+const STAGE_CLASS={discovery:'n',qualified:'b',rfq:'b',preparing:'w',quotesent:'w',negotiation:'p',won:'g',lost:'r'};
+const TENDER_STATUS_CLASS={'in-progress':'b','reviewing':'w','submitted':'g','declined':'n','awarded':'g'};
+const BID_CLASS={bid:'g',pending:'w','no-bid':'n'};
+const CAMPAIGN_STATUS_CLASS={active:'g',paused:'w',completed:'n',planned:'b'};
+const CONTENT_STATUS_CLASS={draft:'n',review:'w',approved:'b',scheduled:'p',published:'g'};
+const ENGAGEMENT_CLASS={high:'g',medium:'w',low:'n'};
+const SOURCE_KEYS=['website','referral','existing','email','linkedin','tender','phone','other'];
+
+const T={
+en:{
+  locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Marketing & Sales",msub:"Leads, campaigns & business growth",msub_short:"Leads & growth",
+  sbox_t:"Shared pipeline",sbox_p:"Leads move from first contact through Estimation into Projects. Customers and estimates are read from the shared workshop data.",
+  nav_overview:"Marketing Overview",nav_leads:"Leads",nav_opportunities:"Opportunities",nav_tenders:"Tenders / RFQs",nav_campaigns:"Campaigns",nav_content:"Content Calendar",nav_casestudies:"Case Studies",nav_segments:"Audience Segments",nav_analytics:"Analytics",nav_newlead:"New Lead",
+  kpi_newleads:"New leads · last 30 days",kpi_qualified:"Qualified opportunities",kpi_pipeline:"Active pipeline value",kpi_estimates:"Estimates generated",kpi_winrate:"Win rate",kpi_overdue:"Overdue follow-ups",trend_prev30:"vs previous 30 days",trend_prevq:"vs previous quarter",trend_flat:"steady vs last period",
+  funnel_title:"Sales Funnel",funnel_sub:"Opportunities and value by stage",
+  stg_new:"New lead",stg_contacted:"Contacted",stg_qualified:"Qualified",stg_rfq:"RFQ received",stg_preparing:"Preparing estimate",stg_quotesent:"Quote sent",stg_negotiation:"Negotiation",stg_won:"Won",stg_lost:"Lost",stg_discovery:"Discovery",
+  fl_company:"Company",fl_contact:"Contact person",fl_email:"Email",fl_phone:"Phone",fl_country:"Country",fl_city:"City",fl_industry:"Industry",fl_size:"Company size",fl_source:"Source",fl_service:"Requested service",fl_value:"Estimated value (SEK)",fl_priority:"Priority",fl_status:"Status",fl_owner:"Owner",fl_created:"Created date",fl_lastcontact:"Last contact date",fl_nextfollowup:"Next follow-up date",fl_commpref:"Communication preference",fl_dnc:"Do not contact",fl_notes:"Notes",fl_linkedcustomer:"Linked customer",fl_linkedopp:"Linked opportunity",fl_title:"Opportunity title",fl_scope:"Scope summary",fl_probability:"Probability",fl_weighted:"Weighted value",fl_expecteddecision:"Expected decision date",fl_requireddelivery:"Required delivery date",fl_competitor:"Competitor",fl_decisionreason:"Decision reason",fl_linkedestimate:"Linked estimate",fl_linkedproject:"Linked project",fl_nextaction:"Next action",fl_followupdate:"Follow-up date",fl_ref:"Reference number",fl_description:"Description",fl_deadline:"Submission deadline",fl_requirements:"Requirements",fl_documents:"Documents",fl_responsible:"Responsible person",fl_biddecision:"Bid / no-bid decision",fl_reminder:"Reminder date",fl_objective:"Campaign objective",fl_targetindustries:"Target industries",fl_targetservices:"Target services",fl_segment:"Audience segment",fl_channels:"Channels",fl_start:"Start date",fl_end:"End date",fl_budget:"Budget (SEK)",fl_spend:"Actual spend (SEK)",fl_cpl:"Cost per lead",fl_conversion:"Conversion rate",fl_won:"Won value",fl_type:"Content type",fl_campaign:"Campaign",fl_publishdate:"Publish date",fl_audience:"Target audience",fl_cta:"Call to action",fl_problem:"Customer problem",fl_solution:"Varmak solution",fl_materials:"Materials & processes",fl_result:"Result",fl_services:"Related services",fl_permission:"Customer publishing permission",fl_channelsused:"Channels where used",fl_activeopp:"Active opportunities",fl_engagement:"Campaign engagement",fl_pipelinevalue:"Estimated pipeline value",fl_leads:"Leads",fl_estimates2:"Estimates",fl_segmentsize:"Segment size",
+  src_website:"Website",src_referral:"Referral",src_existing:"Existing customer",src_email:"Direct email",src_linkedin:"LinkedIn",src_tender:"Tender / RFQ",src_phone:"Phone",src_other:"Other",
+  pr_high:"High",pr_medium:"Medium",pr_low:"Low",
+  ls_new:"New",ls_contacted:"Contacted",ls_qualified:"Qualified",ls_disqualified:"Disqualified",ls_converted:"Converted",
+  ts_inprogress:"In progress",ts_reviewing:"Reviewing",ts_submitted:"Submitted",ts_declined:"Declined",ts_awarded:"Awarded",
+  bid_bid:"Bid",bid_pending:"Pending","bid_no-bid":"No-bid",
+  cs_active:"Active",cs_paused:"Paused",cs_completed:"Completed",cs_planned:"Planned",
+  co_draft:"Draft",co_review:"Review",co_approved:"Approved",co_scheduled:"Scheduled",co_published:"Published",
+  eng_high:"High",eng_medium:"Medium",eng_low:"Low",
+  v_overview_t:"Marketing Overview",v_leads_t:"Leads",v_leads_sub:"Searchable lead directory",v_opportunities_t:"Opportunities",v_opportunities_sub:"Visual opportunity pipeline",v_tenders_t:"Tenders / RFQs",v_tenders_sub:"Industrial tender & RFQ register",v_campaigns_t:"Campaigns",v_campaigns_sub:"Campaign planning & performance",v_content_t:"Content Calendar",v_content_sub:"Upcoming content by channel and status",v_casestudies_t:"Case Studies",v_casestudies_sub:"Project reference library",v_segments_t:"Audience Segments",v_segments_sub:"Segment size, engagement & pipeline",v_analytics_t:"Analytics",v_analytics_sub:"Marketing & sales performance",
+  btn_newlead:"New Lead",btn_newopp:"New Opportunity",btn_newtender:"New Tender / RFQ",btn_newcampaign:"New Campaign",btn_newcontent:"New Content Item",btn_newcase:"New Case Study",btn_save:"Save",btn_cancel:"Cancel",btn_close:"Close",btn_edit:"Edit",btn_table:"Table",btn_kanban:"Kanban",btn_list:"List",btn_calendar:"Calendar",btn_viewall:"View all",
+  act_markcomplete:"Mark completed",act_pause:"Pause",act_complete:"Complete",act_resume:"Resume",act_reschedule:"Reschedule",act_addnote:"Add note",act_open:"Open",act_recordcall:"Record call",act_recordemail:"Record email",act_schedulefollowup:"Schedule follow-up",act_qualify:"Qualify lead",act_disqualify:"Disqualify lead",act_converttocustomer:"Convert to customer",act_movestage:"Move stage",act_opencustomer:"Open customer",act_openestimation:"Open Estimation",act_markwon:"Mark won",act_marklost:"Mark lost",act_addfollowup:"Add follow-up",act_editlead:"Edit lead",act_editopp:"Edit opportunity",
+  th_leadno:"Lead #",th_company:"Company",th_contact:"Contact",th_industry:"Industry",th_service:"Service",th_value:"Value",th_priority:"Priority",th_status:"Status",th_owner:"Owner",th_source:"Source",th_created:"Created",th_lastcontact:"Last contact",th_nextfollowup:"Next follow-up",th_oppno:"Opp #",th_probability:"Prob.",th_stage:"Stage",th_nextaction:"Next action",th_followup:"Follow-up",th_ref:"Reference",th_deadline:"Deadline",th_bid:"Bid decision",th_responsible:"Responsible",th_campaign:"Campaign",th_channels:"Channels",th_budget:"Budget",th_spend:"Spend",th_leads:"Leads",th_qualified:"Qualified",th_estimates:"Estimates",th_wonvalue:"Won value",th_cpl:"Cost/lead",th_conv:"Conversion",th_type:"Type",th_channel:"Channel",th_date:"Date",th_audience:"Audience",th_customer:"Customer",th_estimate:"Estimate",th_actions:"Actions",
+  search_leads:"Search leads…",search_opps:"Search opportunities…",search_tenders:"Search tenders…",search_campaigns:"Search campaigns…",
+  filt_allstages:"All stages",filt_allowners:"All owners",filt_allindustries:"All industries",filt_allpriorities:"All priorities",filt_allstatus:"All statuses",filt_followup:"Follow-up",filt_overdue:"Overdue",filt_upcoming:"Upcoming",filt_ok:"On track",filt_all:"All",
+  empty_leads:"No leads match these filters.",empty_opps:"No opportunities match these filters.",empty_tenders:"No tenders yet.",empty_campaigns:"No campaigns yet.",empty_content:"No content items yet.",empty_cases:"No case studies yet.",empty_notes:"No notes yet.",empty_activity:"No activity yet.",empty_followups:"No follow-ups due — the queue is clear.",empty_select:"Select a record from the list to see details.",
+  tab_profile:"Profile",tab_activity:"Activity",tab_notes:"Notes",
+  m_newlead_t:"New Lead",m_editlead_t:"Edit Lead",m_addnote_t:"Add Note",m_recordcall_t:"Record Call",m_recordemail_t:"Record Email",m_schedulefu_t:"Schedule Follow-up",m_qualify_t:"Qualify Lead",m_disqualify_t:"Disqualify Lead",m_convert_t:"Convert to Customer",m_newopp_t:"New Opportunity",m_editopp_t:"Edit Opportunity",m_marklost_t:"Mark Opportunity Lost",m_newcampaign_t:"New Campaign",m_editcampaign_t:"Edit Campaign",m_newcontent_t:"New Content Item",m_newtender_t:"New Tender / RFQ",m_newcase_t:"New Case Study",
+  f_notetext:"Note",f_calltext:"Call summary",f_emailtext:"Email summary",f_fudate:"Follow-up date",f_fureason:"Reason",f_qualnote:"Qualification note",f_disqreason:"Disqualification reason",f_convertnote:"This will create a new customer record using this lead's company details. No duplicate will be created if a matching customer already exists.",
+  insights_title:"Prototype Insights",insights_sub:"Rule-based observations from the demonstration data",insights_disclaimer:"These are simple rule-based checks over the demo data for this prototype — not real AI, and no external service is called.",
+  ins_followup:"is a high-value opportunity ({v}) with no scheduled follow-up.",ins_notreached:"is a qualified lead that has not yet reached Estimation (opportunity still at “{stage}”).",ins_campaign:"campaign is producing leads ({leads}) but few qualify ({rate}% qualified).",ins_noactivity:"is a previous customer with no recent marketing activity.",ins_casestudy:"case study could support the active opportunity with {company}.",insights_none:"No notable observations right now — the pipeline looks healthy.",
+  an_leadsource:"Leads by Source",an_leadindustry:"Leads by Industry",an_leadtoopp:"Lead → Opportunity Conversion",an_opptoest:"Opportunity → Estimate Conversion",an_winrate:"Estimate Win Rate",an_pipeline:"Pipeline Value",an_weighted:"Weighted Pipeline",an_avgcycle:"Average Sales-Cycle Duration",an_campaignspend:"Campaign Spend & Return",an_wonlost:"Won & Lost Reasons",an_byservice:"Performance by Service Category",an_momtrend:"Month-over-Month Trend",an_days:"days",
+  overview_pipe_t:"Opportunity Pipeline",overview_pipe_sub:"Top active opportunities",overview_fu_t:"Follow-up Queue",overview_camp_t:"Campaign Performance",overview_src_t:"Lead Sources",overview_cal_t:"Content Planner",
+  convert_fields_t:"Fields reused from the lead record",lead_dnc_badge:"Do not contact",
+  chart_none:"No data yet."
+},
+sv:{
+  locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Marknadsföring & Försäljning",msub:"Leads, kampanjer & tillväxt",msub_short:"Leads & tillväxt",
+  sbox_t:"Delad pipeline",sbox_p:"Leads rör sig från första kontakt via kalkyl till projekt. Kunder och kalkyler hämtas från delad verkstadsdata.",
+  nav_overview:"Marknadsöversikt",nav_leads:"Leads",nav_opportunities:"Affärsmöjligheter",nav_tenders:"Upphandlingar / Förfrågningar",nav_campaigns:"Kampanjer",nav_content:"Innehållskalender",nav_casestudies:"Referensfall",nav_segments:"Målgrupper",nav_analytics:"Analys",nav_newlead:"Ny lead",
+  kpi_newleads:"Nya leads · senaste 30 dagarna",kpi_qualified:"Kvalificerade affärsmöjligheter",kpi_pipeline:"Aktivt pipelinevärde",kpi_estimates:"Genererade kalkyler",kpi_winrate:"Vinstfrekvens",kpi_overdue:"Försenade uppföljningar",trend_prev30:"jmf. föregående 30 dagar",trend_prevq:"jmf. föregående kvartal",trend_flat:"stabilt jmf. förra perioden",
+  funnel_title:"Säljtratt",funnel_sub:"Affärsmöjligheter och värde per steg",
+  stg_new:"Ny lead",stg_contacted:"Kontaktad",stg_qualified:"Kvalificerad",stg_rfq:"Förfrågan mottagen",stg_preparing:"Förbereder kalkyl",stg_quotesent:"Offert skickad",stg_negotiation:"Förhandling",stg_won:"Vunnen",stg_lost:"Förlorad",stg_discovery:"Utforskning",
+  fl_company:"Företag",fl_contact:"Kontaktperson",fl_email:"E-post",fl_phone:"Telefon",fl_country:"Land",fl_city:"Stad",fl_industry:"Bransch",fl_size:"Företagsstorlek",fl_source:"Källa",fl_service:"Efterfrågad tjänst",fl_value:"Uppskattat värde (SEK)",fl_priority:"Prioritet",fl_status:"Status",fl_owner:"Ansvarig",fl_created:"Skapad datum",fl_lastcontact:"Senaste kontakt",fl_nextfollowup:"Nästa uppföljning",fl_commpref:"Kommunikationspreferens",fl_dnc:"Kontakta ej",fl_notes:"Anteckningar",fl_linkedcustomer:"Länkad kund",fl_linkedopp:"Länkad affärsmöjlighet",fl_title:"Titel",fl_scope:"Omfattningssammanfattning",fl_probability:"Sannolikhet",fl_weighted:"Viktat värde",fl_expecteddecision:"Förväntat beslutsdatum",fl_requireddelivery:"Önskat leveransdatum",fl_competitor:"Konkurrent",fl_decisionreason:"Beslutsorsak",fl_linkedestimate:"Länkad kalkyl",fl_linkedproject:"Länkat projekt",fl_nextaction:"Nästa åtgärd",fl_followupdate:"Uppföljningsdatum",fl_ref:"Referensnummer",fl_description:"Beskrivning",fl_deadline:"Sista svarsdatum",fl_requirements:"Krav",fl_documents:"Dokument",fl_responsible:"Ansvarig person",fl_biddecision:"Lämna anbud / avstå",fl_reminder:"Påminnelsedatum",fl_objective:"Kampanjmål",fl_targetindustries:"Målbranscher",fl_targetservices:"Måltjänster",fl_segment:"Målgrupp",fl_channels:"Kanaler",fl_start:"Startdatum",fl_end:"Slutdatum",fl_budget:"Budget (SEK)",fl_spend:"Faktisk kostnad (SEK)",fl_cpl:"Kostnad per lead",fl_conversion:"Konverteringsgrad",fl_won:"Vunnet värde",fl_type:"Innehållstyp",fl_campaign:"Kampanj",fl_publishdate:"Publiceringsdatum",fl_audience:"Målgrupp",fl_cta:"Uppmaning (CTA)",fl_problem:"Kundens problem",fl_solution:"Varmaks lösning",fl_materials:"Material & processer",fl_result:"Resultat",fl_services:"Relaterade tjänster",fl_permission:"Kundens publiceringstillstånd",fl_channelsused:"Kanaler där det används",fl_activeopp:"Aktiva affärsmöjligheter",fl_engagement:"Kampanjengagemang",fl_pipelinevalue:"Uppskattat pipelinevärde",fl_leads:"Leads",fl_estimates2:"Kalkyler",fl_segmentsize:"Målgruppsstorlek",
+  src_website:"Webbplats",src_referral:"Rekommendation",src_existing:"Befintlig kund",src_email:"Direktmejl",src_linkedin:"LinkedIn",src_tender:"Upphandling / Förfrågan",src_phone:"Telefon",src_other:"Annat",
+  pr_high:"Hög",pr_medium:"Medel",pr_low:"Låg",
+  ls_new:"Ny",ls_contacted:"Kontaktad",ls_qualified:"Kvalificerad",ls_disqualified:"Diskvalificerad",ls_converted:"Konverterad",
+  ts_inprogress:"Pågår",ts_reviewing:"Granskas",ts_submitted:"Inskickad",ts_declined:"Avböjd",ts_awarded:"Tilldelad",
+  bid_bid:"Lämna anbud",bid_pending:"Ej beslutad","bid_no-bid":"Avstå",
+  cs_active:"Aktiv",cs_paused:"Pausad",cs_completed:"Avslutad",cs_planned:"Planerad",
+  co_draft:"Utkast",co_review:"Granskning",co_approved:"Godkänd",co_scheduled:"Schemalagd",co_published:"Publicerad",
+  eng_high:"Högt",eng_medium:"Medel",eng_low:"Lågt",
+  v_overview_t:"Marknadsöversikt",v_leads_t:"Leads",v_leads_sub:"Sökbar lead-katalog",v_opportunities_t:"Affärsmöjligheter",v_opportunities_sub:"Visuell säljpipeline",v_tenders_t:"Upphandlingar / Förfrågningar",v_tenders_sub:"Register för upphandlingar och förfrågningar",v_campaigns_t:"Kampanjer",v_campaigns_sub:"Kampanjplanering & resultat",v_content_t:"Innehållskalender",v_content_sub:"Kommande innehåll per kanal och status",v_casestudies_t:"Referensfall",v_casestudies_sub:"Bibliotek med projektreferenser",v_segments_t:"Målgrupper",v_segments_sub:"Storlek, engagemang & pipeline",v_analytics_t:"Analys",v_analytics_sub:"Marknads- och säljresultat",
+  btn_newlead:"Ny lead",btn_newopp:"Ny affärsmöjlighet",btn_newtender:"Ny upphandling",btn_newcampaign:"Ny kampanj",btn_newcontent:"Nytt innehåll",btn_newcase:"Nytt referensfall",btn_save:"Spara",btn_cancel:"Avbryt",btn_close:"Stäng",btn_edit:"Redigera",btn_table:"Tabell",btn_kanban:"Kanban",btn_list:"Lista",btn_calendar:"Kalender",btn_viewall:"Visa alla",
+  act_markcomplete:"Markera klar",act_pause:"Pausa",act_complete:"Avsluta",act_resume:"Återuppta",act_reschedule:"Boka om",act_addnote:"Lägg till anteckning",act_open:"Öppna",act_recordcall:"Registrera samtal",act_recordemail:"Registrera e-post",act_schedulefollowup:"Boka uppföljning",act_qualify:"Kvalificera lead",act_disqualify:"Diskvalificera lead",act_converttocustomer:"Konvertera till kund",act_movestage:"Flytta steg",act_opencustomer:"Öppna kund",act_openestimation:"Öppna kalkyl",act_markwon:"Markera vunnen",act_marklost:"Markera förlorad",act_addfollowup:"Lägg till uppföljning",act_editlead:"Redigera lead",act_editopp:"Redigera affärsmöjlighet",
+  th_leadno:"Lead-nr",th_company:"Företag",th_contact:"Kontakt",th_industry:"Bransch",th_service:"Tjänst",th_value:"Värde",th_priority:"Prioritet",th_status:"Status",th_owner:"Ansvarig",th_source:"Källa",th_created:"Skapad",th_lastcontact:"Senaste kontakt",th_nextfollowup:"Nästa uppföljning",th_oppno:"Affär-nr",th_probability:"Sannolikhet",th_stage:"Steg",th_nextaction:"Nästa åtgärd",th_followup:"Uppföljning",th_ref:"Referens",th_deadline:"Deadline",th_bid:"Anbudsbeslut",th_responsible:"Ansvarig",th_campaign:"Kampanj",th_channels:"Kanaler",th_budget:"Budget",th_spend:"Kostnad",th_leads:"Leads",th_qualified:"Kvalificerade",th_estimates:"Kalkyler",th_wonvalue:"Vunnet värde",th_cpl:"Kostnad/lead",th_conv:"Konvertering",th_type:"Typ",th_channel:"Kanal",th_date:"Datum",th_audience:"Målgrupp",th_customer:"Kund",th_estimate:"Kalkyl",th_actions:"Åtgärder",
+  search_leads:"Sök leads…",search_opps:"Sök affärsmöjligheter…",search_tenders:"Sök upphandlingar…",search_campaigns:"Sök kampanjer…",
+  filt_allstages:"Alla steg",filt_allowners:"Alla ansvariga",filt_allindustries:"Alla branscher",filt_allpriorities:"Alla prioriteter",filt_allstatus:"Alla statusar",filt_followup:"Uppföljning",filt_overdue:"Försenad",filt_upcoming:"Kommande",filt_ok:"I tid",filt_all:"Alla",
+  empty_leads:"Inga leads matchar dessa filter.",empty_opps:"Inga affärsmöjligheter matchar dessa filter.",empty_tenders:"Inga upphandlingar ännu.",empty_campaigns:"Inga kampanjer ännu.",empty_content:"Inget innehåll ännu.",empty_cases:"Inga referensfall ännu.",empty_notes:"Inga anteckningar ännu.",empty_activity:"Ingen aktivitet ännu.",empty_followups:"Inga uppföljningar väntar — kön är tom.",empty_select:"Välj en post i listan för att se detaljer.",
+  tab_profile:"Profil",tab_activity:"Aktivitet",tab_notes:"Anteckningar",
+  m_newlead_t:"Ny lead",m_editlead_t:"Redigera lead",m_addnote_t:"Lägg till anteckning",m_recordcall_t:"Registrera samtal",m_recordemail_t:"Registrera e-post",m_schedulefu_t:"Boka uppföljning",m_qualify_t:"Kvalificera lead",m_disqualify_t:"Diskvalificera lead",m_convert_t:"Konvertera till kund",m_newopp_t:"Ny affärsmöjlighet",m_editopp_t:"Redigera affärsmöjlighet",m_marklost_t:"Markera affärsmöjlighet förlorad",m_newcampaign_t:"Ny kampanj",m_editcampaign_t:"Redigera kampanj",m_newcontent_t:"Nytt innehåll",m_newtender_t:"Ny upphandling",m_newcase_t:"Nytt referensfall",
+  f_notetext:"Anteckning",f_calltext:"Samtalssammanfattning",f_emailtext:"E-postsammanfattning",f_fudate:"Uppföljningsdatum",f_fureason:"Anledning",f_qualnote:"Kvalificeringsanteckning",f_disqreason:"Anledning till diskvalificering",f_convertnote:"Detta skapar en ny kundpost med leadens företagsuppgifter. Ingen dubblett skapas om en matchande kund redan finns.",
+  insights_title:"Prototypinsikter",insights_sub:"Regelbaserade observationer från demodatan",insights_disclaimer:"Detta är enkla regelbaserade kontroller av demodatan i denna prototyp — inte riktig AI, och ingen extern tjänst anropas.",
+  ins_followup:"är en högvärdig affärsmöjlighet ({v}) utan bokad uppföljning.",ins_notreached:"är en kvalificerad lead som ännu inte nått kalkylsteget (affärsmöjligheten är fortfarande vid “{stage}”).",ins_campaign:"kampanjen genererar leads ({leads}) men få kvalificeras ({rate}% kvalificerade).",ins_noactivity:"är en tidigare kund utan nyligen genomförd marknadsaktivitet.",ins_casestudy:"referensfall skulle kunna stödja den aktiva affärsmöjligheten med {company}.",insights_none:"Inga anmärkningsvärda observationer just nu — pipelinen ser frisk ut.",
+  an_leadsource:"Leads per källa",an_leadindustry:"Leads per bransch",an_leadtoopp:"Lead → Affärsmöjlighet-konvertering",an_opptoest:"Affärsmöjlighet → Kalkyl-konvertering",an_winrate:"Vinstfrekvens för kalkyler",an_pipeline:"Pipelinevärde",an_weighted:"Viktad pipeline",an_avgcycle:"Genomsnittlig säljcykel",an_campaignspend:"Kampanjkostnad & avkastning",an_wonlost:"Vunna & förlorade anledningar",an_byservice:"Resultat per tjänstekategori",an_momtrend:"Trend månad för månad",an_days:"dagar",
+  overview_pipe_t:"Affärsmöjlighetspipeline",overview_pipe_sub:"Främsta aktiva affärsmöjligheter",overview_fu_t:"Uppföljningskö",overview_camp_t:"Kampanjresultat",overview_src_t:"Lead-källor",overview_cal_t:"Innehållsplanering",
+  convert_fields_t:"Fält som återanvänds från leaden",lead_dnc_badge:"Kontakta ej",
+  chart_none:"Ingen data ännu."
+},
+mk:{
+  locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Marketing i Prodažba",msub:"Potencijalni klienti, kampanji i razvoj",msub_short:"Leadovi i razvoj",
+  sbox_t:"Sподелена pipeline",sbox_p:"Leadovite se dvižat od prv kontakt preku procenka do proekt. Klientite i procenkite se čitaat od споделените podatoci.",
+  nav_overview:"Marketing pregled",nav_leads:"Leadovi",nav_opportunities:"Prilики",nav_tenders:"Tenderi / Baraњa",nav_campaigns:"Kampanji",nav_content:"Kalendar za sodržina",nav_casestudies:"Referentni proekti",nav_segments:"Целни groupи",nav_analytics:"Analitika",nav_newlead:"Nov lead",
+  kpi_newleads:"Novi leadovi · posledni 30 dena",kpi_qualified:"Kvalifikuvani prilики",kpi_pipeline:"Aktivna pipeline vrednost",kpi_estimates:"Generirani procenki",kpi_winrate:"Stapka na uspeh",kpi_overdue:"Docnети sledeњa",trend_prev30:"vs prethodni 30 dena",trend_prevq:"vs prethoden kvartal",trend_flat:"stabilno vs prethoden period",
+  funnel_title:"Prodažen levak",funnel_sub:"Prilики i vrednost po faza",
+  stg_new:"Nov lead",stg_contacted:"Kontaktiran",stg_qualified:"Kvalifikuvan",stg_rfq:"Barañe primeno",stg_preparing:"Podgotvuva se procenka",stg_quotesent:"Ponuda ispratena",stg_negotiation:"Pregovori",stg_won:"Dobieno",stg_lost:"Izgubeno",stg_discovery:"Istražuvañe",
+  fl_company:"Kompanija",fl_contact:"Kontakt lice",fl_email:"E-pošta",fl_phone:"Telefon",fl_country:"Država",fl_city:"Grad",fl_industry:"Industrija",fl_size:"Golemina na kompanija",fl_source:"Izvor",fl_service:"Baraна usluga",fl_value:"Procenета vrednost (SEK)",fl_priority:"Prioritet",fl_status:"Status",fl_owner:"Odgovoren",fl_created:"Datum na kreirañe",fl_lastcontact:"Posleden kontakt",fl_nextfollowup:"Sledno sledeñe",fl_commpref:"Preferiran nacin na komunikacija",fl_dnc:"Ne kontaktiraj",fl_notes:"Beleški",fl_linkedcustomer:"Poврзан klient",fl_linkedopp:"Poврзана prilика",fl_title:"Naslov na prilika",fl_scope:"Kratok opis na opseg",fl_probability:"Verojatnost",fl_weighted:"Ponderirana vrednost",fl_expecteddecision:"Očekuvan datum na odluka",fl_requireddelivery:"Baran datum na isporaka",fl_competitor:"Konkurent",fl_decisionreason:"Pričina za odluka",fl_linkedestimate:"Poврзана procenka",fl_linkedproject:"Poврзан proekt",fl_nextaction:"Sledna akcija",fl_followupdate:"Datum na sledeñe",fl_ref:"Referenten broj",fl_description:"Opis",fl_deadline:"Rok za dostava",fl_requirements:"Baraña",fl_documents:"Dokumenti",fl_responsible:"Odgovorno lice",fl_biddecision:"Odluka za učestvo",fl_reminder:"Datum za potsetuvañe",fl_objective:"Cel na kampanja",fl_targetindustries:"Celni industrii",fl_targetservices:"Celni uslugi",fl_segment:"Celna grupa",fl_channels:"Kanali",fl_start:"Datum na početok",fl_end:"Datum na kraj",fl_budget:"Budžet (SEK)",fl_spend:"Realna potroška (SEK)",fl_cpl:"Cena po lead",fl_conversion:"Stapka na konverzija",fl_won:"Dobiena vrednost",fl_type:"Tip na sodržina",fl_campaign:"Kampanja",fl_publishdate:"Datum na objava",fl_audience:"Celna publika",fl_cta:"Povik na akcija",fl_problem:"Problem na klientot",fl_solution:"Rešenie od Varmak",fl_materials:"Materijali i procesi",fl_result:"Rezultat",fl_services:"Poврзani uslugi",fl_permission:"Dozvola za objavuvañe od klient",fl_channelsused:"Kanali kade se koristi",fl_activeopp:"Aktivni prilики",fl_engagement:"Angažman od kampanji",fl_pipelinevalue:"Procenета pipeline vrednost",fl_leads:"Leadovi",fl_estimates2:"Procenki",fl_segmentsize:"Golemina na grupa",
+  src_website:"Veb-strana",src_referral:"Preporaka",src_existing:"Postoен klient",src_email:"Direkten e-mail",src_linkedin:"LinkedIn",src_tender:"Tender / Barañe",src_phone:"Telefon",src_other:"Drugo",
+  pr_high:"Visok",pr_medium:"Sreden",pr_low:"Nizok",
+  ls_new:"Nov",ls_contacted:"Kontaktiran",ls_qualified:"Kvalifikuvan",ls_disqualified:"Diskvalifikuvan",ls_converted:"Konvertiran",
+  ts_inprogress:"Vo tek",ts_reviewing:"Se razgleduva",ts_submitted:"Dostaveno",ts_declined:"Otfrleno",ts_awarded:"Dodeleno",
+  bid_bid:"Učestvo",bid_pending:"Neodlučeno","bid_no-bid":"Bez učestvo",
+  cs_active:"Aktivna",cs_paused:"Pauzirana",cs_completed:"Završena",cs_planned:"Planirana",
+  co_draft:"Nacrt",co_review:"Pregled",co_approved:"Odobreno",co_scheduled:"Zakažano",co_published:"Objaveno",
+  eng_high:"Visoko",eng_medium:"Sredno",eng_low:"Nisko",
+  v_overview_t:"Marketing pregled",v_leads_t:"Leadovi",v_leads_sub:"Baraчki imenik na leadovi",v_opportunities_t:"Prilики",v_opportunities_sub:"Vizuelna prodažna pipeline",v_tenders_t:"Tenderi / Baraња",v_tenders_sub:"Registar za tenderi i baraња",v_campaigns_t:"Kampanji",v_campaigns_sub:"Planiraње i rezultati na kampanji",v_content_t:"Kalendar za sodržina",v_content_sub:"Idna sodržina po kanal i status",v_casestudies_t:"Referentni proekti",v_casestudies_sub:"Biblioteka so proektni referenci",v_segments_t:"Celni groupи",v_segments_sub:"Golemina, angažman i pipeline",v_analytics_t:"Analitika",v_analytics_sub:"Marketing i prodažni rezultati",
+  btn_newlead:"Nov lead",btn_newopp:"Nova prilika",btn_newtender:"Nov tender",btn_newcampaign:"Nova kampanja",btn_newcontent:"Nova sodržina",btn_newcase:"Nov referenten proekt",btn_save:"Začuvaj",btn_cancel:"Otkaži",btn_close:"Zatvori",btn_edit:"Uredi",btn_table:"Tabela",btn_kanban:"Kanban",btn_list:"Lista",btn_calendar:"Kalendar",btn_viewall:"Vidi gi site",
+  act_markcomplete:"Označi kako završeno",act_pause:"Pauziraj",act_complete:"Završi",act_resume:"Prodolži",act_reschedule:"Premesti termin",act_addnote:"Dodaj beleška",act_open:"Otvori",act_recordcall:"Zapiši povик",act_recordemail:"Zapiši e-pošta",act_schedulefollowup:"Zakaži sledeñe",act_qualify:"Kvalifikuvaj lead",act_disqualify:"Diskvalifikuvaj lead",act_converttocustomer:"Konvertiraj vo klient",act_movestage:"Premesti faza",act_opencustomer:"Otvori klient",act_openestimation:"Otvori procenka",act_markwon:"Označi kako dobieno",act_marklost:"Označi kako izgubeno",act_addfollowup:"Dodaj sledeñe",act_editlead:"Uredi lead",act_editopp:"Uredi prilika",
+  th_leadno:"Lead br.",th_company:"Kompanija",th_contact:"Kontakt",th_industry:"Industrija",th_service:"Usluga",th_value:"Vrednost",th_priority:"Prioritet",th_status:"Status",th_owner:"Odgovoren",th_source:"Izvor",th_created:"Kreirano",th_lastcontact:"Posleden kontakt",th_nextfollowup:"Sledno sledeñe",th_oppno:"Prilика br.",th_probability:"Verojat.",th_stage:"Faza",th_nextaction:"Sledna akcija",th_followup:"Sledeñe",th_ref:"Referenca",th_deadline:"Rok",th_bid:"Odluka za učestvo",th_responsible:"Odgovoren",th_campaign:"Kampanja",th_channels:"Kanali",th_budget:"Budžet",th_spend:"Potroška",th_leads:"Leadovi",th_qualified:"Kvalifikuvani",th_estimates:"Procenki",th_wonvalue:"Dobiena vrednost",th_cpl:"Cena/lead",th_conv:"Konverzija",th_type:"Tip",th_channel:"Kanal",th_date:"Datum",th_audience:"Publika",th_customer:"Klient",th_estimate:"Procenka",th_actions:"Akcii",
+  search_leads:"Pretraži leadovi…",search_opps:"Pretraži prilики…",search_tenders:"Pretraži tenderi…",search_campaigns:"Pretraži kampanji…",
+  filt_allstages:"Site fazi",filt_allowners:"Site odgovorni",filt_allindustries:"Site industrii",filt_allpriorities:"Site prioriteti",filt_allstatus:"Site statusi",filt_followup:"Sledeñe",filt_overdue:"Docnето",filt_upcoming:"Idno",filt_ok:"Na vreme",filt_all:"Site",
+  empty_leads:"Nema leadovi so ovie filtri.",empty_opps:"Nema prilики so ovie filtri.",empty_tenders:"Sè uште nema tenderi.",empty_campaigns:"Sè uште nema kampanji.",empty_content:"Sè uште nema sodržina.",empty_cases:"Sè uште nema referentni proekti.",empty_notes:"Sè uште nema beleški.",empty_activity:"Sè uште nema aktivnost.",empty_followups:"Nema sledeña vo čekaњe — redot e prazen.",empty_select:"Izberi zapis od listata za да vidiš detali.",
+  tab_profile:"Profil",tab_activity:"Aktivnost",tab_notes:"Beleški",
+  m_newlead_t:"Nov lead",m_editlead_t:"Uredi lead",m_addnote_t:"Dodaj beleška",m_recordcall_t:"Zapiši povик",m_recordemail_t:"Zapiši e-pošta",m_schedulefu_t:"Zakaži sledeñe",m_qualify_t:"Kvalifikuvaj lead",m_disqualify_t:"Diskvalifikuvaj lead",m_convert_t:"Konvertiraj vo klient",m_newopp_t:"Nova prilika",m_editopp_t:"Uredi prilika",m_marklost_t:"Označi prilika kako izgubena",m_newcampaign_t:"Nova kampanja",m_editcampaign_t:"Uredi kampanja",m_newcontent_t:"Nova sodržina",m_newtender_t:"Nov tender",m_newcase_t:"Nov referenten proekt",
+  f_notetext:"Beleška",f_calltext:"Rezime na povик",f_emailtext:"Rezime na e-pošta",f_fudate:"Datum na sledeñe",f_fureason:"Pričina",f_qualnote:"Beleška za kvalifikacija",f_disqreason:"Pričina za diskvalifikacija",f_convertnote:"Ova ke kreira nov klient so podatocite od leadot. Nema да se kreira duplikat ako veke postoi soodveten klient.",
+  insights_title:"Prototipni uvidi",insights_sub:"Pravilno-bazirani nabljuduvaña od demo podatocite",insights_disclaimer:"Ova se ednostavni pravilno-bazirani proverki nad demo podatocite vo ovaa prototip — ne е real AI i ne se повикuva nikakov nadворешen servis.",
+  ins_followup:"e prilika so visoka vrednost ({v}) bez zakažano sledeñe.",ins_notreached:"e kvalifikuvan lead koj sè uште ne stignal do procenka (prilikata sè uште e vo “{stage}”).",ins_campaign:"kampanjata generira leadovi ({leads}) no malku se kvalifikuvaat ({rate}% kvalifikuvani).",ins_noactivity:"e prethoden klient bez skoraшna marketing aktivnost.",ins_casestudy:"referenten proekt би можел да ja poддржи aktivnata prilika so {company}.",insights_none:"Nema značajni nabljuduvaña momentalno — pipeline izgleda zdravo.",
+  an_leadsource:"Leadovi po izvor",an_leadindustry:"Leadovi po industrija",an_leadtoopp:"Konverzija Lead → Prilика",an_opptoest:"Konverzija Prilика → Procenka",an_winrate:"Stapka na uspeh na procenki",an_pipeline:"Pipeline vrednost",an_weighted:"Ponderirana pipeline",an_avgcycle:"Prosečno trañe na prodažen ciklus",an_campaignspend:"Potroška i povrat na kampanji",an_wonlost:"Pričini za dobieno i izgubeno",an_byservice:"Rezultati po kategorija usluga",an_momtrend:"Trend od mesec vo mesec",an_days:"dena",
+  overview_pipe_t:"Pipeline na prilики",overview_pipe_sub:"Vodečki aktivni prilики",overview_fu_t:"Red na sledeña",overview_camp_t:"Rezultati na kampanji",overview_src_t:"Izvori na leadovi",overview_cal_t:"Planer za sodržina",
+  convert_fields_t:"Polиña koi se prezemaat od leadot",lead_dnc_badge:"Ne kontaktiraj",
+  chart_none:"Sè uште nema podatoci."
+}
+};
+let LANG='en';
+function t(){return T[LANG];}
+function tpl(str,vals){return str.replace(/\{(\w+)\}/g,(m,k)=>(vals[k]!==undefined?vals[k]:m));}
+
+// ── view / filter state ──
+let VIEW='overview';
+let selectedLeadId=1,leadDetailTab='profile';
+let leadQuery='',leadFilterStatus='all',leadFilterIndustry='all',leadFilterOwner='all',leadFilterPriority='all';
+let oppQuery='',oppView='table',oppFilterStage='all',oppFilterOwner='all',oppFilterIndustry='all',oppFilterFollowup='all';
+let tenderQuery='';
+let campaignQuery='';
+let contentView='list';
+let currentModal=null;
+
+function fmtDate(iso){if(!iso)return '—';try{return d(iso).toLocaleDateString(T[LANG].locale||'en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return iso;}}
+function daysUntil(iso){if(!iso)return null;return daysBetween(TODAY,d(iso));}
+function followupClass(iso){if(!iso)return '';const n=daysUntil(iso);if(n===null)return '';if(n<0)return 'urgent-danger';if(n<=3)return 'urgent-warn';return 'urgent-ok';}
+function deadlineClass(iso){if(!iso)return '';const n=daysUntil(iso);if(n===null)return '';if(n<0)return 'rowdanger';if(n<=7)return 'rowwarn';return '';}
+
+// ── init / chrome ──
+function tick(){const n=new Date();$('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  try{$('date').textContent=n.toLocaleDateString((T[LANG].locale||'en-GB'),{weekday:'short',day:'numeric',month:'short'});}catch(e){$('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+function setLang(code){LANG=code;
+  document.querySelectorAll('[data-i]').forEach(el=>{const key=el.getAttribute('data-i');if(T[code][key]!==undefined)el.textContent=T[code][key];});
+  document.documentElement.lang=code==='mk'?'mk-Latn':code;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
+  const cur=$('langcur');if(cur)cur.textContent=code.toUpperCase();
+  tick();renderApp();}
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));const l=$('langc');if(l)l.classList.remove('open');}));
+(function(){const lc=$('langc'),lt=$('langtoggle');if(lt){lt.addEventListener('click',e=>{e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',e=>{if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+setInterval(tick,10000);
+(function(){const box=$('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce&&box){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}})();
+
+function setView(v){VIEW=v;document.querySelectorAll('.module-side-nav button[data-ms]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-ms')===v));renderApp();}
+
+// ── modal helpers ──
+function openModal(html,wide){$('fcard').className='fcard'+(wide?' wide':'');$('fcard').innerHTML=html;$('fov').classList.add('show');currentModal=true;
+  const first=$('fcard').querySelector('input,select,textarea,button');if(first)first.focus();}
+function closeModal(){$('fov').classList.remove('show');$('fcard').innerHTML='';currentModal=null;}
+$('fov').addEventListener('click',e=>{if(e.target.id==='fov')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&currentModal)closeModal();});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const el=document.activeElement;if(!el)return;
+  if(el.matches('tr.click[tabindex],.kcard[tabindex],.ccard2[tabindex]')){e.preventDefault();el.click();}
+});
+
+// ── KPI computations ──
+function inLast30(iso){const n=daysUntil(iso);return n!==null&&n<=0&&n>=-30;}
+function inPrev30(iso){const n=daysUntil(iso);return n!==null&&n<-30&&n>=-60;}
+function activeOpps(){return OPPORTUNITIES.filter(o=>o.stage!=='won'&&o.stage!=='lost');}
+function qualifiedOpps(){return OPPORTUNITIES.filter(o=>['qualified','rfq','preparing','quotesent','negotiation'].includes(o.stage));}
+function overdueItems(){const items=[];
+  LEADS.forEach(l=>{if(l.nextFollowUp&&daysUntil(l.nextFollowUp)<0&&l.status!=='disqualified'&&l.status!=='converted')items.push({type:'lead',ref:l,date:l.nextFollowUp});});
+  OPPORTUNITIES.forEach(o=>{if(o.followUpDate&&daysUntil(o.followUpDate)<0&&o.stage!=='won'&&o.stage!=='lost')items.push({type:'opp',ref:o,date:o.followUpDate});});
+  return items;}
+function upcomingItems(days){const items=[];
+  LEADS.forEach(l=>{if(l.nextFollowUp){const n=daysUntil(l.nextFollowUp);if(n>=0&&n<=days&&l.status!=='disqualified'&&l.status!=='converted')items.push({type:'lead',ref:l,date:l.nextFollowUp});}});
+  OPPORTUNITIES.forEach(o=>{if(o.followUpDate){const n=daysUntil(o.followUpDate);if(n>=0&&n<=days&&o.stage!=='won'&&o.stage!=='lost')items.push({type:'opp',ref:o,date:o.followUpDate});}});
+  return items;}
+function kpiData(){
+  const newLeads=LEADS.filter(l=>inLast30(l.created)).length;
+  const prevLeads=LEADS.filter(l=>inPrev30(l.created)).length;
+  const qualified=qualifiedOpps().length;
+  const pipelineValue=activeOpps().reduce((a,o)=>a+o.value,0);
+  const estimates=SHARED.estimations.length;
+  const won=OPPORTUNITIES.filter(o=>o.stage==='won').length,lost=OPPORTUNITIES.filter(o=>o.stage==='lost').length;
+  const winRate=(won+lost)?Math.round(won/(won+lost)*100):0;
+  const overdue=overdueItems().length;
+  return{newLeads,prevLeads,qualified,pipelineValue,estimates,winRate,overdue};
+}
+function trendHtml(delta,unit){const cls=delta>0?'up':(delta<0?'down':'flat');const arrow=delta>0?'&#9650;':(delta<0?'&#9660;':'&#9679;');
+  const sign=delta>0?'+':'';return `<div class="kpi-trend ${cls}">${arrow} ${sign}${delta}${unit||''} <span style="color:var(--steel-400);">${t().trend_prev30}</span></div>`;}
+function renderKPIGrid(){const k=kpiData();
+  const tt=t();
+  return `<div class="kpigrid">
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_newleads}</div><div class="kpi-value">${k.newLeads}</div>${trendHtml(k.newLeads-k.prevLeads,'')}</div>
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_qualified}</div><div class="kpi-value">${k.qualified}</div>${trendHtml(1,'')}</div>
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_pipeline}</div><div class="kpi-value" style="font-size:19px;">${fmt(k.pipelineValue)}</div>${trendHtml(24,'%')}</div>
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_estimates}</div><div class="kpi-value">${k.estimates}</div>${trendHtml(1,'')}</div>
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_winrate}</div><div class="kpi-value">${k.winRate}%</div>${trendHtml(9,'pp')}</div>
+    <div class="kpi-card"><div class="kpi-label">${tt.kpi_overdue}</div><div class="kpi-value" style="color:${k.overdue>0?'var(--danger)':'var(--ice)'};">${k.overdue}</div>${trendHtml(-1,'')}</div>
+  </div>`;}
+
+// ── sales funnel ──
+const FUNNEL_STAGES=[
+  {key:'new',match:l=>l.status!=='disqualified'},
+  {key:'contacted',match:l=>['contacted','qualified','converted'].includes(l.status)},
+  {key:'qualified',match:l=>['qualified','converted'].includes(l.status)},
+  {key:'rfq',match:null,opp:o=>['rfq','preparing','quotesent','negotiation','won'].includes(o.stage)},
+  {key:'quotesent',match:null,opp:o=>['quotesent','negotiation','won'].includes(o.stage)},
+  {key:'won',match:null,opp:o=>o.stage==='won'},
+  {key:'lost',match:null,opp:o=>o.stage==='lost'}
+];
+function renderFunnel(){
+  const rows=FUNNEL_STAGES.map(s=>{
+    let count,value;
+    if(s.match){const items=LEADS.filter(s.match);count=items.length;value=items.reduce((a,l)=>a+l.value,0);}
+    else{const items=OPPORTUNITIES.filter(s.opp);count=items.length;value=items.reduce((a,o)=>a+o.value,0);}
+    return{key:s.key,count,value};
+  });
+  const max=Math.max(1,...rows.map(r=>r.count));
+  return `<div class="funnel">${rows.map(r=>`<div class="funnel-row">
+      <div class="funnel-name">${t()['stg_'+r.key]}</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,Math.round(r.count/max*100))}%;">${r.count}</div></div>
+      <div class="funnel-meta">${fmt(r.value)}</div>
+    </div>`).join('')}</div>`;}
+
+// ── overview pipeline preview ──
+function renderOverviewPipeline(){
+  const rows=activeOpps().sort((a,b)=>b.value-a.value).slice(0,6);
+  const tt=t();
+  if(!rows.length)return `<div class="empty3">${tt.empty_opps}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_company}</th><th>${tt.th_service}</th><th>${tt.th_value}</th><th>${tt.th_probability}</th><th>${tt.th_stage}</th><th>${tt.th_owner}</th></tr></thead><tbody>
+    ${rows.map(o=>`<tr class="click" tabindex="0" onclick="setView('opportunities');setTimeout(()=>openOppDetail(${o.id}),0)">
+      <td><b>${esc(o.company)}</b></td><td>${esc(o.title)}</td><td>${fmt(o.value)}</td><td>${o.probability}%</td>
+      <td><span class="tagpill ${STAGE_CLASS[o.stage]}">${tt['stg_'+o.stage]}</span></td><td>${esc(o.owner)}</td></tr>`).join('')}
+  </tbody></table></div>`;}
+
+// ── follow-up queue ──
+function renderFollowupQueue(){
+  const tt=t();
+  const items=[...overdueItems(),...upcomingItems(7)].sort((a,b)=>d(a.date)-d(b.date));
+  if(!items.length)return `<div class="empty3">${tt.empty_followups}</div>`;
+  return items.map(it=>{
+    const overdue=daysUntil(it.date)<0;
+    const name=it.type==='lead'?it.ref.company:it.ref.company;
+    const sub=it.type==='lead'?esc(it.ref.contact)+' · '+tt['ls_'+it.ref.status]:esc(it.ref.title)+' · '+tt['stg_'+it.ref.stage];
+    const openFn=it.type==='lead'?`openLeadDetail(${it.ref.id})`:`openOppDetail(${it.ref.id})`;
+    return `<div class="fuitem">
+      <div class="fuinfo"><b class="${overdue?'urgent-danger':'urgent-warn'}">${esc(name)}</b><div class="fud">${sub} — ${fmtDate(it.date)}</div></div>
+      <div class="fuactions">
+        <button class="tbtn small" onclick="${it.type==='lead'?`completeLeadFollowup(${it.ref.id})`:`completeOppFollowup(${it.ref.id})`}">${tt.act_markcomplete}</button>
+        <button class="tbtn small" onclick="${it.type==='lead'?`openRescheduleLead(${it.ref.id})`:`openRescheduleOpp(${it.ref.id})`}">${tt.act_reschedule}</button>
+        <button class="tbtn small" onclick="${it.type==='lead'?`openAddNote(${it.ref.id})`:`openAddOppNote(${it.ref.id})`}">${tt.act_addnote}</button>
+        <button class="tbtn small" onclick="${openFn}">${tt.act_open}</button>
+      </div></div>`;}).join('');}
+
+// ── campaign performance ──
+function renderCampaignCard(c){
+  const tt=t();const conv=c.leads?Math.round(c.qualified/c.leads*100):0;const cpl=c.leads?Math.round(c.spend/c.leads):0;
+  const over=c.spend>c.budget;
+  return `<div class="ccard2" tabindex="0" onclick="openCampaignDetail(${c.id})">
+    <h4>${esc(c.name)}</h4><div class="csub">${esc(c.segment)} · ${c.channels.map(esc).join(', ')}</div>
+    <span class="tagpill ${CAMPAIGN_STATUS_CLASS[c.status]}">${tt['cs_'+c.status]}</span>
+    <div class="ccmetrics">
+      <div class="cm">${tt.th_leads}<b>${c.leads}</b></div><div class="cm">${tt.th_qualified}<b>${c.qualified}</b></div>
+      <div class="cm">${tt.th_estimates}<b>${c.estimates}</b></div><div class="cm">${tt.th_wonvalue}<b>${fmt(c.wonValue)}</b></div>
+      <div class="cm">${tt.th_cpl}<b>${fmt(cpl)}</b></div><div class="cm">${tt.th_conv}<b>${conv}%</b></div>
+    </div>
+    <div style="font-size:10.5px;color:var(--steel-400);">${fmt(c.spend)} / ${fmt(c.budget)}</div>
+    <div class="progbar ${over?'over':''}"><i style="width:${Math.min(100,Math.round(c.spend/c.budget*100))}%;"></i></div>
+  </div>`;}
+function renderCampaignGrid(list){const tt=t();if(!list.length)return `<div class="empty3">${tt.empty_campaigns}</div>`;return `<div class="cardgrid">${list.map(renderCampaignCard).join('')}</div>`;}
+
+// ── lead source chart ──
+function renderLeadSourceChart(){
+  const tt=t();const total=LEADS.length||1;
+  const counts=SOURCE_KEYS.map(k=>({key:k,count:LEADS.filter(l=>l.source===k).length}));
+  const max=Math.max(1,...counts.map(c=>c.count));
+  return `<div class="barchart">${counts.map(c=>`<div class="barrow"><div>${tt['src_'+c.key]}</div><div class="btrack"><div class="bfill" style="width:${Math.round(c.count/max*100)}%;"></div></div><div class="bval">${c.count}</div></div>`).join('')}</div>`;}
+
+// ── content planner (dashboard mini) ──
+function renderContentPlannerMini(){
+  const tt=t();
+  const upcoming=CONTENT.filter(c=>daysUntil(c.date)!==null&&daysUntil(c.date)>=-3).sort((a,b)=>d(a.date)-d(b.date)).slice(0,6);
+  if(!upcoming.length)return `<div class="empty3">${tt.empty_content}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_date}</th><th>${tt.th_type}</th><th>${tt.th_channel}</th><th>${tt.th_status}</th></tr></thead><tbody>
+    ${upcoming.map(c=>`<tr class="click" tabindex="0" onclick="setView('content')"><td>${fmtDate(c.date)}</td><td>${esc(c.title)}<div style="color:var(--steel-400);font-size:10.5px;">${esc(c.type)}</div></td><td>${esc(c.channel)}</td><td><span class="tagpill ${CONTENT_STATUS_CLASS[c.status]}">${tt['co_'+c.status]}</span></td></tr>`).join('')}
+  </tbody></table></div>`;}
+
+// ── prototype insights (rule-based, on demo data only — no AI, no external calls) ──
+function generateInsights(){
+  const tt=t();const out=[];
+  activeOpps().filter(o=>o.value>150000&&!o.followUpDate).forEach(o=>{
+    out.push({icon:'&#9888;',html:`<b>${esc(o.company)}</b> ${tpl(tt.ins_followup,{v:fmt(o.value)})}`});});
+  LEADS.filter(l=>l.status==='qualified').forEach(l=>{
+    const opp=l.linkedOpportunityId?getOpp(l.linkedOpportunityId):null;
+    if(!opp||['discovery','qualified'].includes(opp.stage)){
+      out.push({icon:'&#8635;',html:`<b>${esc(l.company)}</b> ${tpl(tt.ins_notreached,{stage:opp?tt['stg_'+opp.stage]:tt.stg_new})}`});}});
+  CAMPAIGNS.filter(c=>c.leads>=8&&(c.qualified/c.leads)<0.3).forEach(c=>{
+    out.push({icon:'&#9881;',html:`<b>${esc(c.name)}</b> ${tpl(tt.ins_campaign,{leads:c.leads,rate:Math.round(c.qualified/c.leads*100)})}`});});
+  SHARED.customers.forEach(cust=>{
+    const custOpps=OPPORTUNITIES.filter(o=>o.customerId===cust.id);
+    const hasActive=custOpps.some(o=>o.stage!=='won'&&o.stage!=='lost');
+    const lastAct=custOpps.flatMap(o=>o.activity||[]).map(a=>a.date).sort().pop();
+    const idle=lastAct?daysUntil(lastAct)<-14:true;
+    if(!hasActive&&idle&&custOpps.length){out.push({icon:'&#9201;',html:`<b>${esc(cust.name)}</b> ${tt.ins_noactivity}`});}});
+  CASESTUDIES.filter(cs=>cs.status==='published').forEach(cs=>{
+    const match=activeOpps().find(o=>o.industry&&cs.industry&&(o.industry.toLowerCase().includes(cs.industry.toLowerCase().split(' ')[0])||cs.industry.toLowerCase().includes(o.industry.toLowerCase().split(' ')[0])));
+    if(match){out.push({icon:'&#10070;',html:`<b>${esc(cs.title)}</b> ${tpl(tt.ins_casestudy,{company:esc(match.company)})}`});}});
+  return out.slice(0,6);
+}
+function renderInsights(){
+  const tt=t();const items=generateInsights();
+  const body=items.length?items.map(i=>`<div class="insight-card"><div class="insight-ic">${i.icon}</div><div class="insight-body"><p>${i.html}</p></div></div>`).join(''):`<div class="empty3">${tt.insights_none}</div>`;
+  return `<div class="panel"><div class="phead"><h3>${tt.insights_title}</h3><span class="phsub">${tt.insights_sub}</span></div>${body}<div class="disclaimer">${tt.insights_disclaimer}</div></div>`;
+}
+
+// ── overview assembly ──
+function renderOverview(){
+  const tt=t();
+  return `${renderKPIGrid()}
+  <div class="panel"><div class="phead"><h3>${tt.funnel_title}</h3><span class="phsub">${tt.funnel_sub}</span></div>${renderFunnel()}</div>
+  <div class="panel"><div class="phead"><h3>${tt.overview_pipe_t}</h3><span class="phsub">${tt.overview_pipe_sub}</span></div>${renderOverviewPipeline()}</div>
+  <div class="panel"><div class="phead"><h3>${tt.overview_fu_t}</h3></div>${renderFollowupQueue()}</div>
+  <div class="panel"><div class="phead"><h3>${tt.overview_camp_t}</h3></div>${renderCampaignGrid(CAMPAIGNS.filter(c=>c.status==='active'))}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="ovsplit">
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${tt.overview_src_t}</h3></div>${renderLeadSourceChart()}</div>
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${tt.overview_cal_t}</h3></div>${renderContentPlannerMini()}</div>
+  </div>
+  <div style="margin-top:16px;">${renderInsights()}</div>`;
+}
+
+// ── shared form field builders ──
+function field(id,label,value,type){type=type||'text';return `<div><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${esc(value??'')}"></div>`;}
+function fieldSelect(id,label,options,selected){return `<div><label for="${id}">${label}</label><select id="${id}">${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
+function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}</label><textarea id="${id}">${esc(value??'')}</textarea></div>`;}
+function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]}));}
+function ownerOptions(){return [{v:'Aleksandar C.',l:'Aleksandar C.'},{v:'Elena N.',l:'Elena N.'},{v:'Marko K.',l:'Marko K.'}];}
+
+// ═══════════════ LEADS VIEW ═══════════════
+function leadIndustryList(){return [...new Set(LEADS.map(l=>l.industry))];}
+function filteredLeads(){const q=leadQuery.trim().toLowerCase();
+  return LEADS.filter(l=>(leadFilterStatus==='all'||l.status===leadFilterStatus)
+    &&(leadFilterIndustry==='all'||l.industry===leadFilterIndustry)
+    &&(leadFilterOwner==='all'||l.owner===leadFilterOwner)
+    &&(leadFilterPriority==='all'||l.priority===leadFilterPriority)
+    &&(!q||l.company.toLowerCase().includes(q)||l.contact.toLowerCase().includes(q)||l.no.toLowerCase().includes(q)));}
+function openLeadDetail(id){selectedLeadId=id;leadDetailTab='profile';setView('leads');}
+function selectLead(id){selectedLeadId=id;leadDetailTab='profile';renderApp();}
+
+function renderLeads(){
+  const tt=t();const rows=filteredLeads();
+  if(!getLead(selectedLeadId)&&rows.length)selectedLeadId=rows[0].id;
+  const listHtml=rows.length?rows.map(l=>`<div class="leadrow ${l.id===selectedLeadId?'sel':''}" role="button" tabindex="0" onclick="selectLead(${l.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectLead(${l.id})}">
+      <div class="avc">${initials(l.company)}</div>
+      <div style="min-width:0;"><div class="lrname">${esc(l.company)}</div><div class="lrsub">${esc(l.no)} · ${esc(l.contact)}</div></div>
+      <div class="lrmeta"><div class="lrval">${fmt(l.value)}</div><span class="tagpill ${PRIORITY_CLASS[l.priority]}">${tt['pr_'+l.priority]}</span></div>
+    </div>`).join(''):`<div class="empty3">${tt.empty_leads}</div>`;
+  const industries=leadIndustryList();
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_leads_t}</h3><button class="tbtn primary small" onclick="openLeadForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newlead}</button></div>
+    <div class="filterbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="leadSearch" type="text" placeholder="${tt.search_leads}" value="${esc(leadQuery)}"></div>
+      <select id="leadFStatus" onchange="leadFilterStatus=this.value;renderApp();">
+        <option value="all" ${leadFilterStatus==='all'?'selected':''}>${tt.filt_allstatus}</option>
+        ${['new','contacted','qualified','disqualified','converted'].map(s=>`<option value="${s}" ${leadFilterStatus===s?'selected':''}>${tt['ls_'+s]}</option>`).join('')}
+      </select>
+      <select id="leadFIndustry" onchange="leadFilterIndustry=this.value;renderApp();">
+        <option value="all" ${leadFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>
+        ${industries.map(i=>`<option value="${esc(i)}" ${leadFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}
+      </select>
+      <select id="leadFOwner" onchange="leadFilterOwner=this.value;renderApp();">
+        <option value="all" ${leadFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>
+        ${ownerOptions().map(o=>`<option value="${o.v}" ${leadFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}
+      </select>
+      <select id="leadFPriority" onchange="leadFilterPriority=this.value;renderApp();">
+        <option value="all" ${leadFilterPriority==='all'?'selected':''}>${tt.filt_allpriorities}</option>
+        ${['high','medium','low'].map(p=>`<option value="${p}" ${leadFilterPriority===p?'selected':''}>${tt['pr_'+p]}</option>`).join('')}
+      </select>
+    </div>
+    <div class="leadgrid"><div class="rowlist">${listHtml}</div><div id="leadDetail">${renderLeadDetail()}</div></div>
+  </div>`;
+}
+function attachLeads(){const s=$('leadSearch');if(s)s.addEventListener('input',e=>{leadQuery=e.target.value;renderApp();});}
+
+function renderLeadDetail(){
+  const tt=t();const l=getLead(selectedLeadId);
+  if(!l)return `<div class="empty3">${tt.empty_select}</div>`;
+  const cust=l.linkedCustomerId?sharedCustomer(l.linkedCustomerId):null;
+  const opp=l.linkedOpportunityId?getOpp(l.linkedOpportunityId):null;
+  const tabs=`<div class="ptabs">
+    <button class="${leadDetailTab==='profile'?'on':''}" onclick="leadDetailTab='profile';renderApp();">${tt.tab_profile}</button>
+    <button class="${leadDetailTab==='activity'?'on':''}" onclick="leadDetailTab='activity';renderApp();">${tt.tab_activity}</button>
+    <button class="${leadDetailTab==='notes'?'on':''}" onclick="leadDetailTab='notes';renderApp();">${tt.tab_notes}</button>
+  </div>`;
+  let body='';
+  if(leadDetailTab==='profile'){
+    body=`<div class="kvcols">
+      <div class="kv"><div class="k">${tt.fl_email}</div><div class="v"><a href="mailto:${esc(l.email)}" style="color:var(--spark);">${esc(l.email)}</a></div></div>
+      <div class="kv"><div class="k">${tt.fl_phone}</div><div class="v">${esc(l.phone)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_city}</div><div class="v">${esc(l.city)}, ${esc(l.country)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_industry}</div><div class="v">${esc(l.industry)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_size}</div><div class="v">${esc(l.size)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_source}</div><div class="v">${tt['src_'+l.source]}</div></div>
+      <div class="kv"><div class="k">${tt.fl_service}</div><div class="v">${esc(l.service)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_owner}</div><div class="v">${esc(l.owner)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_created}</div><div class="v">${fmtDate(l.created)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_lastcontact}</div><div class="v">${fmtDate(l.lastContact)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_nextfollowup}</div><div class="v ${followupClass(l.nextFollowUp)}">${fmtDate(l.nextFollowUp)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_commpref}</div><div class="v">${esc(l.commPref)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_linkedcustomer}</div><div class="v">${cust?`<a onclick="location.href='customers-desktop.html'" style="color:var(--spark);cursor:pointer;">${esc(cust.name)}</a>`:'—'}</div></div>
+      <div class="kv"><div class="k">${tt.fl_linkedopp}</div><div class="v">${opp?`<a onclick="openOppDetail(${opp.id})" style="color:var(--spark);cursor:pointer;">${esc(opp.no)}</a>`:'—'}</div></div>
+    </div>${l.dnc?`<span class="tagpill r" style="margin-top:6px;">${tt.lead_dnc_badge}</span>`:''}`;
+  }else if(leadDetailTab==='activity'){
+    body=l.activity&&l.activity.length?`<div class="timeline">${l.activity.slice().reverse().map(a=>`<div class="tlrow"><div class="tldot"></div><div class="tlbody"><div class="tld">${fmtDate(a.date)}</div><div class="tlt">${esc(a.text)}</div></div></div>`).join('')}</div>`:`<div class="empty3">${tt.empty_activity}</div>`;
+  }else{
+    body=l.notes&&l.notes.length?l.notes.map(n=>`<div class="noteitem"><div style="color:var(--steel-400);font-size:11px;">${fmtDate(n.date)} · ${esc(n.author)}</div>${esc(n.text)}</div>`).join(''):`<div class="empty3">${tt.empty_notes}</div>`;
+  }
+  return `<div class="dhead2"><div><h2>${esc(l.company)}</h2><div class="dsub">${esc(l.no)} · ${esc(l.contact)} · <span class="tagpill ${LEAD_STATUS_CLASS[l.status]}">${tt['ls_'+l.status]}</span></div></div>
+    <div class="lrval" style="font-size:19px;">${fmt(l.value)}</div></div>
+    ${tabs}${body}
+    <div class="actionbar">
+      <button onclick="openLeadForm(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>${tt.act_editlead}</button>
+      <button onclick="openRecordCall(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg>${tt.act_recordcall}</button>
+      <button onclick="openRecordEmail(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 6 8-6"/></svg>${tt.act_recordemail}</button>
+      <button onclick="openScheduleFollowup(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${tt.act_schedulefollowup}</button>
+      <button onclick="openAddNote(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${tt.act_addnote}</button>
+      ${l.status!=='qualified'&&l.status!=='disqualified'&&l.status!=='converted'?`<button onclick="openQualifyLead(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${tt.act_qualify}</button>`:''}
+      ${l.status!=='disqualified'&&l.status!=='converted'?`<button onclick="openDisqualifyLead(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>${tt.act_disqualify}</button>`:''}
+      ${l.status!=='converted'?`<button onclick="openConvertLead(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4-4 4M3 12h18"/></svg>${tt.act_converttocustomer}</button>`:''}
+    </div>`;
+}
+
+// ── lead modals & actions ──
+function openLeadForm(id){
+  const tt=t();const l=id?getLead(id):null;
+  const html=`<h2>${l?tt.m_editlead_t:tt.m_newlead_t}</h2><div class="fsub">${tt.v_leads_sub}</div>
+    <div class="frow2">${field('lfCompany',tt.fl_company,l?l.company:'')}${field('lfContact',tt.fl_contact,l?l.contact:'')}</div>
+    <div class="frow2">${field('lfEmail',tt.fl_email,l?l.email:'','email')}${field('lfPhone',tt.fl_phone,l?l.phone:'')}</div>
+    <div class="frow2">${field('lfCity',tt.fl_city,l?l.city:'')}${field('lfCountry',tt.fl_country,l?l.country:'Sweden')}</div>
+    <div class="frow2">${field('lfIndustry',tt.fl_industry,l?l.industry:'')}${field('lfSize',tt.fl_size,l?l.size:'')}</div>
+    <div class="frow2">${fieldSelect('lfSource',tt.fl_source,optList(SOURCE_KEYS,'src_'),l?l.source:'website')}${field('lfService',tt.fl_service,l?l.service:'')}</div>
+    <div class="frow3">${field('lfValue',tt.fl_value,l?l.value:'','number')}${fieldSelect('lfPriority',tt.fl_priority,optList(['high','medium','low'],'pr_'),l?l.priority:'medium')}${fieldSelect('lfOwner',tt.fl_owner,ownerOptions(),l?l.owner:'Aleksandar C.')}</div>
+    <div class="frow2">${field('lfFollowup',tt.fl_nextfollowup,l?l.nextFollowUp:'','date')}${fieldSelect('lfCommpref',tt.fl_commpref,[{v:'Email',l:'Email'},{v:'Phone',l:'Phone'}],l?l.commPref:'Email')}</div>
+    <div class="frow checkrow"><input type="checkbox" id="lfDnc" ${l&&l.dnc?'checked':''}><label for="lfDnc" style="margin:0;">${tt.fl_dnc}</label></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadForm(${l?l.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveLeadForm(id){
+  const company=$('lfCompany').value.trim(),contact=$('lfContact').value.trim();
+  if(!company||!contact)return;
+  const data={company,contact,email:$('lfEmail').value.trim(),phone:$('lfPhone').value.trim(),city:$('lfCity').value.trim(),country:$('lfCountry').value.trim(),
+    industry:$('lfIndustry').value.trim(),size:$('lfSize').value.trim(),source:$('lfSource').value,service:$('lfService').value.trim(),
+    value:Number($('lfValue').value)||0,priority:$('lfPriority').value,owner:$('lfOwner').value,nextFollowUp:$('lfFollowup').value||null,
+    commPref:$('lfCommpref').value,dnc:$('lfDnc').checked};
+  if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:TODAY.toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});}
+  else{LEADS.unshift(Object.assign({id:nextLeadId++,no:'LD-2026-0'+(nextLeadNo++),status:'new',created:TODAY.toISOString().slice(0,10),lastContact:TODAY.toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:TODAY.toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data));selectedLeadId=LEADS[0].id;}
+  closeModal();renderApp();
+}
+function openAddNote(id){const tt=t();const html=`<h2>${tt.m_addnote_t}</h2>${fieldTextarea('noteText',tt.f_notetext,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveLeadNote(id){const txt=$('noteText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.notes.unshift({date:dt,author:'Aleksandar C.',text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});leadDetailTab='notes';closeModal();renderApp();}
+function openRecordCall(id){const tt=t();const html=`<h2>${tt.m_recordcall_t}</h2>${fieldTextarea('callText',tt.f_calltext,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadCall(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveLeadCall(id){const txt=$('callText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.lastContact=dt;l.activity.push({date:dt,type:'call',text:txt});leadDetailTab='activity';closeModal();renderApp();}
+function openRecordEmail(id){const tt=t();const html=`<h2>${tt.m_recordemail_t}</h2>${fieldTextarea('emailText',tt.f_emailtext,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadEmail(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveLeadEmail(id){const txt=$('emailText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.lastContact=dt;l.activity.push({date:dt,type:'email',text:txt});leadDetailTab='activity';closeModal();renderApp();}
+function openScheduleFollowup(id){openRescheduleLead(id);}
+function openRescheduleLead(id){const tt=t();const l=getLead(id);const html=`<h2>${tt.m_schedulefu_t}</h2>
+  ${field('fuDate',tt.f_fudate,l.nextFollowUp||'','date')}${fieldTextarea('fuReason',tt.f_fureason,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveLeadFollowup(id){const date=$('fuDate').value;if(!date)return;const reason=$('fuReason').value.trim();const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.nextFollowUp=date;l.activity.push({date:dt,type:'followup',text:'Follow-up scheduled for '+date+(reason?' — '+reason:'')+'.'});closeModal();renderApp();}
+function completeLeadFollowup(id){const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);l.activity.push({date:dt,type:'followup',text:'Follow-up marked completed.'});l.lastContact=dt;l.nextFollowUp=null;renderApp();}
+function openQualifyLead(id){const tt=t();const html=`<h2>${tt.m_qualify_t}</h2>${fieldTextarea('qualNote',tt.f_qualnote,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveQualifyLead(${id})">${tt.act_qualify}</button></div>`;openModal(html);}
+function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});closeModal();renderApp();}
+function openDisqualifyLead(id){const tt=t();const html=`<h2>${tt.m_disqualify_t}</h2>${fieldTextarea('disqReason',tt.f_disqreason,'')}
+  <div class="frow checkrow"><input type="checkbox" id="disqDnc"><label for="disqDnc" style="margin:0;">${tt.fl_dnc}</label></div>
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveDisqualifyLead(${id})">${tt.act_disqualify}</button></div>`;openModal(html);}
+function saveDisqualifyLead(id){const reason=$('disqReason').value.trim();const dnc=$('disqDnc').checked;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  l.status='disqualified';l.dnc=l.dnc||dnc;l.nextFollowUp=null;l.activity.push({date:dt,type:'disqualify',text:'Lead disqualified.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
+function openConvertLead(id){const tt=t();const l=getLead(id);
+  const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
+  const html=`<h2>${tt.m_convert_t}</h2><div class="fsub">${esc(l.company)}</div>
+    <div class="convertbox"><b>${tt.convert_fields_t}:</b> ${tt.fl_company}, ${tt.fl_contact}, ${tt.fl_email}, ${tt.fl_phone}, ${tt.fl_city}, ${tt.fl_country}, ${tt.fl_industry}.<br>${tt.f_convertnote}
+    ${existing?`<br><br><b style="color:var(--warn);">⚠ ${esc(existing.name)}</b> — ${LANG==='en'?'a matching customer already exists and will be reused, no duplicate will be created.':(LANG==='sv'?'en matchande kund finns redan och kommer att återanvändas, ingen dubblett skapas.':'veke postoi soodveten klient koj ke se koristi повторно, nema да se kreira duplikat.')}`:''}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveConvertLead(${id})">${tt.act_converttocustomer}</button></div>`;
+  openModal(html);}
+function saveConvertLead(id){const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+  let custId=null;
+  if(window.WorkshopData){
+    const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
+    if(existing){custId=existing.id;}
+    else{const saved=WorkshopData.upsertCustomer({name:l.company,status:'active',city:l.city,country:l.country,email:l.email,phone:l.phone,industry:l.industry,type:'Company',since:dt,terms:'30 days',credit:0,currency:'SEK',contacts:[{name:l.contact,role:'Contact',primary:true,email:l.email,phone:l.phone}],notes:[],documents:[]});
+      SHARED.customers=WorkshopData.get().customers;custId=saved.id;}
+  }
+  l.status='converted';l.linkedCustomerId=custId;l.nextFollowUp=null;l.activity.push({date:dt,type:'convert',text:'Converted to customer record'+(custId?' (ID '+custId+').':'.')});
+  closeModal();renderApp();}
+
+// ═══════════════ OPPORTUNITIES VIEW ═══════════════
+function oppIndustryList(){return [...new Set(OPPORTUNITIES.map(o=>o.industry))];}
+function filteredOpps(){const q=oppQuery.trim().toLowerCase();
+  return OPPORTUNITIES.filter(o=>(oppFilterStage==='all'||o.stage===oppFilterStage)
+    &&(oppFilterOwner==='all'||o.owner===oppFilterOwner)
+    &&(oppFilterIndustry==='all'||o.industry===oppFilterIndustry)
+    &&(oppFilterFollowup==='all'||(oppFilterFollowup==='overdue'&&o.followUpDate&&daysUntil(o.followUpDate)<0)||(oppFilterFollowup==='upcoming'&&o.followUpDate&&daysUntil(o.followUpDate)>=0)||(oppFilterFollowup==='none'&&!o.followUpDate))
+    &&(!q||o.company.toLowerCase().includes(q)||o.title.toLowerCase().includes(q)||o.no.toLowerCase().includes(q)));}
+function renderOpportunities(){
+  const tt=t();const rows=filteredOpps();
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_opportunities_t}</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="toggrp"><button class="${oppView==='table'?'on':''}" onclick="oppView='table';renderApp();">${tt.btn_table}</button><button class="${oppView==='kanban'?'on':''}" onclick="oppView='kanban';renderApp();">${tt.btn_kanban}</button></div>
+        <button class="tbtn primary small" onclick="openOppForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newopp}</button>
+      </div></div>
+    <div class="filterbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="oppSearch" type="text" placeholder="${tt.search_opps}" value="${esc(oppQuery)}"></div>
+      <select onchange="oppFilterStage=this.value;renderApp();"><option value="all" ${oppFilterStage==='all'?'selected':''}>${tt.filt_allstages}</option>${STAGES.map(s=>`<option value="${s}" ${oppFilterStage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select>
+      <select onchange="oppFilterOwner=this.value;renderApp();"><option value="all" ${oppFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>${ownerOptions().map(o=>`<option value="${o.v}" ${oppFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}</select>
+      <select onchange="oppFilterIndustry=this.value;renderApp();"><option value="all" ${oppFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>${oppIndustryList().map(i=>`<option value="${esc(i)}" ${oppFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}</select>
+      <select onchange="oppFilterFollowup=this.value;renderApp();"><option value="all" ${oppFilterFollowup==='all'?'selected':''}>${tt.filt_followup}</option><option value="overdue" ${oppFilterFollowup==='overdue'?'selected':''}>${tt.filt_overdue}</option><option value="upcoming" ${oppFilterFollowup==='upcoming'?'selected':''}>${tt.filt_upcoming}</option></select>
+    </div>
+    ${oppView==='table'?renderOppTable(rows):renderOppKanban(rows)}
+  </div>`;
+}
+function attachOpportunities(){const s=$('oppSearch');if(s)s.addEventListener('input',e=>{oppQuery=e.target.value;renderApp();});}
+function renderOppTable(rows){const tt=t();if(!rows.length)return `<div class="empty3">${tt.empty_opps}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_company}</th><th>${tt.th_contact}</th><th>${tt.th_service}</th><th>${tt.th_industry}</th><th>${tt.th_value}</th><th>${tt.th_probability}</th><th>${tt.th_stage}</th><th>${tt.th_owner}</th><th>${tt.th_nextaction}</th><th>${tt.th_followup}</th></tr></thead><tbody>
+    ${rows.map(o=>`<tr class="click ${deadlineClass(o.followUpDate)}" onclick="openOppDetail(${o.id})">
+      <td><b>${esc(o.company)}</b></td><td>${esc(o.contact)}</td><td>${esc(o.title)}</td><td>${esc(o.industry)}</td><td>${fmt(o.value)}</td><td>${o.probability}%</td>
+      <td><span class="tagpill ${STAGE_CLASS[o.stage]}">${tt['stg_'+o.stage]}</span></td><td>${esc(o.owner)}</td><td>${esc(o.nextAction)}</td>
+      <td class="${followupClass(o.followUpDate)}">${fmtDate(o.followUpDate)}</td></tr>`).join('')}
+  </tbody></table></div>`;}
+function renderOppKanban(rows){const tt=t();
+  return `<div class="kanban">${STAGES.map(s=>{const items=rows.filter(o=>o.stage===s);
+    return `<div class="kcol"><div class="kcol-head">${tt['stg_'+s]}<span>${items.length}</span></div><div class="kcol-body">
+      ${items.map(o=>`<div class="kcard" tabindex="0" onclick="openOppDetail(${o.id})"><b>${esc(o.company)}</b>${esc(o.title)}<div class="kmeta">${esc(o.owner)} · ${o.probability}%</div><div class="kval">${fmt(o.value)}</div></div>`).join('')}
+    </div></div>`;}).join('')}</div>`;}
+
+function openOppDetail(id){
+  const tt=t();const o=getOpp(id);if(!o)return;
+  const cust=o.customerId?sharedCustomer(o.customerId):null;
+  const est=o.linkedEstimateNo?sharedEstimation(o.linkedEstimateNo):null;
+  const html=`<h2>${esc(o.title)}</h2><div class="fsub">${esc(o.no)} · ${esc(o.company)}</div>
+    <div class="kvcols">
+      <div class="kv"><div class="k">${tt.fl_contact}</div><div class="v">${esc(o.contact)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_industry}</div><div class="v">${esc(o.industry)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_value}</div><div class="v">${fmt(o.value)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_probability}</div><div class="v">${o.probability}%</div></div>
+      <div class="kv"><div class="k">${tt.fl_weighted}</div><div class="v">${fmt(o.value*o.probability/100)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_owner}</div><div class="v">${esc(o.owner)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_expecteddecision}</div><div class="v">${fmtDate(o.expectedDecision)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_requireddelivery}</div><div class="v">${fmtDate(o.requiredDelivery)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_competitor}</div><div class="v">${esc(o.competitor)||'—'}</div></div>
+      <div class="kv"><div class="k">${tt.fl_linkedestimate}</div><div class="v">${est?esc(est.no):(o.linkedEstimateNo||'—')}</div></div>
+      <div class="kv"><div class="k">${tt.fl_linkedproject}</div><div class="v">${esc(o.linkedProjectNo)||'—'}</div></div>
+      <div class="kv"><div class="k">${tt.fl_nextaction}</div><div class="v">${esc(o.nextAction)}</div></div>
+    </div>
+    <div class="frow"><label>${tt.fl_scope}</label><div style="font-size:12.5px;color:var(--steel-300);">${esc(o.scope)}</div></div>
+    <div class="frow"><label>${tt.act_movestage}</label><select id="oppStageSel">${STAGES.map(s=>`<option value="${s}" ${o.stage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select></div>
+    ${o.activity&&o.activity.length?`<div class="timeline" style="margin-top:10px;">${o.activity.slice().reverse().map(a=>`<div class="tlrow"><div class="tldot"></div><div class="tlbody"><div class="tld">${fmtDate(a.date)}</div><div class="tlt">${esc(a.text)}</div></div></div>`).join('')}</div>`:''}
+    <div class="fbtns" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button class="tbtn small" onclick="closeModal();openOppForm(${o.id})">${tt.act_editopp}</button>
+      <button class="tbtn small" onclick="applyOppStage(${o.id})">${tt.act_movestage}</button>
+      ${cust?`<button class="tbtn small" onclick="location.href='customers-desktop.html'">${tt.act_opencustomer}</button>`:''}
+      <button class="tbtn small" onclick="location.href='estimations-desktop.html'">${tt.act_openestimation}</button>
+      <button class="tbtn small" onclick="markOppWon(${o.id})">${tt.act_markwon}</button>
+      <button class="tbtn small" onclick="closeModal();openMarkLost(${o.id})">${tt.act_marklost}</button>
+      <button class="tbtn small" onclick="closeModal();openRescheduleOpp(${o.id})">${tt.act_addfollowup}</button>
+      <button class="tbtn primary small" onclick="closeModal()">${tt.btn_close}</button>
+    </div>`;
+  openModal(html,true);
+}
+function applyOppStage(id){const sel=$('oppStageSel');if(!sel)return;const o=getOpp(id);const newStage=sel.value;if(newStage===o.stage)return;
+  const dt=TODAY.toISOString().slice(0,10);o.activity.push({date:dt,text:'Stage moved to '+t()['stg_'+newStage]+'.'});
+  o.stage=newStage;if(newStage==='won'){o.probability=100;o.followUpDate=null;}closeModal();renderApp();}
+function markOppWon(id){const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);o.stage='won';o.probability=100;o.followUpDate=null;
+  o.activity.push({date:dt,text:'Marked as won.'});closeModal();renderApp();}
+function openMarkLost(id){const tt=t();const html=`<h2>${tt.m_marklost_t}</h2>${fieldTextarea('lostReason',tt.fl_decisionreason,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveMarkLost(${id})">${tt.act_marklost}</button></div>`;openModal(html);}
+function saveMarkLost(id){const reason=$('lostReason').value.trim();const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);
+  o.stage='lost';o.probability=0;o.followUpDate=null;o.decisionReason=reason;o.activity.push({date:dt,text:'Marked as lost.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
+function openAddOppNote(id){const tt=t();const html=`<h2>${tt.act_addnote}</h2>${fieldTextarea('oppNoteText',tt.f_notetext,'')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveOppNote(id){const txt=$('oppNoteText').value.trim();if(!txt)return;const o=getOpp(id);o.activity.push({date:TODAY.toISOString().slice(0,10),text:txt});closeModal();renderApp();}
+function openRescheduleOpp(id){const tt=t();const o=getOpp(id);const html=`<h2>${tt.m_schedulefu_t}</h2>${field('oppFuDate',tt.f_fudate,o.followUpDate||'','date')}
+  <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
+function saveOppFollowup(id){const date=$('oppFuDate').value;if(!date)return;const o=getOpp(id);o.followUpDate=date;
+  o.activity.push({date:TODAY.toISOString().slice(0,10),text:'Follow-up scheduled for '+date+'.'});closeModal();renderApp();}
+function completeOppFollowup(id){const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);o.activity.push({date:dt,text:'Follow-up marked completed.'});o.followUpDate=null;renderApp();}
+function openOppForm(id){
+  const tt=t();const o=id?getOpp(id):null;
+  const html=`<h2>${o?tt.m_editopp_t:tt.m_newopp_t}</h2>
+    <div class="frow2">${field('ofCompany',tt.fl_company,o?o.company:'')}${field('ofContact',tt.fl_contact,o?o.contact:'')}</div>
+    <div class="frow2">${field('ofTitle',tt.fl_title,o?o.title:'')}${field('ofIndustry',tt.fl_industry,o?o.industry:'')}</div>
+    <div class="frow">${fieldTextarea('ofScope',tt.fl_scope,o?o.scope:'')}</div>
+    <div class="frow3">${field('ofValue',tt.fl_value,o?o.value:'','number')}${field('ofProb',tt.fl_probability,o?o.probability:50,'number')}${fieldSelect('ofStage',tt.fl_status,STAGES.map(s=>({v:s,l:tt['stg_'+s]})),o?o.stage:'discovery')}</div>
+    <div class="frow2">${field('ofDecision',tt.fl_expecteddecision,o?o.expectedDecision:'','date')}${field('ofDelivery',tt.fl_requireddelivery,o?o.requiredDelivery:'','date')}</div>
+    <div class="frow2">${fieldSelect('ofOwner',tt.fl_owner,ownerOptions(),o?o.owner:'Aleksandar C.')}${field('ofCompetitor',tt.fl_competitor,o?o.competitor:'')}</div>
+    <div class="frow">${field('ofNextAction',tt.fl_nextaction,o?o.nextAction:'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppForm(${o?o.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveOppForm(id){
+  const company=$('ofCompany').value.trim(),title=$('ofTitle').value.trim();if(!company||!title)return;
+  const data={company,contact:$('ofContact').value.trim(),title,industry:$('ofIndustry').value.trim(),scope:$('ofScope').value.trim(),
+    value:Number($('ofValue').value)||0,probability:Number($('ofProb').value)||0,stage:$('ofStage').value,
+    expectedDecision:$('ofDecision').value||'',requiredDelivery:$('ofDelivery').value||'',owner:$('ofOwner').value,competitor:$('ofCompetitor').value.trim(),nextAction:$('ofNextAction').value.trim()};
+  const dt=TODAY.toISOString().slice(0,10);
+  if(id){const o=getOpp(id);Object.assign(o,data);o.activity.push({date:dt,text:'Opportunity details updated.'});}
+  else{OPPORTUNITIES.unshift(Object.assign({id:nextOppId++,no:'OPP-2026-1'+(nextOppNo++),leadId:null,customerId:null,services:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:null,activity:[{date:dt,text:'Opportunity created manually.'}]},data));}
+  closeModal();renderApp();
+}
+
+// ═══════════════ TENDERS / RFQs VIEW ═══════════════
+function filteredTenders(){const q=tenderQuery.trim().toLowerCase();
+  return TENDERS.filter(x=>!q||x.company.toLowerCase().includes(q)||x.ref.toLowerCase().includes(q)||x.description.toLowerCase().includes(q));}
+function renderTenders(){
+  const tt=t();const rows=filteredTenders().slice().sort((a,b)=>d(a.deadline)-d(b.deadline));
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_tenders_t}</h3><button class="tbtn primary small" onclick="openTenderForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newtender}</button></div>
+    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tenderSearch" type="text" placeholder="${tt.search_tenders}" value="${esc(tenderQuery)}"></div></div>
+    ${rows.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_ref}</th><th>${tt.th_company}</th><th>${tt.th_industry}</th><th>${tt.th_deadline}</th><th>${tt.th_value}</th><th>${tt.th_bid}</th><th>${tt.th_status}</th><th>${tt.th_responsible}</th><th>${tt.th_actions}</th></tr></thead><tbody>
+      ${rows.map(x=>`<tr class="${deadlineClass(x.deadline)}"><td><b>${esc(x.ref)}</b></td><td>${esc(x.company)}</td><td>${esc(x.industry)}</td>
+        <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmt(x.value)}</td>
+        <td><span class="tagpill ${BID_CLASS[x.bidDecision]}">${tt['bid_'+x.bidDecision]}</span></td>
+        <td><span class="tagpill ${TENDER_STATUS_CLASS[x.status]||'n'}">${tt['ts_'+x.status.replace('-','')]||x.status}</span></td>
+        <td>${esc(x.responsible)}</td><td class="rowactions"><button class="iconbtn" title="${tt.btn_edit}" onclick="openTenderForm(${x.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></td></tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty3">${tt.empty_tenders}</div>`}
+  </div>`;
+}
+function attachTenders(){const s=$('tenderSearch');if(s)s.addEventListener('input',e=>{tenderQuery=e.target.value;renderApp();});}
+function openTenderForm(id){
+  const tt=t();const x=id?TENDERS.find(r=>r.id===id):null;
+  const html=`<h2>${x?tt.btn_edit:tt.m_newtender_t}</h2>
+    <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:('RFQ-2026-0'+(TENDERS.length+11)))}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
+    <div class="frow2">${field('tfIndustry',tt.fl_industry,x?x.industry:'')}${field('tfSource',tt.fl_source,x?x.source:'')}</div>
+    <div class="frow">${fieldTextarea('tfDesc',tt.fl_description,x?x.description:'')}</div>
+    <div class="frow3">${field('tfDeadline',tt.fl_deadline,x?x.deadline:'','date')}${field('tfValue',tt.fl_value,x?x.value:'','number')}${fieldSelect('tfResponsible',tt.fl_responsible,ownerOptions(),x?x.responsible:'Aleksandar C.')}</div>
+    <div class="frow2">${fieldSelect('tfBid',tt.fl_biddecision,[{v:'bid',l:tt.bid_bid},{v:'pending',l:tt.bid_pending},{v:'no-bid',l:tt['bid_no-bid']}],x?x.bidDecision:'pending')}${field('tfReminder',tt.fl_reminder,x?x.reminderDate:'','date')}</div>
+    <div class="frow">${fieldTextarea('tfRequirements',tt.fl_requirements,x?x.requirements:'')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveTenderForm(${x?x.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveTenderForm(id){
+  const ref=$('tfRef').value.trim(),company=$('tfCompany').value.trim();if(!ref||!company)return;
+  const data={ref,company,source:$('tfSource').value.trim(),industry:$('tfIndustry').value.trim(),description:$('tfDesc').value.trim(),
+    deadline:$('tfDeadline').value||'',value:Number($('tfValue').value)||0,responsible:$('tfResponsible').value,
+    bidDecision:$('tfBid').value,reminderDate:$('tfReminder').value||null,requirements:$('tfRequirements').value.trim()};
+  if(id){Object.assign(TENDERS.find(r=>r.id===id),data);}
+  else{TENDERS.unshift(Object.assign({id:nextTenderId++,documents:[],status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null},data));}
+  closeModal();renderApp();
+}
+
+// ═══════════════ CAMPAIGNS VIEW ═══════════════
+function filteredCampaigns(){const q=campaignQuery.trim().toLowerCase();
+  return CAMPAIGNS.filter(c=>!q||c.name.toLowerCase().includes(q)||c.segment.toLowerCase().includes(q));}
+function renderCampaigns(){
+  const tt=t();const rows=filteredCampaigns();
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_campaigns_t}</h3><button class="tbtn primary small" onclick="openCampaignForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newcampaign}</button></div>
+    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="campaignSearch" type="text" placeholder="${tt.search_campaigns}" value="${esc(campaignQuery)}"></div></div>
+    ${renderCampaignGrid(rows)}
+  </div>`;
+}
+function attachCampaigns(){const s=$('campaignSearch');if(s)s.addEventListener('input',e=>{campaignQuery=e.target.value;renderApp();});}
+function openCampaignDetail(id){
+  const tt=t();const c=getCampaign(id);if(!c)return;const conv=c.leads?Math.round(c.qualified/c.leads*100):0,cpl=c.leads?Math.round(c.spend/c.leads):0;
+  const html=`<h2>${esc(c.name)}</h2><div class="fsub">${esc(c.segment)}</div>
+    <div class="kvcols">
+      <div class="kv"><div class="k">${tt.fl_objective}</div><div class="v" style="font-weight:400;">${esc(c.objective)}</div></div>
+    </div>
+    <div class="kvcols">
+      <div class="kv"><div class="k">${tt.fl_targetindustries}</div><div class="v">${c.targetIndustries.map(esc).join(', ')}</div></div>
+      <div class="kv"><div class="k">${tt.fl_channels}</div><div class="v">${c.channels.map(esc).join(', ')}</div></div>
+      <div class="kv"><div class="k">${tt.fl_start}</div><div class="v">${fmtDate(c.start)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_end}</div><div class="v">${fmtDate(c.end)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_budget}</div><div class="v">${fmt(c.budget)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_spend}</div><div class="v">${fmt(c.spend)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_owner}</div><div class="v">${esc(c.owner)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_status}</div><div class="v"><span class="tagpill ${CAMPAIGN_STATUS_CLASS[c.status]}">${tt['cs_'+c.status]}</span></div></div>
+    </div>
+    <div class="ccmetrics" style="grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;margin:12px 0;">
+      <div class="cm">${tt.th_leads}<b>${c.leads}</b></div><div class="cm">${tt.th_qualified}<b>${c.qualified}</b></div><div class="cm">${tt.th_estimates}<b>${c.estimates}</b></div>
+      <div class="cm">${tt.th_wonvalue}<b>${fmt(c.wonValue)}</b></div><div class="cm">${tt.th_cpl}<b>${fmt(cpl)}</b></div><div class="cm">${tt.th_conv}<b>${conv}%</b></div>
+    </div>
+    ${c.activity&&c.activity.length?`<div class="timeline">${c.activity.slice().reverse().map(a=>`<div class="tlrow"><div class="tldot"></div><div class="tlbody"><div class="tld">${fmtDate(a.date)}</div><div class="tlt">${esc(a.text)}</div></div></div>`).join('')}</div>`:''}
+    <div class="fbtns" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button class="tbtn small" onclick="closeModal();openCampaignForm(${c.id})">${tt.btn_edit}</button>
+      ${c.status==='active'?`<button class="tbtn small" onclick="setCampaignStatus(${c.id},'paused')">${tt.act_pause}</button><button class="tbtn small" onclick="setCampaignStatus(${c.id},'completed')">${tt.act_complete}</button>`:''}
+      ${c.status==='paused'?`<button class="tbtn small" onclick="setCampaignStatus(${c.id},'active')">${tt.act_resume}</button>`:''}
+      <button class="tbtn primary small" onclick="closeModal()">${tt.btn_close}</button>
+    </div>`;
+  openModal(html,true);
+}
+function setCampaignStatus(id,status){const c=getCampaign(id);c.status=status;c.activity.push({date:TODAY.toISOString().slice(0,10),text:'Status changed to '+status+'.'});closeModal();renderApp();}
+function openCampaignForm(id){
+  const tt=t();const c=id?getCampaign(id):null;
+  const html=`<h2>${c?tt.m_editcampaign_t:tt.m_newcampaign_t}</h2>
+    <div class="frow">${field('cfName',tt.fl_company,c?c.name:'')}</div>
+    <div class="frow">${fieldTextarea('cfObjective',tt.fl_objective,c?c.objective:'')}</div>
+    <div class="frow2">${field('cfIndustries',tt.fl_targetindustries,c?c.targetIndustries.join(', '):'')}${field('cfChannels',tt.fl_channels,c?c.channels.join(', '):'')}</div>
+    <div class="frow2">${field('cfSegment',tt.fl_segment,c?c.segment:'')}${fieldSelect('cfOwner',tt.fl_owner,ownerOptions(),c?c.owner:'Aleksandar C.')}</div>
+    <div class="frow2">${field('cfStart',tt.fl_start,c?c.start:'','date')}${field('cfEnd',tt.fl_end,c?c.end:'','date')}</div>
+    <div class="frow2">${field('cfBudget',tt.fl_budget,c?c.budget:'','number')}${field('cfSpend',tt.fl_spend,c?c.spend:0,'number')}</div>
+    <div class="frow">${fieldSelect('cfStatus',tt.fl_status,[{v:'active',l:tt.cs_active},{v:'paused',l:tt.cs_paused},{v:'completed',l:tt.cs_completed},{v:'planned',l:tt.cs_planned}],c?c.status:'planned')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveCampaignForm(${c?c.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveCampaignForm(id){
+  const name=$('cfName').value.trim();if(!name)return;
+  const data={name,objective:$('cfObjective').value.trim(),targetIndustries:$('cfIndustries').value.split(',').map(s=>s.trim()).filter(Boolean),
+    channels:$('cfChannels').value.split(',').map(s=>s.trim()).filter(Boolean),segment:$('cfSegment').value.trim(),owner:$('cfOwner').value,
+    start:$('cfStart').value||'',end:$('cfEnd').value||'',budget:Number($('cfBudget').value)||0,spend:Number($('cfSpend').value)||0,status:$('cfStatus').value};
+  const dt=TODAY.toISOString().slice(0,10);
+  if(id){Object.assign(getCampaign(id),data);}
+  else{CAMPAIGNS.unshift(Object.assign({id:nextCampaignId++,targetServices:[],leads:0,qualified:0,estimates:0,wonValue:0,activity:[{date:dt,text:'Campaign created.'}]},data));}
+  closeModal();renderApp();
+}
+
+// ═══════════════ CONTENT CALENDAR VIEW ═══════════════
+function getContent(id){return CONTENT.find(c=>c.id===id);}
+function renderContent(){
+  const tt=t();const rows=CONTENT.slice().sort((a,b)=>d(a.date)-d(b.date));
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_content_t}</h3>
+      <div style="display:flex;gap:8px;">
+        <div class="toggrp"><button class="${contentView==='list'?'on':''}" onclick="contentView='list';renderApp();">${tt.btn_list}</button><button class="${contentView==='calendar'?'on':''}" onclick="contentView='calendar';renderApp();">${tt.btn_calendar}</button></div>
+        <button class="tbtn primary small" onclick="openContentForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newcontent}</button>
+      </div></div>
+    ${contentView==='list'?renderContentList(rows):renderContentCalendar(rows)}
+  </div>`;
+}
+function renderContentList(rows){const tt=t();if(!rows.length)return `<div class="empty3">${tt.empty_content}</div>`;
+  return `<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_date}</th><th>${tt.fl_title}</th><th>${tt.th_type}</th><th>${tt.th_channel}</th><th>${tt.fl_campaign}</th><th>${tt.fl_owner}</th><th>${tt.th_audience}</th><th>${tt.th_status}</th></tr></thead><tbody>
+    ${rows.map(c=>{const camp=c.campaignId?getCampaign(c.campaignId):null;return `<tr class="click" tabindex="0" onclick="openContentDetail(${c.id})"><td>${fmtDate(c.date)}</td><td><b>${esc(c.title)}</b></td><td>${esc(c.type)}</td><td>${esc(c.channel)}</td><td>${camp?esc(camp.name):'—'}</td><td>${esc(c.owner)}</td><td>${esc(c.audience)}</td><td><span class="tagpill ${CONTENT_STATUS_CLASS[c.status]}">${tt['co_'+c.status]}</span></td></tr>`;}).join('')}
+  </tbody></table></div>`;}
+function renderContentCalendar(rows){
+  const tt=t();const monthStart=new Date(2026,7,1);const daysInMonth=new Date(2026,8,0).getDate();
+  const firstDow=(monthStart.getDay()+6)%7;
+  const dow=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let cells='';
+  for(let i=0;i<firstDow;i++)cells+='<div class="calcell pad"></div>';
+  for(let day=1;day<=daysInMonth;day++){
+    const iso='2026-08-'+String(day).padStart(2,'0');
+    const items=rows.filter(c=>c.date===iso);
+    cells+=`<div class="calcell"><div class="cd">${day}</div>${items.map(c=>`<span class="caldot" onclick="openContentDetail(${c.id})" title="${esc(c.title)}">${esc(c.title)}</span>`).join('')}</div>`;
+  }
+  return `<div class="calmonth">${dow.map(x=>`<div class="caldow">${x}</div>`).join('')}${cells}</div>
+    <div style="font-size:11px;color:var(--steel-400);margin-top:10px;">August 2026 · ${tt.btn_calendar}</div>`;
+}
+function openContentDetail(id){
+  const tt=t();const c=getContent(id);if(!c)return;const camp=c.campaignId?getCampaign(c.campaignId):null;
+  const html=`<h2>${esc(c.title)}</h2><div class="fsub">${esc(c.type)} · ${esc(c.channel)}</div>
+    <div class="kvcols">
+      <div class="kv"><div class="k">${tt.th_date}</div><div class="v">${fmtDate(c.date)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_owner}</div><div class="v">${esc(c.owner)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_campaign}</div><div class="v">${camp?esc(camp.name):'—'}</div></div>
+      <div class="kv"><div class="k">${tt.th_audience}</div><div class="v">${esc(c.audience)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_cta}</div><div class="v">${esc(c.cta)}</div></div>
+      <div class="kv"><div class="k">${tt.fl_status}</div><div class="v"><span class="tagpill ${CONTENT_STATUS_CLASS[c.status]}">${tt['co_'+c.status]}</span></div></div>
+    </div>
+    <div class="fbtns" style="justify-content:flex-start;flex-wrap:wrap;">
+      ${['draft','review','approved','scheduled','published'].map(s=>s===c.status?'':`<button class="tbtn small" onclick="setContentStatus(${c.id},'${s}')">${tt['co_'+s]}</button>`).join('')}
+      <button class="tbtn small" onclick="closeModal();openContentForm(${c.id})">${tt.btn_edit}</button>
+      <button class="tbtn primary small" onclick="closeModal()">${tt.btn_close}</button>
+    </div>`;
+  openModal(html);
+}
+function setContentStatus(id,status){getContent(id).status=status;closeModal();renderApp();}
+function openContentForm(id){
+  const tt=t();const c=id?getContent(id):null;
+  const typeOptions=['Project case study','Service post','Workshop update','Technical article','Customer email','Website content','LinkedIn post','Product introduction'];
+  const html=`<h2>${c?tt.btn_edit:tt.m_newcontent_t}</h2>
+    <div class="frow">${field('cnTitle',tt.fl_title,c?c.title:'')}</div>
+    <div class="frow2">${fieldSelect('cnType',tt.th_type,typeOptions.map(x=>({v:x,l:x})),c?c.type:typeOptions[0])}${field('cnChannel',tt.th_channel,c?c.channel:'')}</div>
+    <div class="frow2">${field('cnDate',tt.fl_publishdate,c?c.date:'','date')}${fieldSelect('cnOwner',tt.fl_owner,ownerOptions(),c?c.owner:'Aleksandar C.')}</div>
+    <div class="frow2">${field('cnAudience',tt.th_audience,c?c.audience:'')}${field('cnCta',tt.fl_cta,c?c.cta:'')}</div>
+    <div class="frow2">${fieldSelect('cnCampaign',tt.fl_campaign,[{v:'',l:'—'}].concat(CAMPAIGNS.map(x=>({v:x.id,l:x.name}))),c?c.campaignId:'')}${fieldSelect('cnStatus',tt.fl_status,['draft','review','approved','scheduled','published'].map(s=>({v:s,l:tt['co_'+s]})),c?c.status:'draft')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveContentForm(${c?c.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveContentForm(id){
+  const title=$('cnTitle').value.trim();if(!title)return;
+  const data={title,type:$('cnType').value,channel:$('cnChannel').value.trim(),date:$('cnDate').value||'',owner:$('cnOwner').value,
+    audience:$('cnAudience').value.trim(),cta:$('cnCta').value.trim(),campaignId:$('cnCampaign').value?Number($('cnCampaign').value):null,status:$('cnStatus').value};
+  if(id){Object.assign(getContent(id),data);}
+  else{CONTENT.unshift(Object.assign({id:nextContentId++},data));}
+  closeModal();renderApp();
+}
+
+// ═══════════════ CASE STUDIES VIEW ═══════════════
+function getCase(id){return CASESTUDIES.find(c=>c.id===id);}
+function renderCaseStudies(){
+  const tt=t();
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.v_casestudies_t}</h3><button class="tbtn primary small" onclick="openCaseForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newcase}</button></div>
+    ${CASESTUDIES.length?`<div class="cardgrid">${CASESTUDIES.map(cs=>`<div class="ccard2" tabindex="0" onclick="openCaseDetail(${cs.id})"><h4>${esc(cs.title)}</h4><div class="csub">${esc(cs.customer)} · ${esc(cs.industry)}</div>
+        <span class="tagpill ${CONTENT_STATUS_CLASS[cs.status]||'n'}">${tt['co_'+cs.status]||cs.status}</span>
+        <div style="font-size:11.5px;color:var(--steel-300);margin-top:10px;line-height:1.5;">${esc(cs.result)}</div>
+        <div style="font-size:10.5px;color:var(--steel-400);margin-top:8px;">${cs.services.map(esc).join(', ')}</div></div>`).join('')}</div>`:`<div class="empty3">${tt.empty_cases}</div>`}
+  </div>`;
+}
+function openCaseDetail(id){
+  const tt=t();const cs=getCase(id);if(!cs)return;
+  const html=`<h2>${esc(cs.title)}</h2><div class="fsub">${esc(cs.customer)} · ${esc(cs.industry)}</div>
+    <div class="kv"><div class="k">${tt.fl_problem}</div><div class="v" style="font-weight:400;">${esc(cs.problem)}</div></div>
+    <div class="kv"><div class="k">${tt.fl_solution}</div><div class="v" style="font-weight:400;">${esc(cs.solution)}</div></div>
+    <div class="kv"><div class="k">${tt.fl_materials}</div><div class="v" style="font-weight:400;">${esc(cs.materials)}</div></div>
+    <div class="kv"><div class="k">${tt.fl_result}</div><div class="v" style="font-weight:400;">${esc(cs.result)}</div></div>
+    <div class="kvcols">
+      <div class="kv"><div class="k">${tt.fl_services}</div><div class="v">${cs.services.map(esc).join(', ')||'—'}</div></div>
+      <div class="kv"><div class="k">${tt.fl_permission}</div><div class="v">${cs.permission?'✓':'✗'}</div></div>
+      <div class="kv"><div class="k">${tt.fl_status}</div><div class="v"><span class="tagpill ${CONTENT_STATUS_CLASS[cs.status]||'n'}">${tt['co_'+cs.status]||cs.status}</span></div></div>
+      <div class="kv"><div class="k">${tt.fl_channelsused}</div><div class="v">${cs.channels.map(esc).join(', ')||'—'}</div></div>
+    </div>
+    <div class="fbtns"><button class="tbtn small" onclick="closeModal();openCaseForm(${cs.id})">${tt.btn_edit}</button><button class="tbtn primary small" onclick="closeModal()">${tt.btn_close}</button></div>`;
+  openModal(html,true);
+}
+function openCaseForm(id){
+  const tt=t();const cs=id?getCase(id):null;
+  const html=`<h2>${cs?tt.btn_edit:tt.m_newcase_t}</h2>
+    <div class="frow2">${field('csTitle',tt.fl_title,cs?cs.title:'')}${field('csCustomer',tt.fl_company,cs?cs.customer:'')}</div>
+    <div class="frow">${field('csIndustry',tt.fl_industry,cs?cs.industry:'')}</div>
+    <div class="frow">${fieldTextarea('csProblem',tt.fl_problem,cs?cs.problem:'')}</div>
+    <div class="frow">${fieldTextarea('csSolution',tt.fl_solution,cs?cs.solution:'')}</div>
+    <div class="frow2">${field('csMaterials',tt.fl_materials,cs?cs.materials:'')}${field('csResult',tt.fl_result,cs?cs.result:'')}</div>
+    <div class="frow2">${field('csServices',tt.fl_services,cs?cs.services.join(', '):'')}${field('csChannels',tt.fl_channelsused,cs?cs.channels.join(', '):'')}</div>
+    <div class="frow2"><div class="checkrow"><input type="checkbox" id="csPermission" ${cs&&cs.permission?'checked':''}><label for="csPermission" style="margin:0;">${tt.fl_permission}</label></div>
+      ${fieldSelect('csStatus',tt.fl_status,['draft','review','approved','published'].map(s=>({v:s,l:tt['co_'+s]})),cs?cs.status:'draft')}</div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveCaseForm(${cs?cs.id:'null'})">${tt.btn_save}</button></div>`;
+  openModal(html,true);
+}
+function saveCaseForm(id){
+  const title=$('csTitle').value.trim();if(!title)return;
+  const data={title,customer:$('csCustomer').value.trim(),industry:$('csIndustry').value.trim(),problem:$('csProblem').value.trim(),
+    solution:$('csSolution').value.trim(),materials:$('csMaterials').value.trim(),result:$('csResult').value.trim(),
+    services:$('csServices').value.split(',').map(s=>s.trim()).filter(Boolean),channels:$('csChannels').value.split(',').map(s=>s.trim()).filter(Boolean),
+    permission:$('csPermission').checked,status:$('csStatus').value};
+  if(id){Object.assign(getCase(id),data);}
+  else{CASESTUDIES.unshift(Object.assign({id:nextCaseId++},data));}
+  closeModal();renderApp();
+}
+
+// ═══════════════ AUDIENCE SEGMENTS VIEW ═══════════════
+function renderSegments(){
+  const tt=t();
+  return `<div class="panel"><div class="phead"><h3>${tt.v_segments_t}</h3></div>
+    <div class="cardgrid">${SEGMENTS.map(s=>`<div class="ccard2" style="cursor:default;">
+      <h4>${esc(s.name)}</h4>
+      <div class="ccmetrics">
+        <div class="cm">${tt.fl_segmentsize}<b>${s.size}</b></div>
+        <div class="cm">${tt.fl_activeopp}<b>${s.activeOpp}</b></div>
+        <div class="cm">${tt.fl_engagement}<b><span class="tagpill ${ENGAGEMENT_CLASS[s.engagement]}">${tt['eng_'+s.engagement]}</span></b></div>
+        <div class="cm">${tt.fl_pipelinevalue}<b>${fmt(s.pipelineValue)}</b></div>
+      </div></div>`).join('')}</div>
+  </div>`;
+}
+
+// ═══════════════ ANALYTICS VIEW ═══════════════
+function analyticsData(){
+  const won=OPPORTUNITIES.filter(o=>o.stage==='won'),lost=OPPORTUNITIES.filter(o=>o.stage==='lost');
+  const leadToOpp=LEADS.length?Math.round(OPPORTUNITIES.filter(o=>o.leadId).length/LEADS.length*100):0;
+  const reachedEstimate=OPPORTUNITIES.filter(o=>['preparing','quotesent','negotiation','won','lost'].includes(o.stage));
+  const oppToEst=reachedEstimate.length?Math.round(OPPORTUNITIES.filter(o=>o.linkedEstimateNo).length/reachedEstimate.length*100):0;
+  const winRate=(won.length+lost.length)?Math.round(won.length/(won.length+lost.length)*100):0;
+  const pipelineValue=activeOpps().reduce((a,o)=>a+o.value,0);
+  const weighted=Math.round(activeOpps().reduce((a,o)=>a+o.value*o.probability/100,0));
+  const byIndustry={};OPPORTUNITIES.forEach(o=>{byIndustry[o.industry]=(byIndustry[o.industry]||0)+o.value;});
+  const leadsByIndustry={};LEADS.forEach(l=>{leadsByIndustry[l.industry]=(leadsByIndustry[l.industry]||0)+1;});
+  return{won,lost,leadToOpp,oppToEst,winRate,pipelineValue,weighted,byIndustry,leadsByIndustry};
+}
+function renderAnalytics(){
+  const tt=t();const a=analyticsData();
+  const maxInd=Math.max(1,...Object.values(a.leadsByIndustry));
+  const maxSvc=Math.max(1,...Object.values(a.byIndustry));
+  const momData=[{m:'Jun',n:4},{m:'Jul',n:LEADS.filter(l=>l.created.startsWith('2026-07')).length},{m:'Aug',n:LEADS.filter(l=>l.created.startsWith('2026-08')).length}];
+  const maxMom=Math.max(1,...momData.map(x=>x.n));
+  return `
+  <div class="kpigrid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="kpi-card"><div class="kpi-label">${tt.an_leadtoopp}</div><div class="kpi-value">${a.leadToOpp}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">${tt.an_opptoest}</div><div class="kpi-value">${a.oppToEst}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">${tt.an_winrate}</div><div class="kpi-value">${a.winRate}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">${tt.an_avgcycle}</div><div class="kpi-value">34 <span style="font-size:13px;color:var(--steel-400);">${tt.an_days}</span></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="ovsplit">
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${tt.an_leadsource}</h3></div>${renderLeadSourceChart()}</div>
+    <div class="panel" style="margin-bottom:0;"><div class="phead"><h3>${tt.an_leadindustry}</h3></div>
+      <div class="barchart">${Object.entries(a.leadsByIndustry).map(([k,v])=>`<div class="barrow"><div title="${esc(k)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k)}</div><div class="btrack"><div class="bfill" style="width:${Math.round(v/maxInd*100)}%;"></div></div><div class="bval">${v}</div></div>`).join('')}</div>
+    </div>
+  </div>
+  <div class="panel"><div class="phead"><h3>${tt.an_pipeline} / ${tt.an_weighted}</h3></div>
+    <div class="ccmetrics" style="grid-template-columns:repeat(2,1fr);">
+      <div class="cm">${tt.an_pipeline}<b>${fmt(a.pipelineValue)}</b></div>
+      <div class="cm">${tt.an_weighted}<b>${fmt(a.weighted)}</b></div>
+    </div>
+  </div>
+  <div class="panel"><div class="phead"><h3>${tt.an_byservice}</h3></div>
+    <div class="barchart">${Object.entries(a.byIndustry).map(([k,v])=>`<div class="barrow"><div title="${esc(k)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k)}</div><div class="btrack"><div class="bfill" style="width:${Math.round(v/maxSvc*100)}%;"></div></div><div class="bval">${fmt(v)}</div></div>`).join('')}</div>
+  </div>
+  <div class="panel"><div class="phead"><h3>${tt.an_campaignspend}</h3></div>
+    <div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.fl_campaign}</th><th>${tt.th_budget}</th><th>${tt.th_spend}</th><th>${tt.th_wonvalue}</th><th>ROI</th></tr></thead><tbody>
+      ${CAMPAIGNS.map(c=>`<tr><td>${esc(c.name)}</td><td>${fmt(c.budget)}</td><td>${fmt(c.spend)}</td><td>${fmt(c.wonValue)}</td><td>${c.spend?Math.round(c.wonValue/c.spend*100):0}%</td></tr>`).join('')}
+    </tbody></table></div>
+  </div>
+  <div class="panel"><div class="phead"><h3>${tt.an_wonlost}</h3></div>
+    <div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_company}</th><th>${tt.th_status}</th><th>${tt.fl_decisionreason}</th></tr></thead><tbody>
+      ${[...a.won,...a.lost].map(o=>`<tr><td>${esc(o.company)}</td><td><span class="tagpill ${STAGE_CLASS[o.stage]}">${tt['stg_'+o.stage]}</span></td><td>${esc(o.decisionReason)||'—'}</td></tr>`).join('')||`<tr><td colspan="3" class="empty3">${tt.chart_none}</td></tr>`}
+    </tbody></table></div>
+  </div>
+  <div class="panel"><div class="phead"><h3>${tt.an_momtrend}</h3></div>
+    <div class="barchart">${momData.map(x=>`<div class="barrow"><div>${x.m}</div><div class="btrack"><div class="bfill" style="width:${Math.round(x.n/maxMom*100)}%;"></div></div><div class="bval">${x.n}</div></div>`).join('')}</div>
+  </div>`;
+}
+
+// ═══════════════ APP DISPATCH ═══════════════
+const VIEWS={
+  overview:{render:renderOverview},
+  leads:{render:renderLeads,attach:attachLeads},
+  opportunities:{render:renderOpportunities,attach:attachOpportunities},
+  tenders:{render:renderTenders,attach:attachTenders},
+  campaigns:{render:renderCampaigns,attach:attachCampaigns},
+  content:{render:renderContent},
+  casestudies:{render:renderCaseStudies},
+  segments:{render:renderSegments},
+  analytics:{render:renderAnalytics}
+};
+function renderApp(){
+  const v=VIEWS[VIEW]||VIEWS.overview;
+  $('app').innerHTML=v.render();
+  if(v.attach)v.attach();
+}
+
+setLang('en');
+</script>
+</body></html>
+
