@@ -62,6 +62,7 @@
   .tile-stack .tile:hover .arrow{transform:translate(0,-50%);}
   .tile-stack .tile h3{font-size:14px;margin-bottom:2px;}
   .tile-stack .tile p{font-size:11px;}
+  .tile-stack .tile .art{display:none;}
 
   /* team talk panel */
   .teamtalk{display:flex;flex-direction:column;background:rgba(255,255,255,.035);border:1px solid var(--line);
@@ -232,7 +233,7 @@
         <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='store-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='purchasing-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="46" cy="102" r="8"/><circle cx="88" cy="102" r="8"/><path d="M14 20h12l14 62h48a10 10 0 0 0 10-8l10-38H30"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg></div>
         <div><h3 data-i="m_purchasing">Purchasing</h3><p data-i="c_purchasing">Purchase orders</p></div>
@@ -320,6 +321,16 @@
 </div>
 
 <script>
+  function combineModuleTiles(){
+    [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning'],['m_store','m_purchasing','Store and purchasing']].forEach(([firstKey,secondKey,label])=>{
+      const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');
+      const second=document.querySelector(`[data-i="${secondKey}"]`)?.closest('.tile');
+      if(!first||!second||first.parentElement.classList.contains('tile-stack'))return;
+      const stack=document.createElement('div');stack.className='tile-stack';stack.setAttribute('aria-label',label);
+      first.parentElement.insertBefore(stack,first);stack.append(first,second);
+    });
+  }
+  combineModuleTiles();
   const T={
     sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",

@@ -43,6 +43,12 @@
   .tile .art{position:absolute;right:-6%;bottom:-9%;width:52%;max-width:110px;height:auto;color:var(--steel-400);opacity:.42;pointer-events:none;z-index:0;
     -webkit-mask-image:linear-gradient(135deg,transparent 12%,#000 80%);mask-image:linear-gradient(135deg,transparent 12%,#000 80%);}
   .tile .ic,.tile>div:not(.art){position:relative;z-index:1;}
+  .tile-stack{display:grid;grid-template-rows:1fr 1fr;gap:8px;min-height:118px;}
+  .tile-stack .tile{min-height:0;padding:10px 11px;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;}
+  .tile-stack .tile .ic{width:32px;height:32px;flex:none;}
+  .tile-stack .tile .art{display:none;}
+  .tile-stack .tile h3{font-size:11.5px;}
+  .tile-stack .tile p{font-size:9px;}
 
   .teamtalk{position:relative;display:flex;flex-direction:column;min-height:270px;overflow:hidden;background:rgba(255,255,255,.035);border:1px solid var(--line);}
   .ttart{position:absolute;right:-5%;bottom:-3%;width:46%;max-width:150px;height:auto;color:var(--steel-400);opacity:.38;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(135deg,transparent 22%,#000 88%);mask-image:linear-gradient(135deg,transparent 22%,#000 88%);}
@@ -115,7 +121,7 @@
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
         <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='store-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='purchasing-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="46" cy="102" r="8"/><circle cx="88" cy="102" r="8"/><path d="M14 20h12l14 62h48a10 10 0 0 0 10-8l10-38H30"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg></div>
         <div><h3 data-i="m_purchasing">Purchasing</h3><p data-i="c_purchasing">Purchase orders</p></div>
@@ -179,6 +185,16 @@
 </div>
 
 <script>
+  function combineModuleTiles(){
+    [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning'],['m_store','m_purchasing','Store and purchasing']].forEach(([firstKey,secondKey,label])=>{
+      const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');
+      const second=document.querySelector(`[data-i="${secondKey}"]`)?.closest('.tile');
+      if(!first||!second||first.parentElement.classList.contains('tile-stack'))return;
+      const stack=document.createElement('div');stack.className='tile-stack';stack.setAttribute('aria-label',label);
+      first.parentElement.insertBefore(stack,first);stack.append(first,second);
+    });
+  }
+  combineModuleTiles();
   const T={
     sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
