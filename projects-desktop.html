@@ -268,9 +268,10 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script><script>
+<script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
 const RATE=450;
 const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 let CUSTOMERS=[
   {id:1,name:"Sanus Glutenfri AB",org:"559812-4471",contact:"Per Nilsson · per@sanusglutenfri.se"},
@@ -283,7 +284,6 @@ let CUSTOMERS=[
 ];
 
 const PROJECTS_KEY='varmak.projects.ui.v1';
-try{const stored=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');if(Array.isArray(stored)&&stored.length)PROJECTS=stored;}catch(e){}
 function persistProjects(){localStorage.setItem(PROJECTS_KEY,JSON.stringify(PROJECTS));}
 function syncSharedProject(p){if(window.WorkshopData?.upsertProject)WorkshopData.upsertProject({id:p.id,no:p.no,name:p.name,customerId:p.customerId,customer:custName(p.customerId),status:p.status,deadline:p.deadline,plannedHours:p.estLabourHours||0,usedHours:p.hours.reduce((sum,h)=>sum+(Number(h.hours)||0),0)});}
 let nextCustId=8;
@@ -434,6 +434,8 @@ let PROJECTS=[
    hours:[],materials:[],purchases:[],documents:{},
    activity:[{date:"2026-08-10",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-24",time:"08:00",user:"Aleksandar",action:"Status changed: APPROVED → PLANNED"}]}
 ];
+// Restore persisted projects from localStorage now that PROJECTS has a valid seed value to fall back on.
+try{const stored=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');if(Array.isArray(stored)&&stored.length)PROJECTS=stored;}catch(e){}
 
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"+m+"-"+y;}
@@ -598,38 +600,38 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"Mat. broj",nc_contact:"Kontakt lice",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
  tab_overview:"Pregled",tab_jobcards:"Stavki",tab_hours:"Časovi",tab_materials:"Materijali",tab_purchases:"Nabavki",tab_documents:"Dokumenti",tab_reports:"Izveštai",tab_costs:"Trošoci",tab_activity:"Aktivnost",
  ov_status:"Status",ov_progress:"Napredok",ov_time:"Vreme",ov_est:"Proceneto",ov_used:"Iskoristeno",ov_remaining:"Preostanato",ov_material:"Materijal",ov_purchases:"Nabavki",ov_ordered:"Naračano",ov_delivered:"Isporačano",ov_pending:"Vo čekanje",ov_deadline:"Rok",ov_daysremaining:"{d} denovi preostanati",ov_daysoverdue:"{d} denovi docnenje",ov_nodeadline:"Nema postaven rok",ov_warnings:"Predupreduvanja",ov_nowarnings:"Nema predupreduvanja — se e vo red.",ov_notes:"Zakačena beleška",
- jc_new:"+ Dodaj stavka",jc_no:"Stavka br.",jc_desc:"Opis na rabota",jc_assigned:"Zadolžen",jc_status:"Status",jc_est:"Proc. časovi",jc_act:"Realni časovi",jc_progress:"Napredok",jc_empty:"Sè uште nema stavki.",
- h_date:"Datum",h_worker:"Rabotnik",h_jobcard:"Stavka",h_desc:"Opis na rabota",h_hours:"Časovi",h_total:"Vkupno",h_empty:"Sè uште nema zapišani časovi.",
- m_material:"Materijal",m_spec:"Specifikacija",m_qty:"Količina",m_source:"Izvor",m_jobcard:"Stavka",m_cost:"Trošok",m_status:"Status",m_empty:"Sè uште nema zapišan materijal.",m_new:"+ Dodaj materijal",mf_unit:"Merna edinica",
- pu_new:"+ Kreiraj nabavka",pu_po:"Nabavna narudžba br.",pu_supplier:"Dobavuvač",pu_date:"Datum",pu_items:"Artikli",pu_ordered:"Naračana vrednost",pu_received:"Primena vrednost",pu_status:"Status",pu_expected:"Očekuvana isporaka",pu_empty:"Sè uште nema nabavki.",
- doc_add:"+ Dodaj dokument",doc_rev:"Rev.",doc_date:"Datum",doc_by:"Prikačeno od",doc_status:"Status",doc_empty:"Sè uште nema dokumenti.",
- rp_add:"+ Dodaj izveštaj",rp_no:"Izveštaj br.",rp_type:"Tip izveštaj",rp_date:"Datum",rp_status:"Status",rp_by:"Kreiran od",rp_approvedby:"Odobren od",rp_empty:"Sè uште nema izveštai.",
- c_estimated:"Proценет trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proценета cena",c_actcost:"Realen trošok",
- o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Meѓuzbir",o_vat:"DDV 25%",o_total:"Za plaќaњe",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
- act_empty:"Sè uште nema aktivnost.",note_empty:"Sè uште nema beleški.",
+ jc_new:"+ Dodaj stavka",jc_no:"Stavka br.",jc_desc:"Opis na rabota",jc_assigned:"Zadolžen",jc_status:"Status",jc_est:"Proc. časovi",jc_act:"Realni časovi",jc_progress:"Napredok",jc_empty:"Sè ušte nema stavki.",
+ h_date:"Datum",h_worker:"Rabotnik",h_jobcard:"Stavka",h_desc:"Opis na rabota",h_hours:"Časovi",h_total:"Vkupno",h_empty:"Sè ušte nema zapišani časovi.",
+ m_material:"Materijal",m_spec:"Specifikacija",m_qty:"Količina",m_source:"Izvor",m_jobcard:"Stavka",m_cost:"Trošok",m_status:"Status",m_empty:"Sè ušte nema zapišan materijal.",m_new:"+ Dodaj materijal",mf_unit:"Merna edinica",
+ pu_new:"+ Kreiraj nabavka",pu_po:"Nabavna narudžba br.",pu_supplier:"Dobavuvač",pu_date:"Datum",pu_items:"Artikli",pu_ordered:"Naračana vrednost",pu_received:"Primena vrednost",pu_status:"Status",pu_expected:"Očekuvana isporaka",pu_empty:"Sè ušte nema nabavki.",
+ doc_add:"+ Dodaj dokument",doc_rev:"Rev.",doc_date:"Datum",doc_by:"Prikačeno od",doc_status:"Status",doc_empty:"Sè ušte nema dokumenti.",
+ rp_add:"+ Dodaj izveštaj",rp_no:"Izveštaj br.",rp_type:"Tip izveštaj",rp_date:"Datum",rp_status:"Status",rp_by:"Kreiran od",rp_approvedby:"Odobren od",rp_empty:"Sè ušte nema izveštai.",
+ c_estimated:"Procenet trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proceneta cena",c_actcost:"Realen trošok",
+ o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Megjuzbir",o_vat:"DDV 25%",o_total:"Za plakjanje",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
+ act_empty:"Sè ušte nema aktivnost.",note_empty:"Sè ušte nema beleški.",
  a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",
  st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
  hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",
  resume_title:"Prodolži proekt",resume_tostatus:"Prodolži do status",resume_save:"Prodolži",
- complete_title:"Završi proekt",complete_ok:"Site proverki se pomineti. Označi go proektot kako ZAVRŠEN?",complete_issues_title:"Proektot ne može da se završi bez proverka",complete_goback:"Vrati se",complete_override:"Menadžerska nadmoć",complete_override_reason:"Pričina za nadmoć (задолжително)",complete_confirm:"Označi zaвршено",
+ complete_title:"Završi proekt",complete_ok:"Site proverki se pomineti. Označi go proektot kako ZAVRŠEN?",complete_issues_title:"Proektot ne može da se završi bez proverka",complete_goback:"Vrati se",complete_override:"Menadžerska nadmoć",complete_override_reason:"Pričina za nadmoć (zadolžitelno)",complete_confirm:"Označi završeno",
  close_title:"Zatvori proekt",close_ok:"Site proverki se pomineti. Zatvori go proektot?",close_issues_title:"Proektot ne može da se zatvori",close_confirm:"Zatvori proekt",
  cancel_title:"Otkaži proekt",cancel_reason:"Pričina za otkažuvanje",cancel_save:"Otkaži proekt",
- reopen_title:"Reotvori zatvoren proekt",reopen_reason:"Pričina (задолжително)",reopen_tostatus:"Reotvori do status",reopen_save:"Reotvori",
+ reopen_title:"Reotvori zatvoren proekt",reopen_reason:"Pričina (zadolžitelno)",reopen_tostatus:"Reotvori do status",reopen_save:"Reotvori",
  dup_title:"Dupliciraj proekt",dup_body:"Kreira nov proekt so ist tip, opis i struktura na rabotni karti. Realnite časovi, trošoci, izveštai, nabavki i aktivnosta NE se kopiraat.",dup_confirm:"Dupliciraj",
  note_title:"Dodaj beleška",note_text:"Beleška",note_tag:"Klasifikacija",note_pin:"Zakači vo Pregled",note_save:"Dodaj",
- jc_modal_title:"Dodaj stavka",jcf_desc:"Opis na rabota",jcf_assigned:"Zadolžen na",jcf_est:"Proценети časovi",jcf_estmat:"Proценет trošok za materijal (SEK)",
+ jc_modal_title:"Dodaj stavka",jcf_desc:"Opis na rabota",jcf_assigned:"Zadolžen na",jcf_est:"Proceneti časovi",jcf_estmat:"Procenet trošok za materijal (SEK)",
  doc_modal_title:"Dodaj dokument",docf_folder:"Papka",docf_name:"Ime na dokument",docf_rev:"Revizija",
  po_modal_title:"Kreiraj nabavna narudžba",pof_supplier:"Dobavuvač",pof_items:"Artikli",pof_ordered:"Naračana vrednost (SEK)",pof_expected:"Očekuvana isporaka",
  save_generic:"Začuvaj",cancel_generic:"Otkaži",close_generic:"Zatvori",edit_generic:"Uredi",delete_generic:"Izbriši",confirm_delete:"Izbriši go ova — sigurni ste?",
  readonly_note:"Ovoj proekt e ZATVOREN i samo za čitanje. Administratorot može da go reotvori.",
- warn_deadline_approaching:"Rokot se blizi — {d} denovi preostanati",warn_deadline_overdue:"Proektot docni — {d} denovi po rokot",warn_hours_exceeded:"Proценетите časovi se надминати — {a}h iskoristeni od {e}h proceneti",warn_material_exceeded:"Budžetot za materijal e надминат — {a} iskoristeno od {e} proceneto",warn_budget_exceeded:"Vkupniot budžet e надминат — {a} iskoristeno od {e} proceneto",warn_purchase_late:"Docna isporaka — {po}",
- iss_open_jc:"{n} stavka/i sè uште не se завршени",iss_po_undelivered:"{n} nabavni narudžbi ne se isporačani",iss_report_missing:"Nema kreirano izveštai za ovoj proekt",
- iss_jc_not_complete:"{n} stavka/i не se ЗАВРШЕНИ",iss_po_unresolved:"{n} nabavni narudžbi sè uште нерешени",iss_report_unapproved:"{n} izveštaj/i не se odobreni/potpišani",
- st_hold_material:"Čeka materijal",st_hold_customer:"Čeka klient",st_hold_drawing:"Čeka crtež",st_hold_approval:"Čeka odobruvanje",st_hold_breakdown:"Kvar na mašina",st_hold_external:"Nadvorešno doцнenje",st_hold_other:"Drugo",
+ warn_deadline_approaching:"Rokot se blizi — {d} denovi preostanati",warn_deadline_overdue:"Proektot docni — {d} denovi po rokot",warn_hours_exceeded:"Procenetite časovi se nadminati — {a}h iskoristeni od {e}h proceneti",warn_material_exceeded:"Budžetot za materijal e nadminat — {a} iskoristeno od {e} proceneto",warn_budget_exceeded:"Vkupniot budžet e nadminat — {a} iskoristeno od {e} proceneto",warn_purchase_late:"Docna isporaka — {po}",
+ iss_open_jc:"{n} stavka/i sè ušte ne se završeni",iss_po_undelivered:"{n} nabavni narudžbi ne se isporačani",iss_report_missing:"Nema kreirano izveštai za ovoj proekt",
+ iss_jc_not_complete:"{n} stavka/i ne se ZAVRŠENI",iss_po_unresolved:"{n} nabavni narudžbi sè ušte nerešeni",iss_report_unapproved:"{n} izveštaj/i ne se odobreni/potpišani",
+ st_hold_material:"Čeka materijal",st_hold_customer:"Čeka klient",st_hold_drawing:"Čeka crtež",st_hold_approval:"Čeka odobruvanje",st_hold_breakdown:"Kvar na mašina",st_hold_external:"Nadvorešno docnenje",st_hold_other:"Drugo",
  tag_general:"Opšto",tag_customer:"Klient",tag_workshop:"Rabotilnica",tag_quality:"Kvalitet",tag_purchase:"Nabavka",tag_important:"Važno",
  src_store:"Magacin",src_purchase:"Nabavka",
  ms_reserved:"Rezervirano",ms_issued:"Izdadeno",ms_used:"Iskoristeno",ms_returned:"Vrateno",
- pos_draft:"Nacrt",pos_requested:"Baрано",pos_ordered:"Naračano",pos_partdelivered:"Delumno isporačano",pos_delivered:"Isporačano",pos_cancelled:"Otkažano",
+ pos_draft:"Nacrt",pos_requested:"Barano",pos_ordered:"Naračano",pos_partdelivered:"Delumno isporačano",pos_delivered:"Isporačano",pos_cancelled:"Otkažano",
  rps_draft:"Nacrt",rps_ready:"Podgotveno",rps_approved:"Odobreno",rps_signed:"Potpišano",rps_superseded:"Zameneto",
  ds_current:"Aktuelno",ds_superseded:"Zameneto",ds_archived:"Arhivirano",
  locale:"mk"}
@@ -660,16 +662,16 @@ function renderList(){
   const kHold=rows.filter(p=>p.status==='hold').length;
 
   const chips=["all",...STATUS_ORDER].map(s=>`<button data-f="${s}" class="${listFilter===s?'active':''}">${t["f_"+s]}</button>`).join("");
-  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${listFilters.customer==String(c.id)?'selected':''}>${c.name}</option>`).join("");
+  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${listFilters.customer==String(c.id)?'selected':''}>${esc(c.name)}</option>`).join("");
   const respOpts=PEOPLE.map(n=>`<option value="${n}" ${listFilters.responsible===n?'selected':''}>${n}</option>`).join("");
   const typeOpts=TYPES.map(x=>`<option value="${x}" ${listFilters.type===x?'selected':''}>${x}</option>`).join("");
 
   const trs=rows.map(p=>{const prog=progressOf(p);const dl=daysBetween(p.deadline);const estH0=jcTotals(p).est;const over=estH0&&actLabourHours(p)>estH0;
     return `<tr class="prow2" onclick="openProject(${p.id})">
       <td class="pnum">${p.no}</td>
-      <td class="pname">${p.name}</td>
-      <td>${custName(p.customerId)}<div class="pcust2">${p.customerRef||""}</div></td>
-      <td>${p.customerRef||"—"}</td>
+      <td class="pname">${esc(p.name)}</td>
+      <td>${esc(custName(p.customerId))}<div class="pcust2">${esc(p.customerRef||"")}</div></td>
+      <td>${esc(p.customerRef||"—")}</td>
       <td>${statusBadge(p.status)}</td>
       <td class="rnum">${fmtD(p.plannedStart)}</td>
       <td class="rnum ${dl!==null&&dl<0&&!['completed','closed','cancelled'].includes(p.status)?'over':''}">${fmtD(p.deadline)}</td>
@@ -694,11 +696,11 @@ function renderList(){
     <div class="morewrap ${moreOpen?'open':''}" id="morewrap">
       <button class="tbtn ghost2" id="moreToggle">${t.morefilters}</button>
       <div class="morepanel">
-        <div><label>${t.ff_customer}</label><select id="ffCustomer"><option value="">${t.ff_any}</option>${custOpts}</select></div>
-        <div><label>${t.ff_responsible}</label><select id="ffResp"><option value="">${t.ff_any}</option>${respOpts}</select></div>
-        <div><label>${t.ff_type}</label><select id="ffType"><option value="">${t.ff_any}</option>${typeOpts}</select></div>
-        <div><label>${t.ff_from}</label><input type="date" id="ffFrom" value="${listFilters.from}"></div>
-        <div><label>${t.ff_to}</label><input type="date" id="ffTo" value="${listFilters.to}"></div>
+        <div><label for="ffCustomer">${t.ff_customer}</label><select id="ffCustomer"><option value="">${t.ff_any}</option>${custOpts}</select></div>
+        <div><label for="ffResp">${t.ff_responsible}</label><select id="ffResp"><option value="">${t.ff_any}</option>${respOpts}</select></div>
+        <div><label for="ffType">${t.ff_type}</label><select id="ffType"><option value="">${t.ff_any}</option>${typeOpts}</select></div>
+        <div><label for="ffFrom">${t.ff_from}</label><input type="date" id="ffFrom" value="${listFilters.from}"></div>
+        <div><label for="ffTo">${t.ff_to}</label><input type="date" id="ffTo" value="${listFilters.to}"></div>
       </div>
     </div>
     <div class="ptable-wrap"><table class="ptable"><thead><tr>
@@ -752,7 +754,7 @@ function renderDetail(){
   $("detailView").innerHTML=`
     <div class="dethead">
       <div class="dtop">
-        <div><div class="pno">${p.no}</div><h2>${p.name}</h2><div class="dcust">${custName(p.customerId)}${p.customerRef?' · '+p.customerRef:''}</div></div>
+        <div><div class="pno">${p.no}</div><h2>${esc(p.name)}</h2><div class="dcust">${esc(custName(p.customerId))}${p.customerRef?' · '+esc(p.customerRef):''}</div></div>
         <div class="roactions">
           <button class="tbtn" onclick="openEditProject()" ${ro?'disabled':''}>${t.a_edit}</button>
           <button class="tbtn" onclick="printOffer(${p.id})">${t.np_printoffer}</button>
@@ -800,7 +802,7 @@ function renderOverview(p){
 
   $("tabpanel").innerHTML=`
     ${warns.length?`<div class="warnbox">${warns.map(w=>`<div class="wline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>${w}</div>`).join("")}</div>`:""}
-    ${pinned?`<div class="pinnote"><b>${t.ov_notes}</b>${pinned.text}</div>`:""}
+    ${pinned?`<div class="pinnote"><b>${t.ov_notes}</b>${esc(pinned.text)}</div>`:""}
     <div class="ovgrid">
       <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.ov_progress}</h4>
         <div class="ovbig">${prog}%</div><div class="ovbar"><i style="width:${prog}%"></i></div>
@@ -830,7 +832,7 @@ function renderJobcards(p){
     const price=itemEstPrice(j),cost=itemActualCost(p,j),matAct=itemMaterialActual(p,j.no),margin=price?((price-cost)/price*100):0;
     return `<div class="folder ${open?'open':''}">
       <div class="fh" onclick="toggleItemRow('${j.no}')">
-        <span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>${j.no} — ${j.desc}</span>
+        <span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>${j.no} — ${esc(j.desc)}</span>
         <span style="display:flex;align-items:center;gap:14px;"><span class="pcust2">${j.assigned}</span>${statusBadge(j.status)}<span class="rnum ${j.act>j.est?'over':''}">${j.act} / ${j.est} h</span></span>
       </div>
       <div class="fb"><table class="subtable" style="margin-top:6px;"><thead><tr><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.m_material}</th><th>${t.c_margin}</th></tr></thead>
@@ -845,7 +847,7 @@ function toggleItemRow(no){openItemRows[no]=!openItemRows[no];renderJobcards(get
 
 function renderMaterials(p){
   const t=T[LANG],ro=isReadonly(p);
-  const rows=p.materials.map((m,idx)=>`<tr><td>${m.name}<div class="pcust2">${m.spec}</div></td><td class="rnum">${m.qty} ${m.unit}</td><td><span class="smtag src-${m.source}">${t["src_"+m.source]}</span></td><td class="pnum">${m.jobcard||"—"}</td><td class="rnum">${fmt(m.cost)}</td><td>${t["ms_"+m.status]}</td>
+  const rows=p.materials.map((m,idx)=>`<tr><td>${esc(m.name)}<div class="pcust2">${esc(m.spec)}</div></td><td class="rnum">${m.qty} ${esc(m.unit)}</td><td><span class="smtag src-${m.source}">${t["src_"+m.source]}</span></td><td class="pnum">${m.jobcard||"—"}</td><td class="rnum">${fmt(m.cost)}</td><td>${t["ms_"+m.status]}</td>
     <td>${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openMaterialForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deleteMaterial(${idx})">${t.delete_generic}</button></div>`}</td></tr>`).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_materials}</h3><button class="tbtn primary" onclick="openMaterialForm()" ${ro?'disabled':''}>${t.m_new}</button></div>
     <table class="subtable"><thead><tr><th>${t.m_material}</th><th>${t.m_qty}</th><th>${t.m_source}</th><th>${t.m_jobcard}</th><th>${t.m_cost}</th><th>${t.m_status}</th><th></th></tr></thead>
@@ -854,7 +856,7 @@ function renderMaterials(p){
 
 function renderPurchases(p){
   const t=T[LANG],ro=isReadonly(p);
-  const rows=p.purchases.map((po,idx)=>`<tr><td class="pnum">${po.po}</td><td>${po.supplier}</td><td class="rnum">${fmtD(po.date)}</td><td>${po.items}</td>
+  const rows=p.purchases.map((po,idx)=>`<tr><td class="pnum">${po.po}</td><td>${esc(po.supplier)}</td><td class="rnum">${fmtD(po.date)}</td><td>${esc(po.items)}</td>
     <td class="rnum">${fmt(po.ordered)}</td><td class="rnum">${fmt(po.received)}</td><td><span class="sbadge ${po.status==='delivered'?'completed':po.status==='cancelled'?'cancelled':'quotation'}">${t["pos_"+po.status]}</span></td><td class="rnum">${fmtD(po.expected)}</td>
     <td>${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openPoForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deletePo(${idx})">${t.delete_generic}</button></div>`}</td></tr>`).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_purchases}</h3><button class="tbtn primary" onclick="openPoForm()" ${ro?'disabled':''}>${t.pu_new}</button></div>
@@ -867,7 +869,7 @@ function renderDocuments(p){
   const t=T[LANG],ro=isReadonly(p);
   const folders=Object.keys(p.documents);
   const body=folders.map(f=>{const docs=p.documents[f];const open=openFolders[f];
-    const rows=docs.map(d=>`<div class="docrow"><div class="dn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>${d.name}${d.rev!=="-"?`<span class="revtag">REV ${d.rev}</span>`:""}</div><div style="display:flex;align-items:center;gap:10px;"><span class="dmeta">${d.by} · ${fmtD(d.date)}</span><span class="dstat ${d.status}">${t["ds_"+d.status]}</span></div></div>`).join("");
+    const rows=docs.map(d=>`<div class="docrow"><div class="dn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>${esc(d.name)}${d.rev!=="-"?`<span class="revtag">REV ${esc(d.rev)}</span>`:""}</div><div style="display:flex;align-items:center;gap:10px;"><span class="dmeta">${esc(d.by)} · ${fmtD(d.date)}</span><span class="dstat ${d.status}">${t["ds_"+d.status]}</span></div></div>`).join("");
     return `<div class="folder ${open?'open':''}"><div class="fh" onclick="toggleFolder('${f}')"><span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg>${f}</span><span class="fc">${docs.length}</span></div><div class="fb">${rows}</div></div>`;}).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_documents}</h3><button class="tbtn primary" onclick="openDocForm()" ${ro?'disabled':''}>${t.doc_add}</button></div>
     ${folders.length?body:`<div style="text-align:center;color:var(--steel-400);padding:24px;">${t.doc_empty}</div>`}</div>`;
@@ -899,14 +901,14 @@ function renderCosts(p){
   ${p.jobcards.length?`<div class="card2" style="margin-top:20px;"><div class="tabhead"><h3>${t.c_itemrevenue}</h3></div>
     <table class="subtable"><thead><tr><th>${t.jc_desc}</th><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.c_margin}</th></tr></thead>
     <tbody>${p.jobcards.map(j=>{const price=itemEstPrice(j),cost=itemActualCost(p,j),margin=price?((price-cost)/price*100):0;
-      return `<tr><td>${j.desc}<div class="pcust2">${j.no}</div></td><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr>`;}).join("")}</tbody></table></div>`:""}`;
+      return `<tr><td>${esc(j.desc)}<div class="pcust2">${j.no}</div></td><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr>`;}).join("")}</tbody></table></div>`:""}`;
 }
 
 function renderActivity(p){
   const t=T[LANG],ro=isReadonly(p);
-  const notes=p.notes.map((n,idx)=>({n,idx})).reverse().map(({n,idx})=>`<div class="notecard ${n.pinned?'pinned':''}"><div class="nh"><span><b>${n.author}</b> · ${fmtD(n.date)}</span><span class="ntag">${t["tag_"+n.tag]}</span></div><p>${n.text}</p>
+  const notes=p.notes.map((n,idx)=>({n,idx})).reverse().map(({n,idx})=>`<div class="notecard ${n.pinned?'pinned':''}"><div class="nh"><span><b>${esc(n.author)}</b> · ${fmtD(n.date)}</span><span class="ntag">${t["tag_"+n.tag]}</span></div><p>${esc(n.text)}</p>
     ${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openNoteForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deleteNote(${idx})">${t.delete_generic}</button></div>`}</div>`).join("");
-  const acts=p.activity.slice().reverse().map(a=>`<div class="actrow"><div class="adot"></div><div class="atime">${fmtD(a.date)} ${a.time}</div><div><span class="auser">${a.user}</span>${a.action}</div></div>`).join("");
+  const acts=p.activity.slice().reverse().map(a=>`<div class="actrow"><div class="adot"></div><div class="atime">${fmtD(a.date)} ${a.time}</div><div><span class="auser">${esc(a.user)}</span>${esc(a.action)}</div></div>`).join("");
   $("tabpanel").innerHTML=`
     <div class="card2" style="margin-bottom:18px;"><div class="tabhead"><h3>${t.a_addnote}</h3><button class="tbtn primary" onclick="openNoteForm()" ${ro?'disabled':''}>${t.a_addnote}</button></div>
       ${notes||`<div style="text-align:center;color:var(--steel-400);padding:20px;">${t.note_empty}</div>`}</div>
@@ -922,14 +924,14 @@ function printOffer(id){
   const t=T[LANG],p=getProject(id);if(!p)return;
   const VAT=0.25;let sub=0;
   const rows=p.jobcards.map(j=>{const amt=itemEstPrice(j);sub+=amt;
-    return `<tr><td>${j.desc}</td><td class="n">${j.est}</td><td class="n">${fmt(j.estMaterial||0)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
+    return `<tr><td>${esc(j.desc)}</td><td class="n">${j.est}</td><td class="n">${fmt(j.estMaterial||0)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
   const vat=sub*VAT,tot=sub+vat;const today=new Date("2026-08-25T12:00:00").toLocaleDateString(t.locale);
   const cust=custObj(p.customerId);
   $("sheet").innerHTML=`
     <div class="oh"><div><div class="co">VARMAK AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se · Org.nr 559568-2468</div></div>
       <div class="ot"><h2>${t.o_title}</h2><div class="om">${t.o_no}: ${p.no}-Q<br>${t.o_date}: ${today}</div></div></div>
-    <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${cust?cust.name:"—"}</b><br>${cust?cust.contact:""}</div></div>
-      <div style="text-align:right;"><div class="lbl">${t.ptitle}</div><div>${p.name}<br>${p.no}</div></div></div>
+    <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${cust?esc(cust.name):"—"}</b><br>${cust?esc(cust.contact):""}</div></div>
+      <div style="text-align:right;"><div class="lbl">${t.ptitle}</div><div>${esc(p.name)}<br>${p.no}</div></div></div>
     <table><thead><tr><th>${t.o_desc}</th><th class="n">${t.o_hrs}</th><th class="n">${t.o_mat}</th><th class="n">${t.o_amount}</th></tr></thead>
       <tbody>${rows||`<tr><td colspan="4" style="text-align:center;color:#5b6b7d;">—</td></tr>`}</tbody>
       <tfoot><tr><td colspan="3" class="n">${t.o_subtotal}</td><td class="n">${fmt(sub)}</td></tr>
@@ -956,33 +958,33 @@ function openEditProject(){
 }
 function buildProjectForm(title,v){
   const t=T[LANG];
-  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${String(v.customerId)===String(c.id)?'selected':''}>${c.name}</option>`).join("");
+  const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${String(v.customerId)===String(c.id)?'selected':''}>${esc(c.name)}</option>`).join("");
   const peopleOpts=n=>PEOPLE.map(x=>`<option value="${x}" ${v[n]===x?'selected':''}>${x}</option>`).join("");
   showModal(`<h2>${title}</h2>
     <div class="frow2">
-      <div><label>${t.np_number}</label><input id="fNo" value="${v.no}" readonly></div>
-      <div><label>${t.np_name}</label><input id="fName" value="${v.name}"></div>
+      <div><label for="fNo">${t.np_number}</label><input id="fNo" value="${esc(v.no)}" readonly></div>
+      <div><label for="fName">${t.np_name}</label><input id="fName" value="${esc(v.name)}"></div>
     </div>
-    <div class="frow"><label>${t.np_customer}</label>
+    <div class="frow"><label for="fCustomer">${t.np_customer}</label>
       <select id="fCustomer"><option value="">—</option>${custOpts}</select>
       <span class="fnewlink" id="fNewCustLink">${t.np_newcustomer}</span></div>
     <div class="frow3">
-      <div><label>${t.np_ref}</label><input id="fRef" value="${v.customerRef}"></div>
-      <div><label>${t.np_po}</label><input id="fPo" value="${v.poNumber}"></div>
-      <div><label>${t.np_quoted}</label><input type="number" min="0" id="fQuoted" value="${v.quotedValue||0}"></div>
+      <div><label for="fRef">${t.np_ref}</label><input id="fRef" value="${esc(v.customerRef)}"></div>
+      <div><label for="fPo">${t.np_po}</label><input id="fPo" value="${esc(v.poNumber)}"></div>
+      <div><label for="fQuoted">${t.np_quoted}</label><input type="number" min="0" id="fQuoted" value="${v.quotedValue||0}"></div>
     </div>
-    <div class="frow"><label>${t.np_desc}</label><textarea id="fDesc">${v.description}</textarea></div>
-    <div class="frow"><label>${t.np_notes}</label><textarea id="fNotes">${v.internalNotes}</textarea></div>
+    <div class="frow"><label for="fDesc">${t.np_desc}</label><textarea id="fDesc">${esc(v.description)}</textarea></div>
+    <div class="frow"><label for="fNotes">${t.np_notes}</label><textarea id="fNotes">${esc(v.internalNotes)}</textarea></div>
     <div class="frow"><label>${t.np_type}</label><div class="mchips" id="fTypes">${TYPES.map(x=>`<span class="mchip ${newProjTypes.includes(x)?'on':''}" data-t="${x}">${x}</span>`).join("")}</div></div>
     <div class="frow3">
-      <div><label>${t.np_pm}</label><select id="fPm"><option value="">—</option>${peopleOpts('pm')}</select></div>
-      <div><label>${t.np_workshop}</label><select id="fWorkshop"><option value="">—</option>${peopleOpts('workshop')}</select></div>
-      <div><label>${t.np_sales}</label><select id="fSales"><option value="">—</option>${peopleOpts('sales')}</select></div>
+      <div><label for="fPm">${t.np_pm}</label><select id="fPm"><option value="">—</option>${peopleOpts('pm')}</select></div>
+      <div><label for="fWorkshop">${t.np_workshop}</label><select id="fWorkshop"><option value="">—</option>${peopleOpts('workshop')}</select></div>
+      <div><label for="fSales">${t.np_sales}</label><select id="fSales"><option value="">—</option>${peopleOpts('sales')}</select></div>
     </div>
     <div class="frow3">
-      <div><label>${t.np_start}</label><input type="date" id="fStart" value="${v.plannedStart}"></div>
-      <div><label>${t.np_deadline}</label><input type="date" id="fDeadline" value="${v.deadline}"></div>
-      <div><label>${t.np_plannedcompletion}</label><input type="date" id="fPlannedC" value="${v.plannedCompletion}"></div>
+      <div><label for="fStart">${t.np_start}</label><input type="date" id="fStart" value="${v.plannedStart}"></div>
+      <div><label for="fDeadline">${t.np_deadline}</label><input type="date" id="fDeadline" value="${v.deadline}"></div>
+      <div><label for="fPlannedC">${t.np_plannedcompletion}</label><input type="date" id="fPlannedC" value="${v.plannedCompletion}"></div>
     </div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.np_cancel}</button><button class="tbtn primary" onclick="submitProjectForm()">${t.np_save}</button></div>`);
   $("fTypes").addEventListener('click',e=>{const c=e.target.closest('.mchip');if(!c)return;const x=c.getAttribute('data-t');
@@ -1011,8 +1013,8 @@ function submitProjectForm(){
 function openNewCustomerMini(){
   const t=T[LANG];
   showModal(`<h2>${t.nc_title}</h2>
-    <div class="frow"><label>${t.nc_name}</label><input id="ncName"></div>
-    <div class="frow2"><div><label>${t.nc_org}</label><input id="ncOrg"></div><div><label>${t.nc_contact}</label><input id="ncContact"></div></div>
+    <div class="frow"><label for="ncName">${t.nc_name}</label><input id="ncName"></div>
+    <div class="frow2"><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg"></div><div><label for="ncContact">${t.nc_contact}</label><input id="ncContact"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="cancelNewCustomer()">${t.nc_cancel}</button><button class="tbtn primary" onclick="submitNewCustomer()">${t.nc_save}</button></div>`);
 }
 let pendingProjectFormState=null;
@@ -1034,10 +1036,10 @@ function openJobcardForm(no){
   const t=T[LANG];editJcNo=no||null;
   const p=getProject(currentId);const j=no?p.jobcards.find(x=>x.no===no):null;
   showModal(`<h2>${t.jc_modal_title}</h2>
-    <div class="frow"><label>${t.jcf_desc}</label><input id="jcDesc" value="${j?j.desc:''}"></div>
-    <div class="frow2"><div><label>${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${PEOPLE.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${n}</option>`).join("")}</select></div>
-      <div><label>${t.jcf_est}</label><input type="number" step="0.5" min="0" id="jcEst" value="${j?j.est:0}"></div></div>
-    <div class="frow"><label>${t.jcf_estmat}</label><input type="number" step="1" min="0" id="jcEstMat" value="${j?(j.estMaterial||0):0}"></div>
+    <div class="frow"><label for="jcDesc">${t.jcf_desc}</label><input id="jcDesc" value="${esc(j?j.desc:'')}"></div>
+    <div class="frow2"><div><label for="jcAssigned">${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${PEOPLE.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${n}</option>`).join("")}</select></div>
+      <div><label for="jcEst">${t.jcf_est}</label><input type="number" step="0.5" min="0" id="jcEst" value="${j?j.est:0}"></div></div>
+    <div class="frow"><label for="jcEstMat">${t.jcf_estmat}</label><input type="number" step="1" min="0" id="jcEstMat" value="${j?(j.estMaterial||0):0}"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitJobcard()">${t.save_generic}</button></div>`);
 }
 function submitJobcard(){
@@ -1062,8 +1064,8 @@ function openDocForm(){
   const t=T[LANG];
   const folders=["Drawings","Customer Documents","Material Certificates","Inspection Reports","Photos","Quality","WPS / Welding","Technical Documents","Purchase Documents","Other"];
   showModal(`<h2>${t.doc_modal_title}</h2>
-    <div class="frow"><label>${t.docf_folder}</label><select id="docFolder">${folders.map(f=>`<option>${f}</option>`).join("")}</select></div>
-    <div class="frow2"><div><label>${t.docf_name}</label><input id="docName"></div><div><label>${t.docf_rev}</label><input id="docRev" value="-"></div></div>
+    <div class="frow"><label for="docFolder">${t.docf_folder}</label><select id="docFolder">${folders.map(f=>`<option>${f}</option>`).join("")}</select></div>
+    <div class="frow2"><div><label for="docName">${t.docf_name}</label><input id="docName"></div><div><label for="docRev">${t.docf_rev}</label><input id="docRev" value="-"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitDoc()">${t.save_generic}</button></div>`);
 }
 function submitDoc(){
@@ -1078,22 +1080,46 @@ let editMatIdx=null;
 function openMaterialForm(idx){
   const t=T[LANG],p=getProject(currentId);editMatIdx=(idx!==undefined)?idx:null;
   const m=editMatIdx!==null?p.materials[editMatIdx]:null;
-  const itemOpts=p.jobcards.map(j=>`<option value="${j.no}" ${m&&m.jobcard===j.no?'selected':''}>${j.no} — ${j.desc}</option>`).join("");
+  const itemOpts=p.jobcards.map(j=>`<option value="${j.no}" ${m&&m.jobcard===j.no?'selected':''}>${j.no} — ${esc(j.desc)}</option>`).join("");
   showModal(`<h2>${t.m_new}</h2>
-    <div class="frow2"><div><label>${t.m_material}</label><input id="matName" value="${m?m.name:''}"></div><div><label>${t.m_spec}</label><input id="matSpec" value="${m?m.spec:''}"></div></div>
-    <div class="frow3"><div><label>${t.m_qty}</label><input type="number" step="0.1" min="0" id="matQty" value="${m?m.qty:0}"></div>
-      <div><label>${t.mf_unit}</label><input id="matUnit" value="${m?m.unit:''}"></div>
-      <div><label>${t.m_cost}</label><input type="number" min="0" id="matCost" value="${m?m.cost:0}"></div></div>
-    <div class="frow2"><div><label>${t.m_source}</label><select id="matSource"><option value="store" ${m&&m.source==='store'?'selected':''}>${t.src_store}</option><option value="purchase" ${m&&m.source==='purchase'?'selected':''}>${t.src_purchase}</option></select></div>
-      <div><label>${t.m_status}</label><select id="matStatus">${MAT_STATUSES.map(s=>`<option value="${s}" ${m&&m.status===s?'selected':''}>${t["ms_"+s]}</option>`).join("")}</select></div></div>
-    <div class="frow"><label>${t.m_jobcard}</label><select id="matItem"><option value="">—</option>${itemOpts}</select></div>
+    <div class="frow2"><div><label for="matName">${t.m_material}</label><input id="matName" value="${esc(m?m.name:'')}"></div><div><label for="matSpec">${t.m_spec}</label><input id="matSpec" value="${esc(m?m.spec:'')}"></div></div>
+    <div class="frow3"><div><label for="matQty">${t.m_qty}</label><input type="number" step="0.1" min="0" id="matQty" value="${m?m.qty:0}"></div>
+      <div><label for="matUnit">${t.mf_unit}</label><input id="matUnit" value="${esc(m?m.unit:'')}"></div>
+      <div><label for="matCost">${t.m_cost}</label><input type="number" min="0" id="matCost" value="${m?m.cost:0}"></div></div>
+    <div class="frow2"><div><label for="matSource">${t.m_source}</label><select id="matSource"><option value="store" ${m&&m.source==='store'?'selected':''}>${t.src_store}</option><option value="purchase" ${m&&m.source==='purchase'?'selected':''}>${t.src_purchase}</option></select></div>
+      <div><label for="matStatus">${t.m_status}</label><select id="matStatus">${MAT_STATUSES.map(s=>`<option value="${s}" ${m&&m.status===s?'selected':''}>${t["ms_"+s]}</option>`).join("")}</select></div></div>
+    <div class="frow"><label for="matItem">${t.m_jobcard}</label><select id="matItem"><option value="">—</option>${itemOpts}</select></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitMaterial()">${t.save_generic}</button></div>`);
+}
+function resolveInventoryCode(name){
+  if(!window.WorkshopData)return null;
+  const inv=WorkshopData.get().inventory||[];
+  const n=name.trim().toLowerCase();
+  const match=inv.find(x=>x.code.toLowerCase()===n||(x.description||'').toLowerCase()===n);
+  return match?match.code:null;
 }
 function submitMaterial(){
   const name=$("matName").value.trim();if(!name)return;
   const p=getProject(currentId);
-  const vals={name,spec:$("matSpec").value.trim(),qty:parseFloat($("matQty").value)||0,unit:$("matUnit").value.trim(),
+  const qty=parseFloat($("matQty").value)||0;
+  const prevStatus=editMatIdx!==null?p.materials[editMatIdx].status:null;
+  const vals={name,spec:$("matSpec").value.trim(),qty,unit:$("matUnit").value.trim(),
     source:$("matSource").value,status:$("matStatus").value,jobcard:$("matItem").value,cost:parseFloat($("matCost").value)||0};
+
+  // Route store-sourced reservations/issues through the shared inventory engine in workshop-data.js
+  // (reserveItem/issue) instead of hand-editing reserved/issued/used numbers locally, so store stock,
+  // movements and BOM readiness stay authoritative. Only call it on a new record or a genuine status
+  // transition, so a plain field edit doesn't double-reserve or double-issue the same quantity.
+  if(vals.source==='store'&&vals.status!==prevStatus&&(vals.status==='reserved'||vals.status==='issued'||vals.status==='used')){
+    const code=resolveInventoryCode(name);
+    if(code){
+      const call=vals.status==='reserved'?WorkshopData.reserveItem:WorkshopData.issue;
+      const result=call({code,projectNo:p.no,qty,jobcard:vals.jobcard,user:'Aleksandar'});
+      if(result&&result.error)alert(result.error);
+      else if(result&&result.item)vals.cost=Math.round(qty*result.item.avgCost);
+    }
+  }
+
   if(editMatIdx!==null){Object.assign(p.materials[editMatIdx],vals);pushActivity(p,"Material edited: "+name);}
   else{p.materials.push(vals);pushActivity(p,"Material added: "+name);}
   closeModal();activeTab="materials";render();
@@ -1109,11 +1135,11 @@ function openPoForm(idx){
   const t=T[LANG],p=getProject(currentId);editPoIdx=(idx!==undefined)?idx:null;
   const po=editPoIdx!==null?p.purchases[editPoIdx]:null;
   showModal(`<h2>${t.po_modal_title}</h2>
-    <div class="frow2"><div><label>${t.pof_supplier}</label><input id="poSupplier" value="${po?po.supplier:''}"></div><div><label>${t.pof_ordered}</label><input type="number" min="0" id="poOrdered" value="${po?po.ordered:0}"></div></div>
-    <div class="frow"><label>${t.pof_items}</label><input id="poItems" value="${po?po.items:''}"></div>
-    <div class="frow2"><div><label>${t.pu_received}</label><input type="number" min="0" id="poReceived" value="${po?po.received:0}"></div>
-      <div><label>${t.pu_status}</label><select id="poStatus">${PO_STATUSES.map(s=>`<option value="${s}" ${po&&po.status===s?'selected':''}>${t["pos_"+s]}</option>`).join("")}</select></div></div>
-    <div class="frow"><label>${t.pof_expected}</label><input type="date" id="poExpected" value="${po?po.expected:''}"></div>
+    <div class="frow2"><div><label for="poSupplier">${t.pof_supplier}</label><input id="poSupplier" value="${esc(po?po.supplier:'')}"></div><div><label for="poOrdered">${t.pof_ordered}</label><input type="number" min="0" id="poOrdered" value="${po?po.ordered:0}"></div></div>
+    <div class="frow"><label for="poItems">${t.pof_items}</label><input id="poItems" value="${esc(po?po.items:'')}"></div>
+    <div class="frow2"><div><label for="poReceived">${t.pu_received}</label><input type="number" min="0" id="poReceived" value="${po?po.received:0}"></div>
+      <div><label for="poStatus">${t.pu_status}</label><select id="poStatus">${PO_STATUSES.map(s=>`<option value="${s}" ${po&&po.status===s?'selected':''}>${t["pos_"+s]}</option>`).join("")}</select></div></div>
+    <div class="frow"><label for="poExpected">${t.pof_expected}</label><input type="date" id="poExpected" value="${po?po.expected:''}"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitPo()">${t.save_generic}</button></div>`);
 }
 function submitPo(){
@@ -1135,8 +1161,8 @@ function openNoteForm(idx){
   const t=T[LANG],p=getProject(currentId);editNoteIdx=(idx!==undefined)?idx:null;
   const n=editNoteIdx!==null?p.notes[editNoteIdx]:null;
   showModal(`<h2>${t.note_title}</h2>
-    <div class="frow"><label>${t.note_text}</label><textarea id="noteText">${n?n.text:''}</textarea></div>
-    <div class="frow"><label>${t.note_tag}</label><select id="noteTag">${NOTE_TAGS.map(x=>`<option value="${x}" ${n&&n.tag===x?'selected':''}>${t["tag_"+x]}</option>`).join("")}</select></div>
+    <div class="frow"><label for="noteText">${t.note_text}</label><textarea id="noteText">${esc(n?n.text:'')}</textarea></div>
+    <div class="frow"><label for="noteTag">${t.note_tag}</label><select id="noteTag">${NOTE_TAGS.map(x=>`<option value="${x}" ${n&&n.tag===x?'selected':''}>${t["tag_"+x]}</option>`).join("")}</select></div>
     <div class="frow"><label><input type="checkbox" id="notePin" ${n&&n.pinned?'checked':''} style="width:auto;display:inline-block;margin-right:7px;">${t.note_pin}</label></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitNote()">${t.note_save}</button></div>`);
 }
@@ -1184,24 +1210,24 @@ function doDuplicate(id){
 function openHoldForm(p){
   const t=T[LANG];
   showModal(`<h2>${t.hold_title}</h2>
-    <div class="frow"><label>${t.hold_reason}</label><select id="hReason">${HOLD_REASONS.map(r=>`<option value="${r}">${t["st_hold_"+r]}</option>`).join("")}</select></div>
-    <div class="frow"><label>${t.hold_comment}</label><textarea id="hComment"></textarea></div>
-    <div class="frow"><label>${t.hold_expected}</label><input type="date" id="hExpected"></div>
+    <div class="frow"><label for="hReason">${t.hold_reason}</label><select id="hReason">${HOLD_REASONS.map(r=>`<option value="${r}">${t["st_hold_"+r]}</option>`).join("")}</select></div>
+    <div class="frow"><label for="hComment">${t.hold_comment}</label><textarea id="hComment"></textarea></div>
+    <div class="frow"><label for="hExpected">${t.hold_expected}</label><input type="date" id="hExpected"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doHold(${p.id})">${t.hold_save}</button></div>`);
 }
 function doHold(id){
   const p=getProject(id);p.status="hold";p.holdReason=$("hReason").value;p.holdComment=$("hComment").value;p.expectedResume=$("hExpected").value;
-  pushActivity(p,"Status changed → ON HOLD ("+T[LANG]["st_hold_"+p.holdReason]+")");closeModal();render();
+  pushActivity(p,"Status changed → ON HOLD ("+T[LANG]["st_hold_"+p.holdReason]+")");syncSharedProject(p);closeModal();render();
 }
 function openResumeForm(p){
   const t=T[LANG];
   showModal(`<h2>${t.resume_title}</h2>
-    <div class="frow"><label>${t.resume_tostatus}</label><select id="rStatus"><option value="active">${t.st_active}</option><option value="planned">${t.st_planned}</option></select></div>
+    <div class="frow"><label for="rStatus">${t.resume_tostatus}</label><select id="rStatus"><option value="active">${t.st_active}</option><option value="planned">${t.st_planned}</option></select></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doResume(${p.id})">${t.resume_save}</button></div>`);
 }
 function doResume(id){
   const p=getProject(id);const to=$("rStatus").value;p.status=to;p.holdReason="";p.holdComment="";p.expectedResume="";
-  pushActivity(p,"Status changed: ON HOLD → "+to.toUpperCase());closeModal();render();
+  pushActivity(p,"Status changed: ON HOLD → "+to.toUpperCase());syncSharedProject(p);closeModal();render();
 }
 function openCompleteFlow(p){
   const t=T[LANG];const issues=completeIssues(p);
@@ -1210,14 +1236,14 @@ function openCompleteFlow(p){
       <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doComplete(${p.id},false)">${t.complete_confirm}</button></div>`);
   }else{
     showModal(`<h2>${t.complete_issues_title}</h2><ul class="issuelist">${issues.map(i=>`<li>${i}</li>`).join("")}</ul>
-      <div class="frow"><label>${t.complete_override_reason}</label><textarea id="cOverrideReason"></textarea></div>
+      <div class="frow"><label for="cOverrideReason">${t.complete_override_reason}</label><textarea id="cOverrideReason"></textarea></div>
       <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.complete_goback}</button><button class="tbtn danger" onclick="doComplete(${p.id},true)">${t.complete_override}</button></div>`);
   }
 }
 function doComplete(id,override){
   const p=getProject(id);
   if(override){const reason=$("cOverrideReason").value.trim();if(!reason)return;pushActivity(p,"Manager override on completion: "+reason);}
-  p.status="completed";p.actualCompletion="2026-08-24";pushActivity(p,"Status changed → COMPLETED");closeModal();render();
+  p.status="completed";p.actualCompletion="2026-08-24";pushActivity(p,"Status changed → COMPLETED");syncSharedProject(p);closeModal();render();
 }
 function openCloseFlow(p){
   const t=T[LANG];const issues=closeIssues(p);
@@ -1230,28 +1256,28 @@ function openCloseFlow(p){
   }
 }
 function doClose(id){
-  const p=getProject(id);p.status="closed";p.closedDate="2026-08-24";pushActivity(p,"Status changed → CLOSED");closeModal();render();
+  const p=getProject(id);p.status="closed";p.closedDate="2026-08-24";pushActivity(p,"Status changed → CLOSED");syncSharedProject(p);closeModal();render();
 }
 function openCancelForm(p){
   const t=T[LANG];
   showModal(`<h2>${t.cancel_title}</h2>
-    <div class="frow"><label>${t.cancel_reason}</label><textarea id="cxReason"></textarea></div>
+    <div class="frow"><label for="cxReason">${t.cancel_reason}</label><textarea id="cxReason"></textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn danger" onclick="doCancel(${p.id})">${t.cancel_save}</button></div>`);
 }
 function doCancel(id){
   const p=getProject(id);const reason=$("cxReason").value.trim();if(!reason)return;
-  p.status="cancelled";p.cancelReason=reason;pushActivity(p,"Status changed → CANCELLED: "+reason);closeModal();render();
+  p.status="cancelled";p.cancelReason=reason;pushActivity(p,"Status changed → CANCELLED: "+reason);syncSharedProject(p);closeModal();render();
 }
 function openReopenForm(p){
   const t=T[LANG];
   showModal(`<h2>${t.reopen_title}</h2>
-    <div class="frow"><label>${t.reopen_reason}</label><textarea id="roReason"></textarea></div>
-    <div class="frow"><label>${t.reopen_tostatus}</label><select id="roStatus"><option value="active">${t.st_active}</option><option value="completed">${t.st_completed}</option></select></div>
+    <div class="frow"><label for="roReason">${t.reopen_reason}</label><textarea id="roReason"></textarea></div>
+    <div class="frow"><label for="roStatus">${t.reopen_tostatus}</label><select id="roStatus"><option value="active">${t.st_active}</option><option value="completed">${t.st_completed}</option></select></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doReopen(${p.id})">${t.reopen_save}</button></div>`);
 }
 function doReopen(id){
   const p=getProject(id);const reason=$("roReason").value.trim();if(!reason)return;const to=$("roStatus").value;
-  p.status=to;p.closedDate="";pushActivity(p,"Reopened by Aleksandar → "+to.toUpperCase()+" — reason: "+reason);closeModal();render();
+  p.status=to;p.closedDate="";pushActivity(p,"Reopened by Aleksandar → "+to.toUpperCase()+" — reason: "+reason);syncSharedProject(p);closeModal();render();
 }
 
 function render(){

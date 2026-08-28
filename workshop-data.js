@@ -6,7 +6,7 @@
   const now=()=>new Date().toISOString();
   const seed=()=>({
     version:VERSION,
-    counters:{customer:40,estimation:25,project:15,movement:6,offcut:3},
+    counters:{customer:40,estimation:25,project:15,movement:6,offcut:3,supplier:8},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -37,7 +37,7 @@
       {id:1,code:'OFF-SS304-5-600X420',materialCode:'SS-SHT-304-2.0',description:'AISI 304 plate offcut',grade:'AISI 304',thickness:5,width:600,length:420,unit:'mm',location:'O1-01-01',status:'available',created:'2026-08-20',sourceProject:'P-2026-009'},
       {id:2,code:'OFF-TUBE-50-1450',materialCode:'MS-TUBE-40SQ-2.0',description:'Square tube offcut',grade:'S235JR',dimensions:'50×50×3',length:1450,unit:'mm',location:'O2-01-04',status:'available',created:'2026-08-24',sourceProject:'P-2026-014'}
     ],
-    stockCounts:[],hours:[],activity:[]
+    suppliers:[],stockCounts:[],hours:[],activity:[]
   });
   function load(){try{const raw=global.localStorage&&global.localStorage.getItem(KEY);if(raw){const parsed=JSON.parse(raw);if(parsed&&parsed.version===VERSION)return parsed}}catch(e){}return seed()}
   let state=load();
@@ -58,7 +58,13 @@
     upsertCustomer(customer){const existing=state.customers.find(x=>x.id===customer.id||x.name===customer.name);if(existing)Object.assign(existing,clone(customer));else{customer=clone(customer);customer.id=state.counters.customer++;customer.no=next('customer','C-');state.customers.push(customer)}save(`Customer updated: ${customer.name}`);return clone(existing||customer)},
     addCustomerNote(id,note){const c=state.customers.find(x=>x.id===id);if(!c)return;c.notes=c.notes||[];c.notes.unshift(clone(note));save(`Customer note: ${c.name}`)},
     addCustomerContact(id,contact){const c=state.customers.find(x=>x.id===id);if(!c)return;c.contacts=c.contacts||[];c.contacts.push(clone(contact));save(`Customer contact: ${c.name}`)},
+    listSuppliers:()=>clone(state.suppliers),
+    findSupplier:id=>clone(state.suppliers.find(x=>x.id===id)),
+    upsertSupplier(supplier){const existing=state.suppliers.find(x=>x.id===supplier.id||x.name===supplier.name);if(existing)Object.assign(existing,clone(supplier));else{supplier=clone(supplier);supplier.id=state.counters.supplier++;supplier.no=supplier.no||next('supplier','S-');state.suppliers.push(supplier)}save(`Supplier updated: ${supplier.name}`);return clone(existing||supplier)},
+    addSupplierNote(id,note){const s=state.suppliers.find(x=>x.id===id);if(!s)return;s.notes=s.notes||[];s.notes.unshift(clone(note));save(`Supplier note: ${s.name}`)},
+    addSupplierContact(id,contact){const s=state.suppliers.find(x=>x.id===id);if(!s)return;s.contacts=s.contacts||[];s.contacts.push(clone(contact));save(`Supplier contact: ${s.name}`)},
     listEstimations:()=>clone(state.estimations),
+    deleteEstimation(idOrNo){const idx=state.estimations.findIndex(x=>x.id===idOrNo||x.no===idOrNo);if(idx===-1)return false;const removed=state.estimations.splice(idx,1)[0];save(`Estimation deleted: ${removed.no}`);return true},
     upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:now().slice(0,10),author:'Aleksandar C.',reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
     updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:now().slice(0,10),author:'Aleksandar C.',reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
     createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:'Aleksandar C.',workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},

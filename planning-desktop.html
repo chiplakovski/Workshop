@@ -281,7 +281,7 @@
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▦</div><div><h2>PLANNING</h2><small>Schedule & capacity</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarPlanning('overview')"><i>▦</i>Planning Overview</button><button data-ms="ideas" onclick="sidebarPlanning('ideas')"><i>◉</i>New Ideas</button><button data-ms="existing" onclick="sidebarPlanning('existing')"><i>▣</i>Existing Projects</button><button data-ms="future" onclick="sidebarPlanning('future')"><i>↗</i>Future Projects</button><button data-ms="gantt" onclick="sidebarPlanning('gantt')"><i>▤</i>Gantt Chart</button><button data-ms="calendar" onclick="sidebarPlanning('calendar')"><i>□</i>Calendar</button><button data-ms="timeline" onclick="sidebarPlanning('timeline')"><i>↔</i>Timeline</button><button data-ms="workload" onclick="sidebarPlanning('workload')"><i>▥</i>Capacity / Workload</button><button data-ms="scenarios" onclick="sidebarPlanning('scenarios')"><i>◇</i>Scenarios</button></nav><div class="ms-sidebox"><b>Automatic planning</b><p>Projects, tasks, dependencies, milestones and resource demand update the schedule together.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Planning manager</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▦</div><div><h2 data-i="ms_title">PLANNING</h2><small data-i="psub">Schedule & capacity</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarPlanning('overview')"><i>▦</i><span data-i="tab_overview">Planning Overview</span></button><button data-ms="ideas" onclick="sidebarPlanning('ideas')"><i>◉</i><span data-i="ms_nav_ideas">New Ideas</span></button><button data-ms="existing" onclick="sidebarPlanning('existing')"><i>▣</i><span data-i="sub_existing">Existing Projects</span></button><button data-ms="future" onclick="sidebarPlanning('future')"><i>↗</i><span data-i="sub_future">Future Projects</span></button><button data-ms="gantt" onclick="sidebarPlanning('gantt')"><i>▤</i><span data-i="tab_gantt">Gantt Chart</span></button><button data-ms="calendar" onclick="sidebarPlanning('calendar')"><i>□</i><span data-i="tab_calendar">Calendar</span></button><button data-ms="timeline" onclick="sidebarPlanning('timeline')"><i>↔</i><span data-i="tab_timeline">Timeline</span></button><button data-ms="workload" onclick="sidebarPlanning('workload')"><i>▥</i><span data-i="ms_nav_workload">Capacity / Workload</span></button><button data-ms="scenarios" onclick="sidebarPlanning('scenarios')"><i>◇</i><span data-i="tab_scenarios">Scenarios</span></button></nav><div class="ms-sidebox"><b data-i="ms_sidebox_title">Automatic planning</b><p data-i="ms_sidebox_desc">Projects, tasks, dependencies, milestones and resource demand update the schedule together.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="ms_role">Planning manager</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -301,9 +301,10 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script>
+<script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
 <script>
 const $=id=>document.getElementById(id);
+const escapeHtml=value=>String(value??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const MSDAY=86400000;
 function d(s){return new Date(s+"T00:00:00");}
 function addDays(dt,n){return new Date(dt.getTime()+n*MSDAY);}
@@ -311,12 +312,13 @@ function daysBetween(a,b){return Math.round((b.getTime()-a.getTime())/MSDAY);}
 function fmtISO(dt){return dt.toISOString().slice(0,10);}
 function fmtShort(dt){return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}
 function fmt0(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+const TODAY_ISO=fmtISO(new Date());
 function planningCustomer(p){return CUSTOMERS[p.customerId]||p.customerName||"Internal";}
 
 const CUSTOMERS={1:"Sanus Glutenfri AB",2:"Schröder Nordic",3:"Lund Konditori",4:"Helsingborg Foods",5:"Malmö Livs",6:"Ystad Bageri",7:"Trelleborg Snacks"};
 
 let PROJECTS=[
-  {no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,start:"2026-08-18",deadline:"2026-09-10",progress:60,
+  {no:"P-2026-001",name:"Bakery Conveyor Modification",customerId:1,start:"2026-08-18",deadline:"2026-09-10",progress:60,
     plannedHours:80,usedHours:48,phase:"production",materialStatus:"Delivered",responsible:"Aleksandar C.",
     workers:["Marko K.","Elena N."],machines:["Laser","Press Brake","TIG Station 1"],dependencyNote:"Material delivery (done)",
     problems:[],updatedCompletion:"2026-09-10",
@@ -334,31 +336,31 @@ let PROJECTS=[
       {id:"t11",name:"Delivery",dur:1,dependsOn:["t10"],resource:"Aleksandar C.",status:"planned",shift:0}
     ],
     milestones:[{name:"Drawings Approved",date:"2026-08-18",done:true},{name:"Material Delivered",date:"2026-08-22",done:true},{name:"FAT / Inspection",date:"2026-09-08",done:false}]},
-  {no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,start:"2026-08-18",deadline:"2026-09-20",progress:10,
+  {no:"P-2026-002",name:"Folding Machine Retrofit",customerId:2,start:"2026-08-18",deadline:"2026-09-20",progress:10,
     plannedHours:80,usedHours:12,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
     workers:["Marko K."],machines:["Laser","Press Brake"],dependencyNote:"Awaiting customer scope confirmation",
     problems:["Customer has not confirmed final scope"],updatedCompletion:"2026-09-20",
     tasks:[{id:"a1",name:"Full Retrofit Scope",start:"2026-08-18",dur:23,dependsOn:[],resource:"Marko K.",status:"active",shift:0}],
     milestones:[{name:"Scope Confirmed",date:"2026-08-28",done:false}]},
-  {no:"P-26-0003",name:"Mixer Overhaul — Preliminary",customerId:3,start:"2026-09-01",deadline:"2026-09-15",progress:0,
+  {no:"P-2026-003",name:"Mixer Overhaul — Preliminary",customerId:3,start:"2026-09-01",deadline:"2026-09-15",progress:0,
     plannedHours:16,usedHours:0,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
     workers:[],machines:[],dependencyNote:"Awaiting customer decision on quote",
     problems:[],updatedCompletion:"2026-09-15",
     tasks:[{id:"b1",name:"Gearbox Service & Guard",start:"2026-09-01",dur:14,dependsOn:[],resource:"—",status:"planned",shift:0}],
     milestones:[]},
-  {no:"P-26-0004",name:"Guard Fabrication",customerId:4,start:"2026-06-02",deadline:"2026-06-20",progress:100,
+  {no:"P-2026-004",name:"Guard Fabrication",customerId:4,start:"2026-06-02",deadline:"2026-06-20",progress:100,
     plannedHours:24,usedHours:23.5,phase:"completed",materialStatus:"Used",responsible:"Aleksandar C.",
     workers:["Marko K.","Elena N."],machines:["Laser","Press Brake"],dependencyNote:"—",
     problems:[],updatedCompletion:"2026-06-20",
     tasks:[{id:"c1",name:"Guards — Fabricate & Install",start:"2026-06-02",dur:18,dependsOn:[],resource:"Marko K.",status:"completed",shift:0}],
     milestones:[{name:"Delivered",date:"2026-06-20",done:true}]},
-  {no:"P-26-0005",name:"Service — Malmö Slicer",customerId:5,start:"2026-08-10",deadline:"2026-08-18",progress:100,
+  {no:"P-2026-005",name:"Service — Malmö Slicer",customerId:5,start:"2026-08-10",deadline:"2026-08-18",progress:100,
     plannedHours:12,usedHours:12,phase:"completed",materialStatus:"Used",responsible:"Marko K.",
     workers:["Marko K."],machines:[],dependencyNote:"—",
     problems:[],updatedCompletion:"2026-08-18",
     tasks:[{id:"e1",name:"Inspection & Bearing Replacement",start:"2026-08-10",dur:8,dependsOn:[],resource:"Marko K.",status:"completed",shift:0}],
     milestones:[{name:"Delivered",date:"2026-08-18",done:true}]},
-  {no:"P-26-0006",name:"Spiral Mixer Service",customerId:6,start:"2026-08-19",deadline:"2026-09-05",progress:30,
+  {no:"P-2026-006",name:"Spiral Mixer Service",customerId:6,start:"2026-08-19",deadline:"2026-09-05",progress:30,
     plannedHours:16,usedHours:3,phase:"production",materialStatus:"Awaiting supplier",responsible:"Aleksandar C.",
     workers:["Marko K."],machines:[],dependencyNote:"Waiting on gearbox seal kit from supplier",
     problems:["Supplier delay on seal kit — resume expected Sep 1"],updatedCompletion:"2026-09-08",
@@ -366,13 +368,13 @@ let PROJECTS=[
       {id:"f2",name:"Awaiting Seal Kit",dur:10,dependsOn:["f1"],resource:"—",status:"hold",shift:0},
       {id:"f3",name:"Reassembly & Test",dur:3,dependsOn:["f2"],resource:"Marko K.",status:"planned",shift:0}],
     milestones:[{name:"Seal Kit Delivered",date:"2026-09-02",done:false}]},
-  {no:"P-26-0008",name:"Bearing Replacement",customerId:5,start:"2026-08-28",deadline:"2026-09-15",progress:5,
+  {no:"P-2026-008",name:"Bearing Replacement",customerId:5,start:"2026-08-28",deadline:"2026-09-15",progress:5,
     plannedHours:8,usedHours:0,phase:"material_ordered",materialStatus:"Ordered",responsible:"Aleksandar C.",
     workers:["Marko K."],machines:[],dependencyNote:"—",
     problems:[],updatedCompletion:"2026-09-15",
     tasks:[{id:"g1",name:"Bearing Replacement",start:"2026-08-28",dur:8,dependsOn:[],resource:"Marko K.",status:"planned",shift:0}],
     milestones:[]},
-  {no:"P-26-0009",name:"HMI Upgrade",customerId:2,start:"2026-08-28",deadline:"2026-09-18",progress:0,
+  {no:"P-2026-009",name:"HMI Upgrade",customerId:2,start:"2026-08-28",deadline:"2026-09-18",progress:0,
     plannedHours:18,usedHours:0,phase:"design",materialStatus:"Not ordered",responsible:"Aleksandar C.",
     workers:["Marko K.","Elena N."],machines:["Laser"],dependencyNote:"Starts after Folding Machine Retrofit frees capacity",
     problems:[],updatedCompletion:"2026-09-18",
@@ -511,8 +513,8 @@ let activeScenario='baseline';
 
 let LANG="en",activeTab="overview",activeSub="overview",query="",
   ganttFilter={ideas:true,existing:true,future:true},
-  expandedProjects={},selectedIdeaId=1,selectedProjNo="P-26-0001",selectedFutureId=1,
-  calMonth=new Date(2026,7,1),calSelDate="2026-08-22",timelineZoom="6m";
+  expandedProjects={},selectedIdeaId=1,selectedProjNo="P-2026-001",selectedFutureId=1,
+  calMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1),calSelDate="2026-08-22",timelineZoom="6m";
 
 const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",ptitle:"Planning",psub:"Schedule & capacity",
@@ -559,6 +561,34 @@ const T={
     nf_title:"New Future Project",nf_name:"Project name",
     by_employee:"By Employee",by_machine:"By Machine",by_week:"By Workshop Week",
     day_events:"Events",no_events:"No events on this day.",
+    leg_milestone:"Milestone",
+    flow_est:"Accepted Estimation",flow_bom:"Project + BOM",flow_tasks:"Automatic Tasks",flow_gantt:"Gantt + Dependencies",flow_capacity:"Capacity",flow_jobcard:"Jobcard",flow_actuals:"Hours / Actuals",importest:"Import accepted estimation",
+    attach:"Attach",openinprojects:"Open in Projects",
+    msdepchain:"Milestones & dependency chain",dep_fs:"Finish → Start",ms_completed:"Completed",ms_upcoming:"Upcoming",empty_milestones:"No milestones defined.",
+    convertproj:"Convert → Project + Gantt",
+    ni_source:"Customer / source",ni_internal:"Internal idea",ni_filename:"File name",
+    alert_baseline_live:"Baseline is already the live plan.",alert_scenario_applied:"{s} applied to this demo session.",
+    alert_shareddata_unavailable:"Shared module data is unavailable.",alert_all_est_connected:"All accepted estimations are already connected to Planning.",
+    alert_future_converted:"This future project has already been converted.",
+    alert_project_created:"{no} created. Tasks, dependencies, Gantt, capacity demand and milestones were generated automatically.",
+    tab_scenarios:"Scenarios",
+    ms_title:"PLANNING",ms_nav_ideas:"New Ideas",ms_nav_workload:"Capacity / Workload",
+    ms_sidebox_title:"Automatic planning",ms_sidebox_desc:"Projects, tasks, dependencies, milestones and resource demand update the schedule together.",
+    ms_role:"Planning manager",
+    scenario_baseline_name:"Current schedule",scenario_baseline_desc:"Approved plan using today’s people, machines, and project dates.",
+    scenario_welder_name:"Hire another welder",scenario_welder_desc:"Adds 40 welding hours per week and removes the Week 36 overload.",
+    scenario_delay_name:"Delay Project 14",scenario_delay_desc:"Moves the ventilation project by 14 days to release near-term capacity.",
+    scenario_laser_name:"Buy laser cutter",scenario_laser_desc:"Adds a second laser resource and shortens cutting tasks by 35%.",
+    m_peak_utilization:"Peak utilization",m_overload:"Overload",m_delivery_impact:"Delivery impact",m_extra_capacity:"Extra capacity",
+    scenario_planning_title:"Scenario planning",scenario_planning_desc:"Test changes without altering the live production schedule.",
+    apply_live_plan:"Apply to live plan",recalculated_result_title:"{s} — recalculated result",
+    workshop_peak:"Workshop peak",capacity_shortage:"Capacity shortage",expected_deadline_movement:"Expected deadline movement",
+    hours_unit:"hours",days_unit:"days",
+    capacity_conflict_remains:"Capacity conflict remains",
+    combine_welder_scenario:"Combine the welder scenario with a 3-day project shift to eliminate the remaining shortage.",
+    schedule_within_capacity:"Schedule is within capacity",no_overloaded_weeks:"No overloaded workshop weeks in the selected scenario.",
+    suggest_recommend:"Recommended: add one welder for 24 hours",suggest_alternative:"Alternative: move P-2026-002 by 3 working days.",
+    preview_scenario:"Preview scenario",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ptitle:"Planering",psub:"Schema & kapacitet",
     tab_overview:"Planeringsöversikt",tab_gantt:"Gantt-schema",tab_calendar:"Kalender",tab_timeline:"Tidslinje",tab_workload:"Beläggning",
@@ -604,14 +634,42 @@ const T={
     nf_title:"Nytt framtida projekt",nf_name:"Projektnamn",
     by_employee:"Per anställd",by_machine:"Per maskin",by_week:"Per verkstadsvecka",
     day_events:"Händelser",no_events:"Inga händelser denna dag.",
+    leg_milestone:"Milstolpe",
+    flow_est:"Godkänd offert",flow_bom:"Projekt + Materiallista",flow_tasks:"Automatiska uppgifter",flow_gantt:"Gantt + Beroenden",flow_capacity:"Kapacitet",flow_jobcard:"Jobbkort",flow_actuals:"Timmar / Utfall",importest:"Importera godkänd offert",
+    attach:"Bifoga",openinprojects:"Öppna i Projekt",
+    msdepchain:"Milstolpar & beroendekedja",dep_fs:"Slut → Start",ms_completed:"Klar",ms_upcoming:"Kommande",empty_milestones:"Inga milstolpar definierade.",
+    convertproj:"Konvertera → Projekt + Gantt",
+    ni_source:"Kund / källa",ni_internal:"Intern idé",ni_filename:"Filnamn",
+    alert_baseline_live:"Baslinjen är redan den aktiva planen.",alert_scenario_applied:"{s} tillämpades i denna demosession.",
+    alert_shareddata_unavailable:"Delad moduldata är inte tillgänglig.",alert_all_est_connected:"Alla godkända offerter är redan kopplade till Planering.",
+    alert_future_converted:"Detta framtida projekt har redan konverterats.",
+    alert_project_created:"{no} skapades. Uppgifter, beroenden, Gantt, kapacitetsbehov och milstolpar genererades automatiskt.",
+    tab_scenarios:"Scenarier",
+    ms_title:"PLANERING",ms_nav_ideas:"Nya idéer",ms_nav_workload:"Kapacitet / Beläggning",
+    ms_sidebox_title:"Automatisk planering",ms_sidebox_desc:"Projekt, uppgifter, beroenden, milstolpar och resursbehov uppdaterar schemat tillsammans.",
+    ms_role:"Planeringschef",
+    scenario_baseline_name:"Nuvarande schema",scenario_baseline_desc:"Godkänd plan med dagens personal, maskiner och projektdatum.",
+    scenario_welder_name:"Anställ ytterligare en svetsare",scenario_welder_desc:"Lägger till 40 svetstimmar per vecka och tar bort överbelastningen i vecka 36.",
+    scenario_delay_name:"Fördröj Projekt 14",scenario_delay_desc:"Flyttar ventilationsprojektet 14 dagar för att frigöra kapacitet på kort sikt.",
+    scenario_laser_name:"Köp laserskärare",scenario_laser_desc:"Lägger till en andra laserresurs och förkortar skärningsuppgifter med 35%.",
+    m_peak_utilization:"Maximal beläggning",m_overload:"Överbelastning",m_delivery_impact:"Påverkan på leverans",m_extra_capacity:"Extra kapacitet",
+    scenario_planning_title:"Scenarioplanering",scenario_planning_desc:"Testa ändringar utan att påverka det aktiva produktionsschemat.",
+    apply_live_plan:"Tillämpa på aktiv plan",recalculated_result_title:"{s} — omräknat resultat",
+    workshop_peak:"Verkstadens topp",capacity_shortage:"Kapacitetsbrist",expected_deadline_movement:"Förväntad förskjutning av deadline",
+    hours_unit:"timmar",days_unit:"dagar",
+    capacity_conflict_remains:"Kapacitetskonflikt kvarstår",
+    combine_welder_scenario:"Kombinera svetsarscenariot med en 3-dagars projektförskjutning för att eliminera den återstående bristen.",
+    schedule_within_capacity:"Schemat är inom kapaciteten",no_overloaded_weeks:"Inga överbelastade verkstadsveckor i det valda scenariot.",
+    suggest_recommend:"Rekommendation: lägg till en svetsare i 24 timmar",suggest_alternative:"Alternativ: flytta P-2026-002 med 3 arbetsdagar.",
+    preview_scenario:"Förhandsgranska scenario",
     locale:"sv-SE"},
-  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",ptitle:"Planiraњe",psub:"Raspored i kapacitet",
-    tab_overview:"Pregled na planiraњeto",tab_gantt:"Gant dijagram",tab_calendar:"Kalendar",tab_timeline:"Vremenska linija",tab_workload:"Optovaruvaњe",
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ptitle:"Planiranje",psub:"Raspored i kapacitet",
+    tab_overview:"Pregled na planiranjeto",tab_gantt:"Gant dijagram",tab_calendar:"Kalendar",tab_timeline:"Vremenska linija",tab_workload:"Optovaruvanje",
     today:"Denes",filter:"Filter",new:"Novo",
     sub_overview:"Pregled",sub_ideas:"Novi idei",sub_existing:"Postojni proekti",sub_future:"Idni proekti",
     submodules:"Podmoduli",quicksummary:"Brz pregled",statuslegend:"Legenda na statusi",
     total_projects:"Vkupno proekti",in_progress:"Vo tek",planned:"Planirani",completed:"Završeni",overdue:"Docneti",
-    planned_hours:"Planirani časovi",utilization:"Optovaruvaњe",est_revenue:"Proceneta prihod",
+    planned_hours:"Planirani časovi",utilization:"Optovaruvanje",est_revenue:"Proceneta prihod",
     leg_idea:"Ideja / Koncept",leg_planned:"Planirano",leg_inprogress:"Vo tek",leg_hold:"Pauzirano",leg_completed:"Završeno",leg_overdue:"Docneto",
     submod_overview:"Podmoduli",
     ov_ideas_desc:"Sobiraj, oceni i razvivaj novi idei i koncepti.",
@@ -623,48 +681,84 @@ const T={
     pipeline:"Pipeline na idei",addidea:"+ Dodaj ideja",viewall:"Vidi gi site",
     th_idea:"Ideja",th_stage:"Faza",th_score:"Ocenka",th_next:"Sleden čekor",
     upcoming_milestones:"Idni prekretnici",task_overview:"Pregled na zadači",totalhours:"Vkupno časovi",
-    resource_overview:"Pregled na resursi",viewres:"Vidi gi site resursi",th_resource:"Resurs",th_role:"Uloga",th_util:"Optovaruvaњe",
+    resource_overview:"Pregled na resursi",viewres:"Vidi gi site resursi",th_resource:"Resurs",th_role:"Uloga",th_util:"Optovaruvanje",
     project_timeline:"Vremenska linija na proekti",viewfulltimeline:"Vidi ja celata vremenska linija",
     zoom:"Zum",expand:"Rasiri",
     idealist_title:"Novi idei",existing_title:"Postojni proekti",future_title:"Idni proekti",
-    newidea:"+ Nova ideja",newfuture:"+ Nov ideн proekt",
-    stg_new:"Nova ideja",stg_evaluation:"Ocenuvaњe",stg_feasibility:"Izvodlivost",stg_approved:"Odobreno",stg_future:"Iden proekt",stg_rejected:"Odbieno",stg_onhold:"Pauzirano",stg_concept:"Koncept",
+    newidea:"+ Nova ideja",newfuture:"+ Nov iden proekt",
+    stg_new:"Nova ideja",stg_evaluation:"Ocenuvanje",stg_feasibility:"Izvodlivost",stg_approved:"Odobreno",stg_future:"Iden proekt",stg_rejected:"Odbieno",stg_onhold:"Pauzirano",stg_concept:"Koncept",
     prob_confirmed:"Potvrdeno",prob_probable:"Verojatno",prob_tentative:"Nesigurno",
     f_source:"Izvor",f_category:"Kategorija",f_priority:"Prioritet",f_investment:"Očekuvana investicija",f_revenue:"Očekuvan prihod",
     f_profit:"Proceneta dobivka",f_hours:"Proceneti časovi",f_machines:"Potrebni mašini",f_materials:"Potrebni materijali",
     f_difficulty:"Tehnička složenost",f_market:"Pazaren potencijal",f_risk:"Rizik",f_next:"Sledna akcija",f_responsible:"Odgovorno lice",
     f_target:"Cel datum",f_customer:"Klient",f_deadline:"Rok za isporaka",f_start:"Datum na početok",f_progress:"Napredok",
     f_plannedh:"Planirani časovi",f_usedh:"Iskoristeni časovi",f_remainh:"Preostanati časovi",f_material:"Status na materijal",f_phase:"Tekovna faza",
-    f_workers:"Nazначeni rabotnici",f_dependencies:"Zavisnosti",f_problems:"Problemi / docnenja",f_updatedcompletion:"Ažuriran datum na završuvaњe",
+    f_workers:"Naznačeni rabotnici",f_dependencies:"Zavisnosti",f_problems:"Problemi / docnenja",f_updatedcompletion:"Ažuriran datum na završuvanje",
     f_expstart:"Očekuvan početok",f_expfinish:"Očekuvan kraj",f_probability:"Verojatnost",f_workload:"Procenet obem na rabota",
     f_employees:"Potrebni vraboteni",f_leadtime:"Vreme za dostava na materijal",
-    scoring_title:"Ocenuvaњe na ideja",overall_score:"Vkupna ocenka na ideja",
+    scoring_title:"Ocenuvanje na ideja",overall_score:"Vkupna ocenka na ideja",
     sc_market:"Pazaren potencijal",sc_profit:"Potencijal za profit",sc_investment:"Potrebna investicija",sc_difficulty:"Tehnička složenost",
     sc_equipment:"Dostapna oprema",sc_devtime:"Vreme za razvoj",sc_strategic:"Strateška vrednost",
-    documents:"Dokumenti",empty_docs:"Sè uште nema dokumenti.",
-    warn_overload:"Rabotilnicata e preоptovarena za {h} časovi vo {w}.",suggest:"Predlog: pomesti pomalku priоriteten proekt za nekolku dena, ili dodaj kratkoročna kapacitet na najоptovarenata resursa.",
-    ph_design:"Dizajn",ph_material_ordered:"Materijal nараčan",ph_ready:"Podgotveno za proizvodstvo",ph_production:"Proizvodstvo",ph_inspection:"Inspekcija",ph_delivery:"Isporaka",ph_completed:"Završeno",
+    documents:"Dokumenti",empty_docs:"Sè ušte nema dokumenti.",
+    warn_overload:"Rabotilnicata e preoptovarena za {h} časovi vo {w}.",suggest:"Predlog: pomesti pomalku prioriteten proekt za nekolku dena, ili dodaj kratkoročna kapacitet na najoptovarenata resursa.",
+    ph_design:"Dizajn",ph_material_ordered:"Materijal naračan",ph_ready:"Podgotveno za proizvodstvo",ph_production:"Proizvodstvo",ph_inspection:"Inspekcija",ph_delivery:"Isporaka",ph_completed:"Završeno",
     nc_cancel:"Otkaži",nc_save:"Začuvaj",
     ni_title:"Nova ideja",ni_name:"Ime na ideja",ni_desc:"Kratok opis",
     nf_title:"Nov iden proekt",nf_name:"Ime na proekt",
     by_employee:"Po vraboten",by_machine:"Po mašina",by_week:"Po nedela vo rabotilnica",
     day_events:"Nastani",no_events:"Nema nastani na ovoj den.",
+    leg_milestone:"Prekretnica",
+    flow_est:"Prifatena kalkulacija",flow_bom:"Proekt + Spisok na materijali",flow_tasks:"Avtomatski zadači",flow_gantt:"Gant + Zavisnosti",flow_capacity:"Kapacitet",flow_jobcard:"Raboten nalog",flow_actuals:"Časovi / Realizacija",importest:"Uvezi prifatena kalkulacija",
+    attach:"Prikači",openinprojects:"Otvori vo Proekti",
+    msdepchain:"Prekretnici i sindžir na zavisnosti",dep_fs:"Kraj → Početok",ms_completed:"Završeno",ms_upcoming:"Idno",empty_milestones:"Nema definirani prekretnici.",
+    convertproj:"Konvertiraj → Proekt + Gant",
+    ni_source:"Klient / izvor",ni_internal:"Interna ideja",ni_filename:"Ime na datoteka",
+    alert_baseline_live:"Baznata linija e vekje aktivniot plan.",alert_scenario_applied:"{s} e primeneto vo ovaa demo-sesija.",
+    alert_shareddata_unavailable:"Spodelenite podatoci od modulot se nedostapni.",alert_all_est_connected:"Site prifateni kalkulacii se vekje povrzani so Planiranje.",
+    alert_future_converted:"Ovoj iden proekt e vekje konvertiran.",
+    alert_project_created:"{no} e kreiran. Zadačite, zavisnostite, Gant dijagramot, potrebniot kapacitet i prekretnicite bea generirani avtomatski.",
+    tab_scenarios:"Scenarija",
+    ms_title:"PLANIRANJE",ms_nav_ideas:"Novi idei",ms_nav_workload:"Kapacitet / Optovaruvanje",
+    ms_sidebox_title:"Avtomatsko planiranje",ms_sidebox_desc:"Proektite, zadačite, zavisnostite, prekretnicite i baranjeto na resursi go ažuriraat rasporedot zaedno.",
+    ms_role:"Menadžer za planiranje",
+    scenario_baseline_name:"Tekoven raspored",scenario_baseline_desc:"Odobren plan so denešnite lugje, mašini i datumi na proektot.",
+    scenario_welder_name:"Vraboti ušte eden zavaruvač",scenario_welder_desc:"Dodava 40 časovi za zavaruvanje nedelno i ja otstranuva preoptovarenosta vo nedela 36.",
+    scenario_delay_name:"Odloži go Proekt 14",scenario_delay_desc:"Go pomestuva ventilaciskiot proekt za 14 dena za da oslobodi kratkoročna kapacitet.",
+    scenario_laser_name:"Kupi laserski sekač",scenario_laser_desc:"Dodava vtor laserski resurs i gi skratuva zadačite za sečenje za 35%.",
+    m_peak_utilization:"Maksimalno optovaruvanje",m_overload:"Preoptovaruvanje",m_delivery_impact:"Vlijanie vrz isporakata",m_extra_capacity:"Dopolnitelen kapacitet",
+    scenario_planning_title:"Planiranje na scenarija",scenario_planning_desc:"Testiraj promeni bez da go menjaš aktivniot proizvoden raspored.",
+    apply_live_plan:"Primeni na aktivniot plan",recalculated_result_title:"{s} — preresmetan rezultat",
+    workshop_peak:"Vrv na rabotilnicata",capacity_shortage:"Nedostig na kapacitet",expected_deadline_movement:"Očekuvano pomestuvanje na rokot",
+    hours_unit:"časovi",days_unit:"denovi",
+    capacity_conflict_remains:"Konfliktot na kapacitet ostanuva",
+    combine_welder_scenario:"Kombiniraj go scenarioto so zavaruvačot so pomestuvanje na proektot za 3 dena za da se eliminira preostanatiot nedostig.",
+    schedule_within_capacity:"Rasporedot e vo ramkite na kapacitetot",no_overloaded_weeks:"Nema preoptovareni nedeli vo rabotilnicata za izbranoto scenario.",
+    suggest_recommend:"Preporaka: dodadi eden zavaruvač za 24 časa",suggest_alternative:"Alternativa: pomesti go P-2026-002 za 3 raboti dena.",
+    preview_scenario:"Pregledaj scenario",
     locale:"mk"}
 };
 
 function activeProjects(){return PROJECTS;}
 function projStats(){
-  const total=27,inProgress=14,planned=9,completed=4,overdue=3,plannedHours=1248,util=78,revenue=2450000;
+  const projects=activeProjects();
+  const total=projects.length;
+  const inProgress=projects.filter(p=>p.progress>0&&p.phase!=='completed').length;
+  const planned=projects.filter(p=>p.progress===0).length;
+  const completed=projects.filter(p=>p.phase==='completed').length;
+  const overdue=projects.filter(p=>p.phase!=='completed'&&p.deadline<TODAY_ISO).length;
+  const plannedHours=projects.reduce((a,p)=>a+(p.plannedHours||0),0);
+  const util=EMPLOYEES.length?Math.round(EMPLOYEES.reduce((a,e)=>a+e.util,0)/EMPLOYEES.length):0;
+  const revenue=0;
   return{total,inProgress,planned,completed,overdue,plannedHours,util,revenue};
 }
 
 function renderHeader(){
   const t=T[LANG];
-  const tabs=[["overview","tab_overview"],["gantt","tab_gantt"],["calendar","tab_calendar"],["timeline","tab_timeline"],["workload","tab_workload"],["scenarios",null]];
+  const tabs=[["overview","tab_overview"],["gantt","tab_gantt"],["calendar","tab_calendar"],["timeline","tab_timeline"],["workload","tab_workload"],["scenarios","tab_scenarios"]];
   return `<div class="pheader">
     <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h2M8 18h2M14 14h2M14 18h2"/></svg></div>
       <div><h1>${t.ptitle}</h1><p>${t.psub}</p></div></div>
-    <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${l?t[l]:'Scenarios'}</button>`).join("")}</div>
+    <div class="toptabs">${tabs.map(([k,l])=>`<button class="${activeTab===k?'on':''}" onclick="setTab('${k}')">${t[l]}</button>`).join("")}</div>
     <div class="hcontrols">
       <button class="tbtn small" onclick="gToday()">${t.today}</button>
       <div class="daterange" style="padding:0;gap:0;">
@@ -792,13 +886,13 @@ function ganttBarHtml(rangeStart,rangeEnd,start,end,status,progress,milestones,e
   const totalDays=daysBetween(rangeStart,rangeEnd);
   const left=Math.max(0,daysBetween(rangeStart,start)/totalDays*100);
   const width=Math.max(0.6,daysBetween(start,end)/totalDays*100);
-  const todayOffset=daysBetween(rangeStart,d("2026-08-25"))/totalDays*100;
+  const todayOffset=daysBetween(rangeStart,d(TODAY_ISO))/totalDays*100;
   const msHtml=(milestones||[]).map(m=>{const mo=daysBetween(rangeStart,d(m.date))/totalDays*100;if(mo<0||mo>100)return'';
-    return `<div class="gmilestone ${m.done?'done':'pending'}" style="left:${mo}%" title="${m.name} — ${m.date}"></div>`;}).join("");
+    return `<div class="gmilestone ${m.done?'done':'pending'}" style="left:${mo}%" title="${escapeHtml(m.name)} — ${escapeHtml(m.date)}"></div>`;}).join("");
   let todayHtml='';
   if(todayOffset>=0&&todayOffset<=100){
     const showLabel=!todayLabelShown;todayLabelShown=true;
-    todayHtml=`<div class="gtoday" style="left:${todayOffset}%">${showLabel?'<span class="gtodaylbl">Today</span>':''}</div>`;
+    todayHtml=`<div class="gtoday" style="left:${todayOffset}%">${showLabel?`<span class="gtodaylbl">${T[LANG].today}</span>`:''}</div>`;
   }
   return `<div class="gtrack">${todayHtml}
     <div class="gbar st-${status}" style="left:${left}%;width:${width}%" title="${fmtISO(start)} → ${fmtISO(end)}">
@@ -813,7 +907,7 @@ function renderGanttChart(compact){
     rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>${t.sub_ideas.toUpperCase()}</div></div>`);
     IDEAS.slice(0,compact?3:IDEAS.length).forEach(idea=>{
       const start=d(idea.targetDate?addDaysISO(idea.targetDate,-30):"2026-08-01");const end=d(idea.targetDate);
-      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();">${ganttRowLabel(idea.name,start,end,null)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
+      rows.push(`<div class="grow taskrow"><div class="gname" role="link" tabindex="0" onclick="setSub('ideas');selectedIdeaId=${idea.id};renderAll();">${ganttRowLabel(idea.name,start,end,null)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,start,end,'idea',null,[])}</div>`);
     });
   }
   if(ganttFilter.existing&&activeProjects().length){
@@ -840,7 +934,7 @@ function renderGanttChart(compact){
   if(ganttFilter.future&&FUTURE.length){
     rows.push(`<div class="grow grouprow"><div class="gname" style="width:100%;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>${t.sub_future.toUpperCase()}</div></div>`);
     FUTURE.forEach(f=>{
-      rows.push(`<div class="grow taskrow"><div class="gname" onclick="setSub('future');selectedFutureId=${f.id};renderAll();">${ganttRowLabel(f.name,d(f.expectedStart),d(f.expectedFinish),0)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
+      rows.push(`<div class="grow taskrow"><div class="gname" role="link" tabindex="0" onclick="setSub('future');selectedFutureId=${f.id};renderAll();">${ganttRowLabel(f.name,d(f.expectedStart),d(f.expectedFinish),0)}</div>${ganttBarHtml(gRangeStart,gRangeEnd,d(f.expectedStart),d(f.expectedFinish),'future',0,[])}</div>`);
     });
   }
   return `<div class="gwrap">${ganttHeaderHtml(gRangeStart,gRangeEnd,true)}<div>${rows.join("")}</div></div>
@@ -850,7 +944,7 @@ function renderGanttChart(compact){
       <div class="lg"><span class="ldot" style="background:var(--spark);"></span>${t.leg_inprogress}</div>
       <div class="lg"><span class="ldot" style="background:var(--hold);"></span>${t.leg_hold}</div>
       <div class="lg"><span class="ldot" style="background:var(--ok);"></span>${t.leg_completed}</div>
-      <div class="lg"><span style="width:9px;height:9px;background:#fff;transform:rotate(45deg);display:inline-block;"></span>Milestone</div>
+      <div class="lg"><span style="width:9px;height:9px;background:#fff;transform:rotate(45deg);display:inline-block;"></span>${t.leg_milestone}</div>
     </div>`;
 }
 function addDaysISO(iso,n){return fmtISO(addDays(d(iso),n));}
@@ -866,34 +960,34 @@ function renderOverviewCards(){
       <div style="flex:1;"><div class="otitle">${t.sub_ideas}<span class="ocount">${IDEAS.length}</span></div>
       <div class="odesc">${t.ov_ideas_desc}</div>
       <div class="ostat warn">${ideasEval} in evaluation</div><div class="ostat ok">${ideasReady} ready for planning</div>
-      <a onclick="setSub('ideas')">${t.open_ideas} →</a></div></div>
+      <a role="link" tabindex="0" onclick="setSub('ideas')">${t.open_ideas} →</a></div></div>
     <div class="ovcard2 existing"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg></div>
       <div style="flex:1;"><div class="otitle">${t.sub_existing}<span class="ocount">${activeProjects().length}</span></div>
       <div class="odesc">${t.ov_existing_desc}</div>
       <div class="ostat active">${inProg} in progress</div><div class="ostat warn">${onHold} with delays</div>
-      <a onclick="setSub('existing')">${t.open_projects} →</a></div></div>
+      <a role="link" tabindex="0" onclick="setSub('existing')">${t.open_projects} →</a></div></div>
     <div class="ovcard2 future"><div class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg></div>
       <div style="flex:1;"><div class="otitle">${t.sub_future}<span class="ocount">${FUTURE.length}</span></div>
       <div class="odesc">${t.ov_future_desc}</div>
       <div class="ostat active">${futSched} scheduled</div><div class="ostat">${futWait} waiting for start date</div>
-      <a onclick="setSub('future')">${t.open_future} →</a></div></div>
+      <a role="link" tabindex="0" onclick="setSub('future')">${t.open_future} →</a></div></div>
   </div>`;
 }
 
 function renderBottomRow(){
   const t=T[LANG];
-  const pipeline=IDEAS.slice(0,4).map(i=>`<tr onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();">
-    <td class="ptname" title="${i.name}">${i.name}</td>
+  const pipeline=IDEAS.slice(0,4).map(i=>`<tr role="link" tabindex="0" onclick="setSub('ideas');selectedIdeaId=${i.id};renderAll();">
+    <td class="ptname" title="${escapeHtml(i.name)}">${escapeHtml(i.name)}</td>
     <td><span class="stagetext ${i.stage}">${t["stg_"+i.stage]}</span></td>
     <td class="ptscore">${ideaScore(i).toFixed(1)}</td>
-    <td title="${i.nextAction}">${i.nextAction}</td>
+    <td title="${escapeHtml(i.nextAction)}">${escapeHtml(i.nextAction)}</td>
   </tr>`).join("");
 
   const allMilestones=[];
   activeProjects().forEach(p=>p.milestones.forEach(m=>allMilestones.push({...m,proj:p.name})));
   allMilestones.sort((a,b)=>a.date.localeCompare(b.date));
   const msHtml=allMilestones.slice(0,4).map(m=>`<div class="evrow"><span class="msdiamond" style="background:${m.done?'var(--ok)':'var(--warn)'};"></span>
-    <div><b>${fmtShort(d(m.date))} — ${m.name}</b><span>${m.proj}</span></div></div>`).join("")||`<div class="empty3">—</div>`;
+    <div><b>${fmtShort(d(m.date))} — ${escapeHtml(m.name)}</b><span>${escapeHtml(m.proj)}</span></div></div>`).join("")||`<div class="empty3">—</div>`;
 
   const totalH=projStats().plannedHours;
   const inProgH=activeProjects().filter(p=>p.progress>0&&p.phase!=='completed').reduce((a,p)=>a+p.plannedHours,0);
@@ -908,9 +1002,9 @@ function renderBottomRow(){
   return `<div class="fieldgrid" style="grid-template-columns:1.3fr 1fr 1fr 1.3fr;margin-bottom:0;">
     <div class="panel"><div class="phead"><h3>${t.pipeline}</h3><button class="tbtn small" onclick="openNewIdea()">${t.addidea}</button></div>
       <table class="pipetable"><thead><tr><th>Idea</th><th>Stage</th><th>Score</th><th>Next Step</th></tr></thead><tbody>${pipeline}</tbody></table>
-      <div style="text-align:center;margin-top:10px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setSub('ideas')">${t.viewall} →</a></div></div>
+      <div style="text-align:center;margin-top:10px;"><a role="link" tabindex="0" style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setSub('ideas')">${t.viewall} →</a></div></div>
     <div class="panel"><div class="phead"><h3>${t.upcoming_milestones}</h3></div>${msHtml}
-      <div style="text-align:center;margin-top:8px;"><a style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setTab('gantt')">${t.viewall} →</a></div></div>
+      <div style="text-align:center;margin-top:8px;"><a role="link" tabindex="0" style="color:var(--spark);font-size:11.5px;cursor:pointer;" onclick="setTab('gantt')">${t.viewall} →</a></div></div>
     <div class="panel"><div class="phead"><h3>${t.task_overview}</h3></div>
       <div style="display:flex;flex-direction:column;align-items:center;">
         <svg width="120" height="120" viewBox="0 0 42 42" style="transform:rotate(-90deg);">
@@ -926,7 +1020,7 @@ function renderBottomRow(){
           <div style="display:flex;justify-content:space-between;"><span style="color:var(--ok);">● Future</span><span>${futH} h (${pctFu}%)</span></div>
         </div>
       </div></div>
-    <div class="panel"><div class="phead"><h3>${t.resource_overview}</h3><a style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('workload')">${t.viewres} →</a></div>
+    <div class="panel"><div class="phead"><h3>${t.resource_overview}</h3><a role="link" tabindex="0" style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('workload')">${t.viewres} →</a></div>
       <table style="width:100%;font-size:12px;border-collapse:collapse;"><tbody>${resHtml}</tbody></table></div>
   </div>`;
 }
@@ -940,8 +1034,8 @@ function renderTimelineStrip(){
   const items=[...activeProjects().map(p=>({name:p.name,start:d(p.start),end:d(p.deadline),status:p.phase==='completed'?'completed':(p.progress>0?'active':'planned')})),
     ...FUTURE.map(f=>({name:f.name,start:d(f.expectedStart),end:d(f.expectedFinish),status:'future'}))];
   const rows=items.map(it=>{const left=daysBetween(rangeStart,it.start)/totalDays*100;const width=Math.max(0.6,daysBetween(it.start,it.end)/totalDays*100);
-    return `<div class="grow taskrow"><div class="gname"><b style="font-size:11.5px;">${it.name}</b></div><div class="gtrack" style="height:26px;"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;top:4px;height:16px;"><div class="gfill"></div></div></div></div>`;}).join("");
-  return `<div class="panel"><div class="phead"><h3>${t.project_timeline}</h3><a style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('timeline')">${t.viewfulltimeline} →</a></div>
+    return `<div class="grow taskrow"><div class="gname"><b style="font-size:11.5px;">${escapeHtml(it.name)}</b></div><div class="gtrack" style="height:26px;"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;top:4px;height:16px;"><div class="gfill"></div></div></div></div>`;}).join("");
+  return `<div class="panel"><div class="phead"><h3>${t.project_timeline}</h3><a role="link" tabindex="0" style="color:var(--spark);font-size:11px;cursor:pointer;" onclick="setTab('timeline')">${t.viewfulltimeline} →</a></div>
     <div class="gwrap"><div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline"><div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div></div></div>
     <div>${rows}</div></div></div>`;
 }
@@ -949,7 +1043,7 @@ function renderTimelineStrip(){
 function renderOverviewTab(){
   const t=T[LANG];
   return `${renderOverviewCards()}
-    <div class="flowstrip"><span>Accepted Estimation</span><i>→</i><span>Project + BOM</span><i>→</i><span>Automatic Tasks</span><i>→</i><span>Gantt + Dependencies</span><i>→</i><span>Capacity</span><i>→</i><span>Jobcard</span><i>→</i><span>Hours / Actuals</span><button class="tbtn small primary" style="margin-left:auto" onclick="importAcceptedEstimation()">Import accepted estimation</button></div>
+    <div class="flowstrip"><span>${t.flow_est}</span><i>→</i><span>${t.flow_bom}</span><i>→</i><span>${t.flow_tasks}</span><i>→</i><span>${t.flow_gantt}</span><i>→</i><span>${t.flow_capacity}</span><i>→</i><span>${t.flow_jobcard}</span><i>→</i><span>${t.flow_actuals}</span><button class="tbtn small primary" style="margin-left:auto" onclick="importAcceptedEstimation()">${t.importest}</button></div>
     <div class="maingrid" style="grid-template-columns:1fr 320px;margin-bottom:16px;">
       <div class="panel">${ganttPanelHead(t.gantt_title)}${renderGanttChart(true)}</div>
       ${renderCalendarWidget()}
@@ -975,12 +1069,12 @@ function renderCalendarWidget(){
   const t=T[LANG];
   const cells=monthGrid(calMonth).slice(0,35);
   const dow=["M","T","W","T","F","S","S"];
-  const upcoming=CAL_EVENTS.filter(e=>e.date>="2026-08-25").sort((a,b)=>a.date<b.date?-1:1).slice(0,5);
+  const upcoming=CAL_EVENTS.filter(e=>e.date>=TODAY_ISO).sort((a,b)=>a.date<b.date?-1:1).slice(0,5);
   return `<div class="panel"><div class="phead"><h3>${t.tab_calendar}</h3></div>
     <div class="calnav"><h3>${calMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h3>
       <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button onclick="calNavMini(1)">›</button></div></div>
     <div class="calmonth">${dow.map(x=>`<div class="cdow">${x}</div>`).join("")}
-    ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso==="2026-08-25";const isSel=iso===calSelDate;
+    ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso===TODAY_ISO;const isSel=iso===calSelDate;
       return `<div class="calday ${c.other?'other':''} ${isToday?'today':''} ${isSel?'sel':''}" style="min-height:auto;padding:6px 3px;" onclick="selectCalDate('${iso}')">
         <div class="cdnum">${c.date.getDate()}</div>${evs.slice(0,1).map(e=>`<span class="caldot" style="background:${EVENT_COLOR[e.type]};"></span>`).join("")}
       </div>`;}).join("")}
@@ -1002,9 +1096,9 @@ function renderCalendarTab(){
   return `<div class="calgrid">
     <div class="panel">
       <div class="calnav"><h3>${calMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h3>
-        <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button class="tbtn small" onclick="calMonth=new Date(2026,7,1);renderAll();">${t.today}</button><button onclick="calNavMini(1)">›</button></div></div>
+        <div style="display:flex;gap:5px;"><button onclick="calNavMini(-1)">‹</button><button class="tbtn small" onclick="calMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderAll();">${t.today}</button><button onclick="calNavMini(1)">›</button></div></div>
       <div class="calmonth">${dow.map(x=>`<div class="cdow">${x}</div>`).join("")}
-      ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso==="2026-08-25";const isSel=iso===calSelDate;
+      ${cells.map(c=>{const iso=fmtISO(c.date);const evs=eventsOn(iso);const isToday=iso===TODAY_ISO;const isSel=iso===calSelDate;
         return `<div class="calday ${c.other?'other':''} ${isToday?'today':''} ${isSel?'sel':''}" onclick="selectCalDate('${iso}')">
           <div class="cdnum">${c.date.getDate()}</div>${evs.map(e=>`<span class="caldot" style="background:${EVENT_COLOR[e.type]};">${e.title}</span>`).join("")}
         </div>`;}).join("")}
@@ -1028,7 +1122,7 @@ function renderTimelineTab(){
     ...FUTURE.map(f=>({name:f.name,start:d(f.expectedStart),end:d(f.expectedFinish),status:'future'})),
     ...IDEAS.filter(i=>i.stage==='approved'||i.stage==='feasibility').map(i=>({name:i.name,start:addDays(d(i.targetDate),-20),end:d(i.targetDate),status:'idea'}))];
   const rows=items.map(it=>{const left=Math.max(0,daysBetween(rangeStart,it.start)/totalDays*100);const width=Math.max(0.6,daysBetween(it.start,it.end)/totalDays*100);
-    return `<div class="grow taskrow"><div class="gname"><b>${it.name}</b></div><div class="gtrack"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;"><div class="gfill"></div></div></div></div>`;}).join("");
+    return `<div class="grow taskrow"><div class="gname"><b>${escapeHtml(it.name)}</b></div><div class="gtrack"><div class="gbar st-${it.status}" style="left:${left}%;width:${width}%;"><div class="gfill"></div></div></div></div>`;}).join("");
   return `<div class="panel"><div class="phead"><h3>${t.project_timeline}</h3>
     <div class="zoomtabs">${[["1m","1M"],["3m","3M"],["6m","6M"],["12m","1Y"],["24m","2Y"]].map(([k,l])=>`<button class="${timelineZoom===k?'on':''}" onclick="setZoom('${k}')">${l}</button>`).join("")}</div></div>
     <div class="gwrap"><div class="gantthead"><div class="gcolfixed"></div><div class="gtimeline"><div class="gmonths">${months.map(m=>`<span class="gmonthlbl" style="left:${m.left}%">${m.label}</span>`).join("")}</div></div></div>
@@ -1040,7 +1134,7 @@ function renderWorkloadTab(){
   const overloaded=WEEKS.filter(w=>w.util>100);
   const warnHtml=overloaded.map(w=>`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
     <div><div>${t.warn_overload.replace('{h}',Math.round((w.util-100)/100*40)).replace('{w}',w.label.split(' (')[0])}</div>
-    <div class="wsuggest">${t.suggest}</div><div class="suggestion"><div><b>Recommended: add one welder for 24 hours</b><small>Alternative: move P-26-0002 by 3 working days.</small></div><button class="tbtn small" onclick="applyCapacitySuggestion()">Preview scenario</button></div></div></div>`).join("");
+    <div class="wsuggest">${t.suggest}</div><div class="suggestion"><div><b>${t.suggest_recommend}</b><small>${t.suggest_alternative}</small></div><button class="tbtn small" onclick="applyCapacitySuggestion()">${t.preview_scenario}</button></div></div></div>`).join("");
   const empRows=EMPLOYEES.map(e=>`<div class="wkrow ${e.util>100?'overload':''}"><span class="wkavatar">${initials(e.name)}</span><div class="wkname">${e.name}<span class="wkrole">${e.role}</span></div>
     <div class="wkbar ${utilTier(e.util)} ${e.util>100?'over':''}"><i style="width:${Math.min(100,e.util)}%"></i></div><div class="wkpct">${e.util}%</div></div>`).join("");
   const machRows=MACHINES.map(m=>`<div class="wkrow ${m.util>100?'overload':''}"><div class="wkname">${m.name}</div>
@@ -1061,15 +1155,19 @@ function scenarioMetrics(s){
   const delay=s.projectShift?14:(s.laser?-3:0);
   return{overload,util,delay};
 }
+function scenarioName(id){return T[LANG][`scenario_${id}_name`];}
+function scenarioDesc(id){return T[LANG][`scenario_${id}_desc`];}
 function renderScenariosTab(){
-  const cards=SCENARIOS.map(s=>{const m=scenarioMetrics(s);return `<div class="scenario-card ${activeScenario===s.id?'on':''}" onclick="activeScenario='${s.id}';renderAll()"><h3>${s.name}</h3><p>${s.desc}</p><div class="scenario-metrics"><div class="scenario-metric"><small>Peak utilization</small><b style="color:${m.util>100?'var(--danger)':'var(--ok)'}">${m.util}%</b></div><div class="scenario-metric"><small>Overload</small><b>${m.overload} h</b></div><div class="scenario-metric"><small>Delivery impact</small><b>${m.delay>0?'+':''}${m.delay} days</b></div><div class="scenario-metric"><small>Extra capacity</small><b>${(s.welder-1)*40+(s.laser?32:0)} h/wk</b></div></div></div>`}).join('');
+  const t=T[LANG];
+  const cards=SCENARIOS.map(s=>{const m=scenarioMetrics(s);return `<div class="scenario-card ${activeScenario===s.id?'on':''}" onclick="activeScenario='${s.id}';renderAll()"><h3>${scenarioName(s.id)}</h3><p>${scenarioDesc(s.id)}</p><div class="scenario-metrics"><div class="scenario-metric"><small>${t.m_peak_utilization}</small><b style="color:${m.util>100?'var(--danger)':'var(--ok)'}">${m.util}%</b></div><div class="scenario-metric"><small>${t.m_overload}</small><b>${m.overload} h</b></div><div class="scenario-metric"><small>${t.m_delivery_impact}</small><b>${m.delay>0?'+':''}${m.delay} ${t.days_unit}</b></div><div class="scenario-metric"><small>${t.m_extra_capacity}</small><b>${(s.welder-1)*40+(s.laser?32:0)} h/wk</b></div></div></div>`}).join('');
   const s=SCENARIOS.find(x=>x.id===activeScenario),m=scenarioMetrics(s);
-  return `<div class="panel"><div class="phead"><div><h3>Scenario planning</h3><p>Test changes without altering the live production schedule.</p></div><button class="tbtn primary small" onclick="applyScenario()">Apply to live plan</button></div><div style="padding:16px"><div class="scenario-grid">${cards}</div><div class="panel" style="padding:16px"><h3>${s.name} — recalculated result</h3><div class="fieldgrid" style="margin-top:14px"><div class="field"><div class="fk">Workshop peak</div><div class="fv">${m.util}%</div></div><div class="field"><div class="fk">Capacity shortage</div><div class="fv">${m.overload} hours</div></div><div class="field"><div class="fk">Expected deadline movement</div><div class="fv">${m.delay>0?'+':''}${m.delay} days</div></div></div>${m.overload?`<div class="warnbanner"><div><b>Capacity conflict remains</b><div class="wsuggest">Combine the welder scenario with a 3-day project shift to eliminate the remaining shortage.</div></div></div>`:`<div class="suggestion" style="border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.08)"><div><b style="color:var(--ok)">Schedule is within capacity</b><small>No overloaded workshop weeks in the selected scenario.</small></div></div>`}</div></div></div>`;
+  return `<div class="panel"><div class="phead"><div><h3>${t.scenario_planning_title}</h3><p>${t.scenario_planning_desc}</p></div><button class="tbtn primary small" onclick="applyScenario()">${t.apply_live_plan}</button></div><div style="padding:16px"><div class="scenario-grid">${cards}</div><div class="panel" style="padding:16px"><h3>${t.recalculated_result_title.replace('{s}',scenarioName(s.id))}</h3><div class="fieldgrid" style="margin-top:14px"><div class="field"><div class="fk">${t.workshop_peak}</div><div class="fv">${m.util}%</div></div><div class="field"><div class="fk">${t.capacity_shortage}</div><div class="fv">${m.overload} ${t.hours_unit}</div></div><div class="field"><div class="fk">${t.expected_deadline_movement}</div><div class="fv">${m.delay>0?'+':''}${m.delay} ${t.days_unit}</div></div></div>${m.overload?`<div class="warnbanner"><div><b>${t.capacity_conflict_remains}</b><div class="wsuggest">${t.combine_welder_scenario}</div></div></div>`:`<div class="suggestion" style="border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.08)"><div><b style="color:var(--ok)">${t.schedule_within_capacity}</b><small>${t.no_overloaded_weeks}</small></div></div>`}</div></div></div>`;
 }
 function applyCapacitySuggestion(){activeScenario='welder';setTab('scenarios')}
-function applyScenario(){if(activeScenario==='baseline')return alert('Baseline is already the live plan.');const s=SCENARIOS.find(x=>x.id===activeScenario);if(s.welder>1)EMPLOYEES.push({name:'Scenario Welder',role:'Welder (TIG)',util:60});if(s.projectShift){const p=PROJECTS[0];p.tasks[0].shift=(p.tasks[0].shift||0)+s.projectShift;p.updatedCompletion=fmtISO(projectSpan(p).end)}if(s.laser)MACHINES.push({name:'Laser 2',util:45});alert(`${s.name} applied to this demo session.`);setTab('workload')}
+function delayScenarioTarget(){return PROJECTS.find(p=>p.no==='P-2026-014'||/vent/i.test(p.name))||PROJECTS[0];}
+function applyScenario(){if(activeScenario==='baseline')return alert(T[LANG].alert_baseline_live);const s=SCENARIOS.find(x=>x.id===activeScenario);if(s.welder>1)EMPLOYEES.push({name:'Scenario Welder',role:'Welder (TIG)',util:60});if(s.projectShift){const p=delayScenarioTarget();p.tasks[0].shift=(p.tasks[0].shift||0)+s.projectShift;p.updatedCompletion=fmtISO(projectSpan(p).end)}if(s.laser)MACHINES.push({name:'Laser 2',util:45});alert(T[LANG].alert_scenario_applied.replace('{s}',scenarioName(s.id)));setTab('workload')}
 function importAcceptedEstimation(){
-  if(!window.WorkshopData)return alert('Shared module data is unavailable.');const candidates=WorkshopData.listEstimations().filter(e=>e.status==='accepted'&&!e.projectId);if(!candidates.length)return alert('All accepted estimations are already connected to Planning.');const e=candidates[0];let f=FUTURE.find(x=>x.sharedEstimationId===e.id);if(!f){f={id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Imported from accepted estimation ${e.no}`,priority:'high'};FUTURE.unshift(f)}selectedFutureId=f.id;setSub('future');
+  if(!window.WorkshopData)return alert(T[LANG].alert_shareddata_unavailable);const candidates=WorkshopData.listEstimations().filter(e=>e.status==='accepted'&&!e.projectId);if(!candidates.length)return alert(T[LANG].alert_all_est_connected);const e=candidates[0];let f=FUTURE.find(x=>x.sharedEstimationId===e.id);if(!f){f={id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Imported from accepted estimation ${e.no}`,priority:'high'};FUTURE.unshift(f)}selectedFutureId=f.id;setSub('future');
 }
 
 function renderGanttTab(){
@@ -1087,9 +1185,9 @@ function setIdeaStage(id,stage){const i=IDEAS.find(x=>x.id===id);i.stage=stage;r
 
 function renderIdeasSub(){
   const t=T[LANG];const idea=IDEAS.find(i=>i.id===selectedIdeaId)||IDEAS[0];
-  const listHtml=IDEAS.map(i=>`<div class="listcard" onclick="selectedIdeaId=${i.id};renderAll();" style="${i.id===idea.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
-    <div class="lc-top"><b>${i.name}</b><span class="scorebadge">${ideaScore(i).toFixed(1)}</span></div>
-    <div class="lc-sub">${i.category} · ${i.responsible}</div>
+  const listHtml=IDEAS.map(i=>`<div class="listcard" role="link" tabindex="0" onclick="selectedIdeaId=${i.id};renderAll();" style="${i.id===idea.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+    <div class="lc-top"><b>${escapeHtml(i.name)}</b><span class="scorebadge">${ideaScore(i).toFixed(1)}</span></div>
+    <div class="lc-sub">${escapeHtml(i.category)} · ${escapeHtml(i.responsible)}</div>
     <div style="margin-top:6px;"><span class="stagepill ${i.stage}">${t["stg_"+i.stage]}</span></div></div>`).join("");
   const s=idea.scores;
   const scoreRows=[["sc_market","market"],["sc_profit","profit"],["sc_investment","investment"],["sc_difficulty","difficulty"],["sc_equipment","equipment"],["sc_devtime","devtime"],["sc_strategic","strategic"]]
@@ -1098,28 +1196,28 @@ function renderIdeasSub(){
     <div class="panel"><div class="phead"><h3>${t.idealist_title}</h3><button class="tbtn small" onclick="openNewIdea()">${t.newidea}</button></div>
       <div class="idealist">${listHtml}</div></div>
     <div class="panel">
-      <div class="detailhead"><div><h2>${idea.name}</h2><div class="lc-sub" style="margin-top:4px;">${idea.desc}</div></div>
-        <button class="tbtn small" onclick="openUploadIdea(${idea.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 16H7a3 3 0 0 1-3-1.1z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></svg>Attach</button></div>
+      <div class="detailhead"><div><h2>${escapeHtml(idea.name)}</h2><div class="lc-sub" style="margin-top:4px;">${escapeHtml(idea.desc)}</div></div>
+        <button class="tbtn small" onclick="openUploadIdea(${idea.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 16H7a3 3 0 0 1-3-1.1z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></svg>${t.attach}</button></div>
       ${stagePillsRow(idea)}
       <div class="fieldgrid" style="margin-top:18px;">
         <div class="field"><div class="fk">${t.f_source}</div><div class="fv">${idea.source==='customer'?'Customer':'Internal'}</div></div>
-        <div class="field"><div class="fk">${t.f_category}</div><div class="fv">${idea.category}</div></div>
+        <div class="field"><div class="fk">${t.f_category}</div><div class="fv">${escapeHtml(idea.category)}</div></div>
         <div class="field"><div class="fk">${t.f_priority}</div><div class="fv" style="text-transform:capitalize;">${idea.priority}</div></div>
         <div class="field"><div class="fk">${t.f_investment}</div><div class="fv">${fmt0(idea.investment)}</div></div>
         <div class="field"><div class="fk">${t.f_revenue}</div><div class="fv">${fmt0(idea.expectedRevenue)}</div></div>
         <div class="field"><div class="fk">${t.f_profit}</div><div class="fv" style="color:var(--ok);">${fmt0(idea.estProfit)}</div></div>
         <div class="field"><div class="fk">${t.f_hours}</div><div class="fv">${idea.estHours} h</div></div>
-        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${idea.machines.join(", ")}</div></div>
-        <div class="field"><div class="fk">${t.f_materials}</div><div class="fv">${idea.materials.join(", ")}</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${escapeHtml(idea.machines.join(", "))}</div></div>
+        <div class="field"><div class="fk">${t.f_materials}</div><div class="fv">${escapeHtml(idea.materials.join(", "))}</div></div>
         <div class="field"><div class="fk">${t.f_risk}</div><div class="fv" style="text-transform:capitalize;">${idea.risk}</div></div>
-        <div class="field"><div class="fk">${t.f_next}</div><div class="fv">${idea.nextAction}</div></div>
-        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${idea.responsible}</div></div>
+        <div class="field"><div class="fk">${t.f_next}</div><div class="fv">${escapeHtml(idea.nextAction)}</div></div>
+        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${escapeHtml(idea.responsible)}</div></div>
         <div class="field"><div class="fk">${t.f_target}</div><div class="fv">${idea.targetDate}</div></div>
       </div>
       <div class="scorecard"><div class="phead"><h3>${t.scoring_title}</h3></div>${scoreRows}
         <div class="scoretotal"><span>${t.overall_score}</span><span>${ideaScore(idea).toFixed(1)} / 10</span></div></div>
       <div class="panel" style="padding:14px;"><div class="phead"><h3>${t.documents}</h3></div>
-        ${idea.documents.map(dd=>`<div class="docrow2" style="border-color:var(--line);"><div class="dicon pdf" style="background:#c0392b;">${dd.type.toUpperCase()}</div><div class="dn">${dd.name}</div><div class="dd">${dd.date}</div></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}</div>
+        ${idea.documents.map(dd=>`<div class="docrow2" style="border-color:var(--line);"><div class="dicon pdf" style="background:#c0392b;">${escapeHtml(dd.type.toUpperCase())}</div><div class="dn">${escapeHtml(dd.name)}</div><div class="dd">${escapeHtml(dd.date)}</div></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}</div>
     </div>
   </div>`;
 }
@@ -1132,15 +1230,15 @@ function setPhase(no,phase){const p=PROJECTS.find(x=>x.no===no);p.phase=phase;if
 
 function renderExistingSub(){
   const t=T[LANG];const p=PROJECTS.find(x=>x.no===selectedProjNo)||activeProjects()[0];
-  const listHtml=activeProjects().map(pr=>`<div class="listcard" onclick="selectedProjNo='${pr.no}';renderAll();" style="${pr.no===p.no?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+  const listHtml=activeProjects().map(pr=>`<div class="listcard" role="link" tabindex="0" onclick="selectedProjNo='${pr.no}';renderAll();" style="${pr.no===p.no?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
     <div class="lc-top"><b>${pr.no}</b><span style="font-size:11px;color:var(--steel-400);">${pr.progress}%</span></div>
-    <div class="lc-sub">${pr.name}</div><div class="lc-sub">${planningCustomer(pr)}</div></div>`).join("");
+    <div class="lc-sub">${escapeHtml(pr.name)}</div><div class="lc-sub">${escapeHtml(planningCustomer(pr))}</div></div>`).join("");
   const remain=p.plannedHours-p.usedHours;
   return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
     <div class="panel"><div class="phead"><h3>${t.existing_title}</h3></div><div class="projlist">${listHtml}</div></div>
     <div class="panel">
-      <div class="detailhead"><div><h2>${p.no} — ${p.name}</h2><div class="lc-sub" style="margin-top:4px;">${planningCustomer(p)}</div></div>
-        <button class="tbtn small" onclick="location.href='projects-desktop.html'">Open in Projects →</button></div>
+      <div class="detailhead"><div><h2>${escapeHtml(p.no)} — ${escapeHtml(p.name)}</h2><div class="lc-sub" style="margin-top:4px;">${escapeHtml(planningCustomer(p))}</div></div>
+        <button class="tbtn small" onclick="location.href='projects-desktop.html'">${t.openinprojects} →</button></div>
       ${phaseFlow(p)}
       <div class="fieldgrid" style="margin-top:18px;">
         <div class="field"><div class="fk">${t.f_start}</div><div class="fv">${p.start}</div></div>
@@ -1149,15 +1247,15 @@ function renderExistingSub(){
         <div class="field"><div class="fk">${t.f_plannedh}</div><div class="fv">${p.plannedHours} h</div></div>
         <div class="field"><div class="fk">${t.f_usedh}</div><div class="fv">${p.usedHours} h</div></div>
         <div class="field"><div class="fk">${t.f_remainh}</div><div class="fv" style="${remain<0?'color:var(--warn);':''}">${remain} h</div></div>
-        <div class="field"><div class="fk">${t.f_material}</div><div class="fv">${p.materialStatus}</div></div>
-        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${p.responsible}</div></div>
-        <div class="field"><div class="fk">${t.f_workers}</div><div class="fv">${p.workers.join(", ")||"—"}</div></div>
-        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${p.machines.join(", ")||"—"}</div></div>
-        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${p.dependencyNote}</div></div>
+        <div class="field"><div class="fk">${t.f_material}</div><div class="fv">${escapeHtml(p.materialStatus)}</div></div>
+        <div class="field"><div class="fk">${t.f_responsible}</div><div class="fv">${escapeHtml(p.responsible)}</div></div>
+        <div class="field"><div class="fk">${t.f_workers}</div><div class="fv">${escapeHtml(p.workers.join(", "))||"—"}</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${escapeHtml(p.machines.join(", "))||"—"}</div></div>
+        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${escapeHtml(p.dependencyNote)}</div></div>
         <div class="field"><div class="fk">${t.f_updatedcompletion}</div><div class="fv">${p.updatedCompletion}</div></div>
       </div>
-      ${p.problems.length?`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>${t.f_problems}</b><div>${p.problems.join("; ")}</div></div></div>`:''}
-      <div class="panel" style="padding:14px;margin-bottom:14px"><div class="phead"><h3>Milestones & dependency chain</h3></div><div class="flowstrip" style="margin:0 0 12px">${p.tasks.map((tk,i)=>`<span>${tk.name}${tk.dependsOn.length?` <small>(${typeof tk.dependsOn[0]==='string'?'Finish → Start':tk.dependsOn[0].type})</small>`:''}</span>${i<p.tasks.length-1?'<i>→</i>':''}`).join('')}</div>${p.milestones.map(m=>`<div class="docrow2" style="border-color:var(--line)"><div style="color:${m.done?'var(--ok)':'var(--idea)'}">◆</div><div class="dn">${m.name}</div><div class="dd">${m.date}</div><div>${m.done?'Completed':'Upcoming'}</div></div>`).join('')||'<div class="empty3">No milestones defined.</div>'}</div>
+      ${p.problems.length?`<div class="warnbanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>${t.f_problems}</b><div>${escapeHtml(p.problems.join("; "))}</div></div></div>`:''}
+      <div class="panel" style="padding:14px;margin-bottom:14px"><div class="phead"><h3>${t.msdepchain}</h3></div><div class="flowstrip" style="margin:0 0 12px">${p.tasks.map((tk,i)=>`<span>${tk.name}${tk.dependsOn.length?` <small>(${typeof tk.dependsOn[0]==='string'?t.dep_fs:tk.dependsOn[0].type})</small>`:''}</span>${i<p.tasks.length-1?'<i>→</i>':''}`).join('')}</div>${p.milestones.map(m=>`<div class="docrow2" style="border-color:var(--line)"><div style="color:${m.done?'var(--ok)':'var(--idea)'}">◆</div><div class="dn">${escapeHtml(m.name)}</div><div class="dd">${escapeHtml(m.date)}</div><div>${m.done?t.ms_completed:t.ms_upcoming}</div></div>`).join('')||`<div class="empty3">${t.empty_milestones}</div>`}</div>
       <div class="panel" style="padding:14px;"><div class="phead"><h3>${t.gantt_title.split(' — ')[0]}</h3></div>
         <div class="gwrap">${(function(){const span=projectSpan(p);return ganttHeaderHtml(addDays(span.start,-2),addDays(span.end,2))+`<div>${(function(){const sched=scheduleProject(p);return p.tasks.map(tk=>{const sc=sched[tk.id];
           return `<div class="grow taskrow"><div class="gname"><span class="gsub">${tk.name}${tk.dependsOn.length?` · ${typeof tk.dependsOn[0]==='string'?'FS':tk.dependsOn[0].type}`:''}</span><span class="gshift"><button onclick="shiftTask('${p.no}','${tk.id}',-1)">−</button><button onclick="shiftTask('${p.no}','${tk.id}',1)">+</button></span></div>${ganttBarHtml(addDays(span.start,-2),addDays(span.end,2),sc.start,sc.end,tk.status,tk.status==='completed'?100:(tk.status==='active'?50:0),[])}</div>`;}).join("");})()}</div>`;})()}</div>
@@ -1168,15 +1266,15 @@ function renderExistingSub(){
 
 function renderFutureSub(){
   const t=T[LANG];const f=FUTURE.find(x=>x.id===selectedFutureId)||FUTURE[0];
-  const listHtml=FUTURE.map(fr=>`<div class="listcard" onclick="selectedFutureId=${fr.id};renderAll();" style="${fr.id===f.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
-    <div class="lc-top"><b>${fr.name}</b><span class="stagepill ${fr.probability}">${t["prob_"+fr.probability]}</span></div>
-    <div class="lc-sub">${fr.customerId?CUSTOMERS[fr.customerId]:fr.customerName}</div>
+  const listHtml=FUTURE.map(fr=>`<div class="listcard" role="link" tabindex="0" onclick="selectedFutureId=${fr.id};renderAll();" style="${fr.id===f.id?'border-color:rgba(74,144,255,.5);background:rgba(74,144,255,.06);':''}">
+    <div class="lc-top"><b>${escapeHtml(fr.name)}</b><span class="stagepill ${fr.probability}">${t["prob_"+fr.probability]}</span></div>
+    <div class="lc-sub">${escapeHtml(fr.customerId?CUSTOMERS[fr.customerId]:fr.customerName)}</div>
     <div class="lc-sub">${fmt0(fr.estValue)}</div></div>`).join("");
   return `<div class="maingrid" style="grid-template-columns:300px 1fr;">
     <div class="panel"><div class="phead"><h3>${t.future_title}</h3><button class="tbtn small" onclick="openNewFuture()">${t.newfuture}</button></div><div class="futlist">${listHtml}</div></div>
     <div class="panel">
-      <div class="detailhead"><div><h2>${f.name}</h2><div class="lc-sub" style="margin-top:4px;">${f.customerId?CUSTOMERS[f.customerId]:f.customerName}</div></div>
-        <div style="display:flex;gap:8px;align-items:center"><span class="stagepill ${f.probability}">${t["prob_"+f.probability]} — ${f.probabilityPct}%</span><button class="tbtn primary small" onclick="convertFutureToProject(${f.id})">Convert → Project + Gantt</button></div></div>
+      <div class="detailhead"><div><h2>${escapeHtml(f.name)}</h2><div class="lc-sub" style="margin-top:4px;">${escapeHtml(f.customerId?CUSTOMERS[f.customerId]:f.customerName)}</div></div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="stagepill ${f.probability}">${t["prob_"+f.probability]} — ${f.probabilityPct}%</span><button class="tbtn primary small" onclick="convertFutureToProject(${f.id})">${t.convertproj}</button></div></div>
       <div class="fieldgrid" style="margin-top:6px;">
         <div class="field"><div class="fk">${t.f_expstart}</div><div class="fv">${f.expectedStart}</div></div>
         <div class="field"><div class="fk">${t.f_expfinish}</div><div class="fv">${f.expectedFinish}</div></div>
@@ -1184,9 +1282,9 @@ function renderFutureSub(){
         <div class="field"><div class="fk">${t.f_revenue}</div><div class="fv">${fmt0(f.estValue)}</div></div>
         <div class="field"><div class="fk">${t.f_workload}</div><div class="fv">${f.estHours} h</div></div>
         <div class="field"><div class="fk">${t.f_employees}</div><div class="fv">${f.employees}</div></div>
-        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${f.machines.join(", ")}</div></div>
-        <div class="field"><div class="fk">${t.f_leadtime}</div><div class="fv">${f.materialLeadTime}</div></div>
-        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${f.dependencyNote}</div></div>
+        <div class="field"><div class="fk">${t.f_machines}</div><div class="fv">${escapeHtml(f.machines.join(", "))}</div></div>
+        <div class="field"><div class="fk">${t.f_leadtime}</div><div class="fv">${escapeHtml(f.materialLeadTime)}</div></div>
+        <div class="field"><div class="fk">${t.f_dependencies}</div><div class="fv">${escapeHtml(f.dependencyNote)}</div></div>
         <div class="field"><div class="fk">${t.f_priority}</div><div class="fv" style="text-transform:capitalize;">${f.priority}</div></div>
       </div>
     </div>
@@ -1195,27 +1293,27 @@ function renderFutureSub(){
 
 function convertFutureToProject(id){
   const f=FUTURE.find(x=>x.id===id);if(!f)return;
-  let no=`P-26-${String(PROJECTS.length+10).padStart(4,'0')}`;
-  if(PROJECTS.some(p=>p.name===f.name))return alert('This future project has already been converted.');
+  let no=`P-2026-${String(PROJECTS.length+10).padStart(3,'0')}`;
+  if(PROJECTS.some(p=>p.name===f.name))return alert(T[LANG].alert_future_converted);
   const tasks=[['measurement','Site measurement',1,[],f.employees? 'Aleksandar C.':'—'],['design','Design / drawings',3,['measurement'],'Elena N.'],['order','Material ordering',1,['design'],'Aleksandar C.'],['wait','Material lead time',Math.max(3,parseInt(f.materialLeadTime)*7||7),['order'],'—'],['cut','Laser cutting',1,['wait'],'Marko K.'],['bend','Bending',2,['cut'],'Marko K.'],['weld','TIG welding',4,['bend'],'Marko K.'],['assembly','Assembly',2,['weld'],'Elena N.'],['inspection','FAT / inspection',1,['assembly'],'Aleksandar C.'],['delivery','Delivery',1,['inspection'],'Aleksandar C.']]
     .map((x,i)=>({id:x[0],name:x[1],dur:x[2],dependsOn:x[3],resource:x[4],status:'planned',shift:0,...(i===0?{start:f.expectedStart}:{})}));
   let sharedProject=null;if(window.WorkshopData&&f.sharedEstimationId){const result=WorkshopData.createProjectFromEstimation(f.sharedEstimationId);if(result.project){sharedProject=result.project;no=sharedProject.no}}
   const p={no,name:f.name,customerId:f.customerId||null,customerName:f.customerName,start:f.expectedStart,deadline:f.expectedFinish,progress:0,plannedHours:f.estHours,usedHours:0,phase:'design',materialStatus:'BOM check required',responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'].slice(0,Math.max(1,f.employees)),machines:f.machines,dependencyNote:f.dependencyNote,problems:[],updatedCompletion:f.expectedFinish,tasks,milestones:[{name:'Drawings approved',date:f.expectedStart,done:false},{name:'Material delivered',date:fmtISO(addDays(d(f.expectedStart),Math.max(3,parseInt(f.materialLeadTime)*7||7))),done:false},{name:'FAT / inspection',date:f.expectedFinish,done:false}]};
   if(window.WorkshopData)WorkshopData.upsertProject(Object.assign({},sharedProject||{},p,{status:'planned',expectedCompletion:p.updatedCompletion}));
-  PROJECTS.unshift(p);selectedProjNo=no;setSub('existing');alert(`${no} created. Tasks, dependencies, Gantt, capacity demand and milestones were generated automatically.`);
+  PROJECTS.unshift(p);selectedProjNo=no;setSub('existing');alert(T[LANG].alert_project_created.replace('{no}',no));
 }
 
 function openNewIdea(){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.ni_title}</h2>
-    <div class="frow"><label>${t.ni_name}</label><input id="niName"></div>
-    <div class="frow"><label>${t.ni_desc}</label><textarea id="niDesc"></textarea></div>
-    <div class="frow3"><div><label>Customer / source</label><select id="niSource"><option value="internal">Internal idea</option><option value="customer">Customer</option></select></div><div><label>${t.f_category}</label><input id="niCat" value="Product Development"></div><div><label>${t.f_priority}</label><select id="niPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
-    <div class="frow3"><div><label>${t.f_investment}</label><input id="niInv" type="number" value="50000"></div><div><label>${t.f_revenue}</label><input id="niRev" type="number" value="150000"></div><div><label>${t.f_hours}</label><input id="niHrs" type="number" value="100"></div></div>
-    <div class="frow2"><div><label>${t.f_machines}</label><input id="niMachines" value="Laser, Press Brake"></div><div><label>${t.f_materials}</label><input id="niMaterials" value="Stainless sheet"></div></div>
-    <div class="frow3"><div><label>${t.f_risk}</label><select id="niRisk"><option>low</option><option selected>medium</option><option>high</option></select></div><div><label>${t.f_responsible}</label><input id="niResp" value="Aleksandar C."></div><div><label>${t.f_target}</label><input id="niTarget" type="date" value="2026-10-01"></div></div>
-    <div class="frow"><label>${t.f_next}</label><input id="niNext" value="Initial feasibility review"></div>
-    <div class="frow3"><div><label>Market potential /10</label><input id="niMarket" type="number" min="1" max="10" value="7"></div><div><label>Technical difficulty /10</label><input id="niDifficulty" type="number" min="1" max="10" value="5"></div><div><label>Strategic value /10</label><input id="niStrategic" type="number" min="1" max="10" value="7"></div></div>
+    <div class="frow"><label for="niName">${t.ni_name}</label><input id="niName"></div>
+    <div class="frow"><label for="niDesc">${t.ni_desc}</label><textarea id="niDesc"></textarea></div>
+    <div class="frow3"><div><label for="niSource">${t.ni_source}</label><select id="niSource"><option value="internal">${t.ni_internal}</option><option value="customer">${t.f_customer}</option></select></div><div><label for="niCat">${t.f_category}</label><input id="niCat" value="Product Development"></div><div><label for="niPriority">${t.f_priority}</label><select id="niPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
+    <div class="frow3"><div><label for="niInv">${t.f_investment}</label><input id="niInv" type="number" value="50000"></div><div><label for="niRev">${t.f_revenue}</label><input id="niRev" type="number" value="150000"></div><div><label for="niHrs">${t.f_hours}</label><input id="niHrs" type="number" value="100"></div></div>
+    <div class="frow2"><div><label for="niMachines">${t.f_machines}</label><input id="niMachines" value="Laser, Press Brake"></div><div><label for="niMaterials">${t.f_materials}</label><input id="niMaterials" value="Stainless sheet"></div></div>
+    <div class="frow3"><div><label for="niRisk">${t.f_risk}</label><select id="niRisk"><option>low</option><option selected>medium</option><option>high</option></select></div><div><label for="niResp">${t.f_responsible}</label><input id="niResp" value="Aleksandar C."></div><div><label for="niTarget">${t.f_target}</label><input id="niTarget" type="date" value="2026-10-01"></div></div>
+    <div class="frow"><label for="niNext">${t.f_next}</label><input id="niNext" value="Initial feasibility review"></div>
+    <div class="frow3"><div><label for="niMarket">${t.sc_market} /10</label><input id="niMarket" type="number" min="1" max="10" value="7"></div><div><label for="niDifficulty">${t.sc_difficulty} /10</label><input id="niDifficulty" type="number" min="1" max="10" value="5"></div><div><label for="niStrategic">${t.sc_strategic} /10</label><input id="niStrategic" type="number" min="1" max="10" value="7"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewIdea()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1233,27 +1331,27 @@ function saveNewIdea(){
 function openUploadIdea(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.documents}</h2>
-    <div class="frow"><label>File name</label><input id="uiName" placeholder="Sketch.pdf"></div>
+    <div class="frow"><label for="uiName">${t.ni_filename}</label><input id="uiName" placeholder="Sketch.pdf"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUploadIdea(${id})">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveUploadIdea(id){
   const name=$("uiName").value.trim();if(!name)return;
   const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc';
-  IDEAS.find(i=>i.id===id).documents.push({name,type,date:"2026-08-25"});
+  IDEAS.find(i=>i.id===id).documents.push({name,type,date:TODAY_ISO});
   closeModal();renderAll();
 }
 
 function openNewFuture(){
   const t=T[LANG];
-  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${CUSTOMERS[id]}</option>`).join("");
+  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${escapeHtml(CUSTOMERS[id])}</option>`).join("");
   $("fcard").innerHTML=`<h2>${t.nf_title}</h2>
-    <div class="frow"><label>${t.nf_name}</label><input id="nfName"></div>
-    <div class="frow"><label>${t.f_customer}</label><select id="nfCust">${custOpts}</select></div>
-    <div class="frow2"><div><label>${t.f_expstart}</label><input id="nfStart" type="date" value="2026-11-01"></div><div><label>${t.f_expfinish}</label><input id="nfFinish" type="date" value="2026-11-20"></div></div>
-    <div class="frow3"><div><label>${t.f_revenue}</label><input id="nfValue" type="number" value="100000"></div><div><label>${t.f_workload}</label><input id="nfHours" type="number" value="80"></div><div><label>${t.f_probability}</label><select id="nfProb"><option value="tentative">${t.prob_tentative}</option><option value="probable" selected>${t.prob_probable}</option><option value="confirmed">${t.prob_confirmed}</option></select></div></div>
-    <div class="frow3"><div><label>${t.f_employees}</label><input id="nfEmployees" type="number" value="2"></div><div><label>${t.f_leadtime}</label><input id="nfLead" value="2 weeks"></div><div><label>${t.f_priority}</label><select id="nfPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
-    <div class="frow"><label>${t.f_machines}</label><input id="nfMachines" value="Laser, Press Brake"></div><div class="frow"><label>${t.f_dependencies}</label><input id="nfDependency" value="Awaiting customer confirmation"></div>
+    <div class="frow"><label for="nfName">${t.nf_name}</label><input id="nfName"></div>
+    <div class="frow"><label for="nfCust">${t.f_customer}</label><select id="nfCust">${custOpts}</select></div>
+    <div class="frow2"><div><label for="nfStart">${t.f_expstart}</label><input id="nfStart" type="date" value="2026-11-01"></div><div><label for="nfFinish">${t.f_expfinish}</label><input id="nfFinish" type="date" value="2026-11-20"></div></div>
+    <div class="frow3"><div><label for="nfValue">${t.f_revenue}</label><input id="nfValue" type="number" value="100000"></div><div><label for="nfHours">${t.f_workload}</label><input id="nfHours" type="number" value="80"></div><div><label for="nfProb">${t.f_probability}</label><select id="nfProb"><option value="tentative">${t.prob_tentative}</option><option value="probable" selected>${t.prob_probable}</option><option value="confirmed">${t.prob_confirmed}</option></select></div></div>
+    <div class="frow3"><div><label for="nfEmployees">${t.f_employees}</label><input id="nfEmployees" type="number" value="2"></div><div><label for="nfLead">${t.f_leadtime}</label><input id="nfLead" value="2 weeks"></div><div><label for="nfPriority">${t.f_priority}</label><select id="nfPriority"><option>high</option><option selected>medium</option><option>low</option></select></div></div>
+    <div class="frow"><label for="nfMachines">${t.f_machines}</label><input id="nfMachines" value="Laser, Press Brake"></div><div class="frow"><label for="nfDependency">${t.f_dependencies}</label><input id="nfDependency" value="Awaiting customer confirmation"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewFuture()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1267,6 +1365,7 @@ function saveNewFuture(){
 }
 
 $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
+document.addEventListener('keydown',ev=>{if(ev.key!=='Enter'&&ev.key!==' ')return;const el=ev.target.closest('a[role="link"],tr[role="link"],.listcard[role="link"],.gname[role="link"]');if(el){ev.preventDefault();el.click();}});
 
 function renderAll(){
   const t=T[LANG];
@@ -1292,6 +1391,7 @@ function syncModuleSidebar(){const current=activeSub!=='overview'?activeSub:acti
 function sidebarPlanning(view){if(['ideas','existing','future'].includes(view)){activeSub=view;activeTab='overview'}else{activeSub='overview';activeTab=view}renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 
 function setLang(code){LANG=code;
+  document.querySelectorAll('[data-i]').forEach(el=>el.textContent=T[code][el.getAttribute('data-i')]);
   document.documentElement.lang=code==="mk"?"mk-Latn":code;
   document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
   const _c=$("langcur");if(_c)_c.textContent=code.toUpperCase();

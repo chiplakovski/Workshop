@@ -167,7 +167,7 @@
     .tt-head h3{font-size:21px;} .tt-feed .mtext{font-size:17px;} .tt-input input{font-size:18px;padding:14px 16px;}
     .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;padding:14px 18px;}
   }
-</style></head><body>
+</style><script src="workshop-forms.js"></script></head><body>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
 <div class="topfull">
@@ -175,7 +175,7 @@
     <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se</div></div>
     <div class="topright">
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-      <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div>
+      <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
     </div>
   </div>
 </div>
@@ -184,25 +184,25 @@
   <div class="hubtitle"><h1 data-i="welcome">Choose a module</h1><p data-i="welcomesub">Full access · all workshop tools</p></div>
   <div class="hub">
     <div class="tiles">
-      <div class="tile" onclick="location.href='projects-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='projects-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 46h30l8 8h50v52H16z"/><path d="M16 46v-9h24l8 9"/><path d="M30 70h62M30 82h62M30 94h40"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
         <div><h3 data-i="m_projects">Projects</h3><p data-i="c_projects">Jobs & items</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile-stack" aria-label="Customers and suppliers">
-        <div class="tile" onclick="location.href='customers-desktop.html'">
+        <div class="tile" role="link" tabindex="0" onclick="location.href='customers-desktop.html'">
           <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div><h3 data-i="m_customers">Customers</h3><p data-i="c_customers">Contacts & accounts</p></div>
           <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
-        <div class="tile" onclick="location.href='suppliers-desktop.html'">
+        <div class="tile" role="link" tabindex="0" onclick="location.href='suppliers-desktop.html'">
           <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
           <div><h3 data-i="m_suppliers">Suppliers</h3><p data-i="c_suppliers">Vendor directory</p></div>
           <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
       </div>
-      <div class="tile" onclick="location.href='estimations-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/><path d="M22 46l19-15 17 9 22-24"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
         <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
@@ -214,19 +214,19 @@
         <div><h3 data-i="m_jobcard">Jobcard</h3><p data-i="c_jobcard">Work orders</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
-      <div class="tile" onclick="location.href='hours-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='hours-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="56" cy="62" r="38"/><path d="M56 38v24l17 11"/><path d="M56 18v6M56 100v6M16 62h6M90 62h6"/><circle cx="98" cy="28" r="11"/><path d="M98 23v-5M98 38v-4M93 28h-5M108 28h-4"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
         <div><h3 data-i="m_hours">Hours</h3><p data-i="c_hours">Log time & materials</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
-      <div class="tile" onclick="location.href='planning-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='planning-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="18" y="26" width="84" height="76"/><path d="M40 16v20M80 16v20M18 50h84"/><path d="M38 68h12M58 68h12M38 84h12M58 84h12"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="3" y="5" width="18" height="16"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M8 14h2M13 14h2M8 17h2"/></svg></div>
         <div><h3 data-i="m_planning">Planning</h3><p data-i="c_planning">Schedule & capacity</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
-      <div class="tile" onclick="location.href='store-desktop.html'">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='store-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M58 20l36 19v42L58 100 22 81V39z"/><path d="M22 39l36 19 36-19M58 58v42"/><path d="M40 29l36 19"/></svg></div>
         <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
         <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
@@ -282,8 +282,8 @@
         <div class="msg"><div class="mav">AK</div><div class="mbody"><div class="mname">Aleksandar<span>10:05</span></div><div class="mtext">Good. Log plasma cutter hours on that job please.</div></div></div>
       </div>
       <div class="tt-input">
-        <input type="text" data-i-ph="ttph" placeholder="Write to team…">
-        <button><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        <input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…">
+        <button type="button" id="ttSend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </div>
     </div>
   </div>
@@ -394,5 +394,26 @@
   document.addEventListener('click',e=>{if(!rWrap.contains(e.target))rWrap.classList.remove('open');});
   rVol.addEventListener('input',()=>{rAudio.volume=parseFloat(rVol.value);});
   document.querySelectorAll('.tile[role="link"]').forEach(tile=>tile.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();tile.click();}}));
+
+  document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
+
+  (function(){
+    const ttInput=document.getElementById('ttInput'),ttSend=document.getElementById('ttSend'),ttFeed=document.querySelector('.tt-feed');
+    function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function send(){
+      const text=ttInput.value.trim();
+      if(!text)return;
+      const now=new Date(),hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0');
+      const msg=document.createElement('div');
+      msg.className='msg';
+      msg.innerHTML=`<div class="mav">AK</div><div class="mbody"><div class="mname">Aleksandar<span>${hh}:${mm}</span></div><div class="mtext"></div></div>`;
+      msg.querySelector('.mtext').textContent=text;
+      ttFeed.appendChild(msg);
+      ttFeed.scrollTop=ttFeed.scrollHeight;
+      ttInput.value='';
+    }
+    ttSend.addEventListener('click',send);
+    ttInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
+  })();
 </script>
 </body></html>

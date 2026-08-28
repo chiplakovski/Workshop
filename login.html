@@ -200,7 +200,7 @@
     const t=T[code];
     document.querySelectorAll('[data-i]').forEach(el=>{
       const k=el.getAttribute('data-i');
-      el.innerHTML=t[k];
+      if(k==='headline')el.innerHTML=t[k];else el.textContent=t[k];
     });
     document.documentElement.lang = code==="mk" ? "mk-Latn" : code;
     document.querySelectorAll('.langmenu button').forEach(b=>{

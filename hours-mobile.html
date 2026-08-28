@@ -104,7 +104,7 @@
   .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
   .langmenu button.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
 
-</style></head><body><style>.topfull>.topbar,.topfull .who{display:none!important}</style>
+</style></head><body>
 <div class="bg"></div>
 <div class="phone">
   <div class="inbg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
@@ -119,7 +119,7 @@
         <div class="title"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
           <div><h1 data-i="modtitle">Hours</h1><p data-i="modsub">Log time &amp; materials</p></div></div>
       </div>
-      <div class="who"><div class="badge"><span class="av">MK</span><span>Marko K.</span></div><button class="out" data-i="logout">Log out</button></div>
+      <div class="who"><div class="badge"><span class="av">MK</span><span id="whoName">Marko K.</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
     </div>
     <div class="card">
       
@@ -153,9 +153,10 @@
       <textarea class="fld" id="notes" data-i-ph="notesph" placeholder="What was done…"></textarea>
     </div>
     <div class="row actions">
-      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="0"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-8 8"/></svg><span data-i="addpics">Add pics</span></div>
-      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="explain">More detail</span></div>
-      <div class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i="teamtalk">Share to team feed</span></div>
+      <button type="button" class="chip" id="picsChip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="0"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-8 8"/></svg><span data-i="addpics">Add pics</span></button>
+      <input type="file" id="picsInput" accept="image/*" multiple hidden>
+      <button type="button" class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="explain">More detail</span></button>
+      <button type="button" class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i="teamtalk">Share to team feed</span></button>
     </div>
     <div class="save">
       <button type="button" class="btn-primary" data-i="savebtn" id="saveEntry">Save entry</button>
@@ -179,7 +180,7 @@
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </button>
 </div>
-<script src="workshop-data.js"></script><script>
+<script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
   const DATA={
     "P-2401 · Bakery line — Åhus":[{n:"Frame weldment",est:14},{n:"Conveyor guard",est:6},{n:"Drive mount plate",est:3.5}],
     "P-2402 · Folding machine retrofit":[{n:"Panel wiring",est:20},{n:"HMI bracket",est:2},{n:"Safety cover",est:5}],
@@ -226,9 +227,13 @@
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   document.getElementById('date2').valueAsDate=new Date();
   setLang("en");setInterval(tick,10000);addEqRow();addMatRow();
-  function collectHours(){return {project:proj.value,item:item.value,hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({name:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.name||x.hours),materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)};}
+  function collectHours(){return {project:proj.value,item:item.value,hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,user:document.getElementById('whoName').textContent,equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({name:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.name||x.hours),materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)};}
   function saveHours(reset){const entry=collectHours();const hours=Number(entry.hours);if(!entry.project||!entry.item||!Number.isFinite(hours)||hours<=0){alert('Select a project and item, then enter hours greater than zero.');return false;}const result=window.WorkshopData?.logHours(entry);if(result?.error){alert(result.error);return false;}alert('Hours entry saved.');if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}return true;}
   document.getElementById('saveEntry').addEventListener('click',()=>saveHours(false));document.getElementById('saveNewEntry').addEventListener('click',()=>saveHours(true));
+  document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
+  const picsChip=document.getElementById('picsChip'),picsInput=document.getElementById('picsInput');
+  picsChip.addEventListener('click',()=>picsInput.click());
+  picsInput.addEventListener('change',()=>{picsChip.classList.toggle('on',picsInput.files.length>0);});
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 

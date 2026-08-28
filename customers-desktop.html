@@ -192,7 +192,7 @@
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2>CUSTOMERS</h2><small>Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i>Customer Overview</button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i>Contacts</button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i>Projects</button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i>Estimations / Quotes</button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i>Invoices</button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i>Notes & Documents</button><button onclick="openNewCustomer()"><i>＋</i>New Customer</button></nav><div class="ms-sidebox"><b>Shared customer record</b><p>Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Customer manager</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -217,7 +217,7 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script>
+<script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
@@ -323,6 +323,8 @@ const STATUS_WORD_CLASS={active:"b",completed:"g","in production":"b",hold:"w"};
 
 const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",ctitle:"Customers",csub:"Contacts & accounts",
+    sb_title:"CUSTOMERS",sb_overview:"Customer Overview",sb_quotes:"Estimations / Quotes",sb_notes_docs:"Notes & Documents",
+    sb_workflow_title:"Shared customer record",sb_workflow_desc:"Enter customer details once and reuse them in estimations, projects, planning and invoicing.",sb_role:"Customer manager",
     p_list:"Customer List",p_summary:"Customer Summary",p_details:"Customer Details",p_contacts:"Contact Persons",p_recent:"Recent Projects",p_notes:"Latest Notes",p_docs:"Documents",
     searchph:"Search customers…",newcust:"New Customer",addcontact:"+ Add Contact",viewall:"View All",addnote:"+ Add Note",upload:"Upload",editcust:"Edit Customer",
     f_all:"All",f_active:"Active",f_inactive:"Inactive",
@@ -332,13 +334,14 @@ const T={
     tab_overview:"Overview",tab_contacts:"Contacts",tab_projects:"Projects",tab_quotes:"Quotes",tab_invoices:"Invoices",tab_notes:"Notes",
     billing:"Billing Address",shipping:"Shipping Address",custinfo:"Customer Information",
     industry:"Industry",ctype:"Customer Type",vat:"VAT Number",preferred:"Preferred Contact",pricelist:"Price List",remarks:"Remarks",
+    deliveryterms:"Delivery Terms",discountagreement:"Discount Agreement",
     th_no:"No.",th_name:"Name",th_status:"Status",th_value:"Value",th_deadline:"Deadline",th_date:"Date",
     empty_contacts:"No contacts yet.",empty_projects:"No projects for this customer yet.",empty_quotes:"No quotes yet.",empty_invoices:"No invoices yet.",empty_notes:"No notes yet.",empty_docs:"No documents yet.",
     active_customer:"Active Customer",inactive_customer:"Inactive Customer",primary:"Primary",
     st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
     qs_sent:"Sent",qs_accepted:"Accepted",qs_expired:"Expired",is_paid:"Paid",is_pending:"Pending",is_overdue:"Overdue",
     act_newcust:"New Customer",act_newquote:"New Quote",act_newproj:"New Project",act_newinv:"New Invoice",act_newnote:"New Note",act_upload:"Upload Document",act_report:"Customer Report",
-    nc_title:"New Customer",nc_edit_title:"Edit Customer",nc_name:"Customer name",nc_city:"City",nc_org:"Org. number",nc_email:"Email",nc_phone:"Phone",nc_website:"Website",nc_status:"Status",nc_save:"Save",nc_cancel:"Cancel",
+    nc_title:"New Customer",nc_edit_title:"Edit Customer",nc_name:"Customer name",nc_city:"City",nc_org:"Org. number",nc_email:"Email",nc_phone:"Phone",nc_website:"Website",nc_status:"Status",nc_save:"Save",nc_cancel:"Cancel",nc_shiphint:"Leave empty to reuse billing address",
     ac_title:"Add Contact",ac_name:"Name",ac_role:"Role",ac_email:"Email",ac_phone:"Phone",ac_primary:"Set as primary contact",ac_save:"Add contact",
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
@@ -346,6 +349,8 @@ const T={
     ni_title:"New Invoice",ni_value:"Value (SEK)",ni_save:"Add invoice",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
+    sb_title:"KUNDER",sb_overview:"Kundöversikt",sb_quotes:"Kalkyler / Offerter",sb_notes_docs:"Anteckningar & dokument",
+    sb_workflow_title:"Delat kundregister",sb_workflow_desc:"Ange kunduppgifter en gång och återanvänd dem i kalkyler, projekt, planering och fakturering.",sb_role:"Kundansvarig",
     p_list:"Kundlista",p_summary:"Kundöversikt",p_details:"Kunduppgifter",p_contacts:"Kontaktpersoner",p_recent:"Senaste projekt",p_notes:"Senaste anteckningar",p_docs:"Dokument",
     searchph:"Sök kunder…",newcust:"Ny kund",addcontact:"+ Lägg till kontakt",viewall:"Visa alla",addnote:"+ Lägg till anteckning",upload:"Ladda upp",editcust:"Redigera kund",
     f_all:"Alla",f_active:"Aktiva",f_inactive:"Inaktiva",
@@ -355,36 +360,40 @@ const T={
     tab_overview:"Översikt",tab_contacts:"Kontakter",tab_projects:"Projekt",tab_quotes:"Offerter",tab_invoices:"Fakturor",tab_notes:"Anteckningar",
     billing:"Fakturaadress",shipping:"Leveransadress",custinfo:"Kundinformation",
     industry:"Bransch",ctype:"Kundtyp",vat:"Momsregistreringsnr",preferred:"Föredragen kontakt",pricelist:"Prislista",remarks:"Anmärkningar",
+    deliveryterms:"Leveransvillkor",discountagreement:"Rabattavtal",
     th_no:"Nr",th_name:"Namn",th_status:"Status",th_value:"Värde",th_deadline:"Deadline",th_date:"Datum",
     empty_contacts:"Inga kontakter ännu.",empty_projects:"Inga projekt för denna kund ännu.",empty_quotes:"Inga offerter ännu.",empty_invoices:"Inga fakturor ännu.",empty_notes:"Inga anteckningar ännu.",empty_docs:"Inga dokument ännu.",
     active_customer:"Aktiv kund",inactive_customer:"Inaktiv kund",primary:"Primär",
     st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänd",st_planned:"Planerad",st_active:"Aktiv",st_hold:"Pausad",st_completed:"Klar",st_closed:"Stängd",st_cancelled:"Avbruten",
     qs_sent:"Skickad",qs_accepted:"Accepterad",qs_expired:"Utgången",is_paid:"Betald",is_pending:"Väntande",is_overdue:"Försenad",
     act_newcust:"Ny kund",act_newquote:"Ny offert",act_newproj:"Nytt projekt",act_newinv:"Ny faktura",act_newnote:"Ny anteckning",act_upload:"Ladda upp dokument",act_report:"Kundrapport",
-    nc_title:"Ny kund",nc_edit_title:"Redigera kund",nc_name:"Kundnamn",nc_city:"Stad",nc_org:"Org.nr",nc_email:"E-post",nc_phone:"Telefon",nc_website:"Webbplats",nc_status:"Status",nc_save:"Spara",nc_cancel:"Avbryt",
+    nc_title:"Ny kund",nc_edit_title:"Redigera kund",nc_name:"Kundnamn",nc_city:"Stad",nc_org:"Org.nr",nc_email:"E-post",nc_phone:"Telefon",nc_website:"Webbplats",nc_status:"Status",nc_save:"Spara",nc_cancel:"Avbryt",nc_shiphint:"Lämna tomt för att återanvända faktureringsadressen",
     ac_title:"Lägg till kontakt",ac_name:"Namn",ac_role:"Roll",ac_email:"E-post",ac_phone:"Telefon",ac_primary:"Ange som primär kontakt",ac_save:"Lägg till kontakt",
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
     nq_title:"Ny offert",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
     ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_save:"Lägg till faktura",
     locale:"sv-SE"},
-  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",ctitle:"Klienti",csub:"Kontakti i smetki",
+  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
+    sb_title:"KLIENTI",sb_overview:"Pregled na klienti",sb_quotes:"Kalkulacii / Ponudi",sb_notes_docs:"Beleški i dokumenti",
+    sb_workflow_title:"Zaednički zapis za klient",sb_workflow_desc:"Vnesete gi podatocite za klientot ednaš i iskoristete gi vo kalkulacii, proekti, planiranje i fakturiranje.",sb_role:"Menadžer za klienti",
     p_list:"Lista na klienti",p_summary:"Pregled na klienti",p_details:"Detali za klient",p_contacts:"Kontakt lica",p_recent:"Posledni proekti",p_notes:"Posledni beleški",p_docs:"Dokumenti",
     searchph:"Prebaraj klienti…",newcust:"Nov klient",addcontact:"+ Dodaj kontakt",viewall:"Vidi gi site",addnote:"+ Dodaj beleška",upload:"Otpremi",editcust:"Uredi klient",
     f_all:"Site",f_active:"Aktivni",f_inactive:"Neaktivni",
     showing:"Prikažani {a} do {b} od {n}",
     sum_total:"Vkupno klienti",sum_active:"Aktivni klienti",sum_progress:"Proekti vo tek",sum_revenue:"Vkupen prihod (ovaa godina)",
-    since:"Klient od",terms:"Uslovi za plaќaњe",credit:"Kreditno ograničuvanje",currency:"Valuta",
+    since:"Klient od",terms:"Uslovi za plakjanje",credit:"Kreditno ograničuvanje",currency:"Valuta",
     tab_overview:"Pregled",tab_contacts:"Kontakti",tab_projects:"Proekti",tab_quotes:"Ponudi",tab_invoices:"Fakturi",tab_notes:"Beleški",
     billing:"Adresa za faktura",shipping:"Adresa za dostava",custinfo:"Informacii za klient",
     industry:"Industrija",ctype:"Tip na klient",vat:"DDV broj",preferred:"Preferiran kontakt",pricelist:"Cenovnik",remarks:"Zabeleški",
+    deliveryterms:"Uslovi za dostava",discountagreement:"Dogovor za popust",
     th_no:"Br.",th_name:"Ime",th_status:"Status",th_value:"Vrednost",th_deadline:"Rok",th_date:"Datum",
-    empty_contacts:"Sè uште nema kontakti.",empty_projects:"Sè uште nema proekti za ovoj klient.",empty_quotes:"Sè uште nema ponudi.",empty_invoices:"Sè uште nema fakturi.",empty_notes:"Sè uште nema beleški.",empty_docs:"Sè uште nema dokumenti.",
+    empty_contacts:"Sè ušte nema kontakti.",empty_projects:"Sè ušte nema proekti za ovoj klient.",empty_quotes:"Sè ušte nema ponudi.",empty_invoices:"Sè ušte nema fakturi.",empty_notes:"Sè ušte nema beleški.",empty_docs:"Sè ušte nema dokumenti.",
     active_customer:"Aktiven klient",inactive_customer:"Neaktiven klient",primary:"Primaren",
     st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
-    qs_sent:"Ispratena",qs_accepted:"Prifatena",qs_expired:"Istekla",is_paid:"Platena",is_pending:"Vo čekaњe",is_overdue:"Docnета",
+    qs_sent:"Ispratena",qs_accepted:"Prifatena",qs_expired:"Istekla",is_paid:"Platena",is_pending:"Vo čekanje",is_overdue:"Zadocneta",
     act_newcust:"Nov klient",act_newquote:"Nova ponuda",act_newproj:"Nov proekt",act_newinv:"Nova faktura",act_newnote:"Nova beleška",act_upload:"Otpremi dokument",act_report:"Izveštaj za klient",
-    nc_title:"Nov klient",nc_edit_title:"Uredi klient",nc_name:"Ime na klient",nc_city:"Grad",nc_org:"EMBS",nc_email:"E-pošta",nc_phone:"Telefon",nc_website:"Veb-strana",nc_status:"Status",nc_save:"Začuvaj",nc_cancel:"Otkaži",
+    nc_title:"Nov klient",nc_edit_title:"Uredi klient",nc_name:"Ime na klient",nc_city:"Grad",nc_org:"EMBS",nc_email:"E-pošta",nc_phone:"Telefon",nc_website:"Veb-strana",nc_status:"Status",nc_save:"Začuvaj",nc_cancel:"Otkaži",nc_shiphint:"Ostavi prazno za da se koristi istata adresa kako za faktura",
     ac_title:"Dodaj kontakt",ac_name:"Ime",ac_role:"Uloga",ac_email:"E-pošta",ac_phone:"Telefon",ac_primary:"Postavi kako primaren kontakt",ac_save:"Dodaj kontakt",
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
@@ -397,7 +406,7 @@ let LANG="en",selectedId=2,activeTab="overview",query="",filterStatus="all";
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
 function getCust(id){return CUSTOMERS.find(c=>c.id===id);}
-function syncCustomer(c){if(!window.WorkshopData||!c)return;WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents})}
+function syncCustomer(c){if(!window.WorkshopData||!c)return;const rec=WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents});if(rec){c.sharedId=rec.id;c.sharedNo=rec.no;}}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
 function custStats(id){const ps=custProjects(id);
   const open=ps.filter(p=>OPEN_STATUSES.includes(p.status)).length;
@@ -470,13 +479,13 @@ function renderMiddle(c){
           <div class="ifact"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>${t.vat.split(' ')[0]}: ${esc(c.org)}</div>
           ${c.email?`<div class="ifact"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}
           ${c.phone?`<div class="ifact"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:''}
-          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><a href="https://${c.website}" target="_blank" rel="noopener">${c.website}</a></div>
+          <div class="ifact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><a href="https://${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a></div>
         </div>
         <div class="kvcols">
-          <div class="kv"><div class="k">${t.since}</div><div class="v">${c.since}</div></div>
-          <div class="kv"><div class="k">${t.terms}</div><div class="v">${c.terms}</div></div>
-          <div class="kv"><div class="k">${t.credit}</div><div class="v">${fmt(c.credit)}</div></div>
-          <div class="kv"><div class="k">${t.currency}</div><div class="v">${c.currency}</div></div>
+          <div class="kv"><div class="k">${t.since}</div><div class="v">${esc(c.since)}</div></div>
+          <div class="kv"><div class="k">${t.terms}</div><div class="v">${esc(c.terms)}</div></div>
+          <div class="kv"><div class="k">${t.credit}</div><div class="v">${esc(fmt(c.credit))}</div></div>
+          <div class="kv"><div class="k">${t.currency}</div><div class="v">${esc(c.currency)}</div></div>
         </div>
       </div>
       <div class="ptabs">${tabs.map(tb=>`<button data-tab="${tb}" class="${activeTab===tb?'on':''}">${t["tab_"+tb]}${counts[tb]!==null?` (${counts[tb]})`:''}</button>`).join("")}</div>
@@ -489,33 +498,33 @@ function renderTab(c){
   if(activeTab==='overview'){
     $("tabpanel").innerHTML=`
       <div class="addrgrid">
-        <div class="addrcard"><h4>${t.billing}</h4><div class="al">${c.billing.join("<br>")}</div></div>
-        <div class="addrcard"><h4>${t.shipping}</h4><div class="al">${(c.shipping||c.billing).join("<br>")}</div></div>
+        <div class="addrcard"><h4>${t.billing}</h4><div class="al">${c.billing.map(esc).join("<br>")}</div></div>
+        <div class="addrcard"><h4>${t.shipping}</h4><div class="al">${(c.shipping||c.billing).map(esc).join("<br>")}</div></div>
       </div>
       <div class="infolist">
-        <div class="irow"><span class="ik">${t.industry}</span><span class="iv">${c.industry}</span></div>
-        <div class="irow"><span class="ik">${t.ctype}</span><span class="iv">${c.ctype}</span></div>
-        <div class="irow"><span class="ik">${t.vat}</span><span class="iv">${c.vat}</span></div>
-        <div class="irow"><span class="ik">${t.preferred}</span><span class="iv">${c.preferred}</span></div>
-        <div class="irow"><span class="ik">${t.pricelist}</span><span class="iv">${c.pricelist}</span></div>
-        <div class="irow"><span class="ik">Delivery Terms</span><span class="iv">${c.deliveryTerms||"—"}</span></div>
-        <div class="irow"><span class="ik">Discount Agreement</span><span class="iv">${c.discountAgreement||"—"}</span></div>
-        <div class="irow"><span class="ik">${t.remarks}</span><span class="iv">${c.remarks}</span></div>
+        <div class="irow"><span class="ik">${t.industry}</span><span class="iv">${esc(c.industry)}</span></div>
+        <div class="irow"><span class="ik">${t.ctype}</span><span class="iv">${esc(c.ctype)}</span></div>
+        <div class="irow"><span class="ik">${t.vat}</span><span class="iv">${esc(c.vat)}</span></div>
+        <div class="irow"><span class="ik">${t.preferred}</span><span class="iv">${esc(c.preferred)}</span></div>
+        <div class="irow"><span class="ik">${t.pricelist}</span><span class="iv">${esc(c.pricelist)}</span></div>
+        <div class="irow"><span class="ik">${t.deliveryterms}</span><span class="iv">${esc(c.deliveryTerms||"—")}</span></div>
+        <div class="irow"><span class="ik">${t.discountagreement}</span><span class="iv">${esc(c.discountAgreement||"—")}</span></div>
+        <div class="irow"><span class="ik">${t.remarks}</span><span class="iv">${esc(c.remarks)}</span></div>
       </div>`;
   }else if(activeTab==='contacts'){
     $("tabpanel").innerHTML=c.contacts.map(p=>contactCardHtml(p)).join("")||`<div class="empty3">${t.empty_contacts}</div>`;
   }else if(activeTab==='projects'){
     const ps=custProjects(c.id);
-    const rows=ps.map(p=>`<tr class="click" onclick="location.href='projects-desktop.html'"><td class="pnum2">${p.no}</td><td>${p.name}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${fmtD(p.deadline)}</td></tr>`).join("");
+    const rows=ps.map(p=>`<tr class="click" onclick="location.href='projects-desktop.html'"><td class="pnum2">${esc(p.no)}</td><td>${esc(p.name)}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${esc(fmtD(p.deadline))}</td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_name}</th><th>${t.th_status}</th><th>${t.th_value}</th><th>${t.th_deadline}</th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="empty3">${t.empty_projects}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='quotes'){
-    const rows=c.quotes.map(q=>`<tr><td class="pnum2">${q.no}</td><td class="rnum">${fmtD(q.date)}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
+    const rows=c.quotes.map(q=>`<tr><td class="pnum2">${esc(q.no)}</td><td class="rnum">${esc(fmtD(q.date))}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_quotes}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='invoices'){
-    const rows=c.invoices.map(iv=>`<tr><td class="pnum2">${iv.no}</td><td class="rnum">${fmtD(iv.date)}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]}</span></td></tr>`).join("");
+    const rows=c.invoices.map(iv=>`<tr><td class="pnum2">${esc(iv.no)}</td><td class="rnum">${esc(fmtD(iv.date))}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]}</span></td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_invoices}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='notes'){
-    $("tabpanel").innerHTML=c.notes.slice().reverse().map(n=>`<div class="ccard"><div class="notecard"><div class="nd">${n.date}</div>${n.text}<div class="na">— ${n.author}</div></div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`;
+    $("tabpanel").innerHTML=c.notes.slice().reverse().map(n=>`<div class="ccard"><div class="notecard"><div class="nd">${esc(n.date)}</div>${esc(n.text)}<div class="na">— ${esc(n.author)}</div></div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`;
   }
   document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>{activeTab=b.getAttribute('data-tab');renderAll();}));
 }
@@ -523,13 +532,13 @@ function renderTab(c){
 function contactCardHtml(p){
   const t=T[LANG];
   return `<div class="ccard"><div class="crow1">
-    <div class="avc">${initials(p.name)}</div>
-    <div style="flex:1;"><span style="font-weight:600;font-size:13px;">${p.name}</span>${p.primary?`<span class="primary-badge">${t.primary}</span>`:''}
-      <div class="crole">${p.role}</div>
-      <div class="cmeta"><span>${p.email}</span><span>${p.phone}</span></div></div>
+    <div class="avc">${esc(initials(p.name))}</div>
+    <div style="flex:1;"><span style="font-weight:600;font-size:13px;">${esc(p.name)}</span>${p.primary?`<span class="primary-badge">${t.primary}</span>`:''}
+      <div class="crole">${esc(p.role)}</div>
+      <div class="cmeta"><span>${esc(p.email)}</span><span>${esc(p.phone)}</span></div></div>
     <div class="ciconbtns">
-      <a href="mailto:${p.email}" aria-label="Email"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg></a>
-      <a href="tel:${p.phone}" aria-label="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg></a>
+      <a href="mailto:${esc(p.email)}" aria-label="Email"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg></a>
+      <a href="tel:${esc(p.phone)}" aria-label="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .5 3 .7a2 2 0 0 1 1.7 2z"/></svg></a>
     </div></div></div>`;
 }
 
@@ -549,15 +558,15 @@ function renderRight(c){
     </div>
     <div class="panel">
       <div class="phead"><h3>${t.p_recent}</h3><button class="tbtn linklike" onclick="activeTab='projects';renderAll();">${t.viewall}</button></div>
-      ${ps.map(p=>`<div class="projrow"><div class="pn"><b>${p.no}</b><span style="color:var(--steel-400);">${p.name}</span></div>${statusWordHtml(p.status)}</div>`).join("")||`<div class="empty3">${t.empty_projects}</div>`}
+      ${ps.map(p=>`<div class="projrow"><div class="pn"><b>${esc(p.no)}</b><span style="color:var(--steel-400);">${esc(p.name)}</span></div>${statusWordHtml(p.status)}</div>`).join("")||`<div class="empty3">${t.empty_projects}</div>`}
     </div>
     <div class="panel">
       <div class="phead"><h3>${t.p_notes}</h3><button class="tbtn small" onclick="openAddNote(${c.id})">${t.addnote}</button></div>
-      ${lastNote?`<div class="notecard"><div class="nd">${lastNote.date} — ${lastNote.text}</div><div class="na">– ${lastNote.author}</div></div>`:`<div class="empty3">${t.empty_notes}</div>`}
+      ${lastNote?`<div class="notecard"><div class="nd">${esc(lastNote.date)} — ${esc(lastNote.text)}</div><div class="na">– ${esc(lastNote.author)}</div></div>`:`<div class="empty3">${t.empty_notes}</div>`}
     </div>
     <div class="panel">
       <div class="phead"><h3>${t.p_docs}</h3><button class="tbtn small" onclick="openUpload(${c.id})">${t.upload}</button></div>
-      ${c.documents.map(d=>`<div class="docrow2"><div class="dicon ${d.type}">${d.type.toUpperCase()}</div><div class="dn">${d.name}</div><div class="dd">${d.date}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
+      ${c.documents.map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
     </div>`;
 }
 
@@ -599,15 +608,15 @@ $("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
 function openNewCustomer(){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.csub}</p>
-    <div class="frow"><label>${t.nc_name}</label><input id="ncName"></div>
-    <div class="frow2"><div><label>${t.nc_city}</label><input id="ncCity"></div><div><label>${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div></div>
-    <div class="frow2"><div><label>${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label>${t.nc_phone}</label><input id="ncPhone"></div></div>
-    <div class="frow"><label>${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
-    <div class="frow2"><div><label>VAT Number</label><input id="ncVat"></div><div><label>Industry</label><input id="ncIndustry"></div></div>
-    <div class="frow2"><div><label>Payment Terms</label><input id="ncTerms" value="30 days"></div><div><label>Credit Limit (SEK)</label><input id="ncCredit" type="number" value="0"></div></div>
-    <div class="frow2"><div><label>Delivery Terms</label><input id="ncDelivery" value="EXW Marieholm"></div><div><label>Discount Agreement</label><input id="ncDiscount" value="0%"></div></div>
-    <div class="frow"><label>Billing Address</label><textarea id="ncBilling" placeholder="Company&#10;Street&#10;Postcode City&#10;Sweden"></textarea></div>
-    <div class="frow"><label>Shipping Address</label><textarea id="ncShipping" placeholder="Leave empty to reuse billing address"></textarea></div>
+    <div class="frow"><label for="ncName">${t.nc_name}</label><input id="ncName"></div>
+    <div class="frow2"><div><label for="ncCity">${t.nc_city}</label><input id="ncCity"></div><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div></div>
+    <div class="frow2"><div><label for="ncEmail">${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label for="ncPhone">${t.nc_phone}</label><input id="ncPhone"></div></div>
+    <div class="frow"><label for="ncWebsite">${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
+    <div class="frow2"><div><label for="ncVat">${t.vat}</label><input id="ncVat"></div><div><label for="ncIndustry">${t.industry}</label><input id="ncIndustry"></div></div>
+    <div class="frow2"><div><label for="ncTerms">${t.terms}</label><input id="ncTerms" value="30 days"></div><div><label for="ncCredit">${t.credit} (SEK)</label><input id="ncCredit" type="number" value="0"></div></div>
+    <div class="frow2"><div><label for="ncDelivery">${t.deliveryterms}</label><input id="ncDelivery" value="EXW Marieholm"></div><div><label for="ncDiscount">${t.discountagreement}</label><input id="ncDiscount" value="0%"></div></div>
+    <div class="frow"><label for="ncBilling">${t.billing}</label><textarea id="ncBilling" placeholder="Company&#10;Street&#10;Postcode City&#10;Sweden"></textarea></div>
+    <div class="frow"><label for="ncShipping">${t.shipping}</label><textarea id="ncShipping" placeholder="${t.nc_shiphint}"></textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -624,14 +633,14 @@ function saveNewCustomer(){
 
 function openEditCustomer(id){
   const t=T[LANG];const c=getCust(id);
-  $("fcard").innerHTML=`<h2>${t.nc_edit_title}</h2><p class="fsub">${c.name}</p>
-    <div class="frow"><label>${t.nc_name}</label><input id="ecName" value="${c.name}"></div>
-    <div class="frow2"><div><label>${t.nc_city}</label><input id="ecCity" value="${c.city}"></div>
-      <div><label>${t.nc_status}</label><select id="ecStatus"><option value="active" ${c.status==='active'?'selected':''}>${t.f_active}</option><option value="inactive" ${c.status==='inactive'?'selected':''}>${t.f_inactive}</option></select></div></div>
-    <div class="frow2"><div><label>${t.nc_email}</label><input id="ecEmail" value="${c.email}"></div><div><label>${t.nc_phone}</label><input id="ecPhone" value="${c.phone}"></div></div>
-    <div class="frow"><label>${t.nc_website}</label><input id="ecWebsite" value="${c.website}"></div>
-    <div class="frow2"><div><label>Payment Terms</label><input id="ecTerms" value="${c.terms}"></div><div><label>Credit Limit</label><input id="ecCredit" type="number" value="${c.credit}"></div></div>
-    <div class="frow2"><div><label>Delivery Terms</label><input id="ecDelivery" value="${c.deliveryTerms||'—'}"></div><div><label>Discount Agreement</label><input id="ecDiscount" value="${c.discountAgreement||'—'}"></div></div>
+  $("fcard").innerHTML=`<h2>${t.nc_edit_title}</h2><p class="fsub">${esc(c.name)}</p>
+    <div class="frow"><label for="ecName">${t.nc_name}</label><input id="ecName" value="${esc(c.name)}"></div>
+    <div class="frow2"><div><label for="ecCity">${t.nc_city}</label><input id="ecCity" value="${esc(c.city)}"></div>
+      <div><label for="ecStatus">${t.nc_status}</label><select id="ecStatus"><option value="active" ${c.status==='active'?'selected':''}>${t.f_active}</option><option value="inactive" ${c.status==='inactive'?'selected':''}>${t.f_inactive}</option></select></div></div>
+    <div class="frow2"><div><label for="ecEmail">${t.nc_email}</label><input id="ecEmail" value="${esc(c.email)}"></div><div><label for="ecPhone">${t.nc_phone}</label><input id="ecPhone" value="${esc(c.phone)}"></div></div>
+    <div class="frow"><label for="ecWebsite">${t.nc_website}</label><input id="ecWebsite" value="${esc(c.website)}"></div>
+    <div class="frow2"><div><label for="ecTerms">${t.terms}</label><input id="ecTerms" value="${esc(c.terms)}"></div><div><label for="ecCredit">${t.credit}</label><input id="ecCredit" type="number" value="${esc(c.credit)}"></div></div>
+    <div class="frow2"><div><label for="ecDelivery">${t.deliveryterms}</label><input id="ecDelivery" value="${esc(c.deliveryTerms||'—')}"></div><div><label for="ecDiscount">${t.discountagreement}</label><input id="ecDiscount" value="${esc(c.discountAgreement||'—')}"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditCustomer(${id})">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -645,11 +654,11 @@ function saveEditCustomer(id){
 
 function openAddContact(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.ac_title}</h2><p class="fsub">${getCust(id).name}</p>
-    <div class="frow"><label>${t.ac_name}</label><input id="acName"></div>
-    <div class="frow"><label>${t.ac_role}</label><input id="acRole"></div>
-    <div class="frow2"><div><label>${t.ac_email}</label><input id="acEmail" type="email"></div><div><label>${t.ac_phone}</label><input id="acPhone"></div></div>
-    <div class="frow"><label><input type="checkbox" id="acPrimary" style="width:auto;display:inline-block;margin-right:7px;">${t.ac_primary}</label></div>
+  $("fcard").innerHTML=`<h2>${t.ac_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="acName">${t.ac_name}</label><input id="acName"></div>
+    <div class="frow"><label for="acRole">${t.ac_role}</label><input id="acRole"></div>
+    <div class="frow2"><div><label for="acEmail">${t.ac_email}</label><input id="acEmail" type="email"></div><div><label for="acPhone">${t.ac_phone}</label><input id="acPhone"></div></div>
+    <div class="frow"><label for="acPrimary"><input type="checkbox" id="acPrimary" style="width:auto;display:inline-block;margin-right:7px;">${t.ac_primary}</label></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddContact(${id})">${t.ac_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -664,8 +673,8 @@ function saveAddContact(id){
 
 function openAddNote(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.an_title}</h2><p class="fsub">${getCust(id).name}</p>
-    <div class="frow"><label>${t.an_text}</label><textarea id="anText"></textarea></div>
+  $("fcard").innerHTML=`<h2>${t.an_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="anText">${t.an_text}</label><textarea id="anText"></textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${t.an_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -677,8 +686,8 @@ function saveAddNote(id){
 
 function openUpload(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${getCust(id).name}</p>
-    <div class="frow"><label>${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
+  $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="udName">${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUpload(${id})">${t.ud_save}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -691,28 +700,30 @@ function saveUpload(id){
 
 function openNewQuote(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.nq_title}</h2><p class="fsub">${getCust(id).name}</p>
-    <div class="frow"><label>${t.nq_value}</label><input id="nqValue" type="number"></div>
+  $("fcard").innerHTML=`<h2>${t.nq_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="nqValue">${t.nq_value}</label><input id="nqValue" type="number"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewQuote(${id})">${t.nq_save}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveNewQuote(id){
   const value=parseFloat($("nqValue").value)||0;
-  const c=getCust(id);const no="Q-2026-0"+(20+c.quotes.length+1);
+  const c=getCust(id);const no="Q-2026-"+String(20+c.quotes.length+1).padStart(4,'0');
   c.quotes.push({no,date:new Date().toISOString().slice(0,10),value,status:"sent"});
+  syncCustomer(c);
   closeModal();activeTab='quotes';renderAll();
 }
 function openNewInvoice(id){
   const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${t.ni_title}</h2><p class="fsub">${getCust(id).name}</p>
-    <div class="frow"><label>${t.ni_value}</label><input id="niValue" type="number"></div>
+  $("fcard").innerHTML=`<h2>${t.ni_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="niValue">${t.ni_value}</label><input id="niValue" type="number"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewInvoice(${id})">${t.ni_save}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveNewInvoice(id){
   const value=parseFloat($("niValue").value)||0;
-  const c=getCust(id);const no="INV-2026-0"+(40+c.invoices.length+1);
+  const c=getCust(id);const no="INV-2026-"+String(40+c.invoices.length+1).padStart(4,'0');
   c.invoices.push({no,date:new Date().toISOString().slice(0,10),value,status:"pending"});
+  syncCustomer(c);
   closeModal();activeTab='invoices';renderAll();
 }
 
