@@ -26,38 +26,46 @@
   .sideitem:hover{transform:translateX(2px);}
   @media (prefers-reduced-motion:reduce){.glow{animation:none}.ember{display:none}.panel,.kpi,.attncard,.rolecard,.statuspanel{animation:none}.attncard:hover,.rolecard:hover,.fbtn:hover,.sideitem:hover{transform:none}}
 
-  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
-  .topbar{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;}
-  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
-  .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
-  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
-  .clock{text-align:right;font-variant-numeric:tabular-nums;}
-  .clock .time{font-family:'Sora';font-weight:600;font-size:16px;}
-  .clock .date{font-size:11px;color:var(--steel-400);}
-  .who{display:flex;align-items:center;gap:8px;}
-  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
-  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
-  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
-  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
-  .who .out:hover{border-color:var(--spark);color:var(--ice);}
+  .skip{position:fixed;z-index:100;left:230px;top:8px;transform:translateY(-150%);background:#2c6bd6;color:#fff;padding:9px 13px;transition:.15s;}
+  .skip:focus{transform:none;}
 
-  .main{position:relative;z-index:2;display:flex;min-height:100vh;padding-top:100px;}
-  .sidebar{width:260px;background:rgba(7,26,51,.7);border-right:1px solid var(--line);padding:24px 0;overflow-y:auto;max-height:calc(100vh - 100px);}
-  .sideitem{padding:12px 18px;border-left:2px solid transparent;cursor:pointer;font-size:13px;color:var(--steel-400);transition:.16s;white-space:nowrap;}
-  .sideitem:hover{color:var(--ice);background:rgba(74,144,255,.06);}
-  .sideitem.active{border-left-color:var(--spark);color:#cfe0ff;background:rgba(74,144,255,.08);}
-  .sideitem.group{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);padding:14px 18px 8px;font-weight:600;margin-top:8px;}
-  .sidediv{height:1px;background:var(--line);margin:14px 0;}
-  .sidelbl{padding:12px 18px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);}
-  .content{flex:1;padding:28px 40px 90px;overflow-y:auto;max-height:calc(100vh - 100px);}
-  .topctrl{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap;}
-  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
+  .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:230px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16);overflow-y:auto;}
+  .ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 18px;}
+  .ms-icon{width:31px;height:31px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);flex-shrink:0;}
+  .ms-brand h2{font-family:'Sora';font-weight:700;font-size:15px;letter-spacing:.04em;}
+  .ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px;}
+  .module-side-nav{display:grid;gap:3px;}
+  .sideitem{display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:9px 10px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font-family:'Inter';font-size:11.5px;font-weight:500;text-align:left;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .sideitem i{width:15px;color:#78a7d9;font-style:normal;text-align:center;font-size:12px;flex-shrink:0;}
+  .sideitem:hover{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark);transform:none;}
+  .sideitem.active{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark);}
+  .sidediv{height:1px;background:var(--line);margin:10px 3px;}
+  .ms-sidebox{margin-top:14px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72);}
+  .ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
+  .ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55;margin:0;}
+  .ms-user{margin-top:14px;padding:13px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;}
+  .ms-avatar{width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#16385b;border:1px solid #3e6288;font-size:10.5px;font-family:'Sora';font-weight:600;flex-shrink:0;}
+  .ms-user strong{font-size:12px;}
+  .ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px;}
+
+  .shell{position:relative;z-index:2;margin-left:230px;padding:22px 32px 60px;}
+  .top{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;text-decoration:none;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .ttl{display:flex;align-items:center;gap:11px;}
-  .ttl .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
+  .ttl .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);flex-shrink:0;}
   .ttl h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;}
   .ttl p{font-size:12px;color:var(--steel-400);margin-top:2px;}
+  @media(max-width:900px){
+    .module-sidebar{position:relative;width:100%;height:auto;padding:10px;}
+    .ms-brand{padding-bottom:10px;}
+    .module-side-nav{display:flex;overflow-x:auto;}
+    .sideitem{flex:0 0 auto;width:auto;border-left:none;border-bottom:2px solid transparent;}
+    .sideitem:hover,.sideitem.active{border-left-color:transparent;border-bottom-color:var(--spark);}
+    .statuspanel,.ms-user{display:none;}
+    .shell{margin-left:0;}
+    .langc{left:auto;right:14px;}
+  }
 
   .filtbar{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px 18px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .filtrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
@@ -134,7 +142,7 @@
 
   .toast{position:fixed;z-index:95;right:22px;bottom:22px;background:#0a2447;border:1px solid rgba(74,144,255,.5);padding:12px 18px;font-size:13px;color:var(--ice);opacity:0;transform:translateY(15px);transition:.2s;pointer-events:none;box-shadow:0 14px 34px rgba(0,0,0,.4);}
   .toast.show{opacity:1;transform:none;}
-  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
+  .langc{position:fixed;z-index:50;left:14px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
   .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
   .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);}
@@ -149,21 +157,14 @@
 
   @media(max-width:1200px){
     .kpistrip{grid-template-columns:repeat(2,1fr);}
-    .sidebar{width:200px;}
-    .content{padding:20px 24px 80px;}
-    .sideitem{font-size:12px;padding:10px 14px;}
   }
   @media(max-width:760px){
-    .main{flex-direction:column;padding-top:100px;}
-    .sidebar{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line);padding:12px 0;display:none;}
-    .sidebar.show{display:block;}
-    .content{max-height:none;}
     .kpistrip{grid-template-columns:1fr;}
     .mcard{width:100%;max-width:90vw;}
-    #menuToggleBtn{display:flex !important;}
     .attngrid{grid-template-columns:1fr;}
     .filtrow{flex-direction:column;align-items:stretch;}
     .filtrow .filtsel{width:100%;}
+    .shell{padding:18px 16px 50px;}
   }
 
   /* Reporting status / data coverage */
@@ -227,9 +228,8 @@
 
   @media print{
     body{background:#fff !important;color:#111 !important;}
-    .bg,.sidebar,.topfull,.filtbar,.langc,.back,.fbtn,.mbtn,.kpiinfo,.infobtn,.tabs,.topctrl,#builder-step1 button,.section .fbtn{display:none !important;}
-    .content{padding:0 !important;max-height:none !important;overflow:visible !important;margin:0 !important;}
-    .main{padding-top:0 !important;display:block !important;}
+    .bg,.module-sidebar,.skip,.filtbar,.langc,.back,.fbtn,.mbtn,.kpiinfo,.infobtn,.tabs,.top,#builder-step1 button,.section .fbtn{display:none !important;}
+    .shell{padding:0 !important;margin:0 !important;}
     .panel,.kpi,.attncard,.statuspanel{background:#fff !important;border:1px solid #999 !important;color:#111 !important;break-inside:avoid;}
     .table th,.table td{color:#111 !important;border-color:#ccc !important;}
     .badge{border:1px solid #999 !important;color:#111 !important;background:#f0f0f0 !important;}
@@ -240,50 +240,50 @@
   .print-header{display:none;}
 </style></head><body>
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<a class="skip" href="#main">Skip to reports content</a>
 
-<div class="topfull">
-  <div class="topbar">
-    <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
-    <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-      <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+<aside class="module-sidebar" id="sidebar">
+  <div class="ms-brand">
+    <div class="ms-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg></div>
+    <div><h2>REPORTS</h2><small data-i="reports_short">Analytics & insights</small></div>
   </div>
-</div>
-
-<div class="main">
-  <div class="sidebar" id="sidebar">
-    <div class="sidelbl" data-i="navigation">Navigation</div>
-    <button class="sideitem" data-section="overview" data-i="overview">Overview</button>
-    <button class="sideitem" data-section="projects" data-i="projects">Projects</button>
-    <button class="sideitem" data-section="estimation" data-i="estimation">Estimation</button>
-    <button class="sideitem" data-section="production" data-i="production">Production</button>
-    <button class="sideitem" data-section="jobcards" data-i="jobcards">Jobcards</button>
-    <button class="sideitem" data-section="hours" data-i="hours">Hours & Labour</button>
-    <button class="sideitem" data-section="store" data-i="store">Store & Materials</button>
-    <button class="sideitem" data-section="purchasing" data-i="purchasing">Purchasing</button>
-    <button class="sideitem" data-section="suppliers" data-i="suppliers">Suppliers</button>
-    <button class="sideitem" data-section="equipment" data-i="equipment">Equipment & Machines</button>
-    <button class="sideitem" data-section="quality" data-i="quality">Quality & Inspections</button>
-    <button class="sideitem" data-section="customers" data-i="customers">Customers</button>
-    <button class="sideitem" data-section="marketing" data-i="marketing">Marketing & Sales</button>
+  <nav class="module-side-nav" id="reportsNav">
+    <button class="sideitem" data-section="overview"><i>▦</i><span data-i="overview">Overview</span></button>
+    <button class="sideitem" data-section="projects"><i>▤</i><span data-i="projects">Projects</span></button>
+    <button class="sideitem" data-section="estimation"><i>✎</i><span data-i="estimation">Estimation</span></button>
+    <button class="sideitem" data-section="production"><i>◧</i><span data-i="production">Production</span></button>
+    <button class="sideitem" data-section="jobcards"><i>▧</i><span data-i="jobcards">Jobcards</span></button>
+    <button class="sideitem" data-section="hours"><i>◷</i><span data-i="hours">Hours & Labour</span></button>
+    <button class="sideitem" data-section="store"><i>▥</i><span data-i="store">Store & Materials</span></button>
+    <button class="sideitem" data-section="purchasing"><i>▣</i><span data-i="purchasing">Purchasing</span></button>
+    <button class="sideitem" data-section="suppliers"><i>◇</i><span data-i="suppliers">Suppliers</span></button>
+    <button class="sideitem" data-section="equipment"><i>⚒</i><span data-i="equipment">Equipment & Machines</span></button>
+    <button class="sideitem" data-section="quality"><i>✓</i><span data-i="quality">Quality & Inspections</span></button>
+    <button class="sideitem" data-section="customers"><i>◐</i><span data-i="customers">Customers</span></button>
+    <button class="sideitem" data-section="marketing"><i>↗</i><span data-i="marketing">Marketing & Sales</span></button>
     <div class="sidediv"></div>
-    <button class="sideitem" data-section="saved" data-i="saved_reports">Saved Reports</button>
-    <button class="sideitem" data-section="builder" data-i="custom_builder">Custom Report Builder</button>
-    <div class="statuspanel">
-      <h4 data-i="reporting_status">Reporting Status</h4>
-      <p><span class="statusdot"></span><span data-i="reporting_status_text">Reports use browser demonstration data</span></p>
-      <p style="margin-top:8px;font-size:10.5px;" id="lastCalc" data-i="last_calculated">Last calculated: —</p>
-    </div>
+    <button class="sideitem" data-section="saved"><i>★</i><span data-i="saved_reports">Saved Reports</span></button>
+    <button class="sideitem" data-section="builder"><i>▨</i><span data-i="custom_builder">Custom Report Builder</span></button>
+  </nav>
+  <div class="statuspanel">
+    <h4 data-i="reporting_status">Reporting Status</h4>
+    <p><span class="statusdot"></span><span data-i="reporting_status_text">Reports use browser demonstration data</span></p>
+    <p style="margin-top:8px;font-size:10px;" id="lastCalc" data-i="last_calculated">Last calculated: —</p>
   </div>
+  <div class="ms-user">
+    <div class="ms-avatar">AK</div>
+    <div><strong>Aleksandar</strong><small class="role" data-i="role">Admin</small></div>
+  </div>
+</aside>
 
-  <div class="content">
-    <div class="topctrl">
-      <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
-      <button class="back" id="menuToggleBtn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span data-i="menu">Menu</span></button>
-      <div class="ttl" id="headTitle">
-        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg></div>
-        <div><h1 data-i="reports_title">Reports & Analytics</h1><p data-i="reports_sub">Data analysis and decision support</p></div>
-      </div>
+<div class="shell" id="main">
+  <header class="top">
+    <a class="back" id="backBtn" href="hub-desktop.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></a>
+    <div class="ttl" id="headTitle">
+      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg></div>
+      <div><h1 data-i="reports_title">Reports & Analytics</h1><p data-i="reports_sub">Data analysis and decision support</p></div>
     </div>
+  </header>
 
     <div class="filtbar">
       <div class="filtrow">
@@ -977,7 +977,6 @@
       </div>
     </div>
 
-  </div>
 </div>
 
 <div class="modal" id="exportModal">
@@ -1149,7 +1148,7 @@ const i18n={
     rework_note:'Rework is not explicitly flagged in this data model. Rows below are operations whose logged hours exceeded planned hours by more than 20% — a demo inference, not a confirmed rework record.',
     planned_completion:'Planned Completion',actual_completion:'Actual Completion',planned_start:'Planned Start',planned_finish:'Planned Finish',
     actual_start:'Actual Start',actual_finish:'Actual Finish',responsible_worker:'Responsible',inspection_status:'Inspection Status',
-    priority:'Priority',required:'Required',issued:'Issued'
+    priority:'Priority',required:'Required',issued:'Issued',reports_short:'Analytics & insights'
   },
   sv:{
     overview:'Översikt',navigation:'Navigation',projects:'Projekt',estimation:'Estimering',production:'Produktion',
@@ -1254,7 +1253,7 @@ const i18n={
     rework_note:'Omarbetning flaggas inte uttryckligen i denna datamodell. Raderna nedan är operationer vars loggade timmar överskred planerade timmar med mer än 20% — en demo-slutsats, inte en bekräftad omarbetningspost.',
     planned_completion:'Planerat Slutförande',actual_completion:'Faktiskt Slutförande',planned_start:'Planerad Start',planned_finish:'Planerat Slut',
     actual_start:'Faktisk Start',actual_finish:'Faktiskt Slut',responsible_worker:'Ansvarig',inspection_status:'Inspektionsstatus',
-    priority:'Prioritet',required:'Behövs',issued:'Utlämnat'
+    priority:'Prioritet',required:'Behövs',issued:'Utlämnat',reports_short:'Analys & insikter'
   },
   mk:{
     overview:'Преглед',navigation:'Навигација',projects:'Проекти',estimation:'Проценка',production:'Производство',
@@ -1359,7 +1358,7 @@ const i18n={
     rework_note:'Дораборот не е експлицитно означен во овој модел на податоци. Редовите подолу се операции чии евидентирани часови ги надминале планираните за повеќе од 20% — демо-заклучок, не потврден запис за дораборка.',
     planned_completion:'Планирано Завршување',actual_completion:'Реално Завршување',planned_start:'Планиран Почеток',planned_finish:'Планиран Крај',
     actual_start:'Реален Почеток',actual_finish:'Реален Крај',responsible_worker:'Одговорен',inspection_status:'Статус на Инспекција',
-    priority:'Приоритет',required:'Потребно',issued:'Издадено'
+    priority:'Приоритет',required:'Потребно',issued:'Издадено',reports_short:'Анализа & согледувања'
   }
 };
 
@@ -1477,15 +1476,6 @@ function notify(msg){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));}});
 document.querySelectorAll('.modal').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
 
-// CLOCK
-function updateClock(){
-  const now=new Date();
-  $('time').textContent=now.toLocaleTimeString(currentLang==='sv'?'sv-SE':'en-US',{hour:'2-digit',minute:'2-digit'});
-  $('date').textContent=now.toLocaleDateString(currentLang==='sv'?'sv-SE':'en-US',{weekday:'short',month:'short',day:'numeric'});
-}
-setInterval(updateClock,1000);
-updateClock();
-
 // SECTIONS
 const SECTION_TITLE_KEY={overview:'overview',projects:'projects',estimation:'estimation',production:'production',jobcards:'jobcards',hours:'hours',store:'store',purchasing:'purchasing',suppliers:'suppliers',equipment:'equipment',quality:'quality',customers:'customers',marketing:'marketing',saved:'saved_reports',builder:'custom_builder'};
 function showSection(sectionId){
@@ -1503,22 +1493,7 @@ function showSection(sectionId){
 
 // SIDEBAR NAVIGATION
 document.querySelectorAll('.sideitem[data-section]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    showSection(btn.getAttribute('data-section'));
-    if(window.matchMedia('(max-width:760px)').matches){
-      $('sidebar').classList.remove('show');
-      $('menuToggleBtn').setAttribute('aria-expanded','false');
-    }
-  });
-});
-
-// BACK TO HUB
-$('backBtn').addEventListener('click',()=>{window.location.href='hub-desktop.html';});
-
-// MOBILE SIDEBAR TOGGLE
-$('menuToggleBtn').addEventListener('click',()=>{
-  const open=$('sidebar').classList.toggle('show');
-  $('menuToggleBtn').setAttribute('aria-expanded',open?'true':'false');
+  btn.addEventListener('click',()=>showSection(btn.getAttribute('data-section')));
 });
 
 // LANGUAGE
@@ -2919,7 +2894,6 @@ function loadConfig(){
   updateActiveFilterSummary();
   showSection(config.section||'overview');
   updateLastCalculated();
-  setInterval(updateClock,60000);
   window.addEventListener('workshop:data',()=>{invalidateDataCache();populateFilterSelects();populateStatusFilter(currentSection);if(currentSection)loadSectionData(currentSection);});
 
   const emberBox=$('embers');
