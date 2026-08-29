@@ -314,11 +314,12 @@
   let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV5Detected:false,corruptedRecordPreserved:false,migrationSource:'v5',moduleMigrations:[]};
 
   function resolveOrCreateCustomerInState(base,name){
-    if(!name)return null;
-    let c=base.customers.find(x=>x.name&&x.name.toLowerCase()===String(name).toLowerCase());
+    const trimmed=name?String(name).trim():'';
+    if(!trimmed)return null;
+    let c=base.customers.find(x=>x.name&&x.name.trim().toLowerCase()===trimmed.toLowerCase());
     if(!c){
       base.counters.customer=(base.counters.customer||0)+1;
-      c={id:base.counters.customer,no:'C-'+String(base.counters.customer).padStart(3,'0'),name,status:'active',contacts:[],notes:[],documents:[]};
+      c={id:base.counters.customer,no:'C-'+String(base.counters.customer).padStart(3,'0'),name:trimmed,status:'active',contacts:[],notes:[],documents:[]};
       base.customers.push(c);
     }
     return c;
@@ -638,9 +639,10 @@
   // none matches yet, so callers (e.g. Projects/Marketing pages with their own local id numbering)
   // never have to trust a customerId that may not correspond to the shared customers collection.
   function resolveOrCreateCustomer(name){
-    if(!name)return null;
-    let c=state.customers.find(x=>x.name&&x.name.toLowerCase()===String(name).toLowerCase());
-    if(!c){c={id:state.counters.customer=(state.counters.customer||0)+1,no:'C-'+String(state.counters.customer).padStart(3,'0'),name,status:'active',contacts:[],notes:[],documents:[]};state.customers.push(c);}
+    const trimmed=name?String(name).trim():'';
+    if(!trimmed)return null;
+    let c=state.customers.find(x=>x.name&&x.name.trim().toLowerCase()===trimmed.toLowerCase());
+    if(!c){c={id:state.counters.customer=(state.counters.customer||0)+1,no:'C-'+String(state.counters.customer).padStart(3,'0'),name:trimmed,status:'active',contacts:[],notes:[],documents:[]};state.customers.push(c);}
     return c;
   }
   function estimation(idOrNo){return state.estimations.find(x=>x.id===idOrNo||x.no===idOrNo)}
@@ -703,8 +705,23 @@
       }
       return clone(state.equipment);
     },
+    getCustomers:()=>clone(state.customers),
+    listCustomers:()=>clone(state.customers),
     findCustomer:id=>clone(state.customers.find(x=>x.id===id)),
-    upsertCustomer(customer){const existing=state.customers.find(x=>x.id===customer.id||x.name===customer.name);if(existing)Object.assign(existing,clone(customer));else{customer=clone(customer);customer.id=state.counters.customer++;customer.no=next('customer','C-');state.customers.push(customer)}save(`Customer updated: ${customer.name}`);return clone(existing||customer)},
+    // Matches by id first, then by name — case-insensitively and ignoring surrounding whitespace —
+    // so "MarineVent AB", " marinevent ab " and "MARINEVENT AB " are all treated as the same
+    // customer and never silently create a duplicate record.
+    upsertCustomer(customer){
+      const trimmedName=customer.name!=null?String(customer.name).trim():customer.name;
+      const payload=clone(customer);
+      if(trimmedName!=null)payload.name=trimmedName;
+      const existing=state.customers.find(x=>x.id===payload.id||(trimmedName&&x.name&&x.name.trim().toLowerCase()===trimmedName.toLowerCase()));
+      if(existing){Object.assign(existing,payload);}
+      else{payload.id=state.counters.customer++;payload.no=next('customer','C-');state.customers.push(payload);}
+      const rec=existing||payload;
+      save(`Customer updated: ${rec.name}`);
+      return clone(rec);
+    },
     addCustomerNote(id,note){const c=state.customers.find(x=>x.id===id);if(!c)return;c.notes=c.notes||[];c.notes.unshift(clone(note));save(`Customer note: ${c.name}`)},
     addCustomerContact(id,contact){const c=state.customers.find(x=>x.id===id);if(!c)return;c.contacts=c.contacts||[];c.contacts.push(clone(contact));save(`Customer contact: ${c.name}`)},
     listSuppliers:()=>clone(state.suppliers||[]),

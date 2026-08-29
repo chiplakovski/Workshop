@@ -484,3 +484,75 @@ test('Reports-facing API: purchasing and marketing data are readable through the
   assert.ok(Array.isArray(leads)&&leads.length>0,'Reports must be able to read real shared marketing leads');
   assert.ok(Array.isArray(opps)&&opps.length>0,'Reports must be able to read real shared marketing opportunities');
 });
+
+// ── Pass 2.1: Project customer and status integration fix ──────────────────────────────────────
+test('getCustomers/listCustomers: shared customer id 1 is MarineVent AB, id 2 is Sanus Glutenfri AB', ()=>{
+  const WD=loadWorkshopData();
+  const customers=WD.getCustomers();
+  assert.equal(customers.find(c=>c.id===1).name,'MarineVent AB');
+  assert.equal(customers.find(c=>c.id===2).name,'Sanus Glutenfri AB');
+  assert.deepEqual(WD.listCustomers(),customers);
+});
+
+test('getCustomers returns a clone, not a live reference to shared state', ()=>{
+  const WD=loadWorkshopData();
+  const customers=WD.getCustomers();
+  customers.push({id:9999,no:'C-FAKE',name:'Injected'});
+  assert.equal(WD.getCustomers().some(c=>c.id===9999),false);
+});
+
+test('upsertProject with a trusted shared customerId does not reinterpret it through a name lookup', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().projects.find(p=>p.no==='P-2026-014');
+  assert.equal(before.customerId,1);
+  // Simulate the Projects page syncing an edit WITHOUT the user having changed the customer field —
+  // it must send the real customerId (1) through unchanged, exactly as syncSharedProject() does.
+  const saved=WD.upsertProject({no:'P-2026-014',name:before.name,customerId:1,customer:'MarineVent AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  assert.equal(saved.customerId,1);
+  assert.equal(WD.get().customers.find(c=>c.id===1).name,'MarineVent AB');
+});
+
+test('upsertProject: explicitly selecting a different (real) customerId changes the project correctly', ()=>{
+  const WD=loadWorkshopData();
+  const saved=WD.upsertProject({no:'P-2026-014',name:'Ventilation Duct System',customerId:2,customer:'Sanus Glutenfri AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  assert.equal(saved.customerId,2);
+  assert.equal(WD.get().projects.find(p=>p.no==='P-2026-014').customerId,2);
+});
+
+test('creating a Project customer through upsertCustomer persists it, and it is findable/selectable afterwards', ()=>{
+  const WD=loadWorkshopData();
+  const saved=WD.upsertCustomer({name:'New Mini-Modal Customer AB',org:'123456-7890',status:'active',contacts:[{name:'Test Person',role:'Contact',primary:true}],notes:[],documents:[]});
+  assert.ok(saved.id);
+  const customers=WD.getCustomers();
+  const found=customers.find(c=>c.id===saved.id);
+  assert.equal(found.name,'New Mini-Modal Customer AB');
+});
+
+test('reloading (fresh load from the same localStorage) preserves the project/customer relationship', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const saved=WD.upsertCustomer({name:'Reload Test Customer',status:'active',contacts:[],notes:[],documents:[]});
+  WD.upsertProject({no:'P-RELOAD-TEST',name:'Reload Test Project',customerId:saved.id,customer:saved.name,notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  const WD2=loadWorkshopData(null,localStorage);
+  const reloaded=WD2.get().projects.find(p=>p.no==='P-RELOAD-TEST');
+  assert.equal(reloaded.customerId,saved.id);
+  assert.equal(WD2.getCustomers().find(c=>c.id===saved.id).name,'Reload Test Customer');
+});
+
+test('customer filtering uses shared ids: every real project customerId resolves to a real shared customer', ()=>{
+  const WD=loadWorkshopData();
+  const customers=WD.getCustomers();
+  const marineVentProject=WD.get().projects.find(p=>p.no==='P-2026-014');
+  const matched=customers.find(c=>c.id===marineVentProject.customerId);
+  assert.ok(matched,'the project customerId must resolve against the shared customers collection');
+  assert.equal(matched.name,'MarineVent AB');
+});
+
+test('upsertCustomer does not create a duplicate for a case/whitespace-only name difference', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getCustomers().length;
+  const a=WD.upsertCustomer({name:'  MarineVent AB  ',status:'active',contacts:[],notes:[],documents:[]});
+  const b=WD.upsertCustomer({name:'marinevent ab',status:'active',contacts:[],notes:[],documents:[]});
+  assert.equal(WD.getCustomers().length,before);
+  assert.equal(a.id,1);
+  assert.equal(b.id,1);
+});

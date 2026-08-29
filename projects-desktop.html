@@ -268,26 +268,24 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
+<script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script src="project-rules.js"></script><script>
 const RATE=450;
 const $=id=>document.getElementById(id);
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let CUSTOMERS=[
-  {id:1,name:"Sanus Glutenfri AB",org:"559812-4471",contact:"Per Nilsson · per@sanusglutenfri.se"},
-  {id:2,name:"Schröder Nordic",org:"556234-9012",contact:"Anna Berg · anna@schroder.se"},
-  {id:3,name:"Lund Konditori",org:"559045-1123",contact:"Sofia L. · sofia@lundkond.se"},
-  {id:4,name:"Helsingborg Foods",org:"556678-3345",contact:"Erik S. · erik@hbgfoods.se"},
-  {id:5,name:"Malmö Livs",org:"559211-7789",contact:"Karim A. · info@malmolivs.se"},
-  {id:6,name:"Ystad Bageri",org:"556990-2201",contact:"Nina H. · nina@ystadbageri.se"},
-  {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P. · jonas@trelleborgsnacks.se"}
-];
+// Customers are authoritative in WorkshopData (shared v5 state) — every customerId used on this
+// page IS a real shared customer id (Stabilisation Pass 2.1). This page no longer maintains its
+// own local id numbering, which previously collided with real shared ids (e.g. local id 1 meant
+// "Sanus Glutenfri AB" while shared id 1 means "MarineVent AB") and could silently reassign a
+// project to the wrong customer on every edit.
+let CUSTOMERS=WorkshopData.getCustomers();
+function refreshCustomersFromShared(){CUSTOMERS=WorkshopData.getCustomers();}
 
 // Projects are authoritative in WorkshopData (shared v5 state) — this module no longer reads or
 // writes varmak.projects.ui.v1 directly; that legacy key is only read once, centrally, by
 // workshop-data.js's migration on first load. syncSharedProject pushes every field this page
-// itself owns and edits, and resolves the customer by name rather than trusting this page's own
-// local CUSTOMERS id numbering. It deliberately does NOT send bom/phase/progress/tasks/milestones/
+// itself owns and edits, including the real shared customerId (never re-resolved through a
+// different local id table). It deliberately does NOT send bom/phase/progress/tasks/milestones/
 // workers/machines/materialStatus/plannedHours/usedHours/estimationId — those belong to other
 // modules (Store reservations via reserveItem/issue, Jobcards, Estimation conversion) and must
 // not be overwritten with this page's stale/unused copies of them.
@@ -298,13 +296,12 @@ const PROJECT_UI_OWNED_FIELDS=['id','no','name','customerRef','poNumber','descri
   'jobcards','hours','materials','purchases','documents','activity','archived'];
 function syncSharedProject(p){
   if(!window.WorkshopData?.upsertProject)return;
-  const payload={customer:custName(p.customerId)};
+  const payload={customerId:p.customerId,customer:custName(p.customerId)};
   PROJECT_UI_OWNED_FIELDS.forEach(k=>{if(p[k]!==undefined)payload[k]=p[k];});
   const saved=WorkshopData.upsertProject(payload);
   p.id=saved.id;p.customerId=saved.customerId;
 }
 function refreshProjectsFromShared(){PROJECTS=WorkshopData.getProjects();}
-let nextCustId=8;
 const PEOPLE=["Aleksandar","Marko","Elena","Sofia","Erik"];
 const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Service","Stainless Steel","Aluminium","Carbon Steel","Piping","CNC Cutting","Electrical","Assembly","Maintenance","Other"];
 const HOLD_REASONS=["material","customer","drawing","approval","breakdown","external","other"];
@@ -333,8 +330,20 @@ function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"
 function today(){return new Date();}
 function todayISO(){return new Date().toISOString().slice(0,10);}
 function daysBetween(iso){if(!iso)return null;return Math.round((new Date(iso+"T12:00:00")-today())/86400000);}
-function custName(id){const c=CUSTOMERS.find(x=>x.id===id);return c?c.name:"—";}
-function custObj(id){return CUSTOMERS.find(x=>x.id===id);}
+// custName/custObj and the status adapter (uiStatus, canHold, canResume, ...) live in
+// project-rules.js (loaded above) so this page and the automated tests share one implementation.
+function custName(id){return ProjectRules.custName(CUSTOMERS,id);}
+function custObj(id){return ProjectRules.custObj(CUSTOMERS,id);}
+// The shared customer schema stores contacts as contacts:[{name,role,email,phone,primary}] rather
+// than the flat "Name · email" string this page used to keep locally — this derives an equivalent
+// display line (primary contact first) for the print offer.
+function custContactLine(cust){
+  if(!cust)return"";
+  const c=(cust.contacts||[]).find(x=>x.primary)||(cust.contacts||[])[0];
+  if(!c)return cust.email||"";
+  return[c.name,c.email].filter(Boolean).join(" · ");
+}
+const {STATUS_ORDER,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus}=ProjectRules;
 function getProject(id){return PROJECTS.find(p=>p.id===id);}
 
 function jcTotals(p){const est=p.jobcards.reduce((a,b)=>a+b.est,0),act=p.jobcards.reduce((a,b)=>a+b.act,0),completed=p.jobcards.filter(j=>j.status==='completed').length;return{est,act,completed,total:p.jobcards.length};}
@@ -360,7 +369,7 @@ function costs(p){
 }
 function totalActualCost(p){return costs(p).totalAct;}
 function getWarnings(p){const t=T[LANG],w=[],c=costs(p),dl=daysBetween(p.deadline);
-  if(['completed','closed','cancelled'].includes(p.status))return w;
+  if(['completed','closed','cancelled'].includes(uiStatus(p.status)))return w;
   if(dl!==null){if(dl<0)w.push(t.warn_deadline_overdue.replace('{d}',Math.abs(dl)));else if(dl<=14)w.push(t.warn_deadline_approaching.replace('{d}',dl));}
   const estH=jcTotals(p).est,estM=itemEstMaterialTotal(p);
   if(estH&&c.aLabH>estH)w.push(t.warn_hours_exceeded.replace('{a}',c.aLabH).replace('{e}',estH));
@@ -532,26 +541,28 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
 let VIEW="list",currentId=null,activeTab="overview",moreOpen=false;
 let listFilter="all",listQuery="",sortKey="no",sortDir=1;
 let listFilters={customer:"",responsible:"",type:"",from:"",to:""};
-const STATUS_ORDER=["draft","quotation","approved","planned","active","hold","completed","closed","cancelled"];
 
-function statusBadge(s){return `<span class="sbadge ${s}">${T[LANG]["st_"+s]}</span>`;}
+// A raw status is mapped through uiStatus() before it is used for a label/class/filter/sort/KPI —
+// a status the adapter doesn't recognise (not in STATUS_ORDER and not a known alias) passes through
+// unchanged, so it still renders (with its own raw text as the label) instead of showing "undefined".
+function statusBadge(s){const ui=uiStatus(s);const label=T[LANG]["st_"+ui]||s;return `<span class="sbadge ${ui}">${esc(label)}</span>`;}
 
 function renderList(){
   const t=T[LANG];
-  let rows=PROJECTS.filter(p=>listFilter==="all"||p.status===listFilter);
+  let rows=PROJECTS.filter(p=>listFilter==="all"||uiStatus(p.status)===listFilter);
   if(listQuery){const q=listQuery.toLowerCase();rows=rows.filter(p=>p.no.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||custName(p.customerId).toLowerCase().includes(q)||(p.customerRef||"").toLowerCase().includes(q));}
   if(listFilters.customer)rows=rows.filter(p=>String(p.customerId)===listFilters.customer);
   if(listFilters.responsible)rows=rows.filter(p=>p.pm===listFilters.responsible||p.workshop===listFilters.responsible||p.sales===listFilters.responsible);
   if(listFilters.type)rows=rows.filter(p=>p.types.includes(listFilters.type));
   if(listFilters.from)rows=rows.filter(p=>p.deadline&&p.deadline>=listFilters.from);
   if(listFilters.to)rows=rows.filter(p=>p.deadline&&p.deadline<=listFilters.to);
-  const valOf={no:p=>p.no,name:p=>p.name,customer:p=>custName(p.customerId),status:p=>p.status,start:p=>p.plannedStart||"",deadline:p=>p.deadline||"",progress:p=>progressOf(p),responsible:p=>p.pm,quoted:p=>p.quotedValue,actual:p=>totalActualCost(p)}[sortKey]||(p=>p.no);
+  const valOf={no:p=>p.no,name:p=>p.name,customer:p=>custName(p.customerId),status:p=>uiStatus(p.status),start:p=>p.plannedStart||"",deadline:p=>p.deadline||"",progress:p=>progressOf(p),responsible:p=>p.pm,quoted:p=>p.quotedValue,actual:p=>totalActualCost(p)}[sortKey]||(p=>p.no);
   rows=rows.slice().sort((a,b)=>{const av=valOf(a),bv=valOf(b);return (av>bv?1:av<bv?-1:0)*sortDir;});
 
   const kQuoted=rows.reduce((a,p)=>a+p.quotedValue,0);
   const kActual=rows.reduce((a,p)=>a+totalActualCost(p),0);
-  const kOverdue=rows.filter(p=>!['completed','closed','cancelled'].includes(p.status)&&daysBetween(p.deadline)!==null&&daysBetween(p.deadline)<0).length;
-  const kHold=rows.filter(p=>p.status==='hold').length;
+  const kOverdue=rows.filter(p=>!['completed','closed','cancelled'].includes(uiStatus(p.status))&&daysBetween(p.deadline)!==null&&daysBetween(p.deadline)<0).length;
+  const kHold=rows.filter(p=>uiStatus(p.status)==='hold').length;
 
   const chips=["all",...STATUS_ORDER].map(s=>`<button data-f="${s}" class="${listFilter===s?'active':''}">${t["f_"+s]}</button>`).join("");
   const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${listFilters.customer==String(c.id)?'selected':''}>${esc(c.name)}</option>`).join("");
@@ -566,7 +577,7 @@ function renderList(){
       <td>${esc(p.customerRef||"—")}</td>
       <td>${statusBadge(p.status)}</td>
       <td class="rnum">${fmtD(p.plannedStart)}</td>
-      <td class="rnum ${dl!==null&&dl<0&&!['completed','closed','cancelled'].includes(p.status)?'over':''}">${fmtD(p.deadline)}</td>
+      <td class="rnum ${dl!==null&&dl<0&&!['completed','closed','cancelled'].includes(uiStatus(p.status))?'over':''}">${fmtD(p.deadline)}</td>
       <td><div class="miniprog"><i class="${over?'over':''}" style="width:${prog}%"></i></div><div class="pcust2">${prog}%</div></td>
       <td>${p.pm||"—"}</td>
       <td class="rnum">${p.quotedValue?fmt(p.quotedValue):"—"}</td>
@@ -618,13 +629,9 @@ function sortArrow(k){return sortKey===k?`<span class="sa">${sortDir===1?'▲':'
 function openProject(id){currentId=id;VIEW="detail";activeTab="overview";render();}
 function safeTab(){if(['hours','reports'].includes(activeTab))activeTab="overview";}
 
-function canHold(p){return['active','planned'].includes(p.status);}
-function canResume(p){return p.status==='hold';}
-function canComplete(p){return p.status==='active';}
-function canClose(p){return p.status==='completed';}
-function canCancel(p){return !['closed','cancelled','completed'].includes(p.status);}
-function canReopen(p){return p.status==='closed';}
-function isReadonly(p){return p.status==='closed';}
+// canHold/canResume/canComplete/canClose/canCancel/canReopen are destructured from ProjectRules
+// above (they read p.status through the same uiStatus() adapter statusBadge() uses).
+function isReadonly(p){return isReadonlyStatus(p);}
 
 function renderDetail(){
   safeTab();
@@ -822,7 +829,7 @@ function printOffer(id){
   $("sheet").innerHTML=`
     <div class="oh"><div><div class="co">VARMAK AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se · Org.nr 559568-2468</div></div>
       <div class="ot"><h2>${t.o_title}</h2><div class="om">${t.o_no}: ${p.no}-Q<br>${t.o_date}: ${today}</div></div></div>
-    <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${cust?esc(cust.name):"—"}</b><br>${cust?esc(cust.contact):""}</div></div>
+    <div class="oto"><div><div class="lbl">${t.o_to}</div><div><b>${cust?esc(cust.name):"—"}</b><br>${cust?esc(custContactLine(cust)):""}</div></div>
       <div style="text-align:right;"><div class="lbl">${t.ptitle}</div><div>${esc(p.name)}<br>${p.no}</div></div></div>
     <table><thead><tr><th>${t.o_desc}</th><th class="n">${t.o_hrs}</th><th class="n">${t.o_mat}</th><th class="n">${t.o_amount}</th></tr></thead>
       <tbody>${rows||`<tr><td colspan="4" style="text-align:center;color:#5b6b7d;">—</td></tr>`}</tbody>
@@ -915,8 +922,11 @@ let pendingProjectFormState=null;
 function cancelNewCustomer(){reopenProjectFormAfterCustomer(null);}
 function submitNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;
-  const c={id:nextCustId++,name,org:$("ncOrg").value.trim(),contact:$("ncContact").value.trim()};
-  CUSTOMERS.push(c);reopenProjectFormAfterCustomer(c.id);
+  const org=$("ncOrg").value.trim(),contact=$("ncContact").value.trim();
+  const saved=WorkshopData.upsertCustomer({name,org,status:'active',
+    contacts:contact?[{name:contact,role:'Contact',primary:true}]:[],notes:[],documents:[]});
+  refreshCustomersFromShared();
+  reopenProjectFormAfterCustomer(saved.id);
 }
 function reopenProjectFormAfterCustomer(newId){
   const t=T[LANG];
@@ -1206,6 +1216,6 @@ if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.classN
 document.addEventListener('click',function(e){const mm=document.getElementById('moreMenu');if(mm&&mm.classList.contains('open')&&!mm.contains(e.target)&&e.target.id!=='moreBtn'){mm.classList.remove('open');}});
 // Refresh from shared data whenever another module (or another tab) changes it, rather than
 // keeping a page-level copy that could go stale or overwrite newer shared state.
-window.addEventListener('workshop:data',()=>{refreshProjectsFromShared();render();});
+window.addEventListener('workshop:data',()=>{refreshCustomersFromShared();refreshProjectsFromShared();render();});
 </script>
 </body></html>
