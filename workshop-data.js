@@ -220,7 +220,7 @@
     return KNOWN_COLLECTION_KEYS.some(k=>Array.isArray(obj[k]));
   }
   // Readable migration/data-health summary exposed via WorkshopData.getDataHealth().
-  let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+  let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
   function load(){
     let v4Raw=null;
     try{v4Raw=global.localStorage&&global.localStorage.getItem(KEY);}catch(e){}
@@ -228,9 +228,21 @@
     const v4Corrupted=!!(v4Raw&&(v4Parsed===null||!looksLikeWorkshopState(v4Parsed)));
 
     if(v4Parsed&&looksLikeWorkshopState(v4Parsed)){
-      dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+      dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
       if(v4Parsed.version===VERSION)return normalize(v4Parsed);
       return normalize(Object.assign(seed(),v4Parsed));
+    }
+
+    // v4 is corrupted (present but unreadable/unrecognisable) — rescue the raw original value to a
+    // dedicated key IMMEDIATELY, exactly once per load, before any later save() can overwrite the
+    // only copy. This happens whether or not a v3 backup is found below.
+    let rescueSaved=false;
+    if(v4Corrupted){
+      const rescueKey=`${KEY}.corrupted.${Date.now()}`;
+      try{
+        global.localStorage&&global.localStorage.setItem(rescueKey,v4Raw);
+        rescueSaved=true;
+      }catch(e){/* browser storage rejected the rescue write — surfaced via recoveryWarning below */}
     }
 
     // v4 is missing or unusable — look for a legacy v3 backup before falling back to demo data.
@@ -239,30 +251,32 @@
     const v3Parsed=v3Raw?safeParseJSON(v3Raw):null;
 
     if(v3Parsed&&looksLikeWorkshopState(v3Parsed)){
-      if(v4Corrupted){
-        // Preserve the unreadable v4 record under a rescue key before overwriting it, so nothing is lost.
-        try{global.localStorage&&global.localStorage.setItem(`${KEY}.corrupted.${Date.now()}`,v4Raw);}catch(e){}
-      }
       const migrated=normalize(Object.assign(seed(),clone(v3Parsed)));
       migrated.activity=migrated.activity||[];
       migrated.activity.unshift({time:now(),reason:v4Corrupted
-        ?`Recovered data from legacy key ${LEGACY_KEY} after the current data record was found corrupted. The corrupted record was preserved separately.`
+        ?`Recovered data from legacy key ${LEGACY_KEY} after the current data record was found corrupted.${rescueSaved?' The corrupted record was preserved separately.':''}`
         :`Migrated data from legacy key ${LEGACY_KEY} to ${KEY}.`});
       try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}
       // The legacy v3 key is intentionally left untouched as a recovery source.
       dataHealth={sourceKey:LEGACY_KEY,migratedFromLegacy:true,
-        recoveryWarning:v4Corrupted?'Your current data could not be read, so your older saved data was recovered instead. The unreadable record was kept, not deleted.':null,
-        schemaVersion:VERSION,corruptedV4Detected:v4Corrupted};
+        recoveryWarning:v4Corrupted
+          ?(rescueSaved
+            ?'Your current data could not be read, so your older saved data was recovered instead. The unreadable record was preserved separately and was not deleted.'
+            :'Your current data could not be read, so your older saved data was recovered instead. The unreadable record could not be preserved (browser storage rejected the rescue write).')
+          :null,
+        schemaVersion:VERSION,corruptedV4Detected:v4Corrupted,corruptedRecordPreserved:v4Corrupted&&rescueSaved};
       return migrated;
     }
 
     if(v4Corrupted){
       dataHealth={sourceKey:null,migratedFromLegacy:false,
-        recoveryWarning:'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record was kept in your browser, not deleted.',
-        schemaVersion:VERSION,corruptedV4Detected:true};
+        recoveryWarning:rescueSaved
+          ?'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record was preserved separately and was not deleted.'
+          :'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record could not be preserved (browser storage rejected the rescue write) and may be overwritten.',
+        schemaVersion:VERSION,corruptedV4Detected:true,corruptedRecordPreserved:rescueSaved};
       return normalize(seed());
     }
-    dataHealth={sourceKey:null,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+    dataHealth={sourceKey:null,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
     return normalize(seed());
   }
   // Safe default-normalization: older localStorage records (saved before Jobcards or Equipment existed)
@@ -477,7 +491,11 @@
     addJobcardInspection(idOrNo,inspection){const j=jobcard(idOrNo);if(!j)return null;inspection=Object.assign({id:Date.now()},clone(inspection));j.inspections=j.inspections||[];j.inspections.push(inspection);save(`Inspection added: ${j.no}`);return clone(inspection)},
     updateJobcardInspection(idOrNo,inspId,patch){const j=jobcard(idOrNo);if(!j)return null;const insp=(j.inspections||[]).find(i=>i.id===inspId);if(!insp)return null;Object.assign(insp,clone(patch));save(`Inspection updated: ${j.no}`);return clone(insp)},
     recordJobcardActivity(idOrNo,entry){const j=jobcard(idOrNo);if(!j)return null;entry=Object.assign({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:'Aleksandar C.'},clone(entry));j.activity=j.activity||[];j.activity.unshift(entry);save(`Jobcard activity: ${j.no}`);return clone(entry)},
-    getEquipment:()=>{ if(!Array.isArray(state.equipment)||state.equipment.length===0){ state.equipment=clone(seed().equipment); state.counters.equipment=state.equipment.length; save('Demo equipment initialised'); } return clone(state.equipment); },
+    // A read-only accessor: it must never mutate state. normalize() already guarantees
+    // state.equipment is a valid array (backfilling it only when missing/invalid, never when it is
+    // a genuinely empty user collection) — see the "empty stays empty" rule. Only the explicit
+    // ensureDemoEquipment() call below may add demonstration records.
+    getEquipment:()=>clone(state.equipment||[]),
     createEquipment:(payload)=>{
       const item=clone(payload||{});
       if(!item.equipmentId && !item.id) return {error:'Equipment ID is required'};

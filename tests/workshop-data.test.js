@@ -4,7 +4,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {loadWorkshopData}=require('./helpers/load-workshop-data');
+const {loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage}=require('./helpers/load-workshop-data');
 
 const V4_KEY='varmak.workshop.frontend.v4';
 const V3_KEY='varmak.workshop.frontend.v3';
@@ -75,6 +75,68 @@ test('data migration: corrupted v4 with no v3 backup falls back safely to demo d
   assert.equal(WD.getDataHealth().sourceKey,null);
 });
 
+// ── Corrupted-v4 rescue copy (Pass 1.1) ─────────────────────────────────────
+function rescueKeys(localStorage){
+  return Array.from(localStorage.store.keys()).filter(k=>k.startsWith(`${V4_KEY}.corrupted.`));
+}
+
+test('rescue copy: corrupted v4 with a valid v3 backup creates a rescue copy AND migrates v3', ()=>{
+  const v3=minimalState({customers:[{id:5,no:'C-005',name:'Recover Me'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:JSON.stringify(v3),[V4_KEY]:'{not valid json'});
+  const state=WD.get();
+  assert.ok(state.customers.some(c=>c.name==='Recover Me'),'v3 must still be migrated');
+  const rescued=rescueKeys(localStorage);
+  assert.equal(rescued.length,1,'exactly one rescue copy must be created');
+  const health=WD.getDataHealth();
+  assert.equal(health.corruptedRecordPreserved,true);
+});
+
+test('rescue copy: corrupted v4 with no v3 backup creates a rescue copy before falling back to demo data', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:'{not valid json'});
+  const rescued=rescueKeys(localStorage);
+  assert.equal(rescued.length,1,'a rescue copy must exist even when there is no v3 to recover');
+  const health=WD.getDataHealth();
+  assert.equal(health.corruptedV4Detected,true);
+  assert.equal(health.corruptedRecordPreserved,true);
+  assert.ok(health.recoveryWarning);
+});
+
+test('rescue copy: the rescue copy contains the exact original corrupted raw value', ()=>{
+  const rawCorrupted='{not valid json — this is exactly what was in localStorage';
+  const {localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:rawCorrupted});
+  const rescued=rescueKeys(localStorage);
+  assert.equal(rescued.length,1);
+  assert.equal(localStorage.getItem(rescued[0]),rawCorrupted);
+});
+
+test('rescue copy: loading does not delete the legacy v3 key', ()=>{
+  const v3=minimalState({customers:[{id:1,no:'C-001',name:'X'}]});
+  const rawV3=JSON.stringify(v3);
+  const {localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:rawV3,[V4_KEY]:'{not valid json'});
+  assert.equal(localStorage.getItem(V3_KEY),rawV3,'the v3 record itself must be untouched');
+});
+
+test('rescue copy: valid v4 data does not create a corrupted rescue key', ()=>{
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'Fine'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:JSON.stringify(v4)});
+  assert.equal(rescueKeys(localStorage).length,0);
+  assert.equal(WD.getDataHealth().corruptedRecordPreserved,false);
+});
+
+test('rescue copy: does not claim preservation, and surfaces a warning, when the rescue write itself fails', ()=>{
+  class RejectingLocalStorage extends MemoryLocalStorage{
+    setItem(key,value){
+      if(key.includes('.corrupted.'))throw new Error('QuotaExceededError');
+      return super.setItem(key,value);
+    }
+  }
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:'{not valid json'},new RejectingLocalStorage());
+  assert.equal(rescueKeys(localStorage).length,0,'the rejected write must not have produced a rescue key');
+  const health=WD.getDataHealth();
+  assert.equal(health.corruptedRecordPreserved,false,'must not claim preservation when the write failed');
+  assert.ok(health.recoveryWarning,'a recovery warning must still be surfaced');
+});
+
 // ── Backup / import safety ──────────────────────────────────────────────────
 test('backup/import: an invalid import is rejected and current data is left unchanged', ()=>{
   const WD=loadWorkshopData();
@@ -115,6 +177,46 @@ test('equipment: available equipment can be assigned', ()=>{
   const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1'});
   assert.ok(!res.error);
   assert.equal(res.assignedProject,'P-1');
+});
+
+// ── Equipment: intentionally empty collection must stay empty (Pass 1.1) ───
+test('equipment: a valid empty equipment array remains empty after getEquipment()', ()=>{
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  assert.deepEqual(WD.getEquipment(),[],'an intentionally empty equipment collection must not be refilled');
+});
+
+test('equipment: getEquipment() does not modify stored state', ()=>{
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  WD.getEquipment();
+  WD.getEquipment();
+  assert.deepEqual(WD.get().equipment,[],'repeated reads must never mutate state');
+  assert.equal(WD.getDataHealth().sourceKey,V4_KEY,'no save() should have been triggered by a read');
+});
+
+test('equipment: ensureDemoEquipment() explicitly adds demonstration equipment to an empty collection', ()=>{
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  assert.deepEqual(WD.getEquipment(),[]);
+  const result=WD.ensureDemoEquipment();
+  assert.ok(Array.isArray(result)&&result.length>0,'ensureDemoEquipment must add demo records when called explicitly');
+  assert.deepEqual(WD.getEquipment(),result,'getEquipment() reflects the change once explicitly made');
+});
+
+test('equipment: existing equipment records are left unchanged by getEquipment() and by loading', ()=>{
+  const existing=[{id:'E-9001',equipmentId:'E-9001',name:'Custom Drill Press',status:'Available'}];
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:existing});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const equipment=WD.getEquipment();
+  // normalize() defensively backfills missing per-item sub-arrays (activity, inspections, ...) on
+  // every load — that is schema normalization, not demo-data seeding. What must NOT happen is any
+  // extra (demo) record being added, or this record's identifying fields being altered.
+  assert.equal(equipment.length,1,'no demo equipment must be added alongside the user record');
+  assert.equal(equipment[0].id,'E-9001');
+  assert.equal(equipment[0].equipmentId,'E-9001');
+  assert.equal(equipment[0].name,'Custom Drill Press');
+  assert.equal(equipment[0].status,'Available');
 });
 
 // ── Quality: hold / NCR / release workflow rules ────────────────────────────

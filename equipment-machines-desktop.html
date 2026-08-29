@@ -1660,10 +1660,9 @@
         document.querySelectorAll('[data-open-equipment]').forEach((button) => button.addEventListener('click', () => openEquipmentDetail(button.getAttribute('data-open-equipment'))));
       }
 
-      // Make sure the module works even when the data is empty or older browser data is present.
-      if (window.WorkshopData && typeof window.WorkshopData.ensureDemoEquipment === 'function') {
-        window.WorkshopData.ensureDemoEquipment();
-      }
+      // Demo equipment is never auto-inserted on open — a genuinely empty Equipment collection is a
+      // valid user state and must stay empty. ensureDemoEquipment() remains available for an
+      // explicit user action (e.g. a future "load demo data" control) but is not called here.
       init();
     })();
   </script>

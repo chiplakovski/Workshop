@@ -13,18 +13,34 @@ class MemoryLocalStorage{
   get length(){return this.store.size;}
 }
 
-// Returns a fresh WorkshopData instance backed by its own isolated localStorage, optionally
-// pre-seeded with raw string values under given keys (to simulate existing browser data).
-function loadWorkshopData(seedEntries){
-  const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
+function buildEnv(seedEntries,customLocalStorage){
   const g={};
-  g.localStorage=new MemoryLocalStorage();
+  g.localStorage=customLocalStorage||new MemoryLocalStorage();
   g.window=g;
   g.dispatchEvent=()=>{};
   g.CustomEvent=function(type,init){this.type=type;this.detail=init&&init.detail;};
   if(seedEntries){for(const[key,value]of Object.entries(seedEntries))g.localStorage.setItem(key,value);}
+  return g;
+}
+
+// Returns a fresh WorkshopData instance backed by its own isolated localStorage, optionally
+// pre-seeded with raw string values under given keys (to simulate existing browser data). Pass
+// customLocalStorage to inject a storage implementation with different behaviour (e.g. one that
+// throws on setItem, to simulate the browser rejecting a write).
+function loadWorkshopData(seedEntries,customLocalStorage){
+  const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
+  const g=buildEnv(seedEntries,customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
   return fn(g);
 }
 
-module.exports={loadWorkshopData,MemoryLocalStorage};
+// Same as loadWorkshopData, but also returns the localStorage instance backing it, so a test can
+// inspect exactly what keys/raw values were written (e.g. rescue-copy keys).
+function loadWorkshopDataWithStorage(seedEntries,customLocalStorage){
+  const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
+  const g=buildEnv(seedEntries,customLocalStorage);
+  const fn=new Function('window',src+'\nreturn window.WorkshopData;');
+  return {WD:fn(g),localStorage:g.localStorage};
+}
+
+module.exports={loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage};
