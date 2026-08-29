@@ -1,18 +1,37 @@
 (function(global){
   'use strict';
-  const KEY='varmak.workshop.frontend.v4';
-  const LEGACY_KEY='varmak.workshop.frontend.v3';
-  const VERSION=4;
+  const KEY='varmak.workshop.frontend.v5';
+  const LEGACY_KEY_V4='varmak.workshop.frontend.v4';
+  const LEGACY_KEY_V3='varmak.workshop.frontend.v3';
+  const VERSION=5;
+  // Legacy module-specific keys, migrated into the shared v5 state once and then left untouched
+  // as recovery sources (see migrateLegacyModuleData()).
+  const LEGACY_PROJECTS_KEY='varmak.projects.ui.v1';
+  const LEGACY_PURCHASING_KEY='varmak.purchasing.orders';
+  const LEGACY_DOCUMENTS_KEY='varmak.documents.records';
+  const LEGACY_REPORTS_CONFIG_KEY='varmak.reports.config.v1';
+  const LEGACY_REPORTS_SAVED_KEY='varmak.reports.saved.v1';
+  // The Projects module's own (page-local, non-persisted, fixed) customer picklist — used only to
+  // resolve customerId values found in varmak.projects.ui.v1 records to a real shared customer by
+  // name, since that legacy key's customerId numbering is relative to this fixed local list, not
+  // to the shared customers collection.
+  const LEGACY_PROJECTS_CUSTOMER_NAMES={1:'Sanus Glutenfri AB',2:'Schröder Nordic',3:'Lund Konditori',4:'Helsingborg Foods',5:'Malmö Livs',6:'Ystad Bageri',7:'Trelleborg Snacks'};
   const clone=value=>JSON.parse(JSON.stringify(value));
   const now=()=>new Date().toISOString();
   const seed=()=>({
     version:VERSION,
-    counters:{customer:40,estimation:25,project:15,movement:6,offcut:3,jobcard:2,
-      inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2},
+    counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
+      inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
+      purchaseOrder:145,document:9,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
-      {id:3,no:'C-003',name:'Schröder Nordic',status:'active',city:'Helsingborg',country:'Sweden',org:'556234-9012',vat:'SE556234901201',email:'info@schroder.se',phone:'+46 42 987 65 43',terms:'30 days',credit:300000,currency:'SEK',industry:'Industrial Machinery',type:'Company',contacts:[],notes:[],documents:[]}
+      {id:3,no:'C-003',name:'Schröder Nordic',status:'active',city:'Helsingborg',country:'Sweden',org:'556234-9012',vat:'SE556234901201',email:'info@schroder.se',phone:'+46 42 987 65 43',terms:'30 days',credit:300000,currency:'SEK',industry:'Industrial Machinery',type:'Company',contacts:[],notes:[],documents:[]},
+      {id:4,no:'C-004',name:'Lund Konditori',status:'active',city:'Lund',country:'Sweden',org:'559045-1123',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Sofia L.',role:'Contact',primary:true,email:'sofia@lundkond.se',phone:''}],notes:[],documents:[]},
+      {id:5,no:'C-005',name:'Helsingborg Foods',status:'active',city:'Helsingborg',country:'Sweden',org:'556678-3345',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Erik S.',role:'Contact',primary:true,email:'erik@hbgfoods.se',phone:''}],notes:[],documents:[]},
+      {id:6,no:'C-006',name:'Malmö Livs',status:'active',city:'Malmö',country:'Sweden',org:'559211-7789',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Karim A.',role:'Contact',primary:true,email:'info@malmolivs.se',phone:''}],notes:[],documents:[]},
+      {id:7,no:'C-007',name:'Ystad Bageri',status:'active',city:'Ystad',country:'Sweden',org:'556990-2201',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Nina H.',role:'Contact',primary:true,email:'nina@ystadbageri.se',phone:''}],notes:[],documents:[]},
+      {id:8,no:'C-008',name:'Trelleborg Snacks',status:'active',city:'Trelleborg',country:'Sweden',org:'559333-6654',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Jonas P.',role:'Contact',primary:true,email:'jonas@trelleborgsnacks.se',phone:''}],notes:[],documents:[]}
     ],
     estimations:[
       {id:18,no:'EST-2026-018',customerId:1,customer:'MarineVent AB',title:'Ventilation Duct System',status:'accepted',revision:1,created:'2026-08-14',validUntil:'2026-09-14',currency:'SEK',estimatedMaterial:72450,estimatedLabour:48600,estimatedMachine:12600,estimatedOther:8400,totalCost:142050,sellingPrice:198000,plannedHours:184,machines:['Laser','Press Brake','TIG Station 1'],deliveryTarget:'2026-11-12',projectId:14,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:8,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:36,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:45,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',qty:40,unit:'EA'}],revisions:[{rev:0,date:'2026-08-14',author:'Aleksandar C.',reason:'Initial quotation'},{rev:1,date:'2026-08-18',author:'Aleksandar C.',reason:'Updated material grade and delivery'}]},
@@ -20,7 +39,16 @@
       ,{id:24,no:'EST-2026-024',customerId:2,customer:'Sanus Glutenfri AB',title:'Stainless Platform Extension',status:'accepted',revision:0,created:'2026-08-24',validUntil:'2026-09-24',currency:'SEK',estimatedMaterial:48500,estimatedLabour:36200,estimatedMachine:9800,estimatedOther:5500,totalCost:100000,sellingPrice:138000,plannedHours:126,machines:['Laser','Press Brake','TIG Station 1'],deliveryTarget:'2026-11-28',projectId:null,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:12,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:24,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:18,unit:'KG'}],revisions:[{rev:0,date:'2026-08-24',author:'Aleksandar C.',reason:'Accepted quotation'}]}
     ],
     projects:[
-      {id:14,no:'P-2026-014',customerId:1,customer:'MarineVent AB',name:'Ventilation Duct System',estimationId:18,status:'production',phase:'production',start:'2026-08-15',deadline:'2026-09-12',expectedCompletion:'2026-09-12',progress:62,plannedHours:184,usedHours:96,responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'],machines:['Laser','Press Brake','TIG Station 1'],materialStatus:'shortage',bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',required:8,reserved:8,issued:4,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',required:36,reserved:30,issued:12,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',required:45,reserved:12,issued:10,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',required:40,reserved:40,issued:40,unit:'EA'}],tasks:[],milestones:[]}
+      {id:14,no:'P-2026-014',customerId:1,customer:'MarineVent AB',name:'Ventilation Duct System',estimationId:18,status:'production',phase:'production',start:'2026-08-15',deadline:'2026-09-12',expectedCompletion:'2026-09-12',progress:62,plannedHours:184,usedHours:96,responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'],machines:['Laser','Press Brake','TIG Station 1'],materialStatus:'shortage',bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',required:8,reserved:8,issued:4,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',required:36,reserved:30,issued:12,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',required:45,reserved:12,issued:10,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',required:40,reserved:40,issued:40,unit:'EA'}],tasks:[],milestones:[]},
+      {"id":101,"no":"P-26-0001","customerId":2,"customer":"Sanus Glutenfri AB","name":"Bakery Conveyor Modification","estimationId":null,"status":"active","phase":"production","start":"2026-08-18","deadline":"2026-09-10","expectedCompletion":"2026-09-08","progress":50,"plannedHours":80,"usedHours":25,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"PO-48215","poNumber":"PO-48215","description":"Fabricate and install stainless steel conveyor extension including supports and guarding.","notes":[{"date":"2026-08-15","author":"Aleksandar","text":"Customer confirmed guard color RAL 7035.","tag":"customer","pinned":false},{"date":"2026-08-20","author":"Elena","text":"Drawing revision B approved — proceed with cutting.","tag":"workshop","pinned":true}],"types":["Fabrication","Stainless Steel","Installation"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-10","plannedStart":"2026-08-18","actualStart":"2026-08-18","plannedCompletion":"2026-09-08","actualCompletion":"","closedDate":"","quotedValue":92000,"estLabourHours":80,"estMaterialCost":20000,"estPurchaseCost":8000,"otherCostEst":0,"otherCostAct":500,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0034","desc":"Cut Frame Profiles","assigned":"Marko","status":"completed","est":8,"act":8,"progress":100,"estMaterial":3200},{"no":"JC-26-0035","desc":"Weld Main Frame","assigned":"Marko","status":"active","est":20,"act":14,"progress":70,"estMaterial":9000},{"no":"JC-26-0036","desc":"Fabricate Guarding","assigned":"Elena","status":"planned","est":10,"act":0,"progress":0,"estMaterial":4800},{"no":"JC-26-0037","desc":"Installation","assigned":"Team","status":"planned","est":16,"act":0,"progress":0,"estMaterial":1500},{"no":"JC-26-0038","desc":"Panel & Controls Wiring","assigned":"Marko","status":"planned","est":26,"act":0,"progress":0,"estMaterial":1500}],"hours":[{"date":"2026-08-18","worker":"Marko","jobcard":"JC-26-0034","desc":"Cut Frame Profiles","hours":8},{"date":"2026-08-19","worker":"Marko","jobcard":"JC-26-0035","desc":"Weld Main Frame — setup","hours":6},{"date":"2026-08-20","worker":"Marko","jobcard":"JC-26-0035","desc":"Weld Main Frame","hours":8},{"date":"2026-08-21","worker":"Aleksandar","jobcard":"","desc":"Project management / site coordination","hours":3}],"materials":[{"name":"304L Sheet 2mm","spec":"2mm stainless","qty":3,"unit":"sheets","source":"store","jobcard":"JC-26-0034","cost":4800,"status":"used"},{"name":"RHS 40x40x2","spec":"box section","qty":24,"unit":"m","source":"store","jobcard":"JC-26-0035","cost":1560,"status":"issued"},{"name":"M8 Stainless Bolts","spec":"A2 stainless","qty":40,"unit":"pcs","source":"store","jobcard":"JC-26-0034","cost":280,"status":"used"},{"name":"Stainless Hinges","spec":"316 grade","qty":6,"unit":"pcs","source":"purchase","jobcard":"JC-26-0037","cost":780,"status":"reserved"}],"purchases":[{"po":"PO-26-0018","supplier":"Ahlsell","date":"2026-08-20","items":"Fittings, Bolts, Grinding Discs","ordered":12350,"received":8550,"status":"partdelivered","expected":"2026-08-27"}],"documents":{"Drawings":[{"name":"Frame Drawing","rev":"A","date":"2026-08-10","by":"Aleksandar","status":"superseded"},{"name":"Frame Drawing","rev":"B","date":"2026-08-20","by":"Aleksandar","status":"current"},{"name":"Guard Drawing.dxf","rev":"-","date":"2026-08-15","by":"Elena","status":"current"}],"Customer Documents":[{"name":"Customer PO.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar","status":"current"},{"name":"Customer Specification.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar","status":"current"}],"Material Certificates":[{"name":"EN 10204 3.1 Certificate.pdf","rev":"-","date":"2026-08-19","by":"Marko","status":"current"}],"Photos":[{"name":"Before Work.jpg","rev":"-","date":"2026-08-18","by":"Marko","status":"current"},{"name":"Fabrication.jpg","rev":"-","date":"2026-08-20","by":"Marko","status":"current"}],"Quality":[{"name":"WPS-01.pdf","rev":"-","date":"2026-08-10","by":"Aleksandar","status":"current"}],"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Approved)","rev":"-","date":"2026-08-20","by":"Aleksandar","status":"current"},{"name":"Welding Report RPT-26-0002 (Draft)","rev":"-","date":"2026-08-21","by":"Marko","status":"current"}]},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-10","time":"09:05","user":"Aleksandar","action":"Status changed: DRAFT → QUOTATION"},{"date":"2026-08-12","time":"11:20","user":"Aleksandar","action":"Quotation approved by customer — status changed: QUOTATION → APPROVED"},{"date":"2026-08-14","time":"10:00","user":"Aleksandar","action":"Jobcards created (JC-26-0034 … JC-26-0038)"},{"date":"2026-08-15","time":"14:40","user":"Aleksandar","action":"Note added (customer)"},{"date":"2026-08-16","time":"08:30","user":"Aleksandar","action":"Status changed: APPROVED → PLANNED"},{"date":"2026-08-18","time":"07:15","user":"Marko","action":"Status changed: PLANNED → ACTIVE — first hours logged"},{"date":"2026-08-18","time":"15:30","user":"Marko","action":"Logged 8h on JC-26-0034"},{"date":"2026-08-20","time":"09:10","user":"Aleksandar","action":"Drawing updated REV A → REV B"},{"date":"2026-08-20","time":"09:42","user":"Aleksandar","action":"PO-26-0018 created (Ahlsell)"},{"date":"2026-08-20","time":"16:05","user":"Elena","action":"Note pinned (workshop)"},{"date":"2026-08-21","time":"17:00","user":"Aleksandar","action":"Logged 3h — Project management"}]},
+      {"id":102,"no":"P-26-0002","customerId":3,"customer":"Schröder Nordic","name":"Folding Machine Retrofit","estimationId":null,"status":"quotation","phase":"design","start":"2026-08-14","deadline":"2026-09-20","expectedCompletion":"2026-09-20","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-114","poNumber":"","description":"Retrofit MAK 2500/1.25 folding machine — new panel wiring, HMI bracket and safety cover.","notes":[{"date":"2026-08-16","author":"Aleksandar","text":"Waiting for customer confirmation on final scope.","tag":"customer","pinned":false}],"types":["Fabrication","Electrical"],"pm":"Aleksandar","workshop":"","sales":"Aleksandar","createdDate":"2026-08-14","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":145000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{"Customer Documents":[{"name":"Specification Draft.pdf","rev":"-","date":"2026-08-14","by":"Aleksandar","status":"current"}]},"activity":[{"date":"2026-08-14","time":"10:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-14","time":"10:05","user":"Aleksandar","action":"Status changed: DRAFT → QUOTATION"}]},
+      {"id":103,"no":"P-26-0003","customerId":4,"customer":"Lund Konditori","name":"Mixer Overhaul — Preliminary","estimationId":null,"status":"draft","phase":"design","start":"2026-08-22","deadline":"","expectedCompletion":"","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"","poNumber":"","description":"Preliminary gearbox service and bowl guard replacement.","notes":[],"types":["Repair"],"pm":"Aleksandar","workshop":"","sales":"","createdDate":"2026-08-22","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":0,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-22","time":"13:10","user":"Aleksandar","action":"Project Created"}]},
+      {"id":104,"no":"P-26-0004","customerId":5,"customer":"Helsingborg Foods","name":"Guard Fabrication","estimationId":null,"status":"completed","phase":"closeout","start":"2026-06-02","deadline":"2026-06-20","expectedCompletion":"2026-06-19","progress":100,"plannedHours":24,"usedHours":23.5,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"HF-2201","poNumber":"HF-2201","description":"Sheet metal guards for packing line P2, fabricated and installed on-site.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-05-28","plannedStart":"2026-06-02","actualStart":"2026-06-02","plannedCompletion":"2026-06-19","actualCompletion":"2026-06-20","closedDate":"","quotedValue":58000,"estLabourHours":24,"estMaterialCost":12000,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0011","desc":"Sheet metal guards","assigned":"Marko","status":"completed","est":18,"act":17,"progress":100,"estMaterial":9500},{"no":"JC-26-0012","desc":"Install on-site","assigned":"Team","status":"completed","est":6,"act":6.5,"progress":100,"estMaterial":2500}],"hours":[{"date":"2026-06-18","worker":"Marko","jobcard":"JC-26-0011","desc":"Guard fabrication","hours":17},{"date":"2026-06-20","worker":"Elena","jobcard":"JC-26-0012","desc":"Site install","hours":6.5}],"materials":[{"name":"Mild Steel Sheet 3mm","spec":"3mm","qty":6,"unit":"sheets","source":"store","jobcard":"JC-26-0011","cost":4100,"status":"used"}],"purchases":[],"documents":{"Photos":[{"name":"Install Complete.jpg","rev":"-","date":"2026-06-20","by":"Marko","status":"current"}],"Inspection Reports":[{"name":"Completion Report RPT-26-0001 (Signed)","rev":"-","date":"2026-06-20","by":"Aleksandar","status":"current"}]},"activity":[{"date":"2026-05-28","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-06-20","time":"16:00","user":"Aleksandar","action":"Status changed: ACTIVE → COMPLETED"}]},
+      {"id":105,"no":"P-26-0005","customerId":6,"customer":"Malmö Livs","name":"Service — Malmö Slicer","estimationId":null,"status":"closed","phase":"closeout","start":"2026-08-10","deadline":"2026-08-20","expectedCompletion":"2026-08-18","progress":100,"plannedHours":12,"usedHours":12,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-99","poNumber":"","description":"On-site inspection and bearing replacement on Slicer L-40.","notes":[],"types":["Service"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-05","plannedStart":"2026-08-10","actualStart":"2026-08-10","plannedCompletion":"2026-08-18","actualCompletion":"2026-08-18","closedDate":"2026-08-19","quotedValue":16500,"estLabourHours":12,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0009","desc":"On-site inspection","assigned":"Marko","status":"completed","est":4,"act":4,"progress":100,"estMaterial":0},{"no":"JC-26-0010","desc":"Bearing replacement","assigned":"Marko","status":"completed","est":8,"act":8,"progress":100,"estMaterial":900}],"hours":[{"date":"2026-08-10","worker":"Marko","jobcard":"JC-26-0009","desc":"Inspection","hours":4},{"date":"2026-08-18","worker":"Marko","jobcard":"JC-26-0010","desc":"Bearing replacement","hours":8}],"materials":[{"name":"Bearing 6205-2RS","spec":"-","qty":2,"unit":"pcs","source":"store","jobcard":"JC-26-0010","cost":900,"status":"used"}],"purchases":[],"documents":{"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Signed)","rev":"-","date":"2026-08-18","by":"Marko","status":"current"}]},"activity":[{"date":"2026-08-05","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-19","time":"09:00","user":"Aleksandar","action":"Status changed: COMPLETED → CLOSED"}]},
+      {"id":106,"no":"P-26-0006","customerId":7,"customer":"Ystad Bageri","name":"Spiral Mixer Service","estimationId":null,"status":"hold","phase":"production","start":"2026-08-19","deadline":"2026-09-05","expectedCompletion":"2026-09-05","progress":40,"plannedHours":16,"usedHours":3,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"YB-33","poNumber":"","description":"Gearbox service on spiral mixer SM-80.","notes":[{"date":"2026-08-19","author":"Aleksandar","text":"Supplier delay on gearbox seal kit.","tag":"purchase","pinned":true}],"types":["Repair","Service"],"pm":"Aleksandar","workshop":"Marko","sales":"","createdDate":"2026-08-12","plannedStart":"2026-08-19","actualStart":"2026-08-19","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":24000,"estLabourHours":16,"estMaterialCost":3700,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"material","holdComment":"Waiting for gearbox seal kit from supplier.","expectedResume":"2026-09-01","cancelReason":"","jobcards":[{"no":"JC-26-0022","desc":"Gearbox service","assigned":"Marko","status":"active","est":10,"act":3,"progress":30,"estMaterial":2400},{"no":"JC-26-0023","desc":"New bowl guard","assigned":"Elena","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1300}],"hours":[{"date":"2026-08-19","worker":"Marko","jobcard":"JC-26-0022","desc":"Gearbox teardown","hours":3}],"materials":[],"purchases":[{"po":"PO-26-0016","supplier":"SKF Sverige","date":"2026-08-19","items":"Gearbox seal kit","ordered":1300,"received":0,"status":"ordered","expected":"2026-09-02"}],"documents":{},"activity":[{"date":"2026-08-12","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-19","time":"10:00","user":"Aleksandar","action":"Status changed: ACTIVE → ON HOLD (Waiting for Material)"}]},
+      {"id":107,"no":"P-26-0007","customerId":8,"customer":"Trelleborg Snacks","name":"Packing Line Extension","estimationId":null,"status":"cancelled","phase":"closeout","start":"2026-07-20","deadline":"2026-10-01","expectedCompletion":"2026-10-01","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"TS-500","poNumber":"","description":"Extension of packing line with additional conveyor section.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar","workshop":"","sales":"Aleksandar","createdDate":"2026-07-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":210000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"Customer postponed investment.","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-07-20","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-05","time":"12:00","user":"Aleksandar","action":"Status changed: QUOTATION → CANCELLED"}]},
+      {"id":108,"no":"P-26-0008","customerId":6,"customer":"Malmö Livs","name":"Bearing Replacement","estimationId":null,"status":"approved","phase":"design","start":"2026-08-20","deadline":"2026-09-15","expectedCompletion":"2026-09-15","progress":0,"plannedHours":8,"usedHours":0,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-101","poNumber":"","description":"Bearing replacement on Slicer L-40, approved and awaiting scheduling.","notes":[],"types":["Repair"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":14000,"estLabourHours":8,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-20","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-22","time":"14:00","user":"Aleksandar","action":"Status changed: QUOTATION → APPROVED"}]},
+      {"id":109,"no":"P-26-0009","customerId":3,"customer":"Schröder Nordic","name":"HMI Upgrade","estimationId":null,"status":"planned","phase":"design","start":"2026-08-28","deadline":"2026-09-18","expectedCompletion":"2026-09-15","progress":0,"plannedHours":18,"usedHours":0,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-108","poNumber":"","description":"HMI panel upgrade, jobcards prepared, work not yet started.","notes":[],"types":["Electrical"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-10","plannedStart":"2026-08-28","actualStart":"","plannedCompletion":"2026-09-15","actualCompletion":"","closedDate":"","quotedValue":31000,"estLabourHours":18,"estMaterialCost":4200,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0030","desc":"HMI panel wiring","assigned":"Marko","status":"planned","est":12,"act":0,"progress":0,"estMaterial":2700},{"no":"JC-26-0031","desc":"Bracket fabrication","assigned":"Elena","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1500}],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-24","time":"08:00","user":"Aleksandar","action":"Status changed: APPROVED → PLANNED"}]}
     ],
     equipment:[
       {id:'E-1001',equipmentId:'E-1001',name:'MIG/MAG Welding Machine',category:'Welding Machine',manufacturer:'ESAB',model:'Renegade VOLT',serial:'ESB-24105',assetNumber:'AS-1001',status:'Available',currentLocation:'Bay 1',homeLocation:'Welding bay',department:'Fabrication',responsiblePerson:'Marko K.',condition:'Good',criticality:'High',description:'Industrial MIG/MAG process machine used for sheet and tube fabrication.',purchaseDate:'2024-02-14',purchaseSupplier:'WeldSupply',purchasePrice:18200,warrantyExpiry:'2028-02-14',yearOfManufacture:2024,operatingHourMeter:2845,serviceInterval:250,qrCode:'EQ-1001-MIG',maintenanceDate:'2026-09-08',inspectionDate:'2026-09-12',certificationExpiry:'2026-11-20',calibrationDate:'2026-10-15',safetyWarnings:['Guard inspection due'],assignedProject:'P-2026-014',assignedJobcard:'JC-2026-0001',operator:'Marko K.',notes:'Demo equipment record; production safety controls require backend in real use.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-22',lastActivity:new Date().toISOString() },
@@ -205,12 +233,71 @@
     qualityReleases:[],
     supplierQuality:[
       {id:1,supplier:'FastenAll',approvalStatus:'conditionally-approved',rating:3.4,totalDeliveries:6,acceptedDeliveries:5,rejectedDeliveries:1,missingCertificates:1,openNcrs:1,overdueActions:0,repeatedDefects:'Missing certificate documentation (1 occurrence)',lastReview:'2026-06-01',nextReview:'2026-12-01',notes:[],activity:[{timestamp:'2026-08-22T09:00:00',action:'Supplier NCR linked',user:'Aleksandar C.',from:null,to:'conditionally-approved',reference:'NCR-2026-003',reason:'Missing material certificate'}]}
-    ]
+    ],
+    purchaseOrders:[
+      {"id":1,"no":"PO-2026-0145","supplier":"Stål & Rörspecialisten AB","project":"P-2026-014","date":"2026-08-12","expected":"2026-09-02","value":184200,"buyer":"Aleksandar C.","status":"Confirmed","items":"Ventilation duct materials"},
+      {"id":2,"no":"PO-2026-0144","supplier":"Nordic Hydraulik AB","project":"P-2026-011","date":"2026-08-11","expected":"2026-08-28","value":96450,"buyer":"Anna Berg","status":"Confirmed","items":"Hydraulic pump unit"},
+      {"id":3,"no":"PO-2026-0143","supplier":"Elkomponenter Sverige AB","project":"P-2026-003","date":"2026-08-10","expected":"2026-08-27","value":72860,"buyer":"Marcus Lind","status":"Partially Received","items":"Electrical cabinet IP65"},
+      {"id":4,"no":"PO-2026-0142","supplier":"Maskin & Transmission AB","project":"P-2026-009","date":"2026-08-07","expected":"2026-08-24","value":215300,"buyer":"Aleksandar C.","status":"Overdue","items":"Machine transmission parts"},
+      {"id":5,"no":"PO-2026-0141","supplier":"SvetsTeknik i Malmö AB","project":"P-2026-008","date":"2026-08-06","expected":"2026-08-31","value":138750,"buyer":"Anna Berg","status":"Awaiting Approval","items":"Welding equipment"},
+      {"id":6,"no":"PO-2026-0140","supplier":"Lager & Verktyg i Sverige AB","project":"P-2026-007","date":"2026-08-05","expected":"2026-09-04","value":58920,"buyer":"Marcus Lind","status":"Awaiting Approval","items":"Bearings and tools"}
+    ],
+    documents:[
+      {"id":1,"name":"Material Certificate MTC-240516.pdf","type":"Certificate","module":"Purchasing","record":"PO-2026-0145","category":"Materials","updated":"2026-08-28T10:24:00","status":"Valid","expiry":"2026-09-12","revision":"1","author":"Anna Berg"},
+      {"id":2,"name":"Project Drawing Rev B.pdf","type":"Drawing","module":"Projects","record":"P-2026-014","category":"Drawings","updated":"2026-08-27T14:12:00","status":"Review Soon","expiry":"","revision":"B","author":"Marcus Lind"},
+      {"id":3,"name":"Supplier Agreement 2026.pdf","type":"Document","module":"Suppliers","record":"SteelSupply AB","category":"Contracts","updated":"2026-08-26T09:31:00","status":"Valid","expiry":"2027-01-01","revision":"2","author":"Anna Berg"},
+      {"id":4,"name":"Delivery Note DN-87452.pdf","type":"Document","module":"Purchasing","record":"PO-2026-0145","category":"Delivery","updated":"2026-08-25T16:45:00","status":"Valid","expiry":"","revision":"1","author":"Aleksandar C."},
+      {"id":5,"name":"Quality Report NCR-026.pdf","type":"Report","module":"Quality","record":"P-2026-014","category":"Quality","updated":"2026-08-24T11:08:00","status":"Expired","expiry":"2026-08-24","revision":"1","author":"David H."},
+      {"id":6,"name":"Workshop Safety Manual.pdf","type":"Document","module":"Workshop","record":"General","category":"Safety","updated":"2026-08-22T08:55:00","status":"Draft","expiry":"","revision":"4","author":"Marcus Lind"},
+      {"id":7,"name":"Inspection Checklist IC-101.pdf","type":"Document","module":"Quality","record":"P-2026-014","category":"Inspection","updated":"2026-08-21T15:22:00","status":"Approved","expiry":"","revision":"3","author":"Anna Berg"},
+      {"id":8,"name":"Calibration Certificate CAL-556.pdf","type":"Certificate","module":"Workshop","record":"CAL-556","category":"Calibration","updated":"2026-08-20T10:17:00","status":"Review Soon","expiry":"2026-10-15","revision":"1","author":"Aleksandar C."},
+      {"id":9,"name":"Standard Project Handover.docx","type":"Template","module":"Projects","record":"Template","category":"Templates","updated":"2026-08-18T09:00:00","status":"Approved","expiry":"","revision":"2","author":"Aleksandar C."}
+    ],
+    marketingLeads:[
+      {"id":1,"no":"LD-2026-041","company":"Nordic Bageri Group","contact":"Sofia Lindqvist","email":"sofia.lindqvist@nordicbageri.se","phone":"+46 70 112 34 56","country":"Sweden","city":"Malmö","industry":"Food-production equipment","size":"50-200","source":"referral","service":"Stainless proofing racks & conveyor line","value":145000,"priority":"high","status":"qualified","owner":"Elena N.","created":"2026-08-05","lastContact":"2026-08-22","nextFollowUp":"2026-08-29","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":null,"notes":[{"date":"2026-08-22","author":"Elena N.","text":"Wants a site visit before committing to spec — scheduling for next week."}],"activity":[{"date":"2026-08-05","type":"created","text":"Lead created from referral by Sanus Glutenfri."},{"date":"2026-08-11","type":"call","text":"Introductory call, discussed proofing capacity needs."},{"date":"2026-08-22","type":"qualify","text":"Marked as qualified — budget and timeline confirmed."}]},
+      {"id":2,"no":"LD-2026-042","company":"Öresund Marine Service","contact":"Henrik Dahl","email":"henrik.dahl@oresundmarine.se","phone":"+46 70 223 45 67","country":"Sweden","city":"Malmö","industry":"Marine and shipyard work","size":"20-50","source":"website","service":"Deck fabrication & welding","value":320000,"priority":"high","status":"new","owner":"Marko K.","created":"2026-08-24","lastContact":"2026-08-24","nextFollowUp":"2026-08-31","commPref":"Phone","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":5,"notes":[],"activity":[{"date":"2026-08-24","type":"created","text":"Submitted enquiry form on website about deck fabrication capacity."}]},
+      {"id":3,"no":"LD-2026-043","company":"Ventia HVAC Syd","contact":"Camilla Ek","email":"camilla.ek@ventiahvac.se","phone":"+46 70 334 56 78","country":"Sweden","city":"Lund","industry":"Ventilation and HVAC fabrication","size":"10-50","source":"linkedin","service":"Ventilation duct fabrication","value":98000,"priority":"medium","status":"qualified","owner":"Aleksandar C.","created":"2026-08-14","lastContact":"2026-08-25","nextFollowUp":"2026-09-01","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":6,"notes":[{"date":"2026-08-25","author":"Aleksandar C.","text":"Requested drawings before RFQ — sending duct layout templates."}],"activity":[{"date":"2026-08-14","type":"created","text":"Lead created from LinkedIn campaign click."},{"date":"2026-08-19","type":"email","text":"Sent capability overview and past duct projects."},{"date":"2026-08-25","type":"qualify","text":"Qualified — confirmed project scope and rough budget."}]},
+      {"id":4,"no":"LD-2026-044","company":"Kranfors Verkstad","contact":"Jonas Berg","email":"jonas.berg@kranforsverkstad.se","phone":"+46 70 445 67 89","country":"Sweden","city":"Kristianstad","industry":"Machinery repair","size":"1-10","source":"phone","service":"Gearbox & machinery repair","value":42000,"priority":"medium","status":"qualified","owner":"Marko K.","created":"2026-08-10","lastContact":"2026-08-20","nextFollowUp":"2026-08-27","commPref":"Phone","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":7,"notes":[],"activity":[{"date":"2026-08-10","type":"created","text":"Called in about a broken gearbox on their press line."},{"date":"2026-08-20","type":"qualify","text":"Qualified — sent for RFQ preparation."}]},
+      {"id":5,"no":"LD-2026-045","company":"Sydstål Prototyping","contact":"Lina Holm","email":"lina.holm@sydstalproto.se","phone":"+46 70 556 78 90","country":"Sweden","city":"Malmö","industry":"Custom equipment and prototypes","size":"1-10","source":"tender","service":"Prototype fabrication","value":210000,"priority":"high","status":"qualified","owner":"Aleksandar C.","created":"2026-07-28","lastContact":"2026-08-21","nextFollowUp":"2026-09-02","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":1,"notes":[{"date":"2026-08-21","author":"Aleksandar C.","text":"Private RFQ received (RFQ-2026-014) — preparing estimate."}],"activity":[{"date":"2026-07-28","type":"created","text":"Lead created from tender portal notification."},{"date":"2026-08-05","type":"call","text":"Scoping call — reviewed prototype drawings."},{"date":"2026-08-21","type":"qualify","text":"Qualified and RFQ logged for bid."}]},
+      {"id":6,"no":"LD-2026-046","company":"Fabriksservice Syd AB","contact":"Erik Palm","email":"erik.palm@fabriksservice.se","phone":"+46 70 667 89 01","country":"Sweden","city":"Helsingborg","industry":"Industrial maintenance","size":"10-50","source":"existing","service":"Planned maintenance contract","value":76000,"priority":"medium","status":"contacted","owner":"Elena N.","created":"2026-08-18","lastContact":"2026-08-26","nextFollowUp":"2026-08-25","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":null,"notes":[],"activity":[{"date":"2026-08-18","type":"created","text":"Existing contact expanded scope enquiry to full maintenance contract."},{"date":"2026-08-26","type":"email","text":"Sent maintenance contract outline and reference sites."}]},
+      {"id":7,"no":"LD-2026-047","company":"Nordvent Installation AB","contact":"Michael Sørensen","email":"michael.sorensen@nordvent.dk","phone":"+45 22 778 90 12","country":"Denmark","city":"Copenhagen","industry":"Welding and installation","size":"50-200","source":"linkedin","service":"Welding & installation framework agreement","value":156000,"priority":"high","status":"qualified","owner":"Aleksandar C.","created":"2026-07-15","lastContact":"2026-08-23","nextFollowUp":"2026-08-28","commPref":"Phone","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":8,"notes":[{"date":"2026-08-23","author":"Aleksandar C.","text":"In negotiation on framework pricing — competitor also bidding."}],"activity":[{"date":"2026-07-15","type":"created","text":"Connected via LinkedIn after case study share."},{"date":"2026-08-01","type":"call","text":"Discussed cross-border installation logistics."},{"date":"2026-08-23","type":"qualify","text":"Qualified — moved to negotiation stage."}]},
+      {"id":8,"no":"LD-2026-048","company":"Sanus Rostfri AB","contact":"Peter Nyström","email":"peter.nystrom@sanusrostfri.se","phone":"+46 70 889 01 23","country":"Sweden","city":"Landskrona","industry":"Stainless-steel fabrication","size":"10-50","source":"email","service":"Stainless tank fabrication","value":118000,"priority":"medium","status":"contacted","owner":"Elena N.","created":"2026-08-20","lastContact":"2026-08-27","nextFollowUp":"2026-09-03","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":null,"notes":[],"activity":[{"date":"2026-08-20","type":"created","text":"Direct email enquiry about stainless tank fabrication."},{"date":"2026-08-27","type":"email","text":"Sent stainless grade options and lead time estimate."}]},
+      {"id":9,"no":"LD-2026-049","company":"Ystad Konditori Grupp","contact":"Anna Svensson","email":"anna.svensson@ystadkonditori.se","phone":"+46 70 990 12 34","country":"Sweden","city":"Ystad","industry":"Food-production equipment","size":"1-10","source":"referral","service":"Bakery rack expansion","value":18000,"priority":"low","status":"disqualified","owner":"Marko K.","created":"2026-07-30","lastContact":"2026-08-12","nextFollowUp":null,"commPref":"Phone","dnc":true,"linkedCustomerId":null,"linkedOpportunityId":null,"notes":[{"date":"2026-08-12","author":"Marko K.","text":"Budget far below minimum project size — disqualified. Asked not to be contacted again this year."}],"activity":[{"date":"2026-07-30","type":"created","text":"Referral from Ystad Bageri."},{"date":"2026-08-12","type":"disqualify","text":"Disqualified — budget too small, do-not-contact requested."}]},
+      {"id":10,"no":"LD-2026-050","company":"MarineVent AB","contact":"Per Bengtsson","email":"per.bengtsson@marinevent.se","phone":"+46 70 555 66 77","country":"Sweden","city":"Malmö","industry":"Marine and shipyard work","size":"50-200","source":"existing","service":"Ventilation duct system","value":198000,"priority":"high","status":"converted","owner":"Aleksandar C.","created":"2026-08-14","lastContact":"2026-08-18","nextFollowUp":null,"commPref":"Email","dnc":false,"linkedCustomerId":1,"linkedOpportunityId":3,"notes":[{"date":"2026-08-18","author":"Aleksandar C.","text":"Converted to existing customer record — project already in production."}],"activity":[{"date":"2026-08-14","type":"created","text":"Repeat enquiry from existing customer contact."},{"date":"2026-08-18","type":"convert","text":"Converted to customer — linked to MarineVent AB (C-001)."}]}
+    ],
+    marketingOpportunities:[
+      {"id":1,"no":"OPP-2026-101","company":"Sydstål Prototyping","contact":"Lina Holm","leadId":5,"customerId":null,"title":"Prototype Fabrication Programme","services":["Prototype fabrication","CNC machining"],"scope":"Series of 3 prototype enclosures for a robotics application, stainless frame with CNC-machined panels.","industry":"Custom equipment and prototypes","value":210000,"probability":60,"stage":"preparing","expectedDecision":"2026-09-15","requiredDelivery":"2026-10-30","competitor":"","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Finalize BOM and issue estimate","followUpDate":"2026-09-02","activity":[{"date":"2026-07-28","text":"Opportunity created from qualified lead."},{"date":"2026-08-21","text":"RFQ-2026-014 received, moved to Preparing Estimate."}]},
+      {"id":2,"no":"OPP-2026-102","company":"MarineVent AB","contact":"Lena Mårtensson","leadId":null,"customerId":1,"title":"Ventilation Upgrade Package","services":["Ventilation fabrication"],"scope":"Upgrade package for existing ventilation duct system, additional filtration stage.","industry":"Marine / Ventilation Systems","value":28503,"probability":55,"stage":"quotesent","expectedDecision":"2026-09-10","requiredDelivery":"2026-10-15","competitor":"","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":"EST-2026-023","linkedProjectNo":null,"nextAction":"Follow up on quote EST-2026-023","followUpDate":"2026-09-01","activity":[{"date":"2026-08-22","text":"Quotation EST-2026-023 sent to customer."}]},
+      {"id":3,"no":"OPP-2026-103","company":"MarineVent AB","contact":"Per Bengtsson","leadId":10,"customerId":1,"title":"Ventilation Duct System","services":["Fabrication","Welding","Installation"],"scope":"Full ventilation duct system for vessel retrofit.","industry":"Marine / Ventilation Systems","value":198000,"probability":100,"stage":"won","expectedDecision":"2026-08-18","requiredDelivery":"2026-11-12","competitor":"","decisionReason":"Best technical fit and delivery time.","owner":"Aleksandar C.","linkedEstimateNo":"EST-2026-018","linkedProjectNo":"P-2026-014","nextAction":"Monitor production progress","followUpDate":null,"activity":[{"date":"2026-08-14","text":"Estimate EST-2026-018 accepted."},{"date":"2026-08-15","text":"Project P-2026-014 created and moved into production."}]},
+      {"id":4,"no":"OPP-2026-104","company":"Sanus Glutenfri AB","contact":"Per Nilsson","leadId":null,"customerId":2,"title":"Stainless Platform Extension","services":["Fabrication","Installation"],"scope":"Extension of stainless platform for food safety compliance.","industry":"Food Production","value":138000,"probability":100,"stage":"won","expectedDecision":"2026-08-24","requiredDelivery":"2026-11-28","competitor":"","decisionReason":"Existing supplier relationship and fast turnaround.","owner":"Elena N.","linkedEstimateNo":"EST-2026-024","linkedProjectNo":null,"nextAction":"Convert estimate to project","followUpDate":null,"activity":[{"date":"2026-08-24","text":"Estimate EST-2026-024 accepted by customer."}]},
+      {"id":5,"no":"OPP-2026-105","company":"Öresund Marine Service","contact":"Henrik Dahl","leadId":2,"customerId":null,"title":"Deck Fabrication & Welding","services":["Fabrication","Welding"],"scope":"Steel deck sections and railings for a service vessel refit.","industry":"Marine and shipyard work","value":320000,"probability":20,"stage":"discovery","expectedDecision":"2026-10-01","requiredDelivery":"2026-12-01","competitor":"Sydsvensk Svets AB","decisionReason":"","owner":"Marko K.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Arrange site visit to scope deck works","followUpDate":null,"activity":[{"date":"2026-08-24","text":"Opportunity opened from new website lead."}]},
+      {"id":6,"no":"OPP-2026-106","company":"Ventia HVAC Syd","contact":"Camilla Ek","leadId":3,"customerId":null,"title":"Ventilation Duct Fabrication","services":["Ventilation fabrication"],"scope":"Ductwork fabrication for a new production hall.","industry":"Ventilation and HVAC fabrication","value":98000,"probability":35,"stage":"qualified","expectedDecision":"2026-09-20","requiredDelivery":"2026-11-05","competitor":"","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Prepare RFQ documents once drawings confirmed","followUpDate":"2026-09-04","activity":[{"date":"2026-08-25","text":"Lead qualified, opportunity opened."}]},
+      {"id":7,"no":"OPP-2026-107","company":"Kranfors Verkstad","contact":"Jonas Berg","leadId":4,"customerId":null,"title":"Gearbox & Machinery Repair Contract","services":["Machinery repair"],"scope":"Repair and preventive service contract for press line gearboxes.","industry":"Machinery repair","value":42000,"probability":45,"stage":"rfq","expectedDecision":"2026-09-05","requiredDelivery":"2026-09-25","competitor":"","decisionReason":"","owner":"Marko K.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Prepare estimate from RFQ scope","followUpDate":"2026-08-26","activity":[{"date":"2026-08-20","text":"RFQ received for gearbox repair."}]},
+      {"id":8,"no":"OPP-2026-108","company":"Nordvent Installation AB","contact":"Michael Sørensen","leadId":7,"customerId":null,"title":"Welding & Installation Framework Agreement","services":["Welding","Installation"],"scope":"Multi-site framework agreement for welding and installation call-outs.","industry":"Welding and installation","value":156000,"probability":70,"stage":"negotiation","expectedDecision":"2026-09-08","requiredDelivery":"2026-10-01","competitor":"Baltic Weld Partners","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Finalize framework pricing tiers","followUpDate":"2026-08-31","activity":[{"date":"2026-08-23","text":"Entered negotiation on framework pricing."}]},
+      {"id":9,"no":"OPP-2026-109","company":"Schröder Nordic","contact":"Anna Berg","leadId":null,"customerId":3,"title":"Machinery Retrofit Inquiry","services":["Retrofit"],"scope":"Retrofit of folding machine line — postponed by customer.","industry":"Industrial Machinery","value":85000,"probability":0,"stage":"lost","expectedDecision":"2026-08-10","requiredDelivery":"","competitor":"","decisionReason":"Customer reallocated budget to another site.","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Re-engage in Q1 2027","followUpDate":null,"activity":[{"date":"2026-07-20","text":"Retrofit inquiry opened."},{"date":"2026-08-10","text":"Marked lost — budget reallocated."}]}
+    ],
+    marketingCampaigns:[
+      {"id":1,"name":"Stainless Solutions for Food Producers","objective":"Generate qualified leads among food-production and bakery companies in Skåne.","targetIndustries":["Food-production equipment","Stainless-steel fabrication"],"targetServices":["Fabrication","Installation"],"segment":"Food-production companies","channels":["LinkedIn","Email","Trade fair"],"start":"2026-06-01","end":"2026-09-30","budget":45000,"spend":31200,"owner":"Elena N.","status":"active","leads":14,"qualified":6,"estimates":4,"wonValue":138000,"activity":[{"date":"2026-08-10","text":"Trade fair follow-up emails sent to 22 contacts."}]},
+      {"id":2,"name":"Workshop Repair & Maintenance Services","objective":"Drive service call-outs and maintenance contracts from local industrial sites.","targetIndustries":["Industrial maintenance","Machinery repair"],"targetServices":["Repair","Maintenance contracts"],"segment":"Property and facility maintenance","channels":["Google Ads","Referral programme"],"start":"2026-05-15","end":"2026-09-15","budget":25000,"spend":24100,"owner":"Marko K.","status":"active","leads":22,"qualified":5,"estimates":3,"wonValue":42000,"activity":[{"date":"2026-08-05","text":"Referral programme generated 4 new leads this week."}]},
+      {"id":3,"name":"Marine Steel & Welding Services","objective":"Build pipeline with marine and shipyard operators in the Öresund region.","targetIndustries":["Marine and shipyard work","Welding and installation"],"targetServices":["Welding","Fabrication"],"segment":"Marine and shipyard companies","channels":["LinkedIn","Direct email","Port trade show"],"start":"2026-07-01","end":"2026-10-31","budget":60000,"spend":58900,"owner":"Aleksandar C.","status":"active","leads":9,"qualified":4,"estimates":2,"wonValue":0,"activity":[{"date":"2026-08-18","text":"Port trade show — 9 new contacts collected."}]},
+      {"id":4,"name":"Custom Machinery & Prototype Fabrication","objective":"Position Varmak for prototype and custom-equipment RFQs.","targetIndustries":["Custom equipment and prototypes","Ventilation and HVAC fabrication"],"targetServices":["CNC machining","Prototype fabrication"],"segment":"Industrial manufacturers","channels":["Website","LinkedIn"],"start":"2026-03-01","end":"2026-08-15","budget":30000,"spend":30000,"owner":"Elena N.","status":"completed","leads":11,"qualified":5,"estimates":3,"wonValue":0,"activity":[{"date":"2026-08-15","text":"Campaign closed — 3 estimates still in active pipeline."}]}
+    ],
+    savedReports:[
+      {id:'demo-1',name:'Weekly Production Review',category:'Production',favourite:true,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'production',filters:{dateFilter:'week'},type:'view',archived:false},
+      {id:'demo-2',name:'Projects Over Budget',category:'Projects',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'projects',filters:{dateFilter:'all'},type:'view',archived:false},
+      {id:'demo-3',name:'Quotations Requiring Follow-Up',category:'Estimation',favourite:true,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'estimation',filters:{dateFilter:'all'},type:'view',archived:false},
+      {id:'demo-4',name:'Low Stock and Late Purchasing',category:'Store',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'store',filters:{dateFilter:'all'},type:'view',archived:false},
+      {id:'demo-5',name:'Monthly Hours Summary',category:'Hours',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'hours',filters:{dateFilter:'month'},type:'view',archived:false},
+      {id:'demo-6',name:'Open Quality Actions',category:'Quality',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'quality',filters:{dateFilter:'all'},type:'view',archived:false},
+      {id:'demo-7',name:'Equipment Maintenance Due',category:'Equipment',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'equipment',filters:{dateFilter:'all'},type:'view',archived:false}
+    ],
+    reportConfig:{}
   });
   // Recognized top-level collections used to sanity-check that a stored/imported JSON blob is
   // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
   const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
-    'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs'];
+    'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs',
+    'purchaseOrders','documents','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
   function safeParseJSON(raw){
     if(!raw)return null;
     try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
@@ -219,65 +306,170 @@
     if(!obj||typeof obj!=='object')return false;
     return KNOWN_COLLECTION_KEYS.some(k=>Array.isArray(obj[k]));
   }
-  // Readable migration/data-health summary exposed via WorkshopData.getDataHealth().
-  let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
-  function load(){
-    let v4Raw=null;
-    try{v4Raw=global.localStorage&&global.localStorage.getItem(KEY);}catch(e){}
-    const v4Parsed=v4Raw?safeParseJSON(v4Raw):null;
-    const v4Corrupted=!!(v4Raw&&(v4Parsed===null||!looksLikeWorkshopState(v4Parsed)));
+  // Readable migration/data-health summary exposed via WorkshopData.getDataHealth(). migrationSource
+  // identifies where the active data actually came from: 'v5' (already current), 'v4' or 'v3'
+  // (migrated from that legacy schema version), 'demo' (fresh install, no usable prior data) or
+  // 'import' (set by importBackup()). moduleMigrations lists which legacy per-module keys (if any)
+  // were folded into this state during migration.
+  let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV5Detected:false,corruptedRecordPreserved:false,migrationSource:'v5',moduleMigrations:[]};
 
-    if(v4Parsed&&looksLikeWorkshopState(v4Parsed)){
-      dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
-      if(v4Parsed.version===VERSION)return normalize(v4Parsed);
-      return normalize(Object.assign(seed(),v4Parsed));
+  function resolveOrCreateCustomerInState(base,name){
+    if(!name)return null;
+    let c=base.customers.find(x=>x.name&&x.name.toLowerCase()===String(name).toLowerCase());
+    if(!c){
+      base.counters.customer=(base.counters.customer||0)+1;
+      c={id:base.counters.customer,no:'C-'+String(base.counters.customer).padStart(3,'0'),name,status:'active',contacts:[],notes:[],documents:[]};
+      base.customers.push(c);
+    }
+    return c;
+  }
+  const PROJECTS_UI_STATUS_PHASE={draft:'design',quotation:'design',approved:'design',planned:'design',active:'production',hold:'production',completed:'closeout',closed:'closeout',cancelled:'closeout'};
+  const PROJECTS_UI_STATUS_PROGRESS={draft:0,quotation:0,approved:0,planned:0,active:50,hold:40,completed:100,closed:100,cancelled:0};
+  const PROJECTS_UI_NO_PATTERN=/^P-26-\d{4}$/;
+  // Migrates varmak.projects.ui.v1 into base.projects. The legacy key's customerId numbering is
+  // relative to the Projects module's own fixed local picklist, not the shared customers
+  // collection, so every record is resolved-or-created by customer NAME instead of trusted as-is.
+  // A present (even empty) legacy key is authoritative for the projects-ui-origin record set: it
+  // replaces the demo set (identified by its P-26-NNNN numbering) rather than merging into it, so
+  // an intentionally emptied project list stays empty and edited demo projects are not duplicated.
+  function migrateLegacyProjectsKey(base){
+    let raw=null;try{raw=global.localStorage&&global.localStorage.getItem(LEGACY_PROJECTS_KEY);}catch(e){}
+    if(raw==null)return false;
+    const parsed=safeParseJSON(raw);
+    if(!Array.isArray(parsed))return false;
+    base.projects=(base.projects||[]).filter(p=>!PROJECTS_UI_NO_PATTERN.test(p.no||''));
+    parsed.forEach(legacyP=>{
+      const customerName=LEGACY_PROJECTS_CUSTOMER_NAMES[legacyP.customerId]||legacyP.customer;
+      const customer=resolveOrCreateCustomerInState(base,customerName);
+      const usedHours=(legacyP.hours||[]).reduce((s,h)=>s+(Number(h.hours)||0),0);
+      const workers=[...new Set([legacyP.workshop,...(legacyP.jobcards||[]).map(j=>j.assigned)].filter(Boolean).filter(w=>w!=='Team'))];
+      base.counters.project=(base.counters.project||0)+1;
+      const rec=Object.assign({},legacyP,{
+        id:base.counters.project,
+        customerId:customer?customer.id:null,
+        customer:customer?customer.name:(legacyP.customer||''),
+        estimationId:null,
+        phase:PROJECTS_UI_STATUS_PHASE[legacyP.status]||'design',
+        start:legacyP.actualStart||legacyP.plannedStart||legacyP.createdDate||'',
+        expectedCompletion:legacyP.plannedCompletion||legacyP.deadline||'',
+        progress:PROJECTS_UI_STATUS_PROGRESS[legacyP.status]!=null?PROJECTS_UI_STATUS_PROGRESS[legacyP.status]:0,
+        plannedHours:legacyP.estLabourHours||0,usedHours,
+        responsible:legacyP.pm||'Aleksandar C.',workers,
+        machines:[],materialStatus:'unchecked',bom:[],tasks:[],milestones:[]
+      });
+      base.projects.push(rec);
+    });
+    return true;
+  }
+  // Migrates a legacy key holding a plain array (Purchasing, Documents) into the given base
+  // collection: a present (even empty) legacy array fully replaces the demo/seed set for that
+  // collection — reproducing exactly the whole-array-replace behaviour those pages always had —
+  // so an intentionally emptied collection stays empty rather than falling back to demo content.
+  function migrateLegacyArrayKey(base,legacyKey,collectionName,ensureId){
+    let raw=null;try{raw=global.localStorage&&global.localStorage.getItem(legacyKey);}catch(e){}
+    if(raw==null)return false;
+    const parsed=safeParseJSON(raw);
+    if(!Array.isArray(parsed))return false;
+    base[collectionName]=parsed.map((rec,i)=>ensureId&&rec.id==null?Object.assign({id:i+1},rec):rec);
+    return true;
+  }
+  // Migrates varmak.reports.saved.v1 ({reports:[...]}) into base.savedReports, and
+  // varmak.reports.config.v1 (a plain object) into base.reportConfig. Both replace the demo/seed
+  // value when the legacy key is present and valid, for the same reason as migrateLegacyArrayKey.
+  function migrateLegacyReportsKeys(base){
+    const notes=[];
+    let rawSaved=null;try{rawSaved=global.localStorage&&global.localStorage.getItem(LEGACY_REPORTS_SAVED_KEY);}catch(e){}
+    if(rawSaved!=null){
+      const parsedSaved=safeParseJSON(rawSaved);
+      if(parsedSaved&&Array.isArray(parsedSaved.reports)){base.savedReports=parsedSaved.reports;notes.push(LEGACY_REPORTS_SAVED_KEY);}
+    }
+    let rawConfig=null;try{rawConfig=global.localStorage&&global.localStorage.getItem(LEGACY_REPORTS_CONFIG_KEY);}catch(e){}
+    if(rawConfig!=null){
+      const parsedConfig=safeParseJSON(rawConfig);
+      if(parsedConfig&&typeof parsedConfig==='object'&&!Array.isArray(parsedConfig)){base.reportConfig=parsedConfig;notes.push(LEGACY_REPORTS_CONFIG_KEY);}
+    }
+    return notes;
+  }
+  // Folds every legacy per-module key into `base` in place. Only called while building a state
+  // that will be saved as the very first v5 record — once v5 exists this never runs again, so
+  // migration is idempotent by construction (see load()). Returns the list of legacy keys that
+  // actually contributed data, for an honest getDataHealth() report.
+  function migrateLegacyModuleData(base){
+    const notes=[];
+    if(migrateLegacyProjectsKey(base))notes.push(LEGACY_PROJECTS_KEY);
+    if(migrateLegacyArrayKey(base,LEGACY_PURCHASING_KEY,'purchaseOrders',true))notes.push(LEGACY_PURCHASING_KEY);
+    if(migrateLegacyArrayKey(base,LEGACY_DOCUMENTS_KEY,'documents',false))notes.push(LEGACY_DOCUMENTS_KEY);
+    notes.push(...migrateLegacyReportsKeys(base));
+    return notes;
+  }
+
+  function load(){
+    let v5Raw=null;
+    try{v5Raw=global.localStorage&&global.localStorage.getItem(KEY);}catch(e){}
+    const v5Parsed=v5Raw?safeParseJSON(v5Raw):null;
+    const v5Corrupted=!!(v5Raw&&(v5Parsed===null||!looksLikeWorkshopState(v5Parsed)));
+
+    if(v5Parsed&&looksLikeWorkshopState(v5Parsed)){
+      dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV5Detected:false,corruptedRecordPreserved:false,migrationSource:'v5',moduleMigrations:[]};
+      if(v5Parsed.version===VERSION)return normalize(v5Parsed);
+      return normalize(Object.assign(seed(),v5Parsed));
     }
 
-    // v4 is corrupted (present but unreadable/unrecognisable) — rescue the raw original value to a
+    // v5 is corrupted (present but unreadable/unrecognisable) — rescue the raw original value to a
     // dedicated key IMMEDIATELY, exactly once per load, before any later save() can overwrite the
-    // only copy. This happens whether or not a v3 backup is found below.
+    // only copy. This happens whether or not a v4/v3 backup is found below, and never touches or
+    // deletes the v4/v3 keys themselves.
     let rescueSaved=false;
-    if(v4Corrupted){
+    if(v5Corrupted){
       const rescueKey=`${KEY}.corrupted.${Date.now()}`;
       try{
-        global.localStorage&&global.localStorage.setItem(rescueKey,v4Raw);
+        global.localStorage&&global.localStorage.setItem(rescueKey,v5Raw);
         rescueSaved=true;
       }catch(e){/* browser storage rejected the rescue write — surfaced via recoveryWarning below */}
     }
 
-    // v4 is missing or unusable — look for a legacy v3 backup before falling back to demo data.
-    let v3Raw=null;
-    try{v3Raw=global.localStorage&&global.localStorage.getItem(LEGACY_KEY);}catch(e){}
+    // v5 is missing or unusable — try v4, then v3, then fall back to a clean demonstration state.
+    // Neither legacy key is ever modified or deleted; both remain available as recovery sources.
+    let v4Raw=null;try{v4Raw=global.localStorage&&global.localStorage.getItem(LEGACY_KEY_V4);}catch(e){}
+    const v4Parsed=v4Raw?safeParseJSON(v4Raw):null;
+    let v3Raw=null;try{v3Raw=global.localStorage&&global.localStorage.getItem(LEGACY_KEY_V3);}catch(e){}
     const v3Parsed=v3Raw?safeParseJSON(v3Raw):null;
 
-    if(v3Parsed&&looksLikeWorkshopState(v3Parsed)){
-      const migrated=normalize(Object.assign(seed(),clone(v3Parsed)));
-      migrated.activity=migrated.activity||[];
-      migrated.activity.unshift({time:now(),reason:v4Corrupted
-        ?`Recovered data from legacy key ${LEGACY_KEY} after the current data record was found corrupted.${rescueSaved?' The corrupted record was preserved separately.':''}`
-        :`Migrated data from legacy key ${LEGACY_KEY} to ${KEY}.`});
-      try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}
-      // The legacy v3 key is intentionally left untouched as a recovery source.
-      dataHealth={sourceKey:LEGACY_KEY,migratedFromLegacy:true,
-        recoveryWarning:v4Corrupted
-          ?(rescueSaved
-            ?'Your current data could not be read, so your older saved data was recovered instead. The unreadable record was preserved separately and was not deleted.'
-            :'Your current data could not be read, so your older saved data was recovered instead. The unreadable record could not be preserved (browser storage rejected the rescue write).')
-          :null,
-        schemaVersion:VERSION,corruptedV4Detected:v4Corrupted,corruptedRecordPreserved:v4Corrupted&&rescueSaved};
-      return migrated;
+    let base,migrationSource,sourceKey;
+    if(v4Parsed&&looksLikeWorkshopState(v4Parsed)){
+      base=Object.assign(seed(),clone(v4Parsed));migrationSource='v4';sourceKey=LEGACY_KEY_V4;
+    }else if(v3Parsed&&looksLikeWorkshopState(v3Parsed)){
+      base=Object.assign(seed(),clone(v3Parsed));migrationSource='v3';sourceKey=LEGACY_KEY_V3;
+    }else{
+      base=seed();migrationSource='demo';sourceKey=null;
     }
 
-    if(v4Corrupted){
-      dataHealth={sourceKey:null,migratedFromLegacy:false,
-        recoveryWarning:rescueSaved
-          ?'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record was preserved separately and was not deleted.'
-          :'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record could not be preserved (browser storage rejected the rescue write) and may be overwritten.',
-        schemaVersion:VERSION,corruptedV4Detected:true,corruptedRecordPreserved:rescueSaved};
-      return normalize(seed());
-    }
-    dataHealth={sourceKey:null,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false,corruptedRecordPreserved:false};
-    return normalize(seed());
+    // Fold in legacy per-module data regardless of which branch above produced `base` — a user may
+    // have real Projects/Purchasing/Documents/Reports data even with no v3/v4 shared-data blob.
+    const moduleMigrations=migrateLegacyModuleData(base);
+    const migrated=normalize(base);
+    migrated.activity=migrated.activity||[];
+    const reasonParts=[];
+    if(migrationSource==='v4')reasonParts.push(`Migrated data from ${LEGACY_KEY_V4} to ${KEY}.`);
+    else if(migrationSource==='v3')reasonParts.push(`Migrated data from ${LEGACY_KEY_V3} to ${KEY}.`);
+    if(v5Corrupted)reasonParts.push(`The current data record was found corrupted.${rescueSaved?' The corrupted record was preserved separately.':' The corrupted record could not be preserved.'}`);
+    if(moduleMigrations.length)reasonParts.push(`Legacy module data migrated from: ${moduleMigrations.join(', ')}.`);
+    if(reasonParts.length)migrated.activity.unshift({time:now(),reason:reasonParts.join(' ')});
+    try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}
+
+    const recovered=migrationSource==='v4'||migrationSource==='v3';
+    dataHealth={
+      sourceKey,
+      migratedFromLegacy:recovered,
+      recoveryWarning:v5Corrupted
+        ?(rescueSaved
+          ?`Your current data could not be read${recovered?', so your older saved data was recovered instead':''}. The unreadable record was preserved separately and was not deleted.`
+          :`Your current data could not be read${recovered?', so your older saved data was recovered instead':''}. The unreadable record could not be preserved (browser storage rejected the rescue write).`)
+        :null,
+      schemaVersion:VERSION,corruptedV5Detected:v5Corrupted,corruptedRecordPreserved:v5Corrupted&&rescueSaved,
+      migrationSource,moduleMigrations
+    };
+    return migrated;
   }
   // Safe default-normalization: older localStorage records (saved before Jobcards or Equipment existed)
   // are backfilled in place rather than being wiped. This preserves the user's prior browser data while
@@ -313,6 +505,13 @@
     if(!Array.isArray(s.qualityItps))s.qualityItps=base.qualityItps;
     if(!Array.isArray(s.qualityReleases))s.qualityReleases=[];
     if(!Array.isArray(s.supplierQuality))s.supplierQuality=base.supplierQuality;
+    if(!Array.isArray(s.purchaseOrders))s.purchaseOrders=base.purchaseOrders;
+    if(!Array.isArray(s.documents))s.documents=base.documents;
+    if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
+    if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
+    if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
+    if(!Array.isArray(s.savedReports))s.savedReports=base.savedReports;
+    if(!s.reportConfig||typeof s.reportConfig!=='object')s.reportConfig={};
     s.qualityInspections.forEach(r=>{if(!Array.isArray(r.notes))r.notes=[];if(!Array.isArray(r.activity))r.activity=[];if(!Array.isArray(r.checklist))r.checklist=[];if(!Array.isArray(r.documents))r.documents=[];});
     s.qualityWelds.forEach(r=>{if(!Array.isArray(r.notes))r.notes=[];if(!Array.isArray(r.activity))r.activity=[];if(!Array.isArray(r.repairHistory))r.repairHistory=[];});
     s.qualityNdt.forEach(r=>{if(!Array.isArray(r.notes))r.notes=[];if(!Array.isArray(r.activity))r.activity=[];if(!Array.isArray(r.documents))r.documents=[];});
@@ -353,6 +552,80 @@
       if(!item.equipmentId)item.equipmentId=item.id||`E-${String((s.counters.equipment||0)+1).padStart(4,'0')}`;
       if(!item.id)item.id=item.equipmentId;
     });
+    // Projects now carry both the original shared-schema fields (bom/tasks/milestones/phase/...)
+    // and the richer Projects-module fields (notes/jobcards/hours/materials/purchases/documents/
+    // activity/...). A project created through a narrower path (e.g. createProjectFromEstimation)
+    // only has the former — backfill safe empty defaults for the latter so the Projects UI never
+    // has to guard against missing fields.
+    s.projects.forEach(p=>{
+      if(!Array.isArray(p.workers))p.workers=[];
+      if(!Array.isArray(p.machines))p.machines=[];
+      if(!Array.isArray(p.bom))p.bom=[];
+      if(!Array.isArray(p.tasks))p.tasks=[];
+      if(!Array.isArray(p.milestones))p.milestones=[];
+      if(!Array.isArray(p.notes))p.notes=[];
+      if(!Array.isArray(p.jobcards))p.jobcards=[];
+      if(!Array.isArray(p.hours))p.hours=[];
+      if(!Array.isArray(p.materials))p.materials=[];
+      if(!Array.isArray(p.purchases))p.purchases=[];
+      if(!Array.isArray(p.activity))p.activity=[];
+      if(!Array.isArray(p.types))p.types=[];
+      if(!p.documents||typeof p.documents!=='object')p.documents={};
+      if(p.customerRef==null)p.customerRef='';
+      if(p.poNumber==null)p.poNumber='';
+      if(p.description==null)p.description='';
+      if(p.pm==null)p.pm='';
+      if(p.workshop==null)p.workshop='';
+      if(p.sales==null)p.sales='';
+      if(p.createdDate==null)p.createdDate=p.start||'';
+      if(p.plannedStart==null)p.plannedStart='';
+      if(p.actualStart==null)p.actualStart='';
+      if(p.plannedCompletion==null)p.plannedCompletion='';
+      if(p.actualCompletion==null)p.actualCompletion='';
+      if(p.closedDate==null)p.closedDate='';
+      if(p.quotedValue==null)p.quotedValue=0;
+      if(p.estLabourHours==null)p.estLabourHours=p.plannedHours||0;
+      if(p.estMaterialCost==null)p.estMaterialCost=0;
+      if(p.estPurchaseCost==null)p.estPurchaseCost=0;
+      if(p.otherCostEst==null)p.otherCostEst=0;
+      if(p.otherCostAct==null)p.otherCostAct=0;
+      if(p.holdReason==null)p.holdReason='';
+      if(p.holdComment==null)p.holdComment='';
+      if(p.expectedResume==null)p.expectedResume='';
+      if(p.cancelReason==null)p.cancelReason='';
+      if(p.progress==null)p.progress=0;
+      if(p.usedHours==null)p.usedHours=0;
+      if(p.materialStatus==null)p.materialStatus='unchecked';
+    });
+    s.purchaseOrders.forEach(po=>{
+      if(po.status==null)po.status='Draft';
+      if(po.items==null)po.items='';
+    });
+    s.documents.forEach(d=>{
+      if(!Array.isArray(d.notes))d.notes=[];
+      if(d.status==null)d.status='Draft';
+    });
+    s.marketingLeads.forEach(l=>{
+      if(!Array.isArray(l.notes))l.notes=[];
+      if(!Array.isArray(l.activity))l.activity=[];
+      if(l.dnc==null)l.dnc=false;
+      if(l.status==null)l.status='new';
+      if(l.linkedCustomerId===undefined)l.linkedCustomerId=null;
+      if(l.linkedOpportunityId===undefined)l.linkedOpportunityId=null;
+    });
+    s.marketingOpportunities.forEach(o=>{
+      if(!Array.isArray(o.activity))o.activity=[];
+      if(!Array.isArray(o.services))o.services=[];
+      if(o.stage==null)o.stage='discovery';
+    });
+    s.marketingCampaigns.forEach(c=>{
+      if(!Array.isArray(c.activity))c.activity=[];
+      if(!Array.isArray(c.targetServices))c.targetServices=[];
+      if(!Array.isArray(c.targetIndustries))c.targetIndustries=[];
+      if(!Array.isArray(c.channels))c.channels=[];
+      if(c.status==null)c.status='active';
+    });
+    s.savedReports.forEach(r=>{if(r.archived==null)r.archived=false;});
     return s;
   }
   let state=load();
@@ -361,6 +634,15 @@
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}
   function inventory(code){return state.inventory.find(x=>x.code===code)}
   function project(no){return state.projects.find(x=>x.no===no)}
+  // Resolves a customer by name (case-insensitive), creating a minimal real customer record if
+  // none matches yet, so callers (e.g. Projects/Marketing pages with their own local id numbering)
+  // never have to trust a customerId that may not correspond to the shared customers collection.
+  function resolveOrCreateCustomer(name){
+    if(!name)return null;
+    let c=state.customers.find(x=>x.name&&x.name.toLowerCase()===String(name).toLowerCase());
+    if(!c){c={id:state.counters.customer=(state.counters.customer||0)+1,no:'C-'+String(state.counters.customer).padStart(3,'0'),name,status:'active',contacts:[],notes:[],documents:[]};state.customers.push(c);}
+    return c;
+  }
   function estimation(idOrNo){return state.estimations.find(x=>x.id===idOrNo||x.no===idOrNo)}
   function jobcard(idOrNo){return state.jobcards.find(x=>x.id===idOrNo||x.no===idOrNo)}
   function addMovement(m){const rec=Object.assign({id:state.counters.movement++,time:now(),user:'Aleksandar C.'},m);state.movements.unshift(rec);save(`${rec.action} ${rec.code}`);return rec}
@@ -397,6 +679,7 @@
       for(const k of KNOWN_COLLECTION_KEYS){
         if(obj[k]!==undefined&&!Array.isArray(obj[k]))return{valid:false,error:`The "${k}" field in this backup is not in the expected format.`};
       }
+      if(obj.reportConfig!==undefined&&(typeof obj.reportConfig!=='object'||obj.reportConfig===null||Array.isArray(obj.reportConfig)))return{valid:false,error:'The "reportConfig" field in this backup is not in the expected format.'};
       return{valid:true};
     },
     importBackup:(obj)=>{
@@ -408,7 +691,7 @@
       imported.activity=imported.activity||[];
       imported.activity.unshift({time:now(),reason:'Backup imported. Previous data was preserved as a recovery copy.'});
       state=imported;
-      dataHealth={sourceKey:'import',migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+      dataHealth={sourceKey:'import',migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV5Detected:false,corruptedRecordPreserved:false,migrationSource:'import',moduleMigrations:[]};
       save();
       return{success:true};
     },
@@ -457,9 +740,43 @@
     },
     createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:'Aleksandar C.',workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
     listProjects:()=>clone(state.projects),
+    getProjects:()=>clone(state.projects),
+    findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
     logHours(entry){const hours=Number(entry.hours);if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be greater than zero'};const record=Object.assign({id:`H-${Date.now()}`,date:now().slice(0,10),user:'Aleksandar C.'},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
-    upsertProject(payload){let p=state.projects.find(x=>x.id===payload.id||x.no===payload.no);if(p)Object.assign(p,clone(payload));else{p=clone(payload);p.id=p.id||state.counters.project++;p.no=p.no||`P-2026-${String(p.id).padStart(3,'0')}`;state.projects.push(p)}save(`Project saved: ${p.no}`);return clone(p)},
+    upsertProject(payload){
+      if(!payload||!payload.name)return{error:'A project name is required'};
+      let p=state.projects.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);
+      // Trust an existing customerId only if it actually resolves in the shared customers
+      // collection (a caller's own local numbering, e.g. Projects' page-local picklist, cannot be
+      // trusted as-is) — otherwise resolve/create by the supplied customer name.
+      if(data.customerId!=null&&!state.customers.some(c=>c.id===data.customerId))data.customerId=null;
+      if(data.customerId==null&&data.customer){const c=resolveOrCreateCustomer(data.customer);if(c){data.customerId=c.id;data.customer=c.name;}}
+      if(p){Object.assign(p,data);}
+      else{
+        // A caller (e.g. the Projects module) may supply only its own richer fields — apply the
+        // same shared-schema defaults normalize() would, so a brand-new project is immediately
+        // usable by other modules (Store reservations, Jobcards) within the same session.
+        p=Object.assign({phase:'design',progress:0,plannedHours:0,usedHours:0,responsible:'Aleksandar C.',
+          workers:[],machines:[],materialStatus:'unchecked',bom:[],tasks:[],milestones:[],estimationId:null},data);
+        p.id=p.id||state.counters.project++;p.no=p.no||`P-2026-${String(p.id).padStart(3,'0')}`;
+        state.projects.push(p);
+      }
+      save(`Project saved: ${p.no}`);
+      return clone(p);
+    },
     updateProject(no,patch){const p=project(no);if(!p)return null;Object.assign(p,clone(patch));save(`Project updated: ${no}`);return clone(p)},
+    // Projects are referenced by jobcards, estimations, materials and documents — never hard-deleted.
+    // archiveProject marks it archived (a non-destructive status change) rather than removing it.
+    archiveProject(idOrNo,reason){
+      const p=state.projects.find(x=>x.id===idOrNo||x.no===idOrNo);
+      if(!p)return{error:'Project not found'};
+      p.archived=true;
+      p.activity=p.activity||[];
+      p.activity.push({date:now().slice(0,10),time:now().slice(11,16),user:'Aleksandar C.',action:reason||'Project archived'});
+      save(`Project archived: ${p.no}`);
+      return clone(p);
+    },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
     reserveItem(input){const inv=inventory(input.code),p=project(input.projectNo);if(!inv||!p)return{error:'Item or project not found'};const requested=Math.max(0,Number(input.qty)||0),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(requested,free);if(!qty)return{error:'No available stock to reserve'};inv.reserved+=qty;let line=(p.bom||[]).find(x=>x.code===inv.code);if(!line){line={code:inv.code,description:inv.description,required:qty,reserved:0,issued:0,unit:inv.unit};p.bom=p.bom||[];p.bom.push(line)}line.reserved=(line.reserved||0)+qty;addMovement({action:'RESERVED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:p.no,projectNo:p.no,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`Material reserved: ${inv.code}`);return{item:clone(inv),project:clone(p),reserved:qty,readiness:clone(r)}},
     reserveBom(no){const p=project(no);if(!p)return null;(p.bom||[]).forEach(line=>{const inv=inventory(line.code);if(!inv)return;const need=Math.max(0,line.required-(line.reserved||0)),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(need,free);line.reserved=(line.reserved||0)+qty;inv.reserved+=qty;if(qty)addMovement({action:'RESERVED',code:line.code,qty,unit:line.unit,from:inv.location,to:no,projectNo:no})});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`BOM reserved: ${no}`);return clone(r)},
@@ -1033,6 +1350,160 @@
       const rec=qFind(arr,idOrNo); if(!rec)return{error:'Record not found'};
       qActivity(rec,entry.action||'Activity',entry.from,entry.to,rec.no,entry.reason||'',entry.user);
       save(`Quality activity: ${rec.no}`); return clone(rec.activity[0]);
+    },
+
+    // ── Purchasing: purchase orders, shared with the Purchasing and Reports modules. ──
+    getPurchaseOrders:()=>clone(state.purchaseOrders),
+    findPurchaseOrder:idOrNo=>clone(state.purchaseOrders.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    upsertPurchaseOrder(payload){
+      if(!payload||!payload.supplier)return{error:'A supplier is required'};
+      let po=state.purchaseOrders.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);
+      if(po){Object.assign(po,data);}
+      else{
+        po=data;
+        po.id=po.id||(state.counters.purchaseOrder=(state.counters.purchaseOrder||0)+1);
+        po.no=po.no||(`PO-${new Date().getFullYear()}-${String(state.counters.purchaseOrder).padStart(4,'0')}`);
+        po.status=po.status||'Draft';
+        state.purchaseOrders.unshift(po);
+      }
+      save(`Purchase order saved: ${po.no}`);
+      return clone(po);
+    },
+    updatePurchaseOrder(idOrNo,patch){
+      const po=state.purchaseOrders.find(x=>x.id===idOrNo||x.no===idOrNo);
+      if(!po)return{error:'Purchase order not found'};
+      Object.assign(po,clone(patch));
+      save(`Purchase order updated: ${po.no}`);
+      return clone(po);
+    },
+    // Purchase orders are referenced by projects and documents — never hard-deleted.
+    archivePurchaseOrder(idOrNo,reason){
+      const po=state.purchaseOrders.find(x=>x.id===idOrNo||x.no===idOrNo);
+      if(!po)return{error:'Purchase order not found'};
+      po.archived=true;
+      save(`Purchase order archived: ${po.no}${reason?' — '+reason:''}`);
+      return clone(po);
+    },
+
+    // ── Documents: metadata-only records (no real file storage). ──
+    getDocuments:()=>clone(state.documents),
+    findDocument:id=>clone(state.documents.find(x=>x.id===id)),
+    upsertDocument(payload){
+      if(!payload||!payload.name)return{error:'A document name is required'};
+      let d=state.documents.find(x=>payload.id!=null&&x.id===payload.id);
+      const data=clone(payload);
+      if(d){Object.assign(d,data);d.updated=data.updated||now();}
+      else{
+        d=Object.assign({revision:'1',status:'Draft'},data);
+        d.id=d.id||(state.counters.document=(state.counters.document||0)+1);
+        d.updated=d.updated||now();
+        state.documents.unshift(d);
+      }
+      save(`Document saved: ${d.name}`);
+      return clone(d);
+    },
+    updateDocument(id,patch){
+      const d=state.documents.find(x=>x.id===id);
+      if(!d)return{error:'Document not found'};
+      Object.assign(d,clone(patch));
+      d.updated=now();
+      save(`Document updated: ${d.name}`);
+      return clone(d);
+    },
+    // Documents use status:'Archived' as their archive state (matches the Documents module's own
+    // existing convention) rather than being removed from the collection.
+    archiveDocument(id,reason){
+      const d=state.documents.find(x=>x.id===id);
+      if(!d)return{error:'Document not found'};
+      d.status='Archived';
+      d.updated=now();
+      save(`Document archived: ${d.name}${reason?' — '+reason:''}`);
+      return clone(d);
+    },
+
+    // ── Marketing: leads, opportunities and campaigns. ──
+    getMarketingLeads:()=>clone(state.marketingLeads),
+    findMarketingLead:idOrNo=>clone(state.marketingLeads.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    upsertMarketingLead(payload){
+      if(!payload||!payload.company)return{error:'A company name is required'};
+      let l=state.marketingLeads.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);
+      if(l){Object.assign(l,data);}
+      else{
+        l=Object.assign({notes:[],activity:[],dnc:false,linkedCustomerId:null,linkedOpportunityId:null},data);
+        l.id=l.id||(state.counters.marketingLead=(state.counters.marketingLead||0)+1);
+        l.no=l.no||(`LD-${new Date().getFullYear()}-0${state.counters.marketingLead}`);
+        l.status=l.status||'new';
+        state.marketingLeads.unshift(l);
+      }
+      save(`Marketing lead saved: ${l.no}`);
+      return clone(l);
+    },
+    getMarketingOpportunities:()=>clone(state.marketingOpportunities),
+    findMarketingOpportunity:idOrNo=>clone(state.marketingOpportunities.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    upsertMarketingOpportunity(payload){
+      if(!payload||!payload.title)return{error:'An opportunity title is required'};
+      let o=state.marketingOpportunities.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);
+      if(o){Object.assign(o,data);}
+      else{
+        o=Object.assign({activity:[],services:[]},data);
+        o.id=o.id||(state.counters.marketingOpportunity=(state.counters.marketingOpportunity||0)+1);
+        o.no=o.no||(`OPP-${new Date().getFullYear()}-1${state.counters.marketingOpportunity}`);
+        o.stage=o.stage||'discovery';
+        state.marketingOpportunities.unshift(o);
+      }
+      save(`Marketing opportunity saved: ${o.no}`);
+      return clone(o);
+    },
+    getMarketingCampaigns:()=>clone(state.marketingCampaigns),
+    findMarketingCampaign:id=>clone(state.marketingCampaigns.find(x=>x.id===id)),
+    upsertMarketingCampaign(payload){
+      if(!payload||!payload.name)return{error:'A campaign name is required'};
+      let c=state.marketingCampaigns.find(x=>payload.id!=null&&x.id===payload.id);
+      const data=clone(payload);
+      if(c){Object.assign(c,data);}
+      else{
+        c=Object.assign({activity:[],targetServices:[],targetIndustries:[],channels:[],leads:0,qualified:0,estimates:0,wonValue:0},data);
+        c.id=c.id||(state.counters.marketingCampaign=(state.counters.marketingCampaign||0)+1);
+        c.status=c.status||'active';
+        state.marketingCampaigns.unshift(c);
+      }
+      save(`Marketing campaign saved: ${c.name}`);
+      return clone(c);
+    },
+
+    // ── Reports: saved report definitions and report-page configuration (UI state that Pass 2
+    // explicitly moves into shared storage so it survives across devices/browsers like other data). ──
+    getSavedReports:()=>clone(state.savedReports),
+    saveReport(payload){
+      if(!payload||!payload.name)return{error:'A report name is required'};
+      let r=state.savedReports.find(x=>payload.id!=null&&x.id===payload.id);
+      const data=clone(payload);
+      if(r){Object.assign(r,data);}
+      else{
+        r=Object.assign({favourite:false,archived:false},data);
+        r.id=r.id||(`rpt-${Date.now()}`);
+        r.created=r.created||now().slice(0,10);
+        r.lastUsed=r.lastUsed||r.created;
+        state.savedReports.push(r);
+      }
+      save(`Report saved: ${r.name}`);
+      return clone(r);
+    },
+    archiveSavedReport(id){
+      const r=state.savedReports.find(x=>x.id===id);
+      if(!r)return{error:'Saved report not found'};
+      r.archived=true;
+      save(`Report archived: ${r.name}`);
+      return clone(r);
+    },
+    getReportConfig:()=>clone(state.reportConfig||{}),
+    updateReportConfig(patch){
+      state.reportConfig=Object.assign({},state.reportConfig||{},clone(patch||{}));
+      save();
+      return clone(state.reportConfig);
     }
   };
   global.WorkshopData=api;

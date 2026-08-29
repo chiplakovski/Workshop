@@ -283,9 +283,27 @@ let CUSTOMERS=[
   {id:7,name:"Trelleborg Snacks",org:"559333-6654",contact:"Jonas P. · jonas@trelleborgsnacks.se"}
 ];
 
-const PROJECTS_KEY='varmak.projects.ui.v1';
-function persistProjects(){localStorage.setItem(PROJECTS_KEY,JSON.stringify(PROJECTS));}
-function syncSharedProject(p){if(window.WorkshopData?.upsertProject)WorkshopData.upsertProject({id:p.id,no:p.no,name:p.name,customerId:p.customerId,customer:custName(p.customerId),status:p.status,deadline:p.deadline,plannedHours:p.estLabourHours||0,usedHours:p.hours.reduce((sum,h)=>sum+(Number(h.hours)||0),0)});}
+// Projects are authoritative in WorkshopData (shared v5 state) — this module no longer reads or
+// writes varmak.projects.ui.v1 directly; that legacy key is only read once, centrally, by
+// workshop-data.js's migration on first load. syncSharedProject pushes every field this page
+// itself owns and edits, and resolves the customer by name rather than trusting this page's own
+// local CUSTOMERS id numbering. It deliberately does NOT send bom/phase/progress/tasks/milestones/
+// workers/machines/materialStatus/plannedHours/usedHours/estimationId — those belong to other
+// modules (Store reservations via reserveItem/issue, Jobcards, Estimation conversion) and must
+// not be overwritten with this page's stale/unused copies of them.
+const PROJECT_UI_OWNED_FIELDS=['id','no','name','customerRef','poNumber','description','notes','types',
+  'pm','workshop','sales','createdDate','plannedStart','actualStart','deadline','plannedCompletion',
+  'actualCompletion','closedDate','quotedValue','estLabourHours','estMaterialCost','estPurchaseCost',
+  'otherCostEst','otherCostAct','status','holdReason','holdComment','expectedResume','cancelReason',
+  'jobcards','hours','materials','purchases','documents','activity','archived'];
+function syncSharedProject(p){
+  if(!window.WorkshopData?.upsertProject)return;
+  const payload={customer:custName(p.customerId)};
+  PROJECT_UI_OWNED_FIELDS.forEach(k=>{if(p[k]!==undefined)payload[k]=p[k];});
+  const saved=WorkshopData.upsertProject(payload);
+  p.id=saved.id;p.customerId=saved.customerId;
+}
+function refreshProjectsFromShared(){PROJECTS=WorkshopData.getProjects();}
 let nextCustId=8;
 const PEOPLE=["Aleksandar","Marko","Elena","Sofia","Erik"];
 const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Service","Stainless Steel","Aluminium","Carbon Steel","Piping","CNC Cutting","Electrical","Assembly","Maintenance","Other"];
@@ -293,149 +311,22 @@ const HOLD_REASONS=["material","customer","drawing","approval","breakdown","exte
 const NOTE_TAGS=["general","customer","workshop","quality","purchase","important"];
 
 let seqProject=10, seqJobcard=39, seqPO=19, seqReport=3;
-function projNo(){return "P-26-"+String(seqProject++).padStart(4,'0');}
+// Derives the next number from the currently loaded (shared) PROJECTS rather than trusting the
+// page-local seqProject counter alone — PROJECTS now reflects prior sessions' real data, and
+// upsertProject() matches by `no`, so a stale/repeating counter could silently overwrite an
+// existing project instead of creating a new one.
+function projNo(){
+  const existingNums=PROJECTS.map(p=>{const m=/^P-26-(\d{4})$/.exec(p.no||'');return m?parseInt(m[1],10):0;});
+  seqProject=Math.max(seqProject,...existingNums)+1;
+  return "P-26-"+String(seqProject++).padStart(4,'0');
+}
 function jcNo(){return "JC-26-"+String(seqJobcard++).padStart(4,'0');}
 function poNo(){return "PO-26-"+String(seqPO++).padStart(4,'0');}
 function rptNo(){return "RPT-26-"+String(seqReport++).padStart(4,'0');}
 
-let PROJECTS=[
-  {id:1,no:"P-26-0001",name:"Bakery Conveyor Modification",customerId:1,customerRef:"PO-48215",poNumber:"PO-48215",
-   description:"Fabricate and install stainless steel conveyor extension including supports and guarding.",notes:[
-     {date:"2026-08-15",author:"Aleksandar",text:"Customer confirmed guard color RAL 7035.",tag:"customer",pinned:false},
-     {date:"2026-08-20",author:"Elena",text:"Drawing revision B approved — proceed with cutting.",tag:"workshop",pinned:true}],
-   types:["Fabrication","Stainless Steel","Installation"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
-   createdDate:"2026-08-10",plannedStart:"2026-08-18",actualStart:"2026-08-18",deadline:"2026-09-10",plannedCompletion:"2026-09-08",actualCompletion:"",closedDate:"",
-   quotedValue:92000,estLabourHours:80,estMaterialCost:20000,estPurchaseCost:8000,otherCostEst:0,otherCostAct:500,
-   status:"active",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[
-     {no:"JC-26-0034",desc:"Cut Frame Profiles",assigned:"Marko",status:"completed",est:8,act:8,progress:100,estMaterial:3200},
-     {no:"JC-26-0035",desc:"Weld Main Frame",assigned:"Marko",status:"active",est:20,act:14,progress:70,estMaterial:9000},
-     {no:"JC-26-0036",desc:"Fabricate Guarding",assigned:"Elena",status:"planned",est:10,act:0,progress:0,estMaterial:4800},
-     {no:"JC-26-0037",desc:"Installation",assigned:"Team",status:"planned",est:16,act:0,progress:0,estMaterial:1500},
-     {no:"JC-26-0038",desc:"Panel & Controls Wiring",assigned:"Marko",status:"planned",est:26,act:0,progress:0,estMaterial:1500}],
-   hours:[
-     {date:"2026-08-18",worker:"Marko",jobcard:"JC-26-0034",desc:"Cut Frame Profiles",hours:8},
-     {date:"2026-08-19",worker:"Marko",jobcard:"JC-26-0035",desc:"Weld Main Frame — setup",hours:6},
-     {date:"2026-08-20",worker:"Marko",jobcard:"JC-26-0035",desc:"Weld Main Frame",hours:8},
-     {date:"2026-08-21",worker:"Aleksandar",jobcard:"",desc:"Project management / site coordination",hours:3}],
-   materials:[
-     {name:"304L Sheet 2mm",spec:"2mm stainless",qty:3,unit:"sheets",source:"store",jobcard:"JC-26-0034",cost:4800,status:"used"},
-     {name:"RHS 40x40x2",spec:"box section",qty:24,unit:"m",source:"store",jobcard:"JC-26-0035",cost:1560,status:"issued"},
-     {name:"M8 Stainless Bolts",spec:"A2 stainless",qty:40,unit:"pcs",source:"store",jobcard:"JC-26-0034",cost:280,status:"used"},
-     {name:"Stainless Hinges",spec:"316 grade",qty:6,unit:"pcs",source:"purchase",jobcard:"JC-26-0037",cost:780,status:"reserved"}],
-   purchases:[
-     {po:"PO-26-0018",supplier:"Ahlsell",date:"2026-08-20",items:"Fittings, Bolts, Grinding Discs",ordered:12350,received:8550,status:"partdelivered",expected:"2026-08-27"}],
-   documents:{
-     "Drawings":[{name:"Frame Drawing",rev:"A",date:"2026-08-10",by:"Aleksandar",status:"superseded"},{name:"Frame Drawing",rev:"B",date:"2026-08-20",by:"Aleksandar",status:"current"},{name:"Guard Drawing.dxf",rev:"-",date:"2026-08-15",by:"Elena",status:"current"}],
-     "Customer Documents":[{name:"Customer PO.pdf",rev:"-",date:"2026-08-08",by:"Aleksandar",status:"current"},{name:"Customer Specification.pdf",rev:"-",date:"2026-08-08",by:"Aleksandar",status:"current"}],
-     "Material Certificates":[{name:"EN 10204 3.1 Certificate.pdf",rev:"-",date:"2026-08-19",by:"Marko",status:"current"}],
-     "Photos":[{name:"Before Work.jpg",rev:"-",date:"2026-08-18",by:"Marko",status:"current"},{name:"Fabrication.jpg",rev:"-",date:"2026-08-20",by:"Marko",status:"current"}],
-     "Quality":[{name:"WPS-01.pdf",rev:"-",date:"2026-08-10",by:"Aleksandar",status:"current"}],
-     "Inspection Reports":[{name:"Inspection Report RPT-26-0001 (Approved)",rev:"-",date:"2026-08-20",by:"Aleksandar",status:"current"},{name:"Welding Report RPT-26-0002 (Draft)",rev:"-",date:"2026-08-21",by:"Marko",status:"current"}]},
-   activity:[
-     {date:"2026-08-10",time:"09:00",user:"Aleksandar",action:"Project Created"},
-     {date:"2026-08-10",time:"09:05",user:"Aleksandar",action:"Status changed: DRAFT → QUOTATION"},
-     {date:"2026-08-12",time:"11:20",user:"Aleksandar",action:"Quotation approved by customer — status changed: QUOTATION → APPROVED"},
-     {date:"2026-08-14",time:"10:00",user:"Aleksandar",action:"Jobcards created (JC-26-0034 … JC-26-0038)"},
-     {date:"2026-08-15",time:"14:40",user:"Aleksandar",action:"Note added (customer)"},
-     {date:"2026-08-16",time:"08:30",user:"Aleksandar",action:"Status changed: APPROVED → PLANNED"},
-     {date:"2026-08-18",time:"07:15",user:"Marko",action:"Status changed: PLANNED → ACTIVE — first hours logged"},
-     {date:"2026-08-18",time:"15:30",user:"Marko",action:"Logged 8h on JC-26-0034"},
-     {date:"2026-08-20",time:"09:10",user:"Aleksandar",action:"Drawing updated REV A → REV B"},
-     {date:"2026-08-20",time:"09:42",user:"Aleksandar",action:"PO-26-0018 created (Ahlsell)"},
-     {date:"2026-08-20",time:"16:05",user:"Elena",action:"Note pinned (workshop)"},
-     {date:"2026-08-21",time:"17:00",user:"Aleksandar",action:"Logged 3h — Project management"}]},
-
-  {id:2,no:"P-26-0002",name:"Folding Machine Retrofit",customerId:2,customerRef:"SN-Q-114",poNumber:"",
-   description:"Retrofit MAK 2500/1.25 folding machine — new panel wiring, HMI bracket and safety cover.",notes:[
-     {date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final scope.",tag:"customer",pinned:false}],
-   types:["Fabrication","Electrical"],pm:"Aleksandar",workshop:"",sales:"Aleksandar",
-   createdDate:"2026-08-14",plannedStart:"",actualStart:"",deadline:"2026-09-20",plannedCompletion:"",actualCompletion:"",closedDate:"",
-   quotedValue:145000,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"quotation",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[],hours:[],materials:[],purchases:[],
-   documents:{"Customer Documents":[{name:"Specification Draft.pdf",rev:"-",date:"2026-08-14",by:"Aleksandar",status:"current"}]},
-   activity:[{date:"2026-08-14",time:"10:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-14",time:"10:05",user:"Aleksandar",action:"Status changed: DRAFT → QUOTATION"}]},
-
-  {id:3,no:"P-26-0003",name:"Mixer Overhaul — Preliminary",customerId:3,customerRef:"",poNumber:"",
-   description:"Preliminary gearbox service and bowl guard replacement.",notes:[],
-   types:["Repair"],pm:"Aleksandar",workshop:"",sales:"",
-   createdDate:"2026-08-22",plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
-   quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
-   activity:[{date:"2026-08-22",time:"13:10",user:"Aleksandar",action:"Project Created"}]},
-
-  {id:4,no:"P-26-0004",name:"Guard Fabrication",customerId:4,customerRef:"HF-2201",poNumber:"HF-2201",
-   description:"Sheet metal guards for packing line P2, fabricated and installed on-site.",notes:[],
-   types:["Fabrication","Installation"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
-   createdDate:"2026-05-28",plannedStart:"2026-06-02",actualStart:"2026-06-02",deadline:"2026-06-20",plannedCompletion:"2026-06-19",actualCompletion:"2026-06-20",closedDate:"",
-   quotedValue:58000,estLabourHours:24,estMaterialCost:12000,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"completed",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[
-     {no:"JC-26-0011",desc:"Sheet metal guards",assigned:"Marko",status:"completed",est:18,act:17,progress:100,estMaterial:9500},
-     {no:"JC-26-0012",desc:"Install on-site",assigned:"Team",status:"completed",est:6,act:6.5,progress:100,estMaterial:2500}],
-   hours:[{date:"2026-06-18",worker:"Marko",jobcard:"JC-26-0011",desc:"Guard fabrication",hours:17},{date:"2026-06-20",worker:"Elena",jobcard:"JC-26-0012",desc:"Site install",hours:6.5}],
-   materials:[{name:"Mild Steel Sheet 3mm",spec:"3mm",qty:6,unit:"sheets",source:"store",jobcard:"JC-26-0011",cost:4100,status:"used"}],
-   purchases:[],
-   documents:{"Photos":[{name:"Install Complete.jpg",rev:"-",date:"2026-06-20",by:"Marko",status:"current"}],
-     "Inspection Reports":[{name:"Completion Report RPT-26-0001 (Signed)",rev:"-",date:"2026-06-20",by:"Aleksandar",status:"current"}]},
-   activity:[{date:"2026-05-28",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-06-20",time:"16:00",user:"Aleksandar",action:"Status changed: ACTIVE → COMPLETED"}]},
-
-  {id:5,no:"P-26-0005",name:"Service — Malmö Slicer",customerId:5,customerRef:"ML-99",poNumber:"",
-   description:"On-site inspection and bearing replacement on Slicer L-40.",notes:[],
-   types:["Service"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
-   createdDate:"2026-08-05",plannedStart:"2026-08-10",actualStart:"2026-08-10",deadline:"2026-08-20",plannedCompletion:"2026-08-18",actualCompletion:"2026-08-18",closedDate:"2026-08-19",
-   quotedValue:16500,estLabourHours:12,estMaterialCost:900,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"closed",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[{no:"JC-26-0009",desc:"On-site inspection",assigned:"Marko",status:"completed",est:4,act:4,progress:100,estMaterial:0},{no:"JC-26-0010",desc:"Bearing replacement",assigned:"Marko",status:"completed",est:8,act:8,progress:100,estMaterial:900}],
-   hours:[{date:"2026-08-10",worker:"Marko",jobcard:"JC-26-0009",desc:"Inspection",hours:4},{date:"2026-08-18",worker:"Marko",jobcard:"JC-26-0010",desc:"Bearing replacement",hours:8}],
-   materials:[{name:"Bearing 6205-2RS",spec:"-",qty:2,unit:"pcs",source:"store",jobcard:"JC-26-0010",cost:900,status:"used"}],
-   purchases:[],documents:{"Inspection Reports":[{name:"Inspection Report RPT-26-0001 (Signed)",rev:"-",date:"2026-08-18",by:"Marko",status:"current"}]},
-   activity:[{date:"2026-08-05",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-19",time:"09:00",user:"Aleksandar",action:"Status changed: COMPLETED → CLOSED"}]},
-
-  {id:6,no:"P-26-0006",name:"Spiral Mixer Service",customerId:6,customerRef:"YB-33",poNumber:"",
-   description:"Gearbox service on spiral mixer SM-80.",notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit.",tag:"purchase",pinned:true}],
-   types:["Repair","Service"],pm:"Aleksandar",workshop:"Marko",sales:"",
-   createdDate:"2026-08-12",plannedStart:"2026-08-19",actualStart:"2026-08-19",deadline:"2026-09-05",plannedCompletion:"",actualCompletion:"",closedDate:"",
-   quotedValue:24000,estLabourHours:16,estMaterialCost:3700,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"hold",holdReason:"material",holdComment:"Waiting for gearbox seal kit from supplier.",expectedResume:"2026-09-01",cancelReason:"",
-   jobcards:[{no:"JC-26-0022",desc:"Gearbox service",assigned:"Marko",status:"active",est:10,act:3,progress:30,estMaterial:2400},{no:"JC-26-0023",desc:"New bowl guard",assigned:"Elena",status:"planned",est:6,act:0,progress:0,estMaterial:1300}],
-   hours:[{date:"2026-08-19",worker:"Marko",jobcard:"JC-26-0022",desc:"Gearbox teardown",hours:3}],
-   materials:[],purchases:[{po:"PO-26-0016",supplier:"SKF Sverige",date:"2026-08-19",items:"Gearbox seal kit",ordered:1300,received:0,status:"ordered",expected:"2026-09-02"}],
-   documents:{},
-   activity:[{date:"2026-08-12",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-19",time:"10:00",user:"Aleksandar",action:"Status changed: ACTIVE → ON HOLD (Waiting for Material)"}]},
-
-  {id:7,no:"P-26-0007",name:"Packing Line Extension",customerId:7,customerRef:"TS-500",poNumber:"",
-   description:"Extension of packing line with additional conveyor section.",notes:[],
-   types:["Fabrication","Installation"],pm:"Aleksandar",workshop:"",sales:"Aleksandar",
-   createdDate:"2026-07-20",plannedStart:"",actualStart:"",deadline:"2026-10-01",plannedCompletion:"",actualCompletion:"",closedDate:"",
-   quotedValue:210000,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"cancelled",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"Customer postponed investment.",
-   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
-   activity:[{date:"2026-07-20",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-05",time:"12:00",user:"Aleksandar",action:"Status changed: QUOTATION → CANCELLED"}]},
-
-  {id:8,no:"P-26-0008",name:"Bearing Replacement",customerId:5,customerRef:"ML-101",poNumber:"",
-   description:"Bearing replacement on Slicer L-40, approved and awaiting scheduling.",notes:[],
-   types:["Repair"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
-   createdDate:"2026-08-20",plannedStart:"",actualStart:"",deadline:"2026-09-15",plannedCompletion:"",actualCompletion:"",closedDate:"",
-   quotedValue:14000,estLabourHours:8,estMaterialCost:900,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"approved",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[],hours:[],materials:[],purchases:[],documents:{},
-   activity:[{date:"2026-08-20",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-22",time:"14:00",user:"Aleksandar",action:"Status changed: QUOTATION → APPROVED"}]},
-
-  {id:9,no:"P-26-0009",name:"HMI Upgrade",customerId:2,customerRef:"SN-Q-108",poNumber:"",
-   description:"HMI panel upgrade, jobcards prepared, work not yet started.",notes:[],
-   types:["Electrical"],pm:"Aleksandar",workshop:"Marko",sales:"Aleksandar",
-   createdDate:"2026-08-10",plannedStart:"2026-08-28",actualStart:"",deadline:"2026-09-18",plannedCompletion:"2026-09-15",actualCompletion:"",closedDate:"",
-   quotedValue:31000,estLabourHours:18,estMaterialCost:4200,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-   status:"planned",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-   jobcards:[{no:"JC-26-0030",desc:"HMI panel wiring",assigned:"Marko",status:"planned",est:12,act:0,progress:0,estMaterial:2700},{no:"JC-26-0031",desc:"Bracket fabrication",assigned:"Elena",status:"planned",est:6,act:0,progress:0,estMaterial:1500}],
-   hours:[],materials:[],purchases:[],documents:{},
-   activity:[{date:"2026-08-10",time:"09:00",user:"Aleksandar",action:"Project Created"},{date:"2026-08-24",time:"08:00",user:"Aleksandar",action:"Status changed: APPROVED → PLANNED"}]}
-];
-// Restore persisted projects from localStorage now that PROJECTS has a valid seed value to fall back on.
-try{const stored=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');if(Array.isArray(stored)&&stored.length)PROJECTS=stored;}catch(e){}
+// Projects come from the shared v5 state (WorkshopData) — see syncSharedProject()/refreshProjectsFromShared()
+// above. This module no longer holds its own hardcoded seed or persists to a page-local key.
+let PROJECTS=WorkshopData.getProjects();
 
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"+m+"-"+y;}
@@ -1002,14 +893,16 @@ function submitProjectForm(){
   if(editingId){
     const p=getProject(editingId);Object.assign(p,vals);pushActivity(p,"Project edited");syncSharedProject(p);
   }else{
-    const id=PROJECTS.length?Math.max(...PROJECTS.map(x=>x.id))+1:1;
-    const p={id,no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
+    // No local id is pre-generated here — syncSharedProject() lets WorkshopData assign the real
+    // shared id, so a stale page-local counter can never collide with an existing shared project.
+    const p={no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
       createdDate:todayISO(),actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
       jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
-    PROJECTS.unshift(p);pushActivity(p,"Project Created");syncSharedProject(p);
-    currentId=id;VIEW="detail";activeTab="overview";
+    pushActivity(p,"Project Created");syncSharedProject(p);
+    PROJECTS.unshift(p);
+    currentId=p.id;VIEW="detail";activeTab="overview";
   }
-  persistProjects();closeModal();render();
+  closeModal();render();
 }
 function openNewCustomerMini(){
   const t=T[LANG];
@@ -1054,12 +947,12 @@ function submitJobcard(){
     p.jobcards.push({no:jcNo(),desc,assigned:$("jcAssigned").value,status:"planned",est:parseFloat($("jcEst").value)||0,act:0,progress:0,estMaterial:parseFloat($("jcEstMat").value)||0});
     pushActivity(p,"Item created: "+desc);
   }
-  closeModal();activeTab="jobcards";render();
+  syncSharedProject(p);closeModal();activeTab="jobcards";render();
 }
 function deleteJobcard(no){
   if(!confirm(T[LANG].confirm_delete))return;
   const p=getProject(currentId);p.jobcards=p.jobcards.filter(x=>x.no!==no);
-  pushActivity(p,"Item deleted: "+no);render();
+  pushActivity(p,"Item deleted: "+no);syncSharedProject(p);render();
 }
 function openDocForm(){
   const t=T[LANG];
@@ -1074,7 +967,7 @@ function submitDoc(){
   const p=getProject(currentId);const folder=$("docFolder").value,rev=$("docRev").value.trim()||"-";
   if(!p.documents[folder])p.documents[folder]=[];
   p.documents[folder].push({name,rev,date:todayISO(),by:"Aleksandar",status:"current"});
-  pushActivity(p,"Document added: "+name+" ("+folder+")");closeModal();activeTab="documents";render();
+  pushActivity(p,"Document added: "+name+" ("+folder+")");syncSharedProject(p);closeModal();activeTab="documents";render();
 }
 const MAT_STATUSES=["reserved","issued","used","returned"];
 let editMatIdx=null;
@@ -1123,12 +1016,12 @@ function submitMaterial(){
 
   if(editMatIdx!==null){Object.assign(p.materials[editMatIdx],vals);pushActivity(p,"Material edited: "+name);}
   else{p.materials.push(vals);pushActivity(p,"Material added: "+name);}
-  closeModal();activeTab="materials";render();
+  syncSharedProject(p);closeModal();activeTab="materials";render();
 }
 function deleteMaterial(idx){
   if(!confirm(T[LANG].confirm_delete))return;
   const p=getProject(currentId);const name=p.materials[idx].name;p.materials.splice(idx,1);
-  pushActivity(p,"Material deleted: "+name);render();
+  pushActivity(p,"Material deleted: "+name);syncSharedProject(p);render();
 }
 const PO_STATUSES=["draft","requested","ordered","partdelivered","delivered","cancelled"];
 let editPoIdx=null;
@@ -1150,12 +1043,12 @@ function submitPo(){
     status:$("poStatus")?$("poStatus").value:"ordered",expected:$("poExpected").value};
   if(editPoIdx!==null){Object.assign(p.purchases[editPoIdx],vals);pushActivity(p,"Purchase order edited: "+supplier);}
   else{p.purchases.push({po:poNo(),date:todayISO(),received:0,status:"ordered",...vals});pushActivity(p,"Purchase order created: "+supplier);}
-  closeModal();activeTab="purchases";render();
+  syncSharedProject(p);closeModal();activeTab="purchases";render();
 }
 function deletePo(idx){
   if(!confirm(T[LANG].confirm_delete))return;
   const p=getProject(currentId);const supplier=p.purchases[idx].supplier;p.purchases.splice(idx,1);
-  pushActivity(p,"Purchase order deleted: "+supplier);render();
+  pushActivity(p,"Purchase order deleted: "+supplier);syncSharedProject(p);render();
 }
 let editNoteIdx=null;
 function openNoteForm(idx){
@@ -1173,12 +1066,12 @@ function submitNote(){
   if(pinned)p.notes.forEach(n=>n.pinned=false);
   if(editNoteIdx!==null){Object.assign(p.notes[editNoteIdx],{text,tag,pinned});pushActivity(p,"Note edited ("+tag+")");}
   else{p.notes.push({date:todayISO(),author:"Aleksandar",text,tag,pinned});pushActivity(p,"Note added ("+tag+")");}
-  closeModal();activeTab="activity";render();
+  syncSharedProject(p);closeModal();activeTab="activity";render();
 }
 function deleteNote(idx){
   if(!confirm(T[LANG].confirm_delete))return;
   const p=getProject(currentId);p.notes.splice(idx,1);
-  pushActivity(p,"Note deleted");render();
+  pushActivity(p,"Note deleted");syncSharedProject(p);render();
 }
 
 function handleAction(kind){
@@ -1198,15 +1091,16 @@ function openDuplicateConfirm(p){
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doDuplicate(${p.id})">${t.dup_confirm}</button></div>`);
 }
 function doDuplicate(id){
-  const src=getProject(id);const newId=Math.max(...PROJECTS.map(x=>x.id))+1;
-  const dup={id:newId,no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
+  const src=getProject(id);
+  const dup={no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
     notes:[],types:src.types.slice(),pm:src.pm,workshop:src.workshop,sales:src.sales,
     createdDate:todayISO(),plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
     quotedValue:0,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
     status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
     jobcards:src.jobcards.map(j=>({no:jcNo(),desc:j.desc,assigned:"",status:"planned",est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0})),
     hours:[],materials:[],purchases:[],documents:{},activity:[{date:todayISO(),time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
-  PROJECTS.unshift(dup);closeModal();currentId=newId;activeTab="overview";render();
+  syncSharedProject(dup);
+  PROJECTS.unshift(dup);closeModal();currentId=dup.id;activeTab="overview";render();
 }
 function openHoldForm(p){
   const t=T[LANG];
@@ -1282,7 +1176,6 @@ function doReopen(id){
 }
 
 function render(){
-  persistProjects();
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
   if(VIEW==="list"){
@@ -1311,5 +1204,8 @@ const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:re
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 (function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 document.addEventListener('click',function(e){const mm=document.getElementById('moreMenu');if(mm&&mm.classList.contains('open')&&!mm.contains(e.target)&&e.target.id!=='moreBtn'){mm.classList.remove('open');}});
+// Refresh from shared data whenever another module (or another tab) changes it, rather than
+// keeping a page-level copy that could go stale or overwrite newer shared state.
+window.addEventListener('workshop:data',()=>{refreshProjectsFromShared();render();});
 </script>
 </body></html>

@@ -285,64 +285,23 @@ function currentDate(){return new Date();}
 const SHARED=(window.WorkshopData?WorkshopData.get():{customers:[],estimations:[],projects:[]});
 function sharedCustomer(id){return SHARED.customers.find(c=>c.id===id)||null;}
 function sharedEstimation(no){return SHARED.estimations.find(e=>e.no===no)||null;}
+// Leads/Opportunities/Campaigns are authoritative in WorkshopData (shared v5 state). Each mutation
+// below still edits its local LEADS/OPPORTUNITIES/CAMPAIGNS array in place (for immediate re-render)
+// and then calls the matching syncX() to persist — no local id/no is ever pre-generated for a new
+// record, so WorkshopData always assigns the real id/no and there is no risk of a page-local
+// counter colliding with one from a previous session.
+function syncLead(l){if(window.WorkshopData?.upsertMarketingLead){const saved=WorkshopData.upsertMarketingLead(l);l.id=saved.id;l.no=saved.no;}}
+function syncOpportunity(o){if(window.WorkshopData?.upsertMarketingOpportunity){const saved=WorkshopData.upsertMarketingOpportunity(o);o.id=saved.id;o.no=saved.no;}}
+function syncCampaign(c){if(window.WorkshopData?.upsertMarketingCampaign){const saved=WorkshopData.upsertMarketingCampaign(c);c.id=saved.id;}}
 
 // ── demonstration data (page-level, in-memory only) ──
-let LEADS=[
-  {id:1,no:'LD-2026-041',company:'Nordic Bageri Group',contact:'Sofia Lindqvist',email:'sofia.lindqvist@nordicbageri.se',phone:'+46 70 112 34 56',country:'Sweden',city:'Malmö',industry:'Food-production equipment',size:'50-200',source:'referral',service:'Stainless proofing racks & conveyor line',value:145000,priority:'high',status:'qualified',owner:'Elena N.',created:'2026-08-05',lastContact:'2026-08-22',nextFollowUp:'2026-08-29',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
-    notes:[{date:'2026-08-22',author:'Elena N.',text:'Wants a site visit before committing to spec — scheduling for next week.'}],
-    activity:[{date:'2026-08-05',type:'created',text:'Lead created from referral by Sanus Glutenfri.'},{date:'2026-08-11',type:'call',text:'Introductory call, discussed proofing capacity needs.'},{date:'2026-08-22',type:'qualify',text:'Marked as qualified — budget and timeline confirmed.'}]},
-  {id:2,no:'LD-2026-042',company:'Öresund Marine Service',contact:'Henrik Dahl',email:'henrik.dahl@oresundmarine.se',phone:'+46 70 223 45 67',country:'Sweden',city:'Malmö',industry:'Marine and shipyard work',size:'20-50',source:'website',service:'Deck fabrication & welding',value:320000,priority:'high',status:'new',owner:'Marko K.',created:'2026-08-24',lastContact:'2026-08-24',nextFollowUp:'2026-08-31',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:5,
-    notes:[],
-    activity:[{date:'2026-08-24',type:'created',text:'Submitted enquiry form on website about deck fabrication capacity.'}]},
-  {id:3,no:'LD-2026-043',company:'Ventia HVAC Syd',contact:'Camilla Ek',email:'camilla.ek@ventiahvac.se',phone:'+46 70 334 56 78',country:'Sweden',city:'Lund',industry:'Ventilation and HVAC fabrication',size:'10-50',source:'linkedin',service:'Ventilation duct fabrication',value:98000,priority:'medium',status:'qualified',owner:'Aleksandar C.',created:'2026-08-14',lastContact:'2026-08-25',nextFollowUp:'2026-09-01',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:6,
-    notes:[{date:'2026-08-25',author:'Aleksandar C.',text:'Requested drawings before RFQ — sending duct layout templates.'}],
-    activity:[{date:'2026-08-14',type:'created',text:'Lead created from LinkedIn campaign click.'},{date:'2026-08-19',type:'email',text:'Sent capability overview and past duct projects.'},{date:'2026-08-25',type:'qualify',text:'Qualified — confirmed project scope and rough budget.'}]},
-  {id:4,no:'LD-2026-044',company:'Kranfors Verkstad',contact:'Jonas Berg',email:'jonas.berg@kranforsverkstad.se',phone:'+46 70 445 67 89',country:'Sweden',city:'Kristianstad',industry:'Machinery repair',size:'1-10',source:'phone',service:'Gearbox & machinery repair',value:42000,priority:'medium',status:'qualified',owner:'Marko K.',created:'2026-08-10',lastContact:'2026-08-20',nextFollowUp:'2026-08-27',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:7,
-    notes:[],
-    activity:[{date:'2026-08-10',type:'created',text:'Called in about a broken gearbox on their press line.'},{date:'2026-08-20',type:'qualify',text:'Qualified — sent for RFQ preparation.'}]},
-  {id:5,no:'LD-2026-045',company:'Sydstål Prototyping',contact:'Lina Holm',email:'lina.holm@sydstalproto.se',phone:'+46 70 556 78 90',country:'Sweden',city:'Malmö',industry:'Custom equipment and prototypes',size:'1-10',source:'tender',service:'Prototype fabrication',value:210000,priority:'high',status:'qualified',owner:'Aleksandar C.',created:'2026-07-28',lastContact:'2026-08-21',nextFollowUp:'2026-09-02',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:1,
-    notes:[{date:'2026-08-21',author:'Aleksandar C.',text:'Private RFQ received (RFQ-2026-014) — preparing estimate.'}],
-    activity:[{date:'2026-07-28',type:'created',text:'Lead created from tender portal notification.'},{date:'2026-08-05',type:'call',text:'Scoping call — reviewed prototype drawings.'},{date:'2026-08-21',type:'qualify',text:'Qualified and RFQ logged for bid.'}]},
-  {id:6,no:'LD-2026-046',company:'Fabriksservice Syd AB',contact:'Erik Palm',email:'erik.palm@fabriksservice.se',phone:'+46 70 667 89 01',country:'Sweden',city:'Helsingborg',industry:'Industrial maintenance',size:'10-50',source:'existing',service:'Planned maintenance contract',value:76000,priority:'medium',status:'contacted',owner:'Elena N.',created:'2026-08-18',lastContact:'2026-08-26',nextFollowUp:'2026-08-25',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
-    notes:[],
-    activity:[{date:'2026-08-18',type:'created',text:'Existing contact expanded scope enquiry to full maintenance contract.'},{date:'2026-08-26',type:'email',text:'Sent maintenance contract outline and reference sites.'}]},
-  {id:7,no:'LD-2026-047',company:'Nordvent Installation AB',contact:'Michael Sørensen',email:'michael.sorensen@nordvent.dk',phone:'+45 22 778 90 12',country:'Denmark',city:'Copenhagen',industry:'Welding and installation',size:'50-200',source:'linkedin',service:'Welding & installation framework agreement',value:156000,priority:'high',status:'qualified',owner:'Aleksandar C.',created:'2026-07-15',lastContact:'2026-08-23',nextFollowUp:'2026-08-28',commPref:'Phone',dnc:false,linkedCustomerId:null,linkedOpportunityId:8,
-    notes:[{date:'2026-08-23',author:'Aleksandar C.',text:'In negotiation on framework pricing — competitor also bidding.'}],
-    activity:[{date:'2026-07-15',type:'created',text:'Connected via LinkedIn after case study share.'},{date:'2026-08-01',type:'call',text:'Discussed cross-border installation logistics.'},{date:'2026-08-23',type:'qualify',text:'Qualified — moved to negotiation stage.'}]},
-  {id:8,no:'LD-2026-048',company:'Sanus Rostfri AB',contact:'Peter Nyström',email:'peter.nystrom@sanusrostfri.se',phone:'+46 70 889 01 23',country:'Sweden',city:'Landskrona',industry:'Stainless-steel fabrication',size:'10-50',source:'email',service:'Stainless tank fabrication',value:118000,priority:'medium',status:'contacted',owner:'Elena N.',created:'2026-08-20',lastContact:'2026-08-27',nextFollowUp:'2026-09-03',commPref:'Email',dnc:false,linkedCustomerId:null,linkedOpportunityId:null,
-    notes:[],
-    activity:[{date:'2026-08-20',type:'created',text:'Direct email enquiry about stainless tank fabrication.'},{date:'2026-08-27',type:'email',text:'Sent stainless grade options and lead time estimate.'}]},
-  {id:9,no:'LD-2026-049',company:'Ystad Konditori Grupp',contact:'Anna Svensson',email:'anna.svensson@ystadkonditori.se',phone:'+46 70 990 12 34',country:'Sweden',city:'Ystad',industry:'Food-production equipment',size:'1-10',source:'referral',service:'Bakery rack expansion',value:18000,priority:'low',status:'disqualified',owner:'Marko K.',created:'2026-07-30',lastContact:'2026-08-12',nextFollowUp:null,commPref:'Phone',dnc:true,linkedCustomerId:null,linkedOpportunityId:null,
-    notes:[{date:'2026-08-12',author:'Marko K.',text:'Budget far below minimum project size — disqualified. Asked not to be contacted again this year.'}],
-    activity:[{date:'2026-07-30',type:'created',text:'Referral from Ystad Bageri.'},{date:'2026-08-12',type:'disqualify',text:'Disqualified — budget too small, do-not-contact requested.'}]},
-  {id:10,no:'LD-2026-050',company:'MarineVent AB',contact:'Per Bengtsson',email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77',country:'Sweden',city:'Malmö',industry:'Marine and shipyard work',size:'50-200',source:'existing',service:'Ventilation duct system',value:198000,priority:'high',status:'converted',owner:'Aleksandar C.',created:'2026-08-14',lastContact:'2026-08-18',nextFollowUp:null,commPref:'Email',dnc:false,linkedCustomerId:1,linkedOpportunityId:3,
-    notes:[{date:'2026-08-18',author:'Aleksandar C.',text:'Converted to existing customer record — project already in production.'}],
-    activity:[{date:'2026-08-14',type:'created',text:'Repeat enquiry from existing customer contact.'},{date:'2026-08-18',type:'convert',text:'Converted to customer — linked to MarineVent AB (C-001).'}]}
-];
-let nextLeadId=11,nextLeadNo=51;
+// Leads come from the shared v5 state (WorkshopData) — this module no longer holds its own
+// hardcoded seed or page-local counters; that data now lives in workshop-data.js's seed().
+let LEADS=WorkshopData.getMarketingLeads();
 
 const STAGES=['discovery','qualified','rfq','preparing','quotesent','negotiation','won','lost'];
-let OPPORTUNITIES=[
-  {id:1,no:'OPP-2026-101',company:'Sydstål Prototyping',contact:'Lina Holm',leadId:5,customerId:null,title:'Prototype Fabrication Programme',services:['Prototype fabrication','CNC machining'],scope:'Series of 3 prototype enclosures for a robotics application, stainless frame with CNC-machined panels.',industry:'Custom equipment and prototypes',value:210000,probability:60,stage:'preparing',expectedDecision:'2026-09-15',requiredDelivery:'2026-10-30',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Finalize BOM and issue estimate',followUpDate:'2026-09-02',
-    activity:[{date:'2026-07-28',text:'Opportunity created from qualified lead.'},{date:'2026-08-21',text:'RFQ-2026-014 received, moved to Preparing Estimate.'}]},
-  {id:2,no:'OPP-2026-102',company:'MarineVent AB',contact:'Lena Mårtensson',leadId:null,customerId:1,title:'Ventilation Upgrade Package',services:['Ventilation fabrication'],scope:'Upgrade package for existing ventilation duct system, additional filtration stage.',industry:'Marine / Ventilation Systems',value:28503,probability:55,stage:'quotesent',expectedDecision:'2026-09-10',requiredDelivery:'2026-10-15',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:'EST-2026-023',linkedProjectNo:null,nextAction:'Follow up on quote EST-2026-023',followUpDate:'2026-09-01',
-    activity:[{date:'2026-08-22',text:'Quotation EST-2026-023 sent to customer.'}]},
-  {id:3,no:'OPP-2026-103',company:'MarineVent AB',contact:'Per Bengtsson',leadId:10,customerId:1,title:'Ventilation Duct System',services:['Fabrication','Welding','Installation'],scope:'Full ventilation duct system for vessel retrofit.',industry:'Marine / Ventilation Systems',value:198000,probability:100,stage:'won',expectedDecision:'2026-08-18',requiredDelivery:'2026-11-12',competitor:'',decisionReason:'Best technical fit and delivery time.',owner:'Aleksandar C.',linkedEstimateNo:'EST-2026-018',linkedProjectNo:'P-2026-014',nextAction:'Monitor production progress',followUpDate:null,
-    activity:[{date:'2026-08-14',text:'Estimate EST-2026-018 accepted.'},{date:'2026-08-15',text:'Project P-2026-014 created and moved into production.'}]},
-  {id:4,no:'OPP-2026-104',company:'Sanus Glutenfri AB',contact:'Per Nilsson',leadId:null,customerId:2,title:'Stainless Platform Extension',services:['Fabrication','Installation'],scope:'Extension of stainless platform for food safety compliance.',industry:'Food Production',value:138000,probability:100,stage:'won',expectedDecision:'2026-08-24',requiredDelivery:'2026-11-28',competitor:'',decisionReason:'Existing supplier relationship and fast turnaround.',owner:'Elena N.',linkedEstimateNo:'EST-2026-024',linkedProjectNo:null,nextAction:'Convert estimate to project',followUpDate:null,
-    activity:[{date:'2026-08-24',text:'Estimate EST-2026-024 accepted by customer.'}]},
-  {id:5,no:'OPP-2026-105',company:'Öresund Marine Service',contact:'Henrik Dahl',leadId:2,customerId:null,title:'Deck Fabrication & Welding',services:['Fabrication','Welding'],scope:'Steel deck sections and railings for a service vessel refit.',industry:'Marine and shipyard work',value:320000,probability:20,stage:'discovery',expectedDecision:'2026-10-01',requiredDelivery:'2026-12-01',competitor:'Sydsvensk Svets AB',decisionReason:'',owner:'Marko K.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Arrange site visit to scope deck works',followUpDate:null,
-    activity:[{date:'2026-08-24',text:'Opportunity opened from new website lead.'}]},
-  {id:6,no:'OPP-2026-106',company:'Ventia HVAC Syd',contact:'Camilla Ek',leadId:3,customerId:null,title:'Ventilation Duct Fabrication',services:['Ventilation fabrication'],scope:'Ductwork fabrication for a new production hall.',industry:'Ventilation and HVAC fabrication',value:98000,probability:35,stage:'qualified',expectedDecision:'2026-09-20',requiredDelivery:'2026-11-05',competitor:'',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Prepare RFQ documents once drawings confirmed',followUpDate:'2026-09-04',
-    activity:[{date:'2026-08-25',text:'Lead qualified, opportunity opened.'}]},
-  {id:7,no:'OPP-2026-107',company:'Kranfors Verkstad',contact:'Jonas Berg',leadId:4,customerId:null,title:'Gearbox & Machinery Repair Contract',services:['Machinery repair'],scope:'Repair and preventive service contract for press line gearboxes.',industry:'Machinery repair',value:42000,probability:45,stage:'rfq',expectedDecision:'2026-09-05',requiredDelivery:'2026-09-25',competitor:'',decisionReason:'',owner:'Marko K.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Prepare estimate from RFQ scope',followUpDate:'2026-08-26',
-    activity:[{date:'2026-08-20',text:'RFQ received for gearbox repair.'}]},
-  {id:8,no:'OPP-2026-108',company:'Nordvent Installation AB',contact:'Michael Sørensen',leadId:7,customerId:null,title:'Welding & Installation Framework Agreement',services:['Welding','Installation'],scope:'Multi-site framework agreement for welding and installation call-outs.',industry:'Welding and installation',value:156000,probability:70,stage:'negotiation',expectedDecision:'2026-09-08',requiredDelivery:'2026-10-01',competitor:'Baltic Weld Partners',decisionReason:'',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Finalize framework pricing tiers',followUpDate:'2026-08-31',
-    activity:[{date:'2026-08-23',text:'Entered negotiation on framework pricing.'}]},
-  {id:9,no:'OPP-2026-109',company:'Schröder Nordic',contact:'Anna Berg',leadId:null,customerId:3,title:'Machinery Retrofit Inquiry',services:['Retrofit'],scope:'Retrofit of folding machine line — postponed by customer.',industry:'Industrial Machinery',value:85000,probability:0,stage:'lost',expectedDecision:'2026-08-10',requiredDelivery:'',competitor:'',decisionReason:'Customer reallocated budget to another site.',owner:'Aleksandar C.',linkedEstimateNo:null,linkedProjectNo:null,nextAction:'Re-engage in Q1 2027',followUpDate:null,
-    activity:[{date:'2026-07-20',text:'Retrofit inquiry opened.'},{date:'2026-08-10',text:'Marked lost — budget reallocated.'}]}
-];
-let nextOppId=10,nextOppNo=110;
+// Opportunities come from the shared v5 state (WorkshopData) — no page-local seed or counters.
+let OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
 
 let TENDERS=[
   {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
@@ -353,17 +312,8 @@ let TENDERS=[
 ];
 let nextTenderId=6;
 
-let CAMPAIGNS=[
-  {id:1,name:'Stainless Solutions for Food Producers',objective:'Generate qualified leads among food-production and bakery companies in Skåne.',targetIndustries:['Food-production equipment','Stainless-steel fabrication'],targetServices:['Fabrication','Installation'],segment:'Food-production companies',channels:['LinkedIn','Email','Trade fair'],start:'2026-06-01',end:'2026-09-30',budget:45000,spend:31200,owner:'Elena N.',status:'active',leads:14,qualified:6,estimates:4,wonValue:138000,
-    activity:[{date:'2026-08-10',text:'Trade fair follow-up emails sent to 22 contacts.'}]},
-  {id:2,name:'Workshop Repair & Maintenance Services',objective:'Drive service call-outs and maintenance contracts from local industrial sites.',targetIndustries:['Industrial maintenance','Machinery repair'],targetServices:['Repair','Maintenance contracts'],segment:'Property and facility maintenance',channels:['Google Ads','Referral programme'],start:'2026-05-15',end:'2026-09-15',budget:25000,spend:24100,owner:'Marko K.',status:'active',leads:22,qualified:5,estimates:3,wonValue:42000,
-    activity:[{date:'2026-08-05',text:'Referral programme generated 4 new leads this week.'}]},
-  {id:3,name:'Marine Steel & Welding Services',objective:'Build pipeline with marine and shipyard operators in the Öresund region.',targetIndustries:['Marine and shipyard work','Welding and installation'],targetServices:['Welding','Fabrication'],segment:'Marine and shipyard companies',channels:['LinkedIn','Direct email','Port trade show'],start:'2026-07-01',end:'2026-10-31',budget:60000,spend:58900,owner:'Aleksandar C.',status:'active',leads:9,qualified:4,estimates:2,wonValue:0,
-    activity:[{date:'2026-08-18',text:'Port trade show — 9 new contacts collected.'}]},
-  {id:4,name:'Custom Machinery & Prototype Fabrication',objective:'Position Varmak for prototype and custom-equipment RFQs.',targetIndustries:['Custom equipment and prototypes','Ventilation and HVAC fabrication'],targetServices:['CNC machining','Prototype fabrication'],segment:'Industrial manufacturers',channels:['Website','LinkedIn'],start:'2026-03-01',end:'2026-08-15',budget:30000,spend:30000,owner:'Elena N.',status:'completed',leads:11,qualified:5,estimates:3,wonValue:0,
-    activity:[{date:'2026-08-15',text:'Campaign closed — 3 estimates still in active pipeline.'}]}
-];
-let nextCampaignId=5;
+// Campaigns come from the shared v5 state (WorkshopData) — no page-local seed or counters.
+let CAMPAIGNS=WorkshopData.getMarketingCampaigns();
 
 let CONTENT=[
   {id:1,title:'Ventilation Duct System — Marine Vessel Retrofit',channel:'Website',type:'Project case study',campaignId:3,owner:'Aleksandar C.',date:'2026-08-05',status:'published',audience:'Marine and shipyard companies',cta:'Request a fabrication quote'},
@@ -854,38 +804,41 @@ function saveLeadForm(id){
     industry:$('lfIndustry').value.trim(),size:$('lfSize').value.trim(),source:$('lfSource').value,service:$('lfService').value.trim(),
     value:Number($('lfValue').value)||0,priority:$('lfPriority').value,owner:$('lfOwner').value,nextFollowUp:$('lfFollowup').value||null,
     commPref:$('lfCommpref').value,dnc:$('lfDnc').checked};
-  if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:currentDate().toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});}
-  else{LEADS.unshift(Object.assign({id:nextLeadId++,no:'LD-2026-0'+(nextLeadNo++),status:'new',created:currentDate().toISOString().slice(0,10),lastContact:currentDate().toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:currentDate().toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data));selectedLeadId=LEADS[0].id;}
+  if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:currentDate().toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});syncLead(l);}
+  else{
+    const l=Object.assign({status:'new',created:currentDate().toISOString().slice(0,10),lastContact:currentDate().toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:currentDate().toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data);
+    syncLead(l);LEADS.unshift(l);selectedLeadId=l.id;
+  }
   closeModal();renderApp();
 }
 function openAddNote(id){const tt=t();const html=`<h2>${tt.m_addnote_t}</h2>${fieldTextarea('noteText',tt.f_notetext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadNote(id){const txt=$('noteText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.notes.unshift({date:dt,author:'Aleksandar C.',text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});leadDetailTab='notes';closeModal();renderApp();}
+  l.notes.unshift({date:dt,author:'Aleksandar C.',text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});syncLead(l);leadDetailTab='notes';closeModal();renderApp();}
 function openRecordCall(id){const tt=t();const html=`<h2>${tt.m_recordcall_t}</h2>${fieldTextarea('callText',tt.f_calltext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadCall(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadCall(id){const txt=$('callText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.lastContact=dt;l.activity.push({date:dt,type:'call',text:txt});leadDetailTab='activity';closeModal();renderApp();}
+  l.lastContact=dt;l.activity.push({date:dt,type:'call',text:txt});syncLead(l);leadDetailTab='activity';closeModal();renderApp();}
 function openRecordEmail(id){const tt=t();const html=`<h2>${tt.m_recordemail_t}</h2>${fieldTextarea('emailText',tt.f_emailtext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadEmail(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadEmail(id){const txt=$('emailText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.lastContact=dt;l.activity.push({date:dt,type:'email',text:txt});leadDetailTab='activity';closeModal();renderApp();}
+  l.lastContact=dt;l.activity.push({date:dt,type:'email',text:txt});syncLead(l);leadDetailTab='activity';closeModal();renderApp();}
 function openScheduleFollowup(id){openRescheduleLead(id);}
 function openRescheduleLead(id){const tt=t();const l=getLead(id);const html=`<h2>${tt.m_schedulefu_t}</h2>
   ${field('fuDate',tt.f_fudate,l.nextFollowUp||'','date')}${fieldTextarea('fuReason',tt.f_fureason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadFollowup(id){const date=$('fuDate').value;if(!date)return;const reason=$('fuReason').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.nextFollowUp=date;l.activity.push({date:dt,type:'followup',text:'Follow-up scheduled for '+date+(reason?' — '+reason:'')+'.'});closeModal();renderApp();}
-function completeLeadFollowup(id){const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);l.activity.push({date:dt,type:'followup',text:'Follow-up marked completed.'});l.lastContact=dt;l.nextFollowUp=null;renderApp();}
+  l.nextFollowUp=date;l.activity.push({date:dt,type:'followup',text:'Follow-up scheduled for '+date+(reason?' — '+reason:'')+'.'});syncLead(l);closeModal();renderApp();}
+function completeLeadFollowup(id){const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);l.activity.push({date:dt,type:'followup',text:'Follow-up marked completed.'});l.lastContact=dt;l.nextFollowUp=null;syncLead(l);renderApp();}
 function openQualifyLead(id){const tt=t();const html=`<h2>${tt.m_qualify_t}</h2>${fieldTextarea('qualNote',tt.f_qualnote,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveQualifyLead(${id})">${tt.act_qualify}</button></div>`;openModal(html);}
 function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});closeModal();renderApp();}
+  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});syncLead(l);closeModal();renderApp();}
 function openDisqualifyLead(id){const tt=t();const html=`<h2>${tt.m_disqualify_t}</h2>${fieldTextarea('disqReason',tt.f_disqreason,'')}
   <div class="frow checkrow"><input type="checkbox" id="disqDnc"><label for="disqDnc" style="margin:0;">${tt.fl_dnc}</label></div>
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveDisqualifyLead(${id})">${tt.act_disqualify}</button></div>`;openModal(html);}
 function saveDisqualifyLead(id){const reason=$('disqReason').value.trim();const dnc=$('disqDnc').checked;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.status='disqualified';l.dnc=l.dnc||dnc;l.nextFollowUp=null;l.activity.push({date:dt,type:'disqualify',text:'Lead disqualified.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
+  l.status='disqualified';l.dnc=l.dnc||dnc;l.nextFollowUp=null;l.activity.push({date:dt,type:'disqualify',text:'Lead disqualified.'+(reason?' Reason: '+reason:'')});syncLead(l);closeModal();renderApp();}
 function openConvertLead(id){const tt=t();const l=getLead(id);
   const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
   const html=`<h2>${tt.m_convert_t}</h2><div class="fsub">${esc(l.company)}</div>
@@ -902,7 +855,7 @@ function saveConvertLead(id){const l=getLead(id);const dt=currentDate().toISOStr
       SHARED.customers=WorkshopData.get().customers;custId=saved.id;}
   }
   l.status='converted';l.linkedCustomerId=custId;l.nextFollowUp=null;l.activity.push({date:dt,type:'convert',text:'Converted to customer record'+(custId?' (ID '+custId+').':'.')});
-  closeModal();renderApp();}
+  syncLead(l);closeModal();renderApp();}
 
 // ═══════════════ OPPORTUNITIES VIEW ═══════════════
 function oppIndustryList(){return [...new Set(OPPORTUNITIES.map(o=>o.industry))];}
@@ -980,21 +933,21 @@ function openOppDetail(id){
 }
 function applyOppStage(id){const sel=$('oppStageSel');if(!sel)return;const o=getOpp(id);const newStage=sel.value;if(newStage===o.stage)return;
   const dt=currentDate().toISOString().slice(0,10);o.activity.push({date:dt,text:'Stage moved to '+t()['stg_'+newStage]+'.'});
-  o.stage=newStage;if(newStage==='won'){o.probability=100;o.followUpDate=null;}closeModal();renderApp();}
+  o.stage=newStage;if(newStage==='won'){o.probability=100;o.followUpDate=null;}syncOpportunity(o);closeModal();renderApp();}
 function markOppWon(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.stage='won';o.probability=100;o.followUpDate=null;
-  o.activity.push({date:dt,text:'Marked as won.'});closeModal();renderApp();}
+  o.activity.push({date:dt,text:'Marked as won.'});syncOpportunity(o);closeModal();renderApp();}
 function openMarkLost(id){const tt=t();const html=`<h2>${tt.m_marklost_t}</h2>${fieldTextarea('lostReason',tt.fl_decisionreason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveMarkLost(${id})">${tt.act_marklost}</button></div>`;openModal(html);}
 function saveMarkLost(id){const reason=$('lostReason').value.trim();const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);
-  o.stage='lost';o.probability=0;o.followUpDate=null;o.decisionReason=reason;o.activity.push({date:dt,text:'Marked as lost.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
+  o.stage='lost';o.probability=0;o.followUpDate=null;o.decisionReason=reason;o.activity.push({date:dt,text:'Marked as lost.'+(reason?' Reason: '+reason:'')});syncOpportunity(o);closeModal();renderApp();}
 function openAddOppNote(id){const tt=t();const html=`<h2>${tt.act_addnote}</h2>${fieldTextarea('oppNoteText',tt.f_notetext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveOppNote(id){const txt=$('oppNoteText').value.trim();if(!txt)return;const o=getOpp(id);o.activity.push({date:currentDate().toISOString().slice(0,10),text:txt});closeModal();renderApp();}
+function saveOppNote(id){const txt=$('oppNoteText').value.trim();if(!txt)return;const o=getOpp(id);o.activity.push({date:currentDate().toISOString().slice(0,10),text:txt});syncOpportunity(o);closeModal();renderApp();}
 function openRescheduleOpp(id){const tt=t();const o=getOpp(id);const html=`<h2>${tt.m_schedulefu_t}</h2>${field('oppFuDate',tt.f_fudate,o.followUpDate||'','date')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveOppFollowup(id){const date=$('oppFuDate').value;if(!date)return;const o=getOpp(id);o.followUpDate=date;
-  o.activity.push({date:currentDate().toISOString().slice(0,10),text:'Follow-up scheduled for '+date+'.'});closeModal();renderApp();}
-function completeOppFollowup(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.activity.push({date:dt,text:'Follow-up marked completed.'});o.followUpDate=null;renderApp();}
+  o.activity.push({date:currentDate().toISOString().slice(0,10),text:'Follow-up scheduled for '+date+'.'});syncOpportunity(o);closeModal();renderApp();}
+function completeOppFollowup(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.activity.push({date:dt,text:'Follow-up marked completed.'});o.followUpDate=null;syncOpportunity(o);renderApp();}
 function openOppForm(id){
   const tt=t();const o=id?getOpp(id):null;
   const html=`<h2>${o?tt.m_editopp_t:tt.m_newopp_t}</h2>
@@ -1014,8 +967,11 @@ function saveOppForm(id){
     value:Number($('ofValue').value)||0,probability:Number($('ofProb').value)||0,stage:$('ofStage').value,
     expectedDecision:$('ofDecision').value||'',requiredDelivery:$('ofDelivery').value||'',owner:$('ofOwner').value,competitor:$('ofCompetitor').value.trim(),nextAction:$('ofNextAction').value.trim()};
   const dt=currentDate().toISOString().slice(0,10);
-  if(id){const o=getOpp(id);Object.assign(o,data);o.activity.push({date:dt,text:'Opportunity details updated.'});}
-  else{OPPORTUNITIES.unshift(Object.assign({id:nextOppId++,no:'OPP-2026-1'+(nextOppNo++),leadId:null,customerId:null,services:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:null,activity:[{date:dt,text:'Opportunity created manually.'}]},data));}
+  if(id){const o=getOpp(id);Object.assign(o,data);o.activity.push({date:dt,text:'Opportunity details updated.'});syncOpportunity(o);}
+  else{
+    const o=Object.assign({leadId:null,customerId:null,services:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:null,activity:[{date:dt,text:'Opportunity created manually.'}]},data);
+    syncOpportunity(o);OPPORTUNITIES.unshift(o);
+  }
   closeModal();renderApp();
 }
 
@@ -1100,7 +1056,7 @@ function openCampaignDetail(id){
     </div>`;
   openModal(html,true);
 }
-function setCampaignStatus(id,status){const c=getCampaign(id);c.status=status;c.activity.push({date:currentDate().toISOString().slice(0,10),text:'Status changed to '+status+'.'});closeModal();renderApp();}
+function setCampaignStatus(id,status){const c=getCampaign(id);c.status=status;c.activity.push({date:currentDate().toISOString().slice(0,10),text:'Status changed to '+status+'.'});syncCampaign(c);closeModal();renderApp();}
 function openCampaignForm(id){
   const tt=t();const c=id?getCampaign(id):null;
   const html=`<h2>${c?tt.m_editcampaign_t:tt.m_newcampaign_t}</h2>
@@ -1120,8 +1076,11 @@ function saveCampaignForm(id){
     channels:$('cfChannels').value.split(',').map(s=>s.trim()).filter(Boolean),segment:$('cfSegment').value.trim(),owner:$('cfOwner').value,
     start:$('cfStart').value||'',end:$('cfEnd').value||'',budget:Number($('cfBudget').value)||0,spend:Number($('cfSpend').value)||0,status:$('cfStatus').value};
   const dt=currentDate().toISOString().slice(0,10);
-  if(id){Object.assign(getCampaign(id),data);}
-  else{CAMPAIGNS.unshift(Object.assign({id:nextCampaignId++,targetServices:[],leads:0,qualified:0,estimates:0,wonValue:0,activity:[{date:dt,text:'Campaign created.'}]},data));}
+  if(id){const c=getCampaign(id);Object.assign(c,data);syncCampaign(c);}
+  else{
+    const c=Object.assign({targetServices:[],leads:0,qualified:0,estimates:0,wonValue:0,activity:[{date:dt,text:'Campaign created.'}]},data);
+    syncCampaign(c);CAMPAIGNS.unshift(c);
+  }
   closeModal();renderApp();
 }
 
@@ -1337,6 +1296,15 @@ function renderApp(){
   $('app').innerHTML=v.render();
   if(v.attach)v.attach();
 }
+
+// Refresh from shared data whenever another module (or another tab) changes it, rather than
+// keeping a page-level copy that could go stale or overwrite newer shared state.
+function refreshMarketingFromShared(){
+  LEADS=WorkshopData.getMarketingLeads();
+  OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
+  CAMPAIGNS=WorkshopData.getMarketingCampaigns();
+}
+window.addEventListener('workshop:data',()=>{refreshMarketingFromShared();renderApp();});
 
 setLang('en');
 </script>

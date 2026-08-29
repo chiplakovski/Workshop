@@ -6,6 +6,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage}=require('./helpers/load-workshop-data');
 
+const V5_KEY='varmak.workshop.frontend.v5';
 const V4_KEY='varmak.workshop.frontend.v4';
 const V3_KEY='varmak.workshop.frontend.v3';
 
@@ -14,36 +15,54 @@ function minimalState(overrides){
     jobcards:[],suppliers:[],hours:[],movements:[],offcuts:[],stockCounts:[],activity:[]},overrides);
 }
 
-// ── Data migration ──────────────────────────────────────────────────────────
-test('data migration: v4 present and valid is used as-is', ()=>{
-  const v4=minimalState({version:4,customers:[{id:2,no:'C-002',name:'Current Co'}]});
-  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+// ── Data migration: v5 is primary, v4 and v3 are migration/recovery sources (Pass 2) ───────────
+test('data migration: valid v5 loads unchanged', ()=>{
+  const v5=minimalState({version:5,customers:[{id:2,no:'C-002',name:'Current Co'}]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
   const state=WD.get();
   assert.equal(state.customers.length,1);
   assert.equal(state.customers[0].name,'Current Co');
   assert.equal(WD.getDataHealth().migratedFromLegacy,false);
+  assert.equal(WD.getDataHealth().migrationSource,'v5');
 });
 
-test('data migration: legacy v3 is migrated to v4 when v4 is absent', ()=>{
+test('data migration: v4 migrates safely to v5 when v5 is absent', ()=>{
+  const v4=minimalState({version:4,customers:[{id:2,no:'C-002',name:'V4 Co'}]});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const state=WD.get();
+  assert.ok(state.customers.some(c=>c.name==='V4 Co'));
+  const health=WD.getDataHealth();
+  assert.equal(health.migratedFromLegacy,true);
+  assert.equal(health.migrationSource,'v4');
+  assert.equal(health.sourceKey,V4_KEY);
+});
+
+test('data migration: v3 can still migrate directly to v5 when v5 and v4 are both absent', ()=>{
   const v3=minimalState({customers:[{id:99,no:'C-099',name:'Legacy Customer'}]});
   const WD=loadWorkshopData({[V3_KEY]:JSON.stringify(v3)});
   const state=WD.get();
   assert.ok(state.customers.some(c=>c.name==='Legacy Customer'),'legacy customer must be preserved');
-  assert.equal(WD.getDataHealth().migratedFromLegacy,true);
-  assert.equal(WD.getDataHealth().sourceKey,V3_KEY);
+  const health=WD.getDataHealth();
+  assert.equal(health.migratedFromLegacy,true);
+  assert.equal(health.migrationSource,'v3');
+  assert.equal(health.sourceKey,V3_KEY);
 });
 
-test('data migration: legacy v3 key is preserved untouched after migration', ()=>{
-  const v3=minimalState({customers:[{id:1,no:'C-001',name:'X'}]});
+test('data migration: old v4 and v3 keys remain untouched after either migration path', ()=>{
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}]});
+  const rawV4=JSON.stringify(v4);
+  const {localStorage:ls1}=loadWorkshopDataWithStorage({[V4_KEY]:rawV4});
+  assert.equal(ls1.getItem(V4_KEY),rawV4,'v4 record itself must be untouched after v4->v5 migration');
+
+  const v3=minimalState({customers:[{id:1,no:'C-001',name:'Y'}]});
   const rawV3=JSON.stringify(v3);
-  const WD=loadWorkshopData({[V3_KEY]:rawV3});
-  WD.get();
-  assert.equal(WD.key,V4_KEY,'module still points at the v4 key going forward');
+  const {localStorage:ls2}=loadWorkshopDataWithStorage({[V3_KEY]:rawV3});
+  assert.equal(ls2.getItem(V3_KEY),rawV3,'v3 record itself must be untouched after v3->v5 migration');
 });
 
 test('data migration: an intentionally empty user array stays empty after migration (not refilled with demo data)', ()=>{
-  const v3=minimalState({customers:[{id:1,no:'C-001',name:'X'}],hours:[]});
-  const WD=loadWorkshopData({[V3_KEY]:JSON.stringify(v3)});
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],hours:[]});
+  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
   const state=WD.get();
   assert.deepEqual(state.hours,[],'hours was explicitly empty in the source data and must remain empty');
 });
@@ -57,68 +76,60 @@ test('data migration: a collection missing entirely from old v3 data (Equipment/
   assert.ok(Array.isArray(state.qualityInspections),'missing Quality collections must be backfilled from defaults');
 });
 
-test('data migration: a corrupted v4 record does not destroy a valid v3 backup — v3 is recovered instead', ()=>{
-  const v3=minimalState({customers:[{id:5,no:'C-005',name:'Recover Me'}]});
-  const WD=loadWorkshopData({[V3_KEY]:JSON.stringify(v3),[V4_KEY]:'{not valid json'});
-  const state=WD.get();
-  assert.ok(state.customers.some(c=>c.name==='Recover Me'));
-  const health=WD.getDataHealth();
-  assert.equal(health.corruptedV4Detected,true);
-  assert.ok(health.recoveryWarning,'a recovery warning must be surfaced to the caller');
-});
-
-test('data migration: corrupted v4 with no v3 backup falls back safely to demo data without throwing', ()=>{
-  const WD=loadWorkshopData({[V4_KEY]:'{not valid json'});
-  const state=WD.get();
-  assert.ok(state.customers.length>0);
-  assert.equal(WD.getDataHealth().corruptedV4Detected,true);
-  assert.equal(WD.getDataHealth().sourceKey,null);
-});
-
-// ── Corrupted-v4 rescue copy (Pass 1.1) ─────────────────────────────────────
+// ── Corrupted-v5 rescue copy ─────────────────────────────────────────────────
 function rescueKeys(localStorage){
-  return Array.from(localStorage.store.keys()).filter(k=>k.startsWith(`${V4_KEY}.corrupted.`));
+  return Array.from(localStorage.store.keys()).filter(k=>k.startsWith(`${V5_KEY}.corrupted.`));
 }
 
-test('rescue copy: corrupted v4 with a valid v3 backup creates a rescue copy AND migrates v3', ()=>{
-  const v3=minimalState({customers:[{id:5,no:'C-005',name:'Recover Me'}]});
-  const {WD,localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:JSON.stringify(v3),[V4_KEY]:'{not valid json'});
-  const state=WD.get();
-  assert.ok(state.customers.some(c=>c.name==='Recover Me'),'v3 must still be migrated');
-  const rescued=rescueKeys(localStorage);
-  assert.equal(rescued.length,1,'exactly one rescue copy must be created');
-  const health=WD.getDataHealth();
-  assert.equal(health.corruptedRecordPreserved,true);
-});
-
-test('rescue copy: corrupted v4 with no v3 backup creates a rescue copy before falling back to demo data', ()=>{
-  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:'{not valid json'});
-  const rescued=rescueKeys(localStorage);
-  assert.equal(rescued.length,1,'a rescue copy must exist even when there is no v3 to recover');
-  const health=WD.getDataHealth();
-  assert.equal(health.corruptedV4Detected,true);
-  assert.equal(health.corruptedRecordPreserved,true);
-  assert.ok(health.recoveryWarning);
-});
-
-test('rescue copy: the rescue copy contains the exact original corrupted raw value', ()=>{
+test('rescue copy: corrupted v5 is rescue-copied exactly, byte for byte', ()=>{
   const rawCorrupted='{not valid json — this is exactly what was in localStorage';
-  const {localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:rawCorrupted});
+  const {localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:rawCorrupted});
   const rescued=rescueKeys(localStorage);
   assert.equal(rescued.length,1);
   assert.equal(localStorage.getItem(rescued[0]),rawCorrupted);
 });
 
-test('rescue copy: loading does not delete the legacy v3 key', ()=>{
+test('rescue copy: corrupted v5 recovers from a valid v4 backup', ()=>{
+  const v4=minimalState({version:4,customers:[{id:5,no:'C-005',name:'Recover Me'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:JSON.stringify(v4),[V5_KEY]:'{not valid json'});
+  const state=WD.get();
+  assert.ok(state.customers.some(c=>c.name==='Recover Me'),'v4 must still be migrated');
+  assert.equal(WD.getDataHealth().migrationSource,'v4');
+  const rescued=rescueKeys(localStorage);
+  assert.equal(rescued.length,1,'exactly one rescue copy must be created');
+  assert.equal(WD.getDataHealth().corruptedRecordPreserved,true);
+});
+
+test('rescue copy: corrupted v5 (and no usable v4) recovers from a valid v3 backup', ()=>{
+  const v3=minimalState({customers:[{id:5,no:'C-005',name:'Recover Me Too'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:JSON.stringify(v3),[V5_KEY]:'{not valid json'});
+  const state=WD.get();
+  assert.ok(state.customers.some(c=>c.name==='Recover Me Too'));
+  assert.equal(WD.getDataHealth().migrationSource,'v3');
+  assert.equal(rescueKeys(localStorage).length,1);
+});
+
+test('rescue copy: corrupted v5 with no v3/v4 backup falls back safely to demo data, still rescuing the corrupted record', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:'{not valid json'});
+  const rescued=rescueKeys(localStorage);
+  assert.equal(rescued.length,1,'a rescue copy must exist even when there is no v3/v4 to recover');
+  const health=WD.getDataHealth();
+  assert.equal(health.corruptedV5Detected,true);
+  assert.equal(health.corruptedRecordPreserved,true);
+  assert.ok(health.recoveryWarning);
+});
+
+test('rescue copy: loading does not delete the legacy v3 key even when recovering from v4', ()=>{
   const v3=minimalState({customers:[{id:1,no:'C-001',name:'X'}]});
   const rawV3=JSON.stringify(v3);
-  const {localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:rawV3,[V4_KEY]:'{not valid json'});
+  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}]});
+  const {localStorage}=loadWorkshopDataWithStorage({[V3_KEY]:rawV3,[V4_KEY]:JSON.stringify(v4)});
   assert.equal(localStorage.getItem(V3_KEY),rawV3,'the v3 record itself must be untouched');
 });
 
-test('rescue copy: valid v4 data does not create a corrupted rescue key', ()=>{
-  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'Fine'}]});
-  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:JSON.stringify(v4)});
+test('rescue copy: valid v5 data does not create a corrupted rescue key', ()=>{
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'Fine'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:JSON.stringify(v5)});
   assert.equal(rescueKeys(localStorage).length,0);
   assert.equal(WD.getDataHealth().corruptedRecordPreserved,false);
 });
@@ -130,7 +141,7 @@ test('rescue copy: does not claim preservation, and surfaces a warning, when the
       return super.setItem(key,value);
     }
   }
-  const {WD,localStorage}=loadWorkshopDataWithStorage({[V4_KEY]:'{not valid json'},new RejectingLocalStorage());
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:'{not valid json'},new RejectingLocalStorage());
   assert.equal(rescueKeys(localStorage).length,0,'the rejected write must not have produced a rescue key');
   const health=WD.getDataHealth();
   assert.equal(health.corruptedRecordPreserved,false,'must not claim preservation when the write failed');
@@ -181,23 +192,23 @@ test('equipment: available equipment can be assigned', ()=>{
 
 // ── Equipment: intentionally empty collection must stay empty (Pass 1.1) ───
 test('equipment: a valid empty equipment array remains empty after getEquipment()', ()=>{
-  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
-  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
   assert.deepEqual(WD.getEquipment(),[],'an intentionally empty equipment collection must not be refilled');
 });
 
 test('equipment: getEquipment() does not modify stored state', ()=>{
-  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
-  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
   WD.getEquipment();
   WD.getEquipment();
   assert.deepEqual(WD.get().equipment,[],'repeated reads must never mutate state');
-  assert.equal(WD.getDataHealth().sourceKey,V4_KEY,'no save() should have been triggered by a read');
+  assert.equal(WD.getDataHealth().sourceKey,V5_KEY,'no save() should have been triggered by a read');
 });
 
 test('equipment: ensureDemoEquipment() explicitly adds demonstration equipment to an empty collection', ()=>{
-  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
-  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
   assert.deepEqual(WD.getEquipment(),[]);
   const result=WD.ensureDemoEquipment();
   assert.ok(Array.isArray(result)&&result.length>0,'ensureDemoEquipment must add demo records when called explicitly');
@@ -206,8 +217,8 @@ test('equipment: ensureDemoEquipment() explicitly adds demonstration equipment t
 
 test('equipment: existing equipment records are left unchanged by getEquipment() and by loading', ()=>{
   const existing=[{id:'E-9001',equipmentId:'E-9001',name:'Custom Drill Press',status:'Available'}];
-  const v4=minimalState({version:4,customers:[{id:1,no:'C-001',name:'X'}],equipment:existing});
-  const WD=loadWorkshopData({[V4_KEY]:JSON.stringify(v4)});
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:existing});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
   const equipment=WD.getEquipment();
   // normalize() defensively backfills missing per-item sub-arrays (activity, inspections, ...) on
   // every load — that is schema normalization, not demo-data seeding. What must NOT happen is any
@@ -315,4 +326,161 @@ test('estimation deletion: archiving a linked estimation keeps it present but ma
   const res=WD.archiveEstimation(saved.id,'Archived (linked to project P-2026-014)');
   assert.equal(res.archived,true);
   assert.ok(WD.get().estimations.some(e=>e.id===saved.id&&e.archived===true));
+});
+
+// ── Legacy module-data migration (Pass 2) ───────────────────────────────────
+const LEGACY_PROJECTS_KEY='varmak.projects.ui.v1';
+const LEGACY_PURCHASING_KEY='varmak.purchasing.orders';
+const LEGACY_DOCUMENTS_KEY='varmak.documents.records';
+const LEGACY_REPORTS_SAVED_KEY='varmak.reports.saved.v1';
+const LEGACY_REPORTS_CONFIG_KEY='varmak.reports.config.v1';
+
+test('legacy migration: Projects legacy key (varmak.projects.ui.v1) is migrated into shared projects, customerId remapped by name', ()=>{
+  const legacy=[{id:1,no:'P-26-9001',name:'Custom Project',customerId:2,status:'active',jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
+  const WD=loadWorkshopData({[LEGACY_PROJECTS_KEY]:JSON.stringify(legacy)});
+  const state=WD.get();
+  const migrated=state.projects.find(p=>p.no==='P-26-9001');
+  assert.ok(migrated,'legacy project must be present in shared projects');
+  assert.equal(migrated.name,'Custom Project');
+  assert.equal(migrated.customer,'Schröder Nordic','customerId 2 in the local picklist resolves to Schröder Nordic by name');
+  assert.ok(state.customers.some(c=>c.name==='Schröder Nordic'),'the resolved customer must exist in shared customers');
+  assert.ok(state.projects.some(p=>p.no==='P-2026-014'),'the unrelated pre-existing shared project must be preserved');
+});
+
+test('legacy migration: Purchasing legacy key (varmak.purchasing.orders) is migrated into shared purchaseOrders', ()=>{
+  const legacy=[{no:'PO-CUSTOM-9001',supplier:'Acme Supplies',project:'P-1',date:'2026-01-01',expected:'2026-01-10',value:5000,buyer:'Me',status:'Draft',items:'stuff'}];
+  const WD=loadWorkshopData({[LEGACY_PURCHASING_KEY]:JSON.stringify(legacy)});
+  const state=WD.get();
+  assert.equal(state.purchaseOrders.length,1);
+  assert.equal(state.purchaseOrders[0].no,'PO-CUSTOM-9001');
+  assert.equal(state.purchaseOrders[0].supplier,'Acme Supplies');
+});
+
+test('legacy migration: Documents legacy key (varmak.documents.records) is migrated into shared documents', ()=>{
+  const legacy=[{id:500,name:'Custom Cert.pdf',type:'Certificate',module:'Purchasing',record:'PO-1',category:'Materials',updated:'2026-01-01T00:00:00',status:'Valid',expiry:'',revision:'1',author:'Me'}];
+  const WD=loadWorkshopData({[LEGACY_DOCUMENTS_KEY]:JSON.stringify(legacy)});
+  const state=WD.get();
+  assert.equal(state.documents.length,1);
+  assert.equal(state.documents[0].name,'Custom Cert.pdf');
+});
+
+test('legacy migration: Reports legacy keys (saved reports + config) are migrated into shared savedReports/reportConfig', ()=>{
+  const legacySaved={reports:[{id:'custom-1',name:'My Custom Report',category:'Custom',favourite:false,created:'2026-01-01',lastUsed:'2026-01-01',section:'projects',filters:{},type:'view',archived:false}]};
+  const legacyConfig={lang:'sv',section:'projects',filter:'week',activeFilters:{}};
+  const WD=loadWorkshopData({[LEGACY_REPORTS_SAVED_KEY]:JSON.stringify(legacySaved),[LEGACY_REPORTS_CONFIG_KEY]:JSON.stringify(legacyConfig)});
+  const state=WD.get();
+  assert.equal(state.savedReports.length,1);
+  assert.equal(state.savedReports[0].name,'My Custom Report');
+  assert.equal(state.reportConfig.lang,'sv');
+});
+
+test('legacy migration: an intentionally empty legacy array (Projects/Purchasing/Documents) results in an empty shared collection, not demo data', ()=>{
+  const projWD=loadWorkshopData({[LEGACY_PROJECTS_KEY]:'[]'});
+  const projectsUiRecords=projWD.get().projects.filter(p=>/^P-26-\d{4}$/.test(p.no));
+  assert.equal(projectsUiRecords.length,0,'an emptied Projects-UI legacy key must leave no projects-ui-origin demo records');
+
+  const poWD=loadWorkshopData({[LEGACY_PURCHASING_KEY]:'[]'});
+  assert.deepEqual(poWD.get().purchaseOrders,[],'an emptied Purchasing legacy key must result in an empty shared collection');
+
+  const docWD=loadWorkshopData({[LEGACY_DOCUMENTS_KEY]:'[]'});
+  assert.deepEqual(docWD.get().documents,[],'an emptied Documents legacy key must result in an empty shared collection');
+});
+
+test('legacy migration: repeated migration (reloading the app) does not duplicate records', ()=>{
+  const legacy=[{id:1,no:'P-26-9002',name:'Once Only',customerId:1,status:'draft',jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[LEGACY_PROJECTS_KEY]:JSON.stringify(legacy)});
+  const firstCount=WD.get().projects.filter(p=>p.no==='P-26-9002').length;
+  assert.equal(firstCount,1);
+  // A second application load reads the SAME localStorage, which now has a valid v5 record plus
+  // the still-present (untouched) legacy key — v5 being present must short-circuit re-migration.
+  const WD2=loadWorkshopData(null,localStorage);
+  const secondCount=WD2.get().projects.filter(p=>p.no==='P-26-9002').length;
+  assert.equal(secondCount,1,'the record must not be duplicated on a subsequent load');
+});
+
+test('legacy migration: Marketing leads/opportunities/campaigns persist through the shared API', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getMarketingLeads().length;
+  WD.upsertMarketingLead({company:'Persisted Co',contact:'A',email:'a@b.com'});
+  assert.equal(WD.getMarketingLeads().length,before+1);
+  assert.ok(WD.get().marketingLeads.some(l=>l.company==='Persisted Co'),'the lead must be present in the persisted shared state, not just in-memory');
+});
+
+// ── Shared API surface: clones, correct-collection writes, non-destructive archiving ───────────
+test('shared API getters return clones, not live references to internal state', ()=>{
+  const WD=loadWorkshopData();
+  const a=WD.getPurchaseOrders();
+  a.push({no:'HACK'});
+  assert.equal(WD.getPurchaseOrders().some(p=>p.no==='HACK'),false,'mutating a getter result must not affect shared state');
+
+  const b=WD.getDocuments();
+  b.length=0;
+  assert.ok(WD.getDocuments().length>0,'mutating a getter result must not affect shared state');
+
+  const c=WD.getMarketingLeads();
+  if(c[0])c[0].company='MUTATED';
+  assert.notEqual(WD.getMarketingLeads()[0]&&WD.getMarketingLeads()[0].company,'MUTATED');
+});
+
+test('CRUD methods write to the correct collection and do not cross-contaminate others', ()=>{
+  const WD=loadWorkshopData();
+  const poCountBefore=WD.getPurchaseOrders().length;
+  const docCountBefore=WD.getDocuments().length;
+  WD.upsertPurchaseOrder({supplier:'Isolated Test Supplier',items:'x'});
+  assert.equal(WD.getPurchaseOrders().length,poCountBefore+1);
+  assert.equal(WD.getDocuments().length,docCountBefore,'creating a purchase order must not affect documents');
+});
+
+test('archived linked records are not hard-deleted (Purchasing and Documents)', ()=>{
+  const WD=loadWorkshopData();
+  const po=WD.upsertPurchaseOrder({supplier:'Archive Me Ltd',items:'x'});
+  const archivedPo=WD.archivePurchaseOrder(po.no);
+  assert.equal(archivedPo.archived,true);
+  assert.ok(WD.getPurchaseOrders().some(p=>p.no===po.no),'archived purchase order must still be present, not deleted');
+
+  const doc=WD.upsertDocument({name:'Archive Me.pdf',type:'Document',module:'Projects',record:'P-1'});
+  const archivedDoc=WD.archiveDocument(doc.id);
+  assert.equal(archivedDoc.status,'Archived');
+  assert.ok(WD.getDocuments().some(d=>d.id===doc.id),'archived document must still be present, not deleted');
+});
+
+// ── Backup / import: v5 collections included, empty collections preserved ──────────────────────
+test('backup validation includes the new v5 collections', ()=>{
+  const WD=loadWorkshopData();
+  const res1=WD.validateBackup({purchaseOrders:'not-an-array'});
+  assert.equal(res1.valid,false);
+  const res2=WD.validateBackup({marketingLeads:'not-an-array'});
+  assert.equal(res2.valid,false);
+  const res3=WD.validateBackup({reportConfig:'not-an-object'});
+  assert.equal(res3.valid,false);
+});
+
+test('backup import preserves explicitly empty v5 collections rather than refilling them with demo data', ()=>{
+  const WD=loadWorkshopData();
+  const backup=Object.assign(WD.get(),{purchaseOrders:[],marketingLeads:[],documents:[]});
+  const res=WD.importBackup(backup);
+  assert.equal(res.success,true);
+  assert.deepEqual(WD.get().purchaseOrders,[]);
+  assert.deepEqual(WD.get().marketingLeads,[]);
+  assert.deepEqual(WD.get().documents,[]);
+});
+
+test('getDataHealth().corruptedRecordPreserved is false after a successful import (not carried over from a prior load)', ()=>{
+  const WD=loadWorkshopData();
+  const backup=WD.get();
+  backup.customers.push({id:999,no:'C-999',name:'Imported Extra'});
+  const res=WD.importBackup(backup);
+  assert.equal(res.success,true);
+  assert.equal(WD.getDataHealth().corruptedRecordPreserved,false);
+});
+
+// ── Reports reads shared Purchasing and Marketing data through the same API a Reports page would use ──
+test('Reports-facing API: purchasing and marketing data are readable through the shared getters Reports uses', ()=>{
+  const WD=loadWorkshopData();
+  const orders=WD.getPurchaseOrders();
+  assert.ok(Array.isArray(orders)&&orders.length>0,'Reports must be able to read real shared purchase orders, not an empty/disconnected stub');
+  const leads=WD.getMarketingLeads();
+  const opps=WD.getMarketingOpportunities();
+  assert.ok(Array.isArray(leads)&&leads.length>0,'Reports must be able to read real shared marketing leads');
+  assert.ok(Array.isArray(opps)&&opps.length>0,'Reports must be able to read real shared marketing opportunities');
 });

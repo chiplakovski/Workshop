@@ -868,8 +868,8 @@
       </div>
 
       <div class="panel">
-        <div class="phead"><h3 data-i="marketing_status">Marketing Status</h3><span class="pstat" data-i="not_connected">Not Connected</span></div>
-        <p style="font-size:12px;color:var(--steel-300);line-height:1.6;" data-i="marketing_note">Marketing leads, opportunities and campaigns are currently stored only in-memory on the Marketing page and reset on reload — they are not yet written to shared browser storage, so Reports cannot calculate real marketing KPIs. This avoids duplicating or fabricating marketing records.</p>
+        <div class="phead"><h3 data-i="marketing_status">Marketing Status</h3><span class="pstat" data-i="mkt_connected">Connected</span></div>
+        <p style="font-size:12px;color:var(--steel-300);line-height:1.6;" data-i="marketing_note">Marketing leads, opportunities and campaigns are read from the shared Varmak data layer, the same records the Marketing module reads and writes — nothing here is invented or duplicated.</p>
         <table class="table" style="margin-top:12px;"><thead><tr><th data-i="metric">Metric</th><th data-i="value">Value</th></tr></thead><tbody id="mkt-list-body"></tbody></table>
       </div>
     </div>
@@ -1035,9 +1035,10 @@
 <script>
 'use strict';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const REPORTS_KEY='varmak.reports.config.v1';
-const SAVED_KEY='varmak.reports.saved.v1';
-const PURCH_KEY='varmak.purchasing.orders';
+// Purchasing data, saved report definitions and report configuration all now come from the shared
+// WorkshopData layer (v5) — see getPurchasingOrders(), loadSavedReports()/saveReport(), and
+// loadConfig()/saveConfig() below. varmak.purchasing.orders, varmak.reports.saved.v1 and
+// varmak.reports.config.v1 are only read once, centrally, by workshop-data.js's migration.
 let currentSection='overview';
 let currentFilter='today';
 let currentLang='en';
@@ -1120,8 +1121,8 @@ const i18n={
     inspection_status:'Inspection Status',ncr_by_project:'Inspections by Project',certificate_completeness:'Certificate Completeness',
     jobcard:'Jobcard',material:'Material',quoted_value:'Quoted Value',accepted_value:'Accepted Value',project_value:'Project Value',
     customer_invoice_note:'Invoiced and paid values are not connected in this prototype (no accounting integration). Only quoted, accepted and project values are shown — do not treat quoted value as revenue.',
-    invoiced_value:'Invoiced Value',not_connected:'Not Connected',
-    marketing_note:'Marketing leads, opportunities and campaigns are currently stored only in-memory on the Marketing page and reset on reload — they are not yet written to shared browser storage, so Reports cannot calculate real marketing KPIs. This avoids duplicating or fabricating marketing records.',
+    invoiced_value:'Invoiced Value',not_connected:'Not Connected',mkt_connected:'Connected',
+    marketing_note:'Marketing leads, opportunities and campaigns are read from the shared Varmak data layer, the same records the Marketing module reads and writes — nothing here is invented or duplicated.',
     favourite:'★',last_used:'Last Used',reset_builder:'Reset Builder',store_items:'Store Items',
     add_filter:'+ Add Filter',group_by:'Group by:',primary_sort:'Primary sort:',ascending:'Ascending',descending:'Descending',
     secondary_sort:'Secondary sort:',table:'Table',kpi_cards:'KPI Cards',bar_chart:'Bar Chart',line_chart:'Line Chart',
@@ -1225,8 +1226,8 @@ const i18n={
     inspection_status:'Inspektionsstatus',ncr_by_project:'Inspektioner Per Projekt',certificate_completeness:'Certifikatfullständighet',
     jobcard:'Arbetskort',material:'Material',quoted_value:'Offererat Värde',accepted_value:'Accepterat Värde',project_value:'Projektvärde',
     customer_invoice_note:'Fakturerat och betalt värde är inte anslutet i denna prototyp (ingen bokföringsintegration). Endast offererat, accepterat och projektvärde visas — behandla inte offererat värde som intäkt.',
-    invoiced_value:'Fakturerat Värde',not_connected:'Ej Ansluten',
-    marketing_note:'Marknadsföringsleads, möjligheter och kampanjer lagras för närvarande endast i minnet på marknadsföringssidan och återställs vid omladdning — de skrivs ännu inte till delad webbläsarlagring, så Rapporter kan inte beräkna verkliga marknadsföringsnyckeltal.',
+    invoiced_value:'Fakturerat Värde',not_connected:'Ej Ansluten',mkt_connected:'Ansluten',
+    marketing_note:'Marknadsföringsleads, möjligheter och kampanjer läses från det delade Varmak-datalagret, samma poster som marknadsföringsmodulen läser och skriver — inget här är påhittat eller duplicerat.',
     favourite:'★',last_used:'Senast Använd',reset_builder:'Återställ Byggare',store_items:'Lagerartiklar',
     add_filter:'+ Lägg Till Filter',group_by:'Gruppera efter:',primary_sort:'Primär sortering:',ascending:'Stigande',descending:'Fallande',
     secondary_sort:'Sekundär sortering:',table:'Tabell',kpi_cards:'Nyckeltalskort',bar_chart:'Stapeldiagram',line_chart:'Linjediagram',
@@ -1330,8 +1331,8 @@ const i18n={
     inspection_status:'Статус на инспекција',ncr_by_project:'Инспекции по Проект',certificate_completeness:'Комплетност на сертификати',
     jobcard:'Работна картичка',material:'Материјал',quoted_value:'Понудена Вредност',accepted_value:'Прифатена Вредност',project_value:'Вредност на проект',
     customer_invoice_note:'Фактурираната и платена вредност не се поврзани во оваа прототип (нема сметководствена интеграција). Прикажани се само понудена, прифатена и вредност на проект — не третирајте ја понудената вредност како приход.',
-    invoiced_value:'Фактурирана Вредност',not_connected:'Не е Поврзано',
-    marketing_note:'Маркетинг потенцијалите, можностите и кампањите моментално се чуваат само во меморија на маркетинг страницата и се ресетираат при превчитување — сè уште не се запишуваат во споделено складирање, па Извештаите не можат да пресметаат вистински маркетинг метрики.',
+    invoiced_value:'Фактурирана Вредност',not_connected:'Не е Поврзано',mkt_connected:'Поврзано',
+    marketing_note:'Маркетинг потенцијалите, можностите и кампањите се читаат од споделениот Varmak слој на податоци, истите записи што маркетинг модулот ги чита и запишува — ништо тука не е измислено или дуплирано.',
     favourite:'★',last_used:'Последно Користено',reset_builder:'Ресетирај Градител',store_items:'Магацински Артикли',
     add_filter:'+ Додади Филтер',group_by:'Групирај по:',primary_sort:'Примарно сортирање:',ascending:'Растечки',descending:'Опаѓачки',
     secondary_sort:'Секундарно сортирање:',table:'Табела',kpi_cards:'KPI Картички',bar_chart:'Столбест Дијаграм',line_chart:'Линиски Дијаграм',
@@ -1398,13 +1399,14 @@ function getData(){
 }
 function invalidateDataCache(){_dataCache=null;}
 
+// Purchasing data now comes from the shared WorkshopData layer (v5) instead of reading
+// varmak.purchasing.orders directly — that legacy key is only read once, centrally, by
+// workshop-data.js's migration on first load. The {orders,connected} shape is preserved so every
+// existing call site below needs no further changes.
 function getPurchasingOrders(){
+  if(!window.WorkshopData)return{orders:[],connected:false};
   try{
-    const raw=localStorage.getItem(PURCH_KEY);
-    if(!raw)return{orders:[],connected:false};
-    const arr=JSON.parse(raw);
-    if(!Array.isArray(arr))return{orders:[],connected:false,corrupted:true};
-    return{orders:arr,connected:true};
+    return{orders:WorkshopData.getPurchaseOrders(),connected:true};
   }catch(e){return{orders:[],connected:false,corrupted:true};}
 }
 
@@ -1746,7 +1748,7 @@ function renderOverview(data,range){
     {check:'Suppliers Data',status:(data.suppliers||[]).length>0?'Partial':'Not Connected'},
     {check:'Purchasing Data',status:purch.connected?'Partial':'Not Connected'},
     {check:'Equipment Data',status:equipment.length>0?'Complete':'Not Connected'},
-    {check:'Marketing Data',status:'Not Connected'},
+    {check:'Marketing Data',status:(data.marketingLeads||[]).length>0?'Partial':'Not Connected'},
     {check:'Quality Module',status:'Demo Data'}
   ];
   $('data-quality-list').innerHTML=dq.map(q=>`<tr><td>${esc(q.check)}</td><td><span class="dq-tag ${q.status.toLowerCase().replace(/ /g,'')}">${esc(q.status)}</span></td></tr>`).join('');
@@ -1897,7 +1899,7 @@ function renderDataCoverage(data){
     {name:'Equipment & Machines',state:(data.equipment||[]).length>0?'complete':'notconnected'},
     {name:'Quality & Inspections',state:'demo'},
     {name:'Customers',state:(data.customers||[]).length>0?'complete':'missing'},
-    {name:'Marketing & Sales',state:'notconnected'}
+    {name:'Marketing & Sales',state:(data.marketingLeads||[]).length>0?'partial':'notconnected'}
   ];
   $('coverage-grid').innerHTML=rows.map(r=>`<div class="covrow"><span class="covname">${esc(r.name)}</span><span class="covstate ${r.state}">${esc(r.state.replace('notconnected','Not Connected'))}</span></div>`).join('');
 }
@@ -2506,44 +2508,45 @@ function renderCustomers(data,range){
   }).join('')||'<tr class="emptyrow"><td colspan="7">No customers</td></tr>';
 }
 
-// ══════════════ MARKETING (not connected — honest empty state) ══════════════
+// ══════════════ MARKETING (reads the shared Marketing collections — real data, not invented) ══════════════
 function renderMarketing(data,range){
-  $('mkt-leads').textContent='N/A';
-  $('mkt-opps').textContent='N/A';
-  $('mkt-pipeline').textContent='N/A';
-  $('mkt-conv').textContent='N/A';
-  $('mkt-list-body').innerHTML=`<tr><td>${tr('marketing_status')}</td><td>${tr('not_connected')}</td></tr>`;
+  const leads=data.marketingLeads||[];
+  const opps=data.marketingOpportunities||[];
+  const campaigns=data.marketingCampaigns||[];
+  const newLeads=leads.filter(l=>inRange(l.created,range));
+  const openOpps=opps.filter(o=>!['won','lost'].includes(o.stage));
+  const pipelineValue=openOpps.reduce((s,o)=>s+(num(o.value)||0),0);
+  const decided=opps.filter(o=>['won','lost'].includes(o.stage));
+  const won=opps.filter(o=>o.stage==='won');
+  const convRate=decided.length?won.length/decided.length*100:null;
+
+  $('mkt-leads').textContent=newLeads.length;
+  $('mkt-opps').textContent=openOpps.length;
+  $('mkt-pipeline').textContent=sekStr(pipelineValue);
+  $('mkt-conv').textContent=convRate==null?'N/A':convRate.toFixed(0)+'%';
+
+  const rows=[
+    ['Total leads',leads.length],
+    ['Qualified leads',leads.filter(l=>l.status==='qualified').length],
+    ['Converted to customer',leads.filter(l=>l.status==='converted').length],
+    ['Do-not-contact leads',leads.filter(l=>l.dnc).length],
+    ['Open opportunities',openOpps.length],
+    ['Won opportunities',won.length],
+    ['Active campaigns',campaigns.filter(c=>c.status==='active').length]
+  ];
+  $('mkt-list-body').innerHTML=rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('');
 }
 
 // ══════════════ SAVED REPORTS ══════════════
+// Saved report definitions are authoritative in WorkshopData (shared v5 state) — this module no
+// longer reads or writes varmak.reports.saved.v1 directly; that legacy key is only read once,
+// centrally, by workshop-data.js's migration on first load. Demo definitions live in
+// workshop-data.js's seed(), not here, so they are never re-seeded on top of real user data.
 function loadSavedReports(){
-  try{
-    const raw=localStorage.getItem(SAVED_KEY);
-    if(!raw)return null;
-    const parsed=JSON.parse(raw);
-    return Array.isArray(parsed.reports)?parsed.reports:[];
-  }catch(e){return [];}
-}
-function saveSavedReports(reports){
-  try{localStorage.setItem(SAVED_KEY,JSON.stringify({reports}));}catch(e){}
-}
-function seedDemoSavedReports(){
-  const today=new Date().toISOString().slice(0,10);
-  const demo=[
-    {id:'demo-1',name:'Weekly Production Review',category:'Production',favourite:true,created:today,lastUsed:today,section:'production',filters:{dateFilter:'week'},type:'view',archived:false},
-    {id:'demo-2',name:'Projects Over Budget',category:'Projects',favourite:false,created:today,lastUsed:today,section:'projects',filters:{dateFilter:'all'},type:'view',archived:false},
-    {id:'demo-3',name:'Quotations Requiring Follow-Up',category:'Estimation',favourite:true,created:today,lastUsed:today,section:'estimation',filters:{dateFilter:'all'},type:'view',archived:false},
-    {id:'demo-4',name:'Low Stock and Late Purchasing',category:'Store',favourite:false,created:today,lastUsed:today,section:'store',filters:{dateFilter:'all'},type:'view',archived:false},
-    {id:'demo-5',name:'Monthly Hours Summary',category:'Hours',favourite:false,created:today,lastUsed:today,section:'hours',filters:{dateFilter:'month'},type:'view',archived:false},
-    {id:'demo-6',name:'Open Quality Actions',category:'Quality',favourite:false,created:today,lastUsed:today,section:'quality',filters:{dateFilter:'all'},type:'view',archived:false},
-    {id:'demo-7',name:'Equipment Maintenance Due',category:'Equipment',favourite:false,created:today,lastUsed:today,section:'equipment',filters:{dateFilter:'all'},type:'view',archived:false}
-  ];
-  saveSavedReports(demo);
-  return demo;
+  return window.WorkshopData?WorkshopData.getSavedReports():[];
 }
 function renderSavedReports(){
-  let saved=loadSavedReports();
-  if(saved===null){saved=seedDemoSavedReports();}
+  const saved=loadSavedReports();
   const visible=saved.filter(r=>!r.archived);
   $('saved-list-body').innerHTML=visible.map(r=>`<tr>
     <td><strong>${esc(r.name)}</strong></td>
@@ -2563,8 +2566,7 @@ function renderSavedReports(){
 function loadSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);
   if(!r)return;
-  r.lastUsed=new Date().toISOString().slice(0,10);
-  saveSavedReports(loadSavedReports().map(x=>x.id===id?r:x));
+  WorkshopData.saveReport(Object.assign({},r,{lastUsed:new Date().toISOString().slice(0,10)}));
   if(r.filters){
     currentFilter=r.filters.dateFilter||'all';
     activeFilters={customer:r.filters.customer||'',project:r.filters.project||'',status:r.filters.status||''};
@@ -2573,37 +2575,29 @@ function loadSavedReport(id){
   if(r.section)showSection(r.section);
 }
 function renameSavedReport(id){
-  const reports=loadSavedReports();
-  const r=reports.find(x=>x.id===id);if(!r)return;
+  const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
   const name=prompt('Rename report:',r.name);
   if(!name)return;
-  r.name=esc(name).slice(0,80);
-  saveSavedReports(reports);
+  WorkshopData.saveReport(Object.assign({},r,{name:esc(name).slice(0,80)}));
   renderSavedReports();
   notify('Report renamed.');
 }
 function duplicateSavedReport(id){
-  const reports=loadSavedReports();
-  const r=reports.find(x=>x.id===id);if(!r)return;
+  const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
   const copy=Object.assign({},r,{id:'copy-'+Date.now(),name:r.name+' (copy)',created:new Date().toISOString().slice(0,10)});
-  reports.push(copy);
-  saveSavedReports(reports);
+  WorkshopData.saveReport(copy);
   renderSavedReports();
   notify('Report duplicated.');
 }
 function toggleFavourite(id){
-  const reports=loadSavedReports();
-  const r=reports.find(x=>x.id===id);if(!r)return;
-  r.favourite=!r.favourite;
-  saveSavedReports(reports);
+  const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
+  WorkshopData.saveReport(Object.assign({},r,{favourite:!r.favourite}));
   renderSavedReports();
 }
 function archiveSavedReport(id){
   if(!confirm('Archive this saved report?'))return;
-  const reports=loadSavedReports();
-  const r=reports.find(x=>x.id===id);if(!r)return;
-  r.archived=true;
-  saveSavedReports(reports);
+  const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
+  WorkshopData.archiveSavedReport(id);
   renderSavedReports();
   notify('Report archived.');
 }
@@ -2620,14 +2614,11 @@ $('newSavedBtn').addEventListener('click',()=>{
 function confirmSavedModal(){
   const name=$('savedNameInput').value.trim();
   if(!name){notify('Please enter a report name.');return;}
-  const reports=loadSavedReports()||[];
-  reports.push({
-    id:'rpt-'+Date.now(),name:esc(name).slice(0,80),category:$('savedCategoryInput').value,
+  WorkshopData.saveReport({
+    name:esc(name).slice(0,80),category:$('savedCategoryInput').value,
     filters:{dateFilter:currentFilter,...activeFilters},favourite:false,
-    created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
     section:currentSection,type:'view',archived:false
   });
-  saveSavedReports(reports);
   renderSavedReports();
   closeModal('savedModal');
 }
@@ -2864,18 +2855,19 @@ function exportReport(format){
 }
 
 // ══════════════ CONFIG PERSISTENCE ══════════════
+// Report configuration is authoritative in WorkshopData (shared v5 state) — this module no longer
+// reads or writes varmak.reports.config.v1 directly; that legacy key is only read once, centrally,
+// by workshop-data.js's migration on first load.
 function saveConfig(){
+  if(!window.WorkshopData)return;
   try{
-    const config={lang:currentLang,section:currentSection,filter:currentFilter,activeFilters};
-    localStorage.setItem(REPORTS_KEY,JSON.stringify(config));
+    WorkshopData.updateReportConfig({lang:currentLang,section:currentSection,filter:currentFilter,activeFilters});
   }catch(e){}
 }
 function loadConfig(){
+  if(!window.WorkshopData)return{};
   try{
-    const raw=localStorage.getItem(REPORTS_KEY);
-    if(!raw)return{};
-    const config=JSON.parse(raw);
-    if(config&&typeof config==='object')return config;
+    return WorkshopData.getReportConfig()||{};
   }catch(e){
     console.warn('Reports configuration could not be read — using defaults.');
   }
