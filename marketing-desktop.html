@@ -279,7 +279,7 @@ function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function initials(name){return String(name||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
 function d(s){return s?new Date(s+"T00:00:00"):null;}
 function daysBetween(a,b){return Math.round((b-a)/86400000);}
-const TODAY=new Date('2026-08-28T09:00:00');
+function currentDate(){return new Date();}
 
 // ── shared data (read-only) from window.WorkshopData ──
 const SHARED=(window.WorkshopData?WorkshopData.get():{customers:[],estimations:[],projects:[]});
@@ -531,7 +531,7 @@ let contentView='list';
 let currentModal=null;
 
 function fmtDate(iso){if(!iso)return '—';try{return d(iso).toLocaleDateString(T[LANG].locale||'en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return iso;}}
-function daysUntil(iso){if(!iso)return null;return daysBetween(TODAY,d(iso));}
+function daysUntil(iso){if(!iso)return null;return daysBetween(currentDate(),d(iso));}
 function followupClass(iso){if(!iso)return '';const n=daysUntil(iso);if(n===null)return '';if(n<0)return 'urgent-danger';if(n<=3)return 'urgent-warn';return 'urgent-ok';}
 function deadlineClass(iso){if(!iso)return '';const n=daysUntil(iso);if(n===null)return '';if(n<0)return 'rowdanger';if(n<=7)return 'rowwarn';return '';}
 
@@ -854,37 +854,37 @@ function saveLeadForm(id){
     industry:$('lfIndustry').value.trim(),size:$('lfSize').value.trim(),source:$('lfSource').value,service:$('lfService').value.trim(),
     value:Number($('lfValue').value)||0,priority:$('lfPriority').value,owner:$('lfOwner').value,nextFollowUp:$('lfFollowup').value||null,
     commPref:$('lfCommpref').value,dnc:$('lfDnc').checked};
-  if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:TODAY.toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});}
-  else{LEADS.unshift(Object.assign({id:nextLeadId++,no:'LD-2026-0'+(nextLeadNo++),status:'new',created:TODAY.toISOString().slice(0,10),lastContact:TODAY.toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:TODAY.toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data));selectedLeadId=LEADS[0].id;}
+  if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:currentDate().toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});}
+  else{LEADS.unshift(Object.assign({id:nextLeadId++,no:'LD-2026-0'+(nextLeadNo++),status:'new',created:currentDate().toISOString().slice(0,10),lastContact:currentDate().toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:currentDate().toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data));selectedLeadId=LEADS[0].id;}
   closeModal();renderApp();
 }
 function openAddNote(id){const tt=t();const html=`<h2>${tt.m_addnote_t}</h2>${fieldTextarea('noteText',tt.f_notetext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveLeadNote(id){const txt=$('noteText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveLeadNote(id){const txt=$('noteText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.notes.unshift({date:dt,author:'Aleksandar C.',text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});leadDetailTab='notes';closeModal();renderApp();}
 function openRecordCall(id){const tt=t();const html=`<h2>${tt.m_recordcall_t}</h2>${fieldTextarea('callText',tt.f_calltext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadCall(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveLeadCall(id){const txt=$('callText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveLeadCall(id){const txt=$('callText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.lastContact=dt;l.activity.push({date:dt,type:'call',text:txt});leadDetailTab='activity';closeModal();renderApp();}
 function openRecordEmail(id){const tt=t();const html=`<h2>${tt.m_recordemail_t}</h2>${fieldTextarea('emailText',tt.f_emailtext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadEmail(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveLeadEmail(id){const txt=$('emailText').value.trim();if(!txt)return;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveLeadEmail(id){const txt=$('emailText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.lastContact=dt;l.activity.push({date:dt,type:'email',text:txt});leadDetailTab='activity';closeModal();renderApp();}
 function openScheduleFollowup(id){openRescheduleLead(id);}
 function openRescheduleLead(id){const tt=t();const l=getLead(id);const html=`<h2>${tt.m_schedulefu_t}</h2>
   ${field('fuDate',tt.f_fudate,l.nextFollowUp||'','date')}${fieldTextarea('fuReason',tt.f_fureason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveLeadFollowup(id){const date=$('fuDate').value;if(!date)return;const reason=$('fuReason').value.trim();const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveLeadFollowup(id){const date=$('fuDate').value;if(!date)return;const reason=$('fuReason').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.nextFollowUp=date;l.activity.push({date:dt,type:'followup',text:'Follow-up scheduled for '+date+(reason?' — '+reason:'')+'.'});closeModal();renderApp();}
-function completeLeadFollowup(id){const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);l.activity.push({date:dt,type:'followup',text:'Follow-up marked completed.'});l.lastContact=dt;l.nextFollowUp=null;renderApp();}
+function completeLeadFollowup(id){const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);l.activity.push({date:dt,type:'followup',text:'Follow-up marked completed.'});l.lastContact=dt;l.nextFollowUp=null;renderApp();}
 function openQualifyLead(id){const tt=t();const html=`<h2>${tt.m_qualify_t}</h2>${fieldTextarea('qualNote',tt.f_qualnote,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveQualifyLead(${id})">${tt.act_qualify}</button></div>`;openModal(html);}
-function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});closeModal();renderApp();}
 function openDisqualifyLead(id){const tt=t();const html=`<h2>${tt.m_disqualify_t}</h2>${fieldTextarea('disqReason',tt.f_disqreason,'')}
   <div class="frow checkrow"><input type="checkbox" id="disqDnc"><label for="disqDnc" style="margin:0;">${tt.fl_dnc}</label></div>
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveDisqualifyLead(${id})">${tt.act_disqualify}</button></div>`;openModal(html);}
-function saveDisqualifyLead(id){const reason=$('disqReason').value.trim();const dnc=$('disqDnc').checked;const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveDisqualifyLead(id){const reason=$('disqReason').value.trim();const dnc=$('disqDnc').checked;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   l.status='disqualified';l.dnc=l.dnc||dnc;l.nextFollowUp=null;l.activity.push({date:dt,type:'disqualify',text:'Lead disqualified.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
 function openConvertLead(id){const tt=t();const l=getLead(id);
   const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
@@ -893,7 +893,7 @@ function openConvertLead(id){const tt=t();const l=getLead(id);
     ${existing?`<br><br><b style="color:var(--warn);">⚠ ${esc(existing.name)}</b> — ${LANG==='en'?'a matching customer already exists and will be reused, no duplicate will be created.':(LANG==='sv'?'en matchande kund finns redan och kommer att återanvändas, ingen dubblett skapas.':'veke postoi soodveten klient koj ke se koristi повторно, nema да se kreira duplikat.')}`:''}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveConvertLead(${id})">${tt.act_converttocustomer}</button></div>`;
   openModal(html);}
-function saveConvertLead(id){const l=getLead(id);const dt=TODAY.toISOString().slice(0,10);
+function saveConvertLead(id){const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   let custId=null;
   if(window.WorkshopData){
     const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
@@ -979,22 +979,22 @@ function openOppDetail(id){
   openModal(html,true);
 }
 function applyOppStage(id){const sel=$('oppStageSel');if(!sel)return;const o=getOpp(id);const newStage=sel.value;if(newStage===o.stage)return;
-  const dt=TODAY.toISOString().slice(0,10);o.activity.push({date:dt,text:'Stage moved to '+t()['stg_'+newStage]+'.'});
+  const dt=currentDate().toISOString().slice(0,10);o.activity.push({date:dt,text:'Stage moved to '+t()['stg_'+newStage]+'.'});
   o.stage=newStage;if(newStage==='won'){o.probability=100;o.followUpDate=null;}closeModal();renderApp();}
-function markOppWon(id){const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);o.stage='won';o.probability=100;o.followUpDate=null;
+function markOppWon(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.stage='won';o.probability=100;o.followUpDate=null;
   o.activity.push({date:dt,text:'Marked as won.'});closeModal();renderApp();}
 function openMarkLost(id){const tt=t();const html=`<h2>${tt.m_marklost_t}</h2>${fieldTextarea('lostReason',tt.fl_decisionreason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveMarkLost(${id})">${tt.act_marklost}</button></div>`;openModal(html);}
-function saveMarkLost(id){const reason=$('lostReason').value.trim();const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);
+function saveMarkLost(id){const reason=$('lostReason').value.trim();const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);
   o.stage='lost';o.probability=0;o.followUpDate=null;o.decisionReason=reason;o.activity.push({date:dt,text:'Marked as lost.'+(reason?' Reason: '+reason:'')});closeModal();renderApp();}
 function openAddOppNote(id){const tt=t();const html=`<h2>${tt.act_addnote}</h2>${fieldTextarea('oppNoteText',tt.f_notetext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
-function saveOppNote(id){const txt=$('oppNoteText').value.trim();if(!txt)return;const o=getOpp(id);o.activity.push({date:TODAY.toISOString().slice(0,10),text:txt});closeModal();renderApp();}
+function saveOppNote(id){const txt=$('oppNoteText').value.trim();if(!txt)return;const o=getOpp(id);o.activity.push({date:currentDate().toISOString().slice(0,10),text:txt});closeModal();renderApp();}
 function openRescheduleOpp(id){const tt=t();const o=getOpp(id);const html=`<h2>${tt.m_schedulefu_t}</h2>${field('oppFuDate',tt.f_fudate,o.followUpDate||'','date')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppFollowup(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveOppFollowup(id){const date=$('oppFuDate').value;if(!date)return;const o=getOpp(id);o.followUpDate=date;
-  o.activity.push({date:TODAY.toISOString().slice(0,10),text:'Follow-up scheduled for '+date+'.'});closeModal();renderApp();}
-function completeOppFollowup(id){const o=getOpp(id);const dt=TODAY.toISOString().slice(0,10);o.activity.push({date:dt,text:'Follow-up marked completed.'});o.followUpDate=null;renderApp();}
+  o.activity.push({date:currentDate().toISOString().slice(0,10),text:'Follow-up scheduled for '+date+'.'});closeModal();renderApp();}
+function completeOppFollowup(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.activity.push({date:dt,text:'Follow-up marked completed.'});o.followUpDate=null;renderApp();}
 function openOppForm(id){
   const tt=t();const o=id?getOpp(id):null;
   const html=`<h2>${o?tt.m_editopp_t:tt.m_newopp_t}</h2>
@@ -1013,7 +1013,7 @@ function saveOppForm(id){
   const data={company,contact:$('ofContact').value.trim(),title,industry:$('ofIndustry').value.trim(),scope:$('ofScope').value.trim(),
     value:Number($('ofValue').value)||0,probability:Number($('ofProb').value)||0,stage:$('ofStage').value,
     expectedDecision:$('ofDecision').value||'',requiredDelivery:$('ofDelivery').value||'',owner:$('ofOwner').value,competitor:$('ofCompetitor').value.trim(),nextAction:$('ofNextAction').value.trim()};
-  const dt=TODAY.toISOString().slice(0,10);
+  const dt=currentDate().toISOString().slice(0,10);
   if(id){const o=getOpp(id);Object.assign(o,data);o.activity.push({date:dt,text:'Opportunity details updated.'});}
   else{OPPORTUNITIES.unshift(Object.assign({id:nextOppId++,no:'OPP-2026-1'+(nextOppNo++),leadId:null,customerId:null,services:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:null,activity:[{date:dt,text:'Opportunity created manually.'}]},data));}
   closeModal();renderApp();
@@ -1100,7 +1100,7 @@ function openCampaignDetail(id){
     </div>`;
   openModal(html,true);
 }
-function setCampaignStatus(id,status){const c=getCampaign(id);c.status=status;c.activity.push({date:TODAY.toISOString().slice(0,10),text:'Status changed to '+status+'.'});closeModal();renderApp();}
+function setCampaignStatus(id,status){const c=getCampaign(id);c.status=status;c.activity.push({date:currentDate().toISOString().slice(0,10),text:'Status changed to '+status+'.'});closeModal();renderApp();}
 function openCampaignForm(id){
   const tt=t();const c=id?getCampaign(id):null;
   const html=`<h2>${c?tt.m_editcampaign_t:tt.m_newcampaign_t}</h2>
@@ -1119,7 +1119,7 @@ function saveCampaignForm(id){
   const data={name,objective:$('cfObjective').value.trim(),targetIndustries:$('cfIndustries').value.split(',').map(s=>s.trim()).filter(Boolean),
     channels:$('cfChannels').value.split(',').map(s=>s.trim()).filter(Boolean),segment:$('cfSegment').value.trim(),owner:$('cfOwner').value,
     start:$('cfStart').value||'',end:$('cfEnd').value||'',budget:Number($('cfBudget').value)||0,spend:Number($('cfSpend').value)||0,status:$('cfStatus').value};
-  const dt=TODAY.toISOString().slice(0,10);
+  const dt=currentDate().toISOString().slice(0,10);
   if(id){Object.assign(getCampaign(id),data);}
   else{CAMPAIGNS.unshift(Object.assign({id:nextCampaignId++,targetServices:[],leads:0,qualified:0,estimates:0,wonValue:0,activity:[{date:dt,text:'Campaign created.'}]},data));}
   closeModal();renderApp();

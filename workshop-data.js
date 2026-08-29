@@ -1,6 +1,7 @@
 (function(global){
   'use strict';
   const KEY='varmak.workshop.frontend.v4';
+  const LEGACY_KEY='varmak.workshop.frontend.v3';
   const VERSION=4;
   const clone=value=>JSON.parse(JSON.stringify(value));
   const now=()=>new Date().toISOString();
@@ -206,15 +207,62 @@
       {id:1,supplier:'FastenAll',approvalStatus:'conditionally-approved',rating:3.4,totalDeliveries:6,acceptedDeliveries:5,rejectedDeliveries:1,missingCertificates:1,openNcrs:1,overdueActions:0,repeatedDefects:'Missing certificate documentation (1 occurrence)',lastReview:'2026-06-01',nextReview:'2026-12-01',notes:[],activity:[{timestamp:'2026-08-22T09:00:00',action:'Supplier NCR linked',user:'Aleksandar C.',from:null,to:'conditionally-approved',reference:'NCR-2026-003',reason:'Missing material certificate'}]}
     ]
   });
+  // Recognized top-level collections used to sanity-check that a stored/imported JSON blob is
+  // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
+  const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
+    'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs'];
+  function safeParseJSON(raw){
+    if(!raw)return null;
+    try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
+  }
+  function looksLikeWorkshopState(obj){
+    if(!obj||typeof obj!=='object')return false;
+    return KNOWN_COLLECTION_KEYS.some(k=>Array.isArray(obj[k]));
+  }
+  // Readable migration/data-health summary exposed via WorkshopData.getDataHealth().
+  let dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
   function load(){
-    try{
-      const raw=global.localStorage&&global.localStorage.getItem(KEY);
-      if(raw){
-        const parsed=JSON.parse(raw);
-        if(parsed&&parsed.version===VERSION){ return normalize(parsed); }
-        if(parsed){ return normalize(Object.assign(seed(), parsed)); }
+    let v4Raw=null;
+    try{v4Raw=global.localStorage&&global.localStorage.getItem(KEY);}catch(e){}
+    const v4Parsed=v4Raw?safeParseJSON(v4Raw):null;
+    const v4Corrupted=!!(v4Raw&&(v4Parsed===null||!looksLikeWorkshopState(v4Parsed)));
+
+    if(v4Parsed&&looksLikeWorkshopState(v4Parsed)){
+      dataHealth={sourceKey:KEY,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+      if(v4Parsed.version===VERSION)return normalize(v4Parsed);
+      return normalize(Object.assign(seed(),v4Parsed));
+    }
+
+    // v4 is missing or unusable — look for a legacy v3 backup before falling back to demo data.
+    let v3Raw=null;
+    try{v3Raw=global.localStorage&&global.localStorage.getItem(LEGACY_KEY);}catch(e){}
+    const v3Parsed=v3Raw?safeParseJSON(v3Raw):null;
+
+    if(v3Parsed&&looksLikeWorkshopState(v3Parsed)){
+      if(v4Corrupted){
+        // Preserve the unreadable v4 record under a rescue key before overwriting it, so nothing is lost.
+        try{global.localStorage&&global.localStorage.setItem(`${KEY}.corrupted.${Date.now()}`,v4Raw);}catch(e){}
       }
-    }catch(e){}
+      const migrated=normalize(Object.assign(seed(),clone(v3Parsed)));
+      migrated.activity=migrated.activity||[];
+      migrated.activity.unshift({time:now(),reason:v4Corrupted
+        ?`Recovered data from legacy key ${LEGACY_KEY} after the current data record was found corrupted. The corrupted record was preserved separately.`
+        :`Migrated data from legacy key ${LEGACY_KEY} to ${KEY}.`});
+      try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}
+      // The legacy v3 key is intentionally left untouched as a recovery source.
+      dataHealth={sourceKey:LEGACY_KEY,migratedFromLegacy:true,
+        recoveryWarning:v4Corrupted?'Your current data could not be read, so your older saved data was recovered instead. The unreadable record was kept, not deleted.':null,
+        schemaVersion:VERSION,corruptedV4Detected:v4Corrupted};
+      return migrated;
+    }
+
+    if(v4Corrupted){
+      dataHealth={sourceKey:null,migratedFromLegacy:false,
+        recoveryWarning:'Your saved data could not be read and no usable backup was found. Starting from demonstration data. The unreadable record was kept in your browser, not deleted.',
+        schemaVersion:VERSION,corruptedV4Detected:true};
+      return normalize(seed());
+    }
+    dataHealth={sourceKey:null,migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
     return normalize(seed());
   }
   // Safe default-normalization: older localStorage records (saved before Jobcards or Equipment existed)
@@ -326,6 +374,30 @@
       document.body.appendChild(link); link.click(); setTimeout(()=>{URL.revokeObjectURL(url); link.remove();}, 1000);
       return true;
     },
+    getDataHealth:()=>Object.assign({},dataHealth,{
+      counts:Object.fromEntries(KNOWN_COLLECTION_KEYS.map(k=>[k,Array.isArray(state[k])?state[k].length:0]))
+    }),
+    validateBackup:(obj)=>{
+      if(!obj||typeof obj!=='object')return{valid:false,error:'The file is not a valid backup (not a JSON object).'};
+      if(!looksLikeWorkshopState(obj))return{valid:false,error:'The file does not contain recognisable Varmak Workshop data.'};
+      for(const k of KNOWN_COLLECTION_KEYS){
+        if(obj[k]!==undefined&&!Array.isArray(obj[k]))return{valid:false,error:`The "${k}" field in this backup is not in the expected format.`};
+      }
+      return{valid:true};
+    },
+    importBackup:(obj)=>{
+      const check=api.validateBackup(obj);
+      if(!check.valid)return{success:false,error:check.error};
+      // Preserve the current state as a recovery backup before replacing it.
+      try{global.localStorage&&global.localStorage.setItem(`${KEY}.before-import.${Date.now()}`,JSON.stringify(state));}catch(e){}
+      const imported=normalize(Object.assign(seed(),clone(obj)));
+      imported.activity=imported.activity||[];
+      imported.activity.unshift({time:now(),reason:'Backup imported. Previous data was preserved as a recovery copy.'});
+      state=imported;
+      dataHealth={sourceKey:'import',migratedFromLegacy:false,recoveryWarning:null,schemaVersion:VERSION,corruptedV4Detected:false};
+      save();
+      return{success:true};
+    },
     ensureDemoEquipment:()=>{
       if(!Array.isArray(state.equipment)||state.equipment.length===0){
         state.equipment=clone(seed().equipment);
@@ -352,6 +424,23 @@
     listEstimations:()=>clone(state.estimations),
     upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:now().slice(0,10),author:'Aleksandar C.',reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
     updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:now().slice(0,10),author:'Aleksandar C.',reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
+    archiveEstimation(idOrNo,reason){
+      const e=estimation(idOrNo);
+      if(!e)return{error:'Estimation not found'};
+      e.archived=true;
+      e.history=e.history||[];
+      e.history.push({date:now().slice(0,10),action:reason||'Archived',by:'Aleksandar C.'});
+      save(`Estimation archived: ${e.no}`);
+      return clone(e);
+    },
+    deleteEstimation(idOrNo){
+      const e=estimation(idOrNo);
+      if(!e)return{error:'Estimation not found'};
+      if(e.projectId)return{error:'This estimation is linked to a project and cannot be deleted. Archive it instead.'};
+      state.estimations=state.estimations.filter(x=>x!==e);
+      save(`Estimation deleted: ${e.no}`);
+      return{success:true};
+    },
     createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:'Aleksandar C.',workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
     listProjects:()=>clone(state.projects),
     logHours(entry){const hours=Number(entry.hours);if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be greater than zero'};const record=Object.assign({id:`H-${Date.now()}`,date:now().slice(0,10),user:'Aleksandar C.'},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},

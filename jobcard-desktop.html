@@ -295,6 +295,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </div>
 
 <script src="workshop-data.js"></script>
+<script src="jobcard-rules.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -302,9 +303,10 @@ function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(
 function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE');}
 function todayISO(){return new Date().toISOString().slice(0,10);}
 function nowTime(){return new Date().toTimeString().slice(0,5);}
-function isBlank(v){return v===undefined||v===null||String(v).trim()==='';}
+// isBlank, isPositiveNumber, canCompleteOp, VALID_RESUME_TARGETS and resumeTargetFor live in
+// jobcard-rules.js (loaded above) so the page and the automated tests share one implementation.
+const {isBlank,isPositiveNumber,canCompleteOp,VALID_RESUME_TARGETS,resumeTargetFor}=JobcardRules;
 function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
-function isPositiveNumber(v){const n=Number(v);return Number.isFinite(n)&&n>0;}
 function clearAllFieldErrors(){document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));document.querySelectorAll('#fcard .errmsg').forEach(el=>{el.style.display='none';el.textContent='';});}
 function showFieldError(fieldId,errId,msg){const f=$(fieldId),err=$(errId);if(f){f.classList.add('fielderr');f.focus();}if(err){err.textContent=msg;err.style.display='block';}}
 function toast(msg,kind){
@@ -358,8 +360,8 @@ function pendingInspections(j){return(j.inspections||[]).filter(i=>i.requirement
 function materialsShort(j){return(j.materials||[]).some(m=>m.status==='shortage'||m.status==='substitute');}
 function jcHoursLogged(j){return(j.operations||[]).reduce((a,o)=>a+(Number(o.loggedHours)||0),0);}
 function jcProgress(j){const total=(j.operations||[]).length;if(!total)return j.progress||0;const done=(j.operations||[]).filter(o=>o.status==='completed').length;return Math.round(done/total*100);}
-function daysUntil(iso){if(!iso)return null;return Math.round((new Date(iso+'T00:00:00')-TODAY)/86400000);}
-const TODAY=new Date('2026-08-28T09:00:00');
+function daysUntil(iso){if(!iso)return null;return Math.round((new Date(iso+'T00:00:00')-currentDate())/86400000);}
+function currentDate(){return new Date();}
 
 const T={
 en:{
@@ -396,7 +398,7 @@ en:{
   nc_pick_t:"New Jobcard",nc_pick_sub:"Choose how to start this jobcard.",nc_blank:"Blank jobcard",nc_blank_sub:"Start from an empty jobcard and fill in every detail manually.",nc_fromproject:"From an existing project",nc_fromproject_sub:"Reuse the project's customer, delivery target, BOM, planned hours and machines.",nc_frombom:"From a project BOM item",nc_frombom_sub:"Scope the jobcard to a single material line from a project's bill of materials.",
   nc_title:"New Jobcard",nc_edit_title:"Edit Jobcard",nc_save:"Save",nc_cancel:"Cancel",nc_create:"Create",
   a_edit:"Edit",a_print:"Print Jobcard",a_duplicate:"Duplicate",a_more:"More",a_start:"Start work",a_pause:"Pause",a_resume:"Resume",a_block:"Mark blocked",a_complete:"Mark completed",a_close:"Close jobcard",a_cancel:"Cancel jobcard",a_reopen:"Reopen",a_archive:"Archive",a_release:"Release",a_ready:"Mark ready",a_inspection:"Send to inspection",
-  m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
+  m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",resume_target_info:"This jobcard will resume to: {s}",resume_fallback_warning:"The recorded resume status was missing or invalid, so this jobcard will resume to Ready instead.",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
   f_reason:"Reason",f_comment:"Comment",f_resumestatus:"Resume to status",f_overridereason:"Override reason (required)",f_hours:"Hours",f_qty:"Quantity",f_date:"Date",f_worker:"Worker",f_barcode:"Barcode / QR value",f_destination:"Destination",
   confirm_delete_op:"Delete operation \"{n}\"?",confirm_delete_mat:"Delete material line \"{n}\"?",confirm_status:"Move this jobcard to \"{s}\"?",confirm_archive:"Archive jobcard {no}? It will be hidden from the active lists but kept for record-keeping.",confirm_complete_override:"Complete this jobcard anyway using a manager override?",
   err_required:"This field is required.",err_qty:"Quantity must be greater than zero.",err_hours:"Hours must be greater than zero.",err_date:"Please enter a valid date.",err_negative:"This value cannot be negative.",
@@ -443,7 +445,7 @@ sv:{
   nc_pick_t:"Nytt jobbkort",nc_pick_sub:"Välj hur detta jobbkort ska skapas.",nc_blank:"Tomt jobbkort",nc_blank_sub:"Starta från ett tomt jobbkort och fyll i allt manuellt.",nc_fromproject:"Från ett befintligt projekt",nc_fromproject_sub:"Återanvänd projektets kund, leveransmål, materialbehov, planerade timmar och maskiner.",nc_frombom:"Från en materialrad i projektet",nc_frombom_sub:"Begränsa jobbkortet till en enskild materialrad från projektets materialspecifikation.",
   nc_title:"Nytt jobbkort",nc_edit_title:"Redigera jobbkort",nc_save:"Spara",nc_cancel:"Avbryt",nc_create:"Skapa",
   a_edit:"Redigera",a_print:"Skriv ut jobbkort",a_duplicate:"Duplicera",a_more:"Mer",a_start:"Starta arbete",a_pause:"Pausa",a_resume:"Återuppta",a_block:"Markera blockerat",a_complete:"Markera klart",a_close:"Stäng jobbkort",a_cancel:"Avbryt jobbkort",a_reopen:"Återöppna",a_archive:"Arkivera",a_release:"Utfärda",a_ready:"Markera redo",a_inspection:"Skicka till besiktning",
-  m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
+  m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",resume_target_info:"Detta jobbkort återupptas till: {s}",resume_fallback_warning:"Den sparade återupptagningsstatusen saknades eller var ogiltig, så jobbkortet återupptas till Redo istället.",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
   f_reason:"Anledning",f_comment:"Kommentar",f_resumestatus:"Återuppta till status",f_overridereason:"Anledning till överstyrning (krävs)",f_hours:"Timmar",f_qty:"Antal",f_date:"Datum",f_worker:"Personal",f_barcode:"Streckkod / QR-värde",f_destination:"Destination",
   confirm_delete_op:"Ta bort momentet \"{n}\"?",confirm_delete_mat:"Ta bort materialraden \"{n}\"?",confirm_status:"Flytta detta jobbkort till \"{s}\"?",confirm_archive:"Arkivera jobbkort {no}? Det döljs från aktiva listor men behålls för spårbarhet.",confirm_complete_override:"Slutför detta jobbkort ändå med chefsöverstyrning?",
   err_required:"Detta fält är obligatoriskt.",err_qty:"Antal måste vara större än noll.",err_hours:"Timmar måste vara större än noll.",err_date:"Ange ett giltigt datum.",err_negative:"Detta värde kan inte vara negativt.",
@@ -490,7 +492,7 @@ mk:{
   nc_pick_t:"Nov raboten karton",nc_pick_sub:"Izberi kako da se kreira ovoj karton.",nc_blank:"Prazen karton",nc_blank_sub:"Počni od prazen karton i pополни sè rakoпisno.",nc_fromproject:"Od postoен proekt",nc_fromproject_sub:"Prezemi go klientot, celta za isporaka, spisokot na materijali, planiranite časovi i mašinite od proektot.",nc_frombom:"Od stavka od spisokot na materijali",nc_frombom_sub:"Ограничи go kartonot na eden materijalen red od spisokot na materijali na proektot.",
   nc_title:"Nov raboten karton",nc_edit_title:"Uredi raboten karton",nc_save:"Začuvaj",nc_cancel:"Otkaži",nc_create:"Kreiraj",
   a_edit:"Uredi",a_print:"Pečati karton",a_duplicate:"Dupliciraj",a_more:"Poveќe",a_start:"Започни rabota",a_pause:"Pauziraj",a_resume:"Prodolži",a_block:"Označi kako blokiran",a_complete:"Označi kako završen",a_close:"Zatvori karton",a_cancel:"Otkaži karton",a_reopen:"Povторно otvori",a_archive:"Arhiviraj",a_release:"Izdadi",a_ready:"Označi kako podgotven",a_inspection:"Isprati na inspekcija",
-  m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
+  m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",resume_target_info:"Ovoj karton kje prodolži do: {s}",resume_fallback_warning:"Začuvaniot status za prodolžuvanje nedostasuvaše ili beše nevaliden, pa kartonot kje prodolži do Podgotven naместо toa.",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
   f_reason:"Pričina",f_comment:"Komentar",f_resumestatus:"Prodolži do status",f_overridereason:"Pričina za overriding (se bara)",f_hours:"Časovi",f_qty:"Količina",f_date:"Datum",f_worker:"Rabotnik",f_barcode:"Barkod / QR vrednost",f_destination:"Destinacija",
   confirm_delete_op:"Izbriši ja operacijata \"{n}\"?",confirm_delete_mat:"Izbriši go redot na materijal \"{n}\"?",confirm_status:"Premesti go ovoj karton vo \"{s}\"?",confirm_archive:"Arhiviraj go kartonot {no}? Ke bide skrien od aktivnite listi no se čuva za evidencija.",confirm_complete_override:"Sepak da se završi ovoj karton so upravuvačko overriding?",
   err_required:"Ова poле е задолжително.",err_qty:"Količinata mora da bide pogolema od nula.",err_hours:"Časovite mora da bidat pogolemi od nula.",err_date:"Vnesi validen datum.",err_negative:"Ovaa vrednost ne može da bide negativna.",
@@ -807,7 +809,6 @@ function renderTabInfo(j){
 // ── Operations ──
 const OP_STATUSES=['pending','in-progress','paused','completed','skipped'];
 function canStartOp(j,op){if(!op.dependency)return true;const dep=(j.operations||[]).find(o=>o.id===op.dependency);return!dep||dep.status==='completed'||dep.status==='skipped';}
-function canCompleteOp(op){return !isBlank(op.worker)||isPositiveNumber(Number(op.loggedHours));}
 
 function renderTabOperations(j){
   const tt=t();const locked=isLocked(j);const ops=j.operations||[];
@@ -908,9 +909,19 @@ function setOpStatus(jcId,opId,status){
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation ${status==='in-progress'?'started':status}: ${op.desc}`});
   refreshShared();renderApp();
 }
+function opMissingFields(op,tt){
+  const missing=[];
+  if(isBlank(op.worker))missing.push(tt.op_worker);
+  if(!isPositiveNumber(Number(op.loggedHours)))missing.push(tt.op_loggedhours);
+  return missing;
+}
 function attemptCompleteOp(jcId,opId){
   const tt=t();const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
-  if(!canCompleteOp(op)){toast(tt.err_required+' ('+tt.op_worker+' / '+tt.op_loggedhours+')','error');return;}
+  if(!canCompleteOp(op)){
+    const missing=opMissingFields(op,tt);
+    toast(tt.err_required+': '+missing.join(', '),'error');
+    return;
+  }
   WorkshopData.updateJobcardOperation(jcId,opId,{status:'completed',actualCompletion:todayISO()});
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation completed: ${op.desc}`});
   refreshShared();renderApp();
@@ -1303,17 +1314,29 @@ function savePauseBlock(id,stage){
   refreshShared();closeModal();renderApp();
 }
 function openResume(id){
-  const tt=t();const j=getJC(id);const resumeTo=j._resumeStatus||'ready';
+  const tt=t();const j=getJC(id);
+  const stored=j._resumeStatus;
+  const valid=VALID_RESUME_TARGETS.includes(stored);
+  const resumeTo=resumeTargetFor(j);
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_resume_t)}</h2><p class="fsub">${esc(j.no)}</p>
-    <div class="frow">${fieldSelect('resumeStatus',tt.f_resumestatus,MAIN_STAGES.slice(0,5).map(s=>({v:s,l:tt['st_'+s]})),resumeTo)}</div>
+    <p class="fsub" style="margin-top:-6px;">${esc(tpl(tt.resume_target_info,{s:tt['st_'+resumeTo]}))}</p>
+    ${!valid?`<div class="errmsg" style="display:block;">${esc(tt.resume_fallback_warning)}</div>`:''}
+    <div id="resumeErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveResume(${id})">${esc(tt.a_resume)}</button></div>`;
   $('fov').classList.add('show');
 }
 function saveResume(id){
-  const tt=t();const stage=$('resumeStatus').value;
-  applyStatusChange(id,stage);
-  closeModal();
+  const tt=t();const j=getJC(id);if(!j)return;
+  const stage=resumeTargetFor(j);
+  // Apply the same relevant preconditions a normal transition to this status would require.
+  if(stage==='released'&&!hasAtLeastOneOperation(j)){showFieldError(null,'resumeErr',tt.issue_no_operations);return;}
+  if(stage==='ready'&&isBlank(j.responsible)){showFieldError(null,'resumeErr',tt.issue_no_responsible);return;}
+  const patch={status:stage};
+  if(stage==='in-progress'&&!j.actualStart)patch.actualStart=todayISO();
+  WorkshopData.updateJobcard(id,patch);
+  WorkshopData.recordJobcardActivity(id,{action:`Resumed to ${tt['st_'+stage]}`});
+  refreshShared();closeModal();renderApp();
 }
 function openCancel(id){
   const tt=t();const j=getJC(id);

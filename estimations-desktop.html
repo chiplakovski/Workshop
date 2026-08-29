@@ -303,12 +303,14 @@
 </div>
 
 <script src="workshop-data.js"></script>
+<script src="estimation-rules.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 // ── security: reusable HTML-escaping helper, applied to every dynamic value inserted through innerHTML ──
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-// ── central money-rounding helper: every displayed/stored monetary value passes through here so results are consistent to 2 decimals ──
-function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(n*100)/100;}
+// money, lineTotal, lineCostTotal and baseAndIncludedLines live in estimation-rules.js (loaded
+// above) so this page and the automated tests share exactly one pricing/effective-lines implementation.
+const {money,lineTotal,lineCostTotal,baseAndIncludedLines}=EstimationRules;
 function fmt(n){return money(n).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
 function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE')+" kr";}
 function todayISO(){return new Date().toISOString().slice(0,10);}
@@ -806,33 +808,11 @@ function stageIndex(status){if(status==='declined'||status==='expired')return 3;
 // a line, a work item and a whole estimate are priced.
 // ─────────────────────────────────────────────────────────────────────────
 
-// A line's sell total is qty × unit sell price, reduced by the line discount (0–100%, clamped defensively).
-function lineTotal(it){
-  const qty=Math.max(0,Number(it.qty)||0),sell=Math.max(0,Number(it.sell)||0),disc=Math.min(100,Math.max(0,Number(it.disc)||0));
-  return money(qty*sell*(1-disc/100));
-}
 // Tax (VAT) on a single line is computed on that line's already-discounted sell total.
 // The estimate-level discount is applied later, proportionally, in computeTotals() — see note there.
 function lineTax(it){const tax=Math.min(100,Math.max(0,Number(it.tax)||0));return money(lineTotal(it)*tax/100);}
-// Internal cost: for MATERIAL lines, waste% inflates the quantity actually consumed (offcuts, kerf, spoilage).
-// Non-material categories (labour, machine, subcontractor, consumable, logistics, other) ignore waste entirely.
-function lineCostTotal(it){
-  const qty=Math.max(0,Number(it.qty)||0),cost=Math.max(0,Number(it.cost)||0);
-  const waste=it.category==='material'?Math.max(0,Number(it.waste)||0):0;
-  return money(qty*cost*(1+waste/100));
-}
 function lineSellCostDelta(it){return money(lineTotal(it)-lineCostTotal(it));}
 
-// Base (saved) items = every work item's lines, plus the lines of every OPTION that is marked
-// as "included in customer offer". Replacement options (option.replacesDesc) drop the base line(s)
-// they replace so the material is never charged twice — see requirement on double-counting.
-function baseAndIncludedLines(e){
-  const replaced=new Set();
-  (e.options||[]).filter(o=>o.included&&Array.isArray(o.replacesDesc)).forEach(o=>o.replacesDesc.forEach(d=>replaced.add(o.intoWorkItem+'|'+d)));
-  const base=e.workItems.flatMap(wi=>wi.lines.filter(l=>!replaced.has(wi.no+'|'+l.desc)));
-  const includedOptLines=(e.options||[]).filter(o=>o.included).flatMap(o=>o.lines.map(l=>Object.assign({},l,{fromOption:o.name,optionId:o.id})));
-  return base.concat(includedOptLines);
-}
 // Display-only merge used to PREVIEW an option in the items table without ever touching the saved totals.
 // activeOptTab selects which option (if any) is temporarily shown; computeTotals() never reads this state.
 function mergedWorkItems(e){
@@ -1630,6 +1610,12 @@ function deleteEst(id){
     return;
   }
   if(!confirm(t.confirm_delete))return;
+  // Unlinked estimates are removed from BOTH this page's local list and the shared data layer, so the
+  // record cannot reappear on refresh (hydrateSharedEstimations() re-adds anything still present there).
+  if(window.WorkshopData&&e.sharedId){
+    const res=WorkshopData.deleteEstimation(e.sharedId);
+    if(res&&res.error){toast(res.error,'error');return;}
+  }
   ESTIMATIONS=ESTIMATIONS.filter(x=>x.id!==id);
   if(selectedId===id)selectedId=ESTIMATIONS.length?ESTIMATIONS[0].id:null;
   renderAll();
@@ -1652,7 +1638,9 @@ function printRows(items){
 }
 function renderPrintSheet(e){
   const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);
-  const baseItems=e.workItems.flatMap(wi=>wi.lines);
+  // Reuse the same effective-line set computeTotals() uses, so printed rows and printed totals
+  // can never disagree. A replacement option's base line(s) must not be printed twice.
+  const baseItems=baseAndIncludedLines(e).filter(l=>!l.fromOption);
   const includedOptions=(e.options||[]).filter(o=>o.included);
   const th=`<tr><th>#</th><th>${esc(t.pr_desc)}</th><th style="text-align:right;">${esc(t.pr_qty)}</th><th>${esc(t.pr_unit)}</th><th style="text-align:right;">${esc(t.pr_price)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr>`;
   const optionSections=includedOptions.map(o=>`

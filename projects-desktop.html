@@ -439,7 +439,8 @@ try{const stored=JSON.parse(localStorage.getItem(PROJECTS_KEY)||'null');if(Array
 
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"+m+"-"+y;}
-function today(){return new Date("2026-08-24T12:00:00");}
+function today(){return new Date();}
+function todayISO(){return new Date().toISOString().slice(0,10);}
 function daysBetween(iso){if(!iso)return null;return Math.round((new Date(iso+"T12:00:00")-today())/86400000);}
 function custName(id){const c=CUSTOMERS.find(x=>x.id===id);return c?c.name:"—";}
 function custObj(id){return CUSTOMERS.find(x=>x.id===id);}
@@ -925,7 +926,7 @@ function printOffer(id){
   const VAT=0.25;let sub=0;
   const rows=p.jobcards.map(j=>{const amt=itemEstPrice(j);sub+=amt;
     return `<tr><td>${esc(j.desc)}</td><td class="n">${j.est}</td><td class="n">${fmt(j.estMaterial||0)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
-  const vat=sub*VAT,tot=sub+vat;const today=new Date("2026-08-25T12:00:00").toLocaleDateString(t.locale);
+  const vat=sub*VAT,tot=sub+vat;const today=new Date().toLocaleDateString(t.locale);
   const cust=custObj(p.customerId);
   $("sheet").innerHTML=`
     <div class="oh"><div><div class="co">VARMAK AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se · Org.nr 559568-2468</div></div>
@@ -944,7 +945,7 @@ function printOffer(id){
 }
 $("offClose").addEventListener('click',()=>$("overlay").classList.remove('show'));
 $("overlay").addEventListener('click',e=>{if(e.target===$("overlay"))$("overlay").classList.remove('show');});
-function pushActivity(p,action,user){p.activity.push({date:"2026-08-24",time:new Date().toTimeString().slice(0,5),user:user||"Aleksandar",action});}
+function pushActivity(p,action,user){p.activity.push({date:todayISO(),time:new Date().toTimeString().slice(0,5),user:user||"Aleksandar",action});}
 
 let editingId=null,newProjTypes=[];
 function openNewProject(){
@@ -1003,7 +1004,7 @@ function submitProjectForm(){
   }else{
     const id=PROJECTS.length?Math.max(...PROJECTS.map(x=>x.id))+1:1;
     const p={id,no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-      createdDate:"2026-08-24",actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+      createdDate:todayISO(),actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
       jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
     PROJECTS.unshift(p);pushActivity(p,"Project Created");syncSharedProject(p);
     currentId=id;VIEW="detail";activeTab="overview";
@@ -1072,7 +1073,7 @@ function submitDoc(){
   const name=$("docName").value.trim();if(!name)return;
   const p=getProject(currentId);const folder=$("docFolder").value,rev=$("docRev").value.trim()||"-";
   if(!p.documents[folder])p.documents[folder]=[];
-  p.documents[folder].push({name,rev,date:"2026-08-24",by:"Aleksandar",status:"current"});
+  p.documents[folder].push({name,rev,date:todayISO(),by:"Aleksandar",status:"current"});
   pushActivity(p,"Document added: "+name+" ("+folder+")");closeModal();activeTab="documents";render();
 }
 const MAT_STATUSES=["reserved","issued","used","returned"];
@@ -1148,7 +1149,7 @@ function submitPo(){
   const vals={supplier,items:$("poItems").value.trim(),ordered:parseFloat($("poOrdered").value)||0,received:parseFloat($("poReceived")?$("poReceived").value:0)||0,
     status:$("poStatus")?$("poStatus").value:"ordered",expected:$("poExpected").value};
   if(editPoIdx!==null){Object.assign(p.purchases[editPoIdx],vals);pushActivity(p,"Purchase order edited: "+supplier);}
-  else{p.purchases.push({po:poNo(),date:"2026-08-24",received:0,status:"ordered",...vals});pushActivity(p,"Purchase order created: "+supplier);}
+  else{p.purchases.push({po:poNo(),date:todayISO(),received:0,status:"ordered",...vals});pushActivity(p,"Purchase order created: "+supplier);}
   closeModal();activeTab="purchases";render();
 }
 function deletePo(idx){
@@ -1171,7 +1172,7 @@ function submitNote(){
   const p=getProject(currentId);const tag=$("noteTag").value,pinned=$("notePin").checked;
   if(pinned)p.notes.forEach(n=>n.pinned=false);
   if(editNoteIdx!==null){Object.assign(p.notes[editNoteIdx],{text,tag,pinned});pushActivity(p,"Note edited ("+tag+")");}
-  else{p.notes.push({date:"2026-08-24",author:"Aleksandar",text,tag,pinned});pushActivity(p,"Note added ("+tag+")");}
+  else{p.notes.push({date:todayISO(),author:"Aleksandar",text,tag,pinned});pushActivity(p,"Note added ("+tag+")");}
   closeModal();activeTab="activity";render();
 }
 function deleteNote(idx){
@@ -1200,11 +1201,11 @@ function doDuplicate(id){
   const src=getProject(id);const newId=Math.max(...PROJECTS.map(x=>x.id))+1;
   const dup={id:newId,no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
     notes:[],types:src.types.slice(),pm:src.pm,workshop:src.workshop,sales:src.sales,
-    createdDate:"2026-08-24",plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
+    createdDate:todayISO(),plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
     quotedValue:0,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
     status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
     jobcards:src.jobcards.map(j=>({no:jcNo(),desc:j.desc,assigned:"",status:"planned",est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0})),
-    hours:[],materials:[],purchases:[],documents:{},activity:[{date:"2026-08-24",time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
+    hours:[],materials:[],purchases:[],documents:{},activity:[{date:todayISO(),time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
   PROJECTS.unshift(dup);closeModal();currentId=newId;activeTab="overview";render();
 }
 function openHoldForm(p){
@@ -1243,7 +1244,7 @@ function openCompleteFlow(p){
 function doComplete(id,override){
   const p=getProject(id);
   if(override){const reason=$("cOverrideReason").value.trim();if(!reason)return;pushActivity(p,"Manager override on completion: "+reason);}
-  p.status="completed";p.actualCompletion="2026-08-24";pushActivity(p,"Status changed → COMPLETED");syncSharedProject(p);closeModal();render();
+  p.status="completed";p.actualCompletion=todayISO();pushActivity(p,"Status changed → COMPLETED");syncSharedProject(p);closeModal();render();
 }
 function openCloseFlow(p){
   const t=T[LANG];const issues=closeIssues(p);
@@ -1256,7 +1257,7 @@ function openCloseFlow(p){
   }
 }
 function doClose(id){
-  const p=getProject(id);p.status="closed";p.closedDate="2026-08-24";pushActivity(p,"Status changed → CLOSED");syncSharedProject(p);closeModal();render();
+  const p=getProject(id);p.status="closed";p.closedDate=todayISO();pushActivity(p,"Status changed → CLOSED");syncSharedProject(p);closeModal();render();
 }
 function openCancelForm(p){
   const t=T[LANG];
