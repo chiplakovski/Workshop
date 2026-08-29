@@ -13,7 +13,18 @@
   .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
   .glow{position:absolute;left:50%;top:34%;width:520px;height:520px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.18),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
-  @media (prefers-reduced-motion:reduce){.glow{animation:none}}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  @keyframes rise{0%{transform:translateY(0);opacity:0;}12%{opacity:.9;}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0;}}
+  @keyframes enter{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+  .panel,.kpi,.attncard,.rolecard,.statuspanel{animation:enter .38s ease both;}
+  .kpistrip .kpi:nth-child(1){animation-delay:.02s;} .kpistrip .kpi:nth-child(2){animation-delay:.06s;}
+  .kpistrip .kpi:nth-child(3){animation-delay:.10s;} .kpistrip .kpi:nth-child(4){animation-delay:.14s;}
+  .kpistrip .kpi:nth-child(5){animation-delay:.18s;}
+  .panel:hover{border-color:rgba(74,144,255,.27);}
+  .attncard:hover,.rolecard:hover{border-color:rgba(74,144,255,.27);transform:translateY(-1px);transition:.16s;}
+  .fbtn:hover{transform:translateY(-1px);transition:.15s;}
+  .sideitem:hover{transform:translateX(2px);}
+  @media (prefers-reduced-motion:reduce){.glow{animation:none}.ember{display:none}.panel,.kpi,.attncard,.rolecard,.statuspanel{animation:none}.attncard:hover,.rolecard:hover,.fbtn:hover,.sideitem:hover{transform:none}}
 
   .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;}
@@ -121,6 +132,8 @@
   .mbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
   .mbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
 
+  .toast{position:fixed;z-index:95;right:22px;bottom:22px;background:#0a2447;border:1px solid rgba(74,144,255,.5);padding:12px 18px;font-size:13px;color:var(--ice);opacity:0;transform:translateY(15px);transition:.2s;pointer-events:none;box-shadow:0 14px 34px rgba(0,0,0,.4);}
+  .toast.show{opacity:1;transform:none;}
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
   .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
@@ -214,18 +227,19 @@
 
   @media print{
     body{background:#fff !important;color:#111 !important;}
-    .bg,.sidebar,.topfull,.filtbar,.langc,.back,.fbtn,.mbtn,.kpiinfo,.infobtn,.tabs,#builder-step1 button,.section .fbtn{display:none !important;}
+    .bg,.sidebar,.topfull,.filtbar,.langc,.back,.fbtn,.mbtn,.kpiinfo,.infobtn,.tabs,.topctrl,#builder-step1 button,.section .fbtn{display:none !important;}
     .content{padding:0 !important;max-height:none !important;overflow:visible !important;margin:0 !important;}
     .main{padding-top:0 !important;display:block !important;}
     .panel,.kpi,.attncard,.statuspanel{background:#fff !important;border:1px solid #999 !important;color:#111 !important;break-inside:avoid;}
     .table th,.table td{color:#111 !important;border-color:#ccc !important;}
     .badge{border:1px solid #999 !important;color:#111 !important;background:#f0f0f0 !important;}
     .tabpanel{display:block !important;}
+    .tabpanel + .tabpanel{margin-top:14px;border-top:2px solid #ccc;padding-top:14px;}
     .print-header{display:block !important;margin-bottom:16px;}
   }
   .print-header{display:none;}
 </style></head><body>
-<div class="bg"><div class="grid"></div><div class="glow"></div></div>
+<div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
 <div class="topfull">
   <div class="topbar">
@@ -301,9 +315,13 @@
       <div class="activefilt" id="activeFiltSummary"></div>
     </div>
 
+    <div class="print-header" id="printHeader">
+      <h2>Varmak AB — <span id="printSectionTitle">Reports & Analytics</span></h2>
+      <div id="printMeta"></div>
+    </div>
+
     <!-- OVERVIEW SECTION -->
     <div id="section-overview" class="section" style="display:none;">
-      <div class="print-header"><h2>Varmak AB — <span id="printSectionTitle">Reports & Analytics</span></h2><div id="printMeta"></div></div>
       <div class="noticebar" data-i="notice_local_data">Reports use data stored in this browser. Multi-user reporting, server-side calculations, official audit history and scheduled distribution require the future backend.</div>
 
       <div class="kpistrip">
@@ -498,16 +516,63 @@
         <div class="kpi"><div class="kl" data-i="blocked">Blocked</div><div class="kv warn" id="prod-blocked">—</div></div>
         <div class="kpi"><div class="kl" data-i="completed_week">Completed This Week</div><div class="kv ok" id="prod-completed">—</div></div>
         <div class="kpi"><div class="kl" data-i="completion_rate">Completion Rate</div><div class="kv" id="prod-rate">—</div></div>
+        <div class="kpi"><div class="kl" data-i="first_pass_rate">First-Pass Rate</div><div class="kv ok" id="prod-fpr">—</div></div>
       </div>
 
-      <div class="panel">
-        <div class="phead"><h3 data-i="jobcard_status">Jobcard Status</h3></div>
-        <table class="table"><thead><tr><th data-i="status">Status</th><th data-i="count">Count</th></tr></thead><tbody id="prod-status-list"></tbody></table>
-      </div>
+      <div class="tab-container">
+        <div class="tabs">
+          <button class="tab active" data-tab="prod-status" data-i="jobcard_status">Jobcard Status</button>
+          <button class="tab" data-tab="prod-progress" data-i="jobcard_progress">Jobcard Progress</button>
+          <button class="tab" data-tab="prod-risk" data-i="jobcards_at_risk">Jobcards At Risk</button>
+          <button class="tab" data-tab="prod-blockedlist" data-i="blocked_jobcards">Blocked Jobcards</button>
+          <button class="tab" data-tab="prod-ops" data-i="operation_performance">Operation Performance</button>
+          <button class="tab" data-tab="prod-rework" data-i="rework_analysis">Rework Analysis</button>
+          <button class="tab" data-tab="prod-delays" data-i="production_delays">Production Delays</button>
+          <button class="tab" data-tab="prod-assign" data-i="worker_machine_assignments">Worker & Machine Assignments</button>
+          <button class="tab" data-tab="prod-material-usage" data-i="jobcard_material_usage">Jobcard Material Usage</button>
+          <button class="tab" data-tab="prod-history" data-i="jobcard_completion_history">Jobcard Completion History</button>
+        </div>
 
-      <div class="panel">
-        <div class="phead"><h3 data-i="jobcard_list">Jobcard List</h3></div>
-        <table class="table"><thead><tr><th data-i="no">No</th><th data-i="project">Project</th><th data-i="title">Title</th><th data-i="status">Status</th><th data-i="progress">Progress</th><th data-i="deadline">Deadline</th></tr></thead><tbody id="prod-list-body"></tbody></table>
+        <div id="prod-status" class="tabpanel active">
+          <table class="table"><thead><tr><th data-i="status">Status</th><th data-i="count">Count</th></tr></thead><tbody id="prod-status-list"></tbody></table>
+        </div>
+
+        <div id="prod-progress" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="no">No</th><th data-i="project">Project</th><th data-i="title">Title</th><th data-i="status">Status</th><th data-i="progress">Progress</th><th data-i="deadline">Deadline</th></tr></thead><tbody id="prod-list-body"></tbody></table>
+        </div>
+
+        <div id="prod-risk" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="no">No</th><th data-i="title">Title</th><th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th><th data-i="deadline">Deadline</th><th data-i="reason">Reason</th></tr></thead><tbody id="prod-risk-body"></tbody></table>
+        </div>
+
+        <div id="prod-blockedlist" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="no">No</th><th data-i="title">Title</th><th data-i="project">Project</th><th data-i="blocking_reason">Blocking Reason</th></tr></thead><tbody id="prod-blocked-body"></tbody></table>
+        </div>
+
+        <div id="prod-ops" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="jobcard">Jobcard</th><th data-i="operation">Operation</th><th data-i="worker">Worker</th><th data-i="machine">Machine</th><th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th><th data-i="status">Status</th></tr></thead><tbody id="prod-ops-body"></tbody></table>
+        </div>
+
+        <div id="prod-rework" class="tabpanel">
+          <p class="dq-note" style="margin-bottom:10px;" data-i="rework_note">Rework is not explicitly flagged in this data model. Rows below are operations whose logged hours exceeded planned hours by more than 20% — a demo inference, not a confirmed rework record.</p>
+          <table class="table"><thead><tr><th data-i="jobcard">Jobcard</th><th data-i="operation">Operation</th><th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th><th data-i="variance_pct">Variance %</th></tr></thead><tbody id="prod-rework-body"></tbody></table>
+        </div>
+
+        <div id="prod-delays" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="no">No</th><th data-i="title">Title</th><th data-i="planned_completion">Planned Completion</th><th data-i="actual_completion">Actual Completion</th><th data-i="days_late">Days Late</th></tr></thead><tbody id="prod-delays-body"></tbody></table>
+        </div>
+
+        <div id="prod-assign" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="worker">Worker</th><th data-i="jobcards">Jobcards</th><th data-i="machine">Machine</th></tr></thead><tbody id="prod-assign-body"></tbody></table>
+        </div>
+
+        <div id="prod-material-usage" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="jobcard">Jobcard</th><th data-i="material">Material</th><th data-i="required">Required</th><th data-i="reserved">Reserved</th><th data-i="issued">Issued</th><th data-i="status">Status</th></tr></thead><tbody id="prod-material-usage-body"></tbody></table>
+        </div>
+
+        <div id="prod-history" class="tabpanel">
+          <table class="table"><thead><tr><th data-i="no">No</th><th data-i="title">Title</th><th data-i="actual_start">Actual Start</th><th data-i="actual_completion">Actual Completion</th><th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th></tr></thead><tbody id="prod-history-body"></tbody></table>
+        </div>
       </div>
     </div>
 
@@ -522,7 +587,17 @@
 
       <div class="panel">
         <div class="phead"><h3 data-i="jobcard_details">Jobcard Details</h3></div>
-        <table class="table"><thead><tr><th data-i="no">No</th><th data-i="title">Title</th><th data-i="project">Project</th><th data-i="status">Status</th><th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th><th data-i="remaining">Remaining</th></tr></thead><tbody id="jc-list-body"></tbody></table>
+        <div class="tablewrap" style="overflow-x:auto;">
+        <table class="table"><thead><tr>
+          <th data-i="no">No</th><th data-i="project">Project</th><th data-i="customer">Customer</th><th data-i="description">Description</th>
+          <th data-i="status">Status</th><th data-i="priority">Priority</th>
+          <th data-i="planned_start">Planned Start</th><th data-i="planned_finish">Planned Finish</th>
+          <th data-i="actual_start">Actual Start</th><th data-i="actual_finish">Actual Finish</th>
+          <th data-i="planned_hrs">Planned Hrs</th><th data-i="logged_hrs">Logged Hrs</th><th data-i="remaining">Remaining</th><th data-i="progress">Progress</th>
+          <th data-i="responsible_worker">Responsible</th><th data-i="machine">Machine</th>
+          <th data-i="material_readiness">Material Readiness</th><th data-i="inspection_status">Inspection Status</th><th data-i="blocking_reason">Blocking Reason</th>
+        </tr></thead><tbody id="jc-list-body"></tbody></table>
+        </div>
       </div>
     </div>
 
@@ -935,7 +1010,10 @@
         <option value="Store">Store & Materials</option>
         <option value="Purchasing">Purchasing</option>
         <option value="Suppliers">Suppliers</option>
+        <option value="Equipment">Equipment</option>
         <option value="Quality">Quality</option>
+        <option value="Customers">Customers</option>
+        <option value="Marketing">Marketing</option>
         <option value="Custom">Custom</option>
       </select>
     </div>
@@ -950,6 +1028,8 @@
   <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="workshop-data.js"></script>
 <script src="workshop-forms.js"></script>
@@ -1061,7 +1141,15 @@ const i18n={
     single_supplier_dependency:'Single-Supplier Dependency',material_code:'Material Code',dependent_suppliers:'Supplier(s)',
     equipment_cost:'Equipment Cost',purchase_price:'Purchase Price',welding_ndt:'Welding & NDT Summary',
     stock_count_variance:'Stock Count Variance',slow_dead_stock:'Slow-Moving / Dead Stock',
-    system_qty:'System Qty',counted_qty:'Counted Qty',difference:'Difference',last_movement:'Last Movement',days_since_movement:'Days Since Movement'
+    system_qty:'System Qty',counted_qty:'Counted Qty',difference:'Difference',last_movement:'Last Movement',days_since_movement:'Days Since Movement',
+    jobcard_progress:'Jobcard Progress',jobcards_at_risk:'Jobcards At Risk',operation_performance:'Operation Performance',
+    rework_analysis:'Rework Analysis',production_delays:'Production Delays',worker_machine_assignments:'Worker & Machine Assignments',
+    jobcard_material_usage:'Jobcard Material Usage',jobcard_completion_history:'Jobcard Completion History',
+    blocking_reason:'Blocking Reason',operation:'Operation',machine:'Machine',
+    rework_note:'Rework is not explicitly flagged in this data model. Rows below are operations whose logged hours exceeded planned hours by more than 20% — a demo inference, not a confirmed rework record.',
+    planned_completion:'Planned Completion',actual_completion:'Actual Completion',planned_start:'Planned Start',planned_finish:'Planned Finish',
+    actual_start:'Actual Start',actual_finish:'Actual Finish',responsible_worker:'Responsible',inspection_status:'Inspection Status',
+    priority:'Priority',required:'Required',issued:'Issued'
   },
   sv:{
     overview:'Översikt',navigation:'Navigation',projects:'Projekt',estimation:'Estimering',production:'Produktion',
@@ -1158,7 +1246,15 @@ const i18n={
     single_supplier_dependency:'Enskild Leverantörsberoende',material_code:'Materialkod',dependent_suppliers:'Leverantör(er)',
     equipment_cost:'Utrustningskostnad',purchase_price:'Inköpspris',welding_ndt:'Svets- & NDT-sammanfattning',
     stock_count_variance:'Lagerräkningsavvikelse',slow_dead_stock:'Långsam / Död Lager',
-    system_qty:'Systemantal',counted_qty:'Räknat Antal',difference:'Skillnad',last_movement:'Senaste Rörelse',days_since_movement:'Dagar Sedan Rörelse'
+    system_qty:'Systemantal',counted_qty:'Räknat Antal',difference:'Skillnad',last_movement:'Senaste Rörelse',days_since_movement:'Dagar Sedan Rörelse',
+    jobcard_progress:'Arbetskortsframsteg',jobcards_at_risk:'Arbetskort i Riskzonen',operation_performance:'Operationsprestanda',
+    rework_analysis:'Omarbetningsanalys',production_delays:'Produktionsförseningar',worker_machine_assignments:'Medarbetar- & Maskintilldelningar',
+    jobcard_material_usage:'Materialanvändning per Arbetskort',jobcard_completion_history:'Slutförandehistorik för Arbetskort',
+    blocking_reason:'Blockeringsorsak',operation:'Operation',machine:'Maskin',
+    rework_note:'Omarbetning flaggas inte uttryckligen i denna datamodell. Raderna nedan är operationer vars loggade timmar överskred planerade timmar med mer än 20% — en demo-slutsats, inte en bekräftad omarbetningspost.',
+    planned_completion:'Planerat Slutförande',actual_completion:'Faktiskt Slutförande',planned_start:'Planerad Start',planned_finish:'Planerat Slut',
+    actual_start:'Faktisk Start',actual_finish:'Faktiskt Slut',responsible_worker:'Ansvarig',inspection_status:'Inspektionsstatus',
+    priority:'Prioritet',required:'Behövs',issued:'Utlämnat'
   },
   mk:{
     overview:'Преглед',navigation:'Навигација',projects:'Проекти',estimation:'Проценка',production:'Производство',
@@ -1255,7 +1351,15 @@ const i18n={
     single_supplier_dependency:'Зависност од Единствен Добавувач',material_code:'Код на Материјал',dependent_suppliers:'Добавувач(и)',
     equipment_cost:'Цена на Опрема',purchase_price:'Набавна Цена',welding_ndt:'Резиме за Заварување & НДТ',
     stock_count_variance:'Отстапување на Попис',slow_dead_stock:'Бавна / Мртва Залиха',
-    system_qty:'Системска Количина',counted_qty:'Пребројана Количина',difference:'Разлика',last_movement:'Последно Движење',days_since_movement:'Денови од Движење'
+    system_qty:'Системска Количина',counted_qty:'Пребројана Количина',difference:'Разлика',last_movement:'Последно Движење',days_since_movement:'Денови од Движење',
+    jobcard_progress:'Напредок на Работна Картичка',jobcards_at_risk:'Работни Картички во Ризик',operation_performance:'Перформанси на Операција',
+    rework_analysis:'Анализа на Преработка',production_delays:'Задоцнувања во Производство',worker_machine_assignments:'Доделувања на Работници & Машини',
+    jobcard_material_usage:'Употреба на Материјал по Работна Картичка',jobcard_completion_history:'Историја на Завршување на Работни Картички',
+    blocking_reason:'Причина за Блокирање',operation:'Операција',machine:'Машина',
+    rework_note:'Дораборот не е експлицитно означен во овој модел на податоци. Редовите подолу се операции чии евидентирани часови ги надминале планираните за повеќе од 20% — демо-заклучок, не потврден запис за дораборка.',
+    planned_completion:'Планирано Завршување',actual_completion:'Реално Завршување',planned_start:'Планиран Почеток',planned_finish:'Планиран Крај',
+    actual_start:'Реален Почеток',actual_finish:'Реален Крај',responsible_worker:'Одговорен',inspection_status:'Статус на Инспекција',
+    priority:'Приоритет',required:'Потребно',issued:'Издадено'
   }
 };
 
@@ -1363,6 +1467,13 @@ function inRange(dateVal,range){
 function $(id){return document.getElementById(id);}
 function openModal(id){$(id).classList.add('show');}
 function closeModal(id){$(id).classList.remove('show');}
+function notify(msg){
+  const t=$('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));}});
 document.querySelectorAll('.modal').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
 
@@ -1467,7 +1578,7 @@ $('saveViewBtn').addEventListener('click',()=>{
   });
   saveSavedReports(reports);
   renderSavedReports();
-  alert('View saved to Saved Reports.');
+  notify('View saved to Saved Reports.');
 });
 
 // EXPORT / PRINT / REFRESH
@@ -1479,6 +1590,7 @@ $('refreshBtn').addEventListener('click',()=>{
   populateStatusFilter(currentSection);
   if(currentSection)loadSectionData(currentSection);
   updateLastCalculated();
+  notify('Calculations refreshed.');
 });
 
 // TABS (also drives the Custom Report Builder step tabs)
@@ -2012,6 +2124,17 @@ function renderEstimation(data,range){
 }
 
 // ══════════════ PRODUCTION / JOBCARDS ══════════════
+function jobcardLoggedHours(j){
+  if(!j.operations||j.operations.length===0)return null;
+  return j.operations.reduce((s,o)=>s+(num(o.loggedHours)||0),0);
+}
+function jobcardBlockingReason(j){
+  if(j.blockingReason)return j.blockingReason;
+  if(j.status!=='blocked')return null;
+  if(j.materialReadiness==='shortage')return 'Material shortage';
+  const note=(j.notes||[]).find(n=>/block/i.test(n.text||''));
+  return note?note.text:'Unspecified';
+}
 function renderProduction(data,range){
   const jobcards=filterJobcards(data.jobcards||[]);
 
@@ -2020,11 +2143,14 @@ function renderProduction(data,range){
   const completedWeek=jobcards.filter(j=>j.status==='completed'&&safeDate(j.actualCompletion)&&safeDate(j.actualCompletion)>range.start).length;
   const completedTotal=jobcards.filter(j=>j.status==='completed').length;
   const completionRate=jobcards.length>0?completedTotal/jobcards.length*100:null;
+  const inspRequired=jobcards.filter(j=>j.inspectionRequired).length;
+  const firstPass=jobcards.filter(j=>j.status==='completed'&&(j.inspections||[]).every(i=>i.result!=='failed')).length;
 
   $('prod-active').textContent=activeJC;
   $('prod-blocked').textContent=blocked;
   $('prod-completed').textContent=completedWeek;
   $('prod-rate').textContent=completionRate==null?'N/A':pctStr(completionRate);
+  $('prod-fpr').textContent=completedTotal>0?pctStr(firstPass/completedTotal*100):'N/A';
 
   const statusCounts=groupBy(jobcards,j=>j.status||'unknown');
   $('prod-status-list').innerHTML=Object.entries(statusCounts).map(([s,l])=>`<tr><td>${esc(s)}</td><td>${l.length}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="2">No jobcards</td></tr>';
@@ -2035,17 +2161,92 @@ function renderProduction(data,range){
     <td>${num(j.progress)!=null?j.progress+'%':'N/A'}</td><td>${esc(j.plannedCompletion||'N/A')}</td>
   </tr>`).join('')||'<tr class="emptyrow"><td colspan="6">No jobcards</td></tr>';
 
-  const inspRequired=jobcards.filter(j=>j.inspectionRequired).length;
-  const firstPass=jobcards.filter(j=>j.status==='completed'&&(j.inspections||[]).every(i=>i.result!=='failed')).length;
+  // Jobcards at Risk: logged hours exceed planned, or planned completion passed while still open
+  const atRisk=jobcards.filter(j=>{
+    if(j.status==='completed'||j.status==='closed')return false;
+    const logged=jobcardLoggedHours(j);
+    const overHours=logged!=null&&num(j.plannedHours)!=null&&logged>j.plannedHours;
+    const d=safeDate(j.plannedCompletion);
+    const late=d&&d<new Date();
+    return overHours||late;
+  });
+  $('prod-risk-body').innerHTML=atRisk.map(j=>{
+    const logged=jobcardLoggedHours(j);
+    const d=safeDate(j.plannedCompletion);
+    const reasons=[];
+    if(logged!=null&&num(j.plannedHours)!=null&&logged>j.plannedHours)reasons.push('Logged hours exceed planned');
+    if(d&&d<new Date())reasons.push('Past planned completion');
+    return `<tr><td>${esc(j.no)}</td><td>${esc(j.title)}</td><td>${hrsStr(num(j.plannedHours))}</td><td>${logged==null?'N/A':hrsStr(logged)}</td><td>${esc(j.plannedCompletion||'N/A')}</td><td>${esc(reasons.join('; ')||'—')}</td></tr>`;
+  }).join('')||'<tr class="emptyrow"><td colspan="6">No jobcards at risk</td></tr>';
+
+  const blockedJCs=jobcards.filter(j=>j.status==='blocked');
+  $('prod-blocked-body').innerHTML=blockedJCs.map(j=>
+    `<tr><td>${esc(j.no)}</td><td>${esc(j.title)}</td><td>${esc(j.projectNo)}</td><td>${esc(jobcardBlockingReason(j)||'N/A')}</td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="4">No blocked jobcards</td></tr>';
+
+  const opRows=[];
+  jobcards.forEach(j=>(j.operations||[]).forEach(o=>opRows.push({jobcard:j.no,desc:o.desc,worker:o.worker,machine:o.machine,planned:num(o.plannedHours),logged:num(o.loggedHours),status:o.status})));
+  $('prod-ops-body').innerHTML=opRows.map(o=>
+    `<tr><td>${esc(o.jobcard)}</td><td>${esc(o.desc||'N/A')}</td><td>${naOr(o.worker)}</td><td>${naOr(o.machine)}</td><td>${hrsStr(o.planned)}</td><td>${hrsStr(o.logged)}</td><td><span class="badge ${o.status==='completed'?'completed':o.status==='in-progress'?'active':'pending'}">${esc(o.status||'N/A')}</span></td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="7">No operations recorded</td></tr>';
+
+  const reworkRows=opRows.filter(o=>o.planned!=null&&o.logged!=null&&o.planned>0&&(o.logged-o.planned)/o.planned>0.2);
+  $('prod-rework-body').innerHTML=reworkRows.map(o=>
+    `<tr><td>${esc(o.jobcard)}</td><td>${esc(o.desc||'N/A')}</td><td>${hrsStr(o.planned)}</td><td>${hrsStr(o.logged)}</td><td>${pctStr((o.logged-o.planned)/o.planned*100)}</td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="5">No operations show a significant hour overrun</td></tr>';
+
+  const delayed=jobcards.filter(j=>{
+    const planned=safeDate(j.plannedCompletion),actual=safeDate(j.actualCompletion);
+    if(planned&&actual)return actual>planned;
+    if(planned&&!actual&&j.status!=='completed'&&j.status!=='closed')return planned<new Date();
+    return false;
+  });
+  $('prod-delays-body').innerHTML=delayed.map(j=>{
+    const planned=safeDate(j.plannedCompletion),actual=safeDate(j.actualCompletion);
+    const days=actual?daysBetween(planned,actual):daysBetween(planned,new Date());
+    return `<tr><td>${esc(j.no)}</td><td>${esc(j.title)}</td><td>${esc(j.plannedCompletion||'N/A')}</td><td>${esc(j.actualCompletion||'Not yet completed')}</td><td>${days==null?'N/A':Math.max(0,days)}</td></tr>`;
+  }).join('')||'<tr class="emptyrow"><td colspan="5">No production delays</td></tr>';
+
+  const workerMap={};
+  jobcards.forEach(j=>(j.workers||[]).forEach(w=>{workerMap[w]=workerMap[w]||{jobcards:new Set(),machines:new Set()};workerMap[w].jobcards.add(j.no);(j.machines||[]).forEach(m=>workerMap[w].machines.add(m.name||m));}));
+  $('prod-assign-body').innerHTML=Object.entries(workerMap).map(([w,v])=>
+    `<tr><td>${esc(w)}</td><td>${[...v.jobcards].map(esc).join(', ')}</td><td>${[...v.machines].map(esc).join(', ')||'N/A'}</td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="3">No worker assignments recorded</td></tr>';
+
+  const matRows=[];
+  jobcards.forEach(j=>(j.materials||[]).forEach(m=>matRows.push({jobcard:j.no,desc:m.description||m.code,required:num(m.required),reserved:num(m.reserved),issued:num(m.issued),status:m.status})));
+  $('prod-material-usage-body').innerHTML=matRows.map(m=>
+    `<tr><td>${esc(m.jobcard)}</td><td>${esc(m.desc||'N/A')}</td><td>${m.required==null?'N/A':m.required}</td><td>${m.reserved==null?'N/A':m.reserved}</td><td>${m.issued==null?'N/A':m.issued}</td><td><span class="badge ${m.status==='issued'?'ready':m.status==='shortage'?'overdue':'pending'}">${esc(m.status||'N/A')}</span></td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="6">No jobcard material records</td></tr>';
+
+  const completedJCs=jobcards.filter(j=>j.status==='completed');
+  $('prod-history-body').innerHTML=completedJCs.map(j=>
+    `<tr><td>${esc(j.no)}</td><td>${esc(j.title)}</td><td>${esc(j.actualStart||'N/A')}</td><td>${esc(j.actualCompletion||'N/A')}</td><td>${hrsStr(num(j.plannedHours))}</td><td>${hrsStr(jobcardLoggedHours(j))}</td></tr>`
+  ).join('')||'<tr class="emptyrow"><td colspan="6">No completed jobcards yet</td></tr>';
+
   $('jc-total').textContent=jobcards.length;
   $('jc-progress').textContent=activeJC;
   $('jc-inspection').textContent=inspRequired;
   $('jc-fpr').textContent=completedTotal>0?pctStr(firstPass/completedTotal*100):'N/A';
 
   $('jc-list-body').innerHTML=jobcards.map(j=>{
-    const remaining=num(j.plannedHours)!=null&&num(j.loggedHours)!=null?Math.max(0,j.plannedHours-j.loggedHours):(num(j.plannedHours)!=null?j.plannedHours:null);
-    return `<tr><td>${esc(j.no)}</td><td>${esc(j.title)}</td><td>${esc(j.projectNo)}</td><td><span class="badge">${esc(j.status)}</span></td><td>${hrsStr(num(j.plannedHours))}</td><td>${hrsStr(num(j.loggedHours)||0)}</td><td>${remaining==null?'N/A':hrsStr(remaining)}</td></tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="7">No jobcards</td></tr>';
+    const logged=jobcardLoggedHours(j);
+    const remaining=num(j.plannedHours)!=null&&logged!=null?Math.max(0,j.plannedHours-logged):null;
+    const machines=(j.machines||[]).map(m=>m.name||m).join(', ')||'N/A';
+    const pendingInsp=(j.inspections||[]).some(i=>i.result==='pending');
+    const failedInsp=(j.inspections||[]).some(i=>i.result==='failed');
+    const inspStatus=!j.inspectionRequired?'Not required':failedInsp?'Failed':pendingInsp?'Pending':(j.inspections||[]).length>0?'Passed':'N/A';
+    return `<tr>
+      <td>${esc(j.no)}</td><td>${esc(j.projectNo)}</td><td>${esc(j.customer||'N/A')}</td><td>${esc(j.title)}</td>
+      <td><span class="badge ${j.status==='in-progress'?'active':j.status==='completed'?'completed':j.status==='blocked'?'overdue':'pending'}">${esc(j.status)}</span></td>
+      <td>${esc(j.priority||'N/A')}</td>
+      <td>${esc(j.plannedStart||'N/A')}</td><td>${esc(j.plannedCompletion||'N/A')}</td>
+      <td>${esc(j.actualStart||'N/A')}</td><td>${esc(j.actualCompletion||'N/A')}</td>
+      <td>${hrsStr(num(j.plannedHours))}</td><td>${logged==null?'N/A':hrsStr(logged)}</td><td>${remaining==null?'N/A':hrsStr(remaining)}</td><td>${num(j.progress)!=null?j.progress+'%':'N/A'}</td>
+      <td>${esc(j.responsible||'N/A')}</td><td>${esc(machines)}</td>
+      <td>${esc(j.materialReadiness||'N/A')}</td><td>${esc(inspStatus)}</td><td>${esc(jobcardBlockingReason(j)||'N/A')}</td>
+    </tr>`;
+  }).join('')||'<tr class="emptyrow"><td colspan="19">No jobcards</td></tr>';
 }
 
 // ══════════════ HOURS & LABOUR ══════════════
@@ -2159,7 +2360,7 @@ function renderPurchasing(data,range){
   const purch=getPurchasingOrders();
   const note=$('purch-source-note');
   if(!purch.connected){
-    note.textContent=purch.corrupted?'Stored purchasing data could not be read (corrupted) — showing no data.':'Not yet connected — open the Purchasing module at least once to generate demonstration purchase orders.';
+    note.textContent=purch.corrupted?'Stored purchasing data could not be read (corrupted) — showing no data.':'Not yet connected — create or update a purchase order in the Purchasing module (e.g. approve one) to generate demonstration data here.';
     ['purch-open','purch-spend','purch-late','purch-approval','purch-partial'].forEach(id=>$(id).textContent='N/A');
     $('purch-list-body').innerHTML='<tr class="emptyrow"><td colspan="7">Not yet connected</td></tr>';
     $('purch-late-body').innerHTML='<tr class="emptyrow"><td colspan="5">Not yet connected</td></tr>';
@@ -2360,7 +2561,7 @@ function seedDemoSavedReports(){
     {id:'demo-4',name:'Low Stock and Late Purchasing',category:'Store',favourite:false,created:today,lastUsed:today,section:'store',filters:{dateFilter:'all'},type:'view',archived:false},
     {id:'demo-5',name:'Monthly Hours Summary',category:'Hours',favourite:false,created:today,lastUsed:today,section:'hours',filters:{dateFilter:'month'},type:'view',archived:false},
     {id:'demo-6',name:'Open Quality Actions',category:'Quality',favourite:false,created:today,lastUsed:today,section:'quality',filters:{dateFilter:'all'},type:'view',archived:false},
-    {id:'demo-7',name:'Equipment Maintenance Due',category:'Suppliers',favourite:false,created:today,lastUsed:today,section:'equipment',filters:{dateFilter:'all'},type:'view',archived:false}
+    {id:'demo-7',name:'Equipment Maintenance Due',category:'Equipment',favourite:false,created:today,lastUsed:today,section:'equipment',filters:{dateFilter:'all'},type:'view',archived:false}
   ];
   saveSavedReports(demo);
   return demo;
@@ -2404,6 +2605,7 @@ function renameSavedReport(id){
   r.name=esc(name).slice(0,80);
   saveSavedReports(reports);
   renderSavedReports();
+  notify('Report renamed.');
 }
 function duplicateSavedReport(id){
   const reports=loadSavedReports();
@@ -2412,6 +2614,7 @@ function duplicateSavedReport(id){
   reports.push(copy);
   saveSavedReports(reports);
   renderSavedReports();
+  notify('Report duplicated.');
 }
 function toggleFavourite(id){
   const reports=loadSavedReports();
@@ -2427,10 +2630,12 @@ function archiveSavedReport(id){
   r.archived=true;
   saveSavedReports(reports);
   renderSavedReports();
+  notify('Report archived.');
 }
 function exportSavedDefinition(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
   downloadBlob(JSON.stringify(r,null,2),'application/json','saved-report-'+r.id+'.json');
+  notify('Report definition exported.');
 }
 $('newSavedBtn').addEventListener('click',()=>{
   $('savedModalTitle').textContent=tr('new_report');
@@ -2439,7 +2644,7 @@ $('newSavedBtn').addEventListener('click',()=>{
 });
 function confirmSavedModal(){
   const name=$('savedNameInput').value.trim();
-  if(!name){alert('Please enter a report name.');return;}
+  if(!name){notify('Please enter a report name.');return;}
   const reports=loadSavedReports()||[];
   reports.push({
     id:'rpt-'+Date.now(),name:esc(name).slice(0,80),category:$('savedCategoryInput').value,
@@ -2522,7 +2727,7 @@ function onBuilderFieldToggle(cb){
 const FILTER_OPERATORS=[['equals','Equals'],['notequals','Does not equal'],['contains','Contains'],['gt','Greater than'],['lt','Less than'],['before','Before'],['after','After'],['between','Between'],['empty','Is empty'],['notempty','Is not empty']];
 function addBuilderFilterRow(){
   const def=BUILDER_SOURCES[builderState.source];
-  if(!def){alert('Select a data source first.');return;}
+  if(!def){notify('Select a data source first.');return;}
   const idx=builderState.filters.length;
   builderState.filters.push({field:def.fields[0],op:'contains',value:''});
   renderBuilderFilterRows();
@@ -2613,7 +2818,7 @@ function previewBuilderReport(){
   }
 }
 function saveBuilderReport(duplicate){
-  if(!builderState.source){alert('Select a data source first.');return;}
+  if(!builderState.source){notify('Select a data source first.');return;}
   const name=$('builder-name').value.trim()||('Custom report '+new Date().toISOString().slice(0,10));
   const reports=loadSavedReports()||[];
   reports.push({
@@ -2623,12 +2828,13 @@ function saveBuilderReport(duplicate){
     section:'builder',type:'custom',archived:false
   });
   saveSavedReports(reports);
-  alert('Report definition saved.');
+  notify('Report definition saved.');
 }
 function exportBuilderCsv(){
   const table=$('builderPreviewTable');
-  if(!table){alert('Preview the report first.');return;}
+  if(!table){notify('Preview the report first.');return;}
   downloadBlob(tableToCsv(table),'text/csv;charset=utf-8','custom-report.csv');
+  notify('CSV exported.');
 }
 
 // EXPORT (top toolbar)
@@ -2654,22 +2860,28 @@ function getVisibleTable(){
   return (activePanel&&activePanel.querySelector('table.table'))||sec.querySelector('table.table');
 }
 function preparePrint(){
-  const header=document.querySelector('#section-'+currentSection+' .print-header');
-  if(header){
-    const title=SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection;
-    const titleEl=header.querySelector('#printSectionTitle');if(titleEl)titleEl.textContent=title;
-    const meta=header.querySelector('#printMeta');
-    if(meta)meta.innerHTML=`<p>Frontend Prototype Report — ${esc(title)}</p><p>Filters: ${esc(currentFilter)}</p><p>Generated: ${new Date().toLocaleString()}</p>`;
-  }
+  const header=$('printHeader');
+  if(!header)return;
+  const title=SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection;
+  const titleEl=header.querySelector('#printSectionTitle');if(titleEl)titleEl.textContent=title;
+  const data=getData();
+  const filterParts=[document.querySelector(`[data-filter="${currentFilter}"]`)?.textContent||currentFilter];
+  if(activeFilters.customer){const c=(data.customers||[]).find(x=>String(x.id)===String(activeFilters.customer));if(c)filterParts.push('Customer: '+c.name);}
+  if(activeFilters.project)filterParts.push('Project: '+activeFilters.project);
+  if(activeFilters.status)filterParts.push('Status: '+activeFilters.status);
+  const meta=header.querySelector('#printMeta');
+  if(meta)meta.innerHTML=`<p><strong>${esc(title)}</strong> — Frontend Prototype Report</p><p>Filters: ${esc(filterParts.join(' · '))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>Report status: Demonstration data — see Reporting Status panel for module coverage.</p>`;
 }
 function exportReport(format){
   if(format==='csv'){
     const table=getVisibleTable();
-    if(!table){alert('No table is currently visible to export.');closeModal('exportModal');return;}
+    if(!table){notify('No table is currently visible to export.');closeModal('exportModal');return;}
     downloadBlob(tableToCsv(table),'text/csv;charset=utf-8','varmak-report-'+currentSection+'.csv');
+    notify('CSV exported.');
   }else if(format==='json'){
     const payload={section:currentSection,generatedAt:new Date().toISOString(),filters:{dateFilter:currentFilter,...activeFilters},note:'Frontend prototype demonstration export — not an official record.'};
     downloadBlob(JSON.stringify(payload,null,2),'application/json','varmak-report-'+currentSection+'.json');
+    notify('JSON exported.');
   }else if(format==='print'){
     preparePrint();window.print();
   }
@@ -2709,6 +2921,24 @@ function loadConfig(){
   updateLastCalculated();
   setInterval(updateClock,60000);
   window.addEventListener('workshop:data',()=>{invalidateDataCache();populateFilterSelects();populateStatusFilter(currentSection);if(currentSection)loadSectionData(currentSection);});
+
+  const emberBox=$('embers');
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(emberBox&&!reduceMotion){
+    for(let i=0;i<16;i++){
+      const e=document.createElement('i');
+      e.className='ember';
+      e.style.left=Math.random()*100+'%';
+      e.style.setProperty('--drift',(Math.random()*80-40)+'px');
+      const d=7+Math.random()*9;
+      e.style.animationDuration=d+'s';
+      e.style.animationDelay=(-Math.random()*d)+'s';
+      const s=1+Math.random()*2;
+      e.style.width=s+'px';
+      e.style.height=s+'px';
+      emberBox.appendChild(e);
+    }
+  }
 })();
 </script>
 </body></html>
