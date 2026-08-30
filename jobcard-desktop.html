@@ -294,7 +294,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="workshop-data.js"></script>
+<script src="quality-gates.js"></script><script src="workshop-data.js"></script>
 <script src="jobcard-rules.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -327,6 +327,31 @@ function custById(id){return SHARED.customers.find(c=>c.id===id);}
 function custName(id){const c=custById(id);return c?c.name:'—';}
 function projByNo(no){return SHARED.projects.find(p=>p.no===no);}
 function getJC(idOrNo){return JOBCARDS.find(j=>j.id===idOrNo||j.no===idOrNo);}
+// The authoritative decision always comes from WorkshopData's central Quality Hold gate (see
+// quality-gates.js) — this is a thin read-only wrapper used only to drive the banner/disabled
+// controls; it is never trusted as the actual safety enforcement (that happens server-side).
+function jcQualityGate(j){return (j&&window.WorkshopData?.getJobcardQualityGate)?WorkshopData.getJobcardQualityGate(j.no):{blocked:false,holds:[],reasons:[]};}
+// Shows a translated error toast when a WorkshopData mutation was rejected by the central Quality
+// Hold safety gate, instead of silently recording a misleading "status changed" activity entry for
+// a change that was actually blocked and never happened. Returns true if the result was blocked.
+function handleQualityBlocked(result){
+  if(!result||result.code!=='QUALITY_HOLD_ACTIVE')return false;
+  const tt=t();
+  toast(tpl(tt.qh_blocked_toast,{holds:(result.holdNumbers||[]).join(', ')||'—'}),'error');
+  return true;
+}
+function qualityHoldBanner(j){
+  const tt=t();const gate=jcQualityGate(j);
+  if(!gate.blocked)return'';
+  return `<div class="lockbanner" style="background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.4);color:#ffd9d9;flex-direction:column;align-items:stretch;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><b>${esc(tt.qh_title)}</b></div>
+    ${gate.holds.map(h=>`<div style="font-size:12px;line-height:1.6;">
+      <div><b>${esc(tt.qh_hold_label)} ${esc(h.no)}</b>${h.severity?` · ${esc(tt.qh_severity_label)}: ${esc(h.severity)}`:''}</div>
+      ${h.reason?`<div>${esc(tt.qh_reason_label)}: ${esc(h.reason)}</div>`:''}
+      ${h.requiredAction?`<div>${esc(tt.qh_requiredaction_label)}: ${esc(h.requiredAction)}</div>`:''}
+    </div>`).join('')}
+  </div>`;
+}
 function invByCode(code){return SHARED.inventory.find(x=>x.code===code);}
 const OWNER_OPTIONS=['Aleksandar C.','Elena N.','Marko K.'];
 
@@ -336,6 +361,12 @@ const OWNER_OPTIONS=['Aleksandar C.','Elena N.','Marko K.'];
 // Frontend enforcement only — the future backend must repeat every one of these checks server-side.
 const MAIN_STAGES=['draft','released','ready','in-progress','inspection','completed','closed'];
 const SIDE_STATUSES=['paused','blocked','cancelled','archived'];
+// Presentational mirror of workshop-data.js's JOBCARD_UNSAFE_STATUSES/OPERATION_UNSAFE_STATUSES —
+// used only to decide which controls to disable/hide while a Quality Hold is active. The actual
+// safety decision always comes from WorkshopData's central gate (quality-gates.js); these lists
+// only avoid showing a control the server would reject anyway.
+const JOBCARD_UNSAFE_STATUSES=['in-progress','completed','closed'];
+const OPERATION_UNSAFE_STATUSES=['in-progress','completed','skipped'];
 const ALLOWED_TRANSITIONS={
   draft:['released','cancelled'],
   released:['ready','draft','paused','blocked','cancelled'],
@@ -398,7 +429,7 @@ en:{
   nc_pick_t:"New Jobcard",nc_pick_sub:"Choose how to start this jobcard.",nc_blank:"Blank jobcard",nc_blank_sub:"Start from an empty jobcard and fill in every detail manually.",nc_fromproject:"From an existing project",nc_fromproject_sub:"Reuse the project's customer, delivery target, BOM, planned hours and machines.",nc_frombom:"From a project BOM item",nc_frombom_sub:"Scope the jobcard to a single material line from a project's bill of materials.",
   nc_title:"New Jobcard",nc_edit_title:"Edit Jobcard",nc_save:"Save",nc_cancel:"Cancel",nc_create:"Create",
   a_edit:"Edit",a_print:"Print Jobcard",a_duplicate:"Duplicate",a_more:"More",a_start:"Start work",a_pause:"Pause",a_resume:"Resume",a_block:"Mark blocked",a_complete:"Mark completed",a_close:"Close jobcard",a_cancel:"Cancel jobcard",a_reopen:"Reopen",a_archive:"Archive",a_release:"Release",a_ready:"Mark ready",a_inspection:"Send to inspection",
-  m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",resume_target_info:"This jobcard will resume to: {s}",resume_fallback_warning:"The recorded resume status was missing or invalid, so this jobcard will resume to Ready instead.",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
+  m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",resume_target_info:"This jobcard will resume to: {s}",resume_fallback_warning:"The recorded resume status was missing or invalid, so this jobcard will resume to Ready instead.",qh_title:"Quality Hold Active",qh_hold_label:"Hold",qh_severity_label:"Severity",qh_reason_label:"Reason",qh_requiredaction_label:"Required Action",qh_blocked_toast:"Blocked by active Quality Hold {holds} — this action is not allowed while the hold remains active.",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
   f_reason:"Reason",f_comment:"Comment",f_resumestatus:"Resume to status",f_overridereason:"Override reason (required)",f_hours:"Hours",f_qty:"Quantity",f_date:"Date",f_worker:"Worker",f_barcode:"Barcode / QR value",f_destination:"Destination",
   confirm_delete_op:"Delete operation \"{n}\"?",confirm_delete_mat:"Delete material line \"{n}\"?",confirm_status:"Move this jobcard to \"{s}\"?",confirm_archive:"Archive jobcard {no}? It will be hidden from the active lists but kept for record-keeping.",confirm_complete_override:"Complete this jobcard anyway using a manager override?",
   err_required:"This field is required.",err_qty:"Quantity must be greater than zero.",err_hours:"Hours must be greater than zero.",err_date:"Please enter a valid date.",err_negative:"This value cannot be negative.",
@@ -445,7 +476,7 @@ sv:{
   nc_pick_t:"Nytt jobbkort",nc_pick_sub:"Välj hur detta jobbkort ska skapas.",nc_blank:"Tomt jobbkort",nc_blank_sub:"Starta från ett tomt jobbkort och fyll i allt manuellt.",nc_fromproject:"Från ett befintligt projekt",nc_fromproject_sub:"Återanvänd projektets kund, leveransmål, materialbehov, planerade timmar och maskiner.",nc_frombom:"Från en materialrad i projektet",nc_frombom_sub:"Begränsa jobbkortet till en enskild materialrad från projektets materialspecifikation.",
   nc_title:"Nytt jobbkort",nc_edit_title:"Redigera jobbkort",nc_save:"Spara",nc_cancel:"Avbryt",nc_create:"Skapa",
   a_edit:"Redigera",a_print:"Skriv ut jobbkort",a_duplicate:"Duplicera",a_more:"Mer",a_start:"Starta arbete",a_pause:"Pausa",a_resume:"Återuppta",a_block:"Markera blockerat",a_complete:"Markera klart",a_close:"Stäng jobbkort",a_cancel:"Avbryt jobbkort",a_reopen:"Återöppna",a_archive:"Arkivera",a_release:"Utfärda",a_ready:"Markera redo",a_inspection:"Skicka till besiktning",
-  m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",resume_target_info:"Detta jobbkort återupptas till: {s}",resume_fallback_warning:"Den sparade återupptagningsstatusen saknades eller var ogiltig, så jobbkortet återupptas till Redo istället.",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
+  m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",resume_target_info:"Detta jobbkort återupptas till: {s}",resume_fallback_warning:"Den sparade återupptagningsstatusen saknades eller var ogiltig, så jobbkortet återupptas till Redo istället.",qh_title:"Kvalitetsspärr aktiv",qh_hold_label:"Spärr",qh_severity_label:"Allvarlighetsgrad",qh_reason_label:"Orsak",qh_requiredaction_label:"Nödvändig åtgärd",qh_blocked_toast:"Blockerad av aktiv kvalitetsspärr {holds} — denna åtgärd är inte tillåten medan spärren kvarstår.",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
   f_reason:"Anledning",f_comment:"Kommentar",f_resumestatus:"Återuppta till status",f_overridereason:"Anledning till överstyrning (krävs)",f_hours:"Timmar",f_qty:"Antal",f_date:"Datum",f_worker:"Personal",f_barcode:"Streckkod / QR-värde",f_destination:"Destination",
   confirm_delete_op:"Ta bort momentet \"{n}\"?",confirm_delete_mat:"Ta bort materialraden \"{n}\"?",confirm_status:"Flytta detta jobbkort till \"{s}\"?",confirm_archive:"Arkivera jobbkort {no}? Det döljs från aktiva listor men behålls för spårbarhet.",confirm_complete_override:"Slutför detta jobbkort ändå med chefsöverstyrning?",
   err_required:"Detta fält är obligatoriskt.",err_qty:"Antal måste vara större än noll.",err_hours:"Timmar måste vara större än noll.",err_date:"Ange ett giltigt datum.",err_negative:"Detta värde kan inte vara negativt.",
@@ -492,7 +523,7 @@ mk:{
   nc_pick_t:"Nov raboten karton",nc_pick_sub:"Izberi kako da se kreira ovoj karton.",nc_blank:"Prazen karton",nc_blank_sub:"Počni od prazen karton i pополни sè rakoпisno.",nc_fromproject:"Od postoен proekt",nc_fromproject_sub:"Prezemi go klientot, celta za isporaka, spisokot na materijali, planiranite časovi i mašinite od proektot.",nc_frombom:"Od stavka od spisokot na materijali",nc_frombom_sub:"Ограничи go kartonot na eden materijalen red od spisokot na materijali na proektot.",
   nc_title:"Nov raboten karton",nc_edit_title:"Uredi raboten karton",nc_save:"Začuvaj",nc_cancel:"Otkaži",nc_create:"Kreiraj",
   a_edit:"Uredi",a_print:"Pečati karton",a_duplicate:"Dupliciraj",a_more:"Poveќe",a_start:"Започни rabota",a_pause:"Pauziraj",a_resume:"Prodolži",a_block:"Označi kako blokiran",a_complete:"Označi kako završen",a_close:"Zatvori karton",a_cancel:"Otkaži karton",a_reopen:"Povторно otvori",a_archive:"Arhiviraj",a_release:"Izdadi",a_ready:"Označi kako podgotven",a_inspection:"Isprati na inspekcija",
-  m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",resume_target_info:"Ovoj karton kje prodolži do: {s}",resume_fallback_warning:"Začuvaniot status za prodolžuvanje nedostasuvaše ili beše nevaliden, pa kartonot kje prodolži do Podgotven naместо toa.",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
+  m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",resume_target_info:"Ovoj karton kje prodolži do: {s}",resume_fallback_warning:"Začuvaniot status za prodolžuvanje nedostasuvaše ili beše nevaliden, pa kartonot kje prodolži do Podgotven naместо toa.",qh_title:"Aktiven kvalitativen zabranа",qh_hold_label:"Zabrana",qh_severity_label:"Ozbilnost",qh_reason_label:"Pričina",qh_requiredaction_label:"Potrebno dejstvo",qh_blocked_toast:"Blokirano od aktivna kvalitativna zabrana {holds} — ova dejstvo ne e dozvoleno dodeka zabranata e aktivna.",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
   f_reason:"Pričina",f_comment:"Komentar",f_resumestatus:"Prodolži do status",f_overridereason:"Pričina za overriding (se bara)",f_hours:"Časovi",f_qty:"Količina",f_date:"Datum",f_worker:"Rabotnik",f_barcode:"Barkod / QR vrednost",f_destination:"Destinacija",
   confirm_delete_op:"Izbriši ja operacijata \"{n}\"?",confirm_delete_mat:"Izbriši go redot na materijal \"{n}\"?",confirm_status:"Premesti go ovoj karton vo \"{s}\"?",confirm_archive:"Arhiviraj go kartonot {no}? Ke bide skrien od aktivnite listi no se čuva za evidencija.",confirm_complete_override:"Sepak da se završi ovoj karton so upravuvačko overriding?",
   err_required:"Ова poле е задолжително.",err_qty:"Količinata mora da bide pogolema od nula.",err_hours:"Časovite mora da bidat pogolemi od nula.",err_date:"Vnesi validen datum.",err_negative:"Ovaa vrednost ne može da bide negativna.",
@@ -734,6 +765,7 @@ function renderDetail(){
   const tt=t();const j=getJC(selectedJcId);
   if(!j)return `<div class="empty3">${esc(tt.empty_select)}</div>`;
   const locked=isLocked(j);
+  const heldGate=jcQualityGate(j);const held=heldGate.blocked;
   const stagesShown=MAIN_STAGES.map(s=>({k:s,lbl:tt['st_'+s]}));
   const curMainIdx=MAIN_STAGES.indexOf(j.status);
   const onSideBranch=SIDE_STATUSES.includes(j.status);
@@ -742,11 +774,13 @@ function renderDetail(){
     if(!onSideBranch&&s.k===j.status)cls='current';
     else if(curMainIdx>=0&&i<curMainIdx)cls='done';
     else if(onSideBranch&&i<=MAIN_STAGES.indexOf(j._resumeStatus||'draft'))cls='done';
-    return `<button class="step ${cls}" onclick="requestStatusChange(${j.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${esc(s.lbl)}</span></button>${i<stagesShown.length-1?'<span class="stepline"></span>':''}`;
+    const stepBlocked=held&&JOBCARD_UNSAFE_STATUSES.includes(s.k);
+    return `<button class="step ${cls}" ${stepBlocked?'disabled title="'+esc(tt.qh_title)+'"':''} onclick="requestStatusChange(${j.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${esc(s.lbl)}</span></button>${i<stagesShown.length-1?'<span class="stepline"></span>':''}`;
   }).join('')+(onSideBranch?`<span class="stepline"></span><button class="step sidebranch current"><span class="sdot">!</span><span class="slabel">${esc(tt['st_'+j.status])}</span></button>`:'');
 
   return `
     ${locked?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${tpl(esc(tt.lockbanner),{status:esc(tt['st_'+j.status])})}${j.status!=='cancelled'?`<button class="tbtn small" onclick="openReopen(${j.id})">${esc(tt.a_reopen)}</button>`:''}</div>`:''}
+    ${qualityHoldBanner(j)}
     <div class="dethead">
       <div class="dtop">
         <div><div class="jno">${esc(j.no)} · ${esc(j.projectNo)||'—'}</div><h2>${esc(j.title)}</h2><div class="dcust">${esc(custName(j.customerId))}</div></div>
@@ -757,8 +791,8 @@ function renderDetail(){
             <div class="moremenu">
               <button onclick="duplicateJc(${j.id})">${esc(tt.a_duplicate)}</button>
               ${!locked&&!isPaused(j)?`<button onclick="openPauseBlock(${j.id},'paused')">${esc(tt.a_pause)}</button><button onclick="openPauseBlock(${j.id},'blocked')">${esc(tt.a_block)}</button>`:''}
-              ${isPaused(j)?`<button onclick="openResume(${j.id})">${esc(tt.a_resume)}</button>`:''}
-              ${j.status==='completed'?`<button onclick="requestStatusChange(${j.id},'closed')">${esc(tt.a_close)}</button>`:''}
+              ${isPaused(j)&&!held?`<button onclick="openResume(${j.id})">${esc(tt.a_resume)}</button>`:''}
+              ${j.status==='completed'&&!held?`<button onclick="requestStatusChange(${j.id},'closed')">${esc(tt.a_close)}</button>`:''}
               ${['completed','closed'].includes(j.status)&&!j.archived?`<button onclick="archiveJc(${j.id})">${esc(tt.a_archive)}</button>`:''}
               ${['draft','released','ready'].includes(j.status)?`<button class="danger2" onclick="openCancel(${j.id})">${esc(tt.a_cancel)}</button>`:''}
             </div>
@@ -820,6 +854,7 @@ function renderTabOperations(j){
 function renderOpCard(j,op,idx,total,locked){
   const tt=t();const dep=op.dependency?(j.operations||[]).find(o=>o.id===op.dependency):null;
   const startable=canStartOp(j,op);
+  const held=jcQualityGate(j).blocked;
   return `<div class="opcard ${op.status==='in-progress'?'active':''}">
     <div class="oph"><div><span class="opn">${esc(tt.op_no)} ${idx+1}</span> <span class="tagpill ${op.status==='completed'?'g':(op.status==='in-progress'?'b':(op.status==='paused'?'w':(op.status==='skipped'?'n':'n')))}">${esc(tt['ops_'+op.status.replace('-','')])}</span>${op.inspectionCheckpoint?`<span class="tagpill p">${esc(tt.op_inspectioncheckpoint)}</span>`:''}
       <div class="opdesc">${esc(op.desc)}</div></div></div>
@@ -834,9 +869,9 @@ function renderOpCard(j,op,idx,total,locked){
     </div>
     ${op.notes?`<div class="opinstr" style="color:var(--steel-400);">“${esc(op.notes)}”</div>`:''}
     ${!locked?`<div class="opactions">
-      ${op.status==='pending'?`<button ${startable?'':'disabled'} onclick="setOpStatus(${j.id},${op.id},'in-progress')" title="${startable?'':esc(tt.op_dependency)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`:''}
-      ${op.status==='in-progress'?`<button onclick="setOpStatus(${j.id},${op.id},'paused')">${esc(tt.op_pause)}</button><button onclick="attemptCompleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${esc(tt.op_complete)}</button>`:''}
-      ${op.status==='paused'?`<button onclick="setOpStatus(${j.id},${op.id},'in-progress')">${esc(tt.op_resume)}</button>`:''}
+      ${op.status==='pending'?(held?`<button disabled title="${esc(tt.qh_title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`:`<button ${startable?'':'disabled'} onclick="setOpStatus(${j.id},${op.id},'in-progress')" title="${startable?'':esc(tt.op_dependency)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`):''}
+      ${op.status==='in-progress'?`<button onclick="setOpStatus(${j.id},${op.id},'paused')">${esc(tt.op_pause)}</button><button ${held?'disabled title="'+esc(tt.qh_title)+'"':''} onclick="attemptCompleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${esc(tt.op_complete)}</button>`:''}
+      ${op.status==='paused'?`<button ${held?'disabled title="'+esc(tt.qh_title)+'"':''} onclick="setOpStatus(${j.id},${op.id},'in-progress')">${esc(tt.op_resume)}</button>`:''}
       <button onclick="openOpForm(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(tt.op_edit)}</button>
       <button onclick="duplicateOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(tt.op_duplicate)}</button>
       <button ${idx===0?'disabled':''} onclick="moveOp(${j.id},${op.id},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>${esc(tt.op_moveup)}</button>
@@ -856,7 +891,7 @@ function openOpForm(jcId,opId){
     <div class="frow"><label>${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
     <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!OWNER_OPTIONS.includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
       ${field('opMachine',tt.op_machine,op?op.machine:'')}
-      ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
+      ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.filter(s=>!jcQualityGate(j).blocked||s===(op?op.status:'pending')||!OPERATION_UNSAFE_STATUSES.includes(s)).map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
     <div class="frow3">${field('opPlannedHours',tt.op_plannedhours,op?op.plannedHours:0,'number')}
       ${field('opLoggedHours',tt.op_loggedhours,op?op.loggedHours:0,'number')}
       ${field('opPlannedStart',tt.op_plannedstart,op?op.plannedStart:'','date')}</div>
@@ -875,7 +910,11 @@ function saveOpForm(jcId,opId){
   const payload={desc,instructions:$('opInstr').value.trim(),worker:$('opWorker').value,machine:$('opMachine').value.trim(),
     status:$('opStatus').value,plannedHours,loggedHours,plannedStart:$('opPlannedStart').value||null,
     dependency:$('opDependency').value?Number($('opDependency').value):null,inspectionCheckpoint:$('opInspection').checked,notes:$('opNotes').value.trim()};
-  if(opId){WorkshopData.updateJobcardOperation(jcId,opId,payload);WorkshopData.recordJobcardActivity(jcId,{action:`Operation updated: ${desc}`});}
+  if(opId){
+    const res=WorkshopData.updateJobcardOperation(jcId,opId,payload);
+    if(handleQualityBlocked(res)){refreshShared();return;}
+    WorkshopData.recordJobcardActivity(jcId,{action:`Operation updated: ${desc}`});
+  }
   else{WorkshopData.addJobcardOperation(jcId,Object.assign({no:(j.operations||[]).length+1,actualStart:null,actualCompletion:null,attachments:''},payload));WorkshopData.recordJobcardActivity(jcId,{action:`Operation added: ${desc}`});}
   refreshShared();closeModal();renderApp();
 }
@@ -905,7 +944,8 @@ function setOpStatus(jcId,opId,status){
   const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
   const patch={status};const dt=todayISO();
   if(status==='in-progress'&&!op.actualStart)patch.actualStart=dt;
-  WorkshopData.updateJobcardOperation(jcId,opId,patch);
+  const res=WorkshopData.updateJobcardOperation(jcId,opId,patch);
+  if(handleQualityBlocked(res)){refreshShared();renderApp();return;}
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation ${status==='in-progress'?'started':status}: ${op.desc}`});
   refreshShared();renderApp();
 }
@@ -922,7 +962,8 @@ function attemptCompleteOp(jcId,opId){
     toast(tt.err_required+': '+missing.join(', '),'error');
     return;
   }
-  WorkshopData.updateJobcardOperation(jcId,opId,{status:'completed',actualCompletion:todayISO()});
+  const res=WorkshopData.updateJobcardOperation(jcId,opId,{status:'completed',actualCompletion:todayISO()});
+  if(handleQualityBlocked(res)){refreshShared();renderApp();return;}
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation completed: ${op.desc}`});
   refreshShared();renderApp();
 }
@@ -1279,13 +1320,16 @@ function requestStatusChange(id,stage){
 function applyStatusChange(id,stage,extra){
   const tt=t();const j=getJC(id);const patch=Object.assign({status:stage},extra||{});
   if(stage==='in-progress'&&!j.actualStart)patch.actualStart=todayISO();
-  WorkshopData.updateJobcard(id,patch);
+  const res=WorkshopData.updateJobcard(id,patch);
+  if(handleQualityBlocked(res)){refreshShared();renderApp();return;}
   WorkshopData.recordJobcardActivity(id,{action:`Status changed to ${tt['st_'+stage]}`});
   refreshShared();renderApp();
 }
 function openCompleteCheck(id){
   const tt=t();const j=getJC(id);
   const issues=[];
+  const gate=jcQualityGate(j);
+  if(gate.blocked)gate.holds.forEach(h=>issues.push(tpl(tt.qh_blocked_toast,{holds:h.no})));
   if(!requiredOperationsComplete(j)){const n=(j.operations||[]).filter(o=>o.status!=='completed'&&o.status!=='skipped').length;issues.push(tpl(tt.issue_operations_open,{n}));}
   const pend=pendingInspections(j).length;if(pend)issues.push(tpl(tt.issue_inspections_pending,{n:pend}));
   const failed=failedInspections(j).length;if(failed)issues.push(tpl(tt.issue_inspections_failed,{n:failed}));
@@ -1309,7 +1353,8 @@ function savePauseBlock(id,stage){
   const tt=t();clearAllFieldErrors();const reason=$('pbReason').value.trim();
   if(!reason){showFieldError('pbReason','pbErr',tt.err_required);return;}
   const j=getJC(id);
-  WorkshopData.updateJobcard(id,{status:stage,_resumeStatus:j.status});
+  const res=WorkshopData.updateJobcard(id,{status:stage,_resumeStatus:j.status});
+  if(handleQualityBlocked(res)){refreshShared();closeModal();renderApp();return;}
   WorkshopData.recordJobcardActivity(id,{action:`${tt['st_'+stage]}: ${reason}`});
   refreshShared();closeModal();renderApp();
 }
@@ -1334,7 +1379,8 @@ function saveResume(id){
   if(stage==='ready'&&isBlank(j.responsible)){showFieldError(null,'resumeErr',tt.issue_no_responsible);return;}
   const patch={status:stage};
   if(stage==='in-progress'&&!j.actualStart)patch.actualStart=todayISO();
-  WorkshopData.updateJobcard(id,patch);
+  const res=WorkshopData.updateJobcard(id,patch);
+  if(handleQualityBlocked(res)){refreshShared();closeModal();renderApp();return;}
   WorkshopData.recordJobcardActivity(id,{action:`Resumed to ${tt['st_'+stage]}`});
   refreshShared();closeModal();renderApp();
 }
@@ -1355,12 +1401,14 @@ function saveCancel(id){
   refreshShared();closeModal();renderApp();
 }
 function openReopen(id){
-  const tt=t();const j=getJC(id);
+  const tt=t();const j=getJC(id);const held=jcQualityGate(j).blocked;
+  const reopenTargets=['in-progress','ready','released'].filter(s=>!held||!JOBCARD_UNSAFE_STATUSES.includes(s));
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_reopen_t)}</h2><p class="fsub">${esc(j.no)}</p>
+    ${held?qualityHoldBanner(j):''}
     <div class="frow">${fieldTextarea('reopenReason',tt.f_reason,'')}</div>
     <div id="reopenErr" class="errmsg" style="display:none;"></div>
-    <div class="frow">${fieldSelect('reopenStatus',tt.f_resumestatus,['in-progress','ready','released'].map(s=>({v:s,l:tt['st_'+s]})),'in-progress')}</div>
+    <div class="frow">${fieldSelect('reopenStatus',tt.f_resumestatus,reopenTargets.map(s=>({v:s,l:tt['st_'+s]})),reopenTargets[0]||'ready')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveReopen(${id})">${esc(tt.a_reopen)}</button></div>`;
   $('fov').classList.add('show');
 }
@@ -1368,7 +1416,8 @@ function saveReopen(id){
   const tt=t();clearAllFieldErrors();const reason=$('reopenReason').value.trim();
   if(!reason){showFieldError('reopenReason','reopenErr',tt.err_required);return;}
   const stage=$('reopenStatus').value;
-  WorkshopData.updateJobcard(id,{status:stage,actualCompletion:null});
+  const res=WorkshopData.updateJobcard(id,{status:stage,actualCompletion:null});
+  if(handleQualityBlocked(res)){refreshShared();closeModal();renderApp();return;}
   WorkshopData.recordJobcardActivity(id,{action:`Reopened to ${tt['st_'+stage]}: ${reason}`});
   refreshShared();closeModal();renderApp();
 }
@@ -1585,6 +1634,7 @@ function renderApp(){
   if(v.attach)v.attach();
 }
 
+window.addEventListener('workshop:data',()=>{refreshShared();renderApp();});
 setLang('en');
 </script>
 </body></html>

@@ -296,11 +296,278 @@ test('quality: Final Release cannot be issued as Released while blocking reasons
 });
 
 test('quality: Released with Conditions requires written conditions and an approval reference', ()=>{
+  // Uses P-26-0001, which (unlike P-2026-014) has no active Quality Hold — Pass 3.1 makes
+  // P-2026-014 correctly hold-blocked, so that project is no longer suitable for a "this should
+  // succeed" case here; hold-blocking itself is covered separately below.
   const WD=loadWorkshopData();
-  const missing=WD.createFinalRelease({projectNo:'P-2026-014',result:'released-conditions'});
+  const missing=WD.createFinalRelease({projectNo:'P-26-0001',result:'released-conditions'});
   assert.ok(missing.error);
-  const ok=WD.createFinalRelease({projectNo:'P-2026-014',result:'released-conditions',conditions:'Punch list to close within 30 days',approvalRef:'REL-APPROVAL-1'});
+  const ok=WD.createFinalRelease({projectNo:'P-26-0001',result:'released-conditions',conditions:'Punch list to close within 30 days',approvalRef:'REL-APPROVAL-1'});
   assert.ok(!ok.error);
+});
+
+// ── Pass 3.1: central Quality Hold safety gate (quality-gates.js + WorkshopData enforcement) ──
+// Seed fixture used throughout: HOLD-2026-001 (active, scope:'jobcard', reference:'JC-2026-0001')
+// blocks JC-2026-0001 and its parent P-2026-014. JC-2026-0002 (sibling jobcard, same project) and
+// P-26-0001 (unrelated project, status 'active', no jobcards) are the "must stay unaffected" controls.
+test('quality gate: existing seed HOLD-2026-001 blocks both JC-2026-0001 and its parent P-2026-014', ()=>{
+  const WD=loadWorkshopData();
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0001').blocked,true);
+  assert.equal(WD.getProjectQualityGate('P-2026-014').blocked,true);
+  assert.deepEqual(WD.getJobcardQualityGate('JC-2026-0001').holds.map(h=>h.no),['HOLD-2026-001']);
+});
+test('quality gate: an active Jobcard-scoped hold does not block a sibling jobcard under the same project', ()=>{
+  const WD=loadWorkshopData();
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0002').blocked,false);
+  const res=WD.updateJobcard('JC-2026-0002',{status:'in-progress'});
+  assert.ok(!res.error,'a genuinely unrelated sibling jobcard must be free to transition normally');
+});
+test('quality gate: an unrelated project with no linked jobcards and no hold of its own is never blocked', ()=>{
+  const WD=loadWorkshopData();
+  assert.equal(WD.getProjectQualityGate('P-26-0001').blocked,false);
+  const res=WD.updateProject('P-26-0001',{status:'completed'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'completed');
+});
+test('quality gate: an active Project-scoped hold blocks the project AND every linked child jobcard', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
+  assert.equal(WD.getProjectQualityGate('P-26-0002').blocked,true);
+  // P-26-0002 has no seeded jobcards of its own; verify against a synthetic child via the gate API
+  // using a real jobcard reassigned to this project, so "every linked child jobcard" is exercised
+  // against the real WorkshopData.jobcards collection (not the Projects page's unrelated local Items list).
+  const jc=WD.updateJobcard('JC-2026-0002',{projectNo:'P-26-0002'});
+  assert.ok(!jc.error);
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0002').blocked,true,'a jobcard under a held project must itself read as blocked');
+});
+test('quality gate: a released hold no longer blocks its jobcard or project', ()=>{
+  const WD=loadWorkshopData();
+  const rel=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Weld repaired, PT reinspection accepted'});
+  assert.ok(!rel.error);
+  assert.equal(rel.status,'released');
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0001').blocked,false);
+  assert.equal(WD.getProjectQualityGate('P-2026-014').blocked,false);
+});
+test('quality gate: an orphan/malformed hold (references a jobcard number that does not exist) does not block real, unrelated records', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'jobcard',reference:'JC-DOES-NOT-EXIST',reason:'Orphan test hold'});
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0002').blocked,false);
+  assert.equal(WD.getProjectQualityGate('P-26-0001').blocked,false);
+});
+
+// ── Operation-level enforcement ──
+test('quality gate: a held jobcard cannot start a pending operation', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcardOperation('JC-2026-0001',5,{status:'in-progress'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  assert.ok(res.holdNumbers.includes('HOLD-2026-001'));
+  const op=WD.get().jobcards.find(j=>j.no==='JC-2026-0001').operations.find(o=>o.id===5);
+  assert.equal(op.status,'pending','a blocked operation must not have its status changed');
+});
+test('quality gate: a held jobcard cannot complete an in-progress operation', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcardOperation('JC-2026-0001',4,{status:'completed',actualCompletion:'2026-08-30'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  const op=WD.get().jobcards.find(j=>j.no==='JC-2026-0001').operations.find(o=>o.id===4);
+  assert.equal(op.status,'in-progress');
+  assert.equal(op.actualCompletion,null,'a blocked completion must not set actualCompletion either');
+});
+test('quality gate: a held jobcard cannot skip an operation (status set directly to skipped)', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcardOperation('JC-2026-0001',5,{status:'skipped'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+test('quality gate: pausing an in-progress operation on a held jobcard is still allowed (a safe, non-execution transition)', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcardOperation('JC-2026-0001',4,{status:'paused'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'paused');
+});
+test('quality gate: after the hold is released, the previously-blocked operation completes normally (no other blocker)', ()=>{
+  const WD=loadWorkshopData();
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  const res=WD.updateJobcardOperation('JC-2026-0001',4,{status:'completed',actualCompletion:'2026-08-30'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'completed');
+});
+
+// ── Jobcard-level enforcement ──
+test('quality gate: a held jobcard cannot resume to in-progress (resume-to-production)', ()=>{
+  const WD=loadWorkshopData();
+  WD.updateJobcard('JC-2026-0001',{status:'paused',_resumeStatus:'in-progress'});
+  const res=WD.updateJobcard('JC-2026-0001',{status:'in-progress'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.get().jobcards.find(j=>j.no==='JC-2026-0001').status,'paused');
+});
+test('quality gate: pausing/blocking a held jobcard is still allowed (a safe, non-execution transition)', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcard('JC-2026-0001',{status:'paused',_resumeStatus:'in-progress'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'paused');
+});
+test('quality gate: a held jobcard cannot be marked completed or closed', ()=>{
+  const WD=loadWorkshopData();
+  const completed=WD.updateJobcard('JC-2026-0001',{status:'completed'});
+  assert.equal(completed.code,'QUALITY_HOLD_ACTIVE');
+  const closed=WD.upsertJobcard({id:1,no:'JC-2026-0001',status:'closed'});
+  assert.equal(closed.code,'QUALITY_HOLD_ACTIVE');
+});
+test('quality gate: upsertJobcard (the same path jobcard-desktop.html save forms use) cannot bypass the gate either', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.upsertJobcard({id:1,no:'JC-2026-0001',status:'closed'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+test('quality gate: a caller-supplied override flag or an empty blockingReasons list cannot bypass a held jobcard transition', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.updateJobcard('JC-2026-0001',{status:'completed',managerOverride:true,force:true,blockingReasons:[]});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+
+// ── Project-level enforcement ──
+test('quality gate: a project cannot be completed or closed while a child jobcard hold is active', ()=>{
+  const WD=loadWorkshopData();
+  const completed=WD.updateProject('P-2026-014',{status:'completed'});
+  assert.equal(completed.code,'QUALITY_HOLD_ACTIVE');
+  const closed=WD.upsertProject({no:'P-2026-014',name:'Ventilation Duct System',status:'closed'});
+  assert.equal(closed.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.get().projects.find(p=>p.no==='P-2026-014').status,'production','status must be unchanged after either blocked attempt');
+});
+test('quality gate: a redundant re-save of a project that is already completed/closed does not re-trigger the gate (no genuine transition)', ()=>{
+  const WD=loadWorkshopData();
+  const first=WD.updateProject('P-26-0001',{status:'completed'});
+  assert.ok(!first.error);
+  const resave=WD.updateProject('P-26-0001',{status:'completed',notes:'unrelated edit'});
+  assert.ok(!resave.error,'saving an already-completed project again must not be treated as a new unsafe transition');
+});
+
+// ── Final Release enforcement ──
+test('quality gate: Final Release (Released) cannot be issued for a held project even with an empty/fabricated blocker list', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().qualityReleases.length;
+  const res=WD.createFinalRelease({projectNo:'P-2026-014',result:'released',blockingReasons:[],override:true});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.get().qualityReleases.length,before,'a rejected release request must not create a release record');
+});
+test('quality gate: Released with Conditions cannot be issued for a held project even with valid conditions/approvalRef supplied', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createFinalRelease({projectNo:'P-2026-014',result:'released-conditions',conditions:'Accepted with punch list',approvalRef:'REL-1'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+test('quality gate: Final Release independently recalculates active holds from a jobcard number, not just projectNo', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createFinalRelease({projectNo:'P-2026-014',jobcard:'JC-2026-0001',result:'released'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+test('quality gate: after the hold is released, Final Release for that project can be issued (no other blocker)', ()=>{
+  const WD=loadWorkshopData();
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  const res=WD.createFinalRelease({projectNo:'P-2026-014',result:'released'});
+  assert.ok(!res.error);
+  assert.equal(res.result,'released');
+});
+
+// ── Release workflow hardening ──
+test('quality gate: releasing a hold requires a non-empty release authority', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'',releaseReason:'Repair verified'});
+  assert.ok(res.error);
+  assert.equal(WD.get().qualityHolds.find(h=>h.no==='HOLD-2026-001').status,'active');
+});
+test('quality gate: releasing a hold requires non-empty resolution evidence/reason', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:''});
+  assert.ok(res.error);
+});
+test('quality gate: whitespace-only release authority/reason is rejected, not treated as valid text', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'   ',releaseReason:'   '});
+  assert.ok(res.error);
+});
+test('quality gate: an already-released hold cannot be released again', ()=>{
+  const WD=loadWorkshopData();
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  const again=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Someone Else',releaseReason:'Repeat attempt'});
+  assert.ok(again.error);
+});
+test('quality gate: releasing a complete audit trail — release records authority, reason and an activity entry', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified, PT accepted'});
+  assert.equal(res.releaseAuthority,'Quality Manager');
+  assert.equal(res.releaseReason,'Repair verified, PT accepted');
+  assert.ok(res.releaseDate);
+  assert.ok(res.activity.some(a=>/released/i.test(a.action||'')));
+});
+test('quality gate: releasing one hold does not release an unrelated second hold', ()=>{
+  const WD=loadWorkshopData();
+  const second=WD.applyQualityHold({scope:'jobcard',reference:'JC-2026-0002',reason:'A second, distinct issue'});
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  const stillActive=WD.get().qualityHolds.find(h=>h.no===second.no);
+  assert.equal(stillActive.status,'active');
+});
+test('quality gate: releasing a hold does not auto-complete or auto-resume the jobcard/project it was blocking', ()=>{
+  const WD=loadWorkshopData();
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  const jc=WD.get().jobcards.find(j=>j.no==='JC-2026-0001');
+  const p=WD.get().projects.find(x=>x.no==='P-2026-014');
+  assert.equal(jc.status,'in-progress','releasing must not silently change the jobcard status');
+  assert.equal(p.status,'production','releasing must not silently change the project status');
+});
+
+// ── Duplicate-hold avoidance (Part 7) ──
+test('quality gate: applying a hold with the same scope/reference/reason as an existing active hold reuses it instead of creating a duplicate', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().qualityHolds.length;
+  const dup=WD.applyQualityHold({scope:'jobcard',reference:'JC-2026-0001',reason:'Critical NCR NCR-2026-002 — rejected mandatory NDT (NDT-2026-002) on weld W-03.'});
+  assert.equal(dup.no,'HOLD-2026-001');
+  assert.equal(WD.get().qualityHolds.length,before,'no new hold record should have been created');
+});
+test('quality gate: a hold for the same jobcard but a genuinely different reason is NOT merged into the existing one', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().qualityHolds.length;
+  const distinct=WD.applyQualityHold({scope:'jobcard',reference:'JC-2026-0001',reason:'A second, unrelated quality issue'});
+  assert.notEqual(distinct.no,'HOLD-2026-001');
+  assert.equal(WD.get().qualityHolds.length,before+1);
+  assert.equal(WD.getJobcardQualityGate('JC-2026-0001').holds.length,2,'both distinct holds on the same jobcard must be reported');
+});
+
+// ── API surface: clones, getters, blocked-attempt auditability ──
+test('quality gate API: getActiveQualityHolds/getJobcardQualityGate/getProjectQualityGate return clones, not live references', ()=>{
+  const WD=loadWorkshopData();
+  const holds=WD.getActiveQualityHolds();
+  holds[0].reason='TAMPERED';
+  assert.notEqual(WD.getActiveQualityHolds()[0].reason,'TAMPERED');
+  const gate=WD.getJobcardQualityGate('JC-2026-0001');
+  gate.holds[0].reason='TAMPERED-2';
+  assert.notEqual(WD.getJobcardQualityGate('JC-2026-0001').holds[0].reason,'TAMPERED-2');
+});
+test('quality gate API: getActiveQualityHolds excludes released holds', ()=>{
+  const WD=loadWorkshopData();
+  WD.releaseQualityHold('HOLD-2026-001',{releaseAuthority:'Quality Manager',releaseReason:'Repair verified'});
+  assert.equal(WD.getActiveQualityHolds().length,0);
+});
+test('quality gate API: canTransitionJobcard/canTransitionProject/canTransitionJobcardOperation reflect the same gate', ()=>{
+  const WD=loadWorkshopData();
+  assert.equal(WD.canTransitionJobcard('JC-2026-0001').allowed,false);
+  assert.equal(WD.canTransitionProject('P-2026-014').allowed,false);
+  assert.equal(WD.canTransitionJobcardOperation('JC-2026-0001').allowed,false);
+  assert.equal(WD.canTransitionJobcard('JC-2026-0002').allowed,true);
+});
+test('quality gate: a blocked transition attempt records an audit activity entry naming the action, reference and hold number', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().activity.length;
+  WD.updateJobcard('JC-2026-0001',{status:'completed'});
+  const after=WD.get().activity;
+  assert.equal(after.length,before+1);
+  assert.match(after[0].reason,/Blocked by active Quality Hold/);
+  assert.match(after[0].reason,/JC-2026-0001/);
+  assert.match(after[0].reason,/HOLD-2026-001/);
+});
+test('quality gate: hold reason/reference text is preserved exactly (safe for the caller to HTML-escape at render time), not stripped or altered', ()=>{
+  const WD=loadWorkshopData();
+  const injected='<img src=x onerror=alert(1)>';
+  WD.applyQualityHold({scope:'jobcard',reference:'JC-2026-0002',reason:injected});
+  const gate=WD.getJobcardQualityGate('JC-2026-0002');
+  assert.equal(gate.holds[0].reason,injected,'the raw string must round-trip unchanged — escaping is the render layer\'s job, not the data layer\'s');
 });
 
 // ── Estimation deletion sync (shared-data layer) ────────────────────────────

@@ -666,6 +666,48 @@
     const map={inspection:state.qualityInspections,ncr:state.qualityNcrs,capa:state.qualityCapas,weld:state.qualityWelds,ndt:state.qualityNdt,itp:state.qualityItps,hold:state.qualityHolds,complaint:state.qualityComplaints,dossier:state.qualityDossiers,release:state.qualityReleases,supplierQuality:state.supplierQuality};
     return map[name];
   }
+  // ── Central Quality Hold safety gate (see quality-gates.js) ──
+  // Every Jobcard number belonging to a Project, used to resolve "does any child Jobcard have an
+  // active hold" for Project-level completion/closure/release checks.
+  function jobcardNosForProject(projectNo){
+    if(!projectNo)return[];
+    return state.jobcards.filter(j=>j.projectNo===projectNo).map(j=>j.no);
+  }
+  function jobcardQualityGate(jobcardNo,projectNo){
+    if(!global.QualityGates)throw new Error('quality-gates.js must be loaded before workshop-data.js');
+    // getQualityGate() normalises a missing projectNo option to null (not undefined) before it
+    // reaches here, so the fallback must treat null the same as undefined — otherwise a
+    // Project-scoped hold silently stops reaching this jobcard whenever the caller (e.g. every
+    // getJobcardQualityGate(jobcardNo) call from the UI) doesn't pass a projectNo explicitly.
+    const resolvedProjectNo=projectNo!=null?projectNo:(()=>{const j=jobcard(jobcardNo);return j?j.projectNo:null;})();
+    return global.QualityGates.getJobcardQualityGate(state.qualityHolds,jobcardNo,resolvedProjectNo);
+  }
+  function projectQualityGate(projectNo){
+    if(!global.QualityGates)throw new Error('quality-gates.js must be loaded before workshop-data.js');
+    return global.QualityGates.getProjectQualityGate(state.qualityHolds,projectNo,jobcardNosForProject(projectNo));
+  }
+  // Statuses that represent unsafe "execution"/"completion" transitions while a Quality Hold is
+  // active. Anything else (pausing, editing metadata, adding notes/documents) remains allowed.
+  const JOBCARD_UNSAFE_STATUSES=['in-progress','completed','closed'];
+  const OPERATION_UNSAFE_STATUSES=['in-progress','completed','skipped'];
+  const PROJECT_UNSAFE_STATUSES=['completed','closed'];
+  // Builds the structured, backward-compatible error every gated mutation returns when blocked, and
+  // records a meaningful blocked-attempt audit entry (via the normal save() activity log) WITHOUT
+  // touching the target Project/Jobcard/Operation record itself.
+  function qualityGateBlockedResult(action,reference,gate,extra){
+    const holdNumbers=gate.holds.map(h=>h.no).filter(Boolean);
+    save(`Blocked by active Quality Hold: ${action} for ${reference}${holdNumbers.length?' ('+holdNumbers.join(', ')+')':''}`);
+    return Object.assign({
+      error:`Blocked by an active Quality Hold (${holdNumbers.join(', ')||'unnumbered'}).`,
+      code:'QUALITY_HOLD_ACTIVE',
+      message:`${action} is blocked while ${holdNumbers.join(', ')||'an active Quality Hold'} remain active.`,
+      holdNumbers,
+      holds:clone(gate.holds),
+      reasons:gate.reasons.slice(),
+      projectNo:gate.projectNo,
+      jobcardNo:gate.jobcardNo
+    },extra||{});
+  }
   const api={
     key:KEY,
     get:()=>clone(state),
@@ -796,6 +838,14 @@
         data.customerId=c?c.id:null;
         data.customer=c?c.name:null;
       }
+      // A genuine transition into 'completed'/'closed' is blocked by an active Quality Hold on the
+      // project or any of its child Jobcards — a redundant re-save of an already-completed/closed
+      // project (e.g. adding a note) is NOT treated as a new transition and is never blocked.
+      if(data.status&&PROJECT_UNSAFE_STATUSES.includes(data.status)&&(!p||p.status!==data.status)){
+        const reference=p?p.no:data.no;
+        const gate=projectQualityGate(reference);
+        if(gate.blocked)return qualityGateBlockedResult(`Project ${data.status}`,reference,gate);
+      }
       if(p){Object.assign(p,data);}
       else{
         // A caller (e.g. the Projects module) may supply only its own richer fields — apply the
@@ -809,7 +859,17 @@
       save(`Project saved: ${p.no}`);
       return clone(p);
     },
-    updateProject(no,patch){const p=project(no);if(!p)return null;Object.assign(p,clone(patch));save(`Project updated: ${no}`);return clone(p)},
+    // Same Quality Hold gate as upsertProject — a caller cannot bypass safety by calling this
+    // lower-level method directly instead of a dedicated transition helper.
+    updateProject(no,patch){
+      const p=project(no);if(!p)return null;
+      const data=clone(patch);
+      if(data.status&&PROJECT_UNSAFE_STATUSES.includes(data.status)&&p.status!==data.status){
+        const gate=projectQualityGate(no);
+        if(gate.blocked)return qualityGateBlockedResult(`Project ${data.status}`,no,gate);
+      }
+      Object.assign(p,data);save(`Project updated: ${no}`);return clone(p);
+    },
     // Projects are referenced by jobcards, estimations, materials and documents — never hard-deleted.
     // archiveProject marks it archived (a non-destructive status change) rather than removing it.
     archiveProject(idOrNo,reason){
@@ -837,16 +897,48 @@
     listJobcards:()=>clone(state.jobcards),
     findJobcard:idOrNo=>clone(jobcard(idOrNo)),
     upsertJobcard(payload){let j=payload.id?jobcard(payload.id):(payload.no?jobcard(payload.no):null);
-      if(j){Object.assign(j,clone(payload))}
+      if(j){
+        const data=clone(payload);
+        if(data.status&&JOBCARD_UNSAFE_STATUSES.includes(data.status)&&j.status!==data.status){
+          const gate=jobcardQualityGate(j.no);
+          if(gate.blocked)return qualityGateBlockedResult(`Jobcard ${data.status}`,j.no,gate);
+        }
+        Object.assign(j,data);
+      }
       else{j=Object.assign({operations:[],materials:[],machines:[],inspections:[],notes:[],documents:[],activity:[],workers:[],archived:false,status:'draft'},clone(payload));
         j.id=state.counters.jobcard=(state.counters.jobcard||0)+1;
         j.no=j.no||('JC-'+new Date().getFullYear()+'-'+String(j.id).padStart(4,'0'));
         state.jobcards.push(j)}
       save(`Jobcard saved: ${j.no}`);return clone(j)},
-    updateJobcard(idOrNo,patch){const j=jobcard(idOrNo);if(!j)return null;Object.assign(j,clone(patch));save(`Jobcard updated: ${j.no}`);return clone(j)},
+    // Generic status-affecting patches (e.g. resume, direct edits) go through the same Quality Hold
+    // gate as the dedicated transition helpers below — a caller cannot bypass safety by calling this
+    // lower-level method directly. Non-status patches (reordering operations, editing fields) are
+    // never blocked.
+    updateJobcard(idOrNo,patch){
+      const j=jobcard(idOrNo);if(!j)return null;
+      const data=clone(patch);
+      if(data.status&&JOBCARD_UNSAFE_STATUSES.includes(data.status)&&j.status!==data.status){
+        const gate=jobcardQualityGate(j.no);
+        if(gate.blocked)return qualityGateBlockedResult(`Jobcard ${data.status}`,j.no,gate);
+      }
+      Object.assign(j,data);save(`Jobcard updated: ${j.no}`);return clone(j);
+    },
     archiveJobcard(idOrNo){const j=jobcard(idOrNo);if(!j)return null;j.archived=true;j.archivedAt=now();save(`Jobcard archived: ${j.no}`);return clone(j)},
     addJobcardOperation(idOrNo,operation){const j=jobcard(idOrNo);if(!j)return null;operation=clone(operation);j._opSeq=(j._opSeq||j.operations.reduce((a,o)=>Math.max(a,o.id||0),0))+1;operation.id=j._opSeq;j.operations.push(operation);save(`Operation added: ${j.no}`);return clone(operation)},
-    updateJobcardOperation(idOrNo,opId,patch){const j=jobcard(idOrNo);if(!j)return null;const op=j.operations.find(o=>o.id===opId);if(!op)return null;Object.assign(op,clone(patch));save(`Operation updated: ${j.no}`);return clone(op)},
+    // Starting, completing or skipping an operation is blocked by an active Quality Hold on the
+    // Jobcard (or its Project) — this is the single chokepoint every page path (start/pause button,
+    // Complete button, the operation edit form's status dropdown used to "skip") already goes
+    // through, so no separate skip-specific method is needed.
+    updateJobcardOperation(idOrNo,opId,patch){
+      const j=jobcard(idOrNo);if(!j)return null;
+      const op=j.operations.find(o=>o.id===opId);if(!op)return null;
+      const data=clone(patch);
+      if(data.status&&OPERATION_UNSAFE_STATUSES.includes(data.status)&&op.status!==data.status){
+        const gate=jobcardQualityGate(j.no);
+        if(gate.blocked)return qualityGateBlockedResult(`Operation ${data.status}`,j.no,gate,{operationId:opId});
+      }
+      Object.assign(op,data);save(`Operation updated: ${j.no}`);return clone(op);
+    },
     assignJobcardWorker(idOrNo,worker){const j=jobcard(idOrNo);if(!j||!worker)return null;j.workers=j.workers||[];if(!j.workers.includes(worker))j.workers.push(worker);save(`Worker assigned to ${j.no}: ${worker}`);return clone(j)},
     addJobcardNote(idOrNo,note){const j=jobcard(idOrNo);if(!j)return null;note=Object.assign({id:Date.now(),date:now().slice(0,10),time:new Date().toTimeString().slice(0,5)},clone(note));j.notes=j.notes||[];j.notes.unshift(note);save(`Note added: ${j.no}`);return clone(note)},
     addJobcardInspection(idOrNo,inspection){const j=jobcard(idOrNo);if(!j)return null;inspection=Object.assign({id:Date.now()},clone(inspection));j.inspections=j.inspections||[];j.inspections.push(inspection);save(`Inspection added: ${j.no}`);return clone(inspection)},
@@ -1208,7 +1300,33 @@
     },
 
     listQualityHolds:()=>clone(state.qualityHolds),
+    getActiveQualityHolds:()=>clone(state.qualityHolds.filter(h=>h.status==='active')),
+    // ── Central Quality Hold safety gate (see quality-gates.js) ──
+    // getQualityGate({projectNo, jobcardNo}) is the general-purpose entry point; the more specific
+    // getProjectQualityGate/getJobcardQualityGate below are thin convenience wrappers around it.
+    getQualityGate(opts){
+      const projectNo=(opts&&opts.projectNo)||null, jobcardNo=(opts&&opts.jobcardNo)||null;
+      const gate=jobcardNo?jobcardQualityGate(jobcardNo,projectNo):(projectNo?projectQualityGate(projectNo):null);
+      if(!gate)return{blocked:false,holds:[],reasons:[],projectNo:null,jobcardNo:null};
+      return Object.assign({},gate,{holds:clone(gate.holds)});
+    },
+    getProjectQualityGate(projectNo){return api.getQualityGate({projectNo});},
+    getJobcardQualityGate(jobcardNo){return api.getQualityGate({jobcardNo});},
+    canTransitionProject(projectNo){const gate=api.getProjectQualityGate(projectNo);return{allowed:!gate.blocked,gate};},
+    canTransitionJobcard(jobcardNo){const gate=api.getJobcardQualityGate(jobcardNo);return{allowed:!gate.blocked,gate};},
+    // Operation-level transitions are gated by their parent Jobcard's own gate — a hold never
+    // applies to one operation differently than to the rest of its Jobcard.
+    canTransitionJobcardOperation(jobcardNo){return api.canTransitionJobcard(jobcardNo);},
     applyQualityHold(payload){
+      // Automatic hold creation (a critical failed inspection, a critical NCR) can otherwise fire
+      // repeatedly for the same underlying issue and stack up duplicate active holds on the same
+      // scope+reference — an identical-scope/reference/reason active hold is reused instead of
+      // creating a new record; a hold for the same reference but a genuinely different reason (a
+      // second, distinct quality issue) is NOT merged and still creates its own hold.
+      const scope=global.QualityGates?global.QualityGates.normalizeScope(payload.scope):payload.scope;
+      const reference=String(payload.reference||''), reason=String(payload.reason||'').trim();
+      const existing=state.qualityHolds.find(h=>h.status==='active'&&(global.QualityGates?global.QualityGates.normalizeScope(h.scope):h.scope)===scope&&String(h.reference||'')===reference&&String(h.reason||'').trim()===reason);
+      if(existing)return clone(existing);
       const rec=Object.assign({id:state.counters.hold=(state.counters.hold||0)+1,activity:[]},clone(payload));
       rec.no=rec.no||('HOLD-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.appliedDate=rec.appliedDate||now();
@@ -1217,11 +1335,18 @@
       state.qualityHolds.unshift(rec);
       save(`Quality Hold applied: ${rec.no}`); return clone(rec);
     },
+    // Formal release: requires a real (non-whitespace) release authority and resolution evidence,
+    // and only ever changes the ONE hold record identified by idOrNo. Does not touch, auto-complete
+    // or auto-close any Jobcard/Project — after release, the user must manually retry whatever
+    // transition was previously blocked (see Part 4).
     releaseQualityHold(idOrNo,{releaseAuthority,releaseReason}={}){
       const rec=qFind(state.qualityHolds,idOrNo); if(!rec)return{error:'Hold not found'};
-      if(!releaseAuthority||!releaseReason)return{error:'Releasing a hold requires resolution evidence and an authorised approval reference'};
-      const from=rec.status; rec.status='released'; rec.releaseAuthority=releaseAuthority; rec.releaseReason=releaseReason; rec.releaseDate=now();
-      qActivity(rec,'Quality Hold released',from,'released',rec.no,releaseReason);
+      const authority=releaseAuthority!=null?String(releaseAuthority).trim():'';
+      const reason=releaseReason!=null?String(releaseReason).trim():'';
+      if(!authority||!reason)return{error:'Releasing a hold requires resolution evidence and an authorised approval reference'};
+      if(rec.status==='released')return{error:`Hold ${rec.no} has already been released and cannot be released again`};
+      const from=rec.status; rec.status='released'; rec.releaseAuthority=authority; rec.releaseReason=reason; rec.releaseDate=now();
+      qActivity(rec,'Quality Hold released',from,'released',rec.no,reason);
       save(`Quality Hold released: ${rec.no}`); return clone(rec);
     },
 
@@ -1366,6 +1491,15 @@
     listQualityReleases:()=>clone(state.qualityReleases),
     findQualityRelease:idOrNo=>clone(qFind(state.qualityReleases,idOrNo)),
     createFinalRelease(payload){
+      if(!payload)return{error:'A release payload is required'};
+      // Released / Released with Conditions are operational releases — independently recompute
+      // active Quality Holds from shared state (never trust a caller-supplied blockingReasons list,
+      // an absent/empty one, or any override flag) before allowing either result.
+      if(payload.result==='released'||payload.result==='released-conditions'){
+        const jobcardNo=payload.jobcard||payload.jobcardNo||null;
+        const gate=jobcardNo?jobcardQualityGate(jobcardNo,payload.projectNo||null):projectQualityGate(payload.projectNo||null);
+        if(gate.blocked)return qualityGateBlockedResult(`Final Release (${payload.result})`,jobcardNo||payload.projectNo||'(no project)',gate);
+      }
       if(payload.result==='released'&&Array.isArray(payload.blockingReasons)&&payload.blockingReasons.length>0)return{error:'Cannot issue Released while mandatory blocking conditions remain'};
       if(payload.result==='released-conditions'&&(!payload.conditions||!payload.approvalRef))return{error:'Released with Conditions requires written conditions and an approval reference'};
       const rec=Object.assign({id:state.counters.release=(state.counters.release||0)+1,activity:[]},clone(payload));

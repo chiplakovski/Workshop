@@ -4,7 +4,7 @@
   "private": true,
   "description": "Varmak Workshop App — frontend prototype (static HTML/CSS/JS, browser-storage only). No backend, database or build step.",
   "scripts": {
-    "test": "node --test tests/estimation-rules.test.js tests/jobcard-rules.test.js tests/project-rules.test.js tests/workshop-data.test.js",
+    "test": "node --test tests/estimation-rules.test.js tests/jobcard-rules.test.js tests/project-rules.test.js tests/quality-gates.test.js tests/workshop-data.test.js",
     "test:syntax": "node tests/syntax-check.js"
   }
 }

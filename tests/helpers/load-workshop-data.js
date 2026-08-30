@@ -19,6 +19,10 @@ function buildEnv(seedEntries,customLocalStorage){
   g.window=g;
   g.dispatchEvent=()=>{};
   g.CustomEvent=function(type,init){this.type=type;this.detail=init&&init.detail;};
+  // Mirrors the real browser's <script src="quality-gates.js"></script> loading BEFORE
+  // workshop-data.js, so workshop-data.js's window.QualityGates lookup finds the real module —
+  // exactly the logic the pages use, never a reimplementation.
+  g.QualityGates=require(path.join(__dirname,'..','..','quality-gates.js'));
   if(seedEntries){for(const[key,value]of Object.entries(seedEntries))g.localStorage.setItem(key,value);}
   return g;
 }
