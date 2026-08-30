@@ -294,7 +294,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script>
 <script src="jobcard-rules.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -306,6 +306,12 @@ function nowTime(){return new Date().toTimeString().slice(0,5);}
 // isBlank, isPositiveNumber, canCompleteOp, VALID_RESUME_TARGETS and resumeTargetFor live in
 // jobcard-rules.js (loaded above) so the page and the automated tests share one implementation.
 const {isBlank,isPositiveNumber,canCompleteOp,VALID_RESUME_TARGETS,resumeTargetFor}=JobcardRules;
+// resolveMachineLink, isDuplicateEquipmentLink, isAssignedElsewhere, canAddEquipmentToJobcard,
+// canStartOperationEquipment, canReturnEquipmentFromJobcard and equipmentUsageForJobcard live in
+// jobcard-equipment-rules.js — the actual safety DECISION always still comes from WorkshopData's
+// central Equipment Safety Gate (equipment-gates.js); these are read-only reference/UI helpers.
+const {resolveMachineLink,isDuplicateEquipmentLink,isAssignedElsewhere,canAddEquipmentToJobcard,
+  canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard}=JobcardEquipmentRules;
 function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
 function clearAllFieldErrors(){document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));document.querySelectorAll('#fcard .errmsg').forEach(el=>{el.style.display='none';el.textContent='';});}
 function showFieldError(fieldId,errId,msg){const f=$(fieldId),err=$(errId);if(f){f.classList.add('fielderr');f.focus();}if(err){err.textContent=msg;err.style.display='block';}}
@@ -412,13 +418,25 @@ en:{
   ji_jcno:"Jobcard number",ji_project:"Project number",ji_customer:"Customer",ji_title:"Job title",ji_item:"Item / assembly name",ji_qty:"Quantity",ji_revision:"Revision",ji_drawingno:"Drawing number",ji_worktype:"Work type",ji_location:"Workshop or site work",ji_priority:"Priority",ji_responsible:"Responsible supervisor",ji_workers:"Assigned workers",ji_plannedstart:"Planned start",ji_plannedcompletion:"Planned completion",ji_actualstart:"Actual start",ji_actualcompletion:"Actual completion",ji_plannedhours:"Planned hours",ji_loggedhours:"Logged hours",ji_progress:"Progress",ji_status:"Current status",ji_materialready:"Material readiness",ji_inspectionreq:"Inspection requirement",ji_deliverytarget:"Delivery target",ji_none:"— None —",ji_required:"Required",ji_notrequired:"Not required",
   tab_info:"Job Information",tab_operations:"Operations",tab_documents:"Drawings & Documents",tab_materials:"Materials",tab_workers:"Workers & Hours",tab_machines:"Machines & Equipment",tab_quality:"Quality & Inspection",tab_notes:"Notes & Problems",tab_activity:"Activity History",
   op_add:"Add operation",op_edit:"Edit",op_duplicate:"Duplicate",op_delete:"Delete",op_moveup:"Move up",op_movedown:"Move down",op_start:"Start",op_pause:"Pause",op_resume:"Resume",op_complete:"Complete",
+  op_delete_pausefirst:"Pause the operation before deleting it.",
   op_no:"Operation #",op_desc:"Description",op_instructions:"Work instructions",op_worker:"Assigned worker",op_machine:"Required machine",op_plannedhours:"Planned hours",op_loggedhours:"Logged hours",op_plannedstart:"Planned start",op_actualstart:"Actual start",op_actualcompletion:"Actual completion",op_status:"Status",op_dependency:"Depends on",op_inspectioncheckpoint:"Inspection checkpoint",op_notes:"Worker notes",op_attachments:"Attachments reference",op_empty:"No operations yet — add the first production step.",op_active_badge:"Active",
   ops_pending:"Pending",ops_inprogress:"In progress",ops_paused:"Paused",ops_completed:"Completed",ops_skipped:"Skipped",
   mat_code:"Item code",mat_desc:"Material description",mat_spec:"Specification",mat_grade:"Grade",mat_dim:"Dimension",mat_required:"Required qty",mat_reserved:"Reserved",mat_issued:"Issued",mat_remaining:"Remaining",mat_unit:"Unit",mat_location:"Store location",mat_heat:"Batch / heat #",mat_cert:"Certificate ref.",mat_status:"Material status",mat_empty:"No materials linked yet.",mat_reserve:"Reserve",mat_issue:"Issue",mat_return:"Return unused",mat_scrap:"Record scrap",mat_addoffcut:"Add offcut",mat_scan:"Scan barcode",mat_add:"Add material line",doc_add:"Add document reference",
   ms_notchecked:"Not checked",ms_available:"Available",ms_partial:"Partially available",ms_reserved:"Reserved",ms_issued:"Issued",ms_shortage:"Shortage",ms_substitute:"Substitute approval required",
   wh_assigned:"Assigned workers",wh_role:"Role",wh_plannedhours:"Planned h",wh_loggedhours:"Logged h",wh_remaining:"Remaining h",wh_activeop:"Active operation",wh_lastentry:"Last time entry",wh_logtime:"Log time",wh_empty:"No workers assigned yet.",wh_entries_t:"Recent time entries",wh_entries_empty:"No time entries yet.",
   mc_required:"Required machine",mc_assigned:"Assigned",mc_availability:"Availability",mc_status:"Machine status",mc_plannedusage:"Planned usage (h)",mc_actualusage:"Actual usage (h)",mc_operator:"Operator",mc_preusecheck:"Pre-use check",mc_maintenance:"Maintenance warning",mc_empty:"No machines linked yet.",mc_add:"Add machine",
-  pu_pending:"Pending",pu_passed:"Passed",pu_flagged:"Flagged",
+  mc_equipment:"Equipment",mc_safety:"Safety",mc_currentassignment:"Current assignment",mc_safe:"Safe",mc_blocked:"Blocked",
+  mc_unlinked:"Unlinked equipment",mc_unlinked_detail:"This machine reference could not be matched to a real equipment record and cannot be treated as safe.",
+  mc_unlinked_start_blocked:"This operation's required equipment is missing, ambiguous or not linked to this Jobcard — link it in the Machines & Equipment tab before starting.",
+  mc_assignedelsewhere:"Assigned elsewhere: {jc}",mc_alreadylinked:"Already linked to this Jobcard",
+  mc_notassignedhere:"Equipment is not assigned to this Jobcard",mc_startblocked:"Start blocked",mc_usageblocked:"Usage blocked",mc_returnorreassign:"Return or reassign equipment first",
+  mc_pausetoedit:"Pause the operation before changing its equipment.",
+  mc_pausetoremove:"Pause the related operation before removing this equipment.",
+  mc_recordcheck:"Record pre-use check",mc_reportproblem:"Report problem",mc_remove:"Remove / return",
+  mc_checkedby:"Checked by",mc_result:"Result",mc_evidence:"Evidence / checklist",mc_evidence_required:"A passed check requires evidence/checklist text.",
+  mc_check_failed_toast:"Pre-use check failed — equipment is now blocked.",mc_blocked_toast:"Blocked by equipment safety rules: {reasons}",
+  mc_breakdown_toast:"Breakdown reported — equipment is now Out of Service.",mc_responsibleperson:"Responsible person",
+  pu_pending:"Pending",pu_passed:"Passed",pu_failed:"Failed",pu_flagged:"Flagged",pu_none:"No check recorded",
   q_type:"Inspection type",q_inspector:"Responsible inspector",q_requirement:"Required or optional",q_status:"Status",q_date:"Date",q_result:"Result",q_comments:"Comments",q_relatedop:"Related operation",q_reference:"Document / report reference",q_add:"Add inspection",q_edit:"Update inspection",q_empty:"No inspection checkpoints yet.",
   it_dimensional:"Dimensional inspection",it_visualweld:"Visual weld inspection","it_ndt-required":"NDT required","it_material-cert":"Material certificate check","it_drawing-revision":"Drawing revision check",it_final:"Final inspection",it_customer:"Customer inspection","it_test-report":"Test report",
   req_required:"Required",req_optional:"Optional",
@@ -431,7 +449,7 @@ en:{
   a_edit:"Edit",a_print:"Print Jobcard",a_duplicate:"Duplicate",a_more:"More",a_start:"Start work",a_pause:"Pause",a_resume:"Resume",a_block:"Mark blocked",a_complete:"Mark completed",a_close:"Close jobcard",a_cancel:"Cancel jobcard",a_reopen:"Reopen",a_archive:"Archive",a_release:"Release",a_ready:"Mark ready",a_inspection:"Send to inspection",
   m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",resume_target_info:"This jobcard will resume to: {s}",resume_fallback_warning:"The recorded resume status was missing or invalid, so this jobcard will resume to Ready instead.",qh_title:"Quality Hold Active",qh_hold_label:"Hold",qh_severity_label:"Severity",qh_reason_label:"Reason",qh_requiredaction_label:"Required Action",qh_blocked_toast:"Blocked by active Quality Hold {holds} — this action is not allowed while the hold remains active.",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
   f_reason:"Reason",f_comment:"Comment",f_resumestatus:"Resume to status",f_overridereason:"Override reason (required)",f_hours:"Hours",f_qty:"Quantity",f_date:"Date",f_worker:"Worker",f_barcode:"Barcode / QR value",f_destination:"Destination",
-  confirm_delete_op:"Delete operation \"{n}\"?",confirm_delete_mat:"Delete material line \"{n}\"?",confirm_status:"Move this jobcard to \"{s}\"?",confirm_archive:"Archive jobcard {no}? It will be hidden from the active lists but kept for record-keeping.",confirm_complete_override:"Complete this jobcard anyway using a manager override?",
+  confirm_delete_op:"Delete operation \"{n}\"?",confirm_delete_mat:"Delete material line \"{n}\"?",confirm_removemachine:"Remove \"{n}\" from this Jobcard?",confirm_status:"Move this jobcard to \"{s}\"?",confirm_archive:"Archive jobcard {no}? It will be hidden from the active lists but kept for record-keeping.",confirm_complete_override:"Complete this jobcard anyway using a manager override?",
   err_required:"This field is required.",err_qty:"Quantity must be greater than zero.",err_hours:"Hours must be greater than zero.",err_date:"Please enter a valid date.",err_negative:"This value cannot be negative.",
   demo_scan:"Barcode scan — demo. Manual entry only, no camera or physical scanner is connected.",demo_upload:"Attachment reference — demo. No file is actually stored.",
   issue_no_operations:"This jobcard has no operations yet — add at least one before releasing.",issue_no_responsible:"No responsible supervisor is assigned yet.",issue_material_short:"One or more materials are short — check availability before starting.",issue_operations_open:"{n} operation(s) are not yet completed.",issue_inspections_pending:"{n} required inspection(s) are still pending.",issue_inspections_failed:"{n} required inspection(s) failed or need rework.",
@@ -459,13 +477,25 @@ sv:{
   ji_jcno:"Jobbkortsnummer",ji_project:"Projektnummer",ji_customer:"Kund",ji_title:"Jobbtitel",ji_item:"Artikel- / enhetsnamn",ji_qty:"Antal",ji_revision:"Revision",ji_drawingno:"Ritningsnummer",ji_worktype:"Arbetstyp",ji_location:"Verkstad eller platsarbete",ji_priority:"Prioritet",ji_responsible:"Ansvarig arbetsledare",ji_workers:"Tilldelad personal",ji_plannedstart:"Planerad start",ji_plannedcompletion:"Planerat klart",ji_actualstart:"Verklig start",ji_actualcompletion:"Verkligt klart",ji_plannedhours:"Planerade timmar",ji_loggedhours:"Loggade timmar",ji_progress:"Framsteg",ji_status:"Aktuell status",ji_materialready:"Materialstatus",ji_inspectionreq:"Besiktningskrav",ji_deliverytarget:"Leveransmål",ji_none:"— Ingen —",ji_required:"Krävs",ji_notrequired:"Krävs ej",
   tab_info:"Jobbinformation",tab_operations:"Moment",tab_documents:"Ritningar & dokument",tab_materials:"Material",tab_workers:"Personal & timmar",tab_machines:"Maskiner & utrustning",tab_quality:"Kvalitet & besiktning",tab_notes:"Anteckningar & problem",tab_activity:"Aktivitetshistorik",
   op_add:"Lägg till moment",op_edit:"Redigera",op_duplicate:"Duplicera",op_delete:"Ta bort",op_moveup:"Flytta upp",op_movedown:"Flytta ner",op_start:"Starta",op_pause:"Pausa",op_resume:"Återuppta",op_complete:"Slutför",
+  op_delete_pausefirst:"Pausa momentet innan du tar bort det.",
   op_no:"Moment #",op_desc:"Beskrivning",op_instructions:"Arbetsinstruktion",op_worker:"Tilldelad personal",op_machine:"Krävd maskin",op_plannedhours:"Planerade timmar",op_loggedhours:"Loggade timmar",op_plannedstart:"Planerad start",op_actualstart:"Verklig start",op_actualcompletion:"Verkligt klart",op_status:"Status",op_dependency:"Beror på",op_inspectioncheckpoint:"Besiktningspunkt",op_notes:"Anteckningar från personal",op_attachments:"Bilaga-referens",op_empty:"Inga moment ännu — lägg till det första tillverkningssteget.",op_active_badge:"Aktivt",
   ops_pending:"Väntar",ops_inprogress:"Pågår",ops_paused:"Pausat",ops_completed:"Klart",ops_skipped:"Överhoppat",
   mat_code:"Artikelkod",mat_desc:"Materialbeskrivning",mat_spec:"Specifikation",mat_grade:"Kvalitet",mat_dim:"Dimension",mat_required:"Behov",mat_reserved:"Reserverat",mat_issued:"Uttaget",mat_remaining:"Kvarstår",mat_unit:"Enhet",mat_location:"Lagerplats",mat_heat:"Sats- / smältnummer",mat_cert:"Certifikatreferens",mat_status:"Materialstatus",mat_empty:"Inget material kopplat ännu.",mat_reserve:"Reservera",mat_issue:"Ta ut",mat_return:"Returnera oanvänt",mat_scrap:"Registrera skrot",mat_addoffcut:"Lägg till restbit",mat_scan:"Skanna streckkod",mat_add:"Lägg till materialrad",doc_add:"Lägg till dokumentreferens",
   ms_notchecked:"Ej kontrollerat",ms_available:"Tillgängligt",ms_partial:"Delvis tillgängligt",ms_reserved:"Reserverat",ms_issued:"Uttaget",ms_shortage:"Brist",ms_substitute:"Kräver ersättningsgodkännande",
   wh_assigned:"Tilldelad personal",wh_role:"Roll",wh_plannedhours:"Plan. tim",wh_loggedhours:"Logg. tim",wh_remaining:"Kvar. tim",wh_activeop:"Aktivt moment",wh_lastentry:"Senaste tidregistrering",wh_logtime:"Registrera tid",wh_empty:"Ingen personal tilldelad ännu.",wh_entries_t:"Senaste tidregistreringar",wh_entries_empty:"Inga tidregistreringar ännu.",
   mc_required:"Krävd maskin",mc_assigned:"Tilldelad",mc_availability:"Tillgänglighet",mc_status:"Maskinstatus",mc_plannedusage:"Planerad användning (tim)",mc_actualusage:"Verklig användning (tim)",mc_operator:"Operatör",mc_preusecheck:"Förkontroll",mc_maintenance:"Underhållsvarning",mc_empty:"Ingen maskin kopplad ännu.",mc_add:"Lägg till maskin",
-  pu_pending:"Väntar",pu_passed:"Godkänd",pu_flagged:"Flaggad",
+  mc_equipment:"Utrustning",mc_safety:"Säkerhet",mc_currentassignment:"Aktuell tilldelning",mc_safe:"Säker",mc_blocked:"Blockerad",
+  mc_unlinked:"Okopplad utrustning",mc_unlinked_detail:"Denna maskinreferens kunde inte matchas mot en verklig utrustningspost och kan inte betraktas som säker.",
+  mc_unlinked_start_blocked:"Momentets krävda utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under fliken Maskiner & Utrustning innan start.",
+  mc_assignedelsewhere:"Tilldelad annat jobbkort: {jc}",mc_alreadylinked:"Redan kopplad till detta jobbkort",
+  mc_notassignedhere:"Utrustningen är inte tilldelad detta jobbkort",mc_startblocked:"Start blockerad",mc_usageblocked:"Användning blockerad",mc_returnorreassign:"Återlämna eller omtilldela utrustningen först",
+  mc_pausetoedit:"Pausa momentet innan du ändrar dess utrustning.",
+  mc_pausetoremove:"Pausa det tillhörande momentet innan du tar bort denna utrustning.",
+  mc_recordcheck:"Registrera förkontroll",mc_reportproblem:"Rapportera problem",mc_remove:"Ta bort / återlämna",
+  mc_checkedby:"Kontrollerad av",mc_result:"Resultat",mc_evidence:"Underlag / checklista",mc_evidence_required:"En godkänd kontroll kräver underlag/checklistetext.",
+  mc_check_failed_toast:"Förkontrollen underkändes — utrustningen är nu blockerad.",mc_blocked_toast:"Blockerad av säkerhetsregler för utrustning: {reasons}",
+  mc_breakdown_toast:"Haveri rapporterat — utrustningen är nu Ur drift.",mc_responsibleperson:"Ansvarig person",
+  pu_pending:"Väntar",pu_passed:"Godkänd",pu_failed:"Underkänd",pu_flagged:"Flaggad",pu_none:"Ingen kontroll registrerad",
   q_type:"Besiktningstyp",q_inspector:"Ansvarig besiktningsman",q_requirement:"Obligatorisk eller valfri",q_status:"Status",q_date:"Datum",q_result:"Resultat",q_comments:"Kommentarer",q_relatedop:"Relaterat moment",q_reference:"Dokument- / rapportreferens",q_add:"Lägg till besiktning",q_edit:"Uppdatera besiktning",q_empty:"Inga besiktningspunkter ännu.",
   it_dimensional:"Måttbesiktning",it_visualweld:"Visuell svetsbesiktning","it_ndt-required":"OFP krävs","it_material-cert":"Materialcertifikatkontroll","it_drawing-revision":"Ritningsrevisionskontroll",it_final:"Slutbesiktning",it_customer:"Kundbesiktning","it_test-report":"Testrapport",
   req_required:"Obligatorisk",req_optional:"Valfri",
@@ -478,7 +508,7 @@ sv:{
   a_edit:"Redigera",a_print:"Skriv ut jobbkort",a_duplicate:"Duplicera",a_more:"Mer",a_start:"Starta arbete",a_pause:"Pausa",a_resume:"Återuppta",a_block:"Markera blockerat",a_complete:"Markera klart",a_close:"Stäng jobbkort",a_cancel:"Avbryt jobbkort",a_reopen:"Återöppna",a_archive:"Arkivera",a_release:"Utfärda",a_ready:"Markera redo",a_inspection:"Skicka till besiktning",
   m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",resume_target_info:"Detta jobbkort återupptas till: {s}",resume_fallback_warning:"Den sparade återupptagningsstatusen saknades eller var ogiltig, så jobbkortet återupptas till Redo istället.",qh_title:"Kvalitetsspärr aktiv",qh_hold_label:"Spärr",qh_severity_label:"Allvarlighetsgrad",qh_reason_label:"Orsak",qh_requiredaction_label:"Nödvändig åtgärd",qh_blocked_toast:"Blockerad av aktiv kvalitetsspärr {holds} — denna åtgärd är inte tillåten medan spärren kvarstår.",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
   f_reason:"Anledning",f_comment:"Kommentar",f_resumestatus:"Återuppta till status",f_overridereason:"Anledning till överstyrning (krävs)",f_hours:"Timmar",f_qty:"Antal",f_date:"Datum",f_worker:"Personal",f_barcode:"Streckkod / QR-värde",f_destination:"Destination",
-  confirm_delete_op:"Ta bort momentet \"{n}\"?",confirm_delete_mat:"Ta bort materialraden \"{n}\"?",confirm_status:"Flytta detta jobbkort till \"{s}\"?",confirm_archive:"Arkivera jobbkort {no}? Det döljs från aktiva listor men behålls för spårbarhet.",confirm_complete_override:"Slutför detta jobbkort ändå med chefsöverstyrning?",
+  confirm_delete_op:"Ta bort momentet \"{n}\"?",confirm_delete_mat:"Ta bort materialraden \"{n}\"?",confirm_removemachine:"Ta bort \"{n}\" från detta jobbkort?",confirm_status:"Flytta detta jobbkort till \"{s}\"?",confirm_archive:"Arkivera jobbkort {no}? Det döljs från aktiva listor men behålls för spårbarhet.",confirm_complete_override:"Slutför detta jobbkort ändå med chefsöverstyrning?",
   err_required:"Detta fält är obligatoriskt.",err_qty:"Antal måste vara större än noll.",err_hours:"Timmar måste vara större än noll.",err_date:"Ange ett giltigt datum.",err_negative:"Detta värde kan inte vara negativt.",
   demo_scan:"Streckkodsskanning — demo. Endast manuell inmatning, ingen kamera eller fysisk skanner är ansluten.",demo_upload:"Bilagereferens — demo. Ingen fil sparas i verkligheten.",
   issue_no_operations:"Detta jobbkort har inga moment ännu — lägg till minst ett innan det utfärdas.",issue_no_responsible:"Ingen ansvarig arbetsledare är tilldelad ännu.",issue_material_short:"Ett eller flera material har brist — kontrollera tillgänglighet innan start.",issue_operations_open:"{n} moment är ännu inte klara.",issue_inspections_pending:"{n} obligatoriska besiktningar väntar fortfarande.",issue_inspections_failed:"{n} obligatoriska besiktningar underkändes eller kräver omarbete.",
@@ -506,13 +536,25 @@ mk:{
   ji_jcno:"Broj na karton",ji_project:"Broj na proekt",ji_customer:"Klient",ji_title:"Naslov na rabota",ji_item:"Ime na artikl / sklop",ji_qty:"Količina",ji_revision:"Revizija",ji_drawingno:"Broj na crtež",ji_worktype:"Tip na rabota",ji_location:"Rabotilnica ili teren",ji_priority:"Prioritet",ji_responsible:"Odgovoren nadzornik",ji_workers:"Zadolženi rabotnici",ji_plannedstart:"Planiran početok",ji_plannedcompletion:"Planirano zavrшuvañe",ji_actualstart:"Realen početok",ji_actualcompletion:"Realno zavrшuvañe",ji_plannedhours:"Planirani časovi",ji_loggedhours:"Zapišani časovi",ji_progress:"Napredok",ji_status:"Tekoven status",ji_materialready:"Podgotvenost na materijal",ji_inspectionreq:"Baraña za inspekcija",ji_deliverytarget:"Cel za isporaka",ji_none:"— Nikoj —",ji_required:"Se bara",ji_notrequired:"Ne se bara",
   tab_info:"Informacii za rabota",tab_operations:"Operacii",tab_documents:"Crteži i dokumenti",tab_materials:"Materijali",tab_workers:"Rabotnici i časovi",tab_machines:"Mašini i oprema",tab_quality:"Kvalitet i inspekcija",tab_notes:"Beleški i problemi",tab_activity:"Istorija na aktivnosti",
   op_add:"Dodaj operacija",op_edit:"Uredi",op_duplicate:"Dupliciraj",op_delete:"Izbriši",op_moveup:"Premesti nagore",op_movedown:"Premesti nadolu",op_start:"Started",op_pause:"Pauziraj",op_resume:"Prodolži",op_complete:"Završi",
+  op_delete_pausefirst:"Pauziraj ja operacijata pred da ja izbrišeš.",
   op_no:"Operacija br.",op_desc:"Opis",op_instructions:"Rabotni instrukcii",op_worker:"Zadolžen rabotnik",op_machine:"Baрана mašina",op_plannedhours:"Planirani časovi",op_loggedhours:"Zapišani časovi",op_plannedstart:"Planiran početok",op_actualstart:"Realen početok",op_actualcompletion:"Realno zavrшuvañe",op_status:"Status",op_dependency:"Zavisi od",op_inspectioncheckpoint:"Точка за inspekcija",op_notes:"Beleški od rabotnik",op_attachments:"Referenca za prilog",op_empty:"Sè uште nema operacii — dodaj go prviot proizводен čekor.",op_active_badge:"Aktivna",
   ops_pending:"Vo čekañe",ops_inprogress:"Vo tek",ops_paused:"Pauzirana",ops_completed:"Završena",ops_skipped:"Prescocena",
   mat_code:"Šifra na artikl",mat_desc:"Opis na materijal",mat_spec:"Specifikacija",mat_grade:"Kvalitet",mat_dim:"Dimenzija",mat_required:"Potrebna kol.",mat_reserved:"Rezervirano",mat_issued:"Izdadeno",mat_remaining:"Preostanato",mat_unit:"Edinica",mat_location:"Lokacija vo magacin",mat_heat:"Broj na šarža",mat_cert:"Referenca na certifikat",mat_status:"Status na materijal",mat_empty:"Sè uште nema poврзан materijal.",mat_reserve:"Rezerviraj",mat_issue:"Izdadi",mat_return:"Vrati neupotrebeno",mat_scrap:"Zapiši otpad",mat_addoffcut:"Dodaj otsečok",mat_scan:"Skeniraj barkod",mat_add:"Dodaj red na materijal",doc_add:"Dodaj referenca na dokument",
   ms_notchecked:"Neprovereno",ms_available:"Dostapno",ms_partial:"Delumno dostapno",ms_reserved:"Rezervirano",ms_issued:"Izdadeno",ms_shortage:"Nedostig",ms_substitute:"Bara odobruvañe za zamena",
   wh_assigned:"Zadolženi rabotnici",wh_role:"Uloga",wh_plannedhours:"Plan. časovi",wh_loggedhours:"Zapiš. časovi",wh_remaining:"Preostanati časovi",wh_activeop:"Aktivna operacija",wh_lastentry:"Posledna evidencija na vreme",wh_logtime:"Zapiši vreme",wh_empty:"Sè uште nema zadolženi rabotnici.",wh_entries_t:"Posledni evidencii na vreme",wh_entries_empty:"Sè uште nema evidencii na vreme.",
   mc_required:"Baрана mašina",mc_assigned:"Zadolžena",mc_availability:"Dostapnost",mc_status:"Status na mašina",mc_plannedusage:"Planirana upotreba (č)",mc_actualusage:"Realna upotreba (č)",mc_operator:"Operator",mc_preusecheck:"Proverka pred upotreba",mc_maintenance:"Predupreduvañe za servis",mc_empty:"Sè uште nema poврзана mašina.",mc_add:"Dodaj mašina",
-  pu_pending:"Vo čekañe",pu_passed:"Poминато",pu_flagged:"Označeno",
+  mc_equipment:"Oprema",mc_safety:"Bezbednost",mc_currentassignment:"Tekovna zadolženost",mc_safe:"Bezbedno",mc_blocked:"Blokirano",
+  mc_unlinked:"Nepoврзana oprema",mc_unlinked_detail:"Ovaa referenca na mašina ne možeše da se poврзе so realen zapis za oprema i ne može da se smeta za bezbedna.",
+  mc_unlinked_start_blocked:"Baraната oprema za оваа operacija nedostasuva, e dvosmislena ili ne e poврзана so ovoj karton — poврзи ja vo tabot Mašini i oprema pred da започneш.",
+  mc_assignedelsewhere:"Zadolžena na drug karton: {jc}",mc_alreadylinked:"Veќe poврзana so ovoj karton",
+  mc_notassignedhere:"Opremata ne e zadolžena za ovoj karton",mc_startblocked:"Startot e blokiran",mc_usageblocked:"Upotrebata e blokirana",mc_returnorreassign:"Vrati ja ili preraspredeli ja opremata prvo",
+  mc_pausetoedit:"Pauziraj ja operacijata pred da ja promeniš opremata.",
+  mc_pausetoremove:"Pauziraj ja poврзаната operacija pred da ja otstraniš ovaa oprema.",
+  mc_recordcheck:"Zapiši proverka pred upotreba",mc_reportproblem:"Prijavi problem",mc_remove:"Otstrani / vrati",
+  mc_checkedby:"Proveril",mc_result:"Rezultat",mc_evidence:"Dokaz / kontrolna lista",mc_evidence_required:"Odobrena proverka bara tekst so dokaz/kontrolna lista.",
+  mc_check_failed_toast:"Proverkata pred upotreba ne pomina — opremata sega e blokirana.",mc_blocked_toast:"Blokirano od bezbednosnite pravila za oprema: {reasons}",
+  mc_breakdown_toast:"Kvarot e prijaven — opremata sega e Von upotreba.",mc_responsibleperson:"Odgovorno lice",
+  pu_pending:"Vo čekañe",pu_passed:"Poминато",pu_failed:"Ne pomina",pu_flagged:"Označeno",pu_none:"Nema zapišana proverka",
   q_type:"Tip na inspekcija",q_inspector:"Odgovoren inspektor",q_requirement:"Zadolžitelna ili opciona",q_status:"Status",q_date:"Datum",q_result:"Rezultat",q_comments:"Komentari",q_relatedop:"Poврзана operacija",q_reference:"Referenca na dokument / izveštaj",q_add:"Dodaj inspekcija",q_edit:"Ažuriraj inspekcija",q_empty:"Sè uште nema точки za inspekcija.",
   it_dimensional:"Dimenzionalna inspekcija",it_visualweld:"Vizuelna inspekcija na zavar","it_ndt-required":"Se bara NDT","it_material-cert":"Proverka na certifikat za materijal","it_drawing-revision":"Proverka na revizija na crtež",it_final:"Zavrшна inspekcija",it_customer:"Inspekcija od klient","it_test-report":"Izveštaj od testiraње",
   req_required:"Zadolžitelna",req_optional:"Opciona",
@@ -525,7 +567,7 @@ mk:{
   a_edit:"Uredi",a_print:"Pečati karton",a_duplicate:"Dupliciraj",a_more:"Poveќe",a_start:"Започни rabota",a_pause:"Pauziraj",a_resume:"Prodolži",a_block:"Označi kako blokiran",a_complete:"Označi kako završen",a_close:"Zatvori karton",a_cancel:"Otkaži karton",a_reopen:"Povторно otvori",a_archive:"Arhiviraj",a_release:"Izdadi",a_ready:"Označi kako podgotven",a_inspection:"Isprati na inspekcija",
   m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",resume_target_info:"Ovoj karton kje prodolži do: {s}",resume_fallback_warning:"Začuvaniot status za prodolžuvanje nedostasuvaše ili beše nevaliden, pa kartonot kje prodolži do Podgotven naместо toa.",qh_title:"Aktiven kvalitativen zabranа",qh_hold_label:"Zabrana",qh_severity_label:"Ozbilnost",qh_reason_label:"Pričina",qh_requiredaction_label:"Potrebno dejstvo",qh_blocked_toast:"Blokirano od aktivna kvalitativna zabrana {holds} — ova dejstvo ne e dozvoleno dodeka zabranata e aktivna.",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
   f_reason:"Pričina",f_comment:"Komentar",f_resumestatus:"Prodolži do status",f_overridereason:"Pričina za overriding (se bara)",f_hours:"Časovi",f_qty:"Količina",f_date:"Datum",f_worker:"Rabotnik",f_barcode:"Barkod / QR vrednost",f_destination:"Destinacija",
-  confirm_delete_op:"Izbriši ja operacijata \"{n}\"?",confirm_delete_mat:"Izbriši go redot na materijal \"{n}\"?",confirm_status:"Premesti go ovoj karton vo \"{s}\"?",confirm_archive:"Arhiviraj go kartonot {no}? Ke bide skrien od aktivnite listi no se čuva za evidencija.",confirm_complete_override:"Sepak da se završi ovoj karton so upravuvačko overriding?",
+  confirm_delete_op:"Izbriši ja operacijata \"{n}\"?",confirm_delete_mat:"Izbriši go redot na materijal \"{n}\"?",confirm_removemachine:"Otstrani \"{n}\" od ovoj karton?",confirm_status:"Premesti go ovoj karton vo \"{s}\"?",confirm_archive:"Arhiviraj go kartonot {no}? Ke bide skrien od aktivnite listi no se čuva za evidencija.",confirm_complete_override:"Sepak da se završi ovoj karton so upravuvačko overriding?",
   err_required:"Ова poле е задолжително.",err_qty:"Količinata mora da bide pogolema od nula.",err_hours:"Časovite mora da bidat pogolemi od nula.",err_date:"Vnesi validen datum.",err_negative:"Ovaa vrednost ne može da bide negativna.",
   demo_scan:"Skeniraње barkod — demo. Samo rakoпisen внес, nikakva kamera ili fizički skener не e поврзан.",demo_upload:"Referenca za prilog — demo. Nikakov fajl не se začuvuva vo realnost.",
   issue_no_operations:"Ovoj karton sè uште nema operacii — dodaj barem edna pred da se izdade.",issue_no_responsible:"Sè uште nema zadolžen odgovoren nadzornik.",issue_material_short:"Eden ili poveќe materijali imaat nedostig — proveri dostapnost pred početok.",issue_operations_open:"{n} operacii sè uште ne se završeni.",issue_inspections_pending:"{n} zadolžitelni inspekcii sè uште čekaat.",issue_inspections_failed:"{n} zadolžitelni inspekcii ne poминaa ili baraat doработка.",
@@ -543,7 +585,7 @@ function tpl(str,vals){return str.replace(/\{(\w+)\}/g,(m,k)=>(vals[k]!==undefin
 
 // ── shared form field builders (match the fov/fcard modal pattern used across the app) ──
 function field(id,label,value,type){type=type||'text';return `<div><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${esc(value??'')}"></div>`;}
-function fieldSelect(id,label,options,selected){return `<div><label for="${id}">${label}</label><select id="${id}">${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
+function fieldSelect(id,label,options,selected,disabled){return `<div><label for="${id}">${label}</label><select id="${id}" ${disabled?'disabled':''}>${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
 function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}</label><textarea id="${id}">${esc(value??'')}</textarea></div>`;}
 function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]??k}));}
 function ownerOptions(){return OWNER_OPTIONS.map(n=>({v:n,l:n}));}
@@ -851,10 +893,27 @@ function renderTabOperations(j){
     ${ops.length?ops.map((op,idx)=>renderOpCard(j,op,idx,ops.length,locked)).join(''):`<div class="empty3">${esc(tt.op_empty)}</div>`}
   </div>`;
 }
+// Cheap, DISPLAY-ONLY hint for the Start/Resume button's disabled state and tooltip — reuses
+// jobcard-equipment-rules.js's canStartOperationEquipment() plus a read-only canUseEquipment() call
+// against the page's cached SHARED snapshot. This never authorizes anything by itself: the real,
+// authoritative check always happens again (against fresh WorkshopData state) inside
+// WorkshopData.startJobcardOperation() when the button is actually clicked — see setOpStatus().
+function opStartBlockedReason(j,op){
+  const resolved=canStartOperationEquipment(op,j.machines||[],SHARED.equipment,j.no);
+  if(resolved.required&&resolved.code){
+    return translateEquipmentBlockCode({code:resolved.code,assignedJobcard:resolved.equipment?resolved.equipment.assignedJobcard:null});
+  }
+  if(resolved.required&&resolved.equipment){
+    const use=WorkshopData.canUseEquipment(resolved.equipment.equipmentId,{date:todayISO(),projectNo:j.projectNo,jobcardNo:j.no});
+    if(!use.allowed)return tpl(t().mc_blocked_toast,{reasons:((use.gate&&use.gate.reasons)||[]).join('; ')});
+  }
+  return null;
+}
 function renderOpCard(j,op,idx,total,locked){
   const tt=t();const dep=op.dependency?(j.operations||[]).find(o=>o.id===op.dependency):null;
   const startable=canStartOp(j,op);
   const held=jcQualityGate(j).blocked;
+  const eqBlock=(op.status==='pending'||op.status==='paused')&&!held?opStartBlockedReason(j,op):null;
   return `<div class="opcard ${op.status==='in-progress'?'active':''}">
     <div class="oph"><div><span class="opn">${esc(tt.op_no)} ${idx+1}</span> <span class="tagpill ${op.status==='completed'?'g':(op.status==='in-progress'?'b':(op.status==='paused'?'w':(op.status==='skipped'?'n':'n')))}">${esc(tt['ops_'+op.status.replace('-','')])}</span>${op.inspectionCheckpoint?`<span class="tagpill p">${esc(tt.op_inspectioncheckpoint)}</span>`:''}
       <div class="opdesc">${esc(op.desc)}</div></div></div>
@@ -869,14 +928,14 @@ function renderOpCard(j,op,idx,total,locked){
     </div>
     ${op.notes?`<div class="opinstr" style="color:var(--steel-400);">“${esc(op.notes)}”</div>`:''}
     ${!locked?`<div class="opactions">
-      ${op.status==='pending'?(held?`<button disabled title="${esc(tt.qh_title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`:`<button ${startable?'':'disabled'} onclick="setOpStatus(${j.id},${op.id},'in-progress')" title="${startable?'':esc(tt.op_dependency)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`):''}
+      ${op.status==='pending'?(held?`<button disabled title="${esc(tt.qh_title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`:`<button ${(startable&&!eqBlock)?'':'disabled'} onclick="setOpStatus(${j.id},${op.id},'in-progress')" title="${!startable?esc(tt.op_dependency):(eqBlock?esc(eqBlock):'')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>${esc(tt.op_start)}</button>`):''}
       ${op.status==='in-progress'?`<button onclick="setOpStatus(${j.id},${op.id},'paused')">${esc(tt.op_pause)}</button><button ${held?'disabled title="'+esc(tt.qh_title)+'"':''} onclick="attemptCompleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${esc(tt.op_complete)}</button>`:''}
-      ${op.status==='paused'?`<button ${held?'disabled title="'+esc(tt.qh_title)+'"':''} onclick="setOpStatus(${j.id},${op.id},'in-progress')">${esc(tt.op_resume)}</button>`:''}
+      ${op.status==='paused'?`<button ${(held||eqBlock)?'disabled title="'+esc(held?tt.qh_title:eqBlock)+'"':''} onclick="setOpStatus(${j.id},${op.id},'in-progress')">${esc(tt.op_resume)}</button>`:''}
       <button onclick="openOpForm(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(tt.op_edit)}</button>
       <button onclick="duplicateOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(tt.op_duplicate)}</button>
       <button ${idx===0?'disabled':''} onclick="moveOp(${j.id},${op.id},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>${esc(tt.op_moveup)}</button>
       <button ${idx===total-1?'disabled':''} onclick="moveOp(${j.id},${op.id},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>${esc(tt.op_movedown)}</button>
-      <button onclick="deleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(tt.op_delete)}</button>
+      <button ${op.status==='in-progress'?'disabled title="'+esc(tt.op_delete_pausefirst)+'"':''} onclick="deleteOp(${j.id},${op.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(tt.op_delete)}</button>
     </div>`:''}
   </div>`;
 }
@@ -884,14 +943,30 @@ function openOpForm(jcId,opId){
   const tt=t();const j=getJC(jcId);if(isLocked(j))return;
   const op=opId?j.operations.find(o=>o.id===opId):null;
   const others=(j.operations||[]).filter(o=>o.id!==opId);
+  // Required equipment can only be selected from equipment already linked to THIS Jobcard (see
+  // Machines & Equipment tab) — never free text, never the whole shared catalog. A legacy operation
+  // that only ever had a machine NAME (no equipmentId) keeps displaying that text unchanged unless
+  // the user deliberately picks a real linked machine instead.
+  const linkedOpts=(j.machines||[]).filter(m=>m.equipmentId).map(m=>({v:m.equipmentId,l:`${m.equipmentId} — ${m.name}`}));
+  const legacyName=(op&&!op.equipmentId&&op.machine)?op.machine:'';
+  const machineOpts=[{v:'',l:tt.ji_none}]
+    .concat(legacyName?[{v:'legacy:'+legacyName,l:`${legacyName} (${tt.mc_unlinked})`}]:[])
+    .concat(linkedOpts);
+  const machineSelected=op&&op.equipmentId?op.equipmentId:(legacyName?'legacy:'+legacyName:'');
+  // Review fix (running-operation equipment-swap bypass): while an operation is in-progress, its
+  // equipment is safety-controlled and cannot be changed here at all — WorkshopData enforces this
+  // centrally regardless, but the selector is also shown disabled with an explanation so the user is
+  // never invited to try. Pause the operation first to change its equipment.
+  const equipmentLocked=!!(op&&op.status==='in-progress');
   $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${op?esc(tt.m_editop):esc(tt.m_addop)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow"><label>${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
     <div id="opDescErr" class="errmsg" style="display:none;"></div>
     <div class="frow"><label>${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
     <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!OWNER_OPTIONS.includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
-      ${field('opMachine',tt.op_machine,op?op.machine:'')}
-      ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.filter(s=>!jcQualityGate(j).blocked||s===(op?op.status:'pending')||!OPERATION_UNSAFE_STATUSES.includes(s)).map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
+      ${fieldSelect('opMachine',tt.op_machine,machineOpts,machineSelected,equipmentLocked)}
+      ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.filter(s=>(s!=='in-progress'||(op&&op.status==='in-progress'))&&(!jcQualityGate(j).blocked||s===(op?op.status:'pending')||!OPERATION_UNSAFE_STATUSES.includes(s))).map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
+    ${equipmentLocked?`<div class="fsub" style="margin-top:-8px;color:var(--steel-400);">${esc(tt.mc_pausetoedit)}</div>`:''}
     <div class="frow3">${field('opPlannedHours',tt.op_plannedhours,op?op.plannedHours:0,'number')}
       ${field('opLoggedHours',tt.op_loggedhours,op?op.loggedHours:0,'number')}
       ${field('opPlannedStart',tt.op_plannedstart,op?op.plannedStart:'','date')}</div>
@@ -907,46 +982,114 @@ function saveOpForm(jcId,opId){
   if(!desc){showFieldError('opDesc','opDescErr',tt.err_required);return;}
   const plannedHours=Number($('opPlannedHours').value)||0,loggedHours=Number($('opLoggedHours').value)||0;
   if(!isNonNegNumber(plannedHours)||!isNonNegNumber(loggedHours)){toast(tt.err_negative,'error');return;}
-  const payload={desc,instructions:$('opInstr').value.trim(),worker:$('opWorker').value,machine:$('opMachine').value.trim(),
+  const opMachineVal=$('opMachine').value;
+  let equipmentId=null,machine='';
+  if(opMachineVal.indexOf('legacy:')===0){machine=opMachineVal.slice('legacy:'.length);}
+  else if(opMachineVal){const linked=(j.machines||[]).find(m=>m.equipmentId===opMachineVal);equipmentId=opMachineVal;machine=linked?linked.name:'';}
+  const payload={desc,instructions:$('opInstr').value.trim(),worker:$('opWorker').value,machine,equipmentId,
     status:$('opStatus').value,plannedHours,loggedHours,plannedStart:$('opPlannedStart').value||null,
     dependency:$('opDependency').value?Number($('opDependency').value):null,inspectionCheckpoint:$('opInspection').checked,notes:$('opNotes').value.trim()};
   if(opId){
     const res=WorkshopData.updateJobcardOperation(jcId,opId,payload);
     if(handleQualityBlocked(res)){refreshShared();return;}
+    // Starting (payload.status:'in-progress' on a pending/paused operation) is always refused here —
+    // see setOpStatus()/the Start/Resume buttons for the one authoritative route. Any other rejection
+    // (should not normally be reachable from this form) also stops here instead of silently
+    // recording a misleading "updated" activity entry.
+    if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
     WorkshopData.recordJobcardActivity(jcId,{action:`Operation updated: ${desc}`});
   }
-  else{WorkshopData.addJobcardOperation(jcId,Object.assign({no:(j.operations||[]).length+1,actualStart:null,actualCompletion:null,attachments:''},payload));WorkshopData.recordJobcardActivity(jcId,{action:`Operation added: ${desc}`});}
+  else{
+    const added=WorkshopData.addJobcardOperation(jcId,Object.assign({no:(j.operations||[]).length+1,actualStart:null,actualCompletion:null,attachments:''},payload));
+    if(added&&added.error){toast(added.error,'error');refreshShared();return;}
+    WorkshopData.recordJobcardActivity(jcId,{action:`Operation added: ${desc}`});
+  }
   refreshShared();closeModal();renderApp();
 }
 function duplicateOp(jcId,opId){
   const j=getJC(jcId);if(isLocked(j))return;const op=j.operations.find(o=>o.id===opId);if(!op)return;
   const copy=Object.assign({},op,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null});delete copy.id;
   const added=WorkshopData.addJobcardOperation(jcId,copy);
+  if(added&&added.error){toast(translateEquipmentBlockCode(added),'error');refreshShared();return;}
   refreshShared();const jj=getJC(jcId);const idx=jj.operations.findIndex(o=>o.id===op.id);const newIdx=jj.operations.findIndex(o=>o.id===added.id);
-  if(newIdx>-1&&idx>-1){const arr=jj.operations;const [item]=arr.splice(newIdx,1);arr.splice(idx+1,0,item);WorkshopData.updateJobcard(jcId,{operations:arr});}
+  if(newIdx>-1&&idx>-1){
+    const arr=jj.operations;const [item]=arr.splice(newIdx,1);arr.splice(idx+1,0,item);
+    const res=WorkshopData.updateJobcard(jcId,{operations:arr});
+    if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
+  }
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation duplicated: ${op.desc}`});
   refreshShared();renderApp();
 }
 function deleteOp(jcId,opId){
   const tt=t();const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
+  // An in-progress operation must be paused before it can be deleted — the button is disabled for
+  // this case, but WorkshopData enforces it centrally regardless (never rely on the UI control alone).
+  if(op.status==='in-progress'){toast(tt.op_delete_pausefirst,'error');return;}
   if(!confirm(tpl(tt.confirm_delete_op,{n:op.desc})))return;
   const arr=j.operations.filter(o=>o.id!==opId);
-  WorkshopData.updateJobcard(jcId,{operations:arr});
+  const res=WorkshopData.updateJobcard(jcId,{operations:arr});
+  if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
   WorkshopData.recordJobcardActivity(jcId,{action:`Operation removed: ${op.desc}`});
   refreshShared();renderApp();
 }
 function moveOp(jcId,opId,dir){
   const j=getJC(jcId);const arr=j.operations.slice();const idx=arr.findIndex(o=>o.id===opId);const to=idx+dir;
   if(to<0||to>=arr.length)return;const tmp=arr[idx];arr[idx]=arr[to];arr[to]=tmp;
-  WorkshopData.updateJobcard(jcId,{operations:arr});refreshShared();renderApp();
+  const res=WorkshopData.updateJobcard(jcId,{operations:arr});
+  if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
+  refreshShared();renderApp();
 }
+// Translates a blocked-start/blocked-usage result code (from WorkshopData.startJobcardOperation() or
+// an equipment-assignment-conflict result) into a user-facing message. This is display-only — the
+// actual decision always comes from WorkshopData, called fresh, right before the mutation; this
+// function never decides anything itself.
+function translateEquipmentBlockCode(res,context){
+  const tt=t();
+  switch(res&&res.code){
+    case 'EQUIPMENT_NOT_LINKED':
+    case 'EQUIPMENT_MISSING':
+      return tt.mc_unlinked_start_blocked;
+    case 'EQUIPMENT_UNASSIGNED':
+      return tt.mc_notassignedhere;
+    case 'EQUIPMENT_ASSIGNED_ELSEWHERE':
+    case 'EQUIPMENT_ASSIGNMENT_CONFLICT':
+      return tpl(tt.mc_assignedelsewhere,{jc:res.assignedJobcard||'—'})+' '+tt.mc_returnorreassign;
+    case 'EQUIPMENT_SAFETY_BLOCKED':
+      return tpl(tt.mc_blocked_toast,{reasons:(res.reasons||[]).join('; ')});
+    case 'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE':
+      return tt.mc_pausetoedit;
+    case 'OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE':
+      return tt.op_delete_pausefirst;
+    case 'ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE':
+      return tt.mc_pausetoremove;
+    default:
+      return (res&&res.error)||(context==='usage'?tt.mc_usageblocked:tt.mc_startblocked);
+  }
+}
+// Starting or resuming an operation ('in-progress') has exactly ONE authoritative route:
+// WorkshopData.startJobcardOperation() — it re-checks the Quality Hold gate and, when the operation
+// references equipment, that the equipment is explicitly linked to THIS Jobcard by equipmentId AND
+// currently assigned to exactly this Jobcard, then the central canUseEquipment() safety gate. All of
+// that always reads WorkshopData's live state, never this page's cached SHARED snapshot, so it is
+// correct even if the equipment's assignment changed a moment ago elsewhere in the app. Every other
+// transition (pause, complete, skip) is unaffected and keeps going through updateJobcardOperation().
 function setOpStatus(jcId,opId,status){
   const j=getJC(jcId);const op=j.operations.find(o=>o.id===opId);if(!op)return;
-  const patch={status};const dt=todayISO();
-  if(status==='in-progress'&&!op.actualStart)patch.actualStart=dt;
-  const res=WorkshopData.updateJobcardOperation(jcId,opId,patch);
+  if(status==='in-progress'){
+    const res=WorkshopData.startJobcardOperation(jcId,opId,{date:todayISO()});
+    if(!res)return;
+    if(res.error){
+      if(!handleQualityBlocked(res))toast(translateEquipmentBlockCode(res),'error');
+      refreshShared();renderApp();
+      return;
+    }
+    WorkshopData.recordJobcardActivity(jcId,{action:`Operation started: ${op.desc}`});
+    refreshShared();renderApp();
+    return;
+  }
+  const res=WorkshopData.updateJobcardOperation(jcId,opId,{status});
   if(handleQualityBlocked(res)){refreshShared();renderApp();return;}
-  WorkshopData.recordJobcardActivity(jcId,{action:`Operation ${status==='in-progress'?'started':status}: ${op.desc}`});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Operation ${status}: ${op.desc}`});
   refreshShared();renderApp();
 }
 function opMissingFields(op,tt){
@@ -1176,62 +1319,258 @@ function openLogTime(jcId){
   const tt=t();const j=getJC(jcId);
   const opOpts=(j.operations||[]).map(o=>({v:o.id,l:o.desc}));
   const workerOpts=(j.workers.length?j.workers:OWNER_OPTIONS).map(w=>({v:w,l:w}));
+  // Only equipment already linked to this Jobcard can be selected — never free text — so time
+  // logging can be tied to a real equipmentId when relevant.
+  const machineOpts=[{v:'',l:tt.ji_none}].concat((j.machines||[]).filter(m=>m.equipmentId).map(m=>({v:m.equipmentId,l:`${m.equipmentId} — ${m.name}`})));
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.wh_logtime)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow2">${fieldSelect('logOp',tt.op_desc,opOpts,opOpts[0]?opOpts[0].v:'')}${fieldSelect('logWorker',tt.f_worker,workerOpts,workerOpts[0]?workerOpts[0].v:'')}</div>
     <div class="frow2">${field('logDate',tt.f_date,todayISO(),'date')}${field('logHours',tt.f_hours,1,'number')}</div>
     <div id="logErr" class="errmsg" style="display:none;"></div>
-    <div class="frow">${field('logMachine',tt.op_machine,'')}</div>
+    <div class="frow">${fieldSelect('logMachine',tt.op_machine,machineOpts,'')}</div>
     <div class="frow">${fieldTextarea('logNotes',tt.op_notes,'')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveLogTime(${jcId})">${esc(tt.nc_save)}</button></div>`;
   $('fov').classList.add('show');
 }
+// When real equipment is selected: re-read the equipment record fresh from WorkshopData (never the
+// page's cached SHARED snapshot) and require it to be CURRENTLY assigned to exactly this Jobcard
+// before even attempting anything — a stale local machine link must never let this Jobcard log usage
+// against equipment another Jobcard now holds. Only then preflight with canUseEquipment(), then
+// record equipment usage through WorkshopData.logEquipmentUsage() BEFORE labour hours — if the
+// equipment safety gate (or the same fresh assignment check, defensively re-applied server-side)
+// rejects it, labour hours are never logged either. No equipment selected simply logs labour hours.
 function saveLogTime(jcId){
   const tt=t();clearAllFieldErrors();const hours=Number($('logHours').value);
   if(!isPositiveNumber(hours)){showFieldError('logHours','logErr',tt.err_hours);return;}
   const date=$('logDate').value;if(isBlank(date)){showFieldError('logDate','logErr',tt.err_date);return;}
   const j=getJC(jcId);const opId=Number($('logOp').value);const op=(j.operations||[]).find(o=>o.id===opId);
-  const worker=$('logWorker').value,machine=$('logMachine').value.trim(),notes=$('logNotes').value.trim();
-  const result=WorkshopData.logHours({project:j.projectNo,jobcard:j.no,item:op?op.desc:j.title,operation:op?op.desc:'',worker,hours,date,notes,equipment:machine?[{name:machine,hours}]:[]});
+  const worker=$('logWorker').value,equipmentId=$('logMachine').value,notes=$('logNotes').value.trim();
+  let linkedMachine=null;
+  if(equipmentId){
+    linkedMachine=(j.machines||[]).find(m=>m.equipmentId===equipmentId);
+    const freshEq=(WorkshopData.getEquipment()||[]).find(e=>e.equipmentId===equipmentId);
+    if(!freshEq||freshEq.assignedJobcard!==j.no){
+      toast(translateEquipmentBlockCode(freshEq&&freshEq.assignedJobcard?{code:'EQUIPMENT_ASSIGNED_ELSEWHERE',assignedJobcard:freshEq.assignedJobcard}:{code:'EQUIPMENT_UNASSIGNED'},'usage'),'error');
+      return;
+    }
+    const use=WorkshopData.canUseEquipment(equipmentId,{date,projectNo:j.projectNo,jobcardNo:j.no});
+    if(!use.allowed){toast(tpl(tt.mc_blocked_toast,{reasons:((use.gate&&use.gate.reasons)||[]).join('; ')}),'error');return;}
+    const usageRes=WorkshopData.logEquipmentUsage(equipmentId,{hours,date,worker,project:j.projectNo,jobcard:j.no,notes});
+    if(usageRes&&usageRes.error){toast(translateEquipmentBlockCode(usageRes,'usage'),'error');return;}
+  }
+  const result=WorkshopData.logHours({project:j.projectNo,jobcard:j.no,item:op?op.desc:j.title,operation:op?op.desc:'',worker,hours,date,notes,equipment:linkedMachine?[{equipmentId,name:linkedMachine.name,hours}]:[]});
   if(result&&result.error){toast(result.error,'error');return;}
   if(op){WorkshopData.updateJobcardOperation(jcId,opId,{loggedHours:(Number(op.loggedHours)||0)+hours});}
-  WorkshopData.recordJobcardActivity(jcId,{action:`${hours}h logged by ${worker}${op?' on '+op.desc:''}`});
+  WorkshopData.recordJobcardActivity(jcId,{action:`${hours}h logged by ${worker}${op?' on '+op.desc:''}${equipmentId?' using '+equipmentId:''}`});
   refreshShared();closeModal();renderApp();
 }
 
-// ── Machines & Equipment (lightweight — not a full Equipment module) ──
+// ── Machines & Equipment — a real, live connection to the shared Equipment module. ──
+// WorkshopData + equipment-gates.js remain the ONLY authority on safety; this section never
+// re-derives a blocked/safe decision itself, it only renders WorkshopData.getEquipmentSafetyGate()
+// results and calls the real assign/return/pre-use-check/breakdown APIs.
+function jcEquipmentGate(equipmentId){return (window.WorkshopData&&WorkshopData.getEquipmentSafetyGate)?WorkshopData.getEquipmentSafetyGate(equipmentId,{asOf:todayISO()}):{blocked:true,reasons:[]};}
 function renderTabMachines(j){
   const tt=t();const locked=isLocked(j);const machines=j.machines||[];
+  const rows=machines.map((m,idx)=>{
+    const resolved=resolveMachineLink(m,SHARED.equipment);
+    const equipment=resolved.equipment;
+    // Review fix (3rd review, finding B / UI): equipment currently powering an in-progress operation
+    // on THIS Jobcard cannot be removed here — checked by raw m.equipmentId (matching what
+    // WorkshopData itself compares), so this stays correct even for an unresolved/missing link.
+    const usedByActiveOp=!!(m.equipmentId&&(j.operations||[]).some(op=>op&&op.status==='in-progress'&&op.equipmentId===m.equipmentId));
+    const removeBtnAttrs=usedByActiveOp?`disabled title="${esc(tt.mc_pausetoremove)}"`:'';
+    if(!equipment){
+      return `<tr>
+        <td><b>${esc(m.name)||'—'}</b></td>
+        <td colspan="6"><span class="tagpill n">${esc(tt.mc_unlinked)}</span> <span style="color:var(--steel-400);font-size:11px;">${esc(tt.mc_unlinked_detail)}</span></td>
+        ${!locked?`<td><button class="tbtn small" ${removeBtnAttrs} onclick="removeMachine(${j.id},${idx})">${esc(tt.mc_remove)}</button></td>`:''}
+      </tr>`;
+    }
+    const gate=jcEquipmentGate(equipment.equipmentId);
+    const conflict=isAssignedElsewhere(equipment,j.no);
+    const usage=equipmentUsageForJobcard(equipment,j.no);
+    const latestCheck=(equipment.preUseChecks||[])[0];
+    return `<tr>
+      <td><b>${esc(equipment.equipmentId)}</b><div style="color:var(--steel-400);font-size:11px;">${esc(equipment.name)}${equipment.category?' · '+esc(equipment.category):''}</div></td>
+      <td>${esc(equipment.status)}</td>
+      <td>${esc(equipment.operator)||'—'}</td>
+      <td class="n">${esc(m.plannedUsage||0)}</td>
+      <td class="n">${esc(Math.round(usage*100)/100)}</td>
+      <td>${latestCheck?`<span class="tagpill ${latestCheck.result==='passed'?'g':'r'}">${esc(tt['pu_'+latestCheck.result]||latestCheck.result)}</span> <span style="color:var(--steel-400);font-size:11px;">${fmtDate(latestCheck.date)}</span>`:`<span class="tagpill n">${esc(tt.pu_none)}</span>`}</td>
+      <td>${gate.blocked?`<span class="tagpill r">${esc(tt.mc_blocked)}</span>`:`<span class="tagpill g">${esc(tt.mc_safe)}</span>`}
+        ${conflict?`<div style="color:var(--danger);font-size:11px;margin-top:3px;">${esc(tpl(tt.mc_assignedelsewhere,{jc:equipment.assignedJobcard}))}</div>`:''}
+        ${gate.blocked?`<div style="color:var(--steel-400);font-size:11px;margin-top:3px;">${gate.reasons.map(r=>esc(r)).join('; ')}</div>`:''}
+      </td>
+      ${!locked?`<td><div class="opactions">
+        <button class="tbtn small" onclick="openPreUseCheckForm(${j.id},'${esc(equipment.equipmentId)}')">${esc(tt.mc_recordcheck)}</button>
+        <button class="tbtn small" onclick="openReportBreakdown(${j.id},'${esc(equipment.equipmentId)}')">${esc(tt.mc_reportproblem)}</button>
+        <button class="tbtn small" ${removeBtnAttrs} onclick="removeMachine(${j.id},${idx})">${esc(tt.mc_remove)}</button>
+      </div></td>`:''}
+    </tr>`;
+  }).join('');
   return `<div class="panel">
     <div class="phead"><h3>${esc(tt.tab_machines)}</h3>${!locked?`<button class="tbtn primary small" onclick="openMachineForm(${j.id})">+ ${esc(tt.mc_add)}</button>`:''}</div>
-    ${machines.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.mc_required)}</th><th>${esc(tt.mc_status)}</th><th class="n">${esc(tt.mc_plannedusage)}</th><th class="n">${esc(tt.mc_actualusage)}</th><th>${esc(tt.mc_operator)}</th><th>${esc(tt.mc_preusecheck)}</th><th>${esc(tt.mc_maintenance)}</th></tr></thead><tbody>
-      ${machines.map((m,idx)=>`<tr><td><b>${esc(m.name)}</b></td><td><span class="tagpill ${m.status==='available'?'g':(m.status==='reserved'?'b':'w')}">${esc(m.status)}</span></td><td class="n">${esc(m.plannedUsage||0)}</td><td class="n">${esc(m.actualUsage||0)}</td><td>${esc(m.operator)||'—'}</td>
-        <td>${!locked?`<button class="tbtn small" onclick="toggleMachineCheck(${j.id},${idx})">${esc(tt['pu_'+(m.preUseCheck==='passed'?'passed':'pending')])}</button>`:esc(tt['pu_'+(m.preUseCheck==='passed'?'passed':'pending')])}</td>
-        <td>${m.maintenanceWarning?`<span class="tagpill r">${esc(tt.mc_maintenance)}</span>`:(!locked?`<button class="tbtn small" onclick="toggleMachineWarning(${j.id},${idx})">${esc(tt.pu_flagged)}?</button>`:'—')}</td>
-      </tr>`).join('')}
-    </tbody></table></div>`:`<div class="empty3">${esc(tt.mc_empty)}</div>`}
+    ${machines.length?`<div class="tblwrap"><table class="stbl"><thead><tr>
+      <th>${esc(tt.mc_equipment)}</th><th>${esc(tt.mc_status)}</th><th>${esc(tt.mc_operator)}</th>
+      <th class="n">${esc(tt.mc_plannedusage)}</th><th class="n">${esc(tt.mc_actualusage)}</th>
+      <th>${esc(tt.mc_preusecheck)}</th><th>${esc(tt.mc_safety)}</th>${!locked?`<th>${esc(tt.th_actions)}</th>`:''}
+    </tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="empty3">${esc(tt.mc_empty)}</div>`}
   </div>`;
 }
+// The "Add machine" picker always reads WorkshopData.getEquipment() live and shows the authoritative
+// safety state for each item — blocked equipment stays visible (for context) but its Add button is
+// disabled, and clicking it can never succeed regardless.
 function openMachineForm(jcId){
-  const tt=t();
-  $('fcard').className='fcard';
-  $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2>
-    <div class="frow">${field('mcName',tt.mc_required,'')}</div>
-    <div id="mcErr" class="errmsg" style="display:none;"></div>
-    <div class="frow2">${field('mcPlanned',tt.mc_plannedusage,0,'number')}${field('mcOperator',tt.mc_operator,'')}</div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveMachine(${jcId})">${esc(tt.nc_save)}</button></div>`;
+  const tt=t();const j=getJC(jcId);
+  const list=(SHARED.equipment||[]).slice().sort((a,b)=>(a.equipmentId||'').localeCompare(b.equipmentId||''));
+  const rows=list.map(eq=>{
+    const gate=jcEquipmentGate(eq.equipmentId);
+    const decision=canAddEquipmentToJobcard(eq,j.machines||[],j.no,gate);
+    const reasonMsg=decision.reasonCode==='DUPLICATE'?tt.mc_alreadylinked
+      :decision.reasonCode==='ASSIGNED_ELSEWHERE'?tpl(tt.mc_assignedelsewhere,{jc:eq.assignedJobcard})
+      :decision.reasonCode==='BLOCKED'?(gate.reasons.join('; ')||tt.mc_blocked)
+      :'';
+    return `<tr>
+      <td><b>${esc(eq.equipmentId)}</b><div style="color:var(--steel-400);font-size:11px;">${esc(eq.name)}${eq.category?' · '+esc(eq.category):''}</div></td>
+      <td>${esc(eq.status)}</td>
+      <td>${esc(eq.assignedJobcard)||'—'}</td>
+      <td>${gate.blocked?`<span class="tagpill r">${esc(tt.mc_blocked)}</span>`:`<span class="tagpill g">${esc(tt.mc_safe)}</span>`}${reasonMsg?`<div style="color:var(--steel-400);font-size:11px;max-width:220px;">${esc(reasonMsg)}</div>`:''}</td>
+      <td><button class="tbtn small primary" ${decision.allowed?'':'disabled'} onclick="openAddMachineDetails(${jcId},'${esc(eq.equipmentId)}')">${esc(tt.mc_add)}</button></td>
+    </tr>`;
+  }).join('');
+  $('fcard').className='fcard wide';
+  $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2><p class="fsub">${esc(j.no)}</p>
+    <div class="tblwrap" style="max-height:360px;overflow-y:auto;"><table class="stbl"><thead><tr>
+      <th>${esc(tt.mc_equipment)}</th><th>${esc(tt.mc_status)}</th><th>${esc(tt.mc_currentassignment)}</th><th>${esc(tt.mc_safety)}</th><th>${esc(tt.th_actions)}</th>
+    </tr></thead><tbody>${rows||`<tr><td colspan="5">${esc(tt.mc_empty)}</td></tr>`}</tbody></table></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button></div>`;
   $('fov').classList.add('show');
 }
-function saveMachine(jcId){
-  const tt=t();clearAllFieldErrors();const name=$('mcName').value.trim();
-  if(!name){showFieldError('mcName','mcErr',tt.err_required);return;}
-  const j=getJC(jcId);const machines=(j.machines||[]).concat([{name,assigned:true,status:'available',plannedUsage:Number($('mcPlanned').value)||0,actualUsage:0,operator:$('mcOperator').value.trim(),preUseCheck:'pending',maintenanceWarning:false}]);
+// Second step: planned usage/operator, then the real WorkshopData.assignEquipment() call. The
+// Jobcard link is only added after that call succeeds — a rejected assignment never touches j.machines.
+function openAddMachineDetails(jcId,equipmentId){
+  const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
+  if(!eq)return;
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
+    <div class="frow2">${field('mcPlanned',tt.mc_plannedusage,0,'number')}${field('mcOperator',tt.mc_operator,eq.operator||'')}</div>
+    <div id="mcErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="openMachineForm(${jcId})">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="addMachineToJobcard(${jcId},'${esc(equipmentId)}')">${esc(tt.mc_add)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function addMachineToJobcard(jcId,equipmentId){
+  const tt=t();clearAllFieldErrors();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
+  if(!eq){toast(tt.err_required,'error');return;}
+  const gate=jcEquipmentGate(equipmentId);
+  const decision=canAddEquipmentToJobcard(eq,j.machines||[],j.no,gate);
+  if(!decision.allowed){
+    if(decision.reasonCode==='BLOCKED')toast(tpl(tt.mc_blocked_toast,{reasons:gate.reasons.join('; ')}),'error');
+    else if(decision.reasonCode==='DUPLICATE')toast(tt.mc_alreadylinked,'error');
+    else if(decision.reasonCode==='ASSIGNED_ELSEWHERE')toast(tpl(tt.mc_assignedelsewhere,{jc:eq.assignedJobcard}),'error');
+    else toast(tt.err_required,'error');
+    return;
+  }
+  const plannedUsage=Number($('mcPlanned').value)||0;
+  const operator=$('mcOperator').value.trim();
+  // Never override/force/managerOverride/safetyApproved — assignEquipment() is called exactly as
+  // WorkshopData defines it; the equipment link is added to the Jobcard only once it succeeds.
+  const res=WorkshopData.assignEquipment(equipmentId,{project:j.projectNo,jobcard:j.no,worker:operator,assignedBy:j.responsible||'Aleksandar C.'});
+  if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
+  const machines=(j.machines||[]).concat([{equipmentId,name:eq.name,plannedUsage}]);
   WorkshopData.updateJobcard(jcId,{machines});
-  WorkshopData.recordJobcardActivity(jcId,{action:`Machine added: ${name}`});
+  WorkshopData.recordJobcardActivity(jcId,{action:`Equipment linked: ${eq.equipmentId} — ${eq.name}`});
   refreshShared();closeModal();renderApp();
 }
-function toggleMachineCheck(jcId,idx){const j=getJC(jcId);const m=j.machines[idx];m.preUseCheck=m.preUseCheck==='passed'?'pending':'passed';WorkshopData.updateJobcard(jcId,{machines:j.machines});WorkshopData.recordJobcardActivity(jcId,{action:`Pre-use check ${m.preUseCheck} for ${m.name}`});refreshShared();renderApp();}
-function toggleMachineWarning(jcId,idx){const j=getJC(jcId);const m=j.machines[idx];m.maintenanceWarning=!m.maintenanceWarning;WorkshopData.updateJobcard(jcId,{machines:j.machines});WorkshopData.recordJobcardActivity(jcId,{action:`Maintenance warning ${m.maintenanceWarning?'raised':'cleared'} for ${m.name}`});refreshShared();renderApp();}
+// A proper pre-use-check form — never a plain toggle. Submits through
+// WorkshopData.recordEquipmentPreUseCheck(); a failed check immediately shows the resulting
+// blocked state on refresh, and an existing failed check is never silently cleared by an
+// unrelated pass (that safety rule lives entirely in equipment-gates.js/workshop-data.js).
+function openPreUseCheckForm(jcId,equipmentId){
+  const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
+  if(!eq)return;
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.mc_recordcheck)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
+    <div class="frow2">${field('pcDate',tt.f_date,todayISO(),'date')}${field('pcCheckedBy',tt.mc_checkedby,'Aleksandar C.')}</div>
+    <div class="frow">${fieldSelect('pcResult',tt.mc_result,[{v:'passed',l:tt.pu_passed},{v:'failed',l:tt.pu_failed}],'passed')}</div>
+    <div class="frow">${fieldTextarea('pcEvidence',tt.mc_evidence,'')}</div>
+    <div class="frow">${fieldTextarea('pcNotes',tt.op_notes,'')}</div>
+    <div id="pcErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="savePreUseCheckForm(${jcId},'${esc(equipmentId)}')">${esc(tt.nc_save)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function savePreUseCheckForm(jcId,equipmentId){
+  const tt=t();clearAllFieldErrors();
+  const date=$('pcDate').value,checkedBy=$('pcCheckedBy').value.trim(),result=$('pcResult').value,evidence=$('pcEvidence').value.trim(),notes=$('pcNotes').value.trim();
+  if(isBlank(checkedBy)){showFieldError('pcCheckedBy','pcErr',tt.err_required);return;}
+  if(isBlank(date)){showFieldError('pcDate','pcErr',tt.err_date);return;}
+  if(result==='passed'&&isBlank(evidence)){showFieldError('pcEvidence','pcErr',tt.mc_evidence_required);return;}
+  const j=getJC(jcId);
+  // Re-read the equipment record fresh right before recording — a stale Jobcard-side link must never
+  // let this Jobcard record a Jobcard-specific passed/failed check for equipment now held elsewhere.
+  // Reporting a genuine breakdown (saveReportBreakdown) has no such restriction — it stays a safe-
+  // direction action regardless of who currently holds the equipment.
+  const freshEq=(WorkshopData.getEquipment()||[]).find(e=>e.equipmentId===equipmentId);
+  if(!freshEq||freshEq.assignedJobcard!==j.no){
+    toast(translateEquipmentBlockCode(freshEq&&freshEq.assignedJobcard?{code:'EQUIPMENT_ASSIGNED_ELSEWHERE',assignedJobcard:freshEq.assignedJobcard}:{code:'EQUIPMENT_UNASSIGNED'}),'error');
+    return;
+  }
+  const res=WorkshopData.recordEquipmentPreUseCheck(equipmentId,{date,checkedBy,result,checklist:evidence,notes,projectNo:j.projectNo,jobcardNo:j.no});
+  if(res&&res.error){toast(res.error,'error');return;}
+  WorkshopData.recordJobcardActivity(jcId,{action:`Pre-use check ${result} for ${equipmentId}`});
+  refreshShared();closeModal();renderApp();
+  if(result==='failed')toast(tt.mc_check_failed_toast,'error');
+}
+// "Report problem" — a real breakdown, not a toggle. Corrective action, inspection resolution and
+// return-to-service remain entirely controlled by the Equipment module; there is no shortcut here.
+function openReportBreakdown(jcId,equipmentId){
+  const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
+  if(!eq)return;
+  $('fcard').className='fcard';
+  $('fcard').innerHTML=`<h2>${esc(tt.mc_reportproblem)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
+    <div class="frow">${fieldTextarea('brReason',tt.f_reason,'')}</div>
+    <div class="frow">${field('brResponsible',tt.mc_responsibleperson,j.responsible||'')}</div>
+    <div class="frow">${fieldTextarea('brNotes',tt.op_notes,'')}</div>
+    <div id="brErr" class="errmsg" style="display:none;"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn danger" onclick="saveReportBreakdown(${jcId},'${esc(equipmentId)}')">${esc(tt.mc_reportproblem)}</button></div>`;
+  $('fov').classList.add('show');
+}
+function saveReportBreakdown(jcId,equipmentId){
+  const tt=t();clearAllFieldErrors();
+  const reason=$('brReason').value.trim(),responsible=$('brResponsible').value.trim(),notes=$('brNotes').value.trim();
+  if(isBlank(reason)){showFieldError('brReason','brErr',tt.err_required);return;}
+  if(isBlank(responsible)){showFieldError('brResponsible','brErr',tt.err_required);return;}
+  const j=getJC(jcId);
+  const res=WorkshopData.reportBreakdown(equipmentId,{reason,responsiblePerson:responsible,notes,projectNo:j.projectNo,jobcardNo:j.no});
+  if(res&&res.error){toast(res.error,'error');return;}
+  WorkshopData.recordJobcardActivity(jcId,{action:`Breakdown reported for ${equipmentId}: ${reason}`});
+  refreshShared();closeModal();renderApp();
+  toast(tt.mc_breakdown_toast,'error');
+}
+// Remove / return equipment. returnEquipment() is only called when this Jobcard is the equipment's
+// CURRENT assignment — never clearing an assignment that belongs to a different Jobcard. Blocked
+// equipment can always be physically returned (a safe-direction action); it never becomes Available
+// through this path (see workshop-data.js's returnEquipment()).
+function removeMachine(jcId,idx){
+  const tt=t();const j=getJC(jcId);const m=(j.machines||[])[idx];if(!m)return;
+  // Equipment powering an in-progress operation must be paused first — the button is disabled for
+  // this case, but WorkshopData enforces it centrally regardless (never rely on the UI control alone).
+  const usedByActiveOp=!!(m.equipmentId&&(j.operations||[]).some(op=>op&&op.status==='in-progress'&&op.equipmentId===m.equipmentId));
+  if(usedByActiveOp){toast(tt.mc_pausetoremove,'error');return;}
+  if(!confirm(tpl(tt.confirm_removemachine,{n:m.name||m.equipmentId||''})))return;
+  if(m.equipmentId){
+    const eq=SHARED.equipment.find(e=>e.equipmentId===m.equipmentId);
+    if(canReturnEquipmentFromJobcard(eq,j.no)){
+      const res=WorkshopData.returnEquipment(m.equipmentId,{user:j.responsible||'Aleksandar C.',note:`Returned from ${j.no}`});
+      if(res&&res.error){toast(res.error,'error');return;}
+    }
+  }
+  const machines=(j.machines||[]).filter((x,i)=>i!==idx);
+  const res=WorkshopData.updateJobcard(jcId,{machines});
+  if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
+  WorkshopData.recordJobcardActivity(jcId,{action:`Equipment removed: ${m.name||m.equipmentId||''}`});
+  refreshShared();renderApp();
+}
 
 // ── Quality & Inspection ──
 const INSPECTION_TYPES=['dimensional','visualweld','ndt-required','material-cert','drawing-revision','final','customer','test-report'];
@@ -1506,7 +1845,10 @@ function saveFromProject(){
   if(!proj){toast(tt.err_required,'error');return;}
   const title=$('fpTitle').value.trim()||proj.name;
   const materials=(proj.bom||[]).map(b=>({code:b.code,description:b.description,spec:'',grade:'',dimension:'',required:b.required,reserved:b.reserved||0,issued:b.issued||0,unit:b.unit,location:(invByCode(b.code)||{}).location||'',heat:(invByCode(b.code)||{}).heat||'',certificate:(invByCode(b.code)||{}).certificate||null,status:(b.issued>=b.required&&b.required>0)?'issued':((b.reserved||0)>0?'reserved':'not-checked')}));
-  const machines=(proj.machines||[]).map(name=>({name,assigned:true,status:'available',plannedUsage:0,actualUsage:0,operator:'',preUseCheck:'pending',maintenanceWarning:false}));
+  // proj.machines is only the project's planned-machine-type NAMES (not real equipment links) — a
+  // brand-new Jobcard starts with these as legacy, unlinked entries; real equipment is only ever
+  // linked (and safety-gated) through the Machines & Equipment tab's Add-machine flow.
+  const machines=(proj.machines||[]).map(name=>({name,plannedUsage:0}));
   const created=WorkshopData.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:proj.customerId,customer:proj.customer,title,
     item:proj.name,quantity:1,revision:0,drawingNo:'',workType:$('fpWorktype').value,location:'workshop',priority:$('fpPriority').value,
     responsible:proj.responsible||'Aleksandar C.',workers:(proj.workers||[]).slice(),plannedStart:$('fpStart').value||todayISO(),
@@ -1558,9 +1900,12 @@ function duplicateJc(id){
   delete copy.id;delete copy.no;delete copy._resumeStatus;
   copy.status='draft';copy.progress=0;copy.actualStart=null;copy.actualCompletion=null;copy.archived=false;
   copy.created=todayISO();copy.createdBy='Aleksandar C.';
-  copy.operations=(copy.operations||[]).map(o=>Object.assign({},o,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null}));
+  copy.operations=(copy.operations||[]).map(o=>Object.assign({},o,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null,equipmentId:null}));
   copy.materials=(copy.materials||[]).map(m=>Object.assign({},m,{reserved:0,issued:0,status:'not-checked'}));
-  copy.machines=(copy.machines||[]).map(m=>Object.assign({},m,{actualUsage:0,preUseCheck:'pending',maintenanceWarning:false}));
+  // Real equipment assignment is a live, single-Jobcard relationship (WorkshopData.assignEquipment)
+  // — it is never silently duplicated onto a new draft Jobcard. Equipment must be explicitly
+  // re-added through the Machines & Equipment tab, going through the real safety gate again.
+  copy.machines=[];
   copy.inspections=(copy.inspections||[]).map(i=>Object.assign({},i,{status:'pending',result:'pending',date:null,comments:''}));
   copy.notes=[];copy.documents=(src.documents||[]).slice();
   copy.activity=[];

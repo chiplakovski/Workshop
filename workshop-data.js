@@ -705,6 +705,22 @@
   const JOBCARD_UNSAFE_STATUSES=['in-progress','completed','closed'];
   const OPERATION_UNSAFE_STATUSES=['in-progress','completed','skipped'];
   const PROJECT_UNSAFE_STATUSES=['completed','closed'];
+  // The complete, recognised operation-status vocabulary (matches OP_STATUSES in jobcard-desktop.html)
+  // — used to validate any caller-supplied operation.status value, never to decide safety by itself.
+  const OPERATION_STATUSES=['pending','in-progress','paused','completed','skipped'];
+  // Review fix (Pass 3.2B independent review, finding 1): 'in-progress' is not just quality-hold-gated
+  // like 'completed'/'skipped' — it has exactly ONE authoritative entry point, startJobcardOperation()
+  // below. Every generic mutation path (updateJobcardOperation, addJobcardOperation, updateJobcard,
+  // upsertJobcard, whether via a single patch or a whole operations-array replace) unconditionally
+  // refuses a transition INTO this status — there is no alternate route around the dedicated method.
+  const OPERATION_START_STATUS='in-progress';
+  // Structured rejection for any attempt to move an operation into OPERATION_START_STATUS through a
+  // path other than startJobcardOperation() — or, once inside startJobcardOperation() itself, for a
+  // failed Quality Hold / equipment-safety-gate check. Never touches the target record.
+  function operationStartBlockedResult(code,message,jcNo,operationId,extra){
+    save(`Blocked: operation start (${code}) for ${jcNo}${operationId!=null?' operation '+operationId:''}`);
+    return Object.assign({error:message,code,jobcardNo:jcNo,operationId:operationId!=null?operationId:null},extra||{});
+  }
   // Builds the structured, backward-compatible error every gated mutation returns when blocked, and
   // records a meaningful blocked-attempt audit entry (via the normal save() activity log) WITHOUT
   // touching the target Project/Jobcard/Operation record itself.
@@ -737,6 +753,118 @@
       return !existing||existing.status!==op.status;
     });
   }
+  // Review fix (2nd review, finding 2): a same-status re-save of an already in-progress operation is
+  // intentionally allowed (ordinary field edits) — but equipmentId/machine are safety-controlled
+  // while an operation stays in-progress; unlike unsafeOperationTransitions above (which only looks
+  // at STATUS changes), this specifically catches an equipment swap smuggled into that "allowed"
+  // same-status re-save, through a bulk operations-array replace. A genuine status change AWAY from
+  // in-progress (e.g. pausing) is not caught here — editing equipment while actually pausing is fine,
+  // since resuming always re-validates the equipment through startJobcardOperation() anyway.
+  // Review fix (4th review, finding 2): a FULL operations-array replace has full-replacement
+  // semantics — the incoming object IS what gets stored via Object.assign(j,data), not merged
+  // field-by-field. So, unlike updateJobcardOperation()'s single-field PATCH (where an omitted key
+  // legitimately means "leave unchanged" and hasOwnProperty is the correct check), omitting
+  // equipmentId/machine here means the RESULTING value would be missing — that must count as a
+  // change too. Compare the resulting values directly; never gate the comparison on hasOwnProperty.
+  // Whether an incoming entry is even SUBJECT to this protection is decided by the STORED status
+  // (was this operation in-progress?), not the incoming one.
+  // Review fix (5th review): the ONLY transition that may be combined with an equipment edit is an
+  // explicit, exact 'paused' — completed/skipped/pending (and, obviously, staying/re-entering
+  // in-progress, or an omitted status) all remain fully equipment-protected. A caller was previously
+  // able to rewrite which equipment performed the work by completing/skipping/reverting an operation
+  // in the same call that changed its equipment — that is exactly the traceability bypass this
+  // closes. By the time this runs, validateOperationsArrayPayload() has already guaranteed any
+  // present op.status is one of the five recognised values, so a plain equality check is sufficient
+  // and correct — no further hasOwnProperty/fallback logic is needed.
+  function unsafeOperationEquipmentChanges(existingOps,incomingOps){
+    if(!Array.isArray(incomingOps))return[];
+    const existingById=new Map((existingOps||[]).map(o=>[o.id,o]));
+    return incomingOps.filter(op=>{
+      if(!op)return false;
+      const existing=existingById.get(op.id);
+      if(!existing||existing.status!==OPERATION_START_STATUS)return false;
+      if(op.status==='paused')return false;
+      return op.equipmentId!==existing.equipmentId||op.machine!==existing.machine;
+    });
+  }
+  // Review fix (3rd review, finding A): a full `operations` array replace must never be usable to
+  // silently delete a currently in-progress operation by simply omitting it — matched by stable id,
+  // never array position/length. An operation missing from the incoming array counts as a deletion
+  // attempt exactly like an operation present but demoted would be caught by other checks.
+  function activeOperationDeletionAttempts(existingOps,incomingOps){
+    if(!Array.isArray(incomingOps))return[];
+    const incomingIds=new Set(incomingOps.filter(o=>o).map(o=>o.id));
+    return (existingOps||[]).filter(op=>op&&op.status===OPERATION_START_STATUS&&!incomingIds.has(op.id));
+  }
+  // Review fix (3rd review, finding B): a full `machines` array replace must never be usable to
+  // silently unlink the equipmentId a currently in-progress operation depends on for its
+  // authorization (see canStartOperationEquipment() in jobcard-equipment-rules.js — it requires the
+  // equipmentId to be present in the Jobcard's own machines list). `operations` is whatever the
+  // resulting operations array will actually be (the same patch's own incoming array when supplied,
+  // otherwise the stored one) so a combined operations+machines patch is checked consistently.
+  function activeOperationEquipmentUnlinkAttempts(operations,incomingMachines){
+    if(!Array.isArray(incomingMachines))return[];
+    const incomingEquipmentIds=new Set(incomingMachines.filter(m=>m&&m.equipmentId).map(m=>m.equipmentId));
+    return (operations||[]).filter(op=>op&&op.status===OPERATION_START_STATUS&&op.equipmentId&&!incomingEquipmentIds.has(op.equipmentId));
+  }
+  // Review fix (4th review, finding 1): a non-null, non-array object (a bare {}, a string, a number,
+  // a boolean...) previously slipped past every check above — they all start with
+  // `if(!Array.isArray(incomingOps))return[]`, i.e. "nothing to flag", NOT "reject this". A caller
+  // supplying operations:null/{}/'' therefore skipped the active-deletion protection entirely and
+  // still had it applied via Object.assign(j,data), silently replacing the whole collection. These
+  // two validators are the FIRST thing checked (only when the field is actually present, via
+  // hasOwnProperty — never truthiness, so a real, valid empty array [] is never rejected here) and
+  // must run before any of the other operations/machines helpers above.
+  function isPlainObject(v){return v!=null&&typeof v==='object'&&!Array.isArray(v);}
+  function validateOperationsArrayPayload(operations){
+    if(!Array.isArray(operations)){
+      return{valid:false,code:'INVALID_JOBCARD_OPERATIONS_PAYLOAD',message:'operations must be an array'};
+    }
+    const seenIds=new Set();
+    for(const op of operations){
+      if(!isPlainObject(op)){
+        return{valid:false,code:'INVALID_JOBCARD_OPERATIONS_PAYLOAD',message:'every operation entry must be a non-null object'};
+      }
+      if(op.id==null){
+        return{valid:false,code:'INVALID_JOBCARD_OPERATIONS_PAYLOAD',message:'every operation entry must have an id'};
+      }
+      if(seenIds.has(op.id)){
+        return{valid:false,code:'INVALID_JOBCARD_OPERATIONS_PAYLOAD',message:`duplicate operation id: ${op.id}`};
+      }
+      seenIds.add(op.id);
+      if(Object.prototype.hasOwnProperty.call(op,'status')&&!OPERATION_STATUSES.includes(op.status)){
+        return{valid:false,code:'INVALID_JOBCARD_OPERATIONS_PAYLOAD',message:`unrecognised operation status: ${op.status}`};
+      }
+    }
+    return{valid:true};
+  }
+  function validateMachinesArrayPayload(machines){
+    if(!Array.isArray(machines)){
+      return{valid:false,code:'INVALID_JOBCARD_MACHINES_PAYLOAD',message:'machines must be an array'};
+    }
+    const seenEquipmentIds=new Set();
+    for(const m of machines){
+      if(!isPlainObject(m)){
+        return{valid:false,code:'INVALID_JOBCARD_MACHINES_PAYLOAD',message:'every machine entry must be a non-null object'};
+      }
+      const hasEquipmentId=typeof m.equipmentId==='string'&&m.equipmentId.trim()!=='';
+      const hasLegacyName=typeof m.name==='string'&&m.name.trim()!=='';
+      if(!hasEquipmentId&&!hasLegacyName){
+        return{valid:false,code:'INVALID_JOBCARD_MACHINES_PAYLOAD',message:'every machine entry needs a usable equipmentId or a legacy name'};
+      }
+      if(hasEquipmentId){
+        if(seenEquipmentIds.has(m.equipmentId)){
+          return{valid:false,code:'INVALID_JOBCARD_MACHINES_PAYLOAD',message:`duplicate equipmentId: ${m.equipmentId}`};
+        }
+        seenEquipmentIds.add(m.equipmentId);
+      }
+    }
+    return{valid:true};
+  }
+  function invalidJobcardPayloadResult(validation,jcNo){
+    save(`Blocked: ${validation.code} for ${jcNo} — ${validation.message}`);
+    return{error:validation.message,code:validation.code,jobcardNo:jcNo};
+  }
   // A brand-new Jobcard has no stored operations at all, so ANY pre-populated operation already
   // set to an unsafe status is by definition a transition from "does not exist yet" into that
   // status — used to close the new-Jobcard creation bypass (see upsertJobcard below).
@@ -764,6 +892,51 @@
       reasons:gate.reasons.slice(),
       blockers:clone(gate.blockers)
     },extra||{});
+  }
+  // Review fix (assignment race/stale state): equipment already assigned to one Jobcard can never be
+  // silently reassigned (or have its usage/pre-use-check attributed) to a different Jobcard — the
+  // holder must explicitly returnEquipment() first. Structured, WITHOUT touching the equipment record.
+  function equipmentAssignmentConflictResult(action,equipmentId,currentJobcard,requestedJobcard){
+    save(`Blocked by equipment assignment conflict: ${action} for ${equipmentId} (held by ${currentJobcard||'—'}, requested by ${requestedJobcard||'—'})`);
+    return{
+      error:`This equipment is already assigned to ${currentJobcard}. Return or reassign it before using it on another Jobcard.`,
+      code:'EQUIPMENT_ASSIGNMENT_CONFLICT',
+      equipmentId:equipmentId||null,
+      assignedJobcard:currentJobcard||null,
+      requestedJobcard:requestedJobcard||null
+    };
+  }
+  // Review fix (3rd review): the ONE central place that reconciles active Jobcard operations after an
+  // equipment mutation. Scans every Jobcard's operations (live `state`, never a page-side cache) for
+  // any operation with status 'in-progress' whose equipmentId matches the affected equipment, and
+  // automatically pauses it if — recomputed fresh, right now — that equipment is no longer validly
+  // held by that exact Jobcard (assignedJobcard mismatch) or the authoritative Equipment Safety Gate
+  // is blocked. This single per-operation check covers all three trigger conditions the caller might
+  // have created: equipment left unassigned, equipment moved to a hard-block status, or equipment
+  // newly gate-blocked for any other reason (e.g. a newly-mandatory requirement) — so every call site
+  // below can simply call this unconditionally after its own mutation, with no need to duplicate that
+  // decision. Matched entirely by stable equipmentId/Jobcard id/operation id, never array position or
+  // name. Preserves every other field on the operation (equipmentId, machine, actualStart,
+  // loggedHours, ...) — only `status` changes. Naturally idempotent: an operation already 'paused'
+  // never matches the 'in-progress' filter again. Never resumes or starts anything. Does NOT call
+  // save() itself — every caller applies its own equipment mutation, calls this, and then calls
+  // save() exactly once, so both changes are always persisted together, never as partial state.
+  function reconcileActiveOperationsForEquipment(equipmentId,reason){
+    const item=equip(equipmentId);
+    if(!item)return{pausedOperations:[]};
+    const stillAuthorized=jobcardNo=>jobcardNo===item.assignedJobcard&&!equipmentSafetyGate(item,{}).blocked;
+    const pausedOperations=[];
+    (state.jobcards||[]).forEach(j=>{
+      (j.operations||[]).forEach(op=>{
+        if(op&&op.status==='in-progress'&&op.equipmentId===equipmentId&&!stillAuthorized(j.no)){
+          op.status='paused';
+          j.activity=j.activity||[];
+          j.activity.unshift({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:'System',action:`Operation "${op.desc}" automatically paused — ${reason} (${equipmentId})`});
+          pausedOperations.push({jobcardId:j.id,jobcardNo:j.no,operationId:op.id,desc:op.desc,equipmentId});
+        }
+      });
+    });
+    return{pausedOperations};
   }
   // Every field the safety gate reads, or that records operational/usage state the gate's callers
   // rely on, is protected — updateEquipment() must REJECT the entire mutation (never silently drop
@@ -1022,12 +1195,45 @@
         // A caller cannot bypass updateJobcardOperation()'s gate by submitting a whole `operations`
         // array through this method instead (e.g. copy-modify-save) — compare every incoming
         // operation against its stored counterpart by id before trusting any of them.
-        if(data.operations){
+        // Review fix (4th review, finding 1): presence is checked with hasOwnProperty, never
+        // truthiness — a genuine [] must still reach the checks below, while null/{}/''/etc. are
+        // rejected outright as a malformed payload, never silently applied via Object.assign.
+        const hasOperationsField=Object.prototype.hasOwnProperty.call(data,'operations');
+        if(hasOperationsField){
+          const validation=validateOperationsArrayPayload(data.operations);
+          if(!validation.valid)return invalidJobcardPayloadResult(validation,j.no);
+          // Review fix (finding A): an in-progress operation simply omitted from the incoming array
+          // (a silent delete) is checked first and unconditionally — it must be paused before it can
+          // be removed, exactly like it must be paused before its equipment can change.
+          const deleteAttempts=activeOperationDeletionAttempts(j.operations,data.operations);
+          if(deleteAttempts.length)return operationStartBlockedResult('OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE','An in-progress operation cannot be deleted — pause it first.',j.no,null,{operationIds:deleteAttempts.map(o=>o.id)});
+          // Review fix: an equipment swap on an already-in-progress operation, smuggled into a
+          // same-status bulk operations-array replace, is checked FIRST and unconditionally — see
+          // unsafeOperationEquipmentChanges() above (unsafeOperationTransitions below never catches
+          // this, since the status itself does not change).
+          const equipChanges=unsafeOperationEquipmentChanges(j.operations,data.operations);
+          if(equipChanges.length)return operationStartBlockedResult('OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE','This operation is in-progress — pause it before changing its equipment.',j.no,null,{operationIds:equipChanges.map(o=>o.id)});
           const changed=unsafeOperationTransitions(j.operations,data.operations);
           if(changed.length){
+            // Review fix: an 'in-progress' transition smuggled into a bulk operations-array save has
+            // no exemption to check for — it is unconditionally refused, exactly like every other
+            // generic path. Only startJobcardOperation() may set this status.
+            const startAttempts=changed.filter(o=>o.status===OPERATION_START_STATUS);
+            if(startAttempts.length)return operationStartBlockedResult('OPERATION_START_DEDICATED_METHOD_REQUIRED','Starting or resuming an operation must go through startJobcardOperation() — a bulk operations-array update cannot do it.',j.no,null,{operationIds:startAttempts.map(o=>o.id)});
             const gate=jobcardQualityGate(j.no);
             if(gate.blocked)return qualityGateBlockedResult(`Operation ${changed.map(o=>o.status).join('/')}`,j.no,gate,{operationIds:changed.map(o=>o.id)});
           }
+        }
+        // Review fix (finding B): a full `machines` array replace must never silently unlink the
+        // equipmentId a currently in-progress operation depends on for its authorization. Checked
+        // against the RESULTING operations array (this same patch's own `data.operations` when also
+        // supplied, otherwise the stored one), so a combined operations+machines patch stays correct.
+        // Review fix (4th review, finding 1): same hasOwnProperty + shape validation as operations.
+        if(Object.prototype.hasOwnProperty.call(data,'machines')){
+          const validation=validateMachinesArrayPayload(data.machines);
+          if(!validation.valid)return invalidJobcardPayloadResult(validation,j.no);
+          const unlinkAttempts=activeOperationEquipmentUnlinkAttempts(hasOperationsField?data.operations:j.operations,data.machines);
+          if(unlinkAttempts.length)return operationStartBlockedResult('ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE','Equipment used by an in-progress operation cannot be unlinked — pause the operation first.',j.no,null,{operationIds:unlinkAttempts.map(o=>o.id)});
         }
         Object.assign(j,data);
       }
@@ -1037,6 +1243,10 @@
         // an unsafe status (in-progress/completed/closed), or with pre-populated operations already
         // set to in-progress/completed/skipped, must not bypass a hold on its supplied Jobcard
         // number or its parent Project — nothing is created/mutated when rejected.
+        // Review fix: a seed operation already 'in-progress' has no hold-dependent exemption — new
+        // operations must never be created already running, full stop.
+        const seedStartAttempts=Array.isArray(data.operations)?data.operations.filter(op=>op&&op.status===OPERATION_START_STATUS):[];
+        if(seedStartAttempts.length)return operationStartBlockedResult('OPERATION_START_DEDICATED_METHOD_REQUIRED','New operations cannot be created already in-progress.',data.no||'(new jobcard)',null,{operationIds:seedStartAttempts.map(o=>o.id)});
         const wantsUnsafeStatus=data.status&&JOBCARD_UNSAFE_STATUSES.includes(data.status);
         const wantsUnsafeOps=hasUnsafeSeedOperations(data.operations);
         if(wantsUnsafeStatus||wantsUnsafeOps){
@@ -1063,30 +1273,133 @@
       // Same operations-array bypass check as upsertJobcard above — a whole-array patch (used by
       // reorder/duplicate/delete flows) must not be able to sneak an unsafe operation-status
       // transition past updateJobcardOperation()'s dedicated gate.
-      if(data.operations){
+      // Review fix (4th review, finding 1): presence via hasOwnProperty, never truthiness — see
+      // upsertJobcard above for the full rationale.
+      const hasOperationsField=Object.prototype.hasOwnProperty.call(data,'operations');
+      if(hasOperationsField){
+        const validation=validateOperationsArrayPayload(data.operations);
+        if(!validation.valid)return invalidJobcardPayloadResult(validation,j.no);
+        // Review fix (finding A): same active-operation-deletion check as upsertJobcard above,
+        // checked first and unconditionally.
+        const deleteAttempts=activeOperationDeletionAttempts(j.operations,data.operations);
+        if(deleteAttempts.length)return operationStartBlockedResult('OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE','An in-progress operation cannot be deleted — pause it first.',j.no,null,{operationIds:deleteAttempts.map(o=>o.id)});
+        // Review fix: same equipment-swap-on-in-progress check as upsertJobcard above, checked first
+        // and unconditionally.
+        const equipChanges=unsafeOperationEquipmentChanges(j.operations,data.operations);
+        if(equipChanges.length)return operationStartBlockedResult('OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE','This operation is in-progress — pause it before changing its equipment.',j.no,null,{operationIds:equipChanges.map(o=>o.id)});
         const changed=unsafeOperationTransitions(j.operations,data.operations);
         if(changed.length){
+          const startAttempts=changed.filter(o=>o.status===OPERATION_START_STATUS);
+          if(startAttempts.length)return operationStartBlockedResult('OPERATION_START_DEDICATED_METHOD_REQUIRED','Starting or resuming an operation must go through startJobcardOperation() — a bulk operations-array update cannot do it.',j.no,null,{operationIds:startAttempts.map(o=>o.id)});
           const gate=jobcardQualityGate(j.no);
           if(gate.blocked)return qualityGateBlockedResult(`Operation ${changed.map(o=>o.status).join('/')}`,j.no,gate,{operationIds:changed.map(o=>o.id)});
         }
       }
+      // Review fix (finding B): same active-operation-equipment-unlink check as upsertJobcard above.
+      // Review fix (4th review, finding 1): same hasOwnProperty + shape validation as operations.
+      if(Object.prototype.hasOwnProperty.call(data,'machines')){
+        const validation=validateMachinesArrayPayload(data.machines);
+        if(!validation.valid)return invalidJobcardPayloadResult(validation,j.no);
+        const unlinkAttempts=activeOperationEquipmentUnlinkAttempts(hasOperationsField?data.operations:j.operations,data.machines);
+        if(unlinkAttempts.length)return operationStartBlockedResult('ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE','Equipment used by an in-progress operation cannot be unlinked — pause the operation first.',j.no,null,{operationIds:unlinkAttempts.map(o=>o.id)});
+      }
       Object.assign(j,data);save(`Jobcard updated: ${j.no}`);return clone(j);
     },
     archiveJobcard(idOrNo){const j=jobcard(idOrNo);if(!j)return null;j.archived=true;j.archivedAt=now();save(`Jobcard archived: ${j.no}`);return clone(j)},
-    addJobcardOperation(idOrNo,operation){const j=jobcard(idOrNo);if(!j)return null;operation=clone(operation);j._opSeq=(j._opSeq||j.operations.reduce((a,o)=>Math.max(a,o.id||0),0))+1;operation.id=j._opSeq;j.operations.push(operation);save(`Operation added: ${j.no}`);return clone(operation)},
-    // Starting, completing or skipping an operation is blocked by an active Quality Hold on the
-    // Jobcard (or its Project) — this is the single chokepoint every page path (start/pause button,
-    // Complete button, the operation edit form's status dropdown used to "skip") already goes
-    // through, so no separate skip-specific method is needed.
+    addJobcardOperation(idOrNo,operation){
+      const j=jobcard(idOrNo);if(!j)return null;
+      operation=clone(operation);
+      // Review fix: a brand-new operation must never be created already 'in-progress' — that status
+      // may only ever be reached through startJobcardOperation(), never at creation time.
+      if(operation&&operation.status===OPERATION_START_STATUS)return operationStartBlockedResult('OPERATION_START_DEDICATED_METHOD_REQUIRED','New operations cannot be created already in-progress.',j.no,null);
+      j._opSeq=(j._opSeq||j.operations.reduce((a,o)=>Math.max(a,o.id||0),0))+1;operation.id=j._opSeq;j.operations.push(operation);save(`Operation added: ${j.no}`);return clone(operation)},
+    // Completing or skipping an operation is blocked by an active Quality Hold on the Jobcard (or its
+    // Project) — this is the single chokepoint every page path (Complete button, the operation edit
+    // form's status dropdown used to "skip") already goes through. Starting/resuming ('in-progress')
+    // is EXPLICITLY refused here (see review fix below) — startJobcardOperation() is its one route.
     updateJobcardOperation(idOrNo,opId,patch){
       const j=jobcard(idOrNo);if(!j)return null;
       const op=j.operations.find(o=>o.id===opId);if(!op)return null;
       const data=clone(patch);
+      // Review fix (4th review, finding 2): a malformed/unknown status (null, '', a number, an
+      // unrecognised string) must never be usable as a disguised "fake transition away from
+      // in-progress" — every check below keys off the exact recognised status strings, so anything
+      // else would otherwise slip past all of them and still get applied via Object.assign. Rejected
+      // unconditionally, before any other check, using hasOwnProperty (never truthiness) so
+      // status:'' / null / 0 are all caught — none of those is a valid operation status.
+      if(Object.prototype.hasOwnProperty.call(data,'status')&&!OPERATION_STATUSES.includes(data.status)){
+        return operationStartBlockedResult('INVALID_OPERATION_STATUS',`"${data.status}" is not a recognised operation status.`,j.no,opId);
+      }
+      // Review fix (edit-operation start bypass): the Edit Operation form (or any other generic
+      // caller) can no longer transition an operation into 'in-progress' — only a genuine transition
+      // is refused; re-saving an operation that is already in-progress with unrelated field edits
+      // stays allowed, exactly like the Quality-Hold-gated statuses below.
+      if(data.status===OPERATION_START_STATUS&&op.status!==OPERATION_START_STATUS){
+        return operationStartBlockedResult('OPERATION_START_DEDICATED_METHOD_REQUIRED','Starting or resuming an operation must go through startJobcardOperation(), which checks the Quality Hold and Equipment safety gates.',j.no,opId);
+      }
+      // Review fix (running-operation equipment-swap bypass): while an operation stays in-progress
+      // (its stored status is 'in-progress'), equipmentId and machine are safety-controlled — they
+      // cannot be added, removed or changed. The equipment that was actually safety-checked and
+      // assigned at start time must stay the equipment in use until the operation is paused;
+      // resuming afterwards re-runs the full startJobcardOperation() check against whatever
+      // equipment is linked at that point.
+      // Review fix (5th review): the ONLY transition that may be combined with an equipment edit is
+      // an explicit, exact 'paused' — completing, skipping, reverting to pending, re-confirming
+      // in-progress, or omitting status entirely all remain fully equipment-protected. Completing or
+      // skipping an operation must never be usable to rewrite which equipment performed the work.
+      // Malformed-status values were already rejected above, so data.status here is either undefined
+      // or one of the five recognised statuses — a plain equality check is sufficient and correct.
+      if(op.status===OPERATION_START_STATUS&&data.status!=='paused'){
+        const equipmentIdChanged=Object.prototype.hasOwnProperty.call(data,'equipmentId')&&data.equipmentId!==op.equipmentId;
+        const machineChanged=Object.prototype.hasOwnProperty.call(data,'machine')&&data.machine!==op.machine;
+        if(equipmentIdChanged||machineChanged){
+          return operationStartBlockedResult('OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE','This operation is in-progress — pause it before changing its equipment.',j.no,opId);
+        }
+      }
       if(data.status&&OPERATION_UNSAFE_STATUSES.includes(data.status)&&op.status!==data.status){
         const gate=jobcardQualityGate(j.no);
         if(gate.blocked)return qualityGateBlockedResult(`Operation ${data.status}`,j.no,gate,{operationId:opId});
       }
       Object.assign(op,data);save(`Operation updated: ${j.no}`);return clone(op);
+    },
+    // The ONE authoritative path into 'in-progress' for a Jobcard operation — used for both starting
+    // (pending -> in-progress) and resuming (paused -> in-progress). Re-checks, in order: the Quality
+    // Hold gate (same as every other unsafe transition), then — only when the operation references
+    // equipment — that it resolves to a real record EXPLICITLY linked to this Jobcard by equipmentId
+    // AND currently assigned to exactly this Jobcard (never a stale link, never a resolvable legacy
+    // name, never equipment assigned elsewhere), then the central canUseEquipment() safety gate
+    // (mandatory pre-use check, blockers, ...). All of this reads live `state` directly — never a
+    // page-side cached snapshot — so it is correct even if equipment was reassigned a moment ago by a
+    // different part of the app. A rejected start leaves the Jobcard, operation and Equipment records
+    // completely unchanged. Re-calling this on an operation that is ALREADY in-progress is a harmless
+    // no-op (matches the "re-saving the same status is not a transition" rule used everywhere else).
+    startJobcardOperation(idOrNo,opId,meta={}){
+      const j=jobcard(idOrNo);if(!j)return null;
+      const op=j.operations.find(o=>o.id===opId);if(!op)return null;
+      if(op.status===OPERATION_START_STATUS)return clone(op);
+      const qGate=jobcardQualityGate(j.no);
+      if(qGate.blocked)return qualityGateBlockedResult('Operation in-progress',j.no,qGate,{operationId:opId});
+      if(!global.JobcardEquipmentRules)throw new Error('jobcard-equipment-rules.js must be loaded before workshop-data.js to use startJobcardOperation()');
+      const resolved=global.JobcardEquipmentRules.canStartOperationEquipment(op,j.machines,state.equipment,j.no);
+      if(resolved.required&&resolved.code){
+        const eqId=resolved.equipment?resolved.equipment.equipmentId:(op.equipmentId||null);
+        const assignedJobcard=resolved.equipment?resolved.equipment.assignedJobcard:null;
+        const messages={
+          EQUIPMENT_NOT_LINKED:'Required equipment is not explicitly linked to this Jobcard by equipment ID.',
+          EQUIPMENT_MISSING:'The linked equipment record no longer exists.',
+          EQUIPMENT_UNASSIGNED:'This equipment is not currently assigned to this Jobcard.',
+          EQUIPMENT_ASSIGNED_ELSEWHERE:`This equipment is currently assigned to ${assignedJobcard||'another Jobcard'}.`
+        };
+        return operationStartBlockedResult(resolved.code,messages[resolved.code],j.no,opId,{equipmentId:eqId,assignedJobcard});
+      }
+      if(resolved.required&&resolved.equipment){
+        const use=api.canUseEquipment(resolved.equipment.equipmentId,{date:meta.date||now().slice(0,10),projectNo:j.projectNo,jobcardNo:j.no});
+        if(!use.allowed)return equipmentGateBlockedResult('Start operation',resolved.equipment.equipmentId,use.gate,{jobcardNo:j.no,operationId:opId});
+      }
+      op.status=OPERATION_START_STATUS;
+      if(!op.actualStart)op.actualStart=meta.date||now().slice(0,10);
+      save(`Operation started: ${j.no}`);
+      return clone(op);
     },
     assignJobcardWorker(idOrNo,worker){const j=jobcard(idOrNo);if(!j||!worker)return null;j.workers=j.workers||[];if(!j.workers.includes(worker))j.workers.push(worker);save(`Worker assigned to ${j.no}: ${worker}`);return clone(j)},
     addJobcardNote(idOrNo,note){const j=jobcard(idOrNo);if(!j)return null;note=Object.assign({id:Date.now(),date:now().slice(0,10),time:new Date().toTimeString().slice(0,5)},clone(note));j.notes=j.notes||[];j.notes.unshift(note);save(`Note added: ${j.no}`);return clone(note)},
@@ -1177,18 +1490,33 @@
       // field and have the unrelated part quietly succeed.
       const touchedProtected=EQUIPMENT_PROTECTED_FIELDS.filter(f=>Object.prototype.hasOwnProperty.call(data,f));
       if(touchedProtected.length)return equipmentProtectedFieldsBlockedResult(equipmentId,touchedProtected);
+      // Review fix (4th review, finding 3): presence via hasOwnProperty, never truthiness — a
+      // malformed value (null, '', whitespace, a number, a boolean, an array, an object) must be
+      // rejected atomically, before anything is touched, rather than silently applied via
+      // Object.assign as a corrupted equipment.status. A non-empty-but-unrecognised STRING (e.g.
+      // "Something Weird") is intentionally still accepted here — that is the existing, deliberate
+      // fail-closed/fail-safe behaviour (see equipment-gates.js), not a validation failure.
+      const hasStatusField=Object.prototype.hasOwnProperty.call(data,'status');
+      if(hasStatusField&&(typeof data.status!=='string'||!data.status.trim())){
+        return{error:'status must be a non-empty string',code:'INVALID_EQUIPMENT_STATUS',equipmentId};
+      }
       // Close bypass: a genuine transition into an operational status is blocked exactly like
       // changeEquipmentStatus() below — moving OUT of an operational status (e.g. reporting it
       // broken) is always allowed; only moving INTO Available/Reserved/In Use while blocked is not.
-      if(data.status&&global.EquipmentGates&&global.EquipmentGates.normalizeStatus(data.status)!==global.EquipmentGates.normalizeStatus(current.status)&&global.EquipmentGates.isOperationalStatus(data.status)){
+      if(hasStatusField&&global.EquipmentGates&&global.EquipmentGates.normalizeStatus(data.status)!==global.EquipmentGates.normalizeStatus(current.status)&&global.EquipmentGates.isOperationalStatus(data.status)){
         const gate=equipmentSafetyGate(current,{});
         if(gate.blocked)return equipmentGateBlockedResult(`Equipment status update to ${data.status}`,equipmentId,gate);
       }
       const next=Object.assign({}, clone(current), data);
       next.lastActivity=now();
       state.equipment[index]=next;
+      // Review fix (3rd review): a status change here can move equipment into a hard-block status —
+      // reconcile before the single save() below so both changes persist together. Review fix (4th
+      // review, finding 3): gated on field PRESENCE, not truthiness (now equivalent post-validation,
+      // but presence is the semantically correct check).
+      const recon=hasStatusField?reconcileActiveOperationsForEquipment(equipmentId,`equipment status changed to ${next.status}`):{pausedOperations:[]};
       save(`Equipment updated: ${equipmentId}`);
-      return clone(next);
+      return Object.assign(clone(next),{pausedOperations:recon.pausedOperations});
     },
     // Close bypass (C): moving blocked equipment back to an operational status through this
     // lower-level method is gated exactly like updateEquipment() above — a caller cannot bypass
@@ -1197,7 +1525,17 @@
     changeEquipmentStatus:(equipmentId,status,meta={})=>{
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const nextStatus=status||item.status;
+      // Review fix (4th review, finding 3): status is a positional argument here, not an object
+      // field, so "presence" means the caller passed something at all — status===undefined (the
+      // argument genuinely omitted) still means "keep the current status", matching every existing
+      // caller's usage. Anything else EXPLICITLY supplied (null, '', whitespace, a number, a
+      // boolean, an array, an object) must be rejected atomically rather than silently falling back
+      // to "keep the old status" via `status||item.status` — that previously masked the fact that a
+      // caller sent garbage. A non-empty-but-unrecognised STRING is still accepted (fail-closed).
+      if(status!==undefined&&(typeof status!=='string'||!status.trim())){
+        return{error:'status must be a non-empty string',code:'INVALID_EQUIPMENT_STATUS',equipmentId};
+      }
+      const nextStatus=status!==undefined?status:item.status;
       if(global.EquipmentGates&&global.EquipmentGates.normalizeStatus(nextStatus)!==global.EquipmentGates.normalizeStatus(item.status)&&global.EquipmentGates.isOperationalStatus(nextStatus)){
         const gate=equipmentSafetyGate(item,{});
         if(gate.blocked)return equipmentGateBlockedResult(`Status change to ${nextStatus}`,equipmentId,gate);
@@ -1206,8 +1544,10 @@
       item.lastActivity=now();
       item.activity=item.activity||[];
       item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:meta.user||'Aleksandar C.',reference:equipmentId,details:meta.reason||''});
+      // Review fix (3rd review): reconcile before the single save() below so both changes persist together.
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,`equipment status changed to ${nextStatus}`);
       save(`Equipment status changed: ${equipmentId}`);
-      return clone(item);
+      return Object.assign(clone(item),{pausedOperations:recon.pausedOperations});
     },
     getEquipmentSafetyGate(equipmentId,options={}){
       const item=equip(equipmentId);
@@ -1223,6 +1563,14 @@
       if(!item) return {error:'Equipment not found'};
       const gate=equipmentSafetyGate(item,{});
       if(gate.blocked)return equipmentGateBlockedResult('Reserve',equipmentId,gate);
+      // Review fix (2nd review, finding 1): reserveEquipment() is a second route into the same
+      // assignedJobcard field assignEquipment() already guards — it must never be usable to silently
+      // move equipment from one Jobcard to another. Same conflict rule: an explicit SAME jobcard is
+      // idempotent; anything else (a different jobcard, or an omitted jobcard while already held)
+      // requires an explicit returnEquipment() first. Checked before any field is touched.
+      if(item.assignedJobcard&&item.assignedJobcard!==(payload.jobcard||null)){
+        return equipmentAssignmentConflictResult('Reserve',equipmentId,item.assignedJobcard,payload.jobcard||null);
+      }
       item.status='Reserved';
       item.assignedProject=payload.project||item.assignedProject||null;
       item.assignedJobcard=payload.jobcard||item.assignedJobcard||null;
@@ -1237,6 +1585,13 @@
       if(!item) return {error:'Equipment not found'};
       const gate=equipmentSafetyGate(item,{});
       if(gate.blocked)return equipmentGateBlockedResult('Assign',equipmentId,gate);
+      // Review fix: equipment already held by a different Jobcard can never be silently reassigned —
+      // the caller must explicitly pass the SAME jobcard (idempotent) or return it first. A caller
+      // that omits assignment.jobcard entirely while the equipment is already held is also refused,
+      // rather than silently keeping the old assignedJobcard while other fields quietly change.
+      if(item.assignedJobcard&&item.assignedJobcard!==(assignment.jobcard||null)){
+        return equipmentAssignmentConflictResult('Assign',equipmentId,item.assignedJobcard,assignment.jobcard||null);
+      }
       item.assignedProject=assignment.project||item.assignedProject||null;
       item.assignedJobcard=assignment.jobcard||item.assignedJobcard||null;
       item.currentLocation=assignment.location||item.currentLocation;
@@ -1264,14 +1619,23 @@
       if(!gate.blocked)item.status='Available';
       item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Equipment returned',user:meta.user||'Aleksandar C.',reference:item.equipmentId,details:meta.note||''});
       item.lastActivity=now();
+      // Review fix (3rd review): the assignment is gone, so ANY still-in-progress operation that was
+      // using this equipment is no longer authorized — reconcile before the single save() below.
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment was returned');
       save(`Equipment returned: ${equipmentId}`);
-      return clone(item);
+      return Object.assign(clone(item),{pausedOperations:recon.pausedOperations});
     },
     logEquipmentUsage:(equipmentId,usage={})=>{
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
       const hours=Number(usage.hours);
       if(!Number.isFinite(hours)||hours<=0)return{error:'Equipment usage requires a positive, finite number of hours'};
+      // Review fix (wrong-jobcard usage bypass): when a jobcard is supplied, usage can only ever be
+      // recorded against the equipment's REAL current holder — never a different jobcard smuggled in
+      // through this payload while the equipment sits assigned elsewhere.
+      if(usage.jobcard&&item.assignedJobcard!==usage.jobcard){
+        return equipmentAssignmentConflictResult('Log usage',equipmentId,item.assignedJobcard,usage.jobcard);
+      }
       const gate=equipmentSafetyGate(item,{requirePreUseCheck:true,date:usage.date,jobcardNo:usage.jobcard,projectNo:usage.project});
       if(gate.blocked)return equipmentGateBlockedResult('Log usage',equipmentId,gate);
       const record={
@@ -1344,8 +1708,11 @@
         item.activity.unshift({timestamp:now(),action:'Inspection next-due date updated',user:inspector,reference:equipmentId,details:nextDueDate});
       }
       item.lastActivity=now();
+      // Review fix (3rd review): a failed inspection (or, in principle, an unfavourable nextDueDate)
+      // can leave the gate blocked — reconcile before the single save() below.
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'an equipment inspection failed');
       save(`Inspection added: ${equipmentId}`);
-      return clone(rec);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     // Formal, individual resolution of ONE specific failed/critical-unresolved inspection record.
     // Never deletes or overwrites the original — only marks that exact record resolved, so it stops
@@ -1404,8 +1771,11 @@
       item.requirements=normalizeEquipmentRequirements(Object.assign({},item.requirements||{},requirements));
       item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Safety requirements updated',user:updatedBy,reference:equipmentId,details:`${reason} (${approvalReference})`});
       item.lastActivity=now();
+      // Review fix (3rd review): a newly-mandatory requirement can make the gate blocked purely from a
+      // stale existing date, with no status field changing at all — reconcile before the single save().
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment safety requirements changed');
       save(`Equipment safety requirements updated: ${equipmentId}`);
-      return clone(item);
+      return Object.assign(clone(item),{pausedOperations:recon.pausedOperations});
     },
     // The dedicated, validated way to record maintenance completion — and, only for a genuinely
     // completed/passed record with real evidence, to legitimately advance the gate-controlling
@@ -1440,8 +1810,11 @@
         item.activity.unshift({timestamp:now(),action:'Maintenance next-due date updated',user:completedBy,reference:equipmentId,details:nextDueDate});
       }
       item.lastActivity=now();
+      // Review fix (3rd review): a backdated record's nextDueDate could still land before today —
+      // reconcile before the single save() below (a no-op in the normal, non-blocked case).
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment maintenance record changed the safety gate');
       save(`Maintenance added: ${equipmentId}`);
-      return clone(rec);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     // The dedicated, validated way to record a certification — always sets/advances the
     // gate-controlling certificationExpiry, and only from real, referenced, authorised evidence.
@@ -1467,8 +1840,11 @@
       item.certificationExpiry=expiryDate;
       item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Certification recorded',user:issuedBy,reference:equipmentId,details:`${reference} — expires ${expiryDate}`});
       item.lastActivity=now();
+      // Review fix (3rd review): a backdated certification's expiryDate could still land before today
+      // — reconcile before the single save() below (a no-op in the normal, non-blocked case).
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment certification changed the safety gate');
       save(`Certification added: ${equipmentId}`);
-      return clone(rec);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     // The dedicated, validated way to record a calibration — only for a genuinely passed record
     // with real evidence does a supplied nextDueDate legitimately advance calibrationDate.
@@ -1501,8 +1877,11 @@
         item.activity.unshift({timestamp:now(),action:'Calibration next-due date updated',user:calibratedBy,reference:equipmentId,details:nextDueDate});
       }
       item.lastActivity=now();
+      // Review fix (3rd review): a backdated record's nextDueDate could still land before today —
+      // reconcile before the single save() below (a no-op in the normal, non-blocked case).
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment calibration record changed the safety gate');
       save(`Calibration added: ${equipmentId}`);
-      return clone(rec);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     addNote:(equipmentId,note)=>{
       const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
@@ -1547,7 +1926,11 @@
       item.status='Out of Service';
       item.activity.unshift({timestamp:now(),action:'Status changed to Out of Service',user:responsiblePerson,reference:equipmentId,details:`Breakdown ${rec.id}`});
       item.lastActivity=now();
-      state.breakdowns=state.breakdowns||[]; state.breakdowns.unshift(rec); save(`Breakdown reported: ${equipmentId}`); return clone(rec);
+      state.breakdowns=state.breakdowns||[]; state.breakdowns.unshift(rec);
+      // Review fix (3rd review): reconcile before the single save() below so both changes persist together.
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'a breakdown was reported on this equipment');
+      save(`Breakdown reported: ${equipmentId}`);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     // Explicit, authorised resolution — never deletes or overwrites the original breakdown record,
     // just marks it resolved with who/why so the safety gate stops treating it as open. Updates
@@ -1582,8 +1965,15 @@
     recordEquipmentPreUseCheck(equipmentId,payload={}){
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const EG=global.EquipmentGates;
       const raw=clone(payload||{});
+      // Review fix (2nd review, finding 1): a check submitted WITH Jobcard context can only ever be
+      // recorded by the equipment's real, current holder — a stale Jobcard-side link must never let
+      // a Jobcard record a Jobcard-specific pre-use check for equipment now held elsewhere. A check
+      // with NO Jobcard context at all (the plain Equipment-module workflow) is unaffected.
+      if(raw.jobcardNo&&item.assignedJobcard!==raw.jobcardNo){
+        return equipmentAssignmentConflictResult('Record pre-use check',equipmentId,item.assignedJobcard,raw.jobcardNo);
+      }
+      const EG=global.EquipmentGates;
       const checkedBy=raw.checkedBy!=null?String(raw.checkedBy).trim():'';
       const date=raw.date!=null?String(raw.date).trim():'';
       const result=EG?EG.normalizeResult(raw.result):String(raw.result||'').trim().toLowerCase();
@@ -1627,8 +2017,10 @@
         item.activity.unshift({timestamp:now(),action:'Failed pre-use check resolved',user:checkedBy,reference:equipmentId,details:`${resolveTarget.id} resolved via ${rec.id}`});
       }
       item.lastActivity=now();
+      // Review fix (3rd review): a failed check blocks the gate — reconcile before the single save().
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'a pre-use check failed');
       save(`Pre-use check recorded: ${equipmentId}`);
-      return clone(rec);
+      return Object.assign(clone(rec),{pausedOperations:recon.pausedOperations});
     },
     // The ONLY API allowed to move blocked equipment back to Available. Requires full authority and
     // evidence, independently recalculates every OTHER blocker (status itself is excluded — that is
@@ -1706,7 +2098,10 @@
       item.isRetired=true; item.retirementReason=cleanReason; item.status='Retired'; item.activity=item.activity||[];
       item.activity.unshift({timestamp:now(),action:'Equipment retired',user:retiredBy,reference:equipmentId,details:cleanReason});
       item.lastActivity=now();
-      save(`Equipment retired: ${equipmentId}`); return clone(item);
+      // Review fix (3rd review): reconcile before the single save() below so both changes persist together.
+      const recon=reconcileActiveOperationsForEquipment(equipmentId,'equipment was retired');
+      save(`Equipment retired: ${equipmentId}`);
+      return Object.assign(clone(item),{pausedOperations:recon.pausedOperations});
     },
 
     // ══════════════ QUALITY MODULE ══════════════

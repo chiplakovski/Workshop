@@ -25,6 +25,9 @@ function buildEnv(seedEntries,customLocalStorage){
   // the pages use, never a reimplementation.
   g.QualityGates=require(path.join(__dirname,'..','..','quality-gates.js'));
   g.EquipmentGates=require(path.join(__dirname,'..','..','equipment-gates.js'));
+  // Mirrors jobcard-desktop.html's <script src="jobcard-equipment-rules.js"></script> loading BEFORE
+  // workshop-data.js — startJobcardOperation() depends on it being present on `window`.
+  g.JobcardEquipmentRules=require(path.join(__dirname,'..','..','jobcard-equipment-rules.js'));
   if(seedEntries){for(const[key,value]of Object.entries(seedEntries))g.localStorage.setItem(key,value);}
   return g;
 }

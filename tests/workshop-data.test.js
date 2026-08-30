@@ -187,6 +187,9 @@ test('equipment: cannot assign equipment that is Out of Service, Quarantined, Un
 test('equipment: available equipment can be assigned', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Available');
+  // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
+  // exercises a genuinely fresh assignment, not an (also-valid) same-jobcard idempotent re-assign.
+  WD.returnEquipment('E-1001',{});
   const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1'});
   assert.ok(!res.error);
   assert.equal(res.assignedProject,'P-1');
@@ -237,10 +240,17 @@ test('equipment: existing equipment records are left unchanged by getEquipment()
 // history arrays empty) is the healthy control; other seed statuses (E-1002 In Use, E-1003
 // Maintenance Due, E-1004 Under Maintenance, E-1006 Out of Service, E-1008 Inspection Required,
 // E-1010 Quarantined) already exercise the full hard-block status set without extra setup.
-const EQ_ASOF='2026-08-30';
+// Computed as the real current date (not a hardcoded string) — several tests compare this against
+// timestamps produced by now() inside workshop-data.js (e.g. reportBreakdown), so a fixed past date
+// here would drift stale and start failing those date-ordering checks the moment the real date moves
+// past it, exactly as happened once this suite was still using a hardcoded '2026-08-30'.
+const EQ_ASOF=new Date().toISOString().slice(0,10);
 
 test('equipment gate: available equipment with no blocker can be reserved and then assigned', ()=>{
   const WD=loadWorkshopData();
+  // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
+  // exercises a genuinely fresh reservation, not a (also-valid) different-jobcard conflict.
+  WD.returnEquipment('E-1001',{});
   const reserved=WD.reserveEquipment('E-1001',{project:'P-1',jobcard:'JC-1',reservedBy:'Marko K.'});
   assert.ok(!reserved.error);
   assert.equal(reserved.status,'Reserved');
@@ -417,7 +427,9 @@ test('equipment gate: caller override/force/managerOverride/safetyApproved flags
 });
 test('equipment gate: assignEquipment never trusts a caller-supplied assignment.status', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.assignEquipment('E-1001',{project:'P-1',status:'Available'});
+  // Seed E-1001 is already assigned to JC-2026-0001 — assign it to that SAME jobcard (idempotent,
+  // always allowed) so this test isolates the status-trust behaviour, not the conflict check.
+  const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-2026-0001',status:'Available'});
   assert.ok(!res.error);
   assert.equal(res.status,'Reserved','assignment.status must be ignored — assigning always reserves, never trusts a caller-chosen status');
 });
@@ -1028,13 +1040,20 @@ test('quality gate: an orphan/malformed hold (references a jobcard number that d
 });
 
 // ── Operation-level enforcement ──
-test('quality gate: a held jobcard cannot start a pending operation', ()=>{
+// Review fix (Pass 3.2B review, finding 1): updateJobcardOperation() no longer owns starting an
+// operation at all — it unconditionally refuses ANY transition into 'in-progress', hold or no hold.
+// startJobcardOperation() is the one route in, and IT is the method the Quality Hold gate applies to.
+test('quality gate: updateJobcardOperation() unconditionally refuses to start a pending operation — startJobcardOperation() is the only route, and a held jobcard blocks it there', ()=>{
   const WD=loadWorkshopData();
   const res=WD.updateJobcardOperation('JC-2026-0001',5,{status:'in-progress'});
-  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
-  assert.ok(res.holdNumbers.includes('HOLD-2026-001'));
-  const op=WD.get().jobcards.find(j=>j.no==='JC-2026-0001').operations.find(o=>o.id===5);
-  assert.equal(op.status,'pending','a blocked operation must not have its status changed');
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  const op1=WD.get().jobcards.find(j=>j.no==='JC-2026-0001').operations.find(o=>o.id===5);
+  assert.equal(op1.status,'pending','a blocked operation must not have its status changed');
+  const startRes=WD.startJobcardOperation('JC-2026-0001',5,{});
+  assert.equal(startRes.code,'QUALITY_HOLD_ACTIVE');
+  assert.ok(startRes.holdNumbers.includes('HOLD-2026-001'));
+  const op2=WD.get().jobcards.find(j=>j.no==='JC-2026-0001').operations.find(o=>o.id===5);
+  assert.equal(op2.status,'pending','a blocked start must not have its status changed either');
 });
 test('quality gate: a held jobcard cannot complete an in-progress operation', ()=>{
   const WD=loadWorkshopData();
@@ -1276,10 +1295,13 @@ test('bypass fix C: a new Jobcard cannot be created with a pre-populated operati
   const WD=loadWorkshopData();
   WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
   const before=WD.get().jobcards.length;
+  // Review fix: a seed operation already 'in-progress' is refused unconditionally (never created
+  // running at all, hold or no hold) — completed/skipped seed operations remain hold-gated as before.
+  const expectedCode={'in-progress':'OPERATION_START_DEDICATED_METHOD_REQUIRED',completed:'QUALITY_HOLD_ACTIVE',skipped:'QUALITY_HOLD_ACTIVE'};
   ['in-progress','completed','skipped'].forEach((status,idx)=>{
     const res=WD.upsertJobcard({no:`JC-TEST-C${idx}`,projectNo:'P-26-0002',title:'Bypass attempt',status:'draft',
       operations:[{id:1,desc:'Pre-seeded op',status}]});
-    assert.equal(res.code,'QUALITY_HOLD_ACTIVE',`a pre-populated operation status of "${status}" must be blocked`);
+    assert.equal(res.code,expectedCode[status],`a pre-populated operation status of "${status}" must be blocked`);
   });
   assert.equal(WD.get().jobcards.length,before,'no jobcard record should have been created by any attempt');
 });
@@ -1293,13 +1315,16 @@ test('bypass fix: a new Jobcard with only safe pre-populated operations (pending
 
 // (D) + (E): updateJobcard()/upsertJobcard() cannot bypass updateJobcardOperation()'s gate via a
 // whole operations array, using the seeded HOLD-2026-001 (active, scope:jobcard, reference:JC-2026-0001).
-test('bypass fix D: updateJobcard({operations}) cannot change an operation from pending to an unsafe status while held', ()=>{
+// Review fix: a bulk operations-array update can never start an operation either way (hold or not)
+// — see the equivalent single-patch case above for the same rule via startJobcardOperation().
+test('bypass fix D: updateJobcard({operations}) cannot change an operation from pending to in-progress — the dedicated start method is the only route, held or not', ()=>{
   const WD=loadWorkshopData();
   const j=WD.findJobcard('JC-2026-0001');
   const ops=j.operations.map(o=>o.id===5?Object.assign({},o,{status:'in-progress'}):o);
   const res=WD.updateJobcard('JC-2026-0001',{operations:ops});
-  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
-  assert.ok(res.holdNumbers.includes('HOLD-2026-001'));
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  const op=WD.get().jobcards.find(jj=>jj.no==='JC-2026-0001').operations.find(o=>o.id===5);
+  assert.equal(op.status,'pending','a blocked bulk-array start must not have its status changed');
 });
 test('bypass fix D: updateJobcard({operations}) cannot change an in-progress operation to completed or skipped while held', ()=>{
   const WD=loadWorkshopData();
@@ -1670,4 +1695,1116 @@ test('upsertCustomer: existing customer ids/numbers are never renumbered when a 
     assert.ok(match,`existing customer id ${b.id} must still exist`);
     assert.equal(match.no,b.no,`existing customer id ${b.id}'s number must be unchanged`);
   }
+});
+
+// ── Pass 3.2B independent review fixes ──────────────────────────────────────────────────────────
+// startJobcardOperation() is the ONE authoritative route into 'in-progress'; equipment assignment
+// and usage can never be attributed to a Jobcard other than the equipment's real, current holder.
+// Every test below builds its own isolated fixtures (fresh equipment via createEquipment, a fresh
+// non-held Jobcard) instead of relying on demo seed data, so they are unaffected by seed changes.
+function mkJobcard(WD,no){return WD.upsertJobcard({no,projectNo:'P-2026-014',title:'Review fixture',status:'draft',machines:[],operations:[]});}
+function mkOp(WD,jcId,patch){return WD.addJobcardOperation(jcId,Object.assign({desc:'Test operation',worker:'Marko K.',machine:'',equipmentId:null,plannedHours:1,loggedHours:0,status:'pending',dependency:null,inspectionCheckpoint:false,notes:'',actualStart:null,actualCompletion:null},patch||{}));}
+
+// (1) Blocked equipment cannot transition to in-progress through updateJobcardOperation().
+test('review fix 1: updateJobcardOperation() unconditionally refuses "in-progress", even with no equipment requirement and no active hold', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-01');
+  const op=mkOp(WD,jc.id,{});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'in-progress'});
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+// (2) Edit-form-equivalent status mutation cannot bypass the gate — and the WHOLE mutation is
+// rejected atomically, not just the status field.
+test('review fix 2: an Edit-Operation-form-style full payload (desc/worker/hours/... plus status:"in-progress") cannot start an operation, and no field from it is applied', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-02');
+  const op=mkOp(WD,jc.id,{});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{desc:'Edited desc',worker:'Elena N.',machine:'',equipmentId:null,status:'in-progress',plannedHours:5,loggedHours:0,plannedStart:null,dependency:null,inspectionCheckpoint:false,notes:'edited'});
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.status,'pending');
+  assert.notEqual(stored.desc,'Edited desc','the whole mutation must be rejected, not just the status field');
+});
+// (3) A new operation cannot be created already in-progress to bypass the gate.
+test('review fix 3: a new operation cannot be created already in-progress via addJobcardOperation()', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-03');
+  const res=WD.addJobcardOperation(jc.id,{desc:'Sneaky op',status:'in-progress',worker:'Marko K.'});
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  assert.equal(WD.findJobcard(jc.id).operations.length,0,'no operation may have been added');
+});
+// (4) A whole operations-array update cannot bypass the dedicated start method — true even with NO
+// active hold at all (the old Quality-Hold-only gate would have allowed this).
+test('review fix 4: updateJobcard({operations}) cannot start an operation even with no active hold at all', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-04');
+  const op=mkOp(WD,jc.id,{});
+  const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{status:'in-progress'}):o);
+  const res=WD.updateJobcard(jc.id,{operations:ops});
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+test('review fix 4b: upsertJobcard({operations}) on an existing jobcard cannot start an operation either, hold or no hold', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-04B');
+  const op=mkOp(WD,jc.id,{});
+  const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{status:'in-progress'}):o);
+  const res=WD.upsertJobcard({id:jc.id,no:jc.no,operations:ops});
+  assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+// (5) Dedicated start rejects Out of Service equipment.
+test('review fix 5: startJobcardOperation() rejects equipment that is Out of Service', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-05');
+  WD.createEquipment({equipmentId:'E-REVIEW-05',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-05',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-05',machine:'Test Drill'});
+  WD.changeEquipmentStatus('E-REVIEW-05','Out of Service');
+  const res=WD.startJobcardOperation(jc.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+// (6) Dedicated start rejects an open breakdown.
+test('review fix 6: startJobcardOperation() rejects equipment with an open (unresolved) breakdown', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-06');
+  WD.createEquipment({equipmentId:'E-REVIEW-06',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-06',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-06',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-06',machine:'Test Drill'});
+  WD.reportBreakdown('E-REVIEW-06',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  const res=WD.startJobcardOperation(jc.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+// (7) Dedicated start rejects missing/unlinked equipment (op.equipmentId not present in this
+// Jobcard's own machines list, even though the equipment record itself really exists).
+test('review fix 7: startJobcardOperation() rejects an op.equipmentId that is not linked to THIS Jobcard\'s own machines', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-07');
+  WD.createEquipment({equipmentId:'E-REVIEW-07',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-07',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  // Deliberately never added to jc.machines.
+  const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-07',machine:'Test Drill'});
+  const res=WD.startJobcardOperation(jc.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_NOT_LINKED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+// (8) Dedicated start rejects legacy name-only equipment until explicitly linked — a resolvable
+// op.machine name is never sufficient authorization, even if the Jobcard has that exact machine name
+// linked (with equipmentId) elsewhere in its own machines array.
+test('review fix 8: startJobcardOperation() rejects a legacy op.machine NAME (no op.equipmentId) even when it matches a real, linked, correctly-assigned machine by name', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-08');
+  WD.createEquipment({equipmentId:'E-REVIEW-08',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-08',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-08',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:null,machine:'Test Drill'});
+  const res=WD.startJobcardOperation(jc.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_NOT_LINKED');
+});
+// (9) Dedicated start rejects equipment assigned to another Jobcard (the stale-link bypass).
+test('review fix 9: startJobcardOperation() rejects equipment that is linked here but currently assigned to a DIFFERENT Jobcard', ()=>{
+  const WD=loadWorkshopData();
+  const jcA=mkJobcard(WD,'JC-REVIEW-09A');
+  const jcB=mkJobcard(WD,'JC-REVIEW-09B');
+  WD.createEquipment({equipmentId:'E-REVIEW-09',name:'Test Drill',category:'Power Tool'});
+  // Equipment is really held by jcB...
+  WD.assignEquipment('E-REVIEW-09',{project:'P-2026-014',jobcard:jcB.no,worker:'Marko K.'});
+  // ...but jcA retains a stale local link to it (e.g. left over from before it was returned/reassigned).
+  WD.updateJobcard(jcA.id,{machines:[{equipmentId:'E-REVIEW-09',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jcA.id,{equipmentId:'E-REVIEW-09',machine:'Test Drill'});
+  const res=WD.startJobcardOperation(jcA.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNED_ELSEWHERE');
+  assert.equal(res.assignedJobcard,jcB.no);
+  assert.equal(WD.findJobcard(jcA.id).operations.find(o=>o.id===op.id).status,'pending');
+});
+// (10) Dedicated start rejects unassigned equipment (linked here, real record, but not currently
+// assigned to ANY Jobcard at all).
+test('review fix 10: startJobcardOperation() rejects equipment that is linked here but not currently assigned to any Jobcard', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-10');
+  WD.createEquipment({equipmentId:'E-REVIEW-10',name:'Test Drill',category:'Power Tool'});
+  // Never assigned at all — assignedJobcard stays null.
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-10',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-10',machine:'Test Drill'});
+  const res=WD.startJobcardOperation(jc.id,op.id,{});
+  assert.equal(res.code,'EQUIPMENT_UNASSIGNED');
+});
+// (11) + (12) Dedicated start succeeds for safe equipment properly assigned to the exact Jobcard —
+// and the mandatory matching pre-use-check rule (from canUseEquipment) still applies: it fails
+// without one, and succeeds once a valid passed check is recorded.
+test('review fix 11+12: startJobcardOperation() requires a mandatory pre-use check, then succeeds for safe, correctly-assigned equipment', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW-11');
+  WD.createEquipment({equipmentId:'E-REVIEW-11',name:'Test Drill',category:'Power Tool'});
+  setEqRequirements(WD,'E-REVIEW-11',{preUseCheckRequired:true});
+  WD.assignEquipment('E-REVIEW-11',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-11',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-11',machine:'Test Drill'});
+  const blocked=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(blocked.code,'EQUIPMENT_SAFETY_BLOCKED','no pre-use check recorded yet — must still be blocked');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
+  WD.recordEquipmentPreUseCheck('E-REVIEW-11',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Guards in place, cable checked',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.ok(!started.error);
+  assert.equal(started.status,'in-progress');
+  assert.ok(started.actualStart);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress');
+});
+// (13) + (14) assignEquipment cannot overwrite another Jobcard's assignment, and the rejected
+// attempt leaves the ENTIRE equipment record unchanged.
+test('review fix 13+14: assignEquipment cannot reassign equipment already held by a different Jobcard, and leaves the record completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW-13',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:'JC-REVIEW-13A',worker:'Marko K.'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
+  const res=WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:'JC-REVIEW-13B',worker:'Elena N.'});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
+  assert.equal(res.assignedJobcard,'JC-REVIEW-13A');
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
+  assert.deepEqual(after,before,'not even worker/project may have changed on a rejected reassignment');
+});
+test('review fix: assignEquipment stays idempotent when re-assigning to the SAME Jobcard it already holds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW-13C',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:'JC-REVIEW-13C',worker:'Marko K.'});
+  const res=WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:'JC-REVIEW-13C',worker:'Elena N.'});
+  assert.ok(!res.error,'re-assigning to the same Jobcard must remain allowed');
+  assert.equal(res.operator,'Elena N.');
+});
+// (15) + (16) logEquipmentUsage rejects a different assignedJobcard, and the rejection leaves the
+// meter and usage history completely unchanged.
+test('review fix 15+16: logEquipmentUsage rejects usage.jobcard that does not match the equipment\'s real assignedJobcard, leaving meter and history unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW-15',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-15',{project:'P-2026-014',jobcard:'JC-REVIEW-15A',worker:'Marko K.'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-15',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
+  const res=WD.logEquipmentUsage('E-REVIEW-15',{hours:2,date:EQ_ASOF,worker:'Elena N.',project:'P-2026-014',jobcard:'JC-REVIEW-15B'});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
+  assert.equal(res.assignedJobcard,'JC-REVIEW-15A');
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
+  assert.deepEqual(after,before,'meter, usageHistory and every other field must be completely unchanged');
+});
+// (18) Valid same-Jobcard usage still updates both the equipment record and (via the normal
+// logHours() call the UI makes alongside it) labour hours — the corrected assignedJobcard check
+// never interferes with the legitimate, matching-Jobcard workflow.
+test('review fix 18: valid same-Jobcard usage still updates the equipment record normally', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW-18',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-18',{project:'P-2026-014',jobcard:'JC-REVIEW-18',worker:'Marko K.'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-18',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-18').operatingHourMeter;
+  const res=WD.logEquipmentUsage('E-REVIEW-18',{hours:3,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:'JC-REVIEW-18'});
+  assert.ok(!res.error);
+  assert.equal(res.operatingHourMeter,before+3);
+  assert.ok(res.usageHistory.some(u=>u.jobcard==='JC-REVIEW-18'));
+});
+// logEquipmentUsage with NO jobcard supplied at all is unaffected by the new check (matches existing
+// behaviour/tests that never pass a jobcard field).
+test('review fix: logEquipmentUsage with no usage.jobcard at all is unaffected by the assignment check', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW-15C',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW-15C',{project:'P-2026-014',jobcard:'JC-REVIEW-15C',worker:'Marko K.'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-15C',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  const res=WD.logEquipmentUsage('E-REVIEW-15C',{hours:1,date:EQ_ASOF,worker:'Marko K.'});
+  assert.ok(!res.error);
+});
+
+// ── Pass 3.2B SECOND independent review fixes ──────────────────────────────────────────────────
+// Finding 1: reserveEquipment() was a second, unguarded route into assignedJobcard — it now enforces
+// exactly the same conflict rule as assignEquipment()/logEquipmentUsage(). recordEquipmentPreUseCheck()
+// is now hardened the same way whenever Jobcard context is supplied.
+// (1)+(2) reserveEquipment cannot move equipment from JC-A to JC-B, and the rejected record is
+// completely unchanged.
+test('2nd review fix 1+2: reserveEquipment cannot reassign equipment already held by a different Jobcard, and leaves the record completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-01',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:'JC-REVIEW2-01A',worker:'Marko K.'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
+  const res=WD.reserveEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:'JC-REVIEW2-01B',reservedBy:'Elena N.'});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
+  assert.equal(res.assignedJobcard,'JC-REVIEW2-01A');
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
+  assert.deepEqual(after,before,'not even status/project may have changed on a rejected reservation');
+});
+// (3) reserveEquipment remains idempotent for the same Jobcard.
+test('2nd review fix 3: reserveEquipment stays idempotent when reserving for the SAME Jobcard it already holds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-03',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:'JC-REVIEW2-03',worker:'Marko K.'});
+  const res=WD.reserveEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:'JC-REVIEW2-03',reservedBy:'Elena N.'});
+  assert.ok(!res.error,'reserving for the same Jobcard must remain allowed');
+  assert.equal(res.status,'Reserved');
+});
+// (4) reserveEquipment with an omitted jobcard cannot alter equipment already held by a Jobcard.
+test('2nd review fix 4: reserveEquipment with NO jobcard supplied cannot silently touch equipment already held by a Jobcard', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-04',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-04',{project:'P-2026-014',jobcard:'JC-REVIEW2-04',worker:'Marko K.'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
+  const res=WD.reserveEquipment('E-REVIEW2-04',{project:'P-9',reservedBy:'Elena N.'});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
+  assert.deepEqual(after,before);
+});
+// reserveEquipment on genuinely unassigned equipment (nobody holds it) still works normally.
+test('2nd review fix: reserveEquipment still works normally on equipment nobody currently holds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-04B',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-REVIEW2-04B',{project:'P-2026-014',jobcard:'JC-REVIEW2-04B',reservedBy:'Elena N.'});
+  assert.ok(!res.error);
+  assert.equal(res.assignedJobcard,'JC-REVIEW2-04B');
+});
+// (5)+(6) recordEquipmentPreUseCheck rejects a mismatched jobcardNo, creating no history/status/
+// activity changes at all.
+test('2nd review fix 5+6: recordEquipmentPreUseCheck rejects a jobcardNo that does not match the equipment\'s real holder, with no history/status/activity change', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-05',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-05',{project:'P-2026-014',jobcard:'JC-REVIEW2-05A',worker:'Marko K.'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-05',{checkedBy:'Elena N.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-05B'});
+  assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
+  assert.equal(res.assignedJobcard,'JC-REVIEW2-05A');
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
+  assert.deepEqual(after,before,'no preUseChecks/status/activity entry may have been created');
+});
+// (7) Correctly assigned same-Jobcard pre-use check still succeeds.
+test('2nd review fix 7: recordEquipmentPreUseCheck with a jobcardNo matching the real holder still succeeds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-07',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-07',{project:'P-2026-014',jobcard:'JC-REVIEW2-07',worker:'Marko K.'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-07'});
+  assert.ok(!res.error);
+  assert.equal(res.jobcardNo,'JC-REVIEW2-07');
+  assert.equal(res.result,'passed');
+});
+// A pre-use check submitted with NO Jobcard context at all is unaffected (plain Equipment-module
+// workflow, matches existing behaviour/tests that never pass jobcardNo).
+test('2nd review fix: recordEquipmentPreUseCheck with no jobcardNo at all is unaffected by the assignment check', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-07B',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-07B',{project:'P-2026-014',jobcard:'JC-REVIEW2-07B-OTHER',worker:'Marko K.'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07B',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine'});
+  assert.ok(!res.error);
+});
+// reportBreakdown remains available as a safe-direction action even when a DIFFERENT Jobcard holds
+// the equipment — it must NOT be subject to the new assignment-conflict check.
+test('2nd review fix: reportBreakdown remains a safe-direction action regardless of which Jobcard currently holds the equipment', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW2-BD',name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-BD',{project:'P-2026-014',jobcard:'JC-REVIEW2-BD-A',worker:'Marko K.'});
+  const res=WD.reportBreakdown('E-REVIEW2-BD',{reason:'Smoking motor',responsiblePerson:'Elena N.',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-BD-B'});
+  assert.ok(!res.error,'reporting a breakdown must never be blocked by the assignment-conflict check');
+  assert.equal(res.jobcardNo,'JC-REVIEW2-BD-B');
+  const item=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-BD');
+  assert.equal(item.status,'Out of Service');
+});
+
+// Finding 2: equipmentId/machine are safety-controlled on an in-progress operation — a same-status
+// re-save (previously "allowed" for ordinary field edits) must never be usable to swap equipment
+// out from under a running operation.
+function mkStartedOpFixture(WD,jcNo,eqId){
+  const jc=mkJobcard(WD,jcNo);
+  WD.createEquipment({equipmentId:eqId,name:'Test Drill',category:'Power Tool'});
+  WD.assignEquipment(eqId,{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:eqId,name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:eqId,machine:'Test Drill'});
+  WD.recordEquipmentPreUseCheck(eqId,{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(started.status,'in-progress','fixture setup must succeed');
+  return {jc:WD.findJobcard(jc.id),op:started};
+}
+// (8) In-progress operation cannot change equipmentId through updateJobcardOperation().
+test('2nd review fix 8: an in-progress operation cannot have its equipmentId changed through updateJobcardOperation()', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-08','E-REVIEW2-08-SAFE');
+  WD.createEquipment({equipmentId:'E-REVIEW2-08-OTHER',name:'Other Drill',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'in-progress',equipmentId:'E-REVIEW2-08-OTHER',machine:'Other Drill'});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,'E-REVIEW2-08-SAFE','equipment reference must be unchanged');
+  assert.equal(stored.status,'in-progress');
+});
+// (9) In-progress operation cannot remove equipmentId.
+test('2nd review fix 9: an in-progress operation cannot have its equipmentId removed (set to null) through updateJobcardOperation()', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-09','E-REVIEW2-09');
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'in-progress',equipmentId:null,machine:''});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,'E-REVIEW2-09');
+});
+// (10) In-progress operation cannot ADD equipment when it started without equipment at all.
+test('2nd review fix 10: an in-progress operation that started with NO equipment cannot have equipment added through updateJobcardOperation()', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW2-10');
+  const op=mkOp(WD,jc.id,{equipmentId:null,machine:''});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(started.status,'in-progress');
+  WD.createEquipment({equipmentId:'E-REVIEW2-10',name:'Test Drill',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'in-progress',equipmentId:'E-REVIEW2-10',machine:'Test Drill'});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,null);
+});
+// (11) A rejected mixed edit (equipment change bundled with ordinary field edits) applies NONE of it
+// — the whole mutation is rejected atomically.
+test('2nd review fix 11: a rejected equipment-change patch applies none of its bundled ordinary field edits either', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-11','E-REVIEW2-11-SAFE');
+  WD.createEquipment({equipmentId:'E-REVIEW2-11-OTHER',name:'Other Drill',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{desc:'Sneaky edit',worker:'Someone Else',equipmentId:'E-REVIEW2-11-OTHER'});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.notEqual(stored.desc,'Sneaky edit','no unrelated field may have been applied either');
+  assert.notEqual(stored.worker,'Someone Else');
+});
+// (12) updateJobcard({operations}) cannot swap equipment on an in-progress operation.
+test('2nd review fix 12: updateJobcard({operations}) cannot swap equipment on an in-progress operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-12','E-REVIEW2-12-SAFE');
+  WD.createEquipment({equipmentId:'E-REVIEW2-12-OTHER',name:'Other Drill',category:'Power Tool'});
+  const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{equipmentId:'E-REVIEW2-12-OTHER',machine:'Other Drill'}):o);
+  const res=WD.updateJobcard(jc.id,{operations:ops});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,'E-REVIEW2-12-SAFE');
+});
+// (13) upsertJobcard({operations}) cannot perform the same swap.
+test('2nd review fix 13: upsertJobcard({operations}) cannot swap equipment on an in-progress operation either', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-13','E-REVIEW2-13-SAFE');
+  WD.createEquipment({equipmentId:'E-REVIEW2-13-OTHER',name:'Other Drill',category:'Power Tool'});
+  const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{equipmentId:'E-REVIEW2-13-OTHER',machine:'Other Drill'}):o);
+  const res=WD.upsertJobcard({id:jc.id,no:jc.no,operations:ops});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,'E-REVIEW2-13-SAFE');
+});
+// (14)+(15) A paused operation MAY change equipment, and resuming afterwards re-checks assignment
+// and the Equipment Safety Gate — unsafe or assigned-elsewhere equipment linked while paused still
+// blocks the resume.
+test('2nd review fix 14+15: a paused operation may change equipment, and resuming re-checks assignment/safety against the NEW equipment', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-14','E-REVIEW2-14-SAFE');
+  const paused=WD.updateJobcardOperation(jc.id,op.id,{status:'paused'});
+  assert.ok(!paused.error);
+  // While paused, link it to equipment that is NOT actually assigned to this Jobcard (unsafe swap).
+  // Linking it into jc.machines (Machines & Equipment tab) is a normal, always-allowed edit — the
+  // stale/wrong assignment is only caught at resume time by startJobcardOperation().
+  WD.createEquipment({equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',category:'Power Tool'});
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:'JC-REVIEW2-14-ELSEWHERE',worker:'Someone'});
+  WD.updateJobcard(jc.id,{machines:(WD.findJobcard(jc.id).machines||[]).concat([{equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',plannedUsage:1}])});
+  const swapped=WD.updateJobcardOperation(jc.id,op.id,{equipmentId:'E-REVIEW2-14-OTHER',machine:'Other Drill'});
+  assert.ok(!swapped.error,'changing equipment while paused must be allowed');
+  assert.equal(swapped.equipmentId,'E-REVIEW2-14-OTHER');
+  const resumeBlocked=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(resumeBlocked.code,'EQUIPMENT_ASSIGNED_ELSEWHERE','resume must re-check the NEW equipment is actually assigned to this Jobcard');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused','a blocked resume must not change status');
+  // Now properly return+re-assign the new equipment to THIS Jobcard (it's already linked in
+  // jc.machines) and give it a matching pre-use check — resume must then succeed against it.
+  WD.returnEquipment('E-REVIEW2-14-OTHER',{});
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW2-14-OTHER',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.ok(!resumed.error);
+  assert.equal(resumed.status,'in-progress');
+});
+// (16) Ordinary non-equipment edits to an in-progress operation still work (the pre-existing "allowed"
+// same-status re-save path — must not be broken by the new equipment-field guard).
+test('2nd review fix 16: ordinary non-equipment field edits to an in-progress operation still work normally', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW2-16','E-REVIEW2-16');
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'in-progress',desc:'Updated description',notes:'Progress note',loggedHours:2});
+  assert.ok(!res.error);
+  assert.equal(res.desc,'Updated description');
+  assert.equal(res.equipmentId,'E-REVIEW2-16','equipment reference must be untouched by an ordinary edit');
+});
+
+// ── Pass 3.2B THIRD independent review fixes ───────────────────────────────────────────────────
+// Finding A: an in-progress operation cannot be silently deleted by omitting it from a whole
+// operations-array replace. Finding B: equipment an in-progress operation depends on cannot be
+// silently unlinked by omitting it from a whole machines-array replace. Central reconciliation:
+// any equipment mutation that leaves it unassigned/hard-blocked/gate-blocked automatically pauses
+// every in-progress operation using it (never resumes/starts anything).
+
+// (1) updateJobcard({operations}) cannot delete an in-progress operation.
+test('3rd review fix 1: updateJobcard({operations}) cannot delete an in-progress operation by omitting it', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-01','E-REVIEW3-01');
+  const filtered=WD.findJobcard(jc.id).operations.filter(o=>o.id!==op.id);
+  const res=WD.updateJobcard(jc.id,{operations:filtered});
+  assert.equal(res.code,'OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id);
+  assert.equal(stored.operations.length,1,'the in-progress operation must still be present');
+  assert.equal(stored.operations[0].id,op.id);
+});
+// (2) upsertJobcard({operations}) cannot delete an in-progress operation.
+test('3rd review fix 2: upsertJobcard({operations}) cannot delete an in-progress operation by omitting it', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-02','E-REVIEW3-02');
+  const filtered=WD.findJobcard(jc.id).operations.filter(o=>o.id!==op.id);
+  const res=WD.upsertJobcard({id:jc.id,no:jc.no,operations:filtered});
+  assert.equal(res.code,'OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE');
+  assert.equal(WD.findJobcard(jc.id).operations.length,1);
+});
+// (3) A rejected deletion leaves the complete Jobcard and operation unchanged.
+test('3rd review fix 3: a rejected active-operation deletion leaves the complete Jobcard record unchanged, including unrelated bundled fields', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-03','E-REVIEW3-03');
+  const before=WD.findJobcard(jc.id);
+  const filtered=before.operations.filter(o=>o.id!==op.id);
+  const res=WD.updateJobcard(jc.id,{operations:filtered,title:'Sneaky title change'});
+  assert.equal(res.code,'OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE');
+  const after=WD.findJobcard(jc.id);
+  assert.deepEqual(after,before,'nothing may have changed, including the unrelated title field bundled into the same patch');
+});
+// (4) A paused operation can still be deleted.
+test('3rd review fix 4: a PAUSED operation can still be deleted through a whole operations-array replace', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-04','E-REVIEW3-04');
+  WD.updateJobcardOperation(jc.id,op.id,{status:'paused'});
+  const filtered=WD.findJobcard(jc.id).operations.filter(o=>o.id!==op.id);
+  const res=WD.updateJobcard(jc.id,{operations:filtered});
+  assert.ok(!res.error);
+  assert.equal(WD.findJobcard(jc.id).operations.length,0);
+});
+// (5) updateJobcard({machines}) cannot remove equipment used by an in-progress operation.
+test('3rd review fix 5: updateJobcard({machines}) cannot unlink equipment used by an in-progress operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-05','E-REVIEW3-05');
+  const res=WD.updateJobcard(jc.id,{machines:[]});
+  assert.equal(res.code,'ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id);
+  assert.equal(stored.machines.length,1,'the machine link must still be present');
+  assert.equal(stored.operations.find(o=>o.id===op.id).equipmentId,'E-REVIEW3-05');
+});
+// (6) upsertJobcard({machines}) cannot perform the same unlink.
+test('3rd review fix 6: upsertJobcard({machines}) cannot unlink equipment used by an in-progress operation either', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW3-06','E-REVIEW3-06');
+  const res=WD.upsertJobcard({id:jc.id,no:jc.no,machines:[]});
+  assert.equal(res.code,'ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE');
+  assert.equal(WD.findJobcard(jc.id).machines.length,1);
+});
+// (7) A rejected unlink leaves the complete Jobcard unchanged.
+test('3rd review fix 7: a rejected equipment unlink leaves the complete Jobcard record unchanged, including unrelated bundled fields', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW3-07','E-REVIEW3-07');
+  const before=WD.findJobcard(jc.id);
+  const res=WD.updateJobcard(jc.id,{machines:[],title:'Sneaky title change'});
+  assert.equal(res.code,'ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE');
+  const after=WD.findJobcard(jc.id);
+  assert.deepEqual(after,before);
+});
+// (8) Removing equipment unused by an active operation still works.
+test('3rd review fix 8: removing equipment NOT used by any in-progress operation still works normally', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW3-08','E-REVIEW3-08-USED');
+  WD.createEquipment({equipmentId:'E-REVIEW3-08-UNUSED',name:'Spare Drill',category:'Power Tool'});
+  WD.updateJobcard(jc.id,{machines:WD.findJobcard(jc.id).machines.concat([{equipmentId:'E-REVIEW3-08-UNUSED',name:'Spare Drill',plannedUsage:0}])});
+  const res=WD.updateJobcard(jc.id,{machines:WD.findJobcard(jc.id).machines.filter(m=>m.equipmentId!=='E-REVIEW3-08-UNUSED')});
+  assert.ok(!res.error);
+  assert.equal(res.machines.length,1);
+  assert.equal(res.machines[0].equipmentId,'E-REVIEW3-08-USED');
+});
+// (9) Reordering machines or changing only planned usage still works.
+test('3rd review fix 9: reordering the machines array or editing only plannedUsage still works while an operation is in-progress', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW3-09','E-REVIEW3-09');
+  WD.createEquipment({equipmentId:'E-REVIEW3-09-B',name:'Second Drill',category:'Power Tool'});
+  const withSecond=WD.findJobcard(jc.id).machines.concat([{equipmentId:'E-REVIEW3-09-B',name:'Second Drill',plannedUsage:2}]);
+  WD.updateJobcard(jc.id,{machines:withSecond});
+  const reordered=WD.findJobcard(jc.id).machines.slice().reverse();
+  const res=WD.updateJobcard(jc.id,{machines:reordered});
+  assert.ok(!res.error,'reordering must not be treated as an unlink');
+  const editedUsage=WD.findJobcard(jc.id).machines.map(m=>m.equipmentId==='E-REVIEW3-09'?Object.assign({},m,{plannedUsage:99}):m);
+  const res2=WD.updateJobcard(jc.id,{machines:editedUsage});
+  assert.ok(!res2.error,'editing plannedUsage on the SAME equipmentId must not be treated as an unlink');
+  assert.equal(res2.machines.find(m=>m.equipmentId==='E-REVIEW3-09').plannedUsage,99);
+});
+// (10)+(11) returnEquipment() automatically pauses an active operation, and returning SAFE equipment
+// still clears assignment and becomes Available.
+test('3rd review fix 10+11: returnEquipment() automatically pauses the active operation, and safe equipment still becomes Available', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-10','E-REVIEW3-10');
+  const res=WD.returnEquipment('E-REVIEW3-10',{user:'Marko K.'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'Available');
+  assert.equal(res.assignedJobcard,null);
+  assert.ok(Array.isArray(res.pausedOperations)&&res.pausedOperations.length===1);
+  assert.equal(res.pausedOperations[0].operationId,op.id);
+  assert.equal(res.pausedOperations[0].jobcardNo,jc.no);
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.status,'paused');
+});
+// (12) Returning BLOCKED equipment still clears assignment but preserves its blocking status, and
+// still auto-pauses the active operation.
+test('3rd review fix 12: returning BLOCKED equipment clears assignment but preserves the blocking status — the operation, already auto-paused the moment it became blocked, stays paused', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-12','E-REVIEW3-12');
+  // Quarantining already auto-pauses the running operation immediately (see fix 17) — by the time
+  // returnEquipment() is called, there is nothing left in-progress on this equipment to newly pause;
+  // that is itself the correct, intended behaviour (an operation can never remain in-progress on
+  // blocked equipment for even one intervening mutation).
+  const blockRes=WD.changeEquipmentStatus('E-REVIEW3-12','Quarantined');
+  assert.equal(blockRes.pausedOperations.length,1,'quarantining itself must already auto-pause the running operation');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  const res=WD.returnEquipment('E-REVIEW3-12',{user:'Marko K.'});
+  assert.equal(res.status,'Quarantined','a blocked status must never be silently cleared by returnEquipment');
+  assert.equal(res.assignedJobcard,null);
+  assert.equal(res.pausedOperations.length,0,'nothing new to pause — it was already paused when it became blocked');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused','still paused, never reset');
+});
+// (13) reportBreakdown() automatically pauses the active operation and preserves project/Jobcard
+// references on the breakdown record.
+test('3rd review fix 13: reportBreakdown() automatically pauses the active operation and preserves project/Jobcard references', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-13','E-REVIEW3-13');
+  const res=WD.reportBreakdown('E-REVIEW3-13',{reason:'Motor smoking',responsiblePerson:'Elena N.'});
+  assert.equal(res.projectNo,'P-2026-014');
+  assert.equal(res.jobcardNo,jc.no);
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(res.pausedOperations[0].operationId,op.id);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  const item=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-13');
+  assert.equal(item.status,'Out of Service');
+});
+// (14) A failed pre-use check automatically pauses an active operation.
+test('3rd review fix 14: a failed recordEquipmentPreUseCheck automatically pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-14','E-REVIEW3-14');
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW3-14',{checkedBy:'Marko K.',date:EQ_ASOF,result:'failed',notes:'Guard cracked',projectNo:'P-2026-014',jobcardNo:jc.no});
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// (15) A failed equipment inspection automatically pauses an active operation.
+test('3rd review fix 15: a failed addInspection automatically pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-15','E-REVIEW3-15');
+  const res=WD.addInspection('E-REVIEW3-15',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  const item=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-15');
+  assert.equal(item.status,'Quarantined');
+});
+// (16) Retiring equipment automatically pauses an active operation.
+test('3rd review fix 16: retireEquipment automatically pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-16','E-REVIEW3-16');
+  const res=WD.retireEquipment('E-REVIEW3-16','End of service life');
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// (17) Changing equipment to Quarantined/Out of Service automatically pauses an active operation.
+test('3rd review fix 17: changeEquipmentStatus to a hard-block status automatically pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-17','E-REVIEW3-17');
+  const res=WD.changeEquipmentStatus('E-REVIEW3-17','Quarantined');
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// updateEquipment moving to a non-operational status also reconciles.
+test('3rd review fix: updateEquipment moving to a non-operational status also auto-pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-17B','E-REVIEW3-17B');
+  const res=WD.updateEquipment('E-REVIEW3-17B',{status:'Under Maintenance'});
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// updateEquipmentRequirements that newly blocks the gate (via a stale existing date, no status
+// change at all) also reconciles.
+test('3rd review fix: updateEquipmentRequirements that newly blocks the live gate also auto-pauses the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-17C','E-REVIEW3-17C');
+  const statusBefore=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-17C').status;
+  const res=WD.updateEquipmentRequirements('E-REVIEW3-17C',{maintenanceRequired:true},{updatedBy:'Aleksandar C.',reason:'Policy change',approvalReference:'APPR-3-17C'});
+  assert.ok(!res.error);
+  // No maintenance record exists at all, so a mandatory requirement with no maintenanceDate on file
+  // blocks the gate immediately (see equipment-gates.js) — purely from the requirement flip.
+  assert.equal(res.status,statusBefore,'sanity: this scenario blocks purely via the requirement flip, with no status field change at all');
+  assert.equal(res.pausedOperations.length,1);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// (18) Ordinary descriptive equipment edits do not pause operations.
+test('3rd review fix 18: ordinary descriptive equipment edits (name/location/description) do not pause the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-18','E-REVIEW3-18');
+  const res=WD.updateEquipment('E-REVIEW3-18',{name:'Renamed Drill',currentLocation:'Bay 9',description:'Updated desc'});
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,0);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress','an ordinary descriptive edit must never pause a running operation');
+});
+// (19) An invalid/rejected equipment mutation does not pause operations.
+test('3rd review fix 19: a REJECTED equipment mutation (invalid pre-use check) does not pause the active operation or change any record', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-19','E-REVIEW3-19');
+  const before=WD.findJobcard(jc.id);
+  const beforeEq=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-19');
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW3-19',{checkedBy:'',date:EQ_ASOF,result:'failed',notes:'Missing checkedBy'});
+  assert.ok(res.error,'missing checkedBy must be rejected');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress','a rejected mutation must never pause anything');
+  assert.deepEqual(WD.findJobcard(jc.id),before);
+  assert.deepEqual(WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-19'),beforeEq);
+});
+// (20) Multiple active operations referencing the affected equipment are ALL paused.
+test('3rd review fix 20: multiple in-progress operations referencing the SAME equipment are all paused together', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op:op1}=mkStartedOpFixture(WD,'JC-REVIEW3-20','E-REVIEW3-20');
+  const op2seed=mkOp(WD,jc.id,{equipmentId:'E-REVIEW3-20',machine:'Test Drill'});
+  const op2=WD.startJobcardOperation(jc.id,op2seed.id,{date:EQ_ASOF});
+  assert.equal(op2.status,'in-progress','fixture: second operation must also have started');
+  const res=WD.reportBreakdown('E-REVIEW3-20',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  assert.equal(res.pausedOperations.length,2);
+  const pausedIds=res.pausedOperations.map(p=>p.operationId).sort();
+  assert.deepEqual(pausedIds,[op1.id,op2.id].sort());
+  const stored=WD.findJobcard(jc.id).operations;
+  assert.equal(stored.find(o=>o.id===op1.id).status,'paused');
+  assert.equal(stored.find(o=>o.id===op2.id).status,'paused');
+});
+// (21) Operations using OTHER equipment remain completely unchanged.
+test('3rd review fix 21: operations using a DIFFERENT, unaffected piece of equipment remain completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  const {jc:jcAffected,op:opAffected}=mkStartedOpFixture(WD,'JC-REVIEW3-21A','E-REVIEW3-21A');
+  const {jc:jcOther,op:opOther}=mkStartedOpFixture(WD,'JC-REVIEW3-21B','E-REVIEW3-21B');
+  const beforeOther=WD.findJobcard(jcOther.id);
+  WD.reportBreakdown('E-REVIEW3-21A',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  assert.equal(WD.findJobcard(jcAffected.id).operations.find(o=>o.id===opAffected.id).status,'paused');
+  const afterOther=WD.findJobcard(jcOther.id);
+  assert.deepEqual(afterOther,beforeOther,'a completely unrelated Jobcard/operation/equipment must be untouched');
+  assert.equal(afterOther.operations.find(o=>o.id===opOther.id).status,'in-progress');
+});
+// (22) Repeated reconciliation is idempotent.
+test('3rd review fix 22: repeated reconciliation is idempotent — no duplicate pause activity or state changes on a second trigger', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-22','E-REVIEW3-22');
+  const first=WD.changeEquipmentStatus('E-REVIEW3-22','Quarantined');
+  assert.equal(first.pausedOperations.length,1);
+  const activityCountAfterFirst=WD.findJobcard(jc.id).activity.length;
+  const second=WD.changeEquipmentStatus('E-REVIEW3-22','Quarantined');
+  assert.equal(second.pausedOperations.length,0,'the operation is already paused — a second trigger must not re-pause or re-report it');
+  const activityCountAfterSecond=WD.findJobcard(jc.id).activity.length;
+  assert.equal(activityCountAfterSecond,activityCountAfterFirst,'no duplicate automatic-pause activity entry may be added');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// (23) The operation retains equipmentId, machine, actualStart and logged hours after automatic pause.
+test('3rd review fix 23: an automatically-paused operation retains equipmentId, machine, actualStart and loggedHours', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-23','E-REVIEW3-23');
+  WD.updateJobcardOperation(jc.id,op.id,{loggedHours:4.5});
+  const beforePause=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  WD.reportBreakdown('E-REVIEW3-23',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  const afterPause=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(afterPause.status,'paused');
+  assert.equal(afterPause.equipmentId,beforePause.equipmentId);
+  assert.equal(afterPause.machine,beforePause.machine);
+  assert.equal(afterPause.actualStart,beforePause.actualStart);
+  assert.ok(afterPause.actualStart,'actualStart must be a real recorded value, not cleared');
+  assert.equal(afterPause.loggedHours,4.5);
+});
+// (24) After return/unlink, Resume fails closed until equipment is correctly linked, assigned and
+// checked again — the full UI requirement #8 scenario end to end.
+test('3rd review fix 24: after an automatic pause + equipment return + unlink, Resume fails closed at every step until the equipment is correctly re-linked, re-assigned and re-checked', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-24','E-REVIEW3-24');
+  WD.returnEquipment('E-REVIEW3-24',{user:'Marko K.'});
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  // Step 1: still linked in j.machines, but no longer assigned to this Jobcard — resume fails closed.
+  const blocked1=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(blocked1.code,'EQUIPMENT_UNASSIGNED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  // Step 2: now unlink it from the Jobcard (allowed — the operation is paused, not active) — resume
+  // still fails closed, now because it isn't linked at all.
+  const unlinkRes=WD.updateJobcard(jc.id,{machines:[]});
+  assert.ok(!unlinkRes.error,'unlinking is allowed once the operation is paused');
+  const blocked2=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(blocked2.code,'EQUIPMENT_NOT_LINKED');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+  // Step 3: correctly re-link, re-assign and re-check — resume must then succeed.
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW3-24',name:'Test Drill',plannedUsage:1}]});
+  WD.assignEquipment('E-REVIEW3-24',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW3-24',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.ok(!resumed.error);
+  assert.equal(resumed.status,'in-progress');
+  assert.equal(resumed.equipmentId,'E-REVIEW3-24','traceability: still the same equipmentId throughout');
+});
+
+// ── Pass 3.2B FOURTH independent review fixes ──────────────────────────────────────────────────
+// Root cause: the 3rd-review safety checks used payload TRUTHINESS (`if(data.operations)`,
+// `if(data.machines)`, `data.status?...`) instead of field PRESENCE (hasOwnProperty) and schema
+// validation. A falsy-but-present malformed value (null, {}, '', 0) skipped every check yet was
+// still applied via Object.assign — this section closes that gap.
+const MALFORMED_COLLECTION_VALUES=[null,{},''];
+const MALFORMED_STATUS_VALUES=['',' ','\t',null,0,false,{},[]];
+
+// (1)+(2)+(3) updateJobcard rejects operations:null/{}/''.
+test('4th review fix 1-3: updateJobcard rejects operations:null, {} and "" with INVALID_JOBCARD_OPERATIONS_PAYLOAD', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-01','E-REVIEW4-01');
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    const res=WD.updateJobcard(jc.id,{operations:bad});
+    assert.equal(res.code,'INVALID_JOBCARD_OPERATIONS_PAYLOAD',`operations:${JSON.stringify(bad)} must be rejected`);
+  });
+});
+// (4) Existing-record upsertJobcard rejects the same three values.
+test('4th review fix 4: existing-record upsertJobcard rejects operations:null, {} and ""', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-04','E-REVIEW4-04');
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    const res=WD.upsertJobcard({id:jc.id,no:jc.no,operations:bad});
+    assert.equal(res.code,'INVALID_JOBCARD_OPERATIONS_PAYLOAD',`operations:${JSON.stringify(bad)} must be rejected`);
+  });
+});
+// (5) All six rejected operations cases preserve the complete active Jobcard and operation.
+test('4th review fix 5: all six rejected malformed-operations cases leave the complete Jobcard and its active operation untouched', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-05','E-REVIEW4-05');
+  const before=WD.findJobcard(jc.id);
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    WD.updateJobcard(jc.id,{operations:bad});
+    WD.upsertJobcard({id:jc.id,no:jc.no,operations:bad});
+  });
+  const after=WD.findJobcard(jc.id);
+  assert.deepEqual(after,before);
+  assert.equal(after.operations.find(o=>o.id===op.id).status,'in-progress');
+});
+// (6) updateJobcard rejects machines:null/{}/''.
+test('4th review fix 6: updateJobcard rejects machines:null, {} and "" with INVALID_JOBCARD_MACHINES_PAYLOAD', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-06','E-REVIEW4-06');
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    const res=WD.updateJobcard(jc.id,{machines:bad});
+    assert.equal(res.code,'INVALID_JOBCARD_MACHINES_PAYLOAD',`machines:${JSON.stringify(bad)} must be rejected`);
+  });
+});
+// (7) Existing-record upsertJobcard rejects the same three machine values.
+test('4th review fix 7: existing-record upsertJobcard rejects machines:null, {} and ""', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-07','E-REVIEW4-07');
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    const res=WD.upsertJobcard({id:jc.id,no:jc.no,machines:bad});
+    assert.equal(res.code,'INVALID_JOBCARD_MACHINES_PAYLOAD',`machines:${JSON.stringify(bad)} must be rejected`);
+  });
+});
+// (8) All six rejected machine cases preserve the equipment link and active operation.
+test('4th review fix 8: all six rejected malformed-machines cases leave the equipment link and active operation untouched', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-08','E-REVIEW4-08');
+  const before=WD.findJobcard(jc.id);
+  MALFORMED_COLLECTION_VALUES.forEach(bad=>{
+    WD.updateJobcard(jc.id,{machines:bad});
+    WD.upsertJobcard({id:jc.id,no:jc.no,machines:bad});
+  });
+  const after=WD.findJobcard(jc.id);
+  assert.deepEqual(after,before);
+  assert.equal(after.machines.length,1);
+  assert.equal(after.operations.find(o=>o.id===op.id).status,'in-progress');
+});
+// (9) A real empty operations array still reaches the active-deletion protection.
+test('4th review fix 9: a genuine empty operations array [] is valid input and still reaches the active-deletion protection (not the payload-shape error)', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-09','E-REVIEW4-09');
+  const res=WD.updateJobcard(jc.id,{operations:[]});
+  assert.equal(res.code,'OPERATION_ACTIVE_DELETE_REQUIRES_PAUSE','a real [] must reach the active-operation-deletion check, not be treated as an invalid payload');
+  assert.notEqual(res.code,'INVALID_JOBCARD_OPERATIONS_PAYLOAD');
+});
+// (10) A real empty machines array still reaches the active-unlink protection.
+test('4th review fix 10: a genuine empty machines array [] is valid input and still reaches the active-unlink protection', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-10','E-REVIEW4-10');
+  const res=WD.updateJobcard(jc.id,{machines:[]});
+  assert.equal(res.code,'ACTIVE_OPERATION_EQUIPMENT_UNLINK_REQUIRES_PAUSE');
+  assert.notEqual(res.code,'INVALID_JOBCARD_MACHINES_PAYLOAD');
+});
+// (11) Null/primitive array entries are rejected.
+test('4th review fix 11: null/primitive entries inside an otherwise-array operations or machines payload are rejected', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-11','E-REVIEW4-11');
+  const opsRes=WD.updateJobcard(jc.id,{operations:[null,'not-an-object',42]});
+  assert.equal(opsRes.code,'INVALID_JOBCARD_OPERATIONS_PAYLOAD');
+  const machinesRes=WD.updateJobcard(jc.id,{machines:[null,'not-an-object',42]});
+  assert.equal(machinesRes.code,'INVALID_JOBCARD_MACHINES_PAYLOAD');
+});
+// (12) Duplicate operation IDs are rejected.
+test('4th review fix 12: duplicate operation ids in a full operations-array replacement are rejected', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW4-12');
+  const op=mkOp(WD,jc.id,{});
+  const res=WD.updateJobcard(jc.id,{operations:[Object.assign({},op),Object.assign({},op)]});
+  assert.equal(res.code,'INVALID_JOBCARD_OPERATIONS_PAYLOAD');
+});
+// (13) Duplicate machine equipment IDs are rejected.
+test('4th review fix 13: duplicate equipmentId entries in a full machines-array replacement are rejected', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-REVIEW4-13');
+  const res=WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-DUP',name:'A'},{equipmentId:'E-DUP',name:'B'}]});
+  assert.equal(res.code,'INVALID_JOBCARD_MACHINES_PAYLOAD');
+});
+// (14) An active operation record cannot be replaced by an object containing only its matching ID.
+test('4th review fix 14: an in-progress operation cannot be replaced by a bare {id} object — every other field (including equipmentId) is treated as missing/changed', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-14','E-REVIEW4-14');
+  const res=WD.updateJobcard(jc.id,{operations:[{id:op.id}]});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE','a bare {id} object is missing equipmentId/machine — that must count as an unauthorized equipment change, not a no-op');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.status,'in-progress');
+  assert.equal(stored.equipmentId,'E-REVIEW4-14','the real stored operation must be completely untouched');
+  assert.ok(stored.desc,'the real stored operation must still have its real desc/other fields — nothing was replaced');
+});
+// (15) Omitting equipmentId/machine from a still-in-progress full replacement counts as a protected change.
+test('4th review fix 15: omitting equipmentId (present but replaced by undefined) from a full-array replacement of a still-in-progress operation is rejected', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-15','E-REVIEW4-15');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  const withoutEquipment=Object.assign({},stored);
+  delete withoutEquipment.equipmentId;
+  const res=WD.updateJobcard(jc.id,{operations:[withoutEquipment]});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).equipmentId,'E-REVIEW4-15');
+});
+// (16) updateJobcardOperation rejects malformed/unknown status values atomically.
+test('4th review fix 16: updateJobcardOperation rejects malformed/unrecognised status values atomically, and none of the bundled patch is applied', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-16','E-REVIEW4-16');
+  [...MALFORMED_STATUS_VALUES,'not-a-real-status'].forEach(bad=>{
+    const res=WD.updateJobcardOperation(jc.id,op.id,{status:bad,equipmentId:'SHOULD-NOT-APPLY',desc:'SHOULD-NOT-APPLY'});
+    assert.equal(res.code,'INVALID_OPERATION_STATUS',`status:${JSON.stringify(bad)} must be rejected`);
+  });
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.status,'in-progress');
+  assert.equal(stored.equipmentId,'E-REVIEW4-16');
+  assert.notEqual(stored.desc,'SHOULD-NOT-APPLY');
+});
+// (17) updateEquipment rejects malformed status values.
+test('4th review fix 17: updateEquipment rejects status "", whitespace, null, 0, false, {} and [] with INVALID_EQUIPMENT_STATUS', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW4-17',name:'Test Drill',category:'Power Tool'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-17');
+  MALFORMED_STATUS_VALUES.forEach(bad=>{
+    const res=WD.updateEquipment('E-REVIEW4-17',{status:bad});
+    assert.equal(res.code,'INVALID_EQUIPMENT_STATUS',`status:${JSON.stringify(bad)} must be rejected`);
+  });
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-17');
+  assert.deepEqual(after,before,'no rejected attempt may have changed anything');
+});
+// (18) changeEquipmentStatus rejects the same malformed status values.
+test('4th review fix 18: changeEquipmentStatus rejects the same malformed status values with INVALID_EQUIPMENT_STATUS', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-REVIEW4-18',name:'Test Drill',category:'Power Tool'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-18');
+  MALFORMED_STATUS_VALUES.forEach(bad=>{
+    const res=WD.changeEquipmentStatus('E-REVIEW4-18',bad);
+    assert.equal(res.code,'INVALID_EQUIPMENT_STATUS',`status:${JSON.stringify(bad)} must be rejected`);
+  });
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-18');
+  assert.deepEqual(after,before);
+});
+// (19) Rejected status mutations do not pause the operation because no equipment mutation occurred.
+test('4th review fix 19: a rejected malformed-status mutation does not pause the active operation (nothing valid happened)', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-19','E-REVIEW4-19');
+  MALFORMED_STATUS_VALUES.forEach(bad=>{
+    WD.updateEquipment('E-REVIEW4-19',{status:bad});
+    WD.changeEquipmentStatus('E-REVIEW4-19',bad);
+  });
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress','still running — no genuine equipment mutation ever occurred');
+});
+// (20) A non-empty unknown equipment status remains accepted as fail-closed and pauses the active operation.
+test('4th review fix 20: a non-empty but UNKNOWN status string is still accepted (fail-closed) and still pauses the active operation — preserving existing behaviour', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-20','E-REVIEW4-20');
+  const res=WD.changeEquipmentStatus('E-REVIEW4-20','Something Weird');
+  assert.ok(!res.error,'an unrecognised but well-formed status string must still be ACCEPTED, not rejected as invalid');
+  assert.equal(res.status,'Something Weird');
+  assert.equal(res.pausedOperations.length,1,'an unrecognised status fails safe (blocked) and must still auto-pause the active operation');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
+});
+// (21) Recognised hard-block statuses still pause operations (regression guard for the 3rd-review fix).
+test('4th review fix 21: recognised hard-block statuses (Quarantined, Out of Service) still auto-pause the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const fixtures=[mkStartedOpFixture(WD,'JC-REVIEW4-21A','E-REVIEW4-21A'),mkStartedOpFixture(WD,'JC-REVIEW4-21B','E-REVIEW4-21B')];
+  const r1=WD.changeEquipmentStatus('E-REVIEW4-21A','Quarantined');
+  assert.equal(r1.pausedOperations.length,1);
+  const r2=WD.changeEquipmentStatus('E-REVIEW4-21B','Out of Service');
+  assert.equal(r2.pausedOperations.length,1);
+  fixtures.forEach(({jc,op})=>assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused'));
+});
+// (22) Ordinary descriptive equipment edits remain allowed and do not pause operations.
+test('4th review fix 22: ordinary descriptive equipment edits (no status field at all) remain allowed and never pause the active operation', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW4-22','E-REVIEW4-22');
+  const res=WD.updateEquipment('E-REVIEW4-22',{name:'Renamed',description:'Updated',currentLocation:'Bay 3'});
+  assert.ok(!res.error);
+  assert.equal(res.pausedOperations.length,0);
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress');
+});
+// (24) API return-only pausedOperations data must never be written into stored records.
+test('4th review fix 24: the pausedOperations field returned by an API call is never persisted inside the stored equipment/breakdown/inspection/pre-use-check records', ()=>{
+  const WD=loadWorkshopData();
+  const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-24','E-REVIEW4-24');
+  const breakdown=WD.reportBreakdown('E-REVIEW4-24',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  assert.ok(Array.isArray(breakdown.pausedOperations)&&breakdown.pausedOperations.length===1,'sanity: the API return value does carry pausedOperations');
+  const rawEquipment=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24');
+  assert.equal(rawEquipment.pausedOperations,undefined,'the stored equipment record itself must never carry a pausedOperations field');
+  assert.equal(rawEquipment.downtimeRecords[0].pausedOperations,undefined,'the stored breakdown record must never carry a pausedOperations field');
+  WD.createEquipment({equipmentId:'E-REVIEW4-24B',name:'Test Drill',category:'Power Tool'});
+  const insp=WD.addInspection('E-REVIEW4-24B',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked',date:EQ_ASOF});
+  assert.ok(Array.isArray(insp.pausedOperations));
+  const rawEq2=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24B');
+  assert.equal(rawEq2.inspections[0].pausedOperations,undefined);
+  WD.createEquipment({equipmentId:'E-REVIEW4-24C',name:'Test Drill',category:'Power Tool'});
+  const puc=WD.recordEquipmentPreUseCheck('E-REVIEW4-24C',{checkedBy:'Marko K.',date:EQ_ASOF,result:'failed',notes:'Guard missing'});
+  assert.ok(Array.isArray(puc.pausedOperations));
+  const rawEq3=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24C');
+  assert.equal(rawEq3.preUseChecks[0].pausedOperations,undefined);
+});
+
+// ── Pass 3.2B FIFTH independent review fixes ───────────────────────────────────────────────────
+// Root cause: unsafeOperationEquipmentChanges()/updateJobcardOperation() exempted every recognised
+// non-in-progress status (completed/skipped/pending/paused) from equipment protection, when only an
+// explicit transition to 'paused' should be exempt — completing/skipping/reverting an in-progress
+// operation could otherwise rewrite which equipment performed the work.
+// (1)+(2)+(3) Single-operation patch: in-progress -> completed/skipped/pending plus an equipment
+// change is rejected in every case.
+test('5th review fix 1-3: updateJobcardOperation rejects an equipment change bundled with a transition to completed, skipped or pending', ()=>{
+  const WD=loadWorkshopData();
+  ['completed','skipped','pending'].forEach(targetStatus=>{
+    const {jc,op}=mkStartedOpFixture(WD,`JC-REVIEW5-0${targetStatus}`,`E-REVIEW5-0${targetStatus}`);
+    WD.createEquipment({equipmentId:`E-REVIEW5-FAB-${targetStatus}`,name:'Fabricated machine',category:'Power Tool'});
+    const res=WD.updateJobcardOperation(jc.id,op.id,{status:targetStatus,equipmentId:`E-REVIEW5-FAB-${targetStatus}`,machine:'Fabricated machine',actualCompletion:EQ_ASOF});
+    assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE',`transition to "${targetStatus}" plus an equipment change must be rejected`);
+    const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+    assert.equal(stored.status,'in-progress','rejected — status must not have changed either');
+    assert.equal(stored.equipmentId,`E-REVIEW5-0${targetStatus}`);
+  });
+});
+// (4) Bulk updateJobcard: all three target statuses plus equipment change are rejected.
+test('5th review fix 4: updateJobcard({operations}) rejects an equipment change bundled with a transition to completed, skipped or pending', ()=>{
+  const WD=loadWorkshopData();
+  ['completed','skipped','pending'].forEach(targetStatus=>{
+    const {jc,op}=mkStartedOpFixture(WD,`JC-REVIEW5-4${targetStatus}`,`E-REVIEW5-4${targetStatus}`);
+    WD.createEquipment({equipmentId:`E-REVIEW5-4FAB-${targetStatus}`,name:'Fabricated machine',category:'Power Tool'});
+    const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{status:targetStatus,equipmentId:`E-REVIEW5-4FAB-${targetStatus}`,machine:'Fabricated machine'}):o);
+    const res=WD.updateJobcard(jc.id,{operations:ops});
+    assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE',`bulk transition to "${targetStatus}" plus an equipment change must be rejected`);
+    const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+    assert.equal(stored.status,'in-progress');
+    assert.equal(stored.equipmentId,`E-REVIEW5-4${targetStatus}`);
+  });
+});
+// (5) Bulk existing-record upsertJobcard: all three target statuses plus equipment change are rejected.
+test('5th review fix 5: existing-record upsertJobcard({operations}) rejects an equipment change bundled with a transition to completed, skipped or pending', ()=>{
+  const WD=loadWorkshopData();
+  ['completed','skipped','pending'].forEach(targetStatus=>{
+    const {jc,op}=mkStartedOpFixture(WD,`JC-REVIEW5-5${targetStatus}`,`E-REVIEW5-5${targetStatus}`);
+    WD.createEquipment({equipmentId:`E-REVIEW5-5FAB-${targetStatus}`,name:'Fabricated machine',category:'Power Tool'});
+    const ops=WD.findJobcard(jc.id).operations.map(o=>o.id===op.id?Object.assign({},o,{status:targetStatus,equipmentId:`E-REVIEW5-5FAB-${targetStatus}`,machine:'Fabricated machine'}):o);
+    const res=WD.upsertJobcard({id:jc.id,no:jc.no,operations:ops});
+    assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE',`upsert transition to "${targetStatus}" plus an equipment change must be rejected`);
+    const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+    assert.equal(stored.status,'in-progress');
+    assert.equal(stored.equipmentId,`E-REVIEW5-5${targetStatus}`);
+  });
+});
+// (6) Removing equipmentId while completing is rejected.
+test('5th review fix 6: removing equipmentId (setting it null) while completing an in-progress operation is rejected', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-06','E-REVIEW5-06');
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'completed',equipmentId:null,machine:''});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.equipmentId,'E-REVIEW5-06');
+  assert.equal(stored.status,'in-progress');
+});
+// (7) Removing machine while skipping is rejected.
+test('5th review fix 7: removing the machine display name while skipping an in-progress operation is rejected', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-07','E-REVIEW5-07');
+  const storedBefore=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'skipped',machine:''});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.equal(stored.machine,storedBefore.machine);
+  assert.equal(stored.status,'in-progress');
+});
+// (8) A rejected mixed patch also applies none of its description, worker or hours changes.
+test('5th review fix 8: a rejected complete+equipment-change patch applies none of its bundled desc/worker/loggedHours fields either', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-08','E-REVIEW5-08');
+  WD.createEquipment({equipmentId:'E-REVIEW5-08-FAB',name:'Fabricated machine',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'completed',equipmentId:'E-REVIEW5-08-FAB',machine:'Fabricated machine',desc:'Sneaky desc',worker:'Someone Else',loggedHours:999,actualCompletion:EQ_ASOF});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
+  assert.notEqual(stored.desc,'Sneaky desc');
+  assert.notEqual(stored.worker,'Someone Else');
+  assert.notEqual(stored.loggedHours,999);
+  assert.equal(stored.actualCompletion,null,'actualCompletion must not have been set either');
+});
+// (9) The complete Jobcard remains unchanged after every rejected full-array mutation.
+test('5th review fix 9: the complete Jobcard record is unchanged after a rejected bulk complete+equipment-change mutation, including unrelated bundled fields', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-09','E-REVIEW5-09');
+  WD.createEquipment({equipmentId:'E-REVIEW5-09-FAB',name:'Fabricated machine',category:'Power Tool'});
+  const before=WD.findJobcard(jc.id);
+  const ops=before.operations.map(o=>o.id===op.id?Object.assign({},o,{status:'completed',equipmentId:'E-REVIEW5-09-FAB',machine:'Fabricated machine'}):o);
+  const res=WD.updateJobcard(jc.id,{operations:ops,title:'Sneaky title change'});
+  assert.equal(res.code,'OPERATION_EQUIPMENT_CHANGE_REQUIRES_PAUSE');
+  const after=WD.findJobcard(jc.id);
+  assert.deepEqual(after,before,'the whole Jobcard, including the unrelated bundled title field, must be byte-for-byte unchanged');
+});
+// (10) in-progress -> paused plus an equipment edit remains allowed.
+test('5th review fix 10: transitioning in-progress -> paused while ALSO changing equipment in the same patch remains allowed (current established policy)', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-10','E-REVIEW5-10');
+  WD.createEquipment({equipmentId:'E-REVIEW5-10-NEW',name:'Other machine',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'paused',equipmentId:'E-REVIEW5-10-NEW',machine:'Other machine'});
+  assert.ok(!res.error,'pause + equipment edit in the same call must remain allowed');
+  assert.equal(res.status,'paused');
+  assert.equal(res.equipmentId,'E-REVIEW5-10-NEW');
+  // Same allowance through the bulk path.
+  const {jc:jc2,op:op2}=mkStartedOpFixture(WD,'JC-REVIEW5-10B','E-REVIEW5-10B');
+  WD.createEquipment({equipmentId:'E-REVIEW5-10B-NEW',name:'Other machine',category:'Power Tool'});
+  const ops=WD.findJobcard(jc2.id).operations.map(o=>o.id===op2.id?Object.assign({},o,{status:'paused',equipmentId:'E-REVIEW5-10B-NEW',machine:'Other machine'}):o);
+  const res2=WD.updateJobcard(jc2.id,{operations:ops});
+  assert.ok(!res2.error,'bulk pause + equipment edit in the same call must remain allowed');
+  assert.equal(WD.findJobcard(jc2.id).operations.find(o=>o.id===op2.id).equipmentId,'E-REVIEW5-10B-NEW');
+});
+// (11) An operation already paused can still change equipment normally.
+test('5th review fix 11: an operation already stored as paused can still have its equipment changed normally (unaffected by this fix)', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-11','E-REVIEW5-11');
+  WD.updateJobcardOperation(jc.id,op.id,{status:'paused'});
+  WD.createEquipment({equipmentId:'E-REVIEW5-11-NEW',name:'Other machine',category:'Power Tool'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{equipmentId:'E-REVIEW5-11-NEW',machine:'Other machine'});
+  assert.ok(!res.error);
+  assert.equal(res.equipmentId,'E-REVIEW5-11-NEW');
+});
+// (12) Completing an operation while preserving its original equipment remains allowed with no blocker.
+test('5th review fix 12: completing an operation while preserving its original equipment remains allowed when nothing else blocks it', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-12','E-REVIEW5-12');
+  const res=WD.updateJobcardOperation(jc.id,op.id,{status:'completed',equipmentId:op.equipmentId,machine:op.machine,actualCompletion:EQ_ASOF});
+  assert.ok(!res.error,'completing with UNCHANGED equipment must remain allowed');
+  assert.equal(res.status,'completed');
+  assert.equal(res.equipmentId,'E-REVIEW5-12');
+});
+// (13) Completing/skipping with unchanged equipment remains blocked by an active Quality Hold.
+test('5th review fix 13: completing/skipping with UNCHANGED equipment still respects an active Quality Hold (existing, unrelated protection)', ()=>{
+  const WD=loadWorkshopData();
+  const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW5-13','E-REVIEW5-13');
+  WD.applyQualityHold({scope:'jobcard',reference:jc.no,reason:'Test hold'});
+  const completeRes=WD.updateJobcardOperation(jc.id,op.id,{status:'completed',equipmentId:op.equipmentId,machine:op.machine,actualCompletion:EQ_ASOF});
+  assert.equal(completeRes.code,'QUALITY_HOLD_ACTIVE','completing with unchanged equipment must still be blocked by the active hold');
+  const skipRes=WD.updateJobcardOperation(jc.id,op.id,{status:'skipped',equipmentId:op.equipmentId,machine:op.machine});
+  assert.equal(skipRes.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress','a hold-blocked transition must not have changed status');
 });
