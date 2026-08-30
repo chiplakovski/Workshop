@@ -19,10 +19,12 @@ function buildEnv(seedEntries,customLocalStorage){
   g.window=g;
   g.dispatchEvent=()=>{};
   g.CustomEvent=function(type,init){this.type=type;this.detail=init&&init.detail;};
-  // Mirrors the real browser's <script src="quality-gates.js"></script> loading BEFORE
-  // workshop-data.js, so workshop-data.js's window.QualityGates lookup finds the real module —
-  // exactly the logic the pages use, never a reimplementation.
+  // Mirrors the real browser's <script src="quality-gates.js"></script> / <script
+  // src="equipment-gates.js"></script> loading BEFORE workshop-data.js, so workshop-data.js's
+  // window.QualityGates/window.EquipmentGates lookups find the real modules — exactly the logic
+  // the pages use, never a reimplementation.
   g.QualityGates=require(path.join(__dirname,'..','..','quality-gates.js'));
+  g.EquipmentGates=require(path.join(__dirname,'..','..','equipment-gates.js'));
   if(seedEntries){for(const[key,value]of Object.entries(seedEntries))g.localStorage.setItem(key,value);}
   return g;
 }

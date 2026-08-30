@@ -18,7 +18,7 @@ function checkSyntax(label,source){
   }
 }
 
-const jsFiles=['workshop-data.js','workshop-forms.js','jobcard-rules.js','estimation-rules.js','project-rules.js','quality-gates.js'];
+const jsFiles=['workshop-data.js','workshop-forms.js','jobcard-rules.js','estimation-rules.js','project-rules.js','quality-gates.js','equipment-gates.js'];
 for(const file of jsFiles){
   const full=path.join(ROOT,file);
   if(!fs.existsSync(full)){failures++;console.log(`FAIL ${file}: file not found`);continue;}

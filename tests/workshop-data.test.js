@@ -172,13 +172,15 @@ test('backup/import: validateBackup rejects malformed collection fields', ()=>{
   assert.equal(WD.validateBackup(minimalState()).valid,true);
 });
 
-// ── Equipment: current assignment-blocking behaviour (not expanding the rule set) ──
-test('equipment: cannot assign equipment that is Out of Service, Quarantined, Under Maintenance or Retired', ()=>{
+// ── Equipment: assignment-blocking behaviour — Pass 3.2A routes this through the central
+// Equipment safety gate (equipment-gates.js) instead of a hardcoded, previously-incomplete list. ──
+test('equipment: cannot assign equipment that is Out of Service, Quarantined, Under Maintenance, Maintenance Due, Inspection Required or Retired', ()=>{
   const WD=loadWorkshopData();
-  for(const status of ['Out of Service','Quarantined','Under Maintenance','Retired']){
+  for(const status of ['Out of Service','Quarantined','Under Maintenance','Maintenance Due','Inspection Required','Retired']){
     WD.changeEquipmentStatus('E-1001',status);
     const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1'});
-    assert.equal(res.error,'Unavailable equipment cannot be assigned',`status ${status} must block assignment`);
+    assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED',`status ${status} must block assignment`);
+    assert.ok(res.error,`status ${status} must return a structured error`);
   }
 });
 
@@ -228,6 +230,272 @@ test('equipment: existing equipment records are left unchanged by getEquipment()
   assert.equal(equipment[0].equipmentId,'E-9001');
   assert.equal(equipment[0].name,'Custom Drill Press');
   assert.equal(equipment[0].status,'Available');
+});
+
+// ── Pass 3.2A: central Equipment safety gate (equipment-gates.js + WorkshopData enforcement) ──
+// Seed fixture used throughout: E-1001 (Available, Welding Machine, no `requirements` object, all
+// history arrays empty) is the healthy control; other seed statuses (E-1002 In Use, E-1003
+// Maintenance Due, E-1004 Under Maintenance, E-1006 Out of Service, E-1008 Inspection Required,
+// E-1010 Quarantined) already exercise the full hard-block status set without extra setup.
+const EQ_ASOF='2026-08-30';
+
+test('equipment gate: available equipment with no blocker can be reserved and then assigned', ()=>{
+  const WD=loadWorkshopData();
+  const reserved=WD.reserveEquipment('E-1001',{project:'P-1',jobcard:'JC-1',reservedBy:'Marko K.'});
+  assert.ok(!reserved.error);
+  assert.equal(reserved.status,'Reserved');
+  const assigned=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1',worker:'Marko K.'});
+  assert.ok(!assigned.error);
+  assert.equal(assigned.assignedProject,'P-1');
+});
+test('equipment gate: status blocking is case/whitespace-insensitive through the real WorkshopData API', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','  quarantined  ');
+  const res=WD.assignEquipment('E-1001',{project:'P-1'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: an unrecognised/malformed status through the real API fails safe (blocks), never guessed as safe', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Something Weird');
+  const res=WD.assignEquipment('E-1001',{project:'P-1'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: overdue maintenance/inspection/certification/calibration each block through WorkshopData exactly when mandatory', ()=>{
+  const cases=[
+    {field:'maintenanceDate',flag:'maintenanceRequired'},
+    {field:'inspectionDate',flag:'inspectionRequired'},
+    {field:'certificationExpiry',flag:'certificationRequired'},
+    {field:'calibrationDate',flag:'calibrationRequired'}
+  ];
+  cases.forEach(({field,flag})=>{
+    const WD=loadWorkshopData();
+    WD.updateEquipment('E-1001',{[field]:'2020-01-01',requirements:{[flag]:true}});
+    assert.equal(WD.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true,field);
+    const WD2=loadWorkshopData();
+    WD2.updateEquipment('E-1001',{[field]:'2020-01-01'});
+    assert.equal(WD2.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,false,`${field} not mandatory must stay backwards-compatible`);
+  });
+});
+test('equipment gate: canAssignEquipment/canUseEquipment accept options.asOf for deterministic date-based checks', ()=>{
+  const WD=loadWorkshopData();
+  WD.updateEquipment('E-1001',{maintenanceDate:'2026-06-15',requirements:{maintenanceRequired:true}});
+  assert.equal(WD.canAssignEquipment('E-1001',{asOf:'2026-06-01'}).allowed,true);
+  assert.equal(WD.canAssignEquipment('E-1001',{asOf:'2026-07-01'}).allowed,false);
+});
+test('equipment gate: logEquipmentUsage requires a positive, finite number of hours and leaves the meter unchanged when rejected', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').operatingHourMeter;
+  for(const hours of [0,-1,NaN,Infinity,undefined,null,'abc']){
+    const res=WD.logEquipmentUsage('E-1001',{hours,worker:'Marko K.'});
+    assert.ok(res.error,`hours=${hours} must be rejected`);
+  }
+  assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').operatingHourMeter,before);
+});
+test('equipment gate: canUseEquipment requires a mandatory pre-use check, but canAssignEquipment does not', ()=>{
+  const WD=loadWorkshopData();
+  WD.updateEquipment('E-1001',{requirements:{preUseCheckRequired:true}});
+  assert.equal(WD.canAssignEquipment('E-1001',{}).allowed,true,'assignment is never gated by the pre-use-check requirement');
+  assert.equal(WD.canUseEquipment('E-1001',{asOf:EQ_ASOF,date:EQ_ASOF}).allowed,false);
+});
+test('equipment gate: usage is blocked without a matching passed pre-use check when mandatory, and succeeds once one is recorded', ()=>{
+  const WD=loadWorkshopData();
+  WD.updateEquipment('E-1001',{requirements:{preUseCheckRequired:true}});
+  const blocked=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Marko K.',date:EQ_ASOF});
+  assert.equal(blocked.code,'EQUIPMENT_SAFETY_BLOCKED');
+  const passed=WD.recordEquipmentPreUseCheck('E-1001',{result:'passed',checkedBy:'Marko K.',date:EQ_ASOF,checklist:'Guards in place, oil level OK'});
+  assert.ok(!passed.error);
+  const ok=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Marko K.',date:EQ_ASOF});
+  assert.ok(!ok.error);
+});
+test('equipment gate: a failed pre-use check immediately blocks usage and is recorded as audit history (never a single toggle)', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.recordEquipmentPreUseCheck('E-1001',{result:'failed',checkedBy:'Marko K.',date:EQ_ASOF,notes:'Guard missing'});
+  assert.ok(!res.error);
+  const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  assert.equal(item.preUseChecks.length,1);
+  assert.equal(item.status,'Inspection Required');
+  assert.ok(item.activity.some(a=>/Pre-use check failed/.test(a.action)));
+  const usage=WD.logEquipmentUsage('E-1001',{hours:1,worker:'Marko K.'});
+  assert.equal(usage.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: recordEquipmentPreUseCheck validates required fields and requires evidence for a passed result', ()=>{
+  const WD=loadWorkshopData();
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{result:'passed',date:EQ_ASOF}).error,'missing checkedBy');
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',result:'passed'}).error,'missing date');
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF}).error,'missing result');
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed'}).error,'passed with no evidence/checklist');
+  const ok=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Guards in place, oil level OK'});
+  assert.ok(!ok.error);
+});
+test('equipment gate: pre-use checks accumulate as history, never overwriting a single toggle', ()=>{
+  const WD=loadWorkshopData();
+  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-29',result:'passed',checklist:'OK'});
+  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').preUseChecks.length,2);
+});
+test('equipment gate: a failed critical inspection quarantines the equipment and blocks assignment/usage', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame'});
+  assert.ok(!res.error);
+  assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').status,'Quarantined');
+  const assign=WD.assignEquipment('E-1001',{project:'P-1'});
+  assert.equal(assign.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: an open breakdown blocks assignment and usage', ()=>{
+  const WD=loadWorkshopData();
+  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  const res=WD.assignEquipment('E-1001',{project:'P-1'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: reportBreakdown places the equipment Out of Service and preserves the project/jobcard reference for traceability', ()=>{
+  const WD=loadWorkshopData();
+  WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001'});
+  const rec=WD.reportBreakdown('E-1001',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  assert.equal(rec.projectNo,'P-2026-014');
+  assert.equal(rec.jobcardNo,'JC-2026-0001');
+  assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').status,'Out of Service');
+});
+test('equipment gate: resolveBreakdown requires resolvedBy and resolutionEvidence, clears the open-breakdown blocker, and never deletes the record', ()=>{
+  const WD=loadWorkshopData();
+  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure'});
+  assert.ok(WD.resolveBreakdown('E-1001',br.id,{}).error);
+  const resolved=WD.resolveBreakdown('E-1001',br.id,{resolvedBy:'Marko K.',resolutionEvidence:'Motor replaced and tested'});
+  assert.ok(!resolved.error);
+  const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  assert.equal(item.downtimeRecords.length,1,'the original breakdown record must not be deleted');
+  assert.equal(item.downtimeRecords[0].status,'resolved');
+  assert.ok(!WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blockers.some(b=>b.code==='BREAKDOWN_OPEN'));
+});
+test('equipment gate: returnEquipment clears the assignment but preserves a blocking status', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  const res=WD.returnEquipment('E-1001',{user:'Marko K.'});
+  assert.equal(res.status,'Quarantined');
+  assert.equal(res.assignedProject,null);
+});
+test('equipment gate: returnEquipment sets status to Available for genuinely safe equipment', ()=>{
+  const WD=loadWorkshopData();
+  WD.assignEquipment('E-1001',{project:'P-1'});
+  const res=WD.returnEquipment('E-1001',{user:'Marko K.'});
+  assert.equal(res.status,'Available');
+});
+test('equipment gate: updateEquipment cannot move blocked equipment directly into Available, Reserved or In Use', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Out of Service');
+  for(const target of ['Available','Reserved','In Use']){
+    const res=WD.updateEquipment('E-1001',{status:target});
+    assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED',target);
+  }
+  assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').status,'Out of Service');
+});
+test('equipment gate: changeEquipmentStatus cannot move blocked equipment directly into an operational status', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  const res=WD.changeEquipmentStatus('E-1001','In Use');
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: caller override/force/managerOverride/safetyApproved flags and a fabricated blockers/reasons list never bypass the gate', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Out of Service');
+  const res=WD.updateEquipment('E-1001',{status:'Available',override:true,force:true,managerOverride:true,safetyApproved:true,blockers:[],reasons:[]});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: assignEquipment never trusts a caller-supplied assignment.status', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.assignEquipment('E-1001',{project:'P-1',status:'Available'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'Reserved','assignment.status must be ignored — assigning always reserves, never trusts a caller-chosen status');
+});
+test('equipment gate: reserveEquipment rejects blocked equipment — it is not an unrestricted status change', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Under Maintenance');
+  const res=WD.reserveEquipment('E-1001',{project:'P-1'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: updateEquipment cannot replace or clear safety-controlled history arrays', ()=>{
+  const WD=loadWorkshopData();
+  WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspections;
+  const res=WD.updateEquipment('E-1001',{inspections:[],downtimeRecords:[],preUseChecks:[],certifications:[],calibrations:[],maintenance:[],safetyWarnings:[],activity:[]});
+  assert.ok(!res.error);
+  const after=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  assert.deepEqual(after.inspections,before);
+});
+test('equipment gate: returnEquipmentToService requires authorisedBy, approvalReference, resolutionEvidence, passedInspectionReference and returnDate', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed'});
+  const full={authorisedBy:'Aleksandar C.',approvalReference:'RTS-1',resolutionEvidence:'Repaired and verified',passedInspectionReference:insp.id,returnDate:'2026-08-30'};
+  Object.keys(full).forEach(field=>{
+    const partial=Object.assign({},full);delete partial[field];
+    const res=WD.returnEquipmentToService('E-1001',partial);
+    assert.ok(res.error,`missing ${field} must be rejected`);
+  });
+});
+test('equipment gate: Retired equipment can never be returned to service', ()=>{
+  const WD=loadWorkshopData();
+  WD.retireEquipment('E-1001','End of life');
+  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed'});
+  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:'2026-08-30'});
+  assert.ok(res.error);
+});
+test('equipment gate: returnEquipmentToService is rejected while an open breakdown remains unresolved', ()=>{
+  const WD=loadWorkshopData();
+  WD.reportBreakdown('E-1001',{reason:'Motor failure'});
+  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed'});
+  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:'2026-08-30'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+test('equipment gate: returnEquipmentToService is rejected when passedInspectionReference does not match a real, passed inspection record', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:'DOES-NOT-EXIST',returnDate:'2026-08-30'});
+  assert.ok(res.error);
+});
+test('equipment gate: a successful formal return to service preserves history, does not auto-assign, and adds an audit entry', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  WD.addNote('E-1001',{author:'Marko K.',text:'Under review'});
+  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed'});
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'Aleksandar C.',approvalReference:'RTS-1',resolutionEvidence:'Repaired and reinspected',passedInspectionReference:insp.id,returnDate:'2026-08-30'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'Available');
+  assert.equal(res.assignedProject,null);
+  assert.equal(res.assignedJobcard,null);
+  assert.equal(res.notesLog.length,before.notesLog.length);
+  assert.equal(res.inspections.length,before.inspections.length);
+  assert.ok(res.returnToService.length>=1);
+  assert.ok(res.activity.some(a=>/Returned to service/.test(a.action)));
+});
+test('equipment gate: a blocked usage attempt leaves the equipment, hour meter and usage history completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Out of Service');
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  const res=WD.logEquipmentUsage('E-1001',{hours:5,worker:'Marko K.'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+  assert.deepEqual(WD.get().equipment.find(e=>e.equipmentId==='E-1001'),before);
+});
+test('equipment gate: a blocked assignment attempt leaves the equipment assignment fields completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Out of Service');
+  const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
+  const res=WD.assignEquipment('E-1001',{project:'P-9',jobcard:'JC-9',worker:'Someone'});
+  assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
+  assert.deepEqual(WD.get().equipment.find(e=>e.equipmentId==='E-1001'),before);
+});
+test('equipment gate API: getEquipmentSafetyGate returns clones, not live references', ()=>{
+  const WD=loadWorkshopData();
+  WD.changeEquipmentStatus('E-1001','Quarantined');
+  const gate=WD.getEquipmentSafetyGate('E-1001');
+  gate.blockers[0].message='TAMPERED';
+  const gate2=WD.getEquipmentSafetyGate('E-1001');
+  assert.notEqual(gate2.blockers[0].message,'TAMPERED');
+});
+test('equipment gate: an intentionally empty equipment collection remains empty after normalize() (Pass 3.2A additions do not refill it)', ()=>{
+  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
+  assert.deepEqual(WD.getEquipment(),[]);
 });
 
 // ── Quality: hold / NCR / release workflow rules ────────────────────────────

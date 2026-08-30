@@ -549,6 +549,12 @@
       if(!Array.isArray(item.downtimeRecords))item.downtimeRecords=[];
       if(!Array.isArray(item.safetyWarnings))item.safetyWarnings=[];
       if(!Array.isArray(item.currentAssignment))item.currentAssignment=[];
+      // Pass 3.2A: two new safety-history arrays. A record from before this pass simply has neither
+      // yet — backfilled the same non-destructive way as every other per-item array above, never
+      // touching `requirements` (that object is intentionally left absent on legacy records; its
+      // absence is what makes every requirement default to "not mandatory").
+      if(!Array.isArray(item.preUseChecks))item.preUseChecks=[];
+      if(!Array.isArray(item.returnToService))item.returnToService=[];
       if(item.status==null)item.status='Available';
       if(!item.equipmentId)item.equipmentId=item.id||`E-${String((s.counters.equipment||0)+1).padStart(4,'0')}`;
       if(!item.id)item.id=item.equipmentId;
@@ -654,6 +660,7 @@
   }
   function estimation(idOrNo){return state.estimations.find(x=>x.id===idOrNo||x.no===idOrNo)}
   function jobcard(idOrNo){return state.jobcards.find(x=>x.id===idOrNo||x.no===idOrNo)}
+  function equip(idOrNo){return state.equipment.find(x=>x.equipmentId===idOrNo||x.id===idOrNo)}
   function addMovement(m){const rec=Object.assign({id:state.counters.movement++,time:now(),user:'Aleksandar C.'},m);state.movements.unshift(rec);save(`${rec.action} ${rec.code}`);return rec}
   function projectReadiness(p){const rows=(p.bom||[]).map(line=>{const inv=inventory(line.code),available=inv?Math.max(0,inv.stock-inv.reserved):0,missing=Math.max(0,line.required-(line.reserved||0));return Object.assign({},line,{stock:inv?inv.stock:0,available,missing})});return{status:rows.some(x=>x.missing>0)?'MATERIAL SHORTAGE':'READY FOR PRODUCTION',rows}}
   // ── Quality module helpers: thin, reused across all quality record types. ──
@@ -729,6 +736,37 @@
   function hasUnsafeSeedOperations(operations){
     return Array.isArray(operations)&&operations.some(op=>op&&OPERATION_UNSAFE_STATUSES.includes(op.status));
   }
+  // ── Central Equipment safety gate (see equipment-gates.js) ──
+  // Thin wrapper around the pure EquipmentGates module — the ONE place that decides whether a piece
+  // of equipment can be reserved, assigned, used, or have hours logged. `item` is passed straight
+  // from state (equipment-gates.js never mutates its input); the caller-facing API always clones
+  // the result before returning it (see getEquipmentSafetyGate below).
+  function equipmentSafetyGate(item,options){
+    if(!global.EquipmentGates)throw new Error('equipment-gates.js must be loaded before workshop-data.js');
+    return global.EquipmentGates.getEquipmentSafetyGate(item,options||{});
+  }
+  // Builds the structured, backward-compatible error every gated equipment mutation returns when
+  // blocked, and records a meaningful blocked-attempt audit entry (via the normal save() activity
+  // log) WITHOUT touching the target equipment record itself.
+  function equipmentGateBlockedResult(action,equipmentId,gate,extra){
+    save(`Blocked by equipment safety gate: ${action} for ${equipmentId}${gate.reasons.length?' ('+gate.reasons.join('; ')+')':''}`);
+    return Object.assign({
+      error:`Blocked by equipment safety rules: ${gate.reasons.join('; ')||'equipment is not operational'}.`,
+      code:'EQUIPMENT_SAFETY_BLOCKED',
+      equipmentId:equipmentId||gate.equipmentId,
+      reasons:gate.reasons.slice(),
+      blockers:clone(gate.blockers)
+    },extra||{});
+  }
+  // Safety-controlled history arrays own their own dedicated methods (addInspection,
+  // addMaintenanceRecord, addCertification, addCalibration, recordEquipmentPreUseCheck,
+  // reportBreakdown, resolveBreakdown, ...) — updateEquipment() must never let a caller replace or
+  // clear any of them to silently erase a blocker.
+  const EQUIPMENT_SAFETY_HISTORY_FIELDS=['inspections','maintenance','certifications','calibrations','preUseChecks','downtimeRecords','safetyWarnings','activity'];
+  // A caller-supplied override/force/etc. flag or a caller-supplied blockers/reasons list must
+  // never influence the gate — these fields are stripped from updateEquipment() patches outright so
+  // no future code path can accidentally start trusting them.
+  const EQUIPMENT_OVERRIDE_FLAG_FIELDS=['override','managerOverride','force','safetyApproved','blockers','reasons'];
   const api={
     key:KEY,
     get:()=>clone(state),
@@ -1053,6 +1091,8 @@
         notesLog:[],
         usageHistory:[],
         downtimeRecords:[],
+        preUseChecks:[],
+        returnToService:[],
         currentAssignment:null,
         usageSessions:[],
         isRetired:false,
@@ -1068,16 +1108,37 @@
     updateEquipment:(equipmentId,patch)=>{
       const index=state.equipment.findIndex(x=>x.equipmentId===equipmentId||x.id===equipmentId);
       if(index<0) return null;
-      const next=Object.assign({}, clone(state.equipment[index]), clone(patch||{}));
+      const current=state.equipment[index];
+      const data=clone(patch||{});
+      // Close bypass (B): safety-controlled history arrays and (D) any override/force/blockers/
+      // reasons flag are never applied through this generic path — dedicated methods own them.
+      EQUIPMENT_SAFETY_HISTORY_FIELDS.forEach(f=>{delete data[f];});
+      EQUIPMENT_OVERRIDE_FLAG_FIELDS.forEach(f=>{delete data[f];});
+      // Close bypass (A): a genuine transition into an operational status is blocked exactly like
+      // changeEquipmentStatus() below — moving OUT of an operational status (e.g. reporting it
+      // broken) is always allowed; only moving INTO Available/Reserved/In Use while blocked is not.
+      if(data.status&&global.EquipmentGates&&global.EquipmentGates.normalizeStatus(data.status)!==global.EquipmentGates.normalizeStatus(current.status)&&global.EquipmentGates.isOperationalStatus(data.status)){
+        const gate=equipmentSafetyGate(current,{});
+        if(gate.blocked)return equipmentGateBlockedResult(`Equipment status update to ${data.status}`,equipmentId,gate);
+      }
+      const next=Object.assign({}, clone(current), data);
       next.lastActivity=now();
       state.equipment[index]=next;
       save(`Equipment updated: ${equipmentId}`);
       return clone(next);
     },
+    // Close bypass (C): moving blocked equipment back to an operational status through this
+    // lower-level method is gated exactly like updateEquipment() above — a caller cannot bypass
+    // safety by calling this instead. Moving to a non-operational status (e.g. Quarantined) is
+    // always allowed, matching Pass 3.1's "safe direction" principle for Quality Holds.
     changeEquipmentStatus:(equipmentId,status,meta={})=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
       const nextStatus=status||item.status;
+      if(global.EquipmentGates&&global.EquipmentGates.normalizeStatus(nextStatus)!==global.EquipmentGates.normalizeStatus(item.status)&&global.EquipmentGates.isOperationalStatus(nextStatus)){
+        const gate=equipmentSafetyGate(item,{});
+        if(gate.blocked)return equipmentGateBlockedResult(`Status change to ${nextStatus}`,equipmentId,gate);
+      }
       item.status=nextStatus;
       item.lastActivity=now();
       item.activity=item.activity||[];
@@ -1085,35 +1146,71 @@
       save(`Equipment status changed: ${equipmentId}`);
       return clone(item);
     },
-    assignEquipment:(equipmentId, assignment={})=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+    getEquipmentSafetyGate(equipmentId,options={}){
+      const item=equip(equipmentId);
+      const gate=equipmentSafetyGate(item,options);
+      return Object.assign({},gate,{blockers:clone(gate.blockers)});
+    },
+    canAssignEquipment(equipmentId,options={}){const gate=api.getEquipmentSafetyGate(equipmentId,options);return{allowed:!gate.blocked,gate};},
+    canUseEquipment(equipmentId,options={}){const gate=api.getEquipmentSafetyGate(equipmentId,Object.assign({requirePreUseCheck:true},options));return{allowed:!gate.blocked,gate};},
+    // Reservation is its own method, never an unrestricted changeEquipmentStatus() call — it always
+    // independently re-checks the gate before moving equipment into 'Reserved'.
+    reserveEquipment(equipmentId,payload={}){
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const blocked=['Out of Service','Quarantined','Under Maintenance','Retired'];
-      if(blocked.includes(item.status)) return {error:'Unavailable equipment cannot be assigned'};
+      const gate=equipmentSafetyGate(item,{});
+      if(gate.blocked)return equipmentGateBlockedResult('Reserve',equipmentId,gate);
+      item.status='Reserved';
+      item.assignedProject=payload.project||item.assignedProject||null;
+      item.assignedJobcard=payload.jobcard||item.assignedJobcard||null;
+      item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:'Equipment reserved',user:payload.reservedBy||'Aleksandar C.',reference:equipmentId,details:`${payload.project||'—'} / ${payload.jobcard||'—'}`});
+      item.lastActivity=now();
+      save(`Equipment reserved: ${equipmentId}`);
+      return clone(item);
+    },
+    assignEquipment:(equipmentId, assignment={})=>{
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const gate=equipmentSafetyGate(item,{});
+      if(gate.blocked)return equipmentGateBlockedResult('Assign',equipmentId,gate);
       item.assignedProject=assignment.project||item.assignedProject||null;
       item.assignedJobcard=assignment.jobcard||item.assignedJobcard||null;
       item.currentLocation=assignment.location||item.currentLocation;
       item.operator=assignment.worker||item.operator||null;
-      item.status=assignment.status||item.status||'Reserved';
-      item.currentAssignment={...assignment, equipmentId:item.equipmentId, assignedBy:assignment.assignedBy||'Aleksandar C.', assignedDate:new Date().toISOString().slice(0,10)};
+      // Caller-supplied assignment.status is never trusted (Pass 3.2A requirement) — assigning
+      // equipment always reserves it; a later logEquipmentUsage()/canUseEquipment() call is the
+      // gated path into actual operational use.
+      item.status='Reserved';
+      item.currentAssignment={project:assignment.project||null,jobcard:assignment.jobcard||null,location:assignment.location||null,worker:assignment.worker||null,equipmentId:item.equipmentId, assignedBy:assignment.assignedBy||'Aleksandar C.', assignedDate:new Date().toISOString().slice(0,10)};
       item.activity=item.activity||[];
       item.activity.unshift({timestamp:now(),action:'Equipment assigned',user:assignment.assignedBy||'Aleksandar C.',reference:item.equipmentId,details:`${assignment.project||'—'} / ${assignment.jobcard||'—'}`});
       item.lastActivity=now();
       save(`Equipment assigned: ${equipmentId}`);
       return clone(item);
     },
+    // Physically returning equipment (clearing its assignment, sending it home) is always allowed —
+    // it is a safe direction, like Pass 3.1's pause/block. It must NEVER itself flip unsafe
+    // equipment back to Available; the equipment's blocking status (if any) is preserved.
     returnEquipment:(equipmentId, meta={})=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      item.assignedProject=null; item.assignedJobcard=null; item.currentLocation=meta.location||item.homeLocation||item.currentLocation; item.operator=null; item.status='Available';
+      const gate=equipmentSafetyGate(item,{});
+      item.assignedProject=null; item.assignedJobcard=null; item.currentLocation=meta.location||item.homeLocation||item.currentLocation; item.operator=null;
+      item.currentAssignment=null;
+      if(!gate.blocked)item.status='Available';
       item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Equipment returned',user:meta.user||'Aleksandar C.',reference:item.equipmentId,details:meta.note||''});
       item.lastActivity=now();
       save(`Equipment returned: ${equipmentId}`);
       return clone(item);
     },
     logEquipmentUsage:(equipmentId,usage={})=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
+      const hours=Number(usage.hours);
+      if(!Number.isFinite(hours)||hours<=0)return{error:'Equipment usage requires a positive, finite number of hours'};
+      const gate=equipmentSafetyGate(item,{requirePreUseCheck:true,date:usage.date,jobcardNo:usage.jobcard,projectNo:usage.project});
+      if(gate.blocked)return equipmentGateBlockedResult('Log usage',equipmentId,gate);
       const record={
         id:Date.now().toString(),
         startTime:usage.startTime||now(),
@@ -1123,22 +1220,33 @@
         worker:usage.worker||item.operator||'Unassigned',
         duration:usage.duration||0,
         meterBefore:Number(item.operatingHourMeter)||0,
-        meterAfter:Number(item.operatingHourMeter||0) + Number(usage.hours||0),
+        meterAfter:Number(item.operatingHourMeter||0) + hours,
         fuelOrEnergy:usage.fuelOrEnergy||'n/a',
         notes:usage.notes||'',
         reportedProblems:usage.reportedProblems||[]
       };
       item.usageHistory=item.usageHistory||[]; item.usageHistory.unshift(record);
-      item.operatingHourMeter=Number(item.operatingHourMeter||0)+Number(usage.hours||0);
+      item.operatingHourMeter=Number(item.operatingHourMeter||0)+hours;
       item.lastActivity=now();
       save(`Equipment usage logged: ${equipmentId}`);
       return clone(item);
     },
+    // Inspection history is append-only (unshift, never overwritten/removed) — a failed critical
+    // safety inspection immediately quarantines the equipment; a later PASSED inspection (a real
+    // re-inspection, never an arbitrary edit of the old record) is the only way that clears it,
+    // since it becomes the new latest record the safety gate reads.
     addInspection:(equipmentId,inspection)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
       const rec={...clone(inspection), id:`INS-${Date.now()}`};
-      item.inspections=item.inspections||[]; item.inspections.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Inspection completed',user:inspection.inspector||'Aleksandar C.',reference:equipmentId,details:inspection.result||'Pending'}); item.lastActivity=now();
+      item.inspections=item.inspections||[]; item.inspections.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Inspection completed',user:inspection.inspector||'Aleksandar C.',reference:equipmentId,details:inspection.result||'Pending'});
+      const result=global.EquipmentGates?global.EquipmentGates.normalizeResult(rec.result):String(rec.result||'').toLowerCase();
+      if(result==='failed'){
+        const nextStatus=rec.critical?'Quarantined':'Inspection Required';
+        item.status=nextStatus;
+        item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:inspection.inspector||'Aleksandar C.',reference:equipmentId,details:`Failed inspection ${rec.id}`});
+      }
+      item.lastActivity=now();
       save(`Inspection added: ${equipmentId}`);
       return clone(rec);
     },
@@ -1184,13 +1292,100 @@
       save(`Equipment activity: ${equipmentId}`);
       return clone(rec);
     },
-    reportBreakdown:(equipmentId,record)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+    // Reporting a breakdown always places the equipment Out of Service (a genuine transition INTO a
+    // hard-block status is always allowed, matching Pass 3.1's "safe direction" principle) — this,
+    // combined with the open-breakdown gate rule itself, prevents subsequent reservation, assignment
+    // and usage through every path. The affected project/jobcard is preserved on the breakdown
+    // record for traceability, falling back to the equipment's current assignment when not given.
+    reportBreakdown:(equipmentId,record={})=>{
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(record), id:`BR-${Date.now()}`, timestamp:now(), status:'Reported'};
+      const rec={...clone(record), id:`BR-${Date.now()}`, timestamp:now(), status:'Reported',
+        projectNo:record.projectNo||item.assignedProject||null, jobcardNo:record.jobcardNo||item.assignedJobcard||null};
       item.downtimeRecords=item.downtimeRecords||[]; item.downtimeRecords.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Breakdown reported',user:record.responsiblePerson||'Aleksandar C.',reference:equipmentId,details:record.reason||''});
+      item.status='Out of Service';
+      item.activity.unshift({timestamp:now(),action:'Status changed to Out of Service',user:record.responsiblePerson||'Aleksandar C.',reference:equipmentId,details:`Breakdown ${rec.id}`});
       item.lastActivity=now();
       state.breakdowns=state.breakdowns||[]; state.breakdowns.unshift(rec); save(`Breakdown reported: ${equipmentId}`); return clone(rec);
+    },
+    // Explicit, authorised resolution — never deletes or overwrites the original breakdown record,
+    // just marks it resolved with who/why so the safety gate stops treating it as open.
+    resolveBreakdown(equipmentId,breakdownId,payload={}){
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const rec=(item.downtimeRecords||[]).find(d=>String(d.id)===String(breakdownId));
+      if(!rec) return {error:'Breakdown record not found'};
+      const resolvedBy=payload.resolvedBy!=null?String(payload.resolvedBy).trim():'';
+      const resolutionEvidence=payload.resolutionEvidence!=null?String(payload.resolutionEvidence).trim():'';
+      if(!resolvedBy||!resolutionEvidence)return{error:'Resolving a breakdown requires resolvedBy and resolutionEvidence'};
+      if(global.EquipmentGates&&global.EquipmentGates.isResolvedRecord(rec))return{error:`Breakdown ${rec.id} has already been resolved`};
+      rec.status='resolved'; rec.resolved=true; rec.resolvedBy=resolvedBy; rec.resolutionEvidence=resolutionEvidence; rec.resolvedDate=now();
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Breakdown resolved',user:resolvedBy,reference:equipmentId,details:resolutionEvidence});
+      item.lastActivity=now();
+      save(`Breakdown resolved: ${equipmentId}`);
+      return clone(rec);
+    },
+    // Pre-use checks are stored as append-only history, never a single toggle boolean. A failed
+    // check immediately makes the equipment non-operational (via the safety gate reading the latest
+    // record); a later PASSED check is what clears it, matching the same pattern as inspections.
+    recordEquipmentPreUseCheck(equipmentId,payload={}){
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const checkedBy=payload.checkedBy!=null?String(payload.checkedBy).trim():'';
+      const date=payload.date!=null?String(payload.date).trim():'';
+      const result=global.EquipmentGates?global.EquipmentGates.normalizeResult(payload.result):String(payload.result||'').trim().toLowerCase();
+      if(!checkedBy)return{error:'A pre-use check requires checkedBy'};
+      if(!date)return{error:'A pre-use check requires a date'};
+      if(result!=='passed'&&result!=='failed')return{error:'A pre-use check result must be "passed" or "failed"'};
+      const evidence=payload.checklist||payload.evidence;
+      const hasEvidence=Array.isArray(evidence)?evidence.length>0:(evidence!=null&&String(evidence).trim()!=='');
+      if(result==='passed'&&!hasEvidence)return{error:'A passed pre-use check requires evidence/checklist text'};
+      const rec={id:`PUC-${Date.now()}`,result,checkedBy,date,projectNo:payload.projectNo||null,jobcardNo:payload.jobcardNo||null,
+        checklist:payload.checklist||null,evidence:payload.evidence||null,notes:payload.notes||''};
+      item.preUseChecks=item.preUseChecks||[]; item.preUseChecks.unshift(rec);
+      item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:`Pre-use check ${result}`,user:checkedBy,reference:equipmentId,details:payload.notes||''});
+      if(result==='failed'){
+        item.status='Inspection Required';
+        item.activity.unshift({timestamp:now(),action:'Status changed to Inspection Required',user:checkedBy,reference:equipmentId,details:`Failed pre-use check ${rec.id}`});
+      }
+      item.lastActivity=now();
+      save(`Pre-use check recorded: ${equipmentId}`);
+      return clone(rec);
+    },
+    // The ONLY API allowed to move blocked equipment back to Available. Requires full authority and
+    // evidence, independently recalculates every OTHER blocker (status itself is excluded — that is
+    // precisely what is being reversed), and never auto-assigns or starts the equipment.
+    returnEquipmentToService(equipmentId,payload={}){
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const authorisedBy=payload.authorisedBy!=null?String(payload.authorisedBy).trim():'';
+      const approvalReference=payload.approvalReference!=null?String(payload.approvalReference).trim():'';
+      const resolutionEvidence=payload.resolutionEvidence!=null?String(payload.resolutionEvidence).trim():'';
+      const passedInspectionReference=payload.passedInspectionReference!=null?String(payload.passedInspectionReference).trim():'';
+      const returnDate=payload.returnDate!=null?String(payload.returnDate).trim():'';
+      if(!authorisedBy||!approvalReference||!resolutionEvidence||!passedInspectionReference||!returnDate){
+        return{error:'Returning equipment to service requires authorisedBy, approvalReference, resolutionEvidence, passedInspectionReference and returnDate'};
+      }
+      if(global.EquipmentGates&&global.EquipmentGates.isRetiredStatus(item.status))return{error:'Retired equipment is permanently non-operational and cannot be returned to service'};
+      const matchedInspection=(item.inspections||[]).find(i=>i&&(String(i.id)===passedInspectionReference||String(i.no)===passedInspectionReference)
+        &&(global.EquipmentGates?global.EquipmentGates.normalizeResult(i.result):String(i.result||'').toLowerCase())==='passed');
+      if(!matchedInspection)return{error:'passedInspectionReference must match a real, passed inspection record stored on this equipment'};
+      const gate=equipmentSafetyGate(item,{skipStatusCheck:true});
+      if(gate.blocked)return equipmentGateBlockedResult('Return to service',equipmentId,gate);
+      const from=item.status;
+      item.status='Available';
+      // "Not auto-assign or start" means the equipment comes back unassigned, not still silently
+      // tied to whatever job it was on when it became unsafe — a genuinely NEW assignment/use is a
+      // separate, later, independently-gated action (assignEquipment/logEquipmentUsage).
+      item.assignedProject=null; item.assignedJobcard=null; item.operator=null; item.currentAssignment=null;
+      const rec={timestamp:now(),from,authorisedBy,approvalReference,resolutionEvidence,passedInspectionReference,returnDate};
+      item.returnToService=item.returnToService||[]; item.returnToService.unshift(rec);
+      item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:`Returned to service (from ${from})`,user:authorisedBy,reference:equipmentId,details:`${approvalReference} — ${resolutionEvidence}`});
+      item.lastActivity=now();
+      save(`Equipment returned to service: ${equipmentId}`);
+      return clone(item);
     },
     retireEquipment:(equipmentId,reason)=>{
       const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
