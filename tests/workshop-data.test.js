@@ -570,6 +570,118 @@ test('quality gate: hold reason/reference text is preserved exactly (safe for th
   assert.equal(gate.holds[0].reason,injected,'the raw string must round-trip unchanged — escaping is the render layer\'s job, not the data layer\'s');
 });
 
+// ── Pass 3.1 fix: close generic jobcard/operation safety bypasses ──────────
+// Independent review found two central-gate gaps: (1) upsertJobcard() only gated the
+// existing-jobcard branch, so a brand-new Jobcard could be created directly with an unsafe status
+// or with pre-populated unsafe-status operations under a held Project; (2) updateJobcard()/
+// upsertJobcard() could receive a whole `operations` array (as the reorder/duplicate/delete flows
+// already do) and smuggle an unsafe operation-status transition past updateJobcardOperation()'s
+// dedicated gate. Both are now closed centrally via unsafeOperationTransitions()/
+// hasUnsafeSeedOperations() in workshop-data.js.
+
+// (A) + (B): new Jobcard creation cannot bypass a held PROJECT via a direct unsafe status.
+test('bypass fix A: a new Jobcard cannot be created directly with status in-progress under a held project', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
+  const before=WD.get().jobcards.length;
+  const res=WD.upsertJobcard({no:'JC-TEST-A',projectNo:'P-26-0002',title:'Bypass attempt',status:'in-progress'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.get().jobcards.length,before,'no jobcard record should have been created');
+});
+test('bypass fix B: a new Jobcard cannot be created directly with status completed or closed under a held project', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
+  const before=WD.get().jobcards.length;
+  const completed=WD.upsertJobcard({no:'JC-TEST-B1',projectNo:'P-26-0002',title:'Bypass attempt',status:'completed'});
+  assert.equal(completed.code,'QUALITY_HOLD_ACTIVE');
+  const closed=WD.upsertJobcard({no:'JC-TEST-B2',projectNo:'P-26-0002',title:'Bypass attempt',status:'closed'});
+  assert.equal(closed.code,'QUALITY_HOLD_ACTIVE');
+  assert.equal(WD.get().jobcards.length,before,'neither rejected attempt should have created a jobcard record');
+});
+
+// (C): new Jobcard creation cannot bypass a held project via pre-populated unsafe operations.
+test('bypass fix C: a new Jobcard cannot be created with a pre-populated operation already set to in-progress, completed or skipped under a held project', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
+  const before=WD.get().jobcards.length;
+  ['in-progress','completed','skipped'].forEach((status,idx)=>{
+    const res=WD.upsertJobcard({no:`JC-TEST-C${idx}`,projectNo:'P-26-0002',title:'Bypass attempt',status:'draft',
+      operations:[{id:1,desc:'Pre-seeded op',status}]});
+    assert.equal(res.code,'QUALITY_HOLD_ACTIVE',`a pre-populated operation status of "${status}" must be blocked`);
+  });
+  assert.equal(WD.get().jobcards.length,before,'no jobcard record should have been created by any attempt');
+});
+test('bypass fix: a new Jobcard with only safe pre-populated operations (pending/paused) is unaffected and still creates normally under a held project', ()=>{
+  const WD=loadWorkshopData();
+  WD.applyQualityHold({scope:'project',reference:'P-26-0002',reason:'Customer stop-work notice'});
+  const res=WD.upsertJobcard({no:'JC-TEST-C-SAFE',projectNo:'P-26-0002',title:'Planned only',status:'draft',
+    operations:[{id:1,desc:'Prep',status:'pending'}]});
+  assert.ok(!res.error,'draft status + only pending/paused operations must never be blocked, held project or not');
+});
+
+// (D) + (E): updateJobcard()/upsertJobcard() cannot bypass updateJobcardOperation()'s gate via a
+// whole operations array, using the seeded HOLD-2026-001 (active, scope:jobcard, reference:JC-2026-0001).
+test('bypass fix D: updateJobcard({operations}) cannot change an operation from pending to an unsafe status while held', ()=>{
+  const WD=loadWorkshopData();
+  const j=WD.findJobcard('JC-2026-0001');
+  const ops=j.operations.map(o=>o.id===5?Object.assign({},o,{status:'in-progress'}):o);
+  const res=WD.updateJobcard('JC-2026-0001',{operations:ops});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  assert.ok(res.holdNumbers.includes('HOLD-2026-001'));
+});
+test('bypass fix D: updateJobcard({operations}) cannot change an in-progress operation to completed or skipped while held', ()=>{
+  const WD=loadWorkshopData();
+  const j=WD.findJobcard('JC-2026-0001');
+  const toCompleted=j.operations.map(o=>o.id===4?Object.assign({},o,{status:'completed',actualCompletion:'2026-08-30'}):o);
+  const completed=WD.updateJobcard('JC-2026-0001',{operations:toCompleted});
+  assert.equal(completed.code,'QUALITY_HOLD_ACTIVE');
+  const toSkipped=j.operations.map(o=>o.id===5?Object.assign({},o,{status:'skipped'}):o);
+  const skipped=WD.updateJobcard('JC-2026-0001',{operations:toSkipped});
+  assert.equal(skipped.code,'QUALITY_HOLD_ACTIVE');
+});
+test('bypass fix E: upsertJobcard({operations}) cannot perform the same bypass on an existing held jobcard', ()=>{
+  const WD=loadWorkshopData();
+  const j=WD.findJobcard('JC-2026-0001');
+  const ops=j.operations.map(o=>o.id===4?Object.assign({},o,{status:'completed',actualCompletion:'2026-08-30'}):o);
+  const res=WD.upsertJobcard({id:1,no:'JC-2026-0001',operations:ops});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+});
+
+// (F): a rejected mutation must leave the Jobcard AND every operation completely unchanged — even
+// unrelated fields bundled into the same patch must not be applied, since the whole mutation (not
+// just the operations array) is rejected atomically.
+test('bypass fix F: a rejected operations-array bypass leaves the jobcard and every operation completely unchanged', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.findJobcard('JC-2026-0001');
+  const ops=before.operations.map(o=>o.id===5?Object.assign({},o,{status:'skipped'}):o);
+  const res=WD.updateJobcard('JC-2026-0001',{operations:ops,responsible:'Someone Else',priority:'low'});
+  assert.equal(res.code,'QUALITY_HOLD_ACTIVE');
+  const after=WD.findJobcard('JC-2026-0001');
+  assert.deepEqual(after,before,'nothing on the jobcard record may change when the mutation is rejected, not even unrelated bundled fields');
+});
+
+// (G): redundant re-save of an operation already in the same unsafe status must remain allowed.
+test('bypass fix G: re-saving an operation already in the same unsafe status via the array patch is allowed even while held', ()=>{
+  const WD=loadWorkshopData();
+  const j=WD.findJobcard('JC-2026-0001');
+  const ops=j.operations.map(o=>o.id===4?Object.assign({},o,{status:'in-progress',notes:'unchanged status, just a note edit'}):o);
+  const res=WD.updateJobcard('JC-2026-0001',{operations:ops});
+  assert.ok(!res.error);
+  assert.equal(res.operations.find(o=>o.id===4).notes,'unchanged status, just a note edit');
+});
+
+// (H): ordinary (non-status) operation edits remain allowed while held.
+test('bypass fix H: editing ordinary operation fields (no unsafe status transition) remains allowed while held', ()=>{
+  const WD=loadWorkshopData();
+  const j=WD.findJobcard('JC-2026-0001');
+  const ops=j.operations.map(o=>o.id===6?Object.assign({},o,{worker:'Marko K.',plannedHours:20,notes:'Reassigned'}):o);
+  const res=WD.updateJobcard('JC-2026-0001',{operations:ops});
+  assert.ok(!res.error);
+  const op6=res.operations.find(o=>o.id===6);
+  assert.equal(op6.worker,'Marko K.');
+  assert.equal(op6.plannedHours,20);
+});
+
 // ── Estimation deletion sync (shared-data layer) ────────────────────────────
 test('estimation deletion: a linked estimation (has a projectId) cannot be hard-deleted', ()=>{
   const WD=loadWorkshopData();

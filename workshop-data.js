@@ -708,6 +708,27 @@
       jobcardNo:gate.jobcardNo
     },extra||{});
   }
+  // Finds every operation in an incoming `operations` array that represents a genuine transition
+  // into an unsafe status (in-progress/completed/skipped) versus its stored counterpart — matched
+  // by stable operation id, never array position. An incoming op with no matching stored op (a
+  // brand-new op smuggled into a bulk save already set to an unsafe status) counts as a transition
+  // too, since there is no prior safe state to compare against. Re-saving an operation that is
+  // already in the same unsafe status is NOT a transition and must stay allowed.
+  function unsafeOperationTransitions(existingOps,incomingOps){
+    if(!Array.isArray(incomingOps))return[];
+    const existingById=new Map((existingOps||[]).map(o=>[o.id,o]));
+    return incomingOps.filter(op=>{
+      if(!op||!OPERATION_UNSAFE_STATUSES.includes(op.status))return false;
+      const existing=existingById.get(op.id);
+      return !existing||existing.status!==op.status;
+    });
+  }
+  // A brand-new Jobcard has no stored operations at all, so ANY pre-populated operation already
+  // set to an unsafe status is by definition a transition from "does not exist yet" into that
+  // status — used to close the new-Jobcard creation bypass (see upsertJobcard below).
+  function hasUnsafeSeedOperations(operations){
+    return Array.isArray(operations)&&operations.some(op=>op&&OPERATION_UNSAFE_STATUSES.includes(op.status));
+  }
   const api={
     key:KEY,
     get:()=>clone(state),
@@ -903,12 +924,35 @@
           const gate=jobcardQualityGate(j.no);
           if(gate.blocked)return qualityGateBlockedResult(`Jobcard ${data.status}`,j.no,gate);
         }
+        // A caller cannot bypass updateJobcardOperation()'s gate by submitting a whole `operations`
+        // array through this method instead (e.g. copy-modify-save) — compare every incoming
+        // operation against its stored counterpart by id before trusting any of them.
+        if(data.operations){
+          const changed=unsafeOperationTransitions(j.operations,data.operations);
+          if(changed.length){
+            const gate=jobcardQualityGate(j.no);
+            if(gate.blocked)return qualityGateBlockedResult(`Operation ${changed.map(o=>o.status).join('/')}`,j.no,gate,{operationIds:changed.map(o=>o.id)});
+          }
+        }
         Object.assign(j,data);
       }
-      else{j=Object.assign({operations:[],materials:[],machines:[],inspections:[],notes:[],documents:[],activity:[],workers:[],archived:false,status:'draft'},clone(payload));
+      else{
+        const data=clone(payload);
+        // A brand-new Jobcard must be gated exactly like an existing one: creating it directly with
+        // an unsafe status (in-progress/completed/closed), or with pre-populated operations already
+        // set to in-progress/completed/skipped, must not bypass a hold on its supplied Jobcard
+        // number or its parent Project — nothing is created/mutated when rejected.
+        const wantsUnsafeStatus=data.status&&JOBCARD_UNSAFE_STATUSES.includes(data.status);
+        const wantsUnsafeOps=hasUnsafeSeedOperations(data.operations);
+        if(wantsUnsafeStatus||wantsUnsafeOps){
+          const gate=jobcardQualityGate(data.no,data.projectNo);
+          if(gate.blocked)return qualityGateBlockedResult(`New Jobcard${wantsUnsafeStatus?' '+data.status:''}`,data.no||data.projectNo||'(new jobcard)',gate);
+        }
+        j=Object.assign({operations:[],materials:[],machines:[],inspections:[],notes:[],documents:[],activity:[],workers:[],archived:false,status:'draft'},data);
         j.id=state.counters.jobcard=(state.counters.jobcard||0)+1;
         j.no=j.no||('JC-'+new Date().getFullYear()+'-'+String(j.id).padStart(4,'0'));
-        state.jobcards.push(j)}
+        state.jobcards.push(j);
+      }
       save(`Jobcard saved: ${j.no}`);return clone(j)},
     // Generic status-affecting patches (e.g. resume, direct edits) go through the same Quality Hold
     // gate as the dedicated transition helpers below — a caller cannot bypass safety by calling this
@@ -920,6 +964,16 @@
       if(data.status&&JOBCARD_UNSAFE_STATUSES.includes(data.status)&&j.status!==data.status){
         const gate=jobcardQualityGate(j.no);
         if(gate.blocked)return qualityGateBlockedResult(`Jobcard ${data.status}`,j.no,gate);
+      }
+      // Same operations-array bypass check as upsertJobcard above — a whole-array patch (used by
+      // reorder/duplicate/delete flows) must not be able to sneak an unsafe operation-status
+      // transition past updateJobcardOperation()'s dedicated gate.
+      if(data.operations){
+        const changed=unsafeOperationTransitions(j.operations,data.operations);
+        if(changed.length){
+          const gate=jobcardQualityGate(j.no);
+          if(gate.blocked)return qualityGateBlockedResult(`Operation ${changed.map(o=>o.status).join('/')}`,j.no,gate,{operationIds:changed.map(o=>o.id)});
+        }
       }
       Object.assign(j,data);save(`Jobcard updated: ${j.no}`);return clone(j);
     },
