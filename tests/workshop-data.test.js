@@ -556,3 +556,67 @@ test('upsertCustomer does not create a duplicate for a case/whitespace-only name
   assert.equal(a.id,1);
   assert.equal(b.id,1);
 });
+
+// ── Pass 2.2: no fake "—" customer, placeholder hardening, id-authoritative naming ─────────────
+test('upsertProject: a project with no customer selected does not fabricate a "—" customer', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getCustomers().length;
+  const saved=WD.upsertProject({name:'No customer test',customerId:null,customer:'—',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  assert.equal(WD.getCustomers().length,before,'no new customer must have been created');
+  assert.equal(saved.customerId,null);
+  assert.equal(WD.getCustomers().some(c=>c.name==='—'||c.name==='-'),false);
+});
+
+test('upsertProject: empty, whitespace and placeholder customer names never create a Customer', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getCustomers().length;
+  for(const placeholder of ['',' ','   ','—','-',null,undefined]){
+    const saved=WD.upsertProject({name:'Placeholder test '+String(placeholder),customerId:null,customer:placeholder,notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+    assert.equal(saved.customerId,null,`placeholder ${JSON.stringify(placeholder)} must not resolve to a customer`);
+  }
+  assert.equal(WD.getCustomers().length,before,'no customers must have been created for any placeholder value');
+});
+
+test('upsertProject: a valid shared customerId canonicalises the project customer name from the real record', ()=>{
+  const WD=loadWorkshopData();
+  const saved=WD.upsertProject({name:'Canonical name test',customerId:1,customer:'Whatever the caller happened to send',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  assert.equal(saved.customerId,1);
+  assert.equal(saved.customer,'MarineVent AB');
+});
+
+test('upsertProject: a conflicting supplied customer name cannot override a valid shared customerId', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getCustomers().length;
+  const saved=WD.upsertProject({name:'Conflicting name test',customerId:1,customer:'A Totally Different Company AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  assert.equal(saved.customerId,1);
+  assert.equal(saved.customer,'MarineVent AB','the authoritative shared record name wins, not the conflicting caller-supplied name');
+  assert.equal(WD.getCustomers().length,before,'the conflicting name must not have created a new customer either');
+});
+
+// ── Pass 2.2: customer counter hardening (exactly one increment, no renumbering, uniqueness) ────
+test('upsertCustomer: creating a new customer increments the counter exactly once (id and number use the same sequence value)', ()=>{
+  const WD=loadWorkshopData();
+  const saved=WD.upsertCustomer({name:'Counter Test Co',status:'active',contacts:[],notes:[],documents:[]});
+  assert.equal(saved.no,`C-${String(saved.id).padStart(3,'0')}`,'id and no must come from the same single counter increment');
+});
+
+test('upsertCustomer: generated ids and numbers remain unique across several new customers', ()=>{
+  const WD=loadWorkshopData();
+  const created=['Alpha Co','Beta Co','Gamma Co'].map(name=>WD.upsertCustomer({name,status:'active',contacts:[],notes:[],documents:[]}));
+  const ids=created.map(c=>c.id),nos=created.map(c=>c.no);
+  assert.equal(new Set(ids).size,ids.length,'ids must be unique');
+  assert.equal(new Set(nos).size,nos.length,'numbers must be unique');
+  for(const c of created)assert.equal(c.no,`C-${String(c.id).padStart(3,'0')}`);
+});
+
+test('upsertCustomer: existing customer ids/numbers are never renumbered when a new customer is created', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getCustomers().map(c=>({id:c.id,no:c.no}));
+  WD.upsertCustomer({name:'Freshly Created Co',status:'active',contacts:[],notes:[],documents:[]});
+  const after=WD.getCustomers().map(c=>({id:c.id,no:c.no}));
+  for(const b of before){
+    const match=after.find(a=>a.id===b.id);
+    assert.ok(match,`existing customer id ${b.id} must still exist`);
+    assert.equal(match.no,b.no,`existing customer id ${b.id}'s number must be unchanged`);
+  }
+});

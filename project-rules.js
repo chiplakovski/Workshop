@@ -22,16 +22,35 @@
   const STATUS_ALIASES={production:'active'};
   function uiStatus(rawStatus){return STATUS_ALIASES[rawStatus]||rawStatus;}
   function isKnownUiStatus(rawStatus){return STATUS_ORDER.includes(uiStatus(rawStatus));}
-  function canHold(p){return['active','planned'].includes(uiStatus(p.status));}
-  function canResume(p){return uiStatus(p.status)==='hold';}
-  function canComplete(p){return uiStatus(p.status)==='active';}
-  function canClose(p){return uiStatus(p.status)==='completed';}
-  function canCancel(p){return !['closed','cancelled','completed'].includes(uiStatus(p.status));}
-  function canReopen(p){return uiStatus(p.status)==='closed';}
+  // Every workflow-action check requires a RECOGNISED status (native or aliased) before it can be
+  // true — an unknown status is never eligible for any transition, including Cancel (which used to
+  // be an "allow unless terminal" check that incorrectly treated an unknown status as cancellable).
+  function canHold(p){return isKnownUiStatus(p.status)&&['active','planned'].includes(uiStatus(p.status));}
+  function canResume(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='hold';}
+  function canComplete(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='active';}
+  function canClose(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='completed';}
+  function canCancel(p){return isKnownUiStatus(p.status)&&!['closed','cancelled','completed'].includes(uiStatus(p.status));}
+  function canReopen(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='closed';}
   function isReadonlyStatus(p){return uiStatus(p.status)==='closed';}
+  // The CSS class rendered for a status badge. A known status (native or aliased) uses its own
+  // mapped class name; an unrecognised status ALWAYS uses the fixed 'unknown' class — raw status
+  // text must never be interpolated directly into an HTML class attribute.
+  function statusCssClass(rawStatus){return isKnownUiStatus(rawStatus)?uiStatus(rawStatus):'unknown';}
+
+  // ── Project form state (New Customer mini-modal round trip) ──
+  // Merges a captured Project form snapshot with the outcome of the New Customer mini-modal: if a
+  // customer was created, its id wins; if the modal was cancelled (newCustomerId is null/undefined),
+  // the previously selected customer id is kept. Every other captured field passes through
+  // untouched, so no in-progress Project form value is ever lost when the modal replaces the DOM.
+  function mergeProjectFormStateAfterCustomer(pending,newCustomerId){
+    const state=Object.assign({},pending||{});
+    if(newCustomerId!=null)state.customerId=newCustomerId;
+    return state;
+  }
 
   const ProjectRules={custName,custObj,STATUS_ORDER,STATUS_ALIASES,uiStatus,isKnownUiStatus,
-    canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus};
+    canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass,
+    mergeProjectFormStateAfterCustomer};
   root.ProjectRules=ProjectRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=ProjectRules;
 })(typeof window!=='undefined'?window:globalThis);

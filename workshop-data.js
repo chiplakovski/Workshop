@@ -635,12 +635,19 @@
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}
   function inventory(code){return state.inventory.find(x=>x.code===code)}
   function project(no){return state.projects.find(x=>x.no===no)}
+  // A UI-only display placeholder (e.g. the em-dash a page shows for "no customer selected") must
+  // never be mistaken for a real customer name — these must never resolve to or create a Customer.
+  function isPlaceholderCustomerName(name){
+    const trimmed=name!=null?String(name).trim():'';
+    return !trimmed||trimmed==='—'||trimmed==='-';
+  }
   // Resolves a customer by name (case-insensitive), creating a minimal real customer record if
   // none matches yet, so callers (e.g. Projects/Marketing pages with their own local id numbering)
   // never have to trust a customerId that may not correspond to the shared customers collection.
+  // Never fabricates a customer from a blank/whitespace/placeholder name.
   function resolveOrCreateCustomer(name){
-    const trimmed=name?String(name).trim():'';
-    if(!trimmed)return null;
+    if(isPlaceholderCustomerName(name))return null;
+    const trimmed=String(name).trim();
     let c=state.customers.find(x=>x.name&&x.name.trim().toLowerCase()===trimmed.toLowerCase());
     if(!c){c={id:state.counters.customer=(state.counters.customer||0)+1,no:'C-'+String(state.counters.customer).padStart(3,'0'),name:trimmed,status:'active',contacts:[],notes:[],documents:[]};state.customers.push(c);}
     return c;
@@ -717,7 +724,17 @@
       if(trimmedName!=null)payload.name=trimmedName;
       const existing=state.customers.find(x=>x.id===payload.id||(trimmedName&&x.name&&x.name.trim().toLowerCase()===trimmedName.toLowerCase()));
       if(existing){Object.assign(existing,payload);}
-      else{payload.id=state.counters.customer++;payload.no=next('customer','C-');state.customers.push(payload);}
+      else{
+        // One stable sequence value for both id and number, incremented exactly once. Guards
+        // against a stale counter lower than an already-existing customer id/no (e.g. imported or
+        // migrated data) so a new customer can never collide with or renumber an existing one.
+        const maxExistingId=state.customers.reduce((m,c)=>Math.max(m,Number(c.id)||0),0);
+        const maxExistingNo=state.customers.reduce((m,c)=>{const n=/^C-(\d+)$/.exec(c.no||'');return n?Math.max(m,parseInt(n[1],10)):m;},0);
+        state.counters.customer=Math.max(state.counters.customer||0,maxExistingId,maxExistingNo)+1;
+        payload.id=state.counters.customer;
+        payload.no='C-'+String(state.counters.customer).padStart(3,'0');
+        state.customers.push(payload);
+      }
       const rec=existing||payload;
       save(`Customer updated: ${rec.name}`);
       return clone(rec);
@@ -766,9 +783,19 @@
       const data=clone(payload);
       // Trust an existing customerId only if it actually resolves in the shared customers
       // collection (a caller's own local numbering, e.g. Projects' page-local picklist, cannot be
-      // trusted as-is) — otherwise resolve/create by the supplied customer name.
+      // trusted as-is).
       if(data.customerId!=null&&!state.customers.some(c=>c.id===data.customerId))data.customerId=null;
-      if(data.customerId==null&&data.customer){const c=resolveOrCreateCustomer(data.customer);if(c){data.customerId=c.id;data.customer=c.name;}}
+      if(data.customerId!=null){
+        // A valid shared id is authoritative — the project's customer name always comes from that
+        // real record, never from a caller-supplied name that might be stale, blank or wrong.
+        data.customer=state.customers.find(c=>c.id===data.customerId).name;
+      }else{
+        // No trusted id — only resolve/create a customer from a genuine name. A display placeholder
+        // ('—', '-', empty/whitespace) must never be persisted as a fabricated customer record.
+        const c=resolveOrCreateCustomer(data.customer);
+        data.customerId=c?c.id:null;
+        data.customer=c?c.name:null;
+      }
       if(p){Object.assign(p,data);}
       else{
         // A caller (e.g. the Projects module) may supply only its own richer fields — apply the

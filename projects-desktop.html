@@ -97,6 +97,7 @@
   .sbadge.completed{color:var(--st-completed);border-color:rgba(74,212,138,.45);background:rgba(74,212,138,.12);}
   .sbadge.closed{color:var(--st-closed);border-color:rgba(185,198,218,.35);background:rgba(185,198,218,.08);}
   .sbadge.cancelled{color:var(--st-cancelled);border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.12);}
+  .sbadge.unknown{color:var(--steel-300);border-color:rgba(142,163,192,.35);background:rgba(142,163,192,.08);}
 
   /* detail header */
   .dethead{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:22px 24px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
@@ -296,7 +297,11 @@ const PROJECT_UI_OWNED_FIELDS=['id','no','name','customerRef','poNumber','descri
   'jobcards','hours','materials','purchases','documents','activity','archived'];
 function syncSharedProject(p){
   if(!window.WorkshopData?.upsertProject)return;
-  const payload={customerId:p.customerId,customer:custName(p.customerId)};
+  // custName()'s "—" is a UI-only display placeholder for "no customer selected" — it must never
+  // be sent as a customer name (workshop-data.js would otherwise treat it as a real, if oddly
+  // named, customer to create). Only send a name when a real shared customer record exists.
+  const custRecord=custObj(p.customerId);
+  const payload={customerId:custRecord?p.customerId:null,customer:custRecord?custRecord.name:null};
   PROJECT_UI_OWNED_FIELDS.forEach(k=>{if(p[k]!==undefined)payload[k]=p[k];});
   const saved=WorkshopData.upsertProject(payload);
   p.id=saved.id;p.customerId=saved.customerId;
@@ -343,7 +348,7 @@ function custContactLine(cust){
   if(!c)return cust.email||"";
   return[c.name,c.email].filter(Boolean).join(" · ");
 }
-const {STATUS_ORDER,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus}=ProjectRules;
+const {STATUS_ORDER,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass}=ProjectRules;
 function getProject(id){return PROJECTS.find(p=>p.id===id);}
 
 function jcTotals(p){const est=p.jobcards.reduce((a,b)=>a+b.est,0),act=p.jobcards.reduce((a,b)=>a+b.act,0),completed=p.jobcards.filter(j=>j.status==='completed').length;return{est,act,completed,total:p.jobcards.length};}
@@ -545,7 +550,12 @@ let listFilters={customer:"",responsible:"",type:"",from:"",to:""};
 // A raw status is mapped through uiStatus() before it is used for a label/class/filter/sort/KPI —
 // a status the adapter doesn't recognise (not in STATUS_ORDER and not a known alias) passes through
 // unchanged, so it still renders (with its own raw text as the label) instead of showing "undefined".
-function statusBadge(s){const ui=uiStatus(s);const label=T[LANG]["st_"+ui]||s;return `<span class="sbadge ${ui}">${esc(label)}</span>`;}
+function statusBadge(s){
+  const known=isKnownUiStatus(s);
+  const cls=statusCssClass(s); // 'unknown' (a fixed, safe class) for any unrecognised raw status — never the raw text itself
+  const label=known?(T[LANG]["st_"+uiStatus(s)]||s):s;
+  return `<span class="sbadge ${cls}">${esc(label)}</span>`;
+}
 
 function renderList(){
   const t=T[LANG];
@@ -911,14 +921,38 @@ function submitProjectForm(){
   }
   closeModal();render();
 }
+// Captures every current Project form field before the New Customer mini-modal replaces the
+// form's DOM, so reopenProjectFormAfterCustomer() can restore it afterwards instead of losing
+// in-progress values (this works identically for a brand-new Project and for one being edited —
+// it always reads what is actually on screen right now, never the last-saved record).
+let pendingProjectFormState=null;
+function captureProjectFormState(){
+  return{
+    no:$("fNo")?$("fNo").value:"",
+    name:$("fName")?$("fName").value:"",
+    customerId:$("fCustomer")?(parseInt($("fCustomer").value)||null):null,
+    customerRef:$("fRef")?$("fRef").value:"",
+    poNumber:$("fPo")?$("fPo").value:"",
+    description:$("fDesc")?$("fDesc").value:"",
+    internalNotes:$("fNotes")?$("fNotes").value:"",
+    types:newProjTypes.slice(),
+    pm:$("fPm")?$("fPm").value:"",
+    workshop:$("fWorkshop")?$("fWorkshop").value:"",
+    sales:$("fSales")?$("fSales").value:"",
+    plannedStart:$("fStart")?$("fStart").value:"",
+    deadline:$("fDeadline")?$("fDeadline").value:"",
+    plannedCompletion:$("fPlannedC")?$("fPlannedC").value:"",
+    quotedValue:$("fQuoted")?(parseFloat($("fQuoted").value)||0):0
+  };
+}
 function openNewCustomerMini(){
+  pendingProjectFormState=captureProjectFormState();
   const t=T[LANG];
   showModal(`<h2>${t.nc_title}</h2>
     <div class="frow"><label for="ncName">${t.nc_name}</label><input id="ncName"></div>
     <div class="frow2"><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg"></div><div><label for="ncContact">${t.nc_contact}</label><input id="ncContact"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="cancelNewCustomer()">${t.nc_cancel}</button><button class="tbtn primary" onclick="submitNewCustomer()">${t.nc_save}</button></div>`);
 }
-let pendingProjectFormState=null;
 function cancelNewCustomer(){reopenProjectFormAfterCustomer(null);}
 function submitNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;
@@ -928,10 +962,14 @@ function submitNewCustomer(){
   refreshCustomersFromShared();
   reopenProjectFormAfterCustomer(saved.id);
 }
+// Restores the Project form exactly as the user left it before the New Customer modal took over
+// (mergeProjectFormStateAfterCustomer lives in project-rules.js): every captured field survives
+// unchanged, and only the customer selection is updated — to the newly created customer if one was
+// saved, or left exactly as it was if the mini-modal was cancelled.
 function reopenProjectFormAfterCustomer(newId){
   const t=T[LANG];
-  const v=editingId?(()=>{const p=getProject(editingId);return{no:p.no,name:p.name,customerId:newId||p.customerId,customerRef:p.customerRef,poNumber:p.poNumber,description:p.description,internalNotes:"",types:p.types,pm:p.pm,workshop:p.workshop,sales:p.sales,plannedStart:p.plannedStart,deadline:p.deadline,plannedCompletion:p.plannedCompletion};})()
-    :{no:projNo_peek(),name:$("fName")?$("fName").value:"",customerId:newId||"",customerRef:"",poNumber:"",description:"",internalNotes:"",types:newProjTypes,pm:"",workshop:"",sales:"",plannedStart:"",deadline:"",plannedCompletion:""};
+  const v=ProjectRules.mergeProjectFormStateAfterCustomer(pendingProjectFormState,newId);
+  pendingProjectFormState=null;
   buildProjectForm(editingId?t.np_edit_title:t.np_title,v);
 }
 

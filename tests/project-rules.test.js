@@ -4,7 +4,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const ProjectRules=require('../project-rules.js');
-const {custName,custObj,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,STATUS_ORDER}=ProjectRules;
+const {custName,custObj,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass,mergeProjectFormStateAfterCustomer,STATUS_ORDER}=ProjectRules;
 
 // A minimal shared-customers fixture matching real v5 ids (MarineVent AB = 1, Sanus Glutenfri AB = 2)
 // — the exact mismatch that caused Pass 2's Projects page to show the wrong customer name.
@@ -63,13 +63,14 @@ test('a "production" project receives the same safe actions as an "active" proje
   assert.equal(isReadonlyStatus(production),isReadonlyStatus(active));
 });
 
-test('unknown statuses stay visible (isKnownUiStatus false) but receive no state-transition-dependent action', ()=>{
+test('unknown statuses stay visible (isKnownUiStatus false) but receive no state-transition-dependent action, including Cancel', ()=>{
   const p={status:'totally-unknown-status'};
   assert.equal(isKnownUiStatus(p.status),false);
   assert.equal(canHold(p),false);
   assert.equal(canResume(p),false);
   assert.equal(canComplete(p),false);
   assert.equal(canClose(p),false);
+  assert.equal(canCancel(p),false,'Pass 2.2: canCancel used to be an "allow unless terminal" check that wrongly returned true for an unknown status');
   assert.equal(canReopen(p),false);
   assert.equal(isReadonlyStatus(p),false);
 });
@@ -87,4 +88,48 @@ test('normal Projects-created statuses (draft/active/hold/completed/closed/cance
   assert.equal(canCancel({status:'completed'}),false);
   assert.equal(canCancel({status:'draft'}),true);
   assert.equal(isReadonlyStatus({status:'closed'}),true);
+});
+
+// ── Pass 2.2: safe CSS class for the status badge ───────────────────────────────────────────────
+test('statusCssClass: a known status (native or aliased) uses its own mapped class name', ()=>{
+  assert.equal(statusCssClass('active'),'active');
+  assert.equal(statusCssClass('hold'),'hold');
+  assert.equal(statusCssClass('production'),'active','production must still map safely to active');
+});
+
+test('statusCssClass: an unrecognised status always uses the fixed "unknown" class, never the raw text', ()=>{
+  assert.equal(statusCssClass('totally-unknown-status'),'unknown');
+  assert.equal(statusCssClass('"><img src=x onerror=alert(1)>'),'unknown','even a hostile-looking raw status must resolve to the fixed safe class, never be echoed into it');
+});
+
+// ── Pass 2.2: Project form state survives the New Customer mini-modal round trip ───────────────
+const FULL_FORM_STATE={
+  no:'P-26-0099',name:'Full Field Test Project',customerId:2,customerRef:'REF-999',poNumber:'PO-999',
+  description:'A description that must survive.',internalNotes:'Internal notes that must survive.',
+  types:['Welding'],pm:'Marko',workshop:'Elena',sales:'',plannedStart:'2026-09-01',deadline:'2026-10-01',
+  plannedCompletion:'2026-09-25',quotedValue:55000
+};
+
+test('mergeProjectFormStateAfterCustomer: saving a new customer preserves every other captured field', ()=>{
+  const merged=mergeProjectFormStateAfterCustomer(FULL_FORM_STATE,41);
+  assert.equal(merged.customerId,41,'the newly created customer must be selected');
+  for(const k of Object.keys(FULL_FORM_STATE)){
+    if(k==='customerId')continue;
+    assert.deepEqual(merged[k],FULL_FORM_STATE[k],`field "${k}" must be preserved unchanged`);
+  }
+});
+
+test('mergeProjectFormStateAfterCustomer: cancelling (newCustomerId null) preserves every field, including the previous customer', ()=>{
+  const merged=mergeProjectFormStateAfterCustomer(FULL_FORM_STATE,null);
+  assert.deepEqual(merged,FULL_FORM_STATE,'nothing must change when the New Customer modal is cancelled');
+});
+
+test('mergeProjectFormStateAfterCustomer: works identically for a captured edit-in-progress state (not just a brand-new project)', ()=>{
+  const editState=Object.assign({},FULL_FORM_STATE,{no:'P-2026-014',name:'Edited MarineVent Name (unsaved)',customerId:1});
+  const savedNewCustomer=mergeProjectFormStateAfterCustomer(editState,50);
+  assert.equal(savedNewCustomer.name,'Edited MarineVent Name (unsaved)');
+  assert.equal(savedNewCustomer.customerId,50);
+  const cancelled=mergeProjectFormStateAfterCustomer(editState,null);
+  assert.equal(cancelled.name,'Edited MarineVent Name (unsaved)');
+  assert.equal(cancelled.customerId,1,'cancelling must keep the customer the project already had, unchanged');
 });
