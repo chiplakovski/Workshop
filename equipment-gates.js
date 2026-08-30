@@ -52,6 +52,20 @@
   function resolveAsOf(options){
     return toDateOnly((options&&options.asOf))||toDateOnly(new Date());
   }
+  // Strict calendar-date validation for workflow input (as opposed to toDateOnly()'s lenient
+  // "best effort" parsing used for the gate's own overdue comparisons). A value must be a literal
+  // 'YYYY-MM-DD' string naming a REAL calendar date — '2026-02-30' round-trips to a different
+  // (rolled-over) date in plain `new Date(...)` parsing, so day/month/year are checked explicitly
+  // against what was actually constructed, not just "does Date() not throw".
+  function isValidCalendarDateString(value){
+    if(typeof value!=='string')return false;
+    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if(!m)return false;
+    const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]);
+    if(mo<1||mo>12||d<1||d>31)return false;
+    const dt=new Date(Date.UTC(y,mo-1,d));
+    return dt.getUTCFullYear()===y&&dt.getUTCMonth()===mo-1&&dt.getUTCDate()===d;
+  }
 
   // One date-based requirement (maintenance/inspection/certification/calibration). A missing or
   // overdue date is always reported as a blocker DETAIL for transparency, but only actually blocks
@@ -121,18 +135,25 @@
       if(b)blockers.push(b);
     });
 
-    // Inspections: the array is stored newest-first (see workshop-data.js's addInspection), so
-    // index 0 is always the latest. A newer PASSED inspection naturally supersedes an older failed
-    // one — that is the intended way to clear this blocker (a real re-inspection), never an edit of
-    // the old record.
+    // Inspections: EVERY failed inspection is evaluated, not just the latest — a later, unrelated
+    // PASSED inspection must never silently supersede/hide an earlier failure. A failed inspection
+    // is immutable history; the only way to clear it is an explicit, evidenced resolution (see
+    // workshop-data.js's resolveEquipmentInspection), which sets `resolved:true` on that SPECIFIC
+    // record. isResolvedRecord() is what recognises that.
     const inspections=Array.isArray(equipment.inspections)?equipment.inspections:[];
-    const latestInspection=inspections[0];
-    if(latestInspection&&normalizeResult(latestInspection.result)==='failed'){
-      blockers.push({code:'INSPECTION_FAILED',message:`Latest inspection ${latestInspection.no||latestInspection.id||''} failed`.trim(),mandatory:true,hard:true});
-    }
-    if(latestInspection&&latestInspection.critical&&normalizeResult(latestInspection.result)!=='passed'){
-      blockers.push({code:'CRITICAL_INSPECTION_UNRESOLVED',message:`Critical inspection ${latestInspection.no||latestInspection.id||''} is unresolved`.trim(),mandatory:true,hard:true});
-    }
+    inspections.filter(i=>i&&normalizeResult(i.result)==='failed'&&!isResolvedRecord(i)).forEach(i=>{
+      blockers.push({
+        code:i.critical?'CRITICAL_INSPECTION_UNRESOLVED':'INSPECTION_FAILED',
+        message:`${i.critical?'Critical inspection':'Inspection'} ${i.id||i.no||''} failed and is unresolved`.replace(/\s+/g,' ').trim(),
+        mandatory:true,hard:true
+      });
+    });
+    // A critical inspection that has not yet reached a positive "passed" result (e.g. still
+    // 'pending') also blocks — a critical safety check must be affirmatively passed, not merely
+    // "not yet failed". (Failed-and-critical is already covered, with its own code, above.)
+    inspections.filter(i=>i&&i.critical&&normalizeResult(i.result)!=='passed'&&normalizeResult(i.result)!=='failed'&&!isResolvedRecord(i)).forEach(i=>{
+      blockers.push({code:'CRITICAL_INSPECTION_UNRESOLVED',message:`Critical inspection ${i.id||i.no||''} is unresolved`.trim(),mandatory:true,hard:true});
+    });
 
     // Breakdowns: unlike inspections/pre-use checks, an open breakdown has no "newer record
     // supersedes it" equivalent — it must be explicitly resolved (see resolveBreakdown).
@@ -142,12 +163,14 @@
       blockers.push({code:'BREAKDOWN_OPEN',message:`Open breakdown ${openBreakdown.id||''} is unresolved`.trim(),mandatory:true,hard:true});
     }
 
-    // Pre-use checks: also stored newest-first. A failed latest check blocks immediately and
-    // persistently; it is cleared the same way a failed inspection is — a newer check that passes.
+    // Pre-use checks: same "every unresolved failure blocks, never superseded by an unrelated
+    // later pass" principle as inspections. Cleared only by an explicit resolution/linked re-check
+    // (see workshop-data.js's recordEquipmentPreUseCheck's resolvesCheckId), which marks the
+    // specific failed record `resolved:true`.
     const preUseChecks=Array.isArray(equipment.preUseChecks)?equipment.preUseChecks:[];
-    const latestCheck=preUseChecks[0];
-    if(latestCheck&&normalizeResult(latestCheck.result)==='failed'){
-      blockers.push({code:'PREUSE_CHECK_FAILED',message:'Latest pre-use check failed',mandatory:true,hard:true});
+    const unresolvedFailedChecks=preUseChecks.filter(c=>c&&normalizeResult(c.result)==='failed'&&!isResolvedRecord(c));
+    if(unresolvedFailedChecks.length){
+      blockers.push({code:'PREUSE_CHECK_FAILED',message:`Pre-use check ${unresolvedFailedChecks[0].id||''} failed and is unresolved`.trim(),mandatory:true,hard:true});
     }
     // A mandatory pre-use check only applies to an actual "use" attempt (requirePreUseCheck) and
     // only when the equipment record itself marks preUseCheckRequired — legacy equipment without a
@@ -172,7 +195,7 @@
   const EquipmentGates={
     HARD_BLOCK_STATUSES,OPERATIONAL_STATUSES,
     normalizeStatus,isHardBlockStatus,isOperationalStatus,isKnownStatus,isRetiredStatus,statusBlocksOperation,
-    normalizeResult,isResolvedRecord,toDateOnly,sameCalendarDate,
+    normalizeResult,isResolvedRecord,toDateOnly,sameCalendarDate,isValidCalendarDateString,
     getEquipmentSafetyGate
   };
   root.EquipmentGates=EquipmentGates;

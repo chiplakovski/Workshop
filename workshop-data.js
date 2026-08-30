@@ -548,7 +548,14 @@
       if(!Array.isArray(item.usageHistory))item.usageHistory=[];
       if(!Array.isArray(item.downtimeRecords))item.downtimeRecords=[];
       if(!Array.isArray(item.safetyWarnings))item.safetyWarnings=[];
-      if(!Array.isArray(item.currentAssignment))item.currentAssignment=[];
+      // currentAssignment is a plain object (or null) — never an array. A previous version of this
+      // check used Array.isArray() to decide whether to backfill it, which (since Array.isArray on
+      // a real object or on null is always false) wiped out a genuine assignment object back to []
+      // on every single reload. Preserve a valid object and a real null; only a malformed array or
+      // primitive value is converted to null.
+      if(item.currentAssignment==null||Array.isArray(item.currentAssignment)||typeof item.currentAssignment!=='object'){
+        item.currentAssignment=null;
+      }
       // Pass 3.2A: two new safety-history arrays. A record from before this pass simply has neither
       // yet — backfilled the same non-destructive way as every other per-item array above, never
       // touching `requirements` (that object is intentionally left absent on legacy records; its
@@ -758,15 +765,65 @@
       blockers:clone(gate.blockers)
     },extra||{});
   }
-  // Safety-controlled history arrays own their own dedicated methods (addInspection,
-  // addMaintenanceRecord, addCertification, addCalibration, recordEquipmentPreUseCheck,
-  // reportBreakdown, resolveBreakdown, ...) — updateEquipment() must never let a caller replace or
-  // clear any of them to silently erase a blocker.
-  const EQUIPMENT_SAFETY_HISTORY_FIELDS=['inspections','maintenance','certifications','calibrations','preUseChecks','downtimeRecords','safetyWarnings','activity'];
-  // A caller-supplied override/force/etc. flag or a caller-supplied blockers/reasons list must
-  // never influence the gate — these fields are stripped from updateEquipment() patches outright so
-  // no future code path can accidentally start trusting them.
+  // Every field the safety gate reads, or that records operational/usage state the gate's callers
+  // rely on, is protected — updateEquipment() must REJECT the entire mutation (never silently drop
+  // just these fields and report success) if a caller attempts to touch any of them directly.
+  // Legitimate changes go through their own dedicated, validated, evidenced methods instead:
+  //   requirements                                -> updateEquipmentRequirements
+  //   maintenanceDate  (+ maintenance history)     -> addMaintenanceRecord
+  //   inspectionDate   (+ inspections history)     -> addInspection / resolveEquipmentInspection
+  //   certificationExpiry (+ certifications)       -> addCertification
+  //   calibrationDate  (+ calibrations)            -> addCalibration
+  //   preUseChecks                                 -> recordEquipmentPreUseCheck
+  //   downtimeRecords                              -> reportBreakdown / resolveBreakdown
+  //   currentAssignment/assignedProject/assignedJobcard/operator -> assignEquipment/returnEquipment/returnEquipmentToService
+  //   usageHistory/usageSessions/operatingHourMeter -> logEquipmentUsage
+  // Ordinary descriptive fields (name, description, manufacturer, location, responsiblePerson, ...)
+  // are NOT in this list and remain freely editable.
+  const EQUIPMENT_PROTECTED_FIELDS=[
+    'requirements','maintenanceDate','inspectionDate','certificationExpiry','calibrationDate',
+    'inspections','maintenance','certifications','calibrations','preUseChecks','downtimeRecords',
+    'safetyWarnings','activity','returnToService','usageHistory','usageSessions','operatingHourMeter',
+    'currentAssignment','assignedProject','assignedJobcard','operator',
+    // isRetired/retirementReason may only change through the dedicated retirement workflow
+    // (retireEquipment) — see Pass 3.2A fix round 2.
+    'isRetired','retirementReason'
+  ];
+  // A caller-supplied override/force/etc. flag or a caller-supplied blockers/reasons list is never
+  // a real equipment field — these are stripped from updateEquipment() patches outright (rather
+  // than rejecting the whole mutation) so no future code path can accidentally start trusting them.
   const EQUIPMENT_OVERRIDE_FLAG_FIELDS=['override','managerOverride','force','safetyApproved','blockers','reasons'];
+  // No record-creation payload (reportBreakdown/addInspection/recordEquipmentPreUseCheck/
+  // addMaintenanceRecord/addCertification/addCalibration) may ever directly set these —
+  // they are server/workflow-owned: identity, timing, and every resolution/approval field. Each
+  // dedicated method computes and sets them itself, never trusting the caller's payload.
+  const EQUIPMENT_RECORD_OWNED_FIELDS=[
+    'id','no','timestamp','status','resolved','resolvedBy','resolvedDate','resolutionEvidence',
+    'passedInspectionReference','resolvedViaCheckId','resolutionDate',
+    'authorisedBy','approvalReference','returnDate'
+  ];
+  function stripEquipmentRecordOwnedFields(obj){
+    const out=Object.assign({},obj);
+    EQUIPMENT_RECORD_OWNED_FIELDS.forEach(f=>{delete out[f];});
+    return out;
+  }
+  function equipmentProtectedFieldsBlockedResult(equipmentId,fields){
+    save(`Blocked by equipment safety gate: attempted direct edit of protected field(s) [${fields.join(', ')}] for ${equipmentId}`);
+    return{
+      error:`These fields can only be changed through their dedicated, evidenced methods: ${fields.join(', ')}.`,
+      code:'EQUIPMENT_SAFETY_FIELDS_PROTECTED',
+      equipmentId:equipmentId||null,
+      protectedFields:fields.slice()
+    };
+  }
+  const EQUIPMENT_REQUIREMENT_KEYS=['maintenanceRequired','inspectionRequired','certificationRequired','calibrationRequired','preUseCheckRequired'];
+  // Keeps only the known boolean requirement flags — any other supplied key is ignored, and every
+  // known key is coerced to a real boolean, so `requirements` can never end up holding stray data.
+  function normalizeEquipmentRequirements(obj){
+    const out={};
+    EQUIPMENT_REQUIREMENT_KEYS.forEach(k=>{if(obj&&Object.prototype.hasOwnProperty.call(obj,k))out[k]=!!obj[k];});
+    return out;
+  }
   const api={
     key:KEY,
     get:()=>clone(state),
@@ -1078,6 +1135,7 @@
         inspectionDate:item.inspectionDate||null,
         certificationExpiry:item.certificationExpiry||null,
         calibrationDate:item.calibrationDate||null,
+        requirements:normalizeEquipmentRequirements(item.requirements),
         safetyWarnings:Array.isArray(item.safetyWarnings)?item.safetyWarnings:[],
         assignedProject:item.assignedProject||null,
         assignedJobcard:item.assignedJobcard||null,
@@ -1110,11 +1168,16 @@
       if(index<0) return null;
       const current=state.equipment[index];
       const data=clone(patch||{});
-      // Close bypass (B): safety-controlled history arrays and (D) any override/force/blockers/
-      // reasons flag are never applied through this generic path — dedicated methods own them.
-      EQUIPMENT_SAFETY_HISTORY_FIELDS.forEach(f=>{delete data[f];});
+      // A caller-supplied override/force/blockers/reasons flag is never a real equipment field —
+      // strip it before validation so it can never end up stored on the record.
       EQUIPMENT_OVERRIDE_FLAG_FIELDS.forEach(f=>{delete data[f];});
-      // Close bypass (A): a genuine transition into an operational status is blocked exactly like
+      // Close bypass: every gate-controlling / audit / usage-controlled field is protected — the
+      // WHOLE mutation is rejected (never a silent partial apply) the instant the patch touches any
+      // of them, so a caller cannot smuggle e.g. a future certificationExpiry alongside an unrelated
+      // field and have the unrelated part quietly succeed.
+      const touchedProtected=EQUIPMENT_PROTECTED_FIELDS.filter(f=>Object.prototype.hasOwnProperty.call(data,f));
+      if(touchedProtected.length)return equipmentProtectedFieldsBlockedResult(equipmentId,touchedProtected);
+      // Close bypass: a genuine transition into an operational status is blocked exactly like
       // changeEquipmentStatus() below — moving OUT of an operational status (e.g. reporting it
       // broken) is always allowed; only moving INTO Available/Reserved/In Use while blocked is not.
       if(data.status&&global.EquipmentGates&&global.EquipmentGates.normalizeStatus(data.status)!==global.EquipmentGates.normalizeStatus(current.status)&&global.EquipmentGates.isOperationalStatus(data.status)){
@@ -1235,43 +1298,209 @@
     // safety inspection immediately quarantines the equipment; a later PASSED inspection (a real
     // re-inspection, never an arbitrary edit of the old record) is the only way that clears it,
     // since it becomes the new latest record the safety gate reads.
+    // Validated: an inspection always needs an inspector and a valid date; a passed result
+    // additionally needs evidence/reference text, and a failed result needs findings — an empty
+    // {result:'passed'} record is rejected outright, it can never be used as fabricated proof of
+    // anything. Every server/workflow-owned field (id, resolved, resolvedBy, ...) is stripped from
+    // the caller's payload FIRST — a caller can never create a record that is born "pre-resolved".
+    // Only a passed inspection may advance inspectionDate (the next scheduled inspection due date);
+    // a pending or failed inspection never touches it, and a failed one keeps blocking until it is
+    // explicitly resolved via resolveEquipmentInspection.
     addInspection:(equipmentId,inspection)=>{
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(inspection), id:`INS-${Date.now()}`};
-      item.inspections=item.inspections||[]; item.inspections.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Inspection completed',user:inspection.inspector||'Aleksandar C.',reference:equipmentId,details:inspection.result||'Pending'});
-      const result=global.EquipmentGates?global.EquipmentGates.normalizeResult(rec.result):String(rec.result||'').toLowerCase();
+      const EG=global.EquipmentGates;
+      const raw=clone(inspection||{});
+      const result=EG?EG.normalizeResult(raw.result):String(raw.result||'').trim().toLowerCase();
+      if(!['passed','failed','pending'].includes(result))return{error:'Inspection result must be "passed", "failed" or "pending"'};
+      const inspector=raw.inspector!=null?String(raw.inspector).trim():'';
+      const date=raw.date!=null?String(raw.date).trim():'';
+      if(!inspector)return{error:'An inspection requires an inspector'};
+      if(!EG||!EG.isValidCalendarDateString(date))return{error:'An inspection requires a valid YYYY-MM-DD date'};
+      if(result==='passed'){
+        const evidence=raw.evidence||raw.reference;
+        if(!evidence||!String(evidence).trim())return{error:'A passed inspection requires evidence/reference text'};
+      }
+      if(result==='failed'&&(!raw.findings||!String(raw.findings).trim()))return{error:'A failed inspection requires findings'};
+      let nextDueDate=null;
+      if(raw.nextDueDate!=null&&String(raw.nextDueDate).trim()!==''){
+        if(result!=='passed')return{error:'nextDueDate can only be set on a passed inspection'};
+        const candidate=String(raw.nextDueDate).trim();
+        if(!EG.isValidCalendarDateString(candidate))return{error:'nextDueDate must be a valid YYYY-MM-DD date'};
+        if(EG.toDateOnly(candidate).getTime()<=EG.toDateOnly(date).getTime())return{error:'nextDueDate must be later than the inspection date'};
+        nextDueDate=candidate;
+      }
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      const rec=Object.assign({},clean,{id:`INS-${String(state.counters.equipmentInspection=(state.counters.equipmentInspection||0)+1).padStart(4,'0')}`,result,inspector,date});
+      item.inspections=item.inspections||[]; item.inspections.unshift(rec); item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:'Inspection completed',user:inspector,reference:equipmentId,details:result});
       if(result==='failed'){
         const nextStatus=rec.critical?'Quarantined':'Inspection Required';
         item.status=nextStatus;
-        item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:inspection.inspector||'Aleksandar C.',reference:equipmentId,details:`Failed inspection ${rec.id}`});
+        item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:inspector,reference:equipmentId,details:`Failed inspection ${rec.id}`});
+      }
+      if(nextDueDate){
+        item.inspectionDate=nextDueDate;
+        item.activity.unshift({timestamp:now(),action:'Inspection next-due date updated',user:inspector,reference:equipmentId,details:nextDueDate});
       }
       item.lastActivity=now();
       save(`Inspection added: ${equipmentId}`);
       return clone(rec);
     },
-    addMaintenanceRecord:(equipmentId,maintenance)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+    // Formal, individual resolution of ONE specific failed/critical-unresolved inspection record.
+    // Never deletes or overwrites the original — only marks that exact record resolved, so it stops
+    // contributing a blocker (see equipment-gates.js). Resolving one failure never touches another.
+    // No caller-supplied status string (e.g. "closed"/"repaired") can substitute for this — the
+    // gate's isResolvedRecord() only reads the `resolved` flag this method itself sets.
+    resolveEquipmentInspection(equipmentId,failedInspectionId,payload={}){
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(maintenance), id:`MAINT-${Date.now()}`};
+      const EG=global.EquipmentGates;
+      const target=(item.inspections||[]).find(i=>String(i.id)===String(failedInspectionId));
+      if(!target)return{error:'Referenced inspection record not found'};
+      const targetResult=EG?EG.normalizeResult(target.result):String(target.result||'').toLowerCase();
+      const targetIsBlocking=targetResult==='failed'||(!!target.critical&&targetResult!=='passed');
+      if(!targetIsBlocking)return{error:'Referenced inspection is not a failed or unresolved critical inspection'};
+      if(EG&&EG.isResolvedRecord(target))return{error:`Inspection ${target.id} has already been resolved`};
+      if(!EG||!EG.isValidCalendarDateString(target.date))return{error:'The failed inspection does not have a valid date and cannot be resolved'};
+      const resolvedBy=payload.resolvedBy!=null?String(payload.resolvedBy).trim():'';
+      const resolutionEvidence=payload.resolutionEvidence!=null?String(payload.resolutionEvidence).trim():'';
+      const passedInspectionReference=payload.passedInspectionReference!=null?String(payload.passedInspectionReference).trim():'';
+      const resolutionDate=payload.resolutionDate!=null?String(payload.resolutionDate).trim():'';
+      if(!resolvedBy||!resolutionEvidence||!passedInspectionReference||!resolutionDate){
+        return{error:'Resolving a failed inspection requires resolvedBy, resolutionEvidence, passedInspectionReference and resolutionDate'};
+      }
+      if(!EG.isValidCalendarDateString(resolutionDate))return{error:'resolutionDate must be a valid YYYY-MM-DD date'};
+      const passedInsp=(item.inspections||[]).find(i=>i&&i!==target&&(String(i.id)===passedInspectionReference||String(i.no)===passedInspectionReference));
+      if(!passedInsp)return{error:'passedInspectionReference must match a real inspection record on this equipment'};
+      if(EG.normalizeResult(passedInsp.result)!=='passed')return{error:'passedInspectionReference must reference an inspection with result "passed"'};
+      if(!passedInsp.inspector||!EG.isValidCalendarDateString(passedInsp.date)||!(passedInsp.evidence||passedInsp.reference))return{error:'passedInspectionReference must itself have inspector, a valid date and evidence/reference recorded'};
+      const failedDate=EG.toDateOnly(target.date), passedDate=EG.toDateOnly(passedInsp.date);
+      if(passedDate.getTime()<=failedDate.getTime())return{error:'passedInspectionReference must be newer than the failed inspection it resolves'};
+      if(EG.toDateOnly(resolutionDate).getTime()<passedDate.getTime())return{error:'resolutionDate must be on or after the passed inspection date'};
+      target.resolved=true; target.resolvedBy=resolvedBy; target.resolutionEvidence=resolutionEvidence; target.passedInspectionReference=passedInspectionReference; target.resolutionDate=resolutionDate;
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Failed inspection resolved',user:resolvedBy,reference:equipmentId,details:`${target.id} resolved via ${passedInspectionReference} — ${resolutionEvidence}`});
+      item.lastActivity=now();
+      save(`Failed inspection resolved: ${equipmentId}`);
+      return clone(target);
+    },
+    // Requirements are also protected (see EQUIPMENT_PROTECTED_FIELDS) — this is the only sanctioned
+    // way to change them. Requires who, why AND a formal approval reference, and only ever accepts
+    // real booleans for the known flags — a string like "false" is rejected outright rather than
+    // coerced, so a typo/type-confusion attempt can never silently disable a requirement.
+    updateEquipmentRequirements(equipmentId,requirements,meta={}){
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const updatedBy=meta.updatedBy!=null?String(meta.updatedBy).trim():'';
+      const reason=meta.reason!=null?String(meta.reason).trim():'';
+      const approvalReference=meta.approvalReference!=null?String(meta.approvalReference).trim():'';
+      if(!updatedBy||!reason||!approvalReference)return{error:'Updating safety requirements requires updatedBy, a reason and an approvalReference'};
+      if(!requirements||typeof requirements!=='object'||Array.isArray(requirements))return{error:'requirements must be an object'};
+      for(const k of EQUIPMENT_REQUIREMENT_KEYS){
+        if(Object.prototype.hasOwnProperty.call(requirements,k)&&typeof requirements[k]!=='boolean'){
+          return{error:`requirements.${k} must be a real boolean, not "${requirements[k]}"`};
+        }
+      }
+      item.requirements=normalizeEquipmentRequirements(Object.assign({},item.requirements||{},requirements));
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Safety requirements updated',user:updatedBy,reference:equipmentId,details:`${reason} (${approvalReference})`});
+      item.lastActivity=now();
+      save(`Equipment safety requirements updated: ${equipmentId}`);
+      return clone(item);
+    },
+    // The dedicated, validated way to record maintenance completion — and, only for a genuinely
+    // completed/passed record with real evidence, to legitimately advance the gate-controlling
+    // maintenanceDate (with its own audit trail) instead of that date being editable directly
+    // through updateEquipment().
+    addMaintenanceRecord:(equipmentId,maintenance)=>{
+      const item=equip(equipmentId);
+      if(!item) return {error:'Equipment not found'};
+      const EG=global.EquipmentGates;
+      const raw=clone(maintenance||{});
+      const completedBy=raw.completedBy!=null?String(raw.completedBy).trim():'';
+      const date=raw.date!=null?String(raw.date).trim():'';
+      const result=raw.result!=null?String(raw.result).trim().toLowerCase():'';
+      const evidence=raw.evidence||raw.serviceReportReference;
+      if(!completedBy)return{error:'A maintenance record requires completedBy'};
+      if(!EG||!EG.isValidCalendarDateString(date))return{error:'A maintenance record requires a valid completion date'};
+      if(result!=='completed'&&result!=='passed')return{error:'A maintenance record requires result "completed" or "passed"'};
+      if(!evidence||!String(evidence).trim())return{error:'A maintenance record requires evidence or a serviceReportReference'};
+      let nextDueDate=null;
+      if(raw.nextDueDate!=null&&String(raw.nextDueDate).trim()!==''){
+        const candidate=String(raw.nextDueDate).trim();
+        if(!EG.isValidCalendarDateString(candidate))return{error:'nextDueDate must be a valid YYYY-MM-DD date'};
+        if(EG.toDateOnly(candidate).getTime()<=EG.toDateOnly(date).getTime())return{error:'nextDueDate must be later than the completion date'};
+        nextDueDate=candidate;
+      }
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      const rec=Object.assign({},clean,{id:`MAINT-${String(state.counters.equipmentMaintenance=(state.counters.equipmentMaintenance||0)+1).padStart(4,'0')}`,completedBy,date,result});
       item.maintenance=item.maintenance||[]; item.maintenance.unshift(rec);
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Maintenance completed',user:completedBy,reference:equipmentId,details:String(evidence)});
+      if(nextDueDate){
+        item.maintenanceDate=nextDueDate;
+        item.activity.unshift({timestamp:now(),action:'Maintenance next-due date updated',user:completedBy,reference:equipmentId,details:nextDueDate});
+      }
       item.lastActivity=now();
       save(`Maintenance added: ${equipmentId}`);
       return clone(rec);
     },
+    // The dedicated, validated way to record a certification — always sets/advances the
+    // gate-controlling certificationExpiry, and only from real, referenced, authorised evidence.
     addCertification:(equipmentId,cert)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(cert), id:`CERT-${Date.now()}`};
-      item.certifications=item.certifications||[]; item.certifications.unshift(rec); item.lastActivity=now();
+      const EG=global.EquipmentGates;
+      const raw=clone(cert||{});
+      const issuedBy=(raw.issuedBy!=null?String(raw.issuedBy):(raw.authority!=null?String(raw.authority):'')).trim();
+      const date=raw.date!=null?String(raw.date).trim():'';
+      const expiryDate=raw.expiryDate!=null?String(raw.expiryDate).trim():'';
+      const reference=raw.certificateNumber||raw.approvalReference;
+      const evidence=raw.evidence||raw.reference||reference;
+      if(!issuedBy)return{error:'A certification record requires issuedBy (or authority)'};
+      if(!reference||!String(reference).trim())return{error:'A certification record requires certificateNumber or approvalReference'};
+      if(!EG||!EG.isValidCalendarDateString(date))return{error:'A certification record requires a valid issue date'};
+      if(!EG.isValidCalendarDateString(expiryDate))return{error:'A certification record requires a valid expiryDate'};
+      if(EG.toDateOnly(expiryDate).getTime()<=EG.toDateOnly(date).getTime())return{error:'expiryDate must be later than the issue date'};
+      if(!evidence||!String(evidence).trim())return{error:'A certification record requires evidence/reference'};
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      const rec=Object.assign({},clean,{id:`CERT-${String(state.counters.equipmentCertification=(state.counters.equipmentCertification||0)+1).padStart(4,'0')}`,issuedBy,date,expiryDate});
+      item.certifications=item.certifications||[]; item.certifications.unshift(rec);
+      item.certificationExpiry=expiryDate;
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Certification recorded',user:issuedBy,reference:equipmentId,details:`${reference} — expires ${expiryDate}`});
+      item.lastActivity=now();
       save(`Certification added: ${equipmentId}`);
       return clone(rec);
     },
+    // The dedicated, validated way to record a calibration — only for a genuinely passed record
+    // with real evidence does a supplied nextDueDate legitimately advance calibrationDate.
     addCalibration:(equipmentId,calibration)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(calibration), id:`CAL-${Date.now()}`};
-      item.calibrations=item.calibrations||[]; item.calibrations.unshift(rec); item.lastActivity=now();
+      const EG=global.EquipmentGates;
+      const raw=clone(calibration||{});
+      const calibratedBy=raw.calibratedBy!=null?String(raw.calibratedBy).trim():'';
+      const date=raw.date!=null?String(raw.date).trim():'';
+      const result=raw.result!=null?String(raw.result).trim().toLowerCase():'';
+      const evidence=raw.evidence||raw.certificate||raw.reference;
+      if(!calibratedBy)return{error:'A calibration record requires calibratedBy'};
+      if(result!=='passed')return{error:'A calibration record requires result "passed"'};
+      if(!EG||!EG.isValidCalendarDateString(date))return{error:'A calibration record requires a valid calibration date'};
+      if(!evidence||!String(evidence).trim())return{error:'A calibration record requires certificate/reference/evidence'};
+      let nextDueDate=null;
+      if(raw.nextDueDate!=null&&String(raw.nextDueDate).trim()!==''){
+        const candidate=String(raw.nextDueDate).trim();
+        if(!EG.isValidCalendarDateString(candidate))return{error:'nextDueDate must be a valid YYYY-MM-DD date'};
+        if(EG.toDateOnly(candidate).getTime()<=EG.toDateOnly(date).getTime())return{error:'nextDueDate must be later than the calibration date'};
+        nextDueDate=candidate;
+      }
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      const rec=Object.assign({},clean,{id:`CAL-${String(state.counters.equipmentCalibration=(state.counters.equipmentCalibration||0)+1).padStart(4,'0')}`,calibratedBy,date,result});
+      item.calibrations=item.calibrations||[]; item.calibrations.unshift(rec);
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Calibration recorded',user:calibratedBy,reference:equipmentId,details:String(evidence)});
+      if(nextDueDate){
+        item.calibrationDate=nextDueDate;
+        item.activity.unshift({timestamp:now(),action:'Calibration next-due date updated',user:calibratedBy,reference:equipmentId,details:nextDueDate});
+      }
+      item.lastActivity=now();
       save(`Calibration added: ${equipmentId}`);
       return clone(rec);
     },
@@ -1297,19 +1526,34 @@
     // combined with the open-breakdown gate rule itself, prevents subsequent reservation, assignment
     // and usage through every path. The affected project/jobcard is preserved on the breakdown
     // record for traceability, falling back to the equipment's current assignment when not given.
+    // status/resolved are always workflow-owned: a caller can never create a breakdown that is
+    // born "already resolved" — stripEquipmentRecordOwnedFields() removes any caller-supplied
+    // status/resolved/resolvedBy/... before they are set explicitly, here, to their real values.
     reportBreakdown:(equipmentId,record={})=>{
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={...clone(record), id:`BR-${Date.now()}`, timestamp:now(), status:'Reported',
-        projectNo:record.projectNo||item.assignedProject||null, jobcardNo:record.jobcardNo||item.assignedJobcard||null};
-      item.downtimeRecords=item.downtimeRecords||[]; item.downtimeRecords.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Breakdown reported',user:record.responsiblePerson||'Aleksandar C.',reference:equipmentId,details:record.reason||''});
+      const raw=clone(record||{});
+      const reason=raw.reason!=null?String(raw.reason).trim():'';
+      const responsiblePerson=(raw.responsiblePerson!=null?String(raw.responsiblePerson):(raw.reportedBy!=null?String(raw.reportedBy):'')).trim();
+      if(!reason)return{error:'Reporting a breakdown requires a non-whitespace reason'};
+      if(!responsiblePerson)return{error:'Reporting a breakdown requires responsiblePerson (or reportedBy)'};
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      const rec=Object.assign({},clean,{
+        id:`BR-${String(state.counters.equipmentBreakdown=(state.counters.equipmentBreakdown||0)+1).padStart(4,'0')}`,
+        timestamp:now(),status:'Reported',resolved:false,reason,responsiblePerson,
+        projectNo:raw.projectNo||item.assignedProject||null,jobcardNo:raw.jobcardNo||item.assignedJobcard||null
+      });
+      item.downtimeRecords=item.downtimeRecords||[]; item.downtimeRecords.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Breakdown reported',user:responsiblePerson,reference:equipmentId,details:reason});
       item.status='Out of Service';
-      item.activity.unshift({timestamp:now(),action:'Status changed to Out of Service',user:record.responsiblePerson||'Aleksandar C.',reference:equipmentId,details:`Breakdown ${rec.id}`});
+      item.activity.unshift({timestamp:now(),action:'Status changed to Out of Service',user:responsiblePerson,reference:equipmentId,details:`Breakdown ${rec.id}`});
       item.lastActivity=now();
       state.breakdowns=state.breakdowns||[]; state.breakdowns.unshift(rec); save(`Breakdown reported: ${equipmentId}`); return clone(rec);
     },
     // Explicit, authorised resolution — never deletes or overwrites the original breakdown record,
-    // just marks it resolved with who/why so the safety gate stops treating it as open.
+    // just marks it resolved with who/why so the safety gate stops treating it as open. Updates
+    // BOTH stored copies (equipment.downtimeRecords AND the shared state.breakdowns list) by id —
+    // after a localStorage reload these are two independent object copies, not the same reference
+    // they were at creation time, so each must be found and patched separately.
     resolveBreakdown(equipmentId,breakdownId,payload={}){
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
@@ -1319,35 +1563,68 @@
       const resolutionEvidence=payload.resolutionEvidence!=null?String(payload.resolutionEvidence).trim():'';
       if(!resolvedBy||!resolutionEvidence)return{error:'Resolving a breakdown requires resolvedBy and resolutionEvidence'};
       if(global.EquipmentGates&&global.EquipmentGates.isResolvedRecord(rec))return{error:`Breakdown ${rec.id} has already been resolved`};
-      rec.status='resolved'; rec.resolved=true; rec.resolvedBy=resolvedBy; rec.resolutionEvidence=resolutionEvidence; rec.resolvedDate=now();
+      const patch={status:'resolved',resolved:true,resolvedBy,resolutionEvidence,resolvedDate:now()};
+      Object.assign(rec,patch);
+      const sharedRec=(state.breakdowns||[]).find(d=>String(d.id)===String(breakdownId));
+      if(sharedRec)Object.assign(sharedRec,patch);
       item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Breakdown resolved',user:resolvedBy,reference:equipmentId,details:resolutionEvidence});
       item.lastActivity=now();
       save(`Breakdown resolved: ${equipmentId}`);
       return clone(rec);
     },
     // Pre-use checks are stored as append-only history, never a single toggle boolean. A failed
-    // check immediately makes the equipment non-operational (via the safety gate reading the latest
-    // record); a later PASSED check is what clears it, matching the same pattern as inspections.
+    // check immediately makes the equipment non-operational and remains so — an unrelated later
+    // passed check never silently clears it; only an explicit link (resolvesCheckId, on a NEW
+    // passed check) marks that specific failed record resolved, preserving it unmodified otherwise.
+    // An explicit resolvesCheckId is validated BEFORE anything is created — an invalid/stale/
+    // mismatched reference rejects the WHOLE new check (never silently recorded without the
+    // resolution it claimed to provide, and never a partial mutation).
     recordEquipmentPreUseCheck(equipmentId,payload={}){
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const checkedBy=payload.checkedBy!=null?String(payload.checkedBy).trim():'';
-      const date=payload.date!=null?String(payload.date).trim():'';
-      const result=global.EquipmentGates?global.EquipmentGates.normalizeResult(payload.result):String(payload.result||'').trim().toLowerCase();
+      const EG=global.EquipmentGates;
+      const raw=clone(payload||{});
+      const checkedBy=raw.checkedBy!=null?String(raw.checkedBy).trim():'';
+      const date=raw.date!=null?String(raw.date).trim():'';
+      const result=EG?EG.normalizeResult(raw.result):String(raw.result||'').trim().toLowerCase();
       if(!checkedBy)return{error:'A pre-use check requires checkedBy'};
-      if(!date)return{error:'A pre-use check requires a date'};
+      if(!EG||!EG.isValidCalendarDateString(date))return{error:'A pre-use check requires a valid date'};
       if(result!=='passed'&&result!=='failed')return{error:'A pre-use check result must be "passed" or "failed"'};
-      const evidence=payload.checklist||payload.evidence;
+      const evidence=raw.checklist||raw.evidence;
       const hasEvidence=Array.isArray(evidence)?evidence.length>0:(evidence!=null&&String(evidence).trim()!=='');
       if(result==='passed'&&!hasEvidence)return{error:'A passed pre-use check requires evidence/checklist text'};
-      const rec={id:`PUC-${Date.now()}`,result,checkedBy,date,projectNo:payload.projectNo||null,jobcardNo:payload.jobcardNo||null,
-        checklist:payload.checklist||null,evidence:payload.evidence||null,notes:payload.notes||''};
+
+      let resolveTarget=null;
+      if(raw.resolvesCheckId!=null&&String(raw.resolvesCheckId).trim()!==''){
+        if(result!=='passed')return{error:'resolvesCheckId can only be supplied on a passed pre-use check'};
+        const targetId=String(raw.resolvesCheckId).trim();
+        resolveTarget=(item.preUseChecks||[]).find(c=>c&&String(c.id)===targetId);
+        if(!resolveTarget)return{error:'resolvesCheckId must match a real pre-use check record on this equipment'};
+        if(EG.normalizeResult(resolveTarget.result)!=='failed')return{error:'resolvesCheckId must reference a failed pre-use check'};
+        if(EG.isResolvedRecord(resolveTarget))return{error:`Pre-use check ${resolveTarget.id} has already been resolved`};
+        if(!EG.isValidCalendarDateString(resolveTarget.date))return{error:'The failed pre-use check does not have a valid date and cannot be resolved'};
+        if(EG.toDateOnly(date).getTime()<=EG.toDateOnly(resolveTarget.date).getTime())return{error:'The resolving pre-use check must be newer than the failed check it resolves'};
+        if(resolveTarget.projectNo&&resolveTarget.projectNo!==(raw.projectNo||null))return{error:"The resolving pre-use check must match the failed check's projectNo"};
+        if(resolveTarget.jobcardNo&&resolveTarget.jobcardNo!==(raw.jobcardNo||null))return{error:"The resolving pre-use check must match the failed check's jobcardNo"};
+      }
+
+      const clean=stripEquipmentRecordOwnedFields(raw);
+      delete clean.resolvesCheckId;
+      const rec=Object.assign({},clean,{
+        id:`PUC-${String(state.counters.equipmentPreUseCheck=(state.counters.equipmentPreUseCheck||0)+1).padStart(4,'0')}`,
+        result,checkedBy,date,projectNo:raw.projectNo||null,jobcardNo:raw.jobcardNo||null,
+        checklist:raw.checklist||null,evidence:raw.evidence||null,notes:raw.notes||''
+      });
       item.preUseChecks=item.preUseChecks||[]; item.preUseChecks.unshift(rec);
       item.activity=item.activity||[];
-      item.activity.unshift({timestamp:now(),action:`Pre-use check ${result}`,user:checkedBy,reference:equipmentId,details:payload.notes||''});
+      item.activity.unshift({timestamp:now(),action:`Pre-use check ${result}`,user:checkedBy,reference:equipmentId,details:raw.notes||''});
       if(result==='failed'){
         item.status='Inspection Required';
         item.activity.unshift({timestamp:now(),action:'Status changed to Inspection Required',user:checkedBy,reference:equipmentId,details:`Failed pre-use check ${rec.id}`});
+      }
+      if(resolveTarget){
+        resolveTarget.resolved=true; resolveTarget.resolvedBy=checkedBy; resolveTarget.resolutionEvidence=hasEvidence?String(evidence):''; resolveTarget.resolvedViaCheckId=rec.id; resolveTarget.resolvedDate=date;
+        item.activity.unshift({timestamp:now(),action:'Failed pre-use check resolved',user:checkedBy,reference:equipmentId,details:`${resolveTarget.id} resolved via ${rec.id}`});
       }
       item.lastActivity=now();
       save(`Pre-use check recorded: ${equipmentId}`);
@@ -1359,6 +1636,7 @@
     returnEquipmentToService(equipmentId,payload={}){
       const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
+      const EG=global.EquipmentGates;
       const authorisedBy=payload.authorisedBy!=null?String(payload.authorisedBy).trim():'';
       const approvalReference=payload.approvalReference!=null?String(payload.approvalReference).trim():'';
       const resolutionEvidence=payload.resolutionEvidence!=null?String(payload.resolutionEvidence).trim():'';
@@ -1367,10 +1645,39 @@
       if(!authorisedBy||!approvalReference||!resolutionEvidence||!passedInspectionReference||!returnDate){
         return{error:'Returning equipment to service requires authorisedBy, approvalReference, resolutionEvidence, passedInspectionReference and returnDate'};
       }
-      if(global.EquipmentGates&&global.EquipmentGates.isRetiredStatus(item.status))return{error:'Retired equipment is permanently non-operational and cannot be returned to service'};
+      if(!EG||!EG.isValidCalendarDateString(returnDate))return{error:'returnDate must be a valid YYYY-MM-DD date'};
+      if(EG.isRetiredStatus(item.status))return{error:'Retired equipment is permanently non-operational and cannot be returned to service'};
+      // Only equipment whose CURRENT status is a recognised hard-block status may use this method:
+      // an unknown/malformed status fails safe (rejected here, never an easy way back to
+      // Available), and equipment that is already operational should never call this method at all.
+      if(!EG.isHardBlockStatus(item.status))return{error:'returnEquipmentToService can only be used on equipment whose current status is a recognised blocked status'};
       const matchedInspection=(item.inspections||[]).find(i=>i&&(String(i.id)===passedInspectionReference||String(i.no)===passedInspectionReference)
-        &&(global.EquipmentGates?global.EquipmentGates.normalizeResult(i.result):String(i.result||'').toLowerCase())==='passed');
+        &&EG.normalizeResult(i.result)==='passed');
       if(!matchedInspection)return{error:'passedInspectionReference must match a real, passed inspection record stored on this equipment'};
+      if(!matchedInspection.inspector||!EG.isValidCalendarDateString(matchedInspection.date)||!(matchedInspection.evidence||matchedInspection.reference)){
+        return{error:'passedInspectionReference must itself have inspector, a valid date and evidence/reference recorded'};
+      }
+      const matchedDate=EG.toDateOnly(matchedInspection.date);
+      const returnDateOnly=EG.toDateOnly(returnDate);
+      if(returnDateOnly.getTime()<matchedDate.getTime())return{error:'returnDate cannot predate the passed inspection it relies on'};
+      // An old historical passed inspection cannot be reused as post-repair approval — the
+      // reference must be dated on or after the most recent known failure/breakdown, so it actually
+      // speaks to the equipment's CURRENT fitness, not some unrelated earlier point in time.
+      const failureDates=(item.inspections||[]).filter(i=>i&&EG.normalizeResult(i.result)==='failed').map(i=>EG.toDateOnly(i.date)).filter(Boolean);
+      const breakdownDates=(item.downtimeRecords||[]).map(d=>EG.toDateOnly(d.timestamp||d.date)).filter(Boolean);
+      const problemDates=failureDates.concat(breakdownDates);
+      if(problemDates.length){
+        const latestProblem=new Date(Math.max(...problemDates.map(d=>d.getTime())));
+        if(matchedDate.getTime()<latestProblem.getTime())return{error:'passedInspectionReference must be a passed inspection performed on or after the most recent failure or breakdown'};
+      }
+      // returnDate must not predate the passed inspection (checked above) OR any formal resolution
+      // already recorded against this equipment (a resolved inspection/breakdown).
+      const resolutionDates=(item.inspections||[]).filter(i=>i&&i.resolutionDate&&EG.isValidCalendarDateString(i.resolutionDate)).map(i=>EG.toDateOnly(i.resolutionDate))
+        .concat((item.downtimeRecords||[]).filter(d=>d&&d.resolvedDate&&EG.isValidCalendarDateString(d.resolvedDate)).map(d=>EG.toDateOnly(d.resolvedDate)));
+      if(resolutionDates.length){
+        const latestResolution=new Date(Math.max(...resolutionDates.map(d=>d.getTime())));
+        if(returnDateOnly.getTime()<latestResolution.getTime())return{error:'returnDate cannot predate the most recent formal resolution recorded on this equipment'};
+      }
       const gate=equipmentSafetyGate(item,{skipStatusCheck:true});
       if(gate.blocked)return equipmentGateBlockedResult('Return to service',equipmentId,gate);
       const from=item.status;
@@ -1387,10 +1694,18 @@
       save(`Equipment returned to service: ${equipmentId}`);
       return clone(item);
     },
-    retireEquipment:(equipmentId,reason)=>{
-      const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
+    // isRetired/retirementReason are also protected fields — retireEquipment() is the only
+    // sanctioned way to set them. Requires a non-whitespace reason (no silent default) and always
+    // records both authority (activity.user) and evidence (activity.details, the reason itself).
+    retireEquipment:(equipmentId,reason,meta={})=>{
+      const item=equip(equipmentId);
       if(!item) return {error:'Equipment not found'};
-      item.isRetired=true; item.retirementReason=reason||'Retired by operational decision'; item.status='Retired'; item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Equipment retired',user:'Aleksandar C.',reference:equipmentId,details:reason||''}); item.lastActivity=now();
+      const cleanReason=reason!=null?String(reason).trim():'';
+      if(!cleanReason)return{error:'Retiring equipment requires a non-whitespace reason'};
+      const retiredBy=meta&&meta.retiredBy!=null?String(meta.retiredBy).trim():'Aleksandar C.';
+      item.isRetired=true; item.retirementReason=cleanReason; item.status='Retired'; item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:'Equipment retired',user:retiredBy,reference:equipmentId,details:cleanReason});
+      item.lastActivity=now();
       save(`Equipment retired: ${equipmentId}`); return clone(item);
     },
 

@@ -130,12 +130,27 @@ test('gate: a critical inspection that has not yet passed blocks even if its res
   assert.equal(g.blocked,true);
   assert.ok(g.blockers.some(b=>b.code==='CRITICAL_INSPECTION_UNRESOLVED'));
 });
-test('gate: a later PASSED inspection supersedes an older failed one (latest record wins)', ()=>{
+test('gate: a later UNRELATED passed inspection does NOT clear an earlier unresolved failure (no more "latest wins")', ()=>{
   const g=EquipmentGates.getEquipmentSafetyGate(eq({inspections:[
     {id:'INS-2',result:'passed',critical:true},
     {id:'INS-1',result:'failed',critical:true}
   ]}),{asOf:ASOF});
+  assert.equal(g.blocked,true,'the old failure must still block even though a newer unrelated inspection passed');
+  assert.ok(g.blockers.some(b=>b.code==='CRITICAL_INSPECTION_UNRESOLVED'));
+});
+test('gate: a failed inspection explicitly marked resolved (resolved:true) no longer blocks', ()=>{
+  const g=EquipmentGates.getEquipmentSafetyGate(eq({inspections:[
+    {id:'INS-2',result:'passed',critical:true},
+    {id:'INS-1',result:'failed',critical:true,resolved:true,resolvedBy:'Aleksandar C.'}
+  ]}),{asOf:ASOF});
   assert.equal(g.blocked,false);
+});
+test('gate: multiple independent unresolved failures each produce their own blocker', ()=>{
+  const g=EquipmentGates.getEquipmentSafetyGate(eq({inspections:[
+    {id:'INS-2',result:'failed',critical:false},
+    {id:'INS-1',result:'failed',critical:true}
+  ]}),{asOf:ASOF});
+  assert.equal(g.blockers.filter(b=>b.hard).length,2);
 });
 
 // ── Breakdowns ──
@@ -155,8 +170,13 @@ test('gate: a failed latest pre-use check blocks immediately', ()=>{
   assert.equal(g.blocked,true);
   assert.ok(g.blockers.some(b=>b.code==='PREUSE_CHECK_FAILED'));
 });
-test('gate: a later passed pre-use check supersedes an older failed one', ()=>{
+test('gate: a later UNRELATED passed pre-use check does NOT clear an older unresolved failed one', ()=>{
   const g=EquipmentGates.getEquipmentSafetyGate(eq({preUseChecks:[{id:'PUC-2',result:'passed'},{id:'PUC-1',result:'failed'}]}),{asOf:ASOF});
+  assert.equal(g.blocked,true);
+  assert.ok(g.blockers.some(b=>b.code==='PREUSE_CHECK_FAILED'));
+});
+test('gate: a failed pre-use check explicitly marked resolved no longer blocks', ()=>{
+  const g=EquipmentGates.getEquipmentSafetyGate(eq({preUseChecks:[{id:'PUC-2',result:'passed'},{id:'PUC-1',result:'failed',resolved:true}]}),{asOf:ASOF});
   assert.equal(g.blocked,false);
 });
 test('gate: a mandatory pre-use check only applies when requirePreUseCheck is requested (use context), not on a bare status query', ()=>{
