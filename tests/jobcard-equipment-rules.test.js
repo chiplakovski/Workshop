@@ -8,7 +8,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {
   resolveMachineLink,isDuplicateEquipmentLink,isAssignedElsewhere,canAddEquipmentToJobcard,
-  resolveOperationEquipment,canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard
+  resolveOperationEquipment,canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard,
+  resolveLogTimeEquipment
 }=require('../jobcard-equipment-rules.js');
 
 function eq(overrides){return Object.assign({equipmentId:'E-1',name:'Welder',status:'Available'},overrides);}
@@ -200,4 +201,48 @@ test('equipmentUsageForJobcard: no usage history, or none for this jobcard, is z
   assert.equal(equipmentUsageForJobcard(eq({usageHistory:[]}),'JC-2026-0001'),0);
   assert.equal(equipmentUsageForJobcard(eq({usageHistory:undefined}),'JC-2026-0001'),0);
   assert.equal(equipmentUsageForJobcard(null,'JC-2026-0001'),0);
+});
+
+// ── resolveLogTimeEquipment ── (shared by jobcard-desktop.html's Log Time modal and the Hours module)
+test('resolveLogTimeEquipment: no equipmentId means no requirement at all — ok with a null machine/equipment', ()=>{
+  const res=resolveLogTimeEquipment([{equipmentId:'E-1',name:'Welder'}],'',[eq({equipmentId:'E-1',assignedJobcard:'JC-1'})],'JC-1');
+  assert.equal(res.ok,true);
+  assert.equal(res.machine,null);
+  assert.equal(res.equipment,null);
+});
+test('resolveLogTimeEquipment: equipmentId not present in this jobcard\'s own machines is EQUIPMENT_NOT_LINKED', ()=>{
+  const list=[eq({equipmentId:'E-1',assignedJobcard:'JC-1'})];
+  const res=resolveLogTimeEquipment([],'E-1',list,'JC-1');
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'EQUIPMENT_NOT_LINKED');
+});
+test('resolveLogTimeEquipment: linked here but the equipment record no longer exists is EQUIPMENT_MISSING', ()=>{
+  const machines=[{equipmentId:'E-1',name:'Welder'}];
+  const res=resolveLogTimeEquipment(machines,'E-1',[],'JC-1');
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'EQUIPMENT_MISSING');
+});
+test('resolveLogTimeEquipment: resolved and linked but not assigned to ANY jobcard is EQUIPMENT_UNASSIGNED', ()=>{
+  const machines=[{equipmentId:'E-1',name:'Welder'}];
+  const list=[eq({equipmentId:'E-1',assignedJobcard:null})];
+  const res=resolveLogTimeEquipment(machines,'E-1',list,'JC-1');
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'EQUIPMENT_UNASSIGNED');
+  assert.equal(res.assignedJobcard,null);
+});
+test('resolveLogTimeEquipment: resolved and linked but assigned to a DIFFERENT jobcard is EQUIPMENT_ASSIGNED_ELSEWHERE (stale-link bypass)', ()=>{
+  const machines=[{equipmentId:'E-1',name:'Welder'}];
+  const list=[eq({equipmentId:'E-1',assignedJobcard:'JC-OTHER'})];
+  const res=resolveLogTimeEquipment(machines,'E-1',list,'JC-1');
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'EQUIPMENT_ASSIGNED_ELSEWHERE');
+  assert.equal(res.assignedJobcard,'JC-OTHER');
+});
+test('resolveLogTimeEquipment: resolved, linked here, AND assigned to exactly this jobcard is authorized', ()=>{
+  const machines=[{equipmentId:'E-1',name:'Welder'}];
+  const list=[eq({equipmentId:'E-1',name:'Welder',assignedJobcard:'JC-1'})];
+  const res=resolveLogTimeEquipment(machines,'E-1',list,'JC-1');
+  assert.equal(res.ok,true);
+  assert.equal(res.machine.equipmentId,'E-1');
+  assert.equal(res.equipment.equipmentId,'E-1');
 });

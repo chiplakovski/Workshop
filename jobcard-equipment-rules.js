@@ -114,9 +114,27 @@
       .reduce((sum,u)=>sum+Math.max(0,(Number(u.meterAfter)||0)-(Number(u.meterBefore)||0)),0);
   }
 
+  // Whether an equipmentId picked for a time/usage entry (Jobcards' own Log Time modal, or the Hours
+  // module) may actually be used right now: it must resolve, against a FRESH equipment list (never a
+  // cached snapshot), to a record CURRENTLY assigned to exactly this Jobcard. Same "must be held here"
+  // rule as canStartOperationEquipment() above, reused for usage-logging rather than operation-start.
+  // This still never decides safety — canUseEquipment()/logEquipmentUsage() remain the sole authority.
+  function resolveLogTimeEquipment(machines,equipmentId,freshEquipmentList,jobcardNo){
+    if(!equipmentId)return{ok:true,machine:null,equipment:null};
+    const machine=(machines||[]).find(m=>m&&m.equipmentId===equipmentId)||null;
+    const list=Array.isArray(freshEquipmentList)?freshEquipmentList:[];
+    const eq=list.find(e=>e&&e.equipmentId===equipmentId)||null;
+    if(!machine||!eq)return{ok:false,code:eq?'EQUIPMENT_NOT_LINKED':'EQUIPMENT_MISSING',machine,equipment:eq};
+    if(eq.assignedJobcard!==jobcardNo){
+      return{ok:false,code:eq.assignedJobcard?'EQUIPMENT_ASSIGNED_ELSEWHERE':'EQUIPMENT_UNASSIGNED',machine,equipment:eq,assignedJobcard:eq.assignedJobcard||null};
+    }
+    return{ok:true,machine,equipment:eq};
+  }
+
   const JobcardEquipmentRules={
     resolveMachineLink,isDuplicateEquipmentLink,isAssignedElsewhere,canAddEquipmentToJobcard,
-    resolveOperationEquipment,canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard
+    resolveOperationEquipment,canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard,
+    resolveLogTimeEquipment
   };
   root.JobcardEquipmentRules=JobcardEquipmentRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=JobcardEquipmentRules;

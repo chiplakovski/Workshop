@@ -180,17 +180,31 @@
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </button>
 </div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
-  const DATA={
-    "P-2401 · Bakery line — Åhus":[{n:"Frame weldment",est:14},{n:"Conveyor guard",est:6},{n:"Drive mount plate",est:3.5}],
-    "P-2402 · Folding machine retrofit":[{n:"Panel wiring",est:20},{n:"HMI bracket",est:2},{n:"Safety cover",est:5}],
-    "P-2403 · Service — Malmö":[{n:"On-site inspection",est:4},{n:"Bearing replacement",est:8}]
-  };
-  const EQUIP=["Plasma cutter 5mm","Folding machine","Welding machine","Hand tools"];
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
+  // Project/Item/Equipment are real, live WorkshopData records — never a page-local fake list — and
+  // equipment usage is gated the same way jobcard-desktop.html's own Log Time modal gates it (see
+  // saveHours() below), reusing that page's resolveLogTimeEquipment() helper so there is exactly one
+  // implementation of "is this equipment currently held by this jobcard" in the app.
+  const {resolveLogTimeEquipment}=JobcardEquipmentRules;
   const T={
-    sv:{back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE"},
-    en:{back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB"},
-    mk:{back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk"}
+    sv:{back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
+      wholejobcard:"(helt jobbkort)",noitems:"Inga jobbkort hittades för detta projekt",noeqlinked:"Ingen utrustning kopplad till detta jobbkort ännu",
+      err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
+      eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
+      eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
+      eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad."},
+    en:{back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
+      wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
+      err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
+      eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
+      eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
+      eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved."},
+    mk:{back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
+      wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
+      err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
+      eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
+      eq_missing:"Ovaa oprema nedostasuva ili ne e povrzana so ovoj karton — povrzi ja vo Mašini i oprema prvo.",
+      eq_blocked:"Blokirano od bezbednosnite pravila za oprema: {reasons}",savedok:"Zapisot e začuvan."}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -201,18 +215,55 @@
     refreshEqLang();tick();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   const proj=document.getElementById('project'),item=document.getElementById('item');
-  Object.keys(DATA).forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;proj.appendChild(o);});
-  proj.addEventListener('change',()=>{item.innerHTML='<option value="">—</option>';(DATA[proj.value]||[]).forEach(it=>{const o=document.createElement('option');o.value=it.n;o.dataset.est=it.est;o.textContent=it.n;item.appendChild(o);});updateEst();});
-  item.addEventListener('change',updateEst);document.getElementById('hours').addEventListener('input',updateEst);
+  (WorkshopData.listProjects()||[]).forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+  // Item = a real Jobcard operation (falls back to "(whole jobcard)" when the jobcard has none),
+  // grouped by jobcard — mirrors jobcard-desktop.html's own opOpts/machineOpts construction. Never
+  // the old page-local fake {n,est} list.
+  function loadItems(){
+    const t=T[current];item.innerHTML='';
+    const jobcards=(WorkshopData.listJobcards()||[]).filter(j=>j.projectNo===proj.value&&!j.archived&&!['completed','closed','cancelled'].includes(j.status));
+    if(!proj.value||!jobcards.length){
+      const ph=document.createElement('option');ph.value='';ph.textContent=proj.value?t.noitems:'—';item.appendChild(ph);
+      updateEst();refreshEquipRows();return;
+    }
+    jobcards.forEach(j=>{
+      const grp=document.createElement('optgroup');grp.label=`${j.no} — ${j.title||''}`;
+      const ops=(j.operations&&j.operations.length)?j.operations:[null];
+      ops.forEach(op=>{
+        const o=document.createElement('option');
+        o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=op?op.plannedHours:'';o.dataset.desc=op?op.desc:(j.title||j.no);
+        o.textContent=op?op.desc:`${j.no} — ${t.wholejobcard}`;
+        grp.appendChild(o);
+      });
+      item.appendChild(grp);
+    });
+    updateEst();refreshEquipRows();
+  }
+  proj.addEventListener('change',loadItems);
+  item.addEventListener('change',()=>{updateEst();refreshEquipRows();});document.getElementById('hours').addEventListener('input',updateEst);
   function updateEst(){const chip=document.getElementById('estChip'),val=document.getElementById('estVal');const sel=item.options[item.selectedIndex];
     if(sel&&sel.dataset.est){chip.style.display='inline-flex';val.textContent=sel.dataset.est+' h';const h=parseFloat(document.getElementById('hours').value||0);chip.classList.toggle('warn',h>parseFloat(sel.dataset.est));}else chip.style.display='none';}
+  // Equipment rows may only offer equipment already linked to the SELECTED item's Jobcard (never
+  // free text, never the whole shared catalog) — exactly jobcard-desktop.html's machineOpts rule.
+  function selectedJobcard(){
+    const sel=item.options[item.selectedIndex];const jcNo=sel&&sel.dataset?sel.dataset.jobcard:'';
+    if(!jcNo)return null;
+    return (WorkshopData.listJobcards()||[]).find(j=>j.no===jcNo)||null;
+  }
+  function populateEqSelect(sel){
+    const t=T[current];const prev=sel.value;sel.innerHTML='';
+    const jc=selectedJobcard();const linked=jc?(jc.machines||[]).filter(m=>m.equipmentId):[];
+    const ph=document.createElement('option');ph.value='';ph.textContent=linked.length?t.eqph:t.noeqlinked;sel.appendChild(ph);
+    linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.equipmentId} — ${m.name}`;sel.appendChild(o);});
+    if(linked.some(m=>m.equipmentId===prev))sel.value=prev;
+  }
+  function refreshEquipRows(){document.querySelectorAll('#equipList .eqsel').forEach(populateEqSelect);}
   const equipList=document.getElementById('equipList');
   function addEqRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
-    const sel=document.createElement('select');sel.className='fld eqsel';const ph=document.createElement('option');ph.value='';ph.textContent=t.eqph;sel.appendChild(ph);
-    EQUIP.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+    const sel=document.createElement('select');sel.className='fld eqsel';
     const hrs=document.createElement('input');hrs.className='fld eqhrs';hrs.type='number';hrs.step='0.25';hrs.min='0';hrs.placeholder=t.hrs;
     const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove equipment');del.textContent='×';del.onclick=()=>row.remove();
-    row.append(sel,hrs,del);equipList.appendChild(row);}
+    row.append(sel,hrs,del);equipList.appendChild(row);populateEqSelect(sel);}
   document.getElementById('addEq').addEventListener('click',addEqRow);
   const matList=document.getElementById('matList');
   function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
@@ -221,14 +272,86 @@
     const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove material');del.textContent='×';del.onclick=()=>row.remove();
     row.append(name,qty,del);matList.appendChild(row);}
   document.getElementById('addMat').addEventListener('click',addMatRow);
-  function refreshEqLang(){const t=T[current];document.querySelectorAll('.eqsel').forEach(s=>{if(s.options[0])s.options[0].textContent=t.eqph;});document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
+  function refreshEqLang(){const t=T[current];refreshEquipRows();document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
     document.querySelectorAll('.matname').forEach(n=>n.placeholder=t.matph);document.querySelectorAll('.matqty').forEach(q=>q.placeholder=t.qty);}
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   document.getElementById('date2').valueAsDate=new Date();
   setLang("en");setInterval(tick,10000);addEqRow();addMatRow();
-  function collectHours(){return {project:proj.value,item:item.value,hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,user:document.getElementById('whoName').textContent,equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({name:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.name||x.hours),materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)};}
-  function saveHours(reset){const entry=collectHours();const hours=Number(entry.hours);if(!entry.project||!entry.item||!Number.isFinite(hours)||hours<=0){alert('Select a project and item, then enter hours greater than zero.');return false;}const result=window.WorkshopData?.logHours(entry);if(result?.error){alert(result.error);return false;}alert('Hours entry saved.');if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}return true;}
+  function collectHours(){
+    const sel=item.options[item.selectedIndex];
+    return {
+      project:proj.value,jobcard:sel&&sel.dataset?sel.dataset.jobcard||'':'',
+      operationId:sel&&sel.dataset&&sel.dataset.op?Number(sel.dataset.op):null,
+      item:sel&&sel.dataset?sel.dataset.desc||'':'',
+      hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,
+      worker:document.getElementById('whoName').textContent,
+      equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({equipmentId:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.equipmentId||x.hours),
+      materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)
+    };
+  }
+  function tpl(str,vals){return String(str||'').replace(/\{(\w+)\}/g,(m,k)=>vals&&vals[k]!=null?vals[k]:'');}
+  // Translates a blocked equipment result (from resolveLogTimeEquipment(), canUseEquipment()'s gate,
+  // or logEquipmentUsage()'s returned error) into a user-facing message — display-only, mirrors
+  // jobcard-desktop.html's translateEquipmentBlockCode(). Never decides anything itself.
+  function equipBlockMessage(res){
+    const t=T[current];
+    switch(res&&res.code){
+      case 'EQUIPMENT_NOT_LINKED':
+      case 'EQUIPMENT_MISSING':
+        return t.eq_missing;
+      case 'EQUIPMENT_UNASSIGNED':
+        return t.eq_unassigned;
+      case 'EQUIPMENT_ASSIGNED_ELSEWHERE':
+      case 'EQUIPMENT_ASSIGNMENT_CONFLICT':
+        return tpl(t.eq_assignedelsewhere,{jc:res.assignedJobcard||'—'});
+      case 'EQUIPMENT_SAFETY_BLOCKED':
+        return tpl(t.eq_blocked,{reasons:(res.reasons||[]).join('; ')});
+      default:
+        return (res&&res.error)||t.eq_blocked;
+    }
+  }
+  // Mirrors jobcard-desktop.html's saveLogTime(): validate every equipment row against the live,
+  // authoritative Equipment Safety Gate BEFORE committing anything, then log equipment usage via
+  // WorkshopData.logEquipmentUsage() BEFORE labour hours via logHours() — if any row is blocked,
+  // neither equipment usage nor labour hours are recorded. No equipment rows simply logs labour hours.
+  function saveHours(reset){
+    const entry=collectHours();const hours=Number(entry.hours);
+    if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){alert(T[current].err_select);return false;}
+    const jc=(WorkshopData.listJobcards()||[]).find(j=>j.no===entry.jobcard);
+    if(!jc){alert(T[current].err_jobcard_missing);return false;}
+
+    const toLog=[];
+    for(const row of entry.equipment){
+      if(!row.equipmentId)continue;
+      const resolved=resolveLogTimeEquipment(jc.machines,row.equipmentId,WorkshopData.getEquipment(),jc.no);
+      if(!resolved.ok){alert(equipBlockMessage(resolved));return false;}
+      const use=WorkshopData.canUseEquipment(row.equipmentId,{date:entry.date,projectNo:jc.projectNo,jobcardNo:jc.no});
+      if(!use.allowed){alert(equipBlockMessage({code:'EQUIPMENT_SAFETY_BLOCKED',reasons:(use.gate&&use.gate.reasons)||[]}));return false;}
+      toLog.push({equipmentId:row.equipmentId,name:resolved.machine.name,hours:Number(row.hours)||hours});
+    }
+
+    for(const eqEntry of toLog){
+      const usageRes=WorkshopData.logEquipmentUsage(eqEntry.equipmentId,{hours:eqEntry.hours,date:entry.date,worker:entry.worker,project:jc.projectNo,jobcard:jc.no,notes:entry.notes});
+      if(usageRes&&usageRes.error){alert(equipBlockMessage(usageRes));return false;}
+    }
+
+    // Sets both `worker` (jobcard-desktop.html's own hours panel filters by this — SHARED.hours
+    // matching h.jobcard/h.worker) and `user` (reports-desktop.html's Hours-by-user/by-worker tables
+    // group by this) — logHours() itself only defaults `user`, never derives one from `worker`.
+    const result=WorkshopData.logHours({project:jc.projectNo,jobcard:jc.no,item:entry.item,operation:entry.item,worker:entry.worker,user:entry.worker,hours,date:entry.date,notes:entry.notes,equipment:toLog,materials:entry.materials});
+    if(result&&result.error){alert(result.error);return false;}
+
+    if(entry.operationId!=null){
+      const op=(jc.operations||[]).find(o=>o.id===entry.operationId);
+      WorkshopData.updateJobcardOperation(jc.no,entry.operationId,{loggedHours:(Number(op&&op.loggedHours)||0)+hours});
+    }
+    WorkshopData.recordJobcardActivity(jc.no,{action:`${hours}h logged by ${entry.worker}${entry.item?' on '+entry.item:''}`});
+
+    alert(T[current].savedok);
+    if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}
+    return true;
+  }
   document.getElementById('saveEntry').addEventListener('click',()=>saveHours(false));document.getElementById('saveNewEntry').addEventListener('click',()=>saveHours(true));
   document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
   const picsChip=document.getElementById('picsChip'),picsInput=document.getElementById('picsInput');

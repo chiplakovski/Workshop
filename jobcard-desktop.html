@@ -307,11 +307,13 @@ function nowTime(){return new Date().toTimeString().slice(0,5);}
 // jobcard-rules.js (loaded above) so the page and the automated tests share one implementation.
 const {isBlank,isPositiveNumber,canCompleteOp,VALID_RESUME_TARGETS,resumeTargetFor}=JobcardRules;
 // resolveMachineLink, isDuplicateEquipmentLink, isAssignedElsewhere, canAddEquipmentToJobcard,
-// canStartOperationEquipment, canReturnEquipmentFromJobcard and equipmentUsageForJobcard live in
-// jobcard-equipment-rules.js — the actual safety DECISION always still comes from WorkshopData's
-// central Equipment Safety Gate (equipment-gates.js); these are read-only reference/UI helpers.
+// canStartOperationEquipment, canReturnEquipmentFromJobcard, equipmentUsageForJobcard and
+// resolveLogTimeEquipment live in jobcard-equipment-rules.js — the actual safety DECISION always
+// still comes from WorkshopData's central Equipment Safety Gate (equipment-gates.js); these are
+// read-only reference/UI helpers.
 const {resolveMachineLink,isDuplicateEquipmentLink,isAssignedElsewhere,canAddEquipmentToJobcard,
-  canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard}=JobcardEquipmentRules;
+  canStartOperationEquipment,canReturnEquipmentFromJobcard,equipmentUsageForJobcard,
+  resolveLogTimeEquipment}=JobcardEquipmentRules;
 function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
 function clearAllFieldErrors(){document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));document.querySelectorAll('#fcard .errmsg').forEach(el=>{el.style.display='none';el.textContent='';});}
 function showFieldError(fieldId,errId,msg){const f=$(fieldId),err=$(errId);if(f){f.classList.add('fielderr');f.focus();}if(err){err.textContent=msg;err.style.display='block';}}
@@ -1332,10 +1334,12 @@ function openLogTime(jcId){
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveLogTime(${jcId})">${esc(tt.nc_save)}</button></div>`;
   $('fov').classList.add('show');
 }
-// When real equipment is selected: re-read the equipment record fresh from WorkshopData (never the
-// page's cached SHARED snapshot) and require it to be CURRENTLY assigned to exactly this Jobcard
-// before even attempting anything — a stale local machine link must never let this Jobcard log usage
-// against equipment another Jobcard now holds. Only then preflight with canUseEquipment(), then
+// When real equipment is selected: JobcardEquipmentRules.resolveLogTimeEquipment() re-reads the
+// equipment record fresh from WorkshopData (never the page's cached SHARED snapshot) and requires it
+// to be CURRENTLY assigned to exactly this Jobcard before even attempting anything — a stale local
+// machine link must never let this Jobcard log usage against equipment another Jobcard now holds
+// (the Hours module's saveHours() reuses the same helper for the same reason). Only then preflight
+// with canUseEquipment(), then
 // record equipment usage through WorkshopData.logEquipmentUsage() BEFORE labour hours — if the
 // equipment safety gate (or the same fresh assignment check, defensively re-applied server-side)
 // rejects it, labour hours are never logged either. No equipment selected simply logs labour hours.
@@ -1347,12 +1351,12 @@ function saveLogTime(jcId){
   const worker=$('logWorker').value,equipmentId=$('logMachine').value,notes=$('logNotes').value.trim();
   let linkedMachine=null;
   if(equipmentId){
-    linkedMachine=(j.machines||[]).find(m=>m.equipmentId===equipmentId);
-    const freshEq=(WorkshopData.getEquipment()||[]).find(e=>e.equipmentId===equipmentId);
-    if(!freshEq||freshEq.assignedJobcard!==j.no){
-      toast(translateEquipmentBlockCode(freshEq&&freshEq.assignedJobcard?{code:'EQUIPMENT_ASSIGNED_ELSEWHERE',assignedJobcard:freshEq.assignedJobcard}:{code:'EQUIPMENT_UNASSIGNED'},'usage'),'error');
+    const resolved=resolveLogTimeEquipment(j.machines,equipmentId,WorkshopData.getEquipment(),j.no);
+    if(!resolved.ok){
+      toast(translateEquipmentBlockCode(resolved,'usage'),'error');
       return;
     }
+    linkedMachine=resolved.machine;
     const use=WorkshopData.canUseEquipment(equipmentId,{date,projectNo:j.projectNo,jobcardNo:j.no});
     if(!use.allowed){toast(tpl(tt.mc_blocked_toast,{reasons:((use.gate&&use.gate.reasons)||[]).join('; ')}),'error');return;}
     const usageRes=WorkshopData.logEquipmentUsage(equipmentId,{hours,date,worker,project:j.projectNo,jobcard:j.no,notes});
