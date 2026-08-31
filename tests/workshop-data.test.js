@@ -4,6 +4,8 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('fs');
+const path=require('path');
 const {loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage}=require('./helpers/load-workshop-data');
 
 const V5_KEY='varmak.workshop.frontend.v5';
@@ -190,9 +192,9 @@ test('equipment: available equipment can be assigned', ()=>{
   // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
   // exercises a genuinely fresh assignment, not an (also-valid) same-jobcard idempotent re-assign.
   WD.returnEquipment('E-1001',{});
-  const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1'});
+  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
   assert.ok(!res.error);
-  assert.equal(res.assignedProject,'P-1');
+  assert.equal(res.assignedProject,'P-2026-014');
 });
 
 // ── Equipment: intentionally empty collection must stay empty (Pass 1.1) ───
@@ -251,12 +253,12 @@ test('equipment gate: available equipment with no blocker can be reserved and th
   // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
   // exercises a genuinely fresh reservation, not a (also-valid) different-jobcard conflict.
   WD.returnEquipment('E-1001',{});
-  const reserved=WD.reserveEquipment('E-1001',{project:'P-1',jobcard:'JC-1',reservedBy:'Marko K.'});
+  const reserved=WD.reserveEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',reservedBy:'Marko K.'});
   assert.ok(!reserved.error);
   assert.equal(reserved.status,'Reserved');
-  const assigned=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-1',worker:'Marko K.'});
+  const assigned=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
   assert.ok(!assigned.error);
-  assert.equal(assigned.assignedProject,'P-1');
+  assert.equal(assigned.assignedProject,'P-2026-014');
 });
 test('equipment gate: status blocking is case/whitespace-insensitive through the real WorkshopData API', ()=>{
   const WD=loadWorkshopData();
@@ -429,7 +431,7 @@ test('equipment gate: assignEquipment never trusts a caller-supplied assignment.
   const WD=loadWorkshopData();
   // Seed E-1001 is already assigned to JC-2026-0001 — assign it to that SAME jobcard (idempotent,
   // always allowed) so this test isolates the status-trust behaviour, not the conflict check.
-  const res=WD.assignEquipment('E-1001',{project:'P-1',jobcard:'JC-2026-0001',status:'Available'});
+  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.',status:'Available'});
   assert.ok(!res.error);
   assert.equal(res.status,'Reserved','assignment.status must be ignored — assigning always reserves, never trusts a caller-chosen status');
 });
@@ -1759,7 +1761,7 @@ test('review fix 5: startJobcardOperation() rejects equipment that is Out of Ser
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-05');
   WD.createEquipment({equipmentId:'E-REVIEW-05',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-05',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-05',machine:'Test Drill'});
   WD.changeEquipmentStatus('E-REVIEW-05','Out of Service');
@@ -1772,7 +1774,7 @@ test('review fix 6: startJobcardOperation() rejects equipment with an open (unre
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-06');
   WD.createEquipment({equipmentId:'E-REVIEW-06',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-06',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-06',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-06',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-06',machine:'Test Drill'});
   WD.reportBreakdown('E-REVIEW-06',{reason:'Motor failure',responsiblePerson:'Marko K.'});
@@ -1812,7 +1814,7 @@ test('review fix 9: startJobcardOperation() rejects equipment that is linked her
   const jcB=mkJobcard(WD,'JC-REVIEW-09B');
   WD.createEquipment({equipmentId:'E-REVIEW-09',name:'Test Drill',category:'Power Tool'});
   // Equipment is really held by jcB...
-  WD.assignEquipment('E-REVIEW-09',{project:'P-2026-014',jobcard:jcB.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-09',{project:'P-2026-014',jobcard:jcB.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   // ...but jcA retains a stale local link to it (e.g. left over from before it was returned/reassigned).
   WD.updateJobcard(jcA.id,{machines:[{equipmentId:'E-REVIEW-09',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jcA.id,{equipmentId:'E-REVIEW-09',machine:'Test Drill'});
@@ -1841,7 +1843,7 @@ test('review fix 11+12: startJobcardOperation() requires a mandatory pre-use che
   const jc=mkJobcard(WD,'JC-REVIEW-11');
   WD.createEquipment({equipmentId:'E-REVIEW-11',name:'Test Drill',category:'Power Tool'});
   setEqRequirements(WD,'E-REVIEW-11',{preUseCheckRequired:true});
-  WD.assignEquipment('E-REVIEW-11',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-11',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-11',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-11',machine:'Test Drill'});
   const blocked=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
@@ -1859,19 +1861,22 @@ test('review fix 11+12: startJobcardOperation() requires a mandatory pre-use che
 test('review fix 13+14: assignEquipment cannot reassign equipment already held by a different Jobcard, and leaves the record completely unchanged', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-13',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:'JC-REVIEW-13A',worker:'Marko K.'});
+  const jcA=mkJobcard(WD,'JC-REVIEW-13A');
+  const jcB=mkJobcard(WD,'JC-REVIEW-13B');
+  WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
-  const res=WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:'JC-REVIEW-13B',worker:'Elena N.'});
+  const res=WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
-  assert.equal(res.assignedJobcard,'JC-REVIEW-13A');
+  assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
   assert.deepEqual(after,before,'not even worker/project may have changed on a rejected reassignment');
 });
 test('review fix: assignEquipment stays idempotent when re-assigning to the SAME Jobcard it already holds', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-13C',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:'JC-REVIEW-13C',worker:'Marko K.'});
-  const res=WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:'JC-REVIEW-13C',worker:'Elena N.'});
+  const jc=mkJobcard(WD,'JC-REVIEW-13C');
+  WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
   assert.ok(!res.error,'re-assigning to the same Jobcard must remain allowed');
   assert.equal(res.operator,'Elena N.');
 });
@@ -1880,12 +1885,14 @@ test('review fix: assignEquipment stays idempotent when re-assigning to the SAME
 test('review fix 15+16: logEquipmentUsage rejects usage.jobcard that does not match the equipment\'s real assignedJobcard, leaving meter and history unchanged', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-15',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-15',{project:'P-2026-014',jobcard:'JC-REVIEW-15A',worker:'Marko K.'});
+  const jcA=mkJobcard(WD,'JC-REVIEW-15A');
+  const jcB=mkJobcard(WD,'JC-REVIEW-15B');
+  WD.assignEquipment('E-REVIEW-15',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.recordEquipmentPreUseCheck('E-REVIEW-15',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
-  const res=WD.logEquipmentUsage('E-REVIEW-15',{hours:2,date:EQ_ASOF,worker:'Elena N.',project:'P-2026-014',jobcard:'JC-REVIEW-15B'});
+  const res=WD.logEquipmentUsage('E-REVIEW-15',{hours:2,date:EQ_ASOF,worker:'Elena N.',project:'P-2026-014',jobcard:jcB.no});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
-  assert.equal(res.assignedJobcard,'JC-REVIEW-15A');
+  assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
   assert.deepEqual(after,before,'meter, usageHistory and every other field must be completely unchanged');
 });
@@ -1895,13 +1902,14 @@ test('review fix 15+16: logEquipmentUsage rejects usage.jobcard that does not ma
 test('review fix 18: valid same-Jobcard usage still updates the equipment record normally', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-18',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-18',{project:'P-2026-014',jobcard:'JC-REVIEW-18',worker:'Marko K.'});
+  const jc=mkJobcard(WD,'JC-REVIEW-18');
+  WD.assignEquipment('E-REVIEW-18',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.recordEquipmentPreUseCheck('E-REVIEW-18',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-18').operatingHourMeter;
-  const res=WD.logEquipmentUsage('E-REVIEW-18',{hours:3,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:'JC-REVIEW-18'});
+  const res=WD.logEquipmentUsage('E-REVIEW-18',{hours:3,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
   assert.ok(!res.error);
   assert.equal(res.operatingHourMeter,before+3);
-  assert.ok(res.usageHistory.some(u=>u.jobcard==='JC-REVIEW-18'));
+  assert.ok(res.usageHistory.some(u=>u.jobcard===jc.no));
 });
 // logEquipmentUsage with NO jobcard supplied at all is unaffected by the new check (matches existing
 // behaviour/tests that never pass a jobcard field).
@@ -1923,11 +1931,13 @@ test('review fix: logEquipmentUsage with no usage.jobcard at all is unaffected b
 test('2nd review fix 1+2: reserveEquipment cannot reassign equipment already held by a different Jobcard, and leaves the record completely unchanged', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-01',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:'JC-REVIEW2-01A',worker:'Marko K.'});
+  const jcA=mkJobcard(WD,'JC-REVIEW2-01A');
+  const jcB=mkJobcard(WD,'JC-REVIEW2-01B');
+  WD.assignEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
-  const res=WD.reserveEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:'JC-REVIEW2-01B',reservedBy:'Elena N.'});
+  const res=WD.reserveEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcB.no,reservedBy:'Elena N.'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
-  assert.equal(res.assignedJobcard,'JC-REVIEW2-01A');
+  assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
   assert.deepEqual(after,before,'not even status/project may have changed on a rejected reservation');
 });
@@ -1935,8 +1945,9 @@ test('2nd review fix 1+2: reserveEquipment cannot reassign equipment already hel
 test('2nd review fix 3: reserveEquipment stays idempotent when reserving for the SAME Jobcard it already holds', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-03',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:'JC-REVIEW2-03',worker:'Marko K.'});
-  const res=WD.reserveEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:'JC-REVIEW2-03',reservedBy:'Elena N.'});
+  const jc=mkJobcard(WD,'JC-REVIEW2-03');
+  WD.assignEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.reserveEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Elena N.'});
   assert.ok(!res.error,'reserving for the same Jobcard must remain allowed');
   assert.equal(res.status,'Reserved');
 });
@@ -1944,9 +1955,10 @@ test('2nd review fix 3: reserveEquipment stays idempotent when reserving for the
 test('2nd review fix 4: reserveEquipment with NO jobcard supplied cannot silently touch equipment already held by a Jobcard', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-04',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-04',{project:'P-2026-014',jobcard:'JC-REVIEW2-04',worker:'Marko K.'});
+  const jc=mkJobcard(WD,'JC-REVIEW2-04');
+  WD.assignEquipment('E-REVIEW2-04',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
-  const res=WD.reserveEquipment('E-REVIEW2-04',{project:'P-9',reservedBy:'Elena N.'});
+  const res=WD.reserveEquipment('E-REVIEW2-04',{project:'P-2026-014',reservedBy:'Elena N.'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
   assert.deepEqual(after,before);
@@ -1955,20 +1967,22 @@ test('2nd review fix 4: reserveEquipment with NO jobcard supplied cannot silentl
 test('2nd review fix: reserveEquipment still works normally on equipment nobody currently holds', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-04B',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-REVIEW2-04B',{project:'P-2026-014',jobcard:'JC-REVIEW2-04B',reservedBy:'Elena N.'});
+  const jc=mkJobcard(WD,'JC-REVIEW2-04B');
+  const res=WD.reserveEquipment('E-REVIEW2-04B',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Elena N.'});
   assert.ok(!res.error);
-  assert.equal(res.assignedJobcard,'JC-REVIEW2-04B');
+  assert.equal(res.assignedJobcard,jc.no);
 });
 // (5)+(6) recordEquipmentPreUseCheck rejects a mismatched jobcardNo, creating no history/status/
 // activity changes at all.
 test('2nd review fix 5+6: recordEquipmentPreUseCheck rejects a jobcardNo that does not match the equipment\'s real holder, with no history/status/activity change', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-05',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-05',{project:'P-2026-014',jobcard:'JC-REVIEW2-05A',worker:'Marko K.'});
+  const jc=mkJobcard(WD,'JC-REVIEW2-05A');
+  WD.assignEquipment('E-REVIEW2-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
   const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-05',{checkedBy:'Elena N.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-05B'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
-  assert.equal(res.assignedJobcard,'JC-REVIEW2-05A');
+  assert.equal(res.assignedJobcard,jc.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
   assert.deepEqual(after,before,'no preUseChecks/status/activity entry may have been created');
 });
@@ -1976,10 +1990,11 @@ test('2nd review fix 5+6: recordEquipmentPreUseCheck rejects a jobcardNo that do
 test('2nd review fix 7: recordEquipmentPreUseCheck with a jobcardNo matching the real holder still succeeds', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-07',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-07',{project:'P-2026-014',jobcard:'JC-REVIEW2-07',worker:'Marko K.'});
-  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-07'});
+  const jc=mkJobcard(WD,'JC-REVIEW2-07');
+  WD.assignEquipment('E-REVIEW2-07',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:jc.no});
   assert.ok(!res.error);
-  assert.equal(res.jobcardNo,'JC-REVIEW2-07');
+  assert.equal(res.jobcardNo,jc.no);
   assert.equal(res.result,'passed');
 });
 // A pre-use check submitted with NO Jobcard context at all is unaffected (plain Equipment-module
@@ -2010,7 +2025,8 @@ test('2nd review fix: reportBreakdown remains a safe-direction action regardless
 function mkStartedOpFixture(WD,jcNo,eqId){
   const jc=mkJobcard(WD,jcNo);
   WD.createEquipment({equipmentId:eqId,name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment(eqId,{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  const assigned=WD.assignEquipment(eqId,{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assigned.error,`fixture setup: assignEquipment must succeed — ${assigned.error}`);
   WD.updateJobcard(jc.id,{machines:[{equipmentId:eqId,name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:eqId,machine:'Test Drill'});
   WD.recordEquipmentPreUseCheck(eqId,{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
@@ -2097,7 +2113,8 @@ test('2nd review fix 14+15: a paused operation may change equipment, and resumin
   // Linking it into jc.machines (Machines & Equipment tab) is a normal, always-allowed edit — the
   // stale/wrong assignment is only caught at resume time by startJobcardOperation().
   WD.createEquipment({equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:'JC-REVIEW2-14-ELSEWHERE',worker:'Someone'});
+  const jcElsewhere=mkJobcard(WD,'JC-REVIEW2-14-ELSEWHERE');
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jcElsewhere.no,worker:'Someone',assignedBy:'Aleksandar C.'});
   WD.updateJobcard(jc.id,{machines:(WD.findJobcard(jc.id).machines||[]).concat([{equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',plannedUsage:1}])});
   const swapped=WD.updateJobcardOperation(jc.id,op.id,{equipmentId:'E-REVIEW2-14-OTHER',machine:'Other Drill'});
   assert.ok(!swapped.error,'changing equipment while paused must be allowed');
@@ -2108,7 +2125,7 @@ test('2nd review fix 14+15: a paused operation may change equipment, and resumin
   // Now properly return+re-assign the new equipment to THIS Jobcard (it's already linked in
   // jc.machines) and give it a matching pre-use check — resume must then succeed against it.
   WD.returnEquipment('E-REVIEW2-14-OTHER',{});
-  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.recordEquipmentPreUseCheck('E-REVIEW2-14-OTHER',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!resumed.error);
@@ -2430,7 +2447,7 @@ test('3rd review fix 24: after an automatic pause + equipment return + unlink, R
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
   // Step 3: correctly re-link, re-assign and re-check — resume must then succeed.
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW3-24',name:'Test Drill',plannedUsage:1}]});
-  WD.assignEquipment('E-REVIEW3-24',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW3-24',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
   WD.recordEquipmentPreUseCheck('E-REVIEW3-24',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!resumed.error);
@@ -2807,4 +2824,760 @@ test('5th review fix 13: completing/skipping with UNCHANGED equipment still resp
   const skipRes=WD.updateJobcardOperation(jc.id,op.id,{status:'skipped',equipmentId:op.equipmentId,machine:op.machine});
   assert.equal(skipRes.code,'QUALITY_HOLD_ACTIVE');
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'in-progress','a hold-blocked transition must not have changed status');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// Pass 3.2C — Equipment creation and assignment control-surface hardening
+// Part A: createEquipment() may never be born assigned/in-use/retired or carrying audit history,
+//   and equipmentId/id/name/category must be genuine, trimmed, non-empty strings.
+// Part B: reserveEquipment()/assignEquipment() share ONE context validator (real, non-archived,
+//   case/whitespace-normalised non-terminal project/Jobcard; required authority fields) — never
+//   duplicated — and always persist the CANONICAL resolved project.no/jobcard.no, never a raw
+//   caller-supplied reference (which may be a numeric internal id).
+// Part C/D: equipment-machines-desktop.html no longer contains the old demo bypass paths, and its
+//   safety panel / API error display are translated by structured code in EN/SV/MK.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+
+// ── Part A: createEquipment() creation-time hardening ──────────────────────────────────────────
+test('Pass 3.2C (1): createEquipment rejects initial status "Reserved" with EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'E-32C-A1',name:'Test Drill',category:'Power Tool',status:'Reserved'});
+  assert.ok(res.error);
+  assert.equal(res.code,'EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW');
+  assert.equal(WD.getEquipment().find(e=>e.equipmentId==='E-32C-A1'),undefined);
+});
+
+test('Pass 3.2C (2): createEquipment rejects initial status "In Use" with EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'E-32C-A2',name:'Test Drill',category:'Power Tool',status:'In Use'});
+  assert.ok(res.error);
+  assert.equal(res.code,'EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW');
+});
+
+test('Pass 3.2C (3): createEquipment rejects initial status "Retired" with EQUIPMENT_RETIREMENT_REQUIRES_WORKFLOW', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'E-32C-A3',name:'Test Drill',category:'Power Tool',status:'Retired'});
+  assert.ok(res.error);
+  assert.equal(res.code,'EQUIPMENT_RETIREMENT_REQUIRES_WORKFLOW');
+});
+
+test('Pass 3.2C (4): createEquipment rejects a malformed/blank status value with INVALID_EQUIPMENT_STATUS', ()=>{
+  const WD=loadWorkshopData();
+  for(const bad of ['','   ',null,0,false,{},[]]){
+    const res=WD.createEquipment({equipmentId:'E-32C-A4',name:'Test Drill',category:'Power Tool',status:bad});
+    assert.equal(res.code,'INVALID_EQUIPMENT_STATUS',`status ${JSON.stringify(bad)} must be rejected`);
+  }
+});
+
+test('Pass 3.2C (5): createEquipment rejects an unrecognised (but well-formed) status string with INVALID_EQUIPMENT_STATUS', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'E-32C-A5',name:'Test Drill',category:'Power Tool',status:'Sparkling Clean'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_STATUS');
+});
+
+test('Pass 3.2C (6): createEquipment rejects the whole creation atomically when a workflow-owned field is supplied, even falsy/empty, with EQUIPMENT_CREATION_FIELDS_PROTECTED', ()=>{
+  const WD=loadWorkshopData();
+  const attempts=[
+    {assignedProject:'P-2026-014'},{assignedJobcard:'JC-2026-0001'},{operator:'Marko K.'},
+    {currentAssignment:{worker:'Marko K.'}},{isRetired:true},{isRetired:false},{retirementReason:''},
+    {inspections:[{result:'passed'}]},{maintenance:[]},{certifications:[]},{calibrations:[]},
+    {preUseChecks:[]},{downtimeRecords:[]},{returnToService:[]},{usageHistory:[]},
+    {usageSessions:[]},{activity:[]},{safetyWarnings:[]},{safetyWarnings:null}
+  ];
+  attempts.forEach((extra,i)=>{
+    const res=WD.createEquipment(Object.assign({equipmentId:`E-32C-A6-${i}`,name:'Test Drill',category:'Power Tool'},extra));
+    assert.equal(res.code,'EQUIPMENT_CREATION_FIELDS_PROTECTED',`payload ${JSON.stringify(extra)} must be rejected`);
+    assert.ok(Array.isArray(res.protectedFields)&&res.protectedFields.length,'must report which field(s) were protected');
+    assert.equal(WD.getEquipment().find(e=>e.equipmentId===`E-32C-A6-${i}`),undefined,'nothing may be created, not even with the protected fields stripped');
+  });
+});
+
+test('Pass 3.2C (7): a rejected creation (bad status, protected field, or malformed identity) does not create a record or increment the equipment counter', ()=>{
+  const WD=loadWorkshopData();
+  const beforeCount=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  WD.createEquipment({equipmentId:'E-32C-A7-X',name:'Test Drill',category:'Power Tool',status:'Retired'});
+  WD.createEquipment({equipmentId:'E-32C-A7-Y',name:'Test Drill',category:'Power Tool',operator:'Someone'});
+  WD.createEquipment({equipmentId:123,name:'Test Drill',category:'Power Tool'});
+  const after=WD.get();
+  assert.equal(after.equipment.length,beforeCount,'no equipment record must be added on rejection');
+  assert.equal(after.counters.equipment,beforeCounter,'the equipment counter must not increment on rejection');
+});
+
+test('Pass 3.2C (8): creating equipment with status "Available" (or status omitted entirely) still works exactly as before', ()=>{
+  const WD=loadWorkshopData();
+  const explicit=WD.createEquipment({equipmentId:'E-32C-A8a',name:'Test Drill',category:'Power Tool',status:'Available'});
+  assert.ok(!explicit.error);
+  assert.equal(explicit.status,'Available');
+  const omitted=WD.createEquipment({equipmentId:'E-32C-A8b',name:'Test Drill',category:'Power Tool'});
+  assert.ok(!omitted.error);
+  assert.equal(omitted.status,'Available');
+});
+
+test('Pass 3.2C (9): valid hard-block initial statuses succeed but are immediately gate-blocked', ()=>{
+  const WD=loadWorkshopData();
+  ['Maintenance Due','Under Maintenance','Inspection Required','Out of Service','Quarantined'].forEach((status,i)=>{
+    const res=WD.createEquipment({equipmentId:`E-32C-A9-${i}`,name:'Test Drill',category:'Power Tool',status});
+    assert.ok(!res.error,`status ${status} must be a valid initial status`);
+    assert.equal(res.status,status);
+    const gate=WD.getEquipmentSafetyGate(res.equipmentId,{asOf:EQ_ASOF});
+    assert.equal(gate.blocked,true,`${status} must be immediately gate-blocked`);
+  });
+});
+
+test('Pass 3.2C (10): requirements normalization remains intact, including on an Available record with a missing mandatory requirement', ()=>{
+  const WD=loadWorkshopData();
+  const created=WD.createEquipment({equipmentId:'E-32C-A10',name:'Test Drill',category:'Power Tool',
+    requirements:{maintenanceRequired:true,inspectionRequired:'yes',bogus:true}});
+  assert.ok(!created.error);
+  assert.deepEqual(created.requirements,{maintenanceRequired:true,inspectionRequired:true});
+  const gate=WD.getEquipmentSafetyGate('E-32C-A10',{asOf:EQ_ASOF});
+  assert.equal(gate.blocked,true,'a mandatory requirement with no date must block the gate immediately, even though creation succeeded');
+});
+
+test('Pass 3.2C (11): createEquipment rejects malformed Equipment IDs (missing, null, number, boolean, whitespace, array, object) with INVALID_EQUIPMENT_ID', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getEquipment().length;
+  [undefined,null,123,true,false,'   ','',{},[]].forEach((badId)=>{
+    const payload={name:'Test Drill',category:'Power Tool'};
+    if(badId!==undefined)payload.equipmentId=badId;
+    const res=WD.createEquipment(payload);
+    assert.equal(res.code,'INVALID_EQUIPMENT_ID',`equipmentId ${JSON.stringify(badId)} must be rejected`);
+  });
+  assert.equal(WD.getEquipment().length,before);
+});
+
+test('Pass 3.2C (12): a valid Equipment ID is trimmed before lookup and storage', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'  E-32C-A12  ',name:'Test Drill',category:'Power Tool'});
+  assert.ok(!res.error);
+  assert.equal(res.equipmentId,'E-32C-A12','the stored id must be trimmed, not the raw padded string');
+  assert.equal(res.id,'E-32C-A12');
+  assert.ok(WD.getEquipment().find(e=>e.equipmentId==='E-32C-A12'));
+});
+
+test('Pass 3.2C (13): whitespace cannot bypass duplicate detection — a padded variant of an existing ID is rejected as a duplicate', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getEquipment().length;
+  const first=WD.createEquipment({equipmentId:'E-32C-A13',name:'Test Drill',category:'Power Tool'});
+  assert.ok(!first.error);
+  const dup=WD.createEquipment({equipmentId:'  E-32C-A13  ',name:'Another Drill',category:'Power Tool'});
+  assert.equal(dup.error,'Duplicate equipment ID');
+  assert.equal(WD.getEquipment().length,before+1);
+});
+
+test('Pass 3.2C (14): conflicting non-empty equipmentId and id values are rejected atomically with INVALID_EQUIPMENT_ID', ()=>{
+  const WD=loadWorkshopData();
+  const res=WD.createEquipment({equipmentId:'E-32C-A14-ONE',id:'E-32C-A14-TWO',name:'Test Drill',category:'Power Tool'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ID');
+  assert.equal(WD.getEquipment().find(e=>e.equipmentId==='E-32C-A14-ONE'||e.equipmentId==='E-32C-A14-TWO'),undefined);
+});
+
+test('Pass 3.2C: createEquipment accepts matching equipmentId and id values (same non-empty string) and rejects non-string name/category', ()=>{
+  const WD=loadWorkshopData();
+  const ok=WD.createEquipment({equipmentId:'E-32C-A14C',id:'E-32C-A14C',name:'Test Drill',category:'Power Tool'});
+  assert.ok(!ok.error);
+  const badName=WD.createEquipment({equipmentId:'E-32C-A14D',name:123,category:'Power Tool'});
+  assert.ok(badName.error);
+  const badCategory=WD.createEquipment({equipmentId:'E-32C-A14E',name:'Test Drill',category:['x']});
+  assert.ok(badCategory.error);
+});
+
+// ── Part B: the shared assignment-context validator (reserveEquipment/assignEquipment) ─────────
+test('Pass 3.2C (15a): reserveEquipment rejects an unknown project number with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B1',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-32C-B1',{project:'P-DOES-NOT-EXIST',reservedBy:'Marko K.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-B1');
+  assert.equal(item.status,'Available','a rejected reservation must not touch the equipment record');
+  assert.equal(item.assignedProject,null);
+});
+
+test('Pass 3.2C (15b): assignEquipment rejects an unknown project number with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B2',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B2');
+  const res=WD.assignEquipment('E-32C-B2',{project:'P-DOES-NOT-EXIST',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (16a): assignEquipment rejects an unknown Jobcard number with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B3',name:'Test Drill',category:'Power Tool'});
+  const res=WD.assignEquipment('E-32C-B3',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (16b): reserveEquipment rejects a supplied Jobcard number that does not exist with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B4',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-32C-B4',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',reservedBy:'Marko K.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (17): assignEquipment rejects a Jobcard that does not belong to the supplied project', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B5',name:'Test Drill',category:'Power Tool'});
+  const otherProject=WD.upsertProject({name:'Other Project For Mismatch Test'});
+  assert.ok(!otherProject.error);
+  const jc=mkJobcard(WD,'JC-32C-B5');
+  const res=WD.assignEquipment('E-32C-B5',{project:otherProject.no,jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (18a): reserveEquipment rejects an archived project', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B6',name:'Test Drill',category:'Power Tool'});
+  const proj=WD.upsertProject({name:'Archived Project Test'});
+  WD.archiveProject(proj.no,'test archive');
+  const res=WD.reserveEquipment('E-32C-B6',{project:proj.no,reservedBy:'Marko K.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (18b): assignEquipment rejects an archived Jobcard', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B7',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B7');
+  WD.archiveJobcard(jc.no);
+  const res=WD.assignEquipment('E-32C-B7',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+});
+
+test('Pass 3.2C (19): assignEquipment rejects a Jobcard whose status is completed or closed', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B8',name:'Test Drill',category:'Power Tool'});
+  ['completed','closed'].forEach((status,i)=>{
+    const jc=WD.upsertJobcard({no:`JC-32C-B8-${i}`,projectNo:'P-2026-014',title:'Terminal fixture',status,machines:[],operations:[]});
+    assert.ok(!jc.error,`fixture setup: creating a ${status} jobcard directly must succeed (no hold present)`);
+    const res=WD.assignEquipment('E-32C-B8',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+    assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',`a ${status} jobcard must be rejected`);
+  });
+});
+
+test('Pass 3.2C (20a): assignEquipment rejects case/whitespace variants of terminal Jobcard statuses (Completed, CLOSED, " completed ")', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B9',name:'Test Drill',category:'Power Tool'});
+  ['Completed','CLOSED',' completed ','  CLOSED  '].forEach((rawStatus,i)=>{
+    const jc=WD.upsertJobcard({no:`JC-32C-B9-${i}`,projectNo:'P-2026-014',title:'Terminal casing fixture',status:rawStatus,machines:[],operations:[]});
+    assert.ok(!jc.error,`fixture setup: creating a "${rawStatus}" jobcard directly must succeed — ${jc.error}`);
+    const res=WD.assignEquipment('E-32C-B9',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+    assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',`status "${rawStatus}" must still be recognised as terminal`);
+  });
+});
+
+test('Pass 3.2C (20b): reserveEquipment rejects case/whitespace variants of terminal Jobcard statuses, and "in-progress" is NOT treated as terminal', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B10',name:'Test Drill',category:'Power Tool'});
+  const jcClosed=WD.upsertJobcard({no:'JC-32C-B10-CLOSED',projectNo:'P-2026-014',title:'Closed casing',status:'CLOSED',machines:[],operations:[]});
+  const blocked=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcClosed.no,reservedBy:'Marko K.'});
+  assert.equal(blocked.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
+  const jcInProgress=WD.upsertJobcard({no:'JC-32C-B10-INPROG',projectNo:'P-2026-014',title:'Active casing',status:'in-progress',machines:[],operations:[]});
+  const allowed=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcInProgress.no,reservedBy:'Marko K.'});
+  assert.ok(!allowed.error,'an in-progress Jobcard must NOT be treated as terminal');
+});
+
+test('Pass 3.2C (21a): reserveEquipment rejects a missing or blank reservedBy with EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B11',name:'Test Drill',category:'Power Tool'});
+  const missing=WD.reserveEquipment('E-32C-B11',{project:'P-2026-014'});
+  assert.equal(missing.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED');
+  const blank=WD.reserveEquipment('E-32C-B11',{project:'P-2026-014',reservedBy:'   '});
+  assert.equal(blank.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED','whitespace-only reservedBy must also be rejected');
+});
+
+test('Pass 3.2C (22): assignEquipment rejects a missing worker or assignedBy with EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B12',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B12');
+  const noWorker=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,assignedBy:'Aleksandar C.'});
+  assert.equal(noWorker.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED');
+  const noAssignedBy=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  assert.equal(noAssignedBy.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED');
+});
+
+test('Pass 3.2C (23): a valid project-only reservation (no Jobcard) succeeds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B13',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-32C-B13',{project:'P-2026-014',reservedBy:'Marko K.'});
+  assert.ok(!res.error);
+  assert.equal(res.status,'Reserved');
+  assert.equal(res.assignedProject,'P-2026-014');
+  assert.equal(res.assignedJobcard,null);
+});
+
+test('Pass 3.2C (24): a valid reservation with a matching project and Jobcard succeeds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B14',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B14');
+  const res=WD.reserveEquipment('E-32C-B14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Marko K.'});
+  assert.ok(!res.error);
+  assert.equal(res.assignedJobcard,jc.no);
+});
+
+test('Pass 3.2C (25): a valid assignment with a real matching project, Jobcard, worker and assignedBy succeeds', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B15',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B15');
+  const res=WD.assignEquipment('E-32C-B15',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!res.error);
+  assert.equal(res.assignedJobcard,jc.no);
+  assert.equal(res.operator,'Marko K.');
+  assert.equal(res.currentAssignment.assignedBy,'Aleksandar C.');
+  assert.equal(res.currentAssignment.project,'P-2026-014');
+  assert.equal(res.currentAssignment.jobcard,jc.no);
+});
+
+test('Pass 3.2C (26a): assigning equipment via a numeric Jobcard id persists the CANONICAL Jobcard number, not the raw numeric id', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B16',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B16');
+  const res=WD.assignEquipment('E-32C-B16',{project:'P-2026-014',jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!res.error,`assignment via a numeric Jobcard id must succeed and canonicalize — ${res.error}`);
+  assert.equal(res.assignedJobcard,jc.no,'assignedJobcard must be the canonical JC-... string, never the raw numeric id');
+  assert.equal(typeof res.assignedJobcard,'string');
+  assert.equal(res.currentAssignment.jobcard,jc.no);
+  const stored=WD.getEquipment().find(e=>e.equipmentId==='E-32C-B16');
+  assert.equal(stored.assignedJobcard,jc.no);
+});
+
+test('Pass 3.2C (26b): reserving equipment via a numeric Jobcard id also persists the canonical Jobcard number', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B17',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B17');
+  const res=WD.reserveEquipment('E-32C-B17',{project:'P-2026-014',jobcard:jc.id,reservedBy:'Marko K.'});
+  assert.ok(!res.error);
+  assert.equal(res.assignedJobcard,jc.no);
+});
+
+test('Pass 3.2C (27): a record assigned through a numeric Jobcard id continues working through canonical pre-use-check, canUseEquipment, startJobcardOperation and logEquipmentUsage', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-32C-B18');
+  WD.createEquipment({equipmentId:'E-32C-B18',name:'Test Drill',category:'Power Tool'});
+  const assigned=WD.assignEquipment('E-32C-B18',{project:'P-2026-014',jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assigned.error);
+  assert.equal(assigned.assignedJobcard,jc.no);
+  const check=WD.recordEquipmentPreUseCheck('E-32C-B18',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  assert.ok(!check.error,`pre-use check against the canonical Jobcard number must succeed — ${check.error}`);
+  const canUse=WD.canUseEquipment('E-32C-B18',{asOf:EQ_ASOF,date:EQ_ASOF,jobcardNo:jc.no,projectNo:'P-2026-014'});
+  assert.equal(canUse.allowed,true,'canUseEquipment must recognise the canonical pre-use check');
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-32C-B18',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-32C-B18',machine:'Test Drill'});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.ok(!started.error,`startJobcardOperation must succeed against the canonical assignment — ${started.error}`);
+  assert.equal(started.status,'in-progress');
+  const usage=WD.logEquipmentUsage('E-32C-B18',{hours:2,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
+  assert.ok(!usage.error,`logEquipmentUsage against the canonical Jobcard number must succeed — ${usage.error}`);
+});
+
+test('Pass 3.2C (28): the existing assignment-conflict protection is preserved — equipment already held by one Jobcard cannot be silently reassigned to another (including via a numeric-id request)', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B19',name:'Test Drill',category:'Power Tool'});
+  const jcA=mkJobcard(WD,'JC-32C-B19A');
+  const jcB=mkJobcard(WD,'JC-32C-B19B');
+  const first=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!first.error);
+  const conflict=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcB.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(conflict.code,'EQUIPMENT_ASSIGNMENT_CONFLICT','a numeric id resolving to a DIFFERENT Jobcard must still be caught as a conflict');
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-B19');
+  assert.equal(item.assignedJobcard,jcA.no,'the original assignment must be untouched');
+});
+
+test('Pass 3.2C (29): reassigning equipment to the SAME Jobcard it is already held by remains idempotent', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B20',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-B20');
+  const first=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!first.error);
+  const second=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  assert.ok(!second.error,'reassigning to the identical Jobcard must be idempotent, not a conflict');
+  assert.equal(second.operator,'Elena N.');
+});
+
+test('Pass 3.2C (30): equipment blocked by the safety gate still cannot be reserved or assigned, even with a fully valid context', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B21',name:'Test Drill',category:'Power Tool',status:'Out of Service'});
+  const jc=mkJobcard(WD,'JC-32C-B21');
+  const reserve=WD.reserveEquipment('E-32C-B21',{project:'P-2026-014',reservedBy:'Marko K.'});
+  assert.equal(reserve.code,'EQUIPMENT_SAFETY_BLOCKED');
+  const assign=WD.assignEquipment('E-32C-B21',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(assign.code,'EQUIPMENT_SAFETY_BLOCKED');
+});
+
+test('Pass 3.2C (31): returnEquipment still clears the assignment and pauses any active operation using it', ()=>{
+  const WD=loadWorkshopData();
+  const {op}=mkStartedOpFixture(WD,'JC-32C-B22','E-32C-B22');
+  const res=WD.returnEquipment('E-32C-B22',{user:'Aleksandar C.'});
+  assert.ok(!res.error);
+  assert.equal(res.assignedJobcard,null);
+  assert.equal(res.status,'Available');
+  assert.ok(Array.isArray(res.pausedOperations)&&res.pausedOperations.length===1);
+  assert.equal(res.pausedOperations[0].operationId,op.id);
+  const jc=WD.findJobcard('JC-32C-B22');
+  assert.equal(jc.operations.find(o=>o.id===op.id).status,'paused');
+});
+
+test('Pass 3.2C (32): Quality Hold and all Pass 3.1/3.2A/3.2B protections remain fully intact under the new context validator', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-32C-B23');
+  WD.createEquipment({equipmentId:'E-32C-B23',name:'Test Drill',category:'Power Tool'});
+  WD.applyQualityHold({scope:'jobcard',reference:jc.no,reason:'Test hold'});
+  // Equipment assignment is governed by the equipment safety gate + the new assignment-context
+  // validator — never by Quality Hold, which continues to govern operation starts/completions only.
+  const assign=WD.assignEquipment('E-32C-B23',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assign.error,'equipment assignment must remain unaffected by a Jobcard-level Quality Hold');
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-32C-B23',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-32C-B23',machine:'Test Drill'});
+  WD.recordEquipmentPreUseCheck('E-32C-B23',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.equal(started.code,'QUALITY_HOLD_ACTIVE','starting an operation on a Jobcard under an active Quality Hold must still be blocked — unaffected by Pass 3.2C');
+});
+
+test('Pass 3.2C (33a): reserveEquipment preserves the optional note in the reservation activity record', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-B24',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-32C-B24',{project:'P-2026-014',reservedBy:'Marko K.',note:'Needed for the north wall job'});
+  assert.ok(!res.error);
+  assert.ok(res.activity[0].details.includes('Needed for the north wall job'),'the note must be preserved in the audit record');
+});
+
+test('Pass 3.2C (33b): reserveEquipment with a blank/omitted note does not add stray note text, and the note survives a save+reload round trip', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  WD.createEquipment({equipmentId:'E-32C-B25',name:'Test Drill',category:'Power Tool'});
+  const blank=WD.reserveEquipment('E-32C-B25',{project:'P-2026-014',reservedBy:'Marko K.'});
+  assert.ok(!blank.error);
+  assert.equal(blank.activity[0].details,'P-2026-014 / —','no note supplied must produce the plain project/jobcard details with no trailing dash or empty note marker');
+  WD.createEquipment({equipmentId:'E-32C-B26',name:'Test Drill',category:'Power Tool'});
+  WD.reserveEquipment('E-32C-B26',{project:'P-2026-014',reservedBy:'Marko K.',note:'Fragile — handle with care'});
+  const reloaded=loadWorkshopData(undefined,localStorage);
+  const item=reloaded.get().equipment.find(e=>e.equipmentId==='E-32C-B26');
+  assert.ok(item.activity[0].details.includes('Fragile — handle with care'),'the note must survive a save + reload round trip');
+});
+
+// ── Part C/D: equipment-machines-desktop.html no longer contains the old demo bypass paths, and
+//    its translation layer covers every new structured code in EN/SV/MK ─────────────────────────
+const EQUIPMENT_PAGE_SOURCE=fs.readFileSync(path.join(__dirname,'..','equipment-machines-desktop.html'),'utf8');
+
+test('Pass 3.2C (34): the Equipment page no longer sets equipment to Reserved via a direct changeEquipmentStatus() call', ()=>{
+  const bypass=/changeEquipmentStatus\([^)]*['"]Reserved['"]\)/;
+  assert.equal(bypass.test(EQUIPMENT_PAGE_SOURCE),false,'Reserve must go through reserveEquipment(), never a direct status change');
+});
+
+test('Pass 3.2C (35): the Equipment page no longer auto-selects the first project or Jobcard for assignment', ()=>{
+  assert.equal(EQUIPMENT_PAGE_SOURCE.includes('getProjects()[0]'),false,'assignment must never auto-pick the first project');
+  assert.equal(EQUIPMENT_PAGE_SOURCE.includes('getJobcards()[0]'),false,'assignment must never auto-pick the first Jobcard');
+});
+
+test('Pass 3.2C (36): CREATABLE_STATUSES excludes Reserved, In Use and Retired but keeps Available', ()=>{
+  const match=/CREATABLE_STATUSES\s*=\s*(\[[^\]]*\])/.exec(EQUIPMENT_PAGE_SOURCE);
+  assert.ok(match,'a dedicated restricted creatable-status list must exist');
+  const list=JSON.parse(match[1].replace(/'/g,'"'));
+  ['Reserved','In Use','Retired'].forEach(bad=>assert.equal(list.includes(bad),false,`${bad} must not be offered as a creatable status`));
+  assert.ok(list.includes('Available'),'Available must remain creatable');
+});
+
+test('Pass 3.2C (37): every new blocker/API-error translation key is defined in all three languages (EN/SV/MK)', ()=>{
+  const keys=['blockerStatusBlocked','blockerStatusUnknown','blockerRetired','blockerEquipmentNotFound',
+    'blockerMaintenanceMissing','blockerInspectionMissing','blockerCertificationMissing','blockerCalibrationMissing',
+    'blockerMaintenanceOverdue','blockerInspectionOverdue','blockerCertificationOverdue','blockerCalibrationOverdue',
+    'blockerCriticalInspectionFailed','blockerCriticalInspectionUnresolved','blockerInspectionFailed','blockerBreakdownOpen',
+    'blockerPreUseCheckFailed','blockerPreUseCheckRequiredMissing','errorEquipmentSafetyBlocked','errorAssignmentConflict',
+    'errorProjectConflict',
+    'errorCreationFieldsProtected','errorInitialStatusRequiresWorkflow','errorRetirementRequiresWorkflow',
+    'errorInvalidStatusMalformed','errorInvalidStatusUnrecognised','errorInvalidEquipmentIdRequired','errorInvalidEquipmentIdMismatch',
+    'ctxProjectRequired','ctxProjectNotFound','ctxProjectArchived','ctxJobcardNotFound','ctxJobcardArchived','ctxJobcardTerminal',
+    'ctxJobcardMismatch','ctxJobcardRequiredForAssignment','detailsWorkerRequired','detailsAssignedByRequired','detailsReservedByRequired',
+    'genericUnknownError'];
+  keys.forEach((key)=>{
+    const matches=EQUIPMENT_PAGE_SOURCE.match(new RegExp(`\\b${key}:`,'g'))||[];
+    assert.ok(matches.length>=3,`translation key "${key}" must be defined in all three language blocks (found ${matches.length})`);
+  });
+  assert.ok(/function translateGateBlockerMessage/.test(EQUIPMENT_PAGE_SOURCE),'translateGateBlockerMessage() must exist');
+  assert.ok(/function translateApiErrorMessage/.test(EQUIPMENT_PAGE_SOURCE),'translateApiErrorMessage() must exist');
+});
+
+test('Pass 3.2C (38): the SV/MK fallback path never renders a raw English known-code message — it renders the translated generic message instead', ()=>{
+  // Simulate the page's own safeFallback()/translateApiErrorMessage() logic against the real
+  // structured result codes, confirming the EN branch keeps the raw message (already English)
+  // while SV/MK explicitly resolve to the translated generic-error key rather than leaking it.
+  const svBlock=/sv:\s*\{([\s\S]*?)\n\s*\},\s*\n\s*mk:/.exec(EQUIPMENT_PAGE_SOURCE);
+  const mkBlock=/mk:\s*\{([\s\S]*?)\n\s*\}\s*\n\s*\};/.exec(EQUIPMENT_PAGE_SOURCE);
+  assert.ok(svBlock&&mkBlock,'sv/mk translation blocks must be present');
+  assert.ok(/genericUnknownError:/.test(svBlock[1]),'sv must define genericUnknownError');
+  assert.ok(/genericUnknownError:/.test(mkBlock[1]),'mk must define genericUnknownError');
+  assert.ok(/state\.language === 'en' \? rawMessage : getLanguageText\('genericUnknownError'\)/.test(EQUIPMENT_PAGE_SOURCE),
+    'the safe-fallback function must route non-English languages to the translated generic message, never the raw English string');
+});
+
+// ── Part E: independent-review fix regressions (5 adversarial gaps closed) ─────────────────────
+// Gap 1: dual Equipment ID validation bypass — a malformed equipmentId/id must never be rescued by
+// a valid value on the OTHER field, in either direction.
+test('Pass 3.2C review fix (39): createEquipment rejects a malformed equipmentId even when a valid id is also supplied — neither field may rescue the other (null, number, boolean, blank string, array, object)', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  [null,123,true,false,'   ',[],{}].forEach((bad,i)=>{
+    const res=WD.createEquipment({equipmentId:bad,id:`E-32C-F1-${i}`,name:'Test Drill',category:'Power Tool'});
+    assert.equal(res.code,'INVALID_EQUIPMENT_ID',`malformed equipmentId ${JSON.stringify(bad)} with a valid id must still be rejected`);
+    assert.equal(WD.getEquipment().find(e=>e.equipmentId===`E-32C-F1-${i}`),undefined,'a valid id must never rescue a malformed equipmentId');
+  });
+  assert.equal(WD.getEquipment().length,before,'no record may be created on rejection');
+  assert.equal(WD.get().counters.equipment,beforeCounter,'the equipment counter must not increment on rejection');
+});
+
+test('Pass 3.2C review fix (40): createEquipment rejects a malformed id even when a valid equipmentId is also supplied — neither field may rescue the other (null, number, boolean, blank string, array, object)', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  [null,123,true,false,'   ',[],{}].forEach((bad,i)=>{
+    const res=WD.createEquipment({equipmentId:`E-32C-F2-${i}`,id:bad,name:'Test Drill',category:'Power Tool'});
+    assert.equal(res.code,'INVALID_EQUIPMENT_ID',`malformed id ${JSON.stringify(bad)} with a valid equipmentId must still be rejected`);
+    assert.equal(WD.getEquipment().find(e=>e.equipmentId===`E-32C-F2-${i}`),undefined,'a valid equipmentId must never rescue a malformed id');
+  });
+  assert.equal(WD.getEquipment().length,before);
+  assert.equal(WD.get().counters.equipment,beforeCounter);
+});
+
+// Gap 2: numeric Project ID canonicalization — project() must resolve by either project.id or
+// project.no, exactly like jobcard() already resolves jobcard.id/jobcard.no, and the resolved
+// canonical .no must be what gets stored and propagated everywhere.
+test('Pass 3.2C review fix (41a): reserving equipment via a numeric Project id persists the CANONICAL project number, not the raw numeric id', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F3',name:'Test Drill',category:'Power Tool'});
+  const res=WD.reserveEquipment('E-32C-F3',{project:14,reservedBy:'Marko K.'});
+  assert.ok(!res.error,`reservation via a numeric Project id must succeed and canonicalize — ${res.error}`);
+  assert.equal(res.assignedProject,'P-2026-014','assignedProject must be the canonical P-... string, never the raw numeric id');
+  assert.equal(typeof res.assignedProject,'string');
+});
+
+test('Pass 3.2C review fix (41b): assigning equipment via a numeric Project id (with a real Jobcard) persists the canonical project number in assignedProject and currentAssignment.project', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F4',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-F4');
+  const res=WD.assignEquipment('E-32C-F4',{project:14,jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!res.error,`assignment via a numeric Project id must succeed — ${res.error}`);
+  assert.equal(res.assignedProject,'P-2026-014');
+  assert.equal(res.currentAssignment.project,'P-2026-014');
+});
+
+test('Pass 3.2C review fix (42): assigning equipment via BOTH a numeric Project id AND a numeric Jobcard id together persists both canonical numbers', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F5',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-F5');
+  const res=WD.assignEquipment('E-32C-F5',{project:14,jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!res.error,`assignment via a numeric project id AND a numeric Jobcard id together must succeed — ${res.error}`);
+  assert.equal(res.assignedProject,'P-2026-014');
+  assert.equal(res.assignedJobcard,jc.no);
+  assert.equal(res.currentAssignment.project,'P-2026-014');
+  assert.equal(res.currentAssignment.jobcard,jc.no);
+  const stored=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F5');
+  assert.equal(stored.assignedProject,'P-2026-014');
+  assert.equal(stored.assignedJobcard,jc.no);
+});
+
+test('Pass 3.2C review fix (43): equipment assigned via BOTH a numeric Project id and a numeric Jobcard id continues working end-to-end through canonical pre-use-check, canUseEquipment, startJobcardOperation and logEquipmentUsage', ()=>{
+  const WD=loadWorkshopData();
+  const jc=mkJobcard(WD,'JC-32C-F6');
+  WD.createEquipment({equipmentId:'E-32C-F6',name:'Test Drill',category:'Power Tool'});
+  const assigned=WD.assignEquipment('E-32C-F6',{project:14,jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assigned.error);
+  assert.equal(assigned.assignedProject,'P-2026-014');
+  assert.equal(assigned.assignedJobcard,jc.no);
+  const check=WD.recordEquipmentPreUseCheck('E-32C-F6',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  assert.ok(!check.error,`pre-use check against the canonical numbers must succeed — ${check.error}`);
+  const canUse=WD.canUseEquipment('E-32C-F6',{asOf:EQ_ASOF,date:EQ_ASOF,jobcardNo:jc.no,projectNo:'P-2026-014'});
+  assert.equal(canUse.allowed,true,'canUseEquipment must recognise the canonical pre-use check');
+  WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-32C-F6',name:'Test Drill',plannedUsage:1}]});
+  const op=mkOp(WD,jc.id,{equipmentId:'E-32C-F6',machine:'Test Drill'});
+  const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
+  assert.ok(!started.error,`startJobcardOperation must succeed against the canonical assignment — ${started.error}`);
+  assert.equal(started.status,'in-progress');
+  const usage=WD.logEquipmentUsage('E-32C-F6',{hours:2,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
+  assert.ok(!usage.error,`logEquipmentUsage against the canonical numbers must succeed — ${usage.error}`);
+});
+
+// Gap 3: cross-project reservation theft — a project-only reservation (assignedProject set,
+// assignedJobcard still null) must block a DIFFERENT project from silently taking the equipment
+// through reserveEquipment() or assignEquipment(), not just a different Jobcard within the SAME
+// project (which the pre-existing assignedJobcard conflict check already covered).
+test('Pass 3.2C review fix (44a): a project-only reservation blocks a DIFFERENT project from reserving the same equipment (project A -> project B rejected)', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F7',name:'Test Drill',category:'Power Tool'});
+  const projA=WD.upsertProject({name:'Cross-Project Theft Test A'});
+  const projB=WD.upsertProject({name:'Cross-Project Theft Test B'});
+  const first=WD.reserveEquipment('E-32C-F7',{project:projA.no,reservedBy:'Marko K.'});
+  assert.ok(!first.error);
+  assert.equal(first.assignedProject,projA.no);
+  assert.equal(first.assignedJobcard,null,'a project-only reservation must leave assignedJobcard null');
+  const stolen=WD.reserveEquipment('E-32C-F7',{project:projB.no,reservedBy:'Elena N.'});
+  assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT','a different project must never be able to silently steal a project-only reservation');
+  assert.equal(stolen.assignedProject,projA.no);
+  assert.equal(stolen.requestedProject,projB.no);
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F7');
+  assert.equal(item.assignedProject,projA.no,'the original reservation must be completely unchanged');
+  assert.equal(item.status,'Reserved');
+});
+
+test('Pass 3.2C review fix (44b): a project-only reservation blocks a DIFFERENT project from assigning the same equipment to one of its own Jobcards (project A -> project B assignment rejected)', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F8',name:'Test Drill',category:'Power Tool'});
+  const projA=WD.upsertProject({name:'Cross-Project Theft Test C'});
+  const projB=WD.upsertProject({name:'Cross-Project Theft Test D'});
+  const jcB=WD.upsertJobcard({no:'JC-32C-F8B',projectNo:projB.no,title:'Project B fixture',status:'draft',machines:[],operations:[]});
+  const first=WD.reserveEquipment('E-32C-F8',{project:projA.no,reservedBy:'Marko K.'});
+  assert.ok(!first.error);
+  const stolen=WD.assignEquipment('E-32C-F8',{project:projB.no,jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT','assignment to a different project must be rejected exactly like reservation');
+  assert.equal(stolen.assignedProject,projA.no);
+  assert.equal(stolen.requestedProject,projB.no);
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F8');
+  assert.equal(item.assignedProject,projA.no);
+  assert.equal(item.assignedJobcard,null,'the rejected cross-project assignment must not touch assignedJobcard either');
+});
+
+test('Pass 3.2C review fix (44c): assigning a project-only reservation to a Jobcard belonging to the SAME project remains allowed', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F9',name:'Test Drill',category:'Power Tool'});
+  const projA=WD.upsertProject({name:'Cross-Project Theft Test E'});
+  const jcA=WD.upsertJobcard({no:'JC-32C-F9A',projectNo:projA.no,title:'Project A fixture',status:'draft',machines:[],operations:[]});
+  const first=WD.reserveEquipment('E-32C-F9',{project:projA.no,reservedBy:'Marko K.'});
+  assert.ok(!first.error);
+  const assigned=WD.assignEquipment('E-32C-F9',{project:projA.no,jobcard:jcA.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assigned.error,`assigning a same-project reservation to one of its own Jobcards must remain allowed — ${assigned.error}`);
+  assert.equal(assigned.assignedProject,projA.no);
+  assert.equal(assigned.assignedJobcard,jcA.no);
+});
+
+test('Pass 3.2C review fix (44d): returnEquipment() first allows a DIFFERENT project to reserve/assign the equipment afterward', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F10',name:'Test Drill',category:'Power Tool'});
+  const projA=WD.upsertProject({name:'Cross-Project Theft Test F'});
+  const projB=WD.upsertProject({name:'Cross-Project Theft Test G'});
+  const jcB=WD.upsertJobcard({no:'JC-32C-F10B',projectNo:projB.no,title:'Project B fixture',status:'draft',machines:[],operations:[]});
+  const first=WD.reserveEquipment('E-32C-F10',{project:projA.no,reservedBy:'Marko K.'});
+  assert.ok(!first.error);
+  const returned=WD.returnEquipment('E-32C-F10',{user:'Aleksandar C.'});
+  assert.ok(!returned.error);
+  assert.equal(returned.assignedProject,null);
+  const assignedToB=WD.assignEquipment('E-32C-F10',{project:projB.no,jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  assert.ok(!assignedToB.error,`after returnEquipment(), a different project must be able to assign the equipment — ${assignedToB.error}`);
+  assert.equal(assignedToB.assignedProject,projB.no);
+  assert.equal(assignedToB.assignedJobcard,jcB.no);
+});
+
+test('Pass 3.2C review fix (44e): a rejected cross-project reservation attempt is fully atomic — the whole equipment record is byte-for-byte unchanged', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F11',name:'Test Drill',category:'Power Tool'});
+  const projA=WD.upsertProject({name:'Cross-Project Theft Test H'});
+  const projB=WD.upsertProject({name:'Cross-Project Theft Test I'});
+  const first=WD.reserveEquipment('E-32C-F11',{project:projA.no,reservedBy:'Marko K.'});
+  assert.ok(!first.error);
+  const before=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F11');
+  const stolen=WD.reserveEquipment('E-32C-F11',{project:projB.no,reservedBy:'Elena N.',note:'attempted theft'});
+  assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT');
+  const after=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F11');
+  assert.deepEqual(after,before,'the entire equipment record must be unchanged after a rejected cross-project attempt');
+});
+
+// Gap 4: authority field type validation — reservedBy/worker/assignedBy must be genuine non-empty
+// strings; String(value).trim() previously stringified objects/arrays into stored text.
+test('Pass 3.2C review fix (45a): reserveEquipment rejects a non-string reservedBy (number, boolean, object, array, null, missing) with EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED, never stringifying it', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F12',name:'Test Drill',category:'Power Tool'});
+  [123,true,false,{},[],null,undefined].forEach((bad)=>{
+    const payload={project:'P-2026-014'};
+    if(bad!==undefined)payload.reservedBy=bad;
+    const res=WD.reserveEquipment('E-32C-F12',payload);
+    assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',`reservedBy ${JSON.stringify(bad)} must be rejected`);
+    assert.equal(res.reason,'RESERVED_BY_REQUIRED');
+  });
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F12');
+  assert.equal(item.status,'Available','no rejected reservation attempt may touch the equipment record');
+  assert.equal(item.assignedProject,null);
+});
+
+test('Pass 3.2C review fix (45b): assignEquipment rejects a non-string worker or assignedBy (number, boolean, object, array, null), never stringifying them into stored text like "[object Object]"', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F13',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-F13');
+  [123,true,{},[],null].forEach((bad)=>{
+    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:bad,assignedBy:'Aleksandar C.'});
+    assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',`worker ${JSON.stringify(bad)} must be rejected`);
+    assert.equal(res.reason,'WORKER_REQUIRED');
+  });
+  [123,true,{},[],null].forEach((bad)=>{
+    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:bad});
+    assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',`assignedBy ${JSON.stringify(bad)} must be rejected`);
+    assert.equal(res.reason,'ASSIGNED_BY_REQUIRED');
+  });
+  const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F13');
+  assert.equal(item.assignedJobcard,null,'no rejected assignment attempt may touch the equipment record');
+  assert.equal(item.operator,null);
+});
+
+test('Pass 3.2C review fix (45c): a genuine, valid string worker/assignedBy/reservedBy still succeeds exactly as before', ()=>{
+  const WD=loadWorkshopData();
+  WD.createEquipment({equipmentId:'E-32C-F14',name:'Test Drill',category:'Power Tool'});
+  const jc=mkJobcard(WD,'JC-32C-F14');
+  const res=WD.assignEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.ok(!res.error);
+  assert.equal(res.operator,'Marko K.');
+  assert.equal(res.currentAssignment.assignedBy,'Aleksandar C.');
+  const reserveRes=WD.reserveEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Sven O.'});
+  assert.ok(!reserveRes.error);
+});
+
+// Gap 5: legacy whitespace duplicate bypass — the NEW id is trimmed before comparison, but an
+// EXISTING legacy record's own equipmentId/id must also be normalized before comparison, without
+// mutating that legacy record merely to check it.
+function legacyEquipmentFixture(overrides){
+  return Object.assign({name:'Legacy Drill',category:'Power Tool',status:'Available',
+    assignedProject:null,assignedJobcard:null,operator:null,activity:[],inspections:[],maintenance:[],
+    certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],preUseChecks:[],
+    returnToService:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',
+    safetyWarnings:[],creationDate:'2026-01-01',lastActivity:'2026-01-01T00:00:00.000Z'},overrides);
+}
+
+test('Pass 3.2C review fix (46a): duplicate detection catches a legacy record whose existing equipmentId itself was stored WITH padding', ()=>{
+  const legacyState=minimalState({version:5,equipment:[
+    legacyEquipmentFixture({id:'E-32C-DUP-A',equipmentId:'  E-32C-DUP-A  '})
+  ]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(legacyState)});
+  const legacyBefore=WD.getEquipment().find(e=>e.id==='E-32C-DUP-A');
+  const beforeLength=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  const res=WD.createEquipment({equipmentId:'E-32C-DUP-A',name:'New Drill',category:'Power Tool'});
+  assert.equal(res.error,'Duplicate equipment ID','a trimmed new ID matching a padded existing equipmentId must be rejected as a duplicate');
+  assert.equal(WD.getEquipment().length,beforeLength,'no new record may be created on rejection');
+  assert.equal(WD.get().counters.equipment,beforeCounter,'the equipment counter must not increment on rejection');
+  const legacyAfter=WD.getEquipment().find(e=>e.id==='E-32C-DUP-A');
+  assert.deepEqual(legacyAfter,legacyBefore,'the existing legacy record must never be mutated merely to perform duplicate detection');
+});
+
+test('Pass 3.2C review fix (46b): duplicate detection catches a legacy record whose existing id was stored WITH padding (and equipmentId was backfilled from it, untrimmed, by normalize())', ()=>{
+  const legacyState=minimalState({version:5,equipment:[
+    legacyEquipmentFixture({id:'  E-32C-DUP-B  '})
+  ]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(legacyState)});
+  const legacyBefore=WD.getEquipment()[0];
+  assert.equal(legacyBefore.equipmentId,'  E-32C-DUP-B  ','fixture sanity check: normalize() backfills equipmentId from id verbatim, without trimming');
+  const beforeLength=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  const res=WD.createEquipment({equipmentId:'E-32C-DUP-B',name:'New Drill',category:'Power Tool'});
+  assert.equal(res.error,'Duplicate equipment ID','a trimmed new ID matching a padded existing id must be rejected as a duplicate');
+  assert.equal(WD.getEquipment().length,beforeLength);
+  assert.equal(WD.get().counters.equipment,beforeCounter);
+});
+
+test('Pass 3.2C review fix (46c): duplicate detection catches a legacy record with MIXED padding — equipmentId and id padded differently from each other', ()=>{
+  const legacyState=minimalState({version:5,equipment:[
+    legacyEquipmentFixture({id:'E-32C-DUP-C  ',equipmentId:'  E-32C-DUP-C'})
+  ]});
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(legacyState)});
+  const beforeLength=WD.getEquipment().length;
+  const beforeCounter=WD.get().counters.equipment;
+  const res=WD.createEquipment({equipmentId:'E-32C-DUP-C',name:'New Drill',category:'Power Tool'});
+  assert.equal(res.error,'Duplicate equipment ID');
+  assert.equal(WD.getEquipment().length,beforeLength);
+  assert.equal(WD.get().counters.equipment,beforeCounter);
 });

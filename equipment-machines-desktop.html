@@ -152,7 +152,7 @@
     .bar-col { flex:1; display:flex; align-items:flex-end; justify-content:center; }
     .bar-col .bar { width:100%; max-width:42px; background:linear-gradient(180deg, var(--spark), rgba(74,144,255,.3)); border:1px solid rgba(74,144,255,.5); }
     .bar-col .label { display:block; text-align:center; font-size:10px; color:var(--steel-400); margin-top:8px; }
-    .ring-wrap { display:flex; align-items:center; justify-content:center; }
+    .ring-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
     .ring-wrap svg { width:100%; max-width:190px; height:160px; }
 
     .list-controls {
@@ -236,6 +236,22 @@
     .scan-input input { flex:1 1 260px; }
     .scan-area { height:90px; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(74,144,255,.7); background:rgba(74,144,255,.05); color:var(--steel-400); margin-bottom:12px; font-size:11px; }
     .scan-result { background:rgba(255,255,255,.02); border:1px solid var(--line); padding:10px 12px; margin-top:12px; }
+
+    /* Pass 3.2C: authoritative safety panel + Reserve/Assign/Return action modals */
+    .action-modal { position:fixed; inset:0; background:rgba(2,8,15,.76); display:none; align-items:flex-start; justify-content:center; z-index:60; padding:28px 20px; overflow:auto; }
+    .action-modal.show { display:flex; }
+    .action-box { width:min(560px,100%); background:rgba(9,23,45,.98); border:1px solid var(--line); box-shadow:0 26px 80px rgba(0,0,0,.6); padding:22px 22px 18px; }
+    .action-box h3 { margin:0 0 4px; font-family:'Sora'; font-size:19px; }
+    .action-box .action-sub { color:var(--steel-400); font-size:12px; margin-bottom:14px; }
+    .safety-panel { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-top:12px; padding:10px 12px; border:1px solid var(--line); background:rgba(255,255,255,.02); }
+    .safety-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; border:1px solid; font-weight:700; white-space:nowrap; }
+    .safety-badge.safe { color:var(--ok); border-color:rgba(74,212,138,.5); background:rgba(74,212,138,.12); }
+    .safety-badge.blocked { color:var(--danger); border-color:rgba(255,107,107,.5); background:rgba(255,107,107,.1); }
+    .safety-details { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1 1 220px; }
+    .safety-reasons { font-size:12px; color:#ffb3b3; line-height:1.5; }
+    .safety-warnings { font-size:11px; color:var(--warn); line-height:1.5; }
+    button:disabled, select:disabled { opacity:.42; cursor:not-allowed; }
+    .paused-ops-note { border:1px solid rgba(255,176,87,.5); background:rgba(255,176,87,.08); color:#ffd9a6; padding:10px 12px; font-size:12px; line-height:1.6; margin-top:12px; }
 
     @media (max-width:1080px) {
       .app-shell { grid-template-columns:1fr; }
@@ -457,6 +473,9 @@
                 <select id="eqStatus" name="status" required></select>
                 <div class="inline-error" data-error-for="status"></div>
               </div>
+              <div class="field full">
+                <div class="notice" data-i="newEquipmentStatusNotice">Reserved, In Use and Retired are not available here — reserve, assign or retire equipment from its detail page after it is created.</div>
+              </div>
               <div class="field">
                 <label for="eqLocation" data-i="fieldEqLocation">Location</label>
                 <input id="eqLocation" name="currentLocation" required />
@@ -587,6 +606,7 @@
           </div>
         </div>
         <div class="detail-fast" id="detailFastFacts"></div>
+        <div class="safety-panel" id="detailSafetyPanel" aria-live="polite"></div>
       </div>
       <div class="detail-body">
         <div class="detail-tabs" id="detailTabs">
@@ -605,6 +625,106 @@
         </div>
         <div id="detailTabContent"></div>
       </div>
+    </div>
+  </div>
+
+  <div class="action-modal" id="reserveModal" aria-hidden="true">
+    <div class="action-box">
+      <h3 data-i="reserveFormTitle">Reserve equipment</h3>
+      <div class="action-sub" id="reserveFormSub"></div>
+      <div class="error-summary" id="reserveFormErrors"></div>
+      <form id="reserveForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="resProject" data-i="fieldProject">Project</label>
+            <select id="resProject" name="project" required></select>
+          </div>
+          <div class="field">
+            <label for="resJobcard" data-i="fieldJobcardOptional">Jobcard (optional)</label>
+            <select id="resJobcard" name="jobcard"></select>
+          </div>
+          <div class="field">
+            <label for="resReservedBy" data-i="fieldReservedBy">Reserved by</label>
+            <input id="resReservedBy" name="reservedBy" type="text" required />
+          </div>
+          <div class="field full">
+            <label for="resNote" data-i="fieldNoteOptional">Note (optional)</label>
+            <textarea id="resNote" name="note"></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top:18px;">
+          <button class="primary-btn" type="submit" data-i="reserveAction">Reserve</button>
+          <button class="secondary-btn" type="button" id="reserveCancelBtn" data-i="cancelActionBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="action-modal" id="assignModal" aria-hidden="true">
+    <div class="action-box">
+      <h3 data-i="assignFormTitle">Assign equipment</h3>
+      <div class="action-sub" id="assignFormSub"></div>
+      <div class="error-summary" id="assignFormErrors"></div>
+      <form id="assignForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="asgProject" data-i="fieldProject">Project</label>
+            <select id="asgProject" name="project" required></select>
+          </div>
+          <div class="field">
+            <label for="asgJobcard" data-i="fieldJobcard">Jobcard</label>
+            <select id="asgJobcard" name="jobcard" required></select>
+          </div>
+          <div class="field">
+            <label for="asgWorker" data-i="fieldOperator">Operator / worker</label>
+            <input id="asgWorker" name="worker" type="text" required />
+          </div>
+          <div class="field">
+            <label for="asgLocation" data-i="fieldEqLocation">Location</label>
+            <input id="asgLocation" name="location" type="text" />
+          </div>
+          <div class="field">
+            <label for="asgAssignedBy" data-i="fieldAssignedBy">Assigned by</label>
+            <input id="asgAssignedBy" name="assignedBy" type="text" required />
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top:18px;">
+          <button class="primary-btn" type="submit" data-i="assignAction">Assign</button>
+          <button class="secondary-btn" type="button" id="assignCancelBtn" data-i="cancelActionBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="action-modal" id="returnModal" aria-hidden="true">
+    <div class="action-box">
+      <h3 data-i="returnFormTitle">Return equipment</h3>
+      <div class="action-sub" id="returnFormSub"></div>
+      <div class="error-summary" id="returnFormErrors"></div>
+      <div class="paused-ops-note" id="returnPausedNote" hidden></div>
+      <form id="returnForm">
+        <div class="form-grid" id="returnFormFields">
+          <div class="field">
+            <label for="retLocation" data-i="fieldReturnLocation">Return location</label>
+            <input id="retLocation" name="location" type="text" />
+          </div>
+          <div class="field">
+            <label for="retUser" data-i="fieldReturnedBy">Returned by</label>
+            <input id="retUser" name="user" type="text" required />
+          </div>
+          <div class="field full">
+            <label for="retNote" data-i="fieldNoteOptional">Note (optional)</label>
+            <textarea id="retNote" name="note"></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top:18px;" id="returnFormToolbar">
+          <button class="primary-btn" type="submit" data-i="returnAction">Return</button>
+          <button class="secondary-btn" type="button" id="returnCancelBtn" data-i="cancelActionBtn">Cancel</button>
+        </div>
+        <div class="toolbar" style="margin-top:18px;" id="returnDoneToolbar" hidden>
+          <button class="primary-btn" type="button" id="returnDoneBtn" data-i="doneBtn">Done</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -655,7 +775,46 @@
           saveEquipmentBtn: 'Save equipment', resetFormBtn: 'Reset form', reserveAction: 'Reserve', assignAction: 'Assign', returnAction: 'Return',
           scannerTitle: 'Demo scanner', scannerNote: 'Demo scanner – camera and hardware scanning require a future integration.', scannerArea: 'Manual demo scan area',
           scanLookupBtn: 'Find equipment',
-          formErrorsTitle: 'Please fix the following fields:'
+          formErrorsTitle: 'Please fix the following fields:',
+          safetyStatusSafe: 'Safe for assignment', safetyStatusBlocked: 'Blocked',
+          safetyReasonsLabel: 'Blocking reasons', safetyWarningsLabel: 'Upcoming due-date warnings',
+          reserveFormTitle: 'Reserve equipment', assignFormTitle: 'Assign equipment', returnFormTitle: 'Return equipment',
+          fieldProject: 'Project', fieldJobcard: 'Jobcard', fieldJobcardOptional: 'Jobcard (optional)',
+          fieldReservedBy: 'Reserved by', fieldOperator: 'Operator / worker', fieldAssignedBy: 'Assigned by',
+          fieldReturnLocation: 'Return location', fieldReturnedBy: 'Returned by', fieldNoteOptional: 'Note (optional)',
+          cancelActionBtn: 'Cancel', optionNone: 'None',
+          validationSelectProject: 'Select a real, active project.', validationSelectJobcardOptional: 'Select a real, active Jobcard, or leave blank for a project-only reservation.',
+          validationSelectJobcard: 'Select a real, active Jobcard.', validationReservedByRequired: 'Enter who is reserving this equipment.',
+          validationWorkerRequired: 'Enter the operator/worker.', validationAssignedByRequired: 'Enter who is assigning this equipment.',
+          validationReturnedByRequired: 'Enter who is returning this equipment.',
+          reserveSuccessNotice: 'Equipment reserved.', assignSuccessNotice: 'Equipment assigned.', returnSuccessNotice: 'Equipment returned.',
+          pausedOperationsNotice: 'This automatically paused {count} running operation(s) that were using this equipment:',
+          pausedOperationsNone: 'No running operations were using this equipment.',
+          doneBtn: 'Done', newEquipmentStatusNotice: 'Reserved, In Use and Retired are not available here — reserve, assign or retire equipment from its detail page after it is created.',
+          blockerStatusBlocked: 'Equipment status "{value}" is not operational', blockerStatusUnknown: 'Equipment status "{value}" is unrecognised and fails safe',
+          blockerRetired: 'Equipment is retired and permanently non-operational', blockerEquipmentNotFound: 'Equipment record not found',
+          blockerMaintenanceMissing: 'Maintenance date is missing', blockerInspectionMissing: 'Inspection date is missing',
+          blockerCertificationMissing: 'Certification date is missing', blockerCalibrationMissing: 'Calibration date is missing',
+          blockerMaintenanceOverdue: 'Maintenance is overdue (due {value})', blockerInspectionOverdue: 'Inspection is overdue (due {value})',
+          blockerCertificationOverdue: 'Certification is overdue (due {value})', blockerCalibrationOverdue: 'Calibration is overdue (due {value})',
+          blockerCriticalInspectionFailed: 'Critical inspection {value} failed and is unresolved', blockerCriticalInspectionUnresolved: 'Critical inspection {value} is unresolved',
+          blockerInspectionFailed: 'Inspection {value} failed and is unresolved', blockerBreakdownOpen: 'Open breakdown {value} is unresolved',
+          blockerPreUseCheckFailed: 'Pre-use check {value} failed and is unresolved', blockerPreUseCheckRequiredMissing: 'A passed pre-use check for {value} is required before use',
+          errorEquipmentSafetyBlocked: 'Blocked by equipment safety rules: {reasons}.',
+          errorAssignmentConflict: 'This equipment is already assigned to {jobcard}. Return or reassign it before using it on another Jobcard.',
+          errorProjectConflict: 'This equipment is already reserved for project {project}. Return it before reserving or assigning it to another project.',
+          errorCreationFieldsProtected: 'These fields can only be set through their dedicated workflows after creation: {fields}.',
+          errorInitialStatusRequiresWorkflow: 'Equipment cannot be created directly as Reserved or In Use — use the reservation/assignment workflow after creation.',
+          errorRetirementRequiresWorkflow: 'Equipment cannot be created directly as Retired — use the retirement workflow (with a reason) after creation.',
+          errorInvalidStatusMalformed: 'Status must be a non-empty value.', errorInvalidStatusUnrecognised: '"{value}" is not a recognised initial equipment status.',
+          errorInvalidEquipmentIdRequired: 'A valid, non-empty Equipment ID is required.', errorInvalidEquipmentIdMismatch: 'Equipment ID values do not match.',
+          ctxProjectRequired: 'A real project is required.', ctxProjectNotFound: 'Project "{project}" was not found.', ctxProjectArchived: 'Project "{project}" is archived.',
+          ctxJobcardNotFound: 'Jobcard "{jobcard}" was not found.', ctxJobcardArchived: 'Jobcard "{jobcard}" is archived.',
+          ctxJobcardTerminal: 'Jobcard "{jobcard}" is {status} and cannot receive new equipment.', ctxJobcardMismatch: 'Jobcard "{jobcard}" does not belong to project "{project}".',
+          ctxJobcardRequiredForAssignment: 'Assignment requires a real Jobcard.',
+          detailsWorkerRequired: 'Assignment requires a worker/operator.', detailsAssignedByRequired: 'Assignment requires who is assigning this equipment.',
+          detailsReservedByRequired: 'Reservation requires who is reserving this equipment.',
+          genericUnknownError: 'This action could not be completed. Please check your selections and try again.'
         },
         sv: {
           sidebarSubtitle: 'Maskiner & tillgångar',
@@ -681,7 +840,46 @@
           fieldEqInspectionDate: 'Inspektionsdatum', fieldEqCertExp: 'Certifikat utgång', fieldEqCalDate: 'Kalibreringsdatum', fieldEqDescription: 'Beskrivning', fieldEqNotes: 'Anteckningar',
           saveEquipmentBtn: 'Spara utrustning', resetFormBtn: 'Återställ formulär', reserveAction: 'Reservera', assignAction: 'Tilldela', returnAction: 'Återlämna',
           scannerTitle: 'Demo-skanner', scannerNote: 'Demo-skanner – kamera och hårdvaruskanning kräver framtida integration.', scannerArea: 'Manuell demo-skanningsyta', scanLookupBtn: 'Hitta utrustning',
-          formErrorsTitle: 'Rätta följande fält:'
+          formErrorsTitle: 'Rätta följande fält:',
+          safetyStatusSafe: 'Säker för tilldelning', safetyStatusBlocked: 'Blockerad',
+          safetyReasonsLabel: 'Blockerande orsaker', safetyWarningsLabel: 'Kommande förfallovarningar',
+          reserveFormTitle: 'Reservera utrustning', assignFormTitle: 'Tilldela utrustning', returnFormTitle: 'Återlämna utrustning',
+          fieldProject: 'Projekt', fieldJobcard: 'Jobbkort', fieldJobcardOptional: 'Jobbkort (valfritt)',
+          fieldReservedBy: 'Reserverad av', fieldOperator: 'Operatör / arbetare', fieldAssignedBy: 'Tilldelad av',
+          fieldReturnLocation: 'Returplats', fieldReturnedBy: 'Återlämnad av', fieldNoteOptional: 'Anteckning (valfritt)',
+          cancelActionBtn: 'Avbryt', optionNone: 'Ingen',
+          validationSelectProject: 'Välj ett verkligt, aktivt projekt.', validationSelectJobcardOptional: 'Välj ett verkligt, aktivt jobbkort, eller lämna tomt för en projektreservation.',
+          validationSelectJobcard: 'Välj ett verkligt, aktivt jobbkort.', validationReservedByRequired: 'Ange vem som reserverar denna utrustning.',
+          validationWorkerRequired: 'Ange operatör/arbetare.', validationAssignedByRequired: 'Ange vem som tilldelar denna utrustning.',
+          validationReturnedByRequired: 'Ange vem som återlämnar denna utrustning.',
+          reserveSuccessNotice: 'Utrustningen är reserverad.', assignSuccessNotice: 'Utrustningen är tilldelad.', returnSuccessNotice: 'Utrustningen är återlämnad.',
+          pausedOperationsNotice: 'Detta pausade automatiskt {count} pågående moment som använde denna utrustning:',
+          pausedOperationsNone: 'Inga pågående moment använde denna utrustning.',
+          doneBtn: 'Klar', newEquipmentStatusNotice: 'Reserverad, I användning och Utrangerad kan inte väljas här — reservera, tilldela eller utrangera utrustningen från dess detaljsida efter att den skapats.',
+          blockerStatusBlocked: 'Utrustningsstatus "{value}" är inte driftklar', blockerStatusUnknown: 'Utrustningsstatus "{value}" är okänd och blockeras av säkerhetsskäl',
+          blockerRetired: 'Utrustningen är utrangerad och permanent icke-driftklar', blockerEquipmentNotFound: 'Utrustningspost hittades inte',
+          blockerMaintenanceMissing: 'Underhållsdatum saknas', blockerInspectionMissing: 'Inspektionsdatum saknas',
+          blockerCertificationMissing: 'Certifikatdatum saknas', blockerCalibrationMissing: 'Kalibreringsdatum saknas',
+          blockerMaintenanceOverdue: 'Underhåll är försenat (skulle ske {value})', blockerInspectionOverdue: 'Inspektion är försenad (skulle ske {value})',
+          blockerCertificationOverdue: 'Certifikat är försenat (skulle förnyas {value})', blockerCalibrationOverdue: 'Kalibrering är försenad (skulle ske {value})',
+          blockerCriticalInspectionFailed: 'Kritisk inspektion {value} underkändes och är olöst', blockerCriticalInspectionUnresolved: 'Kritisk inspektion {value} är olöst',
+          blockerInspectionFailed: 'Inspektion {value} underkändes och är olöst', blockerBreakdownOpen: 'Öppen driftstörning {value} är olöst',
+          blockerPreUseCheckFailed: 'Förkontroll {value} underkändes och är olöst', blockerPreUseCheckRequiredMissing: 'En godkänd förkontroll för {value} krävs före användning',
+          errorEquipmentSafetyBlocked: 'Blockerad av säkerhetsregler för utrustning: {reasons}.',
+          errorAssignmentConflict: 'Denna utrustning är redan tilldelad {jobcard}. Återlämna eller omfördela den innan den används på ett annat jobbkort.',
+          errorProjectConflict: 'Denna utrustning är redan reserverad för projekt {project}. Återlämna den innan den reserveras eller tilldelas ett annat projekt.',
+          errorCreationFieldsProtected: 'Dessa fält kan endast anges via sina dedikerade arbetsflöden efter skapandet: {fields}.',
+          errorInitialStatusRequiresWorkflow: 'Utrustning kan inte skapas direkt som Reserverad eller I användning — använd reservations-/tilldelningsflödet efter skapandet.',
+          errorRetirementRequiresWorkflow: 'Utrustning kan inte skapas direkt som Utrangerad — använd utrangeringsflödet (med en anledning) efter skapandet.',
+          errorInvalidStatusMalformed: 'Status måste vara ett icke-tomt värde.', errorInvalidStatusUnrecognised: '"{value}" är inte en godkänd startstatus för utrustning.',
+          errorInvalidEquipmentIdRequired: 'Ett giltigt, icke-tomt utrustnings-ID krävs.', errorInvalidEquipmentIdMismatch: 'Utrustnings-ID-värdena stämmer inte överens.',
+          ctxProjectRequired: 'Ett verkligt projekt krävs.', ctxProjectNotFound: 'Projekt "{project}" hittades inte.', ctxProjectArchived: 'Projekt "{project}" är arkiverat.',
+          ctxJobcardNotFound: 'Jobbkort "{jobcard}" hittades inte.', ctxJobcardArchived: 'Jobbkort "{jobcard}" är arkiverat.',
+          ctxJobcardTerminal: 'Jobbkort "{jobcard}" är {status} och kan inte ta emot ny utrustning.', ctxJobcardMismatch: 'Jobbkort "{jobcard}" tillhör inte projekt "{project}".',
+          ctxJobcardRequiredForAssignment: 'Tilldelning kräver ett verkligt jobbkort.',
+          detailsWorkerRequired: 'Tilldelning kräver en operatör/arbetare.', detailsAssignedByRequired: 'Tilldelning kräver vem som tilldelar denna utrustning.',
+          detailsReservedByRequired: 'Reservation kräver vem som reserverar denna utrustning.',
+          genericUnknownError: 'Åtgärden kunde inte slutföras. Kontrollera dina val och försök igen.'
         },
         mk: {
           sidebarSubtitle: 'Машини & средства',
@@ -707,7 +905,46 @@
           fieldEqInspectionDate: 'Датум на инспекција', fieldEqCertExp: 'Истекување на сертификат', fieldEqCalDate: 'Датум на калибрација', fieldEqDescription: 'Опис', fieldEqNotes: 'Белешки',
           saveEquipmentBtn: 'Зачувај опрема', resetFormBtn: 'Ресетирај формулар', reserveAction: 'Резервирај', assignAction: 'Додели', returnAction: 'Врати',
           scannerTitle: 'Демо скенер', scannerNote: 'Демо скенер – камерата и хардверското скенирање бараат надворешна интеграција.', scannerArea: 'Рачна зона за демо скенирање', scanLookupBtn: 'Пронајди опрема',
-          formErrorsTitle: 'Исправете ги следниве полиња:'
+          formErrorsTitle: 'Исправете ги следниве полиња:',
+          safetyStatusSafe: 'Безбедно за доделување', safetyStatusBlocked: 'Блокирано',
+          safetyReasonsLabel: 'Причини за блокирање', safetyWarningsLabel: 'Претстојни предупредувања за рокови',
+          reserveFormTitle: 'Резервирај опрема', assignFormTitle: 'Додели опрема', returnFormTitle: 'Врати опрема',
+          fieldProject: 'Проект', fieldJobcard: 'Работна картичка', fieldJobcardOptional: 'Работна картичка (опционално)',
+          fieldReservedBy: 'Резервирано од', fieldOperator: 'Оператор / работник', fieldAssignedBy: 'Доделено од',
+          fieldReturnLocation: 'Локација на враќање', fieldReturnedBy: 'Вратено од', fieldNoteOptional: 'Белешка (опционално)',
+          cancelActionBtn: 'Откажи', optionNone: 'Нема',
+          validationSelectProject: 'Изберете реален, активен проект.', validationSelectJobcardOptional: 'Изберете реална, активна работна картичка, или оставете празно за резервација само за проект.',
+          validationSelectJobcard: 'Изберете реална, активна работна картичка.', validationReservedByRequired: 'Внесете кој ја резервира оваа опрема.',
+          validationWorkerRequired: 'Внесете оператор/работник.', validationAssignedByRequired: 'Внесете кој ја доделува оваа опрема.',
+          validationReturnedByRequired: 'Внесете кој ја враќа оваа опрема.',
+          reserveSuccessNotice: 'Опремата е резервирана.', assignSuccessNotice: 'Опремата е доделена.', returnSuccessNotice: 'Опремата е вратена.',
+          pausedOperationsNotice: 'Ова автоматски паузираше {count} активни операции што ја користеа оваа опрема:',
+          pausedOperationsNone: 'Нема активни операции што ја користеа оваа опрема.',
+          doneBtn: 'Готово', newEquipmentStatusNotice: 'Резервирано, Во употреба и Повлечено не се достапни овде — резервирајте, доделете или повлечете ја опремата од нејзината детална страница откако ќе биде креирана.',
+          blockerStatusBlocked: 'Статусот на опремата „{value}“ не е оперативен', blockerStatusUnknown: 'Статусот на опремата „{value}“ е непознат и се блокира од безбедносни причини',
+          blockerRetired: 'Опремата е повлечена и трајно неоперативна', blockerEquipmentNotFound: 'Записот за опремата не е пронајден',
+          blockerMaintenanceMissing: 'Датумот за одржување недостасува', blockerInspectionMissing: 'Датумот за инспекција недостасува',
+          blockerCertificationMissing: 'Датумот на сертификатот недостасува', blockerCalibrationMissing: 'Датумот на калибрација недостасува',
+          blockerMaintenanceOverdue: 'Одржувањето е задоцнето (требаше {value})', blockerInspectionOverdue: 'Инспекцијата е задоцнета (требаше {value})',
+          blockerCertificationOverdue: 'Сертификатот е задоцнет (требаше {value})', blockerCalibrationOverdue: 'Калибрацијата е задоцнета (требаше {value})',
+          blockerCriticalInspectionFailed: 'Критичната инспекција {value} не помина и е нерешена', blockerCriticalInspectionUnresolved: 'Критичната инспекција {value} е нерешена',
+          blockerInspectionFailed: 'Инспекцијата {value} не помина и е нерешена', blockerBreakdownOpen: 'Отворениот дефект {value} е нерешен',
+          blockerPreUseCheckFailed: 'Прегледот пред употреба {value} не помина и е нерешен', blockerPreUseCheckRequiredMissing: 'Потребен е одобрен преглед пред употреба за {value} пред користење',
+          errorEquipmentSafetyBlocked: 'Блокирано од безбедносните правила за опрема: {reasons}.',
+          errorAssignmentConflict: 'Оваа опрема е веќе доделена на {jobcard}. Вратете ја или пренаменете ја пред да ја користите на друга работна картичка.',
+          errorProjectConflict: 'Оваа опрема е веќе резервирана за проектот {project}. Вратете ја пред да ја резервирате или доделите на друг проект.',
+          errorCreationFieldsProtected: 'Овие полиња можат да се постават само преку нивните наменски работни текови по создавањето: {fields}.',
+          errorInitialStatusRequiresWorkflow: 'Опремата не може да се создаде директно како Резервирана или Во употреба — користете го работниот тек за резервација/доделување по создавањето.',
+          errorRetirementRequiresWorkflow: 'Опремата не може да се создаде директно како Повлечена — користете го работниот тек за повлекување (со причина) по создавањето.',
+          errorInvalidStatusMalformed: 'Статусот мора да биде непразна вредност.', errorInvalidStatusUnrecognised: '„{value}“ не е препознаен почетен статус на опрема.',
+          errorInvalidEquipmentIdRequired: 'Потребен е валиден, непразен ID на опрема.', errorInvalidEquipmentIdMismatch: 'Вредностите за ID на опремата не се совпаѓаат.',
+          ctxProjectRequired: 'Потребен е реален проект.', ctxProjectNotFound: 'Проектот „{project}“ не е пронајден.', ctxProjectArchived: 'Проектот „{project}“ е архивиран.',
+          ctxJobcardNotFound: 'Работната картичка „{jobcard}“ не е пронајдена.', ctxJobcardArchived: 'Работната картичка „{jobcard}“ е архивирана.',
+          ctxJobcardTerminal: 'Работната картичка „{jobcard}“ е {status} и не може да прими нова опрема.', ctxJobcardMismatch: 'Работната картичка „{jobcard}“ не припаѓа на проектот „{project}“.',
+          ctxJobcardRequiredForAssignment: 'Доделувањето бара реална работна картичка.',
+          detailsWorkerRequired: 'Доделувањето бара оператор/работник.', detailsAssignedByRequired: 'Доделувањето бара кој ја доделува оваа опрема.',
+          detailsReservedByRequired: 'Резервацијата бара кој ја резервира оваа опрема.',
+          genericUnknownError: 'Дејството не можеше да се заврши. Проверете ги вашите избори и обидете се повторно.'
         }
       };
 
@@ -726,6 +963,15 @@
       ];
 
       const statuses = ['Available','Reserved','In Use','Maintenance Due','Under Maintenance','Inspection Required','Out of Service','Quarantined','Retired'];
+      // Pass 3.2C, Part C: a NEW record can only start in one of these — Reserved/In Use/Retired are
+      // reachable only through their dedicated post-creation workflows. Deliberately separate from
+      // `statuses` above, which the status-breakdown chart still needs in full.
+      const CREATABLE_STATUSES = ['Available','Maintenance Due','Under Maintenance','Inspection Required','Out of Service','Quarantined'];
+      // Jobcard statuses that can no longer receive newly reserved/assigned equipment — mirrors
+      // workshop-data.js's JOBCARD_TERMINAL_STATUSES. This is a display-only pre-filter for the
+      // Reserve/Assign Jobcard dropdowns; the mutator's own validateEquipmentAssignmentContext()
+      // remains the sole safety authority and is never bypassed by this list.
+      const JOBCARD_TERMINAL_STATUSES_FOR_FILTER = ['completed','closed'];
 
       function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
@@ -753,6 +999,10 @@
       function formatNumber(value) {
         const num = Number(value) || 0;
         return new Intl.NumberFormat(state.language === 'sv' ? 'sv-SE' : state.language === 'mk' ? 'mk-MK' : 'en-US').format(num);
+      }
+
+      function todayISO() {
+        return new Date().toISOString().slice(0, 10);
       }
 
       function statusClass(status) {
@@ -805,6 +1055,13 @@
           button.classList.toggle('active', button.getAttribute('data-lang') === state.language);
         });
         renderAll();
+        // The safety panel and the "Safety" detail tab build their text dynamically (not via
+        // data-i spans), so a language switch must explicitly re-render them when a detail is open.
+        const current = currentEquipmentData();
+        if (current) {
+          renderSafetyPanel(current);
+          renderDetailTabs();
+        }
       }
 
       function refreshClock() {
@@ -1227,8 +1484,8 @@
         `;
 
         const safety = `
-          <div class="service-note">
-            ${escapeHtml((item.safetyWarnings || []).length ? item.safetyWarnings.join(' · ') : 'No active safety issues recorded.')}
+          <div class="safety-panel" style="margin-top:0;">
+            ${buildSafetyPanelMarkup(item.equipmentId).html}
           </div>
         `;
 
@@ -1314,7 +1571,7 @@
         const activity = `
           <div class="list-box">
             <table>
-              <thead><tr><th>Timestamp</th><th>Action</th><th>User</th><th>Reference</th></tr></thead>
+              <thead><tr><th>Timestamp</th><th>Action</th><th>User</th><th>Reference</th><th>Details</th></tr></thead>
               <tbody>
                 ${(item.activity || []).length ? (item.activity.map((entry) => `
                   <tr>
@@ -1322,8 +1579,9 @@
                     <td>${escapeHtml(entry.action || 'Activity')}</td>
                     <td>${escapeHtml(entry.user || 'Aleksandar C.')}</td>
                     <td>${escapeHtml(entry.reference || item.equipmentId)}</td>
+                    <td>${escapeHtml(entry.details || '—')}</td>
                   </tr>
-                `)).join('') : '<tr><td colspan="4">No activity logged.</td></tr>'}
+                `)).join('') : '<tr><td colspan="5">No activity logged.</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -1361,16 +1619,366 @@
             <span class="tag">Location: ${escapeHtml(item.currentLocation || '—')}</span>
             <span class="tag">Assignment: ${escapeHtml(item.assignedProject || item.assignedJobcard || 'Unassigned')}</span>
             <span class="tag">Owner: ${escapeHtml(item.responsiblePerson || '—')}</span>
-            <span class="tag ${item.safetyWarnings && item.safetyWarnings.length ? 'warn' : 'ok'}">Safety: ${escapeHtml((item.safetyWarnings || []).length ? item.safetyWarnings[0] : 'Clear')}</span>
           `;
         }
         if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        renderSafetyPanel(item);
         renderDetailTabs();
+      }
+
+      // Pass 3.2C, Part D: presentation-only translation of the authoritative gate's blocker
+      // messages, keyed by code — never recalculates or reinterprets the safety decision itself
+      // (blocked/not-blocked and which blockers apply always come from
+      // WorkshopData.canAssignEquipment()/getEquipmentSafetyGate()). Regex-extracted rather than
+      // reconstructed from source data, because equipment-gates.js (out of this pass's file scope)
+      // only exposes the already-formatted English message; in English, an unmapped code/shape
+      // falls back to that original message (it is already English) — in Swedish/Macedonian it
+      // falls back to a translated generic message instead, so a raw English string is never
+      // leaked. One code (CRITICAL_INSPECTION_UNRESOLVED) has two distinct message shapes, so both
+      // are tried in order.
+      const GATE_BLOCKER_MESSAGE_RULES = [
+        { code: 'STATUS_BLOCKED', re: /^Equipment status "(.*)" is not operational$/, key: 'blockerStatusBlocked' },
+        { code: 'STATUS_UNKNOWN', re: /^Equipment status "(.*)" is unrecognised and fails safe$/, key: 'blockerStatusUnknown' },
+        { code: 'RETIRED', re: null, key: 'blockerRetired' },
+        { code: 'EQUIPMENT_NOT_FOUND', re: null, key: 'blockerEquipmentNotFound' },
+        { code: 'MAINTENANCE_MISSING', re: null, key: 'blockerMaintenanceMissing' },
+        { code: 'INSPECTION_MISSING', re: null, key: 'blockerInspectionMissing' },
+        { code: 'CERTIFICATION_MISSING', re: null, key: 'blockerCertificationMissing' },
+        { code: 'CALIBRATION_MISSING', re: null, key: 'blockerCalibrationMissing' },
+        { code: 'MAINTENANCE_OVERDUE', re: /\(due (.*)\)$/, key: 'blockerMaintenanceOverdue' },
+        { code: 'INSPECTION_OVERDUE', re: /\(due (.*)\)$/, key: 'blockerInspectionOverdue' },
+        { code: 'CERTIFICATION_OVERDUE', re: /\(due (.*)\)$/, key: 'blockerCertificationOverdue' },
+        { code: 'CALIBRATION_OVERDUE', re: /\(due (.*)\)$/, key: 'blockerCalibrationOverdue' },
+        { code: 'CRITICAL_INSPECTION_UNRESOLVED', re: /^Critical inspection (\S*) failed and is unresolved$/, key: 'blockerCriticalInspectionFailed' },
+        { code: 'CRITICAL_INSPECTION_UNRESOLVED', re: /^Critical inspection (\S*) is unresolved$/, key: 'blockerCriticalInspectionUnresolved' },
+        { code: 'INSPECTION_FAILED', re: /^Inspection (\S*) failed and is unresolved$/, key: 'blockerInspectionFailed' },
+        { code: 'BREAKDOWN_OPEN', re: /^Open breakdown (\S*) is unresolved$/, key: 'blockerBreakdownOpen' },
+        { code: 'PREUSE_CHECK_FAILED', re: /^Pre-use check (\S*) failed and is unresolved$/, key: 'blockerPreUseCheckFailed' },
+        { code: 'PREUSE_CHECK_REQUIRED_MISSING', re: /^A passed pre-use check for (\S*) is required before use$/, key: 'blockerPreUseCheckRequiredMissing' }
+      ];
+      // Never leak raw English prose in SV/MK — an unmapped code/shape falls back to the original
+      // message only in English; otherwise it falls back to a translated generic message.
+      function safeFallback(rawMessage) {
+        return state.language === 'en' ? rawMessage : getLanguageText('genericUnknownError');
+      }
+      function translateGateBlockerMessage(blocker) {
+        const rules = GATE_BLOCKER_MESSAGE_RULES.filter((rule) => rule.code === blocker.code);
+        for (const rule of rules) {
+          if (!rule.re) return getLanguageText(rule.key);
+          const match = rule.re.exec(blocker.message || '');
+          if (match) return getLanguageText(rule.key).replace('{value}', match[1]);
+        }
+        return safeFallback(blocker.message);
+      }
+
+      // Same principle as translateGateBlockerMessage() above, for structured errors returned by
+      // WorkshopData's own mutators (reserveEquipment/assignEquipment/createEquipment/...). These
+      // return a stable `code` (and, where one code covers multiple message shapes, a `reason`) plus
+      // the real untranslated dynamic references — built from that structured data, never by
+      // re-parsing English prose. Falls back to safeFallback() for anything unmapped.
+      function translateApiErrorMessage(result) {
+        if (!result) return '';
+        const code = result.code;
+        const reason = result.reason;
+        if (code === 'EQUIPMENT_SAFETY_BLOCKED') {
+          const hard = (result.blockers || []).filter((b) => b.hard).map((b) => translateGateBlockerMessage(b));
+          return hard.length ? getLanguageText('errorEquipmentSafetyBlocked').replace('{reasons}', hard.join(' · ')) : safeFallback(result.error);
+        }
+        if (code === 'EQUIPMENT_ASSIGNMENT_CONFLICT') {
+          // Note: the caller (showFormErrors/submitEquipmentForm's error summary) escapes the
+          // WHOLE returned string exactly once before inserting it into innerHTML — dynamic values
+          // are interpolated raw here and escaped together with the rest at that single point, so
+          // they are never left un-escaped and never double-escaped either.
+          return getLanguageText('errorAssignmentConflict').replace('{jobcard}', result.assignedJobcard || '—');
+        }
+        if (code === 'EQUIPMENT_PROJECT_CONFLICT') {
+          // Same escaping note as EQUIPMENT_ASSIGNMENT_CONFLICT above — raw interpolation here,
+          // escaped once by the caller.
+          return getLanguageText('errorProjectConflict').replace('{project}', result.assignedProject || '—');
+        }
+        if (code === 'EQUIPMENT_CREATION_FIELDS_PROTECTED') {
+          return getLanguageText('errorCreationFieldsProtected').replace('{fields}', (result.protectedFields || []).join(', '));
+        }
+        if (code === 'EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW') return getLanguageText('errorInitialStatusRequiresWorkflow');
+        if (code === 'EQUIPMENT_RETIREMENT_REQUIRES_WORKFLOW') return getLanguageText('errorRetirementRequiresWorkflow');
+        if (code === 'INVALID_EQUIPMENT_STATUS') {
+          if (reason === 'STATUS_MALFORMED') return getLanguageText('errorInvalidStatusMalformed');
+          if (reason === 'STATUS_UNRECOGNISED') return getLanguageText('errorInvalidStatusUnrecognised').replace('{value}', result.attemptedStatus || '');
+          return safeFallback(result.error);
+        }
+        if (code === 'INVALID_EQUIPMENT_ID') {
+          if (reason === 'EQUIPMENT_ID_REQUIRED') return getLanguageText('errorInvalidEquipmentIdRequired');
+          if (reason === 'EQUIPMENT_ID_MISMATCH') return getLanguageText('errorInvalidEquipmentIdMismatch');
+          return safeFallback(result.error);
+        }
+        if (code === 'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT') {
+          switch (reason) {
+            case 'PROJECT_REQUIRED': return getLanguageText('ctxProjectRequired');
+            case 'PROJECT_NOT_FOUND': return getLanguageText('ctxProjectNotFound').replace('{project}', result.projectNo || '');
+            case 'PROJECT_ARCHIVED': return getLanguageText('ctxProjectArchived').replace('{project}', result.projectNo || '');
+            case 'JOBCARD_NOT_FOUND': return getLanguageText('ctxJobcardNotFound').replace('{jobcard}', result.jobcardNo || '');
+            case 'JOBCARD_ARCHIVED': return getLanguageText('ctxJobcardArchived').replace('{jobcard}', result.jobcardNo || '');
+            case 'JOBCARD_TERMINAL': return getLanguageText('ctxJobcardTerminal').replace('{jobcard}', result.jobcardNo || '').replace('{status}', result.status || '');
+            case 'JOBCARD_PROJECT_MISMATCH': return getLanguageText('ctxJobcardMismatch').replace('{jobcard}', result.jobcardNo || '').replace('{project}', result.projectNo || '');
+            case 'JOBCARD_REQUIRED_FOR_ASSIGNMENT': return getLanguageText('ctxJobcardRequiredForAssignment');
+            default: return safeFallback(result.error);
+          }
+        }
+        if (code === 'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED') {
+          switch (reason) {
+            case 'WORKER_REQUIRED': return getLanguageText('detailsWorkerRequired');
+            case 'ASSIGNED_BY_REQUIRED': return getLanguageText('detailsAssignedByRequired');
+            case 'RESERVED_BY_REQUIRED': return getLanguageText('detailsReservedByRequired');
+            default: return safeFallback(result.error);
+          }
+        }
+        return safeFallback(result.error);
+      }
+
+      // Pass 3.2C, Part C (+ Part D translation): the ONE place that turns
+      // WorkshopData.canAssignEquipment()'s authoritative gate into markup — shared by the
+      // always-visible header safety panel and the "Safety" detail tab, so the two displays can
+      // never drift apart. Never reads item.safetyWarnings.
+      function buildSafetyPanelMarkup(equipmentId) {
+        const { allowed, gate } = WorkshopData.canAssignEquipment(equipmentId, { asOf: todayISO() });
+        const hardReasons = (gate.blockers || []).filter((b) => b.hard).map((b) => translateGateBlockerMessage(b));
+        const infoWarnings = (gate.blockers || []).filter((b) => !b.hard).map((b) => translateGateBlockerMessage(b));
+        const html = `
+          <span class="safety-badge ${allowed ? 'safe' : 'blocked'}">${escapeHtml(getLanguageText(allowed ? 'safetyStatusSafe' : 'safetyStatusBlocked'))}</span>
+          <div class="safety-details">
+            ${hardReasons.length ? `<div class="safety-reasons"><strong>${escapeHtml(getLanguageText('safetyReasonsLabel'))}:</strong> ${escapeHtml(hardReasons.join(' · '))}</div>` : ''}
+            ${infoWarnings.length ? `<div class="safety-warnings"><strong>${escapeHtml(getLanguageText('safetyWarningsLabel'))}:</strong> ${escapeHtml(infoWarnings.join(' · '))}</div>` : ''}
+          </div>
+        `;
+        return { allowed, html };
+      }
+
+      // The always-visible header panel on the open equipment detail. Also toggles Reserve/Assign
+      // disabled state so the buttons can never open a form for equipment the gate would reject
+      // anyway — the mutators independently re-check the same gate server-side regardless, since a
+      // disabled button is not a security boundary.
+      function renderSafetyPanel(item) {
+        const panel = document.getElementById('detailSafetyPanel');
+        const reserveBtn = document.getElementById('detailReserveBtn');
+        const assignBtn = document.getElementById('detailAssignBtn');
+        const returnBtn = document.getElementById('detailReturnBtn');
+        if (!item) {
+          if (panel) panel.innerHTML = '';
+          return;
+        }
+        const { allowed, html } = buildSafetyPanelMarkup(item.equipmentId);
+        if (panel) panel.innerHTML = html;
+        if (reserveBtn) reserveBtn.disabled = !allowed;
+        if (assignBtn) assignBtn.disabled = !allowed;
+        if (returnBtn) returnBtn.disabled = !(item.assignedProject || item.assignedJobcard);
       }
 
       function closeEquipmentDetail() {
         const modal = document.getElementById('detailModal');
         if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      // Jobcards eligible to receive equipment for a given project — real, non-archived,
+      // non-terminal. A display-only pre-filter; validateEquipmentAssignmentContext() on the
+      // WorkshopData side remains the sole safety authority. Status compared trimmed+lowercase, so
+      // a 'Completed', 'CLOSED' or ' completed ' Jobcard is filtered out exactly like the canonical
+      // lowercase form.
+      function eligibleJobcardsForProject(projectNo) {
+        if (!projectNo) return [];
+        return getJobcards().filter((j) => j.projectNo === projectNo && !j.archived && !JOBCARD_TERMINAL_STATUSES_FOR_FILTER.includes(String(j.status || '').trim().toLowerCase()));
+      }
+
+      function populateProjectSelect(selectEl) {
+        const projects = getProjects().filter((p) => !p.archived);
+        selectEl.innerHTML = ['<option value=""></option>'].concat(
+          projects.map((p) => `<option value="${escapeHtml(p.no)}">${escapeHtml(p.no)} — ${escapeHtml(p.name)}</option>`)
+        ).join('');
+        selectEl.value = '';
+      }
+
+      // includeNone: Reserve's Jobcard select is optional (project-only reservation is valid), so its
+      // blank option carries a translated "None" label. Assign's Jobcard is required — no auto-select
+      // of the first real option happens either way, since the blank option is always explicitly there.
+      function populateJobcardSelect(selectEl, projectNo, includeNone) {
+        const jobcards = eligibleJobcardsForProject(projectNo);
+        const blankLabel = includeNone ? escapeHtml(getLanguageText('optionNone')) : '';
+        selectEl.innerHTML = [`<option value="">${blankLabel}</option>`].concat(
+          jobcards.map((j) => `<option value="${escapeHtml(j.no)}">${escapeHtml(j.no)} — ${escapeHtml(j.title || '')}</option>`)
+        ).join('');
+        selectEl.value = '';
+      }
+
+      function bindProjectJobcardFilter(projectSelectId, jobcardSelectId, includeNoneJobcard) {
+        const projectEl = document.getElementById(projectSelectId);
+        const jobcardEl = document.getElementById(jobcardSelectId);
+        if (!projectEl || !jobcardEl) return;
+        projectEl.addEventListener('change', () => {
+          populateJobcardSelect(jobcardEl, projectEl.value, includeNoneJobcard);
+        });
+      }
+
+      function clearFormErrors(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '';
+        el.classList.remove('show');
+      }
+
+      function showFormErrors(id, messages) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = `<ul>${messages.map((msg) => `<li>${escapeHtml(msg)}</li>`).join('')}</ul>`;
+        el.classList.add('show');
+      }
+
+      // Refreshes list/dashboard plus the open equipment detail (safety panel + fast facts + tabs) —
+      // the one place "Result handling" success paths converge on after a mutation succeeds.
+      function refreshAfterEquipmentAction() {
+        renderAll();
+        if (state.currentId) openEquipmentDetail(state.currentId);
+      }
+
+      function openReserveForm() {
+        const item = currentEquipmentData();
+        if (!item) return;
+        const preflight = WorkshopData.canAssignEquipment(item.equipmentId, { asOf: todayISO() });
+        if (!preflight.allowed) return;
+        document.getElementById('reserveForm').reset();
+        clearFormErrors('reserveFormErrors');
+        document.getElementById('reserveFormSub').textContent = `${item.equipmentId} · ${item.name}`;
+        populateProjectSelect(document.getElementById('resProject'));
+        populateJobcardSelect(document.getElementById('resJobcard'), '', true);
+        const modal = document.getElementById('reserveModal');
+        if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        document.getElementById('resProject')?.focus();
+      }
+
+      function closeReserveForm() {
+        const modal = document.getElementById('reserveModal');
+        if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      function submitReserveForm(event) {
+        event.preventDefault();
+        const item = currentEquipmentData();
+        if (!item) return;
+        const data = Object.fromEntries(new FormData(event.target).entries());
+        const errors = [];
+        if (!data.project) errors.push(getLanguageText('validationSelectProject'));
+        if (!String(data.reservedBy || '').trim()) errors.push(getLanguageText('validationReservedByRequired'));
+        if (errors.length) { showFormErrors('reserveFormErrors', errors); return; }
+        const result = WorkshopData.reserveEquipment(item.equipmentId, {
+          project: data.project,
+          jobcard: data.jobcard || null,
+          reservedBy: data.reservedBy.trim(),
+          note: data.note || ''
+        });
+        if (result && result.error) { showFormErrors('reserveFormErrors', [translateApiErrorMessage(result)]); return; }
+        clearFormErrors('reserveFormErrors');
+        closeReserveForm();
+        refreshAfterEquipmentAction();
+      }
+
+      function openAssignForm() {
+        const item = currentEquipmentData();
+        if (!item) return;
+        const preflight = WorkshopData.canAssignEquipment(item.equipmentId, { asOf: todayISO() });
+        if (!preflight.allowed) return;
+        const form = document.getElementById('assignForm');
+        form.reset();
+        clearFormErrors('assignFormErrors');
+        document.getElementById('assignFormSub').textContent = `${item.equipmentId} · ${item.name}`;
+        populateProjectSelect(document.getElementById('asgProject'));
+        populateJobcardSelect(document.getElementById('asgJobcard'), '', false);
+        document.getElementById('asgLocation').value = item.currentLocation || '';
+        const modal = document.getElementById('assignModal');
+        if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        document.getElementById('asgProject')?.focus();
+      }
+
+      function closeAssignForm() {
+        const modal = document.getElementById('assignModal');
+        if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      function submitAssignForm(event) {
+        event.preventDefault();
+        const item = currentEquipmentData();
+        if (!item) return;
+        const data = Object.fromEntries(new FormData(event.target).entries());
+        const errors = [];
+        if (!data.project) errors.push(getLanguageText('validationSelectProject'));
+        if (!data.jobcard) errors.push(getLanguageText('validationSelectJobcard'));
+        if (!String(data.worker || '').trim()) errors.push(getLanguageText('validationWorkerRequired'));
+        if (!String(data.assignedBy || '').trim()) errors.push(getLanguageText('validationAssignedByRequired'));
+        if (errors.length) { showFormErrors('assignFormErrors', errors); return; }
+        const result = WorkshopData.assignEquipment(item.equipmentId, {
+          project: data.project,
+          jobcard: data.jobcard,
+          worker: data.worker.trim(),
+          location: data.location || '',
+          assignedBy: data.assignedBy.trim()
+        });
+        if (result && result.error) { showFormErrors('assignFormErrors', [translateApiErrorMessage(result)]); return; }
+        clearFormErrors('assignFormErrors');
+        closeAssignForm();
+        refreshAfterEquipmentAction();
+      }
+
+      function openReturnForm() {
+        const item = currentEquipmentData();
+        if (!item) return;
+        if (!(item.assignedProject || item.assignedJobcard)) return;
+        document.getElementById('returnForm').reset();
+        clearFormErrors('returnFormErrors');
+        const pausedNote = document.getElementById('returnPausedNote');
+        pausedNote.hidden = true;
+        pausedNote.innerHTML = '';
+        document.getElementById('returnFormSub').textContent = `${item.equipmentId} · ${item.name}`;
+        document.getElementById('retLocation').value = item.homeLocation || item.currentLocation || '';
+        document.getElementById('returnFormFields').hidden = false;
+        document.getElementById('returnFormToolbar').hidden = false;
+        document.getElementById('returnDoneToolbar').hidden = true;
+        const modal = document.getElementById('returnModal');
+        if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
+        document.getElementById('retUser')?.focus();
+      }
+
+      function closeReturnForm() {
+        const modal = document.getElementById('returnModal');
+        if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
+      }
+
+      function submitReturnForm(event) {
+        event.preventDefault();
+        const item = currentEquipmentData();
+        if (!item) return;
+        const data = Object.fromEntries(new FormData(event.target).entries());
+        const errors = [];
+        if (!String(data.user || '').trim()) errors.push(getLanguageText('validationReturnedByRequired'));
+        if (errors.length) { showFormErrors('returnFormErrors', errors); return; }
+        const result = WorkshopData.returnEquipment(item.equipmentId, {
+          location: data.location || '',
+          user: data.user.trim(),
+          note: data.note || ''
+        });
+        if (result && result.error) { showFormErrors('returnFormErrors', [translateApiErrorMessage(result)]); return; }
+        clearFormErrors('returnFormErrors');
+        // pausedOperations must always be surfaced, never hidden and never folded into a generic
+        // success message — the user acknowledges explicitly via "Done".
+        const pausedOps = result.pausedOperations || [];
+        const pausedNote = document.getElementById('returnPausedNote');
+        if (pausedOps.length) {
+          const rows = pausedOps.map((op) => `<li>${escapeHtml(op.jobcardNo || '—')} — ${escapeHtml(op.desc || '')}</li>`).join('');
+          pausedNote.innerHTML = `<div>${escapeHtml(getLanguageText('pausedOperationsNotice').replace('{count}', String(pausedOps.length)))}</div><ul style="margin:6px 0 0 18px;padding:0;">${rows}</ul>`;
+        } else {
+          pausedNote.innerHTML = `<div>${escapeHtml(getLanguageText('returnSuccessNotice'))} ${escapeHtml(getLanguageText('pausedOperationsNone'))}</div>`;
+        }
+        pausedNote.hidden = false;
+        document.getElementById('returnFormFields').hidden = true;
+        document.getElementById('returnFormToolbar').hidden = true;
+        document.getElementById('returnDoneToolbar').hidden = false;
+        refreshAfterEquipmentAction();
       }
 
       function bindNavigation() {
@@ -1506,7 +2114,7 @@
         }
         const statusSelect = document.getElementById('eqStatus');
         if (statusSelect) {
-          statusSelect.innerHTML = statuses.map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`).join('');
+          statusSelect.innerHTML = CREATABLE_STATUSES.map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`).join('');
         }
       }
 
@@ -1543,7 +2151,6 @@
           calibrationDate: data.calibrationDate,
           description: data.description,
           notes: data.notes,
-          safetyWarnings: [],
           qrCode: `EQ-${Date.now().toString().slice(-6)}`,
           lastActivity: new Date().toISOString()
         };
@@ -1551,7 +2158,7 @@
         const created = WorkshopData.createEquipment(payload);
         if (created && created.error) {
           const summary = document.getElementById('equipmentFormErrors');
-          summary.innerHTML = `<ul><li>${escapeHtml(created.error)}</li></ul>`;
+          summary.innerHTML = `<ul><li>${escapeHtml(translateApiErrorMessage(created))}</li></ul>`;
           summary.classList.add('show');
           return;
         }
@@ -1568,31 +2175,18 @@
         document.getElementById('newEquipmentCancel')?.addEventListener('click', () => setCurrentView('all'));
         document.getElementById('backToHub')?.addEventListener('click', () => { window.location.href = 'hub-desktop.html'; });
         document.getElementById('detailCloseBtn')?.addEventListener('click', closeEquipmentDetail);
-        document.getElementById('detailReserveBtn')?.addEventListener('click', () => {
-          const current = currentEquipmentData();
-          if (!current) return;
-          WorkshopData.changeEquipmentStatus(current.equipmentId, 'Reserved');
-          renderAll();
-          closeEquipmentDetail();
-        });
-        document.getElementById('detailAssignBtn')?.addEventListener('click', () => {
-          const current = currentEquipmentData();
-          if (!current) return;
-          if (['Out of Service','Quarantined','Under Maintenance','Retired'].includes(current.status)) {
-            alert('This equipment cannot be assigned while blocked by a safety or maintenance state.');
-            return;
-          }
-          WorkshopData.assignEquipment(current.equipmentId, { project: getProjects()[0]?.no || 'P-2026-014', jobcard: getJobcards()[0]?.no || 'JC-2026-0001', location: current.currentLocation, worker: current.responsiblePerson || 'Aleksandar C.', assignedBy: 'Aleksandar C.' });
-          renderAll();
-          closeEquipmentDetail();
-        });
-        document.getElementById('detailReturnBtn')?.addEventListener('click', () => {
-          const current = currentEquipmentData();
-          if (!current) return;
-          WorkshopData.returnEquipment(current.equipmentId, { location: current.homeLocation || current.currentLocation, user: 'Aleksandar C.' });
-          renderAll();
-          closeEquipmentDetail();
-        });
+        document.getElementById('detailReserveBtn')?.addEventListener('click', openReserveForm);
+        document.getElementById('detailAssignBtn')?.addEventListener('click', openAssignForm);
+        document.getElementById('detailReturnBtn')?.addEventListener('click', openReturnForm);
+        document.getElementById('reserveForm')?.addEventListener('submit', submitReserveForm);
+        document.getElementById('reserveCancelBtn')?.addEventListener('click', closeReserveForm);
+        document.getElementById('assignForm')?.addEventListener('submit', submitAssignForm);
+        document.getElementById('assignCancelBtn')?.addEventListener('click', closeAssignForm);
+        document.getElementById('returnForm')?.addEventListener('submit', submitReturnForm);
+        document.getElementById('returnCancelBtn')?.addEventListener('click', closeReturnForm);
+        document.getElementById('returnDoneBtn')?.addEventListener('click', closeReturnForm);
+        bindProjectJobcardFilter('resProject', 'resJobcard', true);
+        bindProjectJobcardFilter('asgProject', 'asgJobcard', false);
         document.getElementById('resetFormBtn')?.addEventListener('click', () => {
           document.getElementById('equipmentForm').reset();
           loadNewEquipmentDefaults();
@@ -1658,6 +2252,16 @@
           });
         });
         document.querySelectorAll('[data-open-equipment]').forEach((button) => button.addEventListener('click', () => openEquipmentDetail(button.getAttribute('data-open-equipment'))));
+        // Shared data can change from another module (e.g. Jobcard's own equipment actions) or
+        // another tab — keep the list/dashboard and any open detail in sync rather than going stale.
+        window.addEventListener('workshop:data', () => {
+          renderAll();
+          const current = currentEquipmentData();
+          if (current) {
+            renderSafetyPanel(current);
+            renderDetailTabs();
+          }
+        });
       }
 
       // Demo equipment is never auto-inserted on open — a genuinely empty Equipment collection is a

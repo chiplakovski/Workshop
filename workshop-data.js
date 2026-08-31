@@ -647,7 +647,11 @@
   function quantity(value){const parsed=Number(value);return Number.isFinite(parsed)&&parsed>0?parsed:null}
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}
   function inventory(code){return state.inventory.find(x=>x.code===code)}
-  function project(no){return state.projects.find(x=>x.no===no)}
+  // Pass 3.2C review fix (numeric Project ID canonicalization): resolves by either the real
+  // project.id (possibly numeric, e.g. a caller passing 14) or the canonical project.no string
+  // (e.g. 'P-2026-014') — mirrors jobcard() below, which already resolved both. Strict === (never
+  // loose coercion), matching jobcard()'s behaviour exactly.
+  function project(idOrNo){return state.projects.find(x=>x.no===idOrNo||x.id===idOrNo)}
   // A UI-only display placeholder (e.g. the em-dash a page shows for "no customer selected") must
   // never be mistaken for a real customer name — these must never resolve to or create a Customer.
   function isPlaceholderCustomerName(name){
@@ -703,6 +707,12 @@
   // Statuses that represent unsafe "execution"/"completion" transitions while a Quality Hold is
   // active. Anything else (pausing, editing metadata, adding notes/documents) remains allowed.
   const JOBCARD_UNSAFE_STATUSES=['in-progress','completed','closed'];
+  // Pass 3.2C, Part B: "terminal" for equipment-assignment-context purposes — a Jobcard that is
+  // completed/closed should never receive a NEW equipment reservation/assignment. Deliberately
+  // narrower than JOBCARD_UNSAFE_STATUSES above (which also includes 'in-progress' for its own,
+  // unrelated Quality-Hold-transition purpose) — an in-progress Jobcard is exactly the normal,
+  // active target equipment gets assigned to. Projects only need to be real and non-archived.
+  const JOBCARD_TERMINAL_STATUSES=['completed','closed'];
   const OPERATION_UNSAFE_STATUSES=['in-progress','completed','skipped'];
   const PROJECT_UNSAFE_STATUSES=['completed','closed'];
   // The complete, recognised operation-status vocabulary (matches OP_STATUSES in jobcard-desktop.html)
@@ -906,6 +916,106 @@
       requestedJobcard:requestedJobcard||null
     };
   }
+  // Pass 3.2C review fix (cross-project reservation theft): a PROJECT-ONLY reservation sets
+  // assignedProject but leaves assignedJobcard null — equipmentAssignmentConflictResult() above only
+  // ever fires when assignedJobcard is set, so it never caught a second project silently reserving
+  // (or assigning) equipment that a first project already holds project-only. This is a distinct,
+  // structured conflict — checked BEFORE the Jobcard-level conflict above, and BEFORE anything on the
+  // equipment record is touched, so a rejected attempt always leaves the whole record unchanged.
+  // Re-requesting the SAME project remains idempotent (the caller checks inequality, never presence
+  // alone); moving to a different project always requires an explicit returnEquipment() first.
+  function equipmentProjectConflictResult(action,equipmentId,currentProject,requestedProject){
+    save(`Blocked by equipment project conflict: ${action} for ${equipmentId} (held by ${currentProject||'—'}, requested by ${requestedProject||'—'})`);
+    return{
+      error:`This equipment is already reserved for project ${currentProject}. Return it before reserving or assigning it to another project.`,
+      code:'EQUIPMENT_PROJECT_CONFLICT',
+      equipmentId:equipmentId||null,
+      assignedProject:currentProject||null,
+      requestedProject:requestedProject||null
+    };
+  }
+  // Pass 3.2C, Part B: a Jobcard's status is compared for "terminal" purposes case/whitespace-
+  // normalised — a caller-supplied or migrated 'Completed', 'CLOSED' or ' completed ' must be
+  // recognised exactly like the canonical lowercase form, never silently treated as still-open just
+  // because the stored casing/whitespace differs.
+  function normalizeJobcardStatusForComparison(status){
+    return status!=null?String(status).trim().toLowerCase():'';
+  }
+  // Pass 3.2C, Part B: the ONE shared context validator for both reserveEquipment() and
+  // assignEquipment() — never duplicated per call site. Purely a READ-only check against live
+  // state.projects/state.jobcards; it decides nothing about equipment safety itself (that remains
+  // the Equipment Safety Gate's job) and never mutates anything. `kind` is 'reserve' or 'assign':
+  // reservation requires only a real project (Jobcard optional but validated if given); assignment
+  // requires a real project AND a real Jobcard belonging to it, plus a named worker and assignedBy.
+  // Returns {valid:true, project, jobcard} — the REAL resolved records, so callers can always store
+  // the canonical .no rather than whatever raw reference (possibly a numeric internal id) the
+  // caller supplied — or {valid:false, code, reason, message, ...dynamic references}.
+  function validateEquipmentAssignmentContext(kind,payload){
+    payload=payload||{};
+    const projectNo=payload.project||null;
+    if(!projectNo){
+      return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'PROJECT_REQUIRED',message:'A real project is required.'};
+    }
+    const p=project(projectNo);
+    if(!p){
+      return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'PROJECT_NOT_FOUND',projectNo,message:`Project "${projectNo}" was not found.`};
+    }
+    if(p.archived){
+      return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'PROJECT_ARCHIVED',projectNo:p.no,message:`Project "${projectNo}" is archived.`};
+    }
+    const jobcardNo=payload.jobcard||null;
+    let j=null;
+    if(jobcardNo){
+      j=jobcard(jobcardNo);
+      if(!j){
+        return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'JOBCARD_NOT_FOUND',jobcardNo,message:`Jobcard "${jobcardNo}" was not found.`};
+      }
+      if(j.archived){
+        return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'JOBCARD_ARCHIVED',jobcardNo:j.no,message:`Jobcard "${jobcardNo}" is archived.`};
+      }
+      if(JOBCARD_TERMINAL_STATUSES.includes(normalizeJobcardStatusForComparison(j.status))){
+        return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'JOBCARD_TERMINAL',jobcardNo:j.no,status:j.status,message:`Jobcard "${jobcardNo}" is ${j.status} and cannot receive new equipment.`};
+      }
+      if(j.projectNo!==p.no){
+        return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'JOBCARD_PROJECT_MISMATCH',jobcardNo:j.no,projectNo:p.no,message:`Jobcard "${jobcardNo}" does not belong to project "${projectNo}".`};
+      }
+    }
+    if(kind==='assign'){
+      if(!j){
+        return{valid:false,code:'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',reason:'JOBCARD_REQUIRED_FOR_ASSIGNMENT',message:'Assignment requires a real Jobcard.'};
+      }
+      // Pass 3.2C review fix (authority field type validation): String(value).trim() previously
+      // stringified ANY value — an object became the literal text "[object Object]", an array its
+      // joined elements — so a caller could store that as the assignment's worker/assignedBy. These
+      // must be genuine, non-empty-after-trim strings, exactly like the identity strings in
+      // createEquipment() above; reuse the same helper rather than a second bespoke check.
+      const worker=normalizeRequiredIdentityString(payload.worker);
+      if(!worker){
+        return{valid:false,code:'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',reason:'WORKER_REQUIRED',message:'Assignment requires a worker/operator.'};
+      }
+      const assignedBy=normalizeRequiredIdentityString(payload.assignedBy);
+      if(!assignedBy){
+        return{valid:false,code:'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',reason:'ASSIGNED_BY_REQUIRED',message:'Assignment requires assignedBy.'};
+      }
+    }else{
+      const reservedBy=normalizeRequiredIdentityString(payload.reservedBy);
+      if(!reservedBy){
+        return{valid:false,code:'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',reason:'RESERVED_BY_REQUIRED',message:'Reservation requires reservedBy.'};
+      }
+    }
+    return{valid:true,project:p,jobcard:j};
+  }
+  function equipmentAssignmentContextBlockedResult(action,equipmentId,validation){
+    save(`Blocked: ${action} for ${equipmentId} — ${validation.message}`);
+    return{
+      error:validation.message,code:validation.code,equipmentId:equipmentId||null,
+      // Structured reason + the real, untranslated dynamic references (never a translated string)
+      // so the UI can build a translated message by code/reason and interpolate these verbatim,
+      // instead of re-parsing English prose.
+      reason:validation.reason||null,projectNo:validation.projectNo||null,jobcardNo:validation.jobcardNo||null,
+      status:validation.status||null
+    };
+  }
   // Review fix (3rd review): the ONE central place that reconciles active Jobcard operations after an
   // equipment mutation. Scans every Jobcard's operations (live `state`, never a page-side cache) for
   // any operation with status 'in-progress' whose equipmentId matches the affected equipment, and
@@ -996,6 +1106,31 @@
     const out={};
     EQUIPMENT_REQUIREMENT_KEYS.forEach(k=>{if(obj&&Object.prototype.hasOwnProperty.call(obj,k))out[k]=!!obj[k];});
     return out;
+  }
+  // Pass 3.2C, Part A: a required identity string (equipmentId/id/name/category) must be a genuine
+  // JS string, non-empty after trimming — never a number, boolean, null, object or array accepted
+  // merely because it is truthy, and never whitespace-only.
+  function normalizeRequiredIdentityString(value){
+    return typeof value==='string'&&value.trim()?value.trim():null;
+  }
+  // Pass 3.2C, Part A: a brand-new equipment record can never be BORN already assigned, in use,
+  // retired, or carrying audit/history — those are exclusively reached through their own dedicated,
+  // evidenced workflows (assignEquipment/reserveEquipment/logEquipmentUsage/retireEquipment/
+  // reportBreakdown/addInspection/...) after the record exists. createEquipment() rejects the WHOLE
+  // creation atomically the instant any of these appear in the payload — never silently strips them
+  // and creates the rest.
+  const EQUIPMENT_CREATION_PROTECTED_FIELDS=[
+    'assignedProject','assignedJobcard','operator','currentAssignment','isRetired','retirementReason',
+    'inspections','maintenance','certifications','calibrations','preUseChecks','downtimeRecords',
+    'returnToService','usageHistory','usageSessions','activity','safetyWarnings'
+  ];
+  function equipmentCreationFieldsBlockedResult(fields){
+    save(`Blocked: equipment creation attempted to set workflow-owned field(s) [${fields.join(', ')}]`);
+    return{
+      error:`These fields can only be set through their dedicated workflows after creation: ${fields.join(', ')}.`,
+      code:'EQUIPMENT_CREATION_FIELDS_PROTECTED',
+      protectedFields:fields.slice()
+    };
   }
   const api={
     key:KEY,
@@ -1413,22 +1548,90 @@
     getEquipment:()=>clone(state.equipment||[]),
     createEquipment:(payload)=>{
       const item=clone(payload||{});
-      if(!item.equipmentId && !item.id) return {error:'Equipment ID is required'};
-      if(!item.name) return {error:'Equipment name is required'};
-      if(!item.category) return {error:'Category is required'};
-      if(!item.status) item.status='Available';
-      const key=item.equipmentId || item.id;
-      if(state.equipment.some(x=>x.equipmentId===key||x.id===key)){ return {error:'Duplicate equipment ID'}; }
+      // Pass 3.2C, Part A: equipmentId/id/name/category must each be a genuine, non-empty-after-
+      // trim string — a bare truthiness check previously accepted numbers, booleans, whitespace-
+      // only strings, objects and arrays as a "valid" identifier or name.
+      // Pass 3.2C review fix (dual Equipment ID validation bypass): presence is checked via
+      // hasOwnProperty, never truthiness of the normalized candidate — a SUPPLIED field must be
+      // valid on its own terms. Previously, a malformed equipmentId (a number, boolean, blank
+      // string, array or object) was silently "rescued" whenever a valid `id` was also present
+      // (and vice versa), because only the pair `!equipmentIdCandidate&&!legacyIdCandidate` was
+      // checked. Each supplied field is now validated independently before the two are reconciled.
+      const hasEquipmentIdField=Object.prototype.hasOwnProperty.call(item,'equipmentId');
+      const hasLegacyIdField=Object.prototype.hasOwnProperty.call(item,'id');
+      const equipmentIdCandidate=hasEquipmentIdField?normalizeRequiredIdentityString(item.equipmentId):null;
+      const legacyIdCandidate=hasLegacyIdField?normalizeRequiredIdentityString(item.id):null;
+      if(!hasEquipmentIdField&&!hasLegacyIdField){
+        return{error:'A valid, non-empty Equipment ID is required',code:'INVALID_EQUIPMENT_ID',reason:'EQUIPMENT_ID_REQUIRED'};
+      }
+      if((hasEquipmentIdField&&!equipmentIdCandidate)||(hasLegacyIdField&&!legacyIdCandidate)){
+        return{error:'A valid, non-empty Equipment ID is required',code:'INVALID_EQUIPMENT_ID',reason:'EQUIPMENT_ID_REQUIRED'};
+      }
+      // `id` is accepted only as a legacy fallback when equipmentId itself is absent — if a caller
+      // supplies both and they disagree, that is ambiguous and the whole creation is rejected
+      // rather than silently preferring one over the other.
+      if(equipmentIdCandidate&&legacyIdCandidate&&equipmentIdCandidate!==legacyIdCandidate){
+        return{error:'equipmentId and id were both supplied and do not match',code:'INVALID_EQUIPMENT_ID',reason:'EQUIPMENT_ID_MISMATCH'};
+      }
+      const key=equipmentIdCandidate||legacyIdCandidate;
+      const normalizedName=normalizeRequiredIdentityString(item.name);
+      if(!normalizedName) return {error:'Equipment name is required'};
+      const normalizedCategory=normalizeRequiredIdentityString(item.category);
+      if(!normalizedCategory) return {error:'Category is required'};
+      const EG=global.EquipmentGates;
+      // Status presence via hasOwnProperty, never truthiness — malformed values (null, '',
+      // whitespace, a number, a boolean, an array, an object) are rejected atomically before
+      // anything else is validated.
+      const hasStatusField=Object.prototype.hasOwnProperty.call(item,'status');
+      if(hasStatusField&&(typeof item.status!=='string'||!item.status.trim())){
+        return{error:'status must be a non-empty string',code:'INVALID_EQUIPMENT_STATUS',reason:'STATUS_MALFORMED'};
+      }
+      const requestedStatus=hasStatusField?item.status.trim():'Available';
+      const normalizedStatus=EG?EG.normalizeStatus(requestedStatus):requestedStatus.toLowerCase();
+      // Retired/Reserved/In Use are all reachable ONLY through their own dedicated, evidenced
+      // workflow after the record exists — never as an initial creation status. Checked in this
+      // order because 'retired' is also technically a hard-block status, but gets its own specific
+      // (and stricter — retireEquipment() requires a reason) rejection code.
+      if(normalizedStatus==='retired'){
+        return{error:'Equipment cannot be created directly as Retired — use retireEquipment() (with a reason) after creation.',code:'EQUIPMENT_RETIREMENT_REQUIRES_WORKFLOW'};
+      }
+      if(normalizedStatus==='reserved'||normalizedStatus==='in use'){
+        return{error:'Equipment cannot be created directly as Reserved or In Use — use the reservation/assignment workflow after creation.',code:'EQUIPMENT_INITIAL_STATUS_REQUIRES_WORKFLOW'};
+      }
+      // The only remaining acceptable values are 'Available' or a genuine hard-block status
+      // (Maintenance Due, Under Maintenance, Inspection Required, Out of Service, Quarantined) —
+      // equipment onboarded already needing attention. Anything else is not a recognised status.
+      if(normalizedStatus!=='available'&&!(EG&&EG.isHardBlockStatus(requestedStatus))){
+        return{error:`"${requestedStatus}" is not a recognised initial equipment status.`,code:'INVALID_EQUIPMENT_STATUS',reason:'STATUS_UNRECOGNISED',attemptedStatus:requestedStatus};
+      }
+      // A caller can never smuggle in assignment/retirement/audit state at creation time — the
+      // whole creation is rejected atomically, never a silent partial create with just those
+      // fields dropped. hasOwnProperty, never truthiness — an explicit empty array/false/null is
+      // still a present, protected field.
+      const touchedCreationProtected=EQUIPMENT_CREATION_PROTECTED_FIELDS.filter(f=>Object.prototype.hasOwnProperty.call(item,f));
+      if(touchedCreationProtected.length)return equipmentCreationFieldsBlockedResult(touchedCreationProtected);
+      // Pass 3.2C review fix (legacy whitespace duplicate bypass): the NEW key is already trimmed,
+      // but a legacy stored record's own equipmentId/id (e.g. ' E-1001 ' saved before this
+      // normalization existed) was compared RAW — so a new 'E-1001' was not caught as a duplicate.
+      // Every existing record's equipmentId/id is now normalized the same way (genuine string,
+      // trimmed) before comparison — read-only, via a local const, never writing back to `x` itself,
+      // so duplicate detection never mutates the existing record.
+      const isDuplicateKey=state.equipment.some(x=>{
+        const existingEquipmentId=normalizeRequiredIdentityString(x&&x.equipmentId);
+        const existingLegacyId=normalizeRequiredIdentityString(x&&x.id);
+        return existingEquipmentId===key||existingLegacyId===key;
+      });
+      if(isDuplicateKey){ return {error:'Duplicate equipment ID'}; }
       const record={
         id:key,
         equipmentId:key,
-        name:item.name,
-        category:item.category,
+        name:normalizedName,
+        category:normalizedCategory,
         manufacturer:item.manufacturer||'—',
         model:item.model||'—',
         serial:item.serial||'—',
         assetNumber:item.assetNumber||`AS-${Date.now().toString().slice(-5)}`,
-        status:item.status,
+        status:requestedStatus,
         currentLocation:item.currentLocation||'Workshop',
         homeLocation:item.homeLocation||item.currentLocation||'Workshop',
         department:item.department||'Workshop',
@@ -1449,10 +1652,10 @@
         certificationExpiry:item.certificationExpiry||null,
         calibrationDate:item.calibrationDate||null,
         requirements:normalizeEquipmentRequirements(item.requirements),
-        safetyWarnings:Array.isArray(item.safetyWarnings)?item.safetyWarnings:[],
-        assignedProject:item.assignedProject||null,
-        assignedJobcard:item.assignedJobcard||null,
-        operator:item.operator||null,
+        safetyWarnings:[],
+        assignedProject:null,
+        assignedJobcard:null,
+        operator:null,
         notes:item.notes||'Demo record created through the frontend workflow.',
         activity:[{timestamp:now(),action:'Equipment created',user:item.responsiblePerson||'Aleksandar C.',reference:key}],
         inspections:[],
@@ -1563,19 +1766,44 @@
       if(!item) return {error:'Equipment not found'};
       const gate=equipmentSafetyGate(item,{});
       if(gate.blocked)return equipmentGateBlockedResult('Reserve',equipmentId,gate);
+      // Pass 3.2C, Part B: the shared context validator confirms the referenced project/Jobcard are
+      // real, active, correctly related, and that reservedBy was supplied — BEFORE anything is
+      // touched. Never duplicated — assignEquipment() below uses the exact same function with
+      // kind:'assign'.
+      const context=validateEquipmentAssignmentContext('reserve',payload);
+      if(!context.valid)return equipmentAssignmentContextBlockedResult('Reserve',equipmentId,context);
+      // Every reference stored/compared from here on is the CANONICAL project/Jobcard number
+      // resolved by the validator above — never the raw caller-supplied value. jobcard()/project()
+      // resolve by either id or no, so a caller could pass a numeric Jobcard id that resolves
+      // correctly here but, if persisted verbatim, would silently desynchronise assignedJobcard
+      // from every other method that compares it against a canonical 'JC-...' string (the conflict
+      // check immediately below included).
+      const canonicalProjectNo=context.project.no;
+      const canonicalJobcardNo=context.jobcard?context.jobcard.no:null;
+      // Pass 3.2C review fix (cross-project reservation theft): checked FIRST, before the Jobcard
+      // check below — a project-only reservation (assignedJobcard still null) must not be silently
+      // stolen by a second project just because there is no Jobcard for the old conflict check to
+      // catch. Same-project re-reservation remains idempotent.
+      if(item.assignedProject&&item.assignedProject!==canonicalProjectNo){
+        return equipmentProjectConflictResult('Reserve',equipmentId,item.assignedProject,canonicalProjectNo);
+      }
       // Review fix (2nd review, finding 1): reserveEquipment() is a second route into the same
       // assignedJobcard field assignEquipment() already guards — it must never be usable to silently
       // move equipment from one Jobcard to another. Same conflict rule: an explicit SAME jobcard is
       // idempotent; anything else (a different jobcard, or an omitted jobcard while already held)
       // requires an explicit returnEquipment() first. Checked before any field is touched.
-      if(item.assignedJobcard&&item.assignedJobcard!==(payload.jobcard||null)){
-        return equipmentAssignmentConflictResult('Reserve',equipmentId,item.assignedJobcard,payload.jobcard||null);
+      if(item.assignedJobcard&&item.assignedJobcard!==canonicalJobcardNo){
+        return equipmentAssignmentConflictResult('Reserve',equipmentId,item.assignedJobcard,canonicalJobcardNo);
       }
+      // An optional reservation note is preserved in the audit trail — it is purely descriptive and
+      // never influences any safety/validation decision. escapeHtml() at render time (never here)
+      // is what keeps it safe to display; this stores the raw trimmed text.
+      const note=payload.note!=null?String(payload.note).trim():'';
       item.status='Reserved';
-      item.assignedProject=payload.project||item.assignedProject||null;
-      item.assignedJobcard=payload.jobcard||item.assignedJobcard||null;
+      item.assignedProject=canonicalProjectNo;
+      item.assignedJobcard=canonicalJobcardNo;
       item.activity=item.activity||[];
-      item.activity.unshift({timestamp:now(),action:'Equipment reserved',user:payload.reservedBy||'Aleksandar C.',reference:equipmentId,details:`${payload.project||'—'} / ${payload.jobcard||'—'}`});
+      item.activity.unshift({timestamp:now(),action:'Equipment reserved',user:String(payload.reservedBy).trim(),reference:equipmentId,details:`${canonicalProjectNo} / ${canonicalJobcardNo||'—'}${note?' — '+note:''}`});
       item.lastActivity=now();
       save(`Equipment reserved: ${equipmentId}`);
       return clone(item);
@@ -1585,24 +1813,41 @@
       if(!item) return {error:'Equipment not found'};
       const gate=equipmentSafetyGate(item,{});
       if(gate.blocked)return equipmentGateBlockedResult('Assign',equipmentId,gate);
+      // Pass 3.2C, Part B: same shared context validator as reserveEquipment() above — assignment
+      // additionally requires a real Jobcard (never project-only) plus worker/assignedBy.
+      const context=validateEquipmentAssignmentContext('assign',assignment);
+      if(!context.valid)return equipmentAssignmentContextBlockedResult('Assign',equipmentId,context);
+      // Canonical references only — see the matching comment in reserveEquipment() above. kind:
+      // 'assign' always resolves a real Jobcard, so canonicalJobcardNo is never null here.
+      const canonicalProjectNo=context.project.no;
+      const canonicalJobcardNo=context.jobcard.no;
+      // Pass 3.2C review fix (cross-project reservation theft): same rule as reserveEquipment()
+      // above, checked first — assigning a project-only reservation to a Jobcard belonging to the
+      // SAME project remains allowed (canonicalProjectNo matches); moving to another project's
+      // Jobcard is rejected here, atomically, before assignedJobcard is even considered.
+      if(item.assignedProject&&item.assignedProject!==canonicalProjectNo){
+        return equipmentProjectConflictResult('Assign',equipmentId,item.assignedProject,canonicalProjectNo);
+      }
       // Review fix: equipment already held by a different Jobcard can never be silently reassigned —
       // the caller must explicitly pass the SAME jobcard (idempotent) or return it first. A caller
       // that omits assignment.jobcard entirely while the equipment is already held is also refused,
       // rather than silently keeping the old assignedJobcard while other fields quietly change.
-      if(item.assignedJobcard&&item.assignedJobcard!==(assignment.jobcard||null)){
-        return equipmentAssignmentConflictResult('Assign',equipmentId,item.assignedJobcard,assignment.jobcard||null);
+      if(item.assignedJobcard&&item.assignedJobcard!==canonicalJobcardNo){
+        return equipmentAssignmentConflictResult('Assign',equipmentId,item.assignedJobcard,canonicalJobcardNo);
       }
-      item.assignedProject=assignment.project||item.assignedProject||null;
-      item.assignedJobcard=assignment.jobcard||item.assignedJobcard||null;
+      const worker=String(assignment.worker).trim();
+      const assignedBy=String(assignment.assignedBy).trim();
+      item.assignedProject=canonicalProjectNo;
+      item.assignedJobcard=canonicalJobcardNo;
       item.currentLocation=assignment.location||item.currentLocation;
-      item.operator=assignment.worker||item.operator||null;
+      item.operator=worker;
       // Caller-supplied assignment.status is never trusted (Pass 3.2A requirement) — assigning
       // equipment always reserves it; a later logEquipmentUsage()/canUseEquipment() call is the
       // gated path into actual operational use.
       item.status='Reserved';
-      item.currentAssignment={project:assignment.project||null,jobcard:assignment.jobcard||null,location:assignment.location||null,worker:assignment.worker||null,equipmentId:item.equipmentId, assignedBy:assignment.assignedBy||'Aleksandar C.', assignedDate:new Date().toISOString().slice(0,10)};
+      item.currentAssignment={project:canonicalProjectNo,jobcard:canonicalJobcardNo,location:assignment.location||null,worker,equipmentId:item.equipmentId, assignedBy, assignedDate:new Date().toISOString().slice(0,10)};
       item.activity=item.activity||[];
-      item.activity.unshift({timestamp:now(),action:'Equipment assigned',user:assignment.assignedBy||'Aleksandar C.',reference:item.equipmentId,details:`${assignment.project||'—'} / ${assignment.jobcard||'—'}`});
+      item.activity.unshift({timestamp:now(),action:'Equipment assigned',user:assignedBy,reference:item.equipmentId,details:`${canonicalProjectNo} / ${canonicalJobcardNo}`});
       item.lastActivity=now();
       save(`Equipment assigned: ${equipmentId}`);
       return clone(item);
