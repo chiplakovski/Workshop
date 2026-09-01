@@ -629,9 +629,9 @@ const T={
     convert_projtitle:"Project title",convert_hours:"Planned hours",convert_delivery:"Delivery target",convert_value:"Estimated project value",convert_create:"Create connected project",
     confirm_convert:"Convert {no} to a connected project? This cannot be undone.",
     discount_max:"max",err_overhead:"Overhead cannot be negative.",err_contingency:"Contingency cannot be negative.",err_discount:"Discount must be between 0 and the selling subtotal.",
-    demo_upload:"File upload — demo. No file is actually stored.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
+    demo_upload:"Files up to 768 KB are stored in this browser and shared with Documents.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
     confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
-    demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Excel export — demo — {no}.xlsx (no file is actually generated).",
+    demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Export {no} as an Excel-compatible SpreadsheetML workbook.",
     pr_desc:"Description",pr_qty:"Qty",pr_unit:"Unit",pr_price:"Price",pr_total:"Total",pr_optional:"Optional Items",pr_estimate:"Estimation",
     pr_customer:"Customer",pr_details:"Estimation Details",pr_scope:"Scope",pr_base:"Base Offer",pr_vat:"VAT",pr_delivery:"Delivery",
     pr_signature_customer:"Customer acceptance / signature",pr_signature_varmak:"Varmak AB",
@@ -698,9 +698,9 @@ const T={
     convert_projtitle:"Projekttitel",convert_hours:"Planerade timmar",convert_delivery:"Leveransmål",convert_value:"Uppskattat projektvärde",convert_create:"Skapa kopplat projekt",
     confirm_convert:"Konvertera {no} till ett kopplat projekt? Detta kan inte ångras.",
     discount_max:"max",err_overhead:"Omkostnader kan inte vara negativa.",err_contingency:"Osäkerhetsmarginal kan inte vara negativ.",err_discount:"Rabatten måste vara mellan 0 och delsumman.",
-    demo_upload:"Filuppladdning — demo. Ingen fil sparas i verkligheten.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
+    demo_upload:"Filer upp till 768 KB lagras i den här webbläsaren och delas med Dokument.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
     confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
-    demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Excel-export — demo — {no}.xlsx (ingen fil skapas i verkligheten).",
+    demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Exportera {no} som en Excel-kompatibel SpreadsheetML-arbetsbok.",
     pr_desc:"Beskrivning",pr_qty:"Antal",pr_unit:"Enhet",pr_price:"Pris",pr_total:"Summa",pr_optional:"Tillval",pr_estimate:"Kalkyl",
     pr_customer:"Kund",pr_details:"Kalkyldetaljer",pr_scope:"Omfattning",pr_base:"Grunderbjudande",pr_vat:"Moms",pr_delivery:"Leverans",
     pr_signature_customer:"Kundens godkännande / underskrift",pr_signature_varmak:"Varmak AB",
@@ -767,9 +767,9 @@ const T={
     convert_projtitle:"Naslov na proekt",convert_hours:"Planirani časovi",convert_delivery:"Cel za isporaka",convert_value:"Procenета vrednost na proektot",convert_create:"Kreiraj poврзан proekt",
     confirm_convert:"Konvertiraj {no} vo poврзан proekt? Ova ne može da se vrati.",
     discount_max:"maks",err_overhead:"Režiskite troшoci ne možat da bidat negativni.",err_contingency:"Rezervata za nesigurnost ne može da bide negativna.",err_discount:"Popustot mora da bide pomeѓu 0 i meѓuzbirot.",
-    demo_upload:"Otpremaњe fajl — demo. Nikakov fajl не se začuvuva vo realnost.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
+    demo_upload:"Fajlovi do 768 KB se začuvuvaat vo ovoj prebaruvač i se delat so Dokumenti.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
     confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
-    demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Excel izvoz — demo — {no}.xlsx (nikakov fajl не se generira vo realnost).",
+    demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Izvezi ja {no} kako Excel-kompatibilna SpreadsheetML rabotna kniga.",
     pr_desc:"Opis",pr_qty:"Kol.",pr_unit:"Edinica",pr_price:"Cena",pr_total:"Vkupno",pr_optional:"Opcionalni stavki",pr_estimate:"Kalkulacija",
     pr_customer:"Klient",pr_details:"Detali za kalkulacija",pr_scope:"Opseg",pr_base:"Osnovna ponuda",pr_vat:"DDV",pr_delivery:"Isporaka",
     pr_signature_customer:"Prifaќaњe / potpis od klient",pr_signature_varmak:"Varmak AB",
@@ -1602,16 +1602,21 @@ function saveAddNote(id){
 function openUpload(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${esc(t.ud_title)}</h2><p class="fsub">${esc(getEst(id).no)} · ${esc(t.demo_upload)}</p>
+    <div class="frow"><label for="udFile">File</label><input id="udFile" type="file" onchange="if(this.files[0]&&!document.getElementById('udName').value)document.getElementById('udName').value=this.files[0].name"></div>
     <div class="frow"><label>${esc(t.ud_name)}</label><input id="udName" placeholder="Document.pdf"></div>
     <div id="udErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveUpload(${id})">${esc(t.ud_save)}</button></div>`;
   $("fov").classList.add("show");
 }
-function saveUpload(id){
+async function saveUpload(id){
   const t=T[LANG];clearAllFieldErrors();const name=$("udName").value.trim();
   if(!name){showFieldError('udName','udErr',t.err_required);return;}
-  const e=getEst(id);
-  WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.'});
+  const e=getEst(id),file=$("udFile").files[0];
+  if(file&&file.size>WorkshopData.maxDocumentFileBytes){showFieldError('udName','udErr',`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`);return;}
+  let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);
+  if(file&&fileData===null){showFieldError('udName','udErr','The selected file could not be read.');return;}
+  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.',fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
+  if(saved.error){showFieldError('udName','udErr',saved.error);return;}
   e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
   syncEstimation(e);
   closeModal();renderAll();
@@ -1675,8 +1680,23 @@ function sendEmail(id){
   toast(t.demo_email,'ok');
   location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
 }
-// Excel export is a frontend demonstration only — no file is generated.
-function exportExcel(id){toast(T[LANG].demo_export.replace('{no}',getEst(id).no),'ok');}
+// A dependency-free Excel export using Microsoft's SpreadsheetML 2003 format. This is a genuine
+// workbook file (not a toast-only simulation) and opens directly in Excel/LibreOffice while
+// keeping the static prototype free of a large XLSX/ZIP dependency.
+function exportExcel(id){
+  const e=getEst(id),c=CUSTOMERS[e.customerId],tot=computeTotals(e),rows=flatLines(e);
+  const x=v=>esc(v==null?'':v),cell=(v,type='String')=>`<Cell><Data ss:Type="${type}">${x(v)}</Data></Cell>`;
+  const body=[
+    ['Estimation',e.no],['Customer',c.name],['Title',e.projectTitle||e.no],['Status',e.status],['Revision',e.revision||0],['Created',e.created],['Valid Until',e.validUntil],[],
+    ['Category','Description','Quantity','Unit','Unit Cost','Unit Sell','Discount %','VAT %','Line Total'],
+    ...rows.map(l=>[l.category,l.desc,l.qty,l.unit,l.cost,l.sell,l.discount||0,l.tax||0,lineTotal(l)]),
+    [],['Sell Subtotal',tot.sellSubtotal],['Estimate Discount',tot.discount],['VAT',tot.taxTotal],['Grand Total',tot.grandTotal]
+  ];
+  const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Estimation"><Table>${body.map(r=>`<Row>${r.map(v=>cell(v,typeof v==='number'&&Number.isFinite(v)?'Number':'String')).join('')}</Row>`).join('')}</Table></Worksheet></Workbook>`;
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=e.no+'-estimation.xml';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast(`Excel workbook downloaded — ${a.download}`,'ok');
+}
 function printEst(id){selectedId=id;renderPrintSheet(getEst(id));window.print();}
 
 // Customer-facing print preview. Intentionally excludes internal cost, overhead, contingency, profit and

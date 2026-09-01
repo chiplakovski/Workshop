@@ -3647,3 +3647,81 @@ test('cross-tab reload: the Node test harness\'s window stub omitting addEventLi
     new Function('window',src+'\nreturn window.WorkshopData;')(g);
   });
 });
+
+// ── Pass 3.34: real document content/folders and invoices ─────────────────────────────────────
+test('document content: a small data URL persists with its metadata and survives reload', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const fileData='data:text/plain;base64,SGVsbG8gVmFybWFr';
+  const saved=WD.upsertDocument({name:'hello.txt',type:'Document',module:'Customers',record:'MarineVent AB',fileName:'hello.txt',mimeType:'text/plain',fileSize:12,fileData});
+  assert.equal(saved.fileData,fileData);
+  assert.equal(WD.findDocument(saved.id).mimeType,'text/plain');
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.equal(reloaded.findDocument(saved.id).fileData,fileData);
+  const removed=reloaded.removeDocumentContent(saved.id);
+  assert.equal(removed.fileData,'');
+  assert.equal(removed.fileSize,0);
+  assert.ok(reloaded.getDocuments().some(d=>d.id===saved.id),'removing content must preserve document metadata');
+});
+
+test('document content: invalid and oversized content is rejected atomically', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.getDocuments().length;
+  const invalid=WD.upsertDocument({name:'bad.bin',fileData:'not-a-data-url',fileSize:10});
+  assert.ok(invalid.error);
+  const oversized=WD.upsertDocument({name:'large.bin',fileData:'data:application/octet-stream;base64,AA==',fileSize:WD.maxDocumentFileBytes+1});
+  assert.ok(oversized.error);
+  assert.equal(WD.getDocuments().length,before);
+});
+
+test('document content: cumulative browser-storage budget rejects a write before localStorage quota is endangered', ()=>{
+  const WD=loadWorkshopData();
+  const size=700*1024,data='data:application/octet-stream;base64,'+'A'.repeat(Math.ceil(size*4/3));
+  assert.equal(WD.upsertDocument({name:'one.bin',fileData:data,fileSize:size}).error,undefined);
+  assert.equal(WD.upsertDocument({name:'two.bin',fileData:data,fileSize:size}).error,undefined);
+  const before=WD.getDocuments().length;
+  const third=WD.upsertDocument({name:'three.bin',fileData:data,fileSize:size});
+  assert.match(third.error,/storage is full/i);
+  assert.equal(WD.getDocuments().length,before);
+});
+
+test('document folders: create is persistent, duplicate scope is idempotent, and archive is non-destructive', ()=>{
+  const WD=loadWorkshopData();
+  const first=WD.upsertDocumentFolder({name:'Contracts',module:'Customers',record:'MarineVent AB'});
+  const second=WD.upsertDocumentFolder({name:'contracts',module:'Customers',record:'MarineVent AB'});
+  assert.equal(first.id,second.id);
+  assert.equal(WD.getDocumentFolders().filter(f=>f.id===first.id).length,1);
+  const archived=WD.archiveDocumentFolder(first.id);
+  assert.equal(archived.archived,true);
+  assert.ok(WD.getDocumentFolders().some(f=>f.id===first.id));
+});
+
+test('invoices: create/update/archive uses a real customer-linked shared record', ()=>{
+  const WD=loadWorkshopData();
+  const customer=WD.getCustomers()[0];
+  const invoice=WD.upsertInvoice({customerId:customer.id,value:12500,status:'pending',reference:'P-2026-014'});
+  assert.match(invoice.no,/^INV-\d{4}-\d{4}$/);
+  assert.equal(invoice.customer,customer.name);
+  assert.equal(WD.listInvoices().filter(i=>i.id===invoice.id).length,1);
+  const paid=WD.updateInvoice(invoice.id,{status:'paid'});
+  assert.equal(paid.status,'paid');
+  assert.equal(WD.findInvoice(invoice.no).status,'paid');
+  assert.equal(WD.archiveInvoice(invoice.id).archived,true);
+  assert.ok(WD.listInvoices().some(i=>i.id===invoice.id));
+});
+
+test('invoices: invalid customer, non-positive value, and invalid status are rejected without writes', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.listInvoices().length;
+  assert.ok(WD.upsertInvoice({customer:'Missing Co',value:10}).error);
+  assert.ok(WD.upsertInvoice({customerId:WD.getCustomers()[0].id,value:0}).error);
+  assert.ok(WD.upsertInvoice({customerId:WD.getCustomers()[0].id,value:10,status:'invented'}).error);
+  assert.equal(WD.listInvoices().length,before);
+});
+
+test('backup validation and old-state normalization include documentFolders and invoices', ()=>{
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(minimalState({version:5}))});
+  assert.deepEqual(WD.getDocumentFolders(),[]);
+  assert.deepEqual(WD.listInvoices(),[]);
+  assert.equal(WD.validateBackup({documentFolders:'bad'}).valid,false);
+  assert.equal(WD.validateBackup({invoices:'bad'}).valid,false);
+});

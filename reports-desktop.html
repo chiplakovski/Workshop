@@ -850,7 +850,7 @@
         <div class="kpi"><div class="kl" data-i="accepted_value">Accepted Value</div><div class="kv ok" id="cust-value">—</div></div>
         <div class="kpi"><div class="kl" data-i="project_value">Project Value</div><div class="kv" id="cust-projvalue">—</div></div>
       </div>
-      <div class="dq-note" data-i="customer_invoice_note" style="margin-bottom:14px;">Invoiced and paid values are not connected in this prototype (no accounting integration). Only quoted, accepted and project values are shown — do not treat quoted value as revenue.</div>
+      <div class="dq-note" data-i="customer_invoice_note" style="margin-bottom:14px;">Invoiced values come from the shared customer invoice register. Payment status is user-recorded and is not reconciled against an external accounting service.</div>
 
       <div class="panel">
         <div class="phead"><h3 data-i="customer_overview">Customer Overview</h3></div>
@@ -1120,7 +1120,7 @@ const i18n={
     quality_module_note:'A dedicated Quality module is not yet implemented — figures below use inspection and material-certificate records already stored on jobcards. Future Quality integration will add NCRs, welding/NDT logs and corrective actions.',
     inspection_status:'Inspection Status',ncr_by_project:'Inspections by Project',certificate_completeness:'Certificate Completeness',
     jobcard:'Jobcard',material:'Material',quoted_value:'Quoted Value',accepted_value:'Accepted Value',project_value:'Project Value',
-    customer_invoice_note:'Invoiced and paid values are not connected in this prototype (no accounting integration). Only quoted, accepted and project values are shown — do not treat quoted value as revenue.',
+    customer_invoice_note:'Invoiced values come from the shared customer invoice register. Payment status is user-recorded and is not reconciled against an external accounting service.',
     invoiced_value:'Invoiced Value',not_connected:'Not Connected',mkt_connected:'Connected',
     marketing_note:'Marketing leads, opportunities and campaigns are read from the shared Varmak data layer, the same records the Marketing module reads and writes — nothing here is invented or duplicated.',
     favourite:'★',last_used:'Last Used',reset_builder:'Reset Builder',store_items:'Store Items',
@@ -1225,7 +1225,7 @@ const i18n={
     quality_module_note:'En dedikerad kvalitetsmodul är ännu inte implementerad — siffrorna nedan använder inspektions- och materialcertifikatposter som redan finns på arbetskort. Framtida kvalitetsintegration lägger till avvikelser, svets-/NDT-loggar och åtgärder.',
     inspection_status:'Inspektionsstatus',ncr_by_project:'Inspektioner Per Projekt',certificate_completeness:'Certifikatfullständighet',
     jobcard:'Arbetskort',material:'Material',quoted_value:'Offererat Värde',accepted_value:'Accepterat Värde',project_value:'Projektvärde',
-    customer_invoice_note:'Fakturerat och betalt värde är inte anslutet i denna prototyp (ingen bokföringsintegration). Endast offererat, accepterat och projektvärde visas — behandla inte offererat värde som intäkt.',
+    customer_invoice_note:'Fakturerade värden kommer från det delade kundfakturaregistret. Betalningsstatus registreras av användaren och stäms inte av mot ett externt ekonomisystem.',
     invoiced_value:'Fakturerat Värde',not_connected:'Ej Ansluten',mkt_connected:'Ansluten',
     marketing_note:'Marknadsföringsleads, möjligheter och kampanjer läses från det delade Varmak-datalagret, samma poster som marknadsföringsmodulen läser och skriver — inget här är påhittat eller duplicerat.',
     favourite:'★',last_used:'Senast Använd',reset_builder:'Återställ Byggare',store_items:'Lagerartiklar',
@@ -1330,7 +1330,7 @@ const i18n={
     quality_module_note:'Посветен модул за квалитет сè уште не е имплементиран — бројките подолу користат записи за инспекции и сертификати за материјал веќе зачувани на работните картички. Идната интеграција на квалитет ќе додаде НЦР, заварување/НДТ логови и корективни дејствија.',
     inspection_status:'Статус на инспекција',ncr_by_project:'Инспекции по Проект',certificate_completeness:'Комплетност на сертификати',
     jobcard:'Работна картичка',material:'Материјал',quoted_value:'Понудена Вредност',accepted_value:'Прифатена Вредност',project_value:'Вредност на проект',
-    customer_invoice_note:'Фактурираната и платена вредност не се поврзани во оваа прототип (нема сметководствена интеграција). Прикажани се само понудена, прифатена и вредност на проект — не третирајте ја понудената вредност како приход.',
+    customer_invoice_note:'Фактурираните вредности доаѓаат од заедничкиот регистар на фактури. Статусот на плаќање го внесува корисникот и не се усогласува со надворешен сметководствен систем.',
     invoiced_value:'Фактурирана Вредност',not_connected:'Не е Поврзано',mkt_connected:'Поврзано',
     marketing_note:'Маркетинг потенцијалите, можностите и кампањите се читаат од споделениот Varmak слој на податоци, истите записи што маркетинг модулот ги чита и запишува — ништо тука не е измислено или дуплирано.',
     favourite:'★',last_used:'Последно Користено',reset_builder:'Ресетирај Градител',store_items:'Магацински Артикли',
@@ -2489,6 +2489,7 @@ function renderCustomers(data,range){
   const customers=data.customers||[];
   const estimates=data.estimations||[];
   const projects=data.projects||[];
+  const invoices=(data.invoices||[]).filter(i=>!i.archived&&i.status!=='cancelled');
 
   const quotedValue=estimates.reduce((s,e)=>s+(num(e.totalCost)||0),0);
   const acceptedValue=estimates.filter(e=>e.status==='accepted').reduce((s,e)=>s+(num(e.sellingPrice)||0),0);
@@ -2506,7 +2507,8 @@ function renderCustomers(data,range){
     const custProj=projects.filter(p=>p.customerId===c.id);
     const cQuoted=custEst.reduce((s,e)=>s+(num(e.totalCost)||0),0);
     const cAccepted=custEst.filter(e=>e.status==='accepted').reduce((s,e)=>s+(num(e.sellingPrice)||0),0);
-    return `<tr><td>${esc(c.name)}</td><td>${custEst.length}</td><td>${sekStr(cQuoted)}</td><td>${sekStr(cAccepted)}</td><td>${custProj.length}</td><td>N/A</td><td><span class="badge ${c.status==='active'?'active':'draft'}">${esc(c.status||'N/A')}</span></td></tr>`;
+    const invoiced=invoices.filter(i=>i.customerId===c.id||i.customer===c.name).reduce((s,i)=>s+(num(i.value)||0),0);
+    return `<tr><td>${esc(c.name)}</td><td>${custEst.length}</td><td>${sekStr(cQuoted)}</td><td>${sekStr(cAccepted)}</td><td>${custProj.length}</td><td>${sekStr(invoiced)}</td><td><span class="badge ${c.status==='active'?'active':'draft'}">${esc(c.status||'N/A')}</span></td></tr>`;
   }).join('')||'<tr class="emptyrow"><td colspan="7">No customers</td></tr>';
 }
 

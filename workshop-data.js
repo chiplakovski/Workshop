@@ -22,7 +22,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,document:9,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
+      purchaseOrder:145,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -253,6 +253,8 @@
       {"id":8,"name":"Calibration Certificate CAL-556.pdf","type":"Certificate","module":"Workshop","record":"CAL-556","category":"Calibration","updated":"2026-08-20T10:17:00","status":"Review Soon","expiry":"2026-10-15","revision":"1","author":"Aleksandar C."},
       {"id":9,"name":"Standard Project Handover.docx","type":"Template","module":"Projects","record":"Template","category":"Templates","updated":"2026-08-18T09:00:00","status":"Approved","expiry":"","revision":"2","author":"Aleksandar C."}
     ],
+    documentFolders:[],
+    invoices:[],
     marketingLeads:[
       {"id":1,"no":"LD-2026-041","company":"Nordic Bageri Group","contact":"Sofia Lindqvist","email":"sofia.lindqvist@nordicbageri.se","phone":"+46 70 112 34 56","country":"Sweden","city":"Malmö","industry":"Food-production equipment","size":"50-200","source":"referral","service":"Stainless proofing racks & conveyor line","value":145000,"priority":"high","status":"qualified","owner":"Elena N.","created":"2026-08-05","lastContact":"2026-08-22","nextFollowUp":"2026-08-29","commPref":"Email","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":null,"notes":[{"date":"2026-08-22","author":"Elena N.","text":"Wants a site visit before committing to spec — scheduling for next week."}],"activity":[{"date":"2026-08-05","type":"created","text":"Lead created from referral by Sanus Glutenfri."},{"date":"2026-08-11","type":"call","text":"Introductory call, discussed proofing capacity needs."},{"date":"2026-08-22","type":"qualify","text":"Marked as qualified — budget and timeline confirmed."}]},
       {"id":2,"no":"LD-2026-042","company":"Öresund Marine Service","contact":"Henrik Dahl","email":"henrik.dahl@oresundmarine.se","phone":"+46 70 223 45 67","country":"Sweden","city":"Malmö","industry":"Marine and shipyard work","size":"20-50","source":"website","service":"Deck fabrication & welding","value":320000,"priority":"high","status":"new","owner":"Marko K.","created":"2026-08-24","lastContact":"2026-08-24","nextFollowUp":"2026-08-31","commPref":"Phone","dnc":false,"linkedCustomerId":null,"linkedOpportunityId":5,"notes":[],"activity":[{"date":"2026-08-24","type":"created","text":"Submitted enquiry form on website about deck fabrication capacity."}]},
@@ -297,7 +299,7 @@
   // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
   const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
     'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs',
-    'purchaseOrders','documents','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
+    'purchaseOrders','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
   function safeParseJSON(raw){
     if(!raw)return null;
     try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
@@ -508,6 +510,8 @@
     if(!Array.isArray(s.supplierQuality))s.supplierQuality=base.supplierQuality;
     if(!Array.isArray(s.purchaseOrders))s.purchaseOrders=base.purchaseOrders;
     if(!Array.isArray(s.documents))s.documents=base.documents;
+    if(!Array.isArray(s.documentFolders))s.documentFolders=[];
+    if(!Array.isArray(s.invoices))s.invoices=[];
     if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
     if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
     if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
@@ -618,7 +622,15 @@
     s.documents.forEach(d=>{
       if(!Array.isArray(d.notes))d.notes=[];
       if(d.status==null)d.status='Draft';
+      if(d.fileData==null)d.fileData='';
+      if(d.fileName==null)d.fileName=d.name||'';
+      if(d.mimeType==null)d.mimeType='';
+      if(d.fileSize==null)d.fileSize=0;
     });
+    s.documentFolders.forEach(f=>{if(f.archived==null)f.archived=false;});
+    s.invoices.forEach(i=>{if(i.archived==null)i.archived=false;if(i.status==null)i.status='pending';if(i.currency==null)i.currency='SEK';});
+    if(s.counters&&s.counters.documentFolder==null)s.counters.documentFolder=s.documentFolders.length;
+    if(s.counters&&s.counters.invoice==null)s.counters.invoice=s.invoices.length;
     s.marketingLeads.forEach(l=>{
       if(!Array.isArray(l.notes))l.notes=[];
       if(!Array.isArray(l.activity))l.activity=[];
@@ -2806,11 +2818,24 @@
       return clone(po);
     },
 
-    // ── Documents: metadata-only records (no real file storage). ──
+    // ── Documents: shared metadata plus optional browser-stored file content. ──
+    // localStorage has a small per-origin quota, so content is deliberately capped. The UI reads
+    // files as data URLs; legacy/metadata-only documents remain valid and simply have no content
+    // to download until a file is attached.
+    maxDocumentFileBytes:768*1024,
+    maxDocumentStorageBytes:2*1024*1024,
     getDocuments:()=>clone(state.documents),
     findDocument:id=>clone(state.documents.find(x=>x.id===id)),
     upsertDocument(payload){
       if(!payload||!payload.name)return{error:'A document name is required'};
+      if(payload.fileData!==undefined){
+        if(typeof payload.fileData!=='string'||(payload.fileData&&!payload.fileData.startsWith('data:')))return{error:'Document content must be a valid data URL'};
+        const size=Number(payload.fileSize)||0;
+        if(size>api.maxDocumentFileBytes)return{error:`File is too large for browser storage (maximum ${Math.round(api.maxDocumentFileBytes/1024)} KB)`};
+        if(payload.fileData.length>api.maxDocumentFileBytes*1.5+512)return{error:'Encoded document content exceeds the browser-storage limit'};
+        const used=state.documents.filter(x=>payload.id==null||x.id!==payload.id).reduce((sum,x)=>sum+(Number(x.fileSize)||0),0);
+        if(used+size>api.maxDocumentStorageBytes)return{error:'Document storage is full. Download and remove stored file content before adding more'};
+      }
       let d=state.documents.find(x=>payload.id!=null&&x.id===payload.id);
       const data=clone(payload);
       if(d){Object.assign(d,data);d.updated=data.updated||now();}
@@ -2826,6 +2851,13 @@
     updateDocument(id,patch){
       const d=state.documents.find(x=>x.id===id);
       if(!d)return{error:'Document not found'};
+      if(patch&&patch.fileData!==undefined){
+        if(typeof patch.fileData!=='string'||(patch.fileData&&!patch.fileData.startsWith('data:')))return{error:'Document content must be a valid data URL'};
+        const size=Number(patch.fileSize)||0;
+        if(size>api.maxDocumentFileBytes)return{error:`File is too large for browser storage (maximum ${Math.round(api.maxDocumentFileBytes/1024)} KB)`};
+        const used=state.documents.filter(x=>x.id!==id).reduce((sum,x)=>sum+(Number(x.fileSize)||0),0);
+        if(used+size>api.maxDocumentStorageBytes)return{error:'Document storage is full. Download and remove stored file content before adding more'};
+      }
       Object.assign(d,clone(patch));
       d.updated=now();
       save(`Document updated: ${d.name}`);
@@ -2840,6 +2872,70 @@
       d.updated=now();
       save(`Document archived: ${d.name}${reason?' — '+reason:''}`);
       return clone(d);
+    },
+    removeDocumentContent(id){
+      const d=state.documents.find(x=>x.id===id);
+      if(!d)return{error:'Document not found'};
+      d.fileData='';d.fileName='';d.mimeType='';d.fileSize=0;d.updated=now();
+      save(`Document file content removed: ${d.name}`);
+      return clone(d);
+    },
+    getDocumentFolders:()=>clone(state.documentFolders),
+    upsertDocumentFolder(payload){
+      const name=payload&&String(payload.name||'').trim();
+      if(!name)return{error:'A folder name is required'};
+      const module=String(payload.module||'General'),record=String(payload.record||'General');
+      let folder=state.documentFolders.find(f=>payload.id!=null&&f.id===payload.id);
+      if(!folder)folder=state.documentFolders.find(f=>!f.archived&&f.name.toLowerCase()===name.toLowerCase()&&f.module===module&&f.record===record);
+      if(folder){Object.assign(folder,clone(payload),{name,module,record,archived:false});}
+      else{
+        folder=Object.assign({id:(state.counters.documentFolder=(state.counters.documentFolder||0)+1),name,module,record,created:now(),author:'Aleksandar C.',archived:false},clone(payload),{name,module,record});
+        state.documentFolders.unshift(folder);
+      }
+      save(`Document folder saved: ${folder.name}`);
+      return clone(folder);
+    },
+    archiveDocumentFolder(id){
+      const folder=state.documentFolders.find(f=>f.id===id);
+      if(!folder)return{error:'Document folder not found'};
+      folder.archived=true;
+      save(`Document folder archived: ${folder.name}`);
+      return clone(folder);
+    },
+
+    // ── Invoices: customer-linked commercial records used by Customers and Reports. ──
+    listInvoices:()=>clone(state.invoices),
+    findInvoice:idOrNo=>clone(state.invoices.find(i=>i.id===idOrNo||i.no===idOrNo)),
+    upsertInvoice(payload){
+      if(!payload)return{error:'Invoice data is required'};
+      const customer=state.customers.find(c=>(payload.customerId!=null&&c.id===payload.customerId)||(payload.customer&&c.name===payload.customer));
+      if(!customer)return{error:'A valid customer is required'};
+      const value=Number(payload.value);
+      if(!Number.isFinite(value)||value<=0)return{error:'Invoice value must be greater than zero'};
+      const allowed=['draft','pending','paid','overdue','cancelled'];
+      const status=String(payload.status||'pending').toLowerCase();
+      if(!allowed.includes(status))return{error:'Invalid invoice status'};
+      let invoice=state.invoices.find(i=>(payload.id!=null&&i.id===payload.id)||(payload.no&&i.no===payload.no));
+      const data=Object.assign({},clone(payload),{customerId:customer.id,customer:customer.name,value,status});
+      if(invoice)Object.assign(invoice,data);
+      else{
+        invoice=Object.assign({id:(state.counters.invoice=(state.counters.invoice||0)+1),no:`INV-${new Date().getFullYear()}-${String(state.counters.invoice).padStart(4,'0')}`,date:now().slice(0,10),currency:'SEK',dueDate:'',reference:'',notes:'',archived:false},data);
+        state.invoices.unshift(invoice);
+      }
+      save(`Invoice saved: ${invoice.no}`);
+      return clone(invoice);
+    },
+    updateInvoice(idOrNo,patch){
+      const invoice=state.invoices.find(i=>i.id===idOrNo||i.no===idOrNo);
+      if(!invoice)return{error:'Invoice not found'};
+      return api.upsertInvoice(Object.assign({},invoice,clone(patch||{})));
+    },
+    archiveInvoice(idOrNo){
+      const invoice=state.invoices.find(i=>i.id===idOrNo||i.no===idOrNo);
+      if(!invoice)return{error:'Invoice not found'};
+      invoice.archived=true;
+      save(`Invoice archived: ${invoice.no}`);
+      return clone(invoice);
     },
 
     // ── Marketing: leads, opportunities and campaigns. ──

@@ -354,7 +354,7 @@ const T={
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
     nq_title:"New Quote",nq_desc:"Description",nq_value:"Value (SEK)",nq_save:"Add quote",
-    ni_title:"New Invoice",ni_value:"Value (SEK)",ni_save:"Add invoice",
+    ni_title:"New Invoice",ni_value:"Value (SEK)",ni_date:"Invoice date",ni_due:"Due date",ni_status:"Status",ni_reference:"Reference",ni_notes:"Notes",ni_save:"Add invoice",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
     sb_title:"KUNDER",sb_overview:"Kundöversikt",sb_quotes:"Kalkyler / Offerter",sb_notes_docs:"Anteckningar & dokument",
@@ -380,7 +380,7 @@ const T={
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
     nq_title:"Ny offert",nq_desc:"Beskrivning",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
-    ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_save:"Lägg till faktura",
+    ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_date:"Fakturadatum",ni_due:"Förfallodatum",ni_status:"Status",ni_reference:"Referens",ni_notes:"Anteckningar",ni_save:"Lägg till faktura",
     locale:"sv-SE"},
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
     sb_title:"KLIENTI",sb_overview:"Pregled na klienti",sb_quotes:"Kalkulacii / Ponudi",sb_notes_docs:"Beleški i dokumenti",
@@ -406,7 +406,7 @@ const T={
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
     nq_title:"Nova ponuda",nq_desc:"Opis",nq_value:"Vrednost (SEK)",nq_save:"Dodaj ponuda",
-    ni_title:"Nova faktura",ni_value:"Vrednost (SEK)",ni_save:"Dodaj faktura",
+    ni_title:"Nova faktura",ni_value:"Vrednost (SEK)",ni_date:"Datum na faktura",ni_due:"Rok za plakjanje",ni_status:"Status",ni_reference:"Referenca",ni_notes:"Beleški",ni_save:"Dodaj faktura",
     locale:"mk"}
 };
 
@@ -445,6 +445,13 @@ function customerDocumentRows(c){
   const iconType=name=>{const ext=String(name).split('.').pop().toLowerCase();return ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc'};
   return live.map(d=>({name:d.name,type:iconType(d.name),date:(d.updated||'').slice(0,10)}))
     .concat((c.documents||[]).filter(d=>!liveNames.has(String(d.name).trim().toLowerCase())));
+}
+// Invoices now have their own shared collection. Preserve the page's original demonstration rows
+// as a fallback, but all new invoices are real customer-linked records visible to Reports.
+function customerInvoiceRows(c){
+  const live=(window.WorkshopData?WorkshopData.listInvoices():[]).filter(i=>!i.archived&&(i.customerId===c.sharedId||i.customer===c.name));
+  const liveNos=new Set(live.map(i=>i.no));
+  return live.concat((c.invoices||[]).filter(i=>!liveNos.has(i.no))).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
 }
 function syncCustomer(c){if(!window.WorkshopData||!c)return;const rec=WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents});if(rec){c.sharedId=rec.id;c.sharedNo=rec.no;}}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
@@ -503,7 +510,7 @@ function renderLeft(){
 function renderMiddle(c){
   const t=T[LANG];
   const tabs=["overview","contacts","projects","quotes","invoices","notes"];
-  const counts={overview:null,contacts:c.contacts.length,projects:custProjects(c.id).length,quotes:customerQuoteRows(c).length,invoices:c.invoices.length,notes:c.notes.length};
+  const counts={overview:null,contacts:c.contacts.length,projects:custProjects(c.id).length,quotes:customerQuoteRows(c).length,invoices:customerInvoiceRows(c).length,notes:c.notes.length};
   return `
     <div class="panel">
       <div class="dhead2">
@@ -561,7 +568,7 @@ function renderTab(c){
     const rows=customerQuoteRows(c).map(q=>`<tr><td class="pnum2">${esc(q.no)}</td><td class="rnum">${esc(fmtD(q.date))}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_quotes}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='invoices'){
-    const rows=c.invoices.map(iv=>`<tr><td class="pnum2">${esc(iv.no)}</td><td class="rnum">${esc(fmtD(iv.date))}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]}</span></td></tr>`).join("");
+    const rows=customerInvoiceRows(c).map(iv=>`<tr><td class="pnum2">${esc(iv.no)}</td><td class="rnum">${esc(fmtD(iv.date))}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]||esc(iv.status)}</span></td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_invoices}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='notes'){
     $("tabpanel").innerHTML=c.notes.slice().reverse().map(n=>`<div class="ccard"><div class="notecard"><div class="nd">${esc(n.date)}</div>${esc(n.text)}<div class="na">— ${esc(n.author)}</div></div></div>`).join("")||`<div class="empty3">${t.empty_notes}</div>`;
@@ -727,14 +734,20 @@ function saveAddNote(id){
 function openUpload(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.ud_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="udFile">File</label><input id="udFile" type="file" onchange="if(this.files[0]&&!document.getElementById('udName').value)document.getElementById('udName').value=this.files[0].name"></div>
     <div class="frow"><label for="udName">${t.ud_name}</label><input id="udName" placeholder="Document.pdf"></div>
+    <div id="udError" style="color:var(--danger);font-size:11px;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveUpload(${id})">${t.ud_save}</button></div>`;
   $("fov").classList.add("show");
 }
-function saveUpload(id){
+async function saveUpload(id){
   const name=$("udName").value.trim();if(!name)return;
-  const c=getCust(id);
-  WorkshopData.upsertDocument({name,type:'Document',module:'Customers',record:c.name,category:'Customer Documents',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.'});
+  const c=getCust(id),file=$("udFile").files[0];
+  if(file&&file.size>WorkshopData.maxDocumentFileBytes){$("udError").textContent=`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`;return;}
+  let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);
+  if(file&&fileData===null){$("udError").textContent='The selected file could not be read.';return;}
+  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Customers',record:c.name,category:'Customer Documents',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.',fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
+  if(saved.error){$("udError").textContent=saved.error;return;}
   closeModal();renderAll();
 }
 
@@ -762,17 +775,21 @@ function saveNewQuote(id){
   closeModal();activeTab='quotes';renderAll();
 }
 function openNewInvoice(id){
-  const t=T[LANG];
+  const t=T[LANG],today=new Date().toISOString().slice(0,10),due=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
   $("fcard").innerHTML=`<h2>${t.ni_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
-    <div class="frow"><label for="niValue">${t.ni_value}</label><input id="niValue" type="number"></div>
+    <div class="frow2"><div><label for="niDate">${t.ni_date}</label><input id="niDate" type="date" value="${today}"></div><div><label for="niDue">${t.ni_due}</label><input id="niDue" type="date" value="${due}"></div></div>
+    <div class="frow2"><div><label for="niValue">${t.ni_value}</label><input id="niValue" type="number" min="0.01" step="0.01"></div><div><label for="niStatus">${t.ni_status}</label><select id="niStatus"><option value="draft">Draft</option><option value="pending" selected>Pending</option><option value="paid">Paid</option><option value="overdue">Overdue</option></select></div></div>
+    <div class="frow"><label for="niReference">${t.ni_reference}</label><input id="niReference"></div>
+    <div class="frow"><label for="niNotes">${t.ni_notes}</label><textarea id="niNotes"></textarea></div>
+    <div id="niError" style="color:var(--danger);font-size:11px;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewInvoice(${id})">${t.ni_save}</button></div>`;
   $("fov").classList.add("show");
 }
 function saveNewInvoice(id){
   const value=parseFloat($("niValue").value)||0;
-  const c=getCust(id);const no="INV-2026-"+String(40+c.invoices.length+1).padStart(4,'0');
-  c.invoices.push({no,date:new Date().toISOString().slice(0,10),value,status:"pending"});
-  syncCustomer(c);
+  const c=getCust(id);if(!c.sharedId)syncCustomer(c);
+  const saved=WorkshopData.upsertInvoice({customerId:c.sharedId,customer:c.name,date:$("niDate").value,dueDate:$("niDue").value,value,status:$("niStatus").value,reference:$("niReference").value.trim(),notes:$("niNotes").value.trim(),currency:'SEK'});
+  if(saved.error){$("niError").textContent=saved.error;return;}
   closeModal();activeTab='invoices';renderAll();
 }
 
