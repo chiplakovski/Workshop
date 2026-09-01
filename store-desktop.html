@@ -233,5 +233,11 @@ setLang('en');
   $('receiveItem').onchange=fillReceiveFromItem;
   $('search').oninput=renderStock;$('sideSearch').oninput=e=>{$('search').value=e.target.value;renderStock()};$('category').onchange=renderStock;
   refresh();fillReceiveFromItem();
+  // Picks up inventory/project/movement changes made elsewhere without a full reload.
+  // hydrateSharedStore() already fully re-syncs (not insert-only - it splices STOCK/BOM/PROJECTS/
+  // TRANSACTIONS to fresh shared data every call, already proven safe to call repeatedly by every
+  // existing action handler that calls refresh() after its own local mutation), so no separate
+  // hydrate call is needed here - refresh() alone covers it.
+  window.addEventListener('workshop:data',()=>refresh());
 })();
 </script></body></html>
