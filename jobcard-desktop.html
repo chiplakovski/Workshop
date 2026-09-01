@@ -1035,7 +1035,12 @@ function deleteOp(jcId,opId){
   refreshShared();renderApp();
 }
 function moveOp(jcId,opId,dir){
-  const j=getJC(jcId);const arr=j.operations.slice();const idx=arr.findIndex(o=>o.id===opId);const to=idx+dir;
+  const j=getJC(jcId);const arr=j.operations.slice();const idx=arr.findIndex(o=>o.id===opId);
+  // Pass 3.27 bug hunt: idx===-1 (the operation this button was rendered for no longer exists -
+  // removed by a concurrent edit elsewhere) must fail closed, not silently overwrite a real entry
+  // at arr[to] with arr[-1]===undefined.
+  if(idx===-1)return;
+  const to=idx+dir;
   if(to<0||to>=arr.length)return;const tmp=arr[idx];arr[idx]=arr[to];arr[to]=tmp;
   const res=WorkshopData.updateJobcard(jcId,{operations:arr});
   if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}

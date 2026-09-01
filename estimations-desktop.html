@@ -608,6 +608,7 @@ const T={
     pricing_title:"Pricing settings",pricing_note:"Overhead and contingency are applied to total direct cost and reduce gross profit — they are not added to the customer price.",
     confirm_delete:"Delete this estimation? This cannot be undone.",confirm_stage:"Move this estimation to \"{s}\"?",
     locked_msg:"Estimation {no} is Accepted, Declined or Expired and is read-only. Create a new revision to edit it.",
+    err_line_changed:"This line was changed or removed elsewhere while you had it open. Please open it again.",
     locked_banner:"This estimation is read-only. Create a new revision to make changes.",
     act_newrevision:"New revision",rev_short:"Rev",
     not_converted:"Not yet converted to project",not_converted_hint:"A project can be created once this estimation is Accepted.",
@@ -676,6 +677,7 @@ const T={
     pricing_title:"Prisinställningar",pricing_note:"Omkostnader och osäkerhetsmarginal appliceras på total direktkostnad och minskar bruttovinsten — de läggs inte till kundpriset.",
     confirm_delete:"Ta bort denna kalkyl? Detta kan inte ångras.",confirm_stage:"Flytta denna kalkyl till \"{s}\"?",
     locked_msg:"Kalkyl {no} är accepterad, nekad eller utgången och är skrivskyddad. Skapa en ny revision för att redigera.",
+    err_line_changed:"Den här raden ändrades eller togs bort någon annanstans medan du hade den öppen. Öppna den igen.",
     locked_banner:"Denna kalkyl är skrivskyddad. Skapa en ny revision för att göra ändringar.",
     act_newrevision:"Ny revision",rev_short:"Rev",
     not_converted:"Ännu inte konverterad till projekt",not_converted_hint:"Ett projekt kan skapas när kalkylen är accepterad.",
@@ -744,6 +746,7 @@ const T={
     pricing_title:"Cenovni podesuvaњa",pricing_note:"Režiskite troшoci i rezervata se primenuvaat na vkupniot direkten trošok i go namaluvaat bruto profitot — ne se dodavaat na cenata za klientot.",
     confirm_delete:"Izbriši ja ovaa kalkulacija? Ova ne može da se vrati.",confirm_stage:"Premesti ja ovaa kalkulacija vo \"{s}\"?",
     locked_msg:"Kalkulacijata {no} e prifatena, odbiena ili istekla i e samo za čitanje. Kreiraj nova revizija za da ja urediš.",
+    err_line_changed:"Ovaa linija be izmeneta ili otstranata na drugo mesto dodeka ja imavte otvorena. Otvori ja povtorno.",
     locked_banner:"Ovaa kalkulacija e samo za čitanje. Kreiraj nova revizija za da napraviš izmeni.",
     act_newrevision:"Nova revizija",rev_short:"Rev",
     not_converted:"Sè ušte ne е konvertirana vo proekt",not_converted_hint:"Proekt može da se kreira откако kalkulacijata ke bide prifatena.",
@@ -1123,7 +1126,10 @@ function renderItemsTable(e){
 // ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
 function moveWorkItem(id,idx,dir){
   const e=getEst(id);if(!guardEdit(e))return;
-  const to=idx+dir;if(to<0||to>=e.workItems.length)return;
+  const to=idx+dir;
+  // Same class of guard as moveLine() (Pass 3.27) - bounds-checking `to` alone does not guarantee
+  // idx itself is still valid after a concurrent edit elsewhere reshaped workItems.
+  if(idx<0||idx>=e.workItems.length||to<0||to>=e.workItems.length)return renderAll();
   const tmp=e.workItems[idx];e.workItems[idx]=e.workItems[to];e.workItems[to]=tmp;
   syncEstimation(e);renderAll();
 }
@@ -1149,7 +1155,10 @@ function saveEditWorkItem(id,idx){
   const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
   const desc=$("ewDesc").value.trim();
   if(!desc){showFieldError('ewDesc','ewErr',t.err_required);return;}
-  const wi=e.workItems[idx];wi.no=$("ewNo").value.trim();wi.desc=desc;
+  // Same class of guard as saveLineForm() (Pass 3.27 bug hunt) - workItems can be replaced
+  // wholesale by hydrateSharedEstimations() reacting to workshop:data while this modal is open.
+  const wi=e.workItems[idx];if(!wi){toast(t.err_line_changed,'error');closeModal();renderAll();return;}
+  wi.no=$("ewNo").value.trim();wi.desc=desc;
   e.history.push({date:todayISO(),action:'Work item renamed to: '+desc,by:'Aleksandar C.'});
   syncEstimation(e);closeModal();renderAll();
 }
@@ -1170,7 +1179,13 @@ function deleteLine(id,wiIdx,lIdx){
 }
 function moveLine(id,wiIdx,lIdx,dir){
   const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];const to=lIdx+dir;if(to<0||to>=wi.lines.length)return;
+  const wi=e.workItems[wiIdx];if(!wi)return renderAll();
+  const to=lIdx+dir;
+  // Bounds-checking `to` alone does not guarantee lIdx itself is still valid (e.g. the array
+  // shrank from a concurrent edit elsewhere such that lIdx is now out of range but lIdx+dir
+  // coincidentally isn't) - without this, an out-of-bounds read would silently overwrite a real
+  // line with undefined. Same class of guard as saveLineForm()/saveEditWorkItem() (Pass 3.27).
+  if(lIdx<0||lIdx>=wi.lines.length||to<0||to>=wi.lines.length)return renderAll();
   const tmp=wi.lines[lIdx];wi.lines[lIdx]=wi.lines[to];wi.lines[to]=tmp;
   syncEstimation(e);renderAll();
 }
@@ -1485,6 +1500,10 @@ function openLineForm(id,wiIdx,lIdx){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   const wi=e.workItems[wiIdx];if(!wi)return;
   const editing=lIdx!==undefined&&lIdx!==null;
+  // Same class of stale-index guard as saveLineForm() (Pass 3.27) - narrower window (the row's
+  // onclick fires with the index current at click time), but a workshop:data event landing in that
+  // exact instant is still possible.
+  if(editing&&!wi.lines[lIdx])return;
   const line=editing?wi.lines[lIdx]:{desc:'',category:'material',qty:1,unit:'pcs',cost:0,sell:0,disc:0,tax:25,waste:0};
   const cats=['material','labour','machine','subcontractor','consumable','logistics','other'];
   $("fcard").innerHTML=`<h2>${editing?esc(t.act_editline):esc(t.addline)}</h2><p class="fsub">${esc(wi.desc)}</p>
@@ -1516,7 +1535,16 @@ function saveLineForm(id,wiIdx,lIdx){
   if(!isPercent(tax)){showFieldError('aiTax','aiNumErr',t.err_tax);return;}
   const category=$("aiCat").value;
   const payload={desc,category,qty,unit:$("aiUnit").value.trim()||"pcs",cost,sell,disc,tax,waste:category==='material'?Math.max(0,Math.min(100,waste)):0};
-  if(editing){Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:"Aleksandar C."});}
+  // Pass 3.27 bug hunt: workItems can now be replaced wholesale by hydrateSharedEstimations()
+  // reacting to workshop:data WHILE this modal is open (Pass 3.22 made it re-callable, correctly,
+  // for the cross-tab sync it exists to support) - if the line this modal was opened for was
+  // removed/reordered by a concurrent edit elsewhere in the meantime, wi.lines[lIdx] is now stale
+  // and Object.assign(undefined,payload) throws. Same "record no longer exists" class of guard as
+  // guardEdit()/getEst() above, just for the array position specifically.
+  if(editing){
+    if(!wi.lines[lIdx]){toast(t.err_line_changed,'error');closeModal();renderAll();return;}
+    Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:"Aleksandar C."});
+  }
   else{wi.lines.push(payload);e.history.push({date:todayISO(),action:`Item added to ${wi.desc}: ${desc}`,by:"Aleksandar C."});}
   syncEstimation(e);
   closeModal();renderAll();
