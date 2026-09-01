@@ -305,11 +305,11 @@
         </div>
       </div>
       <div class="filtrow">
-        <span class="filtlbl" data-i="filt_customer">Customer:</span>
+        <label class="filtlbl" for="filtCustomer" data-i="filt_customer">Customer:</label>
         <select class="filtsel" id="filtCustomer"><option value="" data-i="all_customers">All Customers</option></select>
-        <span class="filtlbl" data-i="filt_project">Project:</span>
+        <label class="filtlbl" for="filtProject" data-i="filt_project">Project:</label>
         <select class="filtsel" id="filtProject"><option value="" data-i="all_projects">All Projects</option></select>
-        <span class="filtlbl" data-i="filt_status">Status:</span>
+        <label class="filtlbl" for="filtStatus" data-i="filt_status">Status:</label>
         <select class="filtsel" id="filtStatus"><option value="" data-i="all_statuses">All Statuses</option></select>
       </div>
       <div class="activefilt" id="activeFiltSummary"></div>
@@ -440,7 +440,7 @@
 
         <div id="proj-est-actual" class="tabpanel">
           <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
-            <label style="font-size:11px;color:var(--steel-400);" data-i="select_project">Select project:</label>
+            <label style="font-size:11px;color:var(--steel-400);" for="projEstSelect" data-i="select_project">Select project:</label>
             <select class="filtsel" id="projEstSelect"></select>
           </div>
           <table class="table"><thead><tr><th data-i="category">Category</th><th data-i="estimated">Estimated</th><th data-i="actual">Actual</th><th data-i="variance">Variance</th><th data-i="variance_pct">Variance %</th><th data-i="status">Status</th></tr></thead><tbody id="proj-est-actual-body"></tbody></table>
@@ -898,7 +898,7 @@
             </div>
 
             <div id="builder-step1" class="tabpanel active">
-              <label data-i="select_data_source" style="display:block;margin-bottom:12px;">Select Data Source:</label>
+              <label data-i="select_data_source" for="builder-source" style="display:block;margin-bottom:12px;">Select Data Source:</label>
               <select id="builder-source" class="filtsel" style="width:100%;max-width:320px;padding:9px;margin-bottom:12px;" onchange="onBuilderSourceChange()">
                 <option value="">— Select —</option>
                 <option value="customers" data-i="customers">Customers</option>
@@ -935,13 +935,13 @@
 
             <div id="builder-step4" class="tabpanel">
               <div class="filtrow">
-                <label data-i="group_by">Group by:</label><select class="filtsel" id="builder-groupby"></select>
-                <label data-i="primary_sort">Primary sort:</label><select class="filtsel" id="builder-sort1"></select>
-                <select class="filtsel" id="builder-sort1dir"><option value="asc" data-i="ascending">Ascending</option><option value="desc" data-i="descending">Descending</option></select>
+                <label data-i="group_by" for="builder-groupby">Group by:</label><select class="filtsel" id="builder-groupby"></select>
+                <label data-i="primary_sort" for="builder-sort1">Primary sort:</label><select class="filtsel" id="builder-sort1"></select>
+                <select class="filtsel" id="builder-sort1dir" aria-label="Sort direction"><option value="asc" data-i="ascending">Ascending</option><option value="desc" data-i="descending">Descending</option></select>
               </div>
               <div class="filtrow">
-                <label data-i="secondary_sort">Secondary sort:</label><select class="filtsel" id="builder-sort2"></select>
-                <select class="filtsel" id="builder-sort2dir"><option value="asc" data-i="ascending">Ascending</option><option value="desc" data-i="descending">Descending</option></select>
+                <label data-i="secondary_sort" for="builder-sort2">Secondary sort:</label><select class="filtsel" id="builder-sort2"></select>
+                <select class="filtsel" id="builder-sort2dir" aria-label="Sort direction"><option value="asc" data-i="ascending">Ascending</option><option value="desc" data-i="descending">Descending</option></select>
               </div>
               <button class="fbtn" onclick="moveBuilderStep(3)" data-i="back">Back</button>
               <button class="fbtn primary" onclick="moveBuilderStep(5)" data-i="next">Next</button>
@@ -1000,7 +1000,7 @@
       <input id="savedNameInput" type="text" maxlength="80">
     </div>
     <div class="mrow">
-      <label data-i="category">Category</label>
+      <label data-i="category" for="savedCategoryInput">Category</label>
       <select id="savedCategoryInput">
         <option value="Projects">Projects</option>
         <option value="Estimation">Estimation</option>
@@ -2704,8 +2704,8 @@ function renderBuilderFilterRows(){
   const def=BUILDER_SOURCES[builderState.source];
   $('builder-filters').innerHTML=builderState.filters.map((f,i)=>`
     <div class="filtrow" style="margin:0;">
-      <select class="filtsel" onchange="builderState.filters[${i}].field=this.value">${def.fields.map(fl=>`<option value="${fl}" ${fl===f.field?'selected':''}>${esc(fl)}</option>`).join('')}</select>
-      <select class="filtsel" onchange="builderState.filters[${i}].op=this.value">${FILTER_OPERATORS.map(([v,l])=>`<option value="${v}" ${v===f.op?'selected':''}>${l}</option>`).join('')}</select>
+      <select class="filtsel" aria-label="Filter ${i+1} field" onchange="builderState.filters[${i}].field=this.value">${def.fields.map(fl=>`<option value="${fl}" ${fl===f.field?'selected':''}>${esc(fl)}</option>`).join('')}</select>
+      <select class="filtsel" aria-label="Filter ${i+1} operator" onchange="builderState.filters[${i}].op=this.value">${FILTER_OPERATORS.map(([v,l])=>`<option value="${v}" ${v===f.op?'selected':''}>${l}</option>`).join('')}</select>
       <input class="filtsel" value="${esc(f.value)}" oninput="builderState.filters[${i}].value=this.value" placeholder="Value">
       <button class="fbtn" onclick="removeBuilderFilterRow(${i})">✕</button>
     </div>`).join('');
