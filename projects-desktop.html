@@ -389,9 +389,12 @@ function itemActualCost(p,item){return item.act*RATE+itemMaterialActual(p,item.n
 function progressOf(p){if(!p.jobcards.length)return 0;const est=p.jobcards.reduce((a,b)=>a+b.est,0);if(!est)return 0;const done=p.jobcards.reduce((a,b)=>a+b.est*(b.status==='completed'?1:(b.progress||0)/100),0);return Math.round(done/est*100);}
 function actLabourHours(p){return p.hours.reduce((a,b)=>a+b.hours,0);}
 function actMaterialStore(p){return p.materials.filter(m=>m.source==='store').reduce((a,b)=>a+b.cost,0);}
-function actPurchaseReceived(p){return p.purchases.reduce((a,b)=>a+b.received,0);}
-function purchaseOrderedTotal(p){return p.purchases.filter(x=>x.status!=='cancelled').reduce((a,b)=>a+b.ordered,0);}
-function purchasePendingTotal(p){return p.purchases.filter(x=>x.status!=='cancelled').reduce((a,b)=>a+Math.max(0,b.ordered-b.received),0);}
+// Pass 3.29: all three read the same live-merged view as renderPurchases() (projectPoRows(),
+// defined below) rather than the stale local p.purchases directly - same reasoning as Pass 3.28's
+// inspectionReports().
+function actPurchaseReceived(p){return projectPoRows(p).reduce((a,b)=>a+b.received,0);}
+function purchaseOrderedTotal(p){return projectPoRows(p).filter(x=>x.status!=='cancelled').reduce((a,b)=>a+b.ordered,0);}
+function purchasePendingTotal(p){return projectPoRows(p).filter(x=>x.status!=='cancelled').reduce((a,b)=>a+Math.max(0,b.ordered-b.received),0);}
 function costs(p){
   const jt=jcTotals(p);
   const estLabour=jt.est*RATE,estMaterial=itemEstMaterialTotal(p),estPurchased=p.estPurchaseCost,estOther=p.otherCostEst||0;
@@ -410,7 +413,7 @@ function getWarnings(p){const t=T[LANG],w=[],c=costs(p),dl=daysBetween(p.deadlin
   if(estH&&c.aLabH>estH)w.push(t.warn_hours_exceeded.replace('{a}',c.aLabH).replace('{e}',estH));
   if(estM&&c.actMaterial>estM)w.push(t.warn_material_exceeded.replace('{a}',fmt(c.actMaterial)).replace('{e}',fmt(estM)));
   if(c.totalEst&&c.totalAct>c.totalEst)w.push(t.warn_budget_exceeded.replace('{a}',fmt(c.totalAct)).replace('{e}',fmt(c.totalEst)));
-  p.purchases.forEach(po=>{if(po.status!=='delivered'&&po.status!=='cancelled'&&daysBetween(po.expected)!==null&&daysBetween(po.expected)<0)w.push(t.warn_purchase_late.replace('{po}',po.po));});
+  projectPoRows(p).forEach(po=>{if(po.status!=='delivered'&&po.status!=='cancelled'&&daysBetween(po.expected)!==null&&daysBetween(po.expected)<0)w.push(t.warn_purchase_late.replace('{po}',po.po));});
   return w;}
 
 // Pass 3.28: reads the same live-merged view as renderDocuments() (projectDocRows(), defined
@@ -425,14 +428,14 @@ function qualityIssues(p){const t=T[LANG];return projQualityGate(p).holds.map(h=
 function completeIssues(p){const t=T[LANG],iss=qualityIssues(p);
   const openJc=p.jobcards.filter(j=>j.status!=='completed');
   if(openJc.length)iss.push(t.iss_open_jc.replace('{n}',openJc.length));
-  const undel=p.purchases.filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
+  const undel=projectPoRows(p).filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
   if(undel.length)iss.push(t.iss_po_undelivered.replace('{n}',undel.length));
   if(!inspectionReports(p).length && p.jobcards.length)iss.push(t.iss_report_missing);
   return iss;}
 function closeIssues(p){const t=T[LANG],iss=qualityIssues(p);
   const openJc=p.jobcards.filter(j=>j.status!=='completed');
   if(openJc.length)iss.push(t.iss_jc_not_complete.replace('{n}',openJc.length));
-  const undel=p.purchases.filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
+  const undel=projectPoRows(p).filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
   if(undel.length)iss.push(t.iss_po_unresolved.replace('{n}',undel.length));
   const unapproved=inspectionReports(p).filter(r=>r.status!=='current');
   if(unapproved.length)iss.push(t.iss_report_unapproved.replace('{n}',unapproved.length));
@@ -811,9 +814,42 @@ function renderMaterials(p){
     <tbody>${rows||`<tr><td colspan="7" style="text-align:center;color:var(--steel-400);padding:24px;">${t.m_empty}</td></tr>`}</tbody></table></div>`;
 }
 
+// Pass 3.29: same disconnect as Pass 3.28's Documents fix, for Purchases. p.purchases was
+// page-local only, never connected to the real Purchasing module (WorkshopData.getPurchaseOrders()/
+// upsertPurchaseOrder()) - a PO created here was invisible in purchasing-desktop.html/
+// suppliers-desktop.html and vice versa. Unlike Documents (add-only), this tab has edit/delete-by-
+// index actions, so - learning from Pass 3.27's stale-index bug class - the merged array itself
+// (not the raw p.purchases) is now the ONE thing openPoForm()/submitPo()/deletePo() index into, so
+// there is never a mismatch between what's rendered and what a click index refers to.
+// po.po (this page's own stable PO number, e.g. "PO-26-0004") is reused directly as the real
+// record's `no` - upsertPurchaseOrder() matches by no, so this naturally creates the real record
+// the first time a PO is edited/created here and updates the SAME real record on every edit after
+// that, with no separate sharedId tracking needed.
+// ordered/received are genuinely SEK values here (see pof_ordered/pu_ordered's own translated
+// labels: "Ordered value (SEK)") - ordered maps directly to the real value field. received (partial
+// receipt tracking) has no real-side equivalent and stays Projects-only, defaulting to 0 for a PO
+// that originated on another page.
+function poLocalStatusToReal(s){
+  return{draft:'Draft',requested:'Awaiting Approval',ordered:'Confirmed',partdelivered:'Partially Received',delivered:'Received',cancelled:'Cancelled'}[s]||'Draft';
+}
+function poRealStatusToLocal(s){
+  // Overdue has no distinct local state - folded into 'ordered' (still in progress, just late),
+  // same "collapse the richer real vocabulary" approach as Pass 3.28's realDocStatusToLocal().
+  return{Draft:'draft','Awaiting Approval':'requested',Confirmed:'ordered',Overdue:'ordered','Partially Received':'partdelivered',Received:'delivered',Cancelled:'cancelled'}[s]||'ordered';
+}
+function projectPoRows(p){
+  const live=(window.WorkshopData?WorkshopData.getPurchaseOrders():[]).filter(po=>po.project===p.no);
+  const rows=live.filter(po=>!po.archived).map(po=>({po:po.no,supplier:po.supplier,date:po.date,items:po.items,ordered:po.value||0,received:0,status:poRealStatusToLocal(po.status),expected:po.expected}));
+  // Keep archived real PO numbers in the dedup set too. Otherwise deleting a synced PO would hide
+  // the real row only to resurrect its retained local fallback on the very next render.
+  const liveNos=new Set(live.map(po=>po.no));
+  (p.purchases||[]).forEach(po=>{if(!liveNos.has(po.po))rows.push(po)});
+  return rows;
+}
 function renderPurchases(p){
   const t=T[LANG],ro=isReadonly(p);
-  const rows=p.purchases.map((po,idx)=>`<tr><td class="pnum">${po.po}</td><td>${esc(po.supplier)}</td><td class="rnum">${fmtD(po.date)}</td><td>${esc(po.items)}</td>
+  const purchases=projectPoRows(p);
+  const rows=purchases.map((po,idx)=>`<tr><td class="pnum">${po.po}</td><td>${esc(po.supplier)}</td><td class="rnum">${fmtD(po.date)}</td><td>${esc(po.items)}</td>
     <td class="rnum">${fmt(po.ordered)}</td><td class="rnum">${fmt(po.received)}</td><td><span class="sbadge ${po.status==='delivered'?'completed':po.status==='cancelled'?'cancelled':'quotation'}">${t["pos_"+po.status]}</span></td><td class="rnum">${fmtD(po.expected)}</td>
     <td>${ro?"":`<div class="rowactions"><button class="rowbtn" onclick="openPoForm(${idx})">${t.edit_generic}</button><button class="rowbtn danger2" onclick="deletePo(${idx})">${t.delete_generic}</button></div>`}</td></tr>`).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_purchases}</h3><button class="tbtn primary" onclick="openPoForm()" ${ro?'disabled':''}>${t.pu_new}</button></div>
@@ -1163,8 +1199,10 @@ function deleteMaterial(idx){
 const PO_STATUSES=["draft","requested","ordered","partdelivered","delivered","cancelled"];
 let editPoIdx=null;
 function openPoForm(idx){
+  // Pass 3.29: indexes into the same merged view (projectPoRows()) renderPurchases() renders, not
+  // the raw p.purchases - see projectPoRows()'s own comment for why (learned from Pass 3.27).
   const t=T[LANG],p=getProject(currentId);editPoIdx=(idx!==undefined)?idx:null;
-  const po=editPoIdx!==null?p.purchases[editPoIdx]:null;
+  const po=editPoIdx!==null?projectPoRows(p)[editPoIdx]:null;
   showModal(`<h2>${t.po_modal_title}</h2>
     <div class="frow2"><div><label for="poSupplier">${t.pof_supplier}</label><input id="poSupplier" value="${esc(po?po.supplier:'')}"></div><div><label for="poOrdered">${t.pof_ordered}</label><input type="number" min="0" id="poOrdered" value="${po?po.ordered:0}"></div></div>
     <div class="frow"><label for="poItems">${t.pof_items}</label><input id="poItems" value="${esc(po?po.items:'')}"></div>
@@ -1176,19 +1214,37 @@ function openPoForm(idx){
 function submitPo(){
   const supplier=$("poSupplier").value.trim();if(!supplier)return;
   const p=getProject(currentId);
-  // Same guard as submitMaterial() (Pass 3.27 bug hunt) - see its comment.
-  if(editPoIdx!==null&&!p.purchases[editPoIdx]){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  const rows=projectPoRows(p);
+  // Same class of guard as submitMaterial() (Pass 3.27 bug hunt) - see its comment.
+  if(editPoIdx!==null&&!rows[editPoIdx]){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  const editing=editPoIdx!==null?rows[editPoIdx]:null;
   const vals={supplier,items:$("poItems").value.trim(),ordered:parseFloat($("poOrdered").value)||0,received:parseFloat($("poReceived")?$("poReceived").value:0)||0,
     status:$("poStatus")?$("poStatus").value:"ordered",expected:$("poExpected").value};
-  if(editPoIdx!==null){Object.assign(p.purchases[editPoIdx],vals);pushActivity(p,"Purchase order edited: "+supplier);}
-  else{p.purchases.push({po:poNo(),date:todayISO(),received:0,status:"ordered",...vals});pushActivity(p,"Purchase order created: "+supplier);}
+  // po.po (this page's own stable number) is reused as-is when editing - preserves identity across
+  // edits whether the row started out local-only or already real. date is preserved from the
+  // original row rather than reset, matching "created" semantics.
+  const poNumber=editing?editing.po:poNo();
+  const date=editing?editing.date:todayISO();
+  p.purchases=p.purchases||[];
+  const local=p.purchases.find(x=>x.po===poNumber);
+  if(local){Object.assign(local,vals);pushActivity(p,"Purchase order edited: "+supplier);}
+  else{p.purchases.push({po:poNumber,date,...vals});pushActivity(p,editing?"Purchase order edited: "+supplier:"Purchase order created: "+supplier);}
+  // Real sync (Pass 3.29): upsertPurchaseOrder() matches by `no`, so this creates the real record
+  // the first time a PO is touched here and updates the same one every time after.
+  if(window.WorkshopData)WorkshopData.upsertPurchaseOrder({no:poNumber,supplier,project:p.no,date,expected:vals.expected,value:vals.ordered,buyer:'Aleksandar C.',status:poLocalStatusToReal(vals.status),items:vals.items});
   syncSharedProject(p);closeModal();activeTab="purchases";render();
 }
 function deletePo(idx){
   if(!confirm(T[LANG].confirm_delete))return;
-  const p=getProject(currentId);if(!p.purchases[idx]){alert(T[LANG].err_row_changed);render();return;}
-  const supplier=p.purchases[idx].supplier;p.purchases.splice(idx,1);
-  pushActivity(p,"Purchase order deleted: "+supplier);syncSharedProject(p);render();
+  const p=getProject(currentId);
+  const rows=projectPoRows(p);
+  if(!rows[idx]){alert(T[LANG].err_row_changed);render();return;}
+  const po=rows[idx];
+  p.purchases=(p.purchases||[]).filter(x=>x.po!==po.po);
+  // Real POs are never hard-deleted app-wide (see workshop-data.js) - archive is this system's
+  // equivalent of "remove", and is a harmless no-op if this PO was never actually synced.
+  if(window.WorkshopData)WorkshopData.archivePurchaseOrder(po.po,'Removed from project '+p.no);
+  pushActivity(p,"Purchase order deleted: "+po.supplier);syncSharedProject(p);render();
 }
 let editNoteIdx=null;
 function openNoteForm(idx){
