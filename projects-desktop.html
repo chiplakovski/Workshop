@@ -413,7 +413,11 @@ function getWarnings(p){const t=T[LANG],w=[],c=costs(p),dl=daysBetween(p.deadlin
   p.purchases.forEach(po=>{if(po.status!=='delivered'&&po.status!=='cancelled'&&daysBetween(po.expected)!==null&&daysBetween(po.expected)<0)w.push(t.warn_purchase_late.replace('{po}',po.po));});
   return w;}
 
-function inspectionReports(p){return (p.documents&&p.documents["Inspection Reports"])||[];}
+// Pass 3.28: reads the same live-merged view as renderDocuments() (projectDocRows(), defined
+// below) rather than the stale local p.documents directly, so a real inspection report uploaded
+// via the Documents module (or this page's own, now-real, submitDoc()) actually clears the
+// "missing inspection report" warning below instead of needing a reload.
+function inspectionReports(p){return projectDocRows(p)["Inspection Reports"]||[];}
 // Quality Hold issues are listed first and are the only ones in either list that a manager
 // override can never clear — see doComplete()/doClose(), which always re-check the shared gate
 // server-side regardless of what the override path here does.
@@ -818,10 +822,42 @@ function renderPurchases(p){
 }
 
 let openFolders={};
+// Pass 3.28: p.documents was a page-local, folder-keyed object never connected to the real
+// Documents module (WorkshopData.getDocuments()/upsertDocument()) - a document added here was
+// invisible in documents-desktop.html and vice versa. This derives the folder view LIVE from real
+// documents tagged module:'Projects', record:p.no (the exact convention already used by this
+// project's own seed data - see e.g. "Project Drawing Rev B.pdf" in workshop-data.js), grouped by
+// `category` (the real module's closest equivalent to a "folder"), merged with any pre-existing
+// local p.documents entries not already present as a real record (matched by name+folder, same
+// dedup approach as Pass 3.7's supplierOrderRows()) so nothing already there is lost.
+function realDocStatusToLocal(status){
+  // The real Documents module's 5-value lifecycle (Draft/Valid/Approved/Review Soon/Expired, plus
+  // Archived) does not map 1:1 onto this page's simpler 3-value one (current/superseded/archived) -
+  // collapsed for a consistent look here: Archived stays archived; Expired/Review Soon (needs
+  // attention) becomes superseded; everything else (Valid/Approved/Draft - still active) is current.
+  if(status==='Archived')return'archived';
+  if(status==='Expired'||status==='Review Soon')return'superseded';
+  return'current';
+}
+function projectDocRows(p){
+  const live=(window.WorkshopData?WorkshopData.getDocuments():[]).filter(d=>d.module==='Projects'&&d.record===p.no);
+  const byFolder={};
+  live.forEach(d=>{
+    const folder=d.category||'Other';
+    (byFolder[folder]=byFolder[folder]||[]).push({name:d.name,rev:d.revision||'-',date:(d.updated||'').slice(0,10),by:d.author||'—',status:realDocStatusToLocal(d.status)});
+  });
+  Object.keys(p.documents||{}).forEach(folder=>{
+    (p.documents[folder]||[]).forEach(d=>{
+      if(!(byFolder[folder]||[]).some(x=>x.name===d.name))(byFolder[folder]=byFolder[folder]||[]).push(d);
+    });
+  });
+  return byFolder;
+}
 function renderDocuments(p){
   const t=T[LANG],ro=isReadonly(p);
-  const folders=Object.keys(p.documents);
-  const body=folders.map(f=>{const docs=p.documents[f];const open=openFolders[f];
+  const docsByFolder=projectDocRows(p);
+  const folders=Object.keys(docsByFolder);
+  const body=folders.map(f=>{const docs=docsByFolder[f];const open=openFolders[f];
     const rows=docs.map(d=>`<div class="docrow"><div class="dn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>${esc(d.name)}${d.rev!=="-"?`<span class="revtag">REV ${esc(d.rev)}</span>`:""}</div><div style="display:flex;align-items:center;gap:10px;"><span class="dmeta">${esc(d.by)} · ${fmtD(d.date)}</span><span class="dstat ${d.status}">${t["ds_"+d.status]}</span></div></div>`).join("");
     return `<div class="folder ${open?'open':''}"><div class="fh" onclick="toggleFolder('${f}')"><span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg>${f}</span><span class="fc">${docs.length}</span></div><div class="fb">${rows}</div></div>`;}).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_documents}</h3><button class="tbtn primary" onclick="openDocForm()" ${ro?'disabled':''}>${t.doc_add}</button></div>
@@ -1057,8 +1093,10 @@ function openDocForm(){
 function submitDoc(){
   const name=$("docName").value.trim();if(!name)return;
   const p=getProject(currentId);const folder=$("docFolder").value,rev=$("docRev").value.trim()||"-";
-  if(!p.documents[folder])p.documents[folder]=[];
-  p.documents[folder].push({name,rev,date:todayISO(),by:"Aleksandar",status:"current"});
+  // Pass 3.28: now a real WorkshopData document (module:'Projects', record:p.no, category:folder -
+  // see projectDocRows()'s own comment for why) instead of a page-local-only push, so it's visible
+  // in the real Documents module too, not just here.
+  if(window.WorkshopData)WorkshopData.upsertDocument({name,type:'Document',module:'Projects',record:p.no,category:folder,status:'Valid',expiry:'',revision:rev,author:'Aleksandar C.'});
   pushActivity(p,"Document added: "+name+" ("+folder+")");syncSharedProject(p);closeModal();activeTab="documents";render();
 }
 const MAT_STATUSES=["reserved","issued","used","returned"];
