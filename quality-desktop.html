@@ -288,9 +288,9 @@
     <div class="filtrow">
       <span class="filtlbl" data-i="search">Search:</span>
       <input class="filtinput" type="text" id="qSearch" placeholder="ID, project, jobcard, description…">
-      <span class="filtlbl" data-i="filt_project">Project:</span>
+      <label class="filtlbl" for="filtProject" data-i="filt_project">Project:</label>
       <select class="filtsel" id="filtProject"><option value="" data-i="all_projects">All Projects</option></select>
-      <span class="filtlbl" data-i="filt_status">Status:</span>
+      <label class="filtlbl" for="filtStatus" data-i="filt_status">Status:</label>
       <select class="filtsel" id="filtStatus"><option value="" data-i="all_statuses">All Statuses</option></select>
       <div class="filtctrl">
         <button class="fbtn" id="clearFiltBtn" data-i="clear_filters">Clear Filters</button>
@@ -374,9 +374,9 @@
       <div class="kpi"><div class="kl" data-i="fpr">First-Pass Rate</div><div class="kv" id="insp-fpr">—</div></div>
     </div>
     <div class="filtrow" style="margin-bottom:14px;">
-      <span class="filtlbl" data-i="type">Type:</span>
+      <label class="filtlbl" for="inspTypeFilter" data-i="type">Type:</label>
       <select class="filtsel" id="inspTypeFilter"><option value="" data-i="all">All</option></select>
-      <span class="filtlbl" data-i="result">Result:</span>
+      <label class="filtlbl" for="inspResultFilter" data-i="result">Result:</label>
       <select class="filtsel" id="inspResultFilter"><option value="" data-i="all">All</option></select>
       <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--steel-300);"><input type="checkbox" id="inspOverdueFilter"> <span data-i="overdue_only">Overdue only</span></label>
       <button class="fbtn primary" id="openNewInspBtn" style="margin-left:auto;" data-i="new_inspection">New Inspection</button>
@@ -445,7 +445,7 @@
       <div class="kpi"><div class="kl" data-i="reinspection_required">Reinspection Required</div><div class="kv warn" id="ndt-reinsp">—</div></div>
     </div>
     <div class="filtrow" style="margin-bottom:10px;">
-      <span class="filtlbl" data-i="method">Method:</span>
+      <label class="filtlbl" for="ndtMethodFilter" data-i="method">Method:</label>
       <select class="filtsel" id="ndtMethodFilter"><option value="" data-i="all">All</option></select>
       <button class="fbtn primary" id="openNewNdtBtn" style="margin-left:auto;" data-i="new_ndt">New NDT Record</button>
     </div>
@@ -467,9 +467,9 @@
       <div class="kpi"><div class="kl" data-i="closed">Closed</div><div class="kv ok" id="ncr-closed">—</div></div>
     </div>
     <div class="filtrow" style="margin-bottom:10px;">
-      <span class="filtlbl" data-i="severity">Severity:</span>
+      <label class="filtlbl" for="ncrSeverityFilter" data-i="severity">Severity:</label>
       <select class="filtsel" id="ncrSeverityFilter"><option value="" data-i="all">All</option></select>
-      <span class="filtlbl" data-i="category">Category:</span>
+      <label class="filtlbl" for="ncrCategoryFilter" data-i="category">Category:</label>
       <select class="filtsel" id="ncrCategoryFilter"><option value="" data-i="all">All</option></select>
       <button class="fbtn primary" id="openNewNcrBtn" style="margin-left:auto;" data-i="new_ncr">New NCR</button>
     </div>
@@ -507,7 +507,7 @@
   <!-- ITP -->
   <div id="section-itp" class="section" style="display:none;">
     <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" data-i="select_itp">Select ITP:</label>
+      <label style="font-size:11px;color:var(--steel-400);" for="itpSelect" data-i="select_itp">Select ITP:</label>
       <select class="filtsel" id="itpSelect"></select>
       <button class="fbtn primary" style="margin-left:auto;" id="openNewItpBtn" data-i="new_itp">New ITP</button>
     </div>
@@ -597,7 +597,7 @@
   <!-- QUALITY DOSSIERS -->
   <div id="section-dossiers" class="section" style="display:none;">
     <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" data-i="select_project">Select project:</label>
+      <label style="font-size:11px;color:var(--steel-400);" for="dossierSelect" data-i="select_project">Select project:</label>
       <select class="filtsel" id="dossierSelect"></select>
     </div>
     <div class="kpistrip">
@@ -618,9 +618,9 @@
   <div id="section-release" class="section" style="display:none;">
     <div class="noticebar" data-i="release_notice">Frontend approval demonstration only. Production release authority, signatures and official audit records require the secured backend.</div>
     <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" data-i="select_project">Select project:</label>
+      <label style="font-size:11px;color:var(--steel-400);" for="releaseProjectSelect" data-i="select_project">Select project:</label>
       <select class="filtsel" id="releaseProjectSelect"></select>
-      <label style="font-size:11px;color:var(--steel-400);margin-left:10px;" data-i="select_jobcard">Jobcard:</label>
+      <label style="font-size:11px;color:var(--steel-400);margin-left:10px;" for="releaseJobcardSelect" data-i="select_jobcard">Jobcard:</label>
       <select class="filtsel" id="releaseJobcardSelect"><option value="" data-i="whole_project">Whole project</option></select>
     </div>
     <div class="panel">
@@ -667,8 +667,8 @@
     <h2 data-i="new_inspection">New Inspection</h2>
     <div class="msub" data-i="inspection_request_sub">Create an inspection request. It moves through the workflow as work progresses.</div>
     <div class="mrow2">
-      <div><label data-i="project">Project</label><select id="ins_project"></select></div>
-      <div><label data-i="jobcard">Jobcard</label><select id="ins_jobcard"><option value="">—</option></select></div>
+      <div><label data-i="project" for="ins_project">Project</label><select id="ins_project"></select></div>
+      <div><label data-i="jobcard" for="ins_jobcard">Jobcard</label><select id="ins_jobcard"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
       <div><label data-i="operation">Operation</label><input id="ins_operation" type="text"></div>
@@ -679,7 +679,7 @@
       <div><label data-i="drawing_rev">Revision</label><input id="ins_rev" type="text"></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="inspection_type">Inspection Type</label><select id="ins_type"></select></div>
+      <div><label data-i="inspection_type" for="ins_type">Inspection Type</label><select id="ins_type"></select></div>
       <div><label data-i="method">Method</label><input id="ins_method" type="text" placeholder="e.g. Visual, Callipers, PT"></div>
     </div>
     <div class="mrow2">
@@ -713,7 +713,7 @@
       <div id="execChecklist"></div>
     </div>
     <div class="mrow2" style="margin-top:14px;">
-      <div><label data-i="result">Result</label><select id="exec_result"></select></div>
+      <div><label data-i="result" for="exec_result">Result</label><select id="exec_result"></select></div>
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;margin-top:22px;"><input type="checkbox" id="exec_critical" style="width:auto;"> <span data-i="critical_failure">Critical failure (applies Quality Hold)</span></label></div>
     </div>
     <div class="mrow"><label data-i="findings">Findings / Comments</label><textarea id="exec_findings"></textarea></div>
@@ -733,15 +733,15 @@
     <h2 data-i="new_ncr">New NCR</h2>
     <div class="mrow"><label data-i="title">Title</label><input id="ncr_title" type="text"></div>
     <div class="mrow2">
-      <div><label data-i="project">Project</label><select id="ncr_project"></select></div>
-      <div><label data-i="jobcard">Jobcard</label><select id="ncr_jobcard"><option value="">—</option></select></div>
+      <div><label data-i="project" for="ncr_project">Project</label><select id="ncr_project"></select></div>
+      <div><label data-i="jobcard" for="ncr_jobcard">Jobcard</label><select id="ncr_jobcard"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="category">Category</label><select id="ncr_category"></select></div>
-      <div><label data-i="severity">Severity</label><select id="ncr_severity"></select></div>
+      <div><label data-i="category" for="ncr_category">Category</label><select id="ncr_category"></select></div>
+      <div><label data-i="severity" for="ncr_severity">Severity</label><select id="ncr_severity"></select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="supplier">Supplier (if applicable)</label><select id="ncr_supplier"><option value="">—</option></select></div>
+      <div><label data-i="supplier" for="ncr_supplier">Supplier (if applicable)</label><select id="ncr_supplier"><option value="">—</option></select></div>
       <div><label data-i="component">Component / Item</label><input id="ncr_component" type="text"></div>
     </div>
     <div class="mrow"><label data-i="description">Description</label><textarea id="ncr_description"></textarea></div>
@@ -819,8 +819,8 @@
   <div class="mcard wide">
     <h2 data-i="new_weld_record">New Weld Record</h2>
     <div class="mrow3">
-      <div><label data-i="project">Project</label><select id="wld_project"></select></div>
-      <div><label data-i="jobcard">Jobcard</label><select id="wld_jobcard"><option value="">—</option></select></div>
+      <div><label data-i="project" for="wld_project">Project</label><select id="wld_project"></select></div>
+      <div><label data-i="jobcard" for="wld_jobcard">Jobcard</label><select id="wld_jobcard"><option value="">—</option></select></div>
       <div><label data-i="weld_position">Weld Map Position</label><input id="wld_position" type="text"></div>
     </div>
     <div class="mrow3">
@@ -829,9 +829,9 @@
       <div><label data-i="thickness">Thickness (mm)</label><input id="wld_thickness" type="number" step="0.1" min="0"></div>
     </div>
     <div class="mrow3">
-      <div><label data-i="process">Welding Process</label><select id="wld_process"></select></div>
-      <div><label data-i="wps_no">WPS No.</label><select id="wld_wps"></select></div>
-      <div><label data-i="welder">Welder</label><select id="wld_welder"></select></div>
+      <div><label data-i="process" for="wld_process">Welding Process</label><select id="wld_process"></select></div>
+      <div><label data-i="wps_no" for="wld_wps">WPS No.</label><select id="wld_wps"></select></div>
+      <div><label data-i="welder" for="wld_welder">Welder</label><select id="wld_welder"></select></div>
     </div>
     <div class="mrow2">
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="wld_visual" style="width:auto;" checked> <span data-i="visual_inspection_required">Visual inspection required</span></label></div>
@@ -852,11 +852,11 @@
   <div class="mcard">
     <h2 data-i="new_ndt_record">New NDT Record</h2>
     <div class="mrow2">
-      <div><label data-i="project">Project</label><select id="ndt_project"></select></div>
-      <div><label data-i="weld_component">Weld / Component</label><select id="ndt_weld"><option value="">—</option></select></div>
+      <div><label data-i="project" for="ndt_project">Project</label><select id="ndt_project"></select></div>
+      <div><label data-i="weld_component" for="ndt_weld">Weld / Component</label><select id="ndt_weld"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="method">Method</label><select id="ndt_method"></select></div>
+      <div><label data-i="method" for="ndt_method">Method</label><select id="ndt_method"></select></div>
       <div><label data-i="technician">Technician</label><input id="ndt_tech" type="text"></div>
     </div>
     <div class="mrow2">
@@ -864,7 +864,7 @@
       <div><label data-i="acceptance_criteria">Acceptance Criteria</label><input id="ndt_criteria" type="text"></div>
     </div>
     <div class="mrow"><label data-i="findings">Findings</label><textarea id="ndt_findings"></textarea></div>
-    <div class="mrow"><label data-i="result">Result</label><select id="ndt_result"></select></div>
+    <div class="mrow"><label data-i="result" for="ndt_result">Result</label><select id="ndt_result"></select></div>
     <p class="dq-note" data-i="ndt_reject_note">A Rejected mandatory NDT result blocks the related weld, operation and final release until resolved.</p>
     <div class="mformerr" id="ndtFormErr"></div>
     <div class="mbtns">
@@ -879,7 +879,7 @@
   <div class="mcard">
     <h2 data-i="new_itp">New ITP</h2>
     <div class="mrow2">
-      <div><label data-i="project">Project</label><select id="itp_project"></select></div>
+      <div><label data-i="project" for="itp_project">Project</label><select id="itp_project"></select></div>
       <div><label data-i="prepared_by">Prepared By</label><input id="itp_prepared" type="text" value="Aleksandar C."></div>
     </div>
     <div class="mrow"><label data-i="effective_date">Effective Date</label><input id="itp_effective" type="date"></div>
@@ -897,13 +897,13 @@
     <h2 data-i="add_itp_line">Add ITP Line</h2>
     <div class="mrow2">
       <div><label data-i="phase">Phase</label><input id="line_phase" type="text"></div>
-      <div><label data-i="jobcard">Jobcard</label><select id="line_jobcard"><option value="">—</option></select></div>
+      <div><label data-i="jobcard" for="line_jobcard">Jobcard</label><select id="line_jobcard"><option value="">—</option></select></div>
     </div>
     <div class="mrow"><label data-i="activity">Inspection Activity</label><input id="line_activity" type="text"></div>
     <div class="mrow"><label data-i="acceptance_criteria">Acceptance Criteria</label><input id="line_criteria" type="text"></div>
     <div class="mrow2">
       <div><label data-i="responsible">Responsible Party</label><input id="line_responsible" type="text"></div>
-      <div><label data-i="point_type">Inspection Point Type</label><select id="line_type">
+      <div><label data-i="point_type" for="line_type">Inspection Point Type</label><select id="line_type">
         <option value="H" data-i="hold_point">H — Hold Point</option>
         <option value="W" data-i="witness_point">W — Witness Point</option>
         <option value="R" data-i="review_point">R — Review Point</option>
@@ -927,12 +927,12 @@
   <div class="mcard">
     <h2 data-i="new_complaint">New Customer Complaint</h2>
     <div class="mrow2">
-      <div><label data-i="customer">Customer</label><select id="cmp_customer"></select></div>
-      <div><label data-i="project">Project</label><select id="cmp_project"><option value="">—</option></select></div>
+      <div><label data-i="customer" for="cmp_customer">Customer</label><select id="cmp_customer"></select></div>
+      <div><label data-i="project" for="cmp_project">Project</label><select id="cmp_project"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
       <div><label data-i="delivered_item">Delivered Item</label><input id="cmp_item" type="text"></div>
-      <div><label data-i="severity">Severity</label><select id="cmp_severity"></select></div>
+      <div><label data-i="severity" for="cmp_severity">Severity</label><select id="cmp_severity"></select></div>
     </div>
     <div class="mrow"><label data-i="description">Description</label><textarea id="cmp_description"></textarea></div>
     <div class="mrow2">
@@ -1602,7 +1602,7 @@ function openExecInspection(no){
       }
       return `<div class="checkrow"><span>${esc(c.item)} (nominal ${esc(c.nominal)}, tol ${esc(c.lower)}/${esc(c.upper)})</span><span>${esc(actual!=null?actual:'N/A')}</span><span>${auto||'N/A'}</span><span></span></div>`;
     }
-    return `<div class="checkrow"><span>${esc(c.item)}</span><select data-idx="${idx}" class="execChkResult"><option value="" ${!c.resultItem?'selected':''}>—</option><option value="pass" ${c.resultItem==='pass'?'selected':''}>Pass</option><option value="fail" ${c.resultItem==='fail'?'selected':''}>Fail</option><option value="na" ${c.resultItem==='na'?'selected':''}>N/A</option></select><span></span><span></span></div>`;
+    return `<div class="checkrow"><span>${esc(c.item)}</span><select data-idx="${idx}" class="execChkResult" aria-label="${esc(tr('result'))}: ${esc(c.item)}"><option value="" ${!c.resultItem?'selected':''}>—</option><option value="pass" ${c.resultItem==='pass'?'selected':''}>Pass</option><option value="fail" ${c.resultItem==='fail'?'selected':''}>Fail</option><option value="na" ${c.resultItem==='na'?'selected':''}>N/A</option></select><span></span><span></span></div>`;
   }).join('');
   fillSelect($('exec_result'),INSPECTION_RESULTS.map(r=>[r,resultLabel(r)]));
   $('exec_result').value=rec.result||'pending';
@@ -1875,7 +1875,7 @@ function ncrShowAction(no,action){
   const area=$('ncrActionArea');
   const forms={
     containment:`<div class="mrow"><label>Containment Action</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitContainment('${esc(no)}')">Save Containment</button>`,
-    disposition:`<div class="mrow"><label>Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label>Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
+    disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label>Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
     capa:`<div class="mrow"><label>Corrective Action Reference (CAPA No.)</label><input id="ncrActInput" type="text" placeholder="CAPA-2026-001"></div><button class="mbtn primary" onclick="ncrSubmitCapaLink('${esc(no)}')">Assign</button>`,
     verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label>Verified By</label><input id="ncrActRef" type="text" value="Aleksandar C."></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
     close:`<div class="mrow"><label>Closure Approval Reference</label><input id="ncrActInput" type="text" placeholder="Approved by Quality Manager — ref #"></div><button class="mbtn primary" onclick="ncrSubmitClose('${esc(no)}')">Close NCR</button>`,
@@ -2260,7 +2260,7 @@ function renderReleaseDetail(){
     :`<div class="holdbar"><strong>${blockingReasons.length} blocking condition(s):</strong></div><ul class="attnlist">${blockingReasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
   $('release-form').innerHTML=`
     <div class="formblock">
-    <div class="mrow2"><div><label>Result</label><select id="rel_result">
+    <div class="mrow2"><div><label for="rel_result">Result</label><select id="rel_result">
       <option value="released" ${blockingReasons.length>0?'disabled':''}>Released</option>
       <option value="released-conditions">Released with Conditions</option>
       <option value="not-released">Not Released</option>
