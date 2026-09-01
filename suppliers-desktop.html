@@ -227,14 +227,23 @@ const T={
   }
 };
 // Pull shared supplier records into this module while preserving the richer local demo set.
-(function hydrateSharedSuppliers(){
+// Named (not an IIFE) so it can be re-run on workshop:data (see the listener near the bottom of
+// this file) - a supplier created elsewhere now reaches this page without a full reload.
+// supplierOrderRows()/supplierDocRows() (Pass 3.7/3.8) already read purchase orders/documents live
+// from WorkshopData on every render() call regardless - what this closes is render() itself never
+// being triggered by an external change, so a PO/document created in another tab sat unseen here
+// until the user did something on THIS page to force a re-render. Insert-only-if-missing (matches
+// suppliers.some(s=>s.name===ss.name) below) is unchanged and deliberate, same reason as every
+// other hydrate function in this sweep.
+function hydrateSharedSuppliers(){
   if(!window.WorkshopData)return;const shared=WorkshopData.listSuppliers();
   shared.forEach(ss=>{
     if(suppliers.some(s=>s.name===ss.name))return;
     const id='SUP-'+String(suppliers.length+1).padStart(4,'0');
     suppliers.push({id,sharedId:ss.id,name:ss.name,category:ss.category||'General',status:ss.status||'active',rating:ss.rating||4,address:ss.address,email:ss.email,phone:ss.phone,website:ss.website,vat:ss.vat,currency:ss.currency||'SEK',type:ss.type||'Company',country:ss.country||'Sweden',established:ss.established,payment:ss.payment||'30 days',delivery:ss.delivery||'DAP',minimum:ss.minimum,notes:ss.notes||[],contacts:ss.contacts||[],performance:ss.performance,docs:ss.docs||[],spendYtd:ss.spendYtd,spendYtdChange:ss.spendYtdChange,openPOs:ss.openPOs,openPOsValue:ss.openPOsValue,overdueDeliveries:ss.overdueDeliveries,overdueDeliveriesValue:ss.overdueDeliveriesValue,purchaseOrders:ss.purchaseOrders||[],items:ss.items||[]});
   });
-})();
+}
+hydrateSharedSuppliers();
 function syncSupplier(s){
   if(!window.WorkshopData||!s)return;
   const rec=WorkshopData.upsertSupplier({id:s.sharedId,name:s.name,category:s.category,status:s.status,rating:s.rating,address:s.address,email:s.email,phone:s.phone,website:s.website,vat:s.vat,currency:s.currency,type:s.type,country:s.country,established:s.established,payment:s.payment,delivery:s.delivery,minimum:s.minimum,notes:s.notes,contacts:s.contacts,performance:s.performance,docs:s.docs,spendYtd:s.spendYtd,spendYtdChange:s.spendYtdChange,openPOs:s.openPOs,openPOsValue:s.openPOsValue,overdueDeliveries:s.overdueDeliveries,overdueDeliveriesValue:s.overdueDeliveriesValue,purchaseOrders:s.purchaseOrders,items:s.items});
@@ -309,4 +318,8 @@ function setLang(code){
 document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$('langc').classList.remove('open');}));
 (function(){var lc=$('langc'),lt=$('langtoggle');if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 setLang('en');
+// Picks up a supplier created elsewhere, and forces the re-render supplierOrderRows()/
+// supplierDocRows() need to actually show a PO/document created in another tab - see
+// hydrateSharedSuppliers()'s own comment.
+window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();});
 </script></body></html>
