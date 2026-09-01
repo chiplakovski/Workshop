@@ -1334,15 +1334,15 @@ function openNewEst(){
   const projOpts=`<option value="">${esc(t.ne_none)}</option>`+Object.keys(PROJECTS).map(no=>`<option value="${no}">${esc(no)} — ${esc(PROJECTS[no].name)}</option>`).join("");
   const today=todayISO();
   $("fcard").innerHTML=`<h2>${esc(t.nc_title)}</h2><p class="fsub">${esc(t.esub)}</p>
-    <div class="frow2"><div><label>${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label>${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
+    <div class="frow2"><div><label for="neCustomer">${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label>${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
     <div id="neErr1" class="errmsg" style="display:none;"></div>
-    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label>${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label>${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label for="neProject">${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
+    <div class="frow2"><div><label>${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label for="neEstimator">${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
     <div class="frow3"><div><label>${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label>${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label>${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
     <div id="neErr2" class="errmsg" style="display:none;"></div>
-    <div class="frow3"><div><label>${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label>${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label>${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
+    <div class="frow3"><div><label>${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label for="neCurrency">${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label>${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
     <div class="frow2"><div><label>${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
-    <div class="frow"><label>${esc(t.ne_startmethod)}</label><select id="neTemplate">
+    <div class="frow"><label for="neTemplate">${esc(t.ne_startmethod)}</label><select id="neTemplate">
       <option value="blank" selected>${esc(t.ne_blank)}</option>
       <option value="fabrication">${esc(t.ne_tpl_fab)}</option>
       <option value="repair">${esc(t.ne_tpl_repair)}</option>
@@ -1481,7 +1481,7 @@ function openLineForm(id,wiIdx,lIdx){
   $("fcard").innerHTML=`<h2>${editing?esc(t.act_editline):esc(t.addline)}</h2><p class="fsub">${esc(wi.desc)}</p>
     <div class="frow"><label>${esc(t.th_item)}</label><input id="aiDesc" value="${esc(line.desc)}"></div>
     <div id="aiDescErr" class="errmsg" style="display:none;"></div>
-    <div class="frow"><label>${esc(t.th_category)}</label><select id="aiCat">${cats.map(c=>`<option value="${c}" ${line.category===c?'selected':''}>${esc(catLabel(c))}</option>`).join('')}</select></div>
+    <div class="frow"><label for="aiCat">${esc(t.th_category)}</label><select id="aiCat">${cats.map(c=>`<option value="${c}" ${line.category===c?'selected':''}>${esc(catLabel(c))}</option>`).join('')}</select></div>
     <div class="frow3"><div><label>${esc(t.th_qty)}</label><input id="aiQty" type="number" min="0.0001" step="any" value="${esc(line.qty)}"></div><div><label>${esc(t.th_unit)}</label><input id="aiUnit" value="${esc(line.unit)}"></div><div><label>${esc(t.th_price)}</label><input id="aiSell" type="number" min="0" step="any" value="${esc(line.sell)}"></div></div>
     <div id="aiNumErr" class="errmsg" style="display:none;"></div>
     <div class="frow3"><div><label>${esc(t.internal_cost)}</label><input id="aiCost" type="number" min="0" step="any" value="${esc(line.cost)}"></div><div><label>${esc(t.th_disc)}</label><input id="aiDisc" type="number" min="0" max="100" step="any" value="${esc(line.disc||0)}"></div><div><label>${esc(t.th_tax)}</label><input id="aiTax" type="number" min="0" max="100" step="any" value="${esc(line.tax!==undefined?line.tax:25)}"></div></div>
