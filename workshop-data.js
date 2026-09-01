@@ -643,6 +643,29 @@
     return s;
   }
   let state=load();
+  // Cross-tab reactivity: the native 'storage' event fires on every OTHER same-origin tab/page when
+  // localStorage changes (never on the tab that made the change itself) - the only way a page can
+  // hear about a write made elsewhere without a full reload. Before this, every page's `state` was
+  // loaded once at script start and simply went stale until manually reloaded; WorkshopData.get()
+  // (and everything built on it) would keep returning what THIS tab last saw, even though a
+  // DIFFERENT tab's write had already succeeded and was sitting in localStorage.
+  // Re-running load() itself (rather than a lighter re-parse) keeps this the one single source of
+  // truth for "how persisted state becomes a real state object" - safe to call again here because
+  // this only fires in reaction to another tab's OWN save() having already succeeded, so v5Raw is
+  // always present and valid at this point: load()'s pure, no-side-effect fast path (no
+  // re-migration, no re-seeding, no rescue-write).
+  // Re-dispatches the SAME 'workshop:data' event save() already fires on every local save, so any
+  // page already listening for it to refresh its own local cache (e.g. documents-desktop.html)
+  // gets real cross-tab updates for free, with no separate per-page wiring needed.
+  // Guarded: the Node test harness's window stub (tests/helpers/load-workshop-data.js) does not
+  // define addEventListener, matching how it already no-ops dispatchEvent for the same reason.
+  if(typeof global.addEventListener==='function'){
+    global.addEventListener('storage',e=>{
+      if(e.key!==KEY&&e.key!==null)return;
+      state=load();
+      try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason:'Updated in another tab',state:clone(state)}}));}catch(err){}
+    });
+  }
   function save(reason){if(reason)state.activity.unshift({time:now(),reason});try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason,state:clone(state)}}))}catch(e){}return state}
   function quantity(value){const parsed=Number(value);return Number.isFinite(parsed)&&parsed>0?parsed:null}
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}

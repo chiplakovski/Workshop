@@ -6,7 +6,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('fs');
 const path=require('path');
-const {loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage}=require('./helpers/load-workshop-data');
+const {loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage}=require('./helpers/load-workshop-data');
 
 const V5_KEY='varmak.workshop.frontend.v5';
 const V4_KEY='varmak.workshop.frontend.v4';
@@ -3580,4 +3580,70 @@ test('Pass 3.2C review fix (46c): duplicate detection catches a legacy record wi
   assert.equal(res.error,'Duplicate equipment ID');
   assert.equal(WD.getEquipment().length,beforeLength);
   assert.equal(WD.get().counters.equipment,beforeCounter);
+});
+
+// ── Cross-tab reactivity: the native 'storage' event (fires on every OTHER same-origin tab when
+// localStorage changes, never on the tab that made the change) reloads state and re-dispatches
+// 'workshop:data' so an already-listening page picks up a write made in a different tab. ──────────
+
+test('cross-tab reload: a real browser save() on the SAME instance still dispatches workshop:data (regression - previously untestable, dispatchEvent was a no-op stub)', ()=>{
+  const {WD,window}=loadWorkshopDataWithEnv({[V5_KEY]:JSON.stringify(minimalState({version:5}))});
+  const seen=[];
+  window.addEventListener('workshop:data',e=>seen.push(e.detail&&e.detail.reason));
+  WD.upsertCustomer({name:'Local Save Co'});
+  assert.equal(seen.length,1,'exactly one workshop:data dispatch for one local save');
+  assert.equal(seen[0],'Customer updated: Local Save Co');
+});
+
+test('cross-tab reload: a storage event for the SAME key reloads state from the fresh localStorage value', ()=>{
+  const {WD,localStorage,window}=loadWorkshopDataWithEnv({[V5_KEY]:JSON.stringify(minimalState({version:5,customers:[{id:1,no:'C-001',name:'Alpha Co'}]}))});
+  assert.equal(WD.get().customers[0].name,'Alpha Co','fixture sanity check');
+  // Simulate a DIFFERENT tab writing directly to the shared localStorage (bypassing this
+  // instance's own save()) and the browser firing the resulting native storage event.
+  const otherTabState=minimalState({version:5,customers:[{id:2,no:'C-002',name:'Beta Co'}]});
+  localStorage.setItem(V5_KEY,JSON.stringify(otherTabState));
+  window.dispatchEvent({type:'storage',key:V5_KEY,newValue:JSON.stringify(otherTabState)});
+  assert.equal(WD.get().customers.length,1);
+  assert.equal(WD.get().customers[0].name,'Beta Co','state must reflect the OTHER tab\'s write, not what this instance last saw');
+});
+
+test('cross-tab reload: a storage event for the SAME key re-dispatches workshop:data so an already-listening page updates too', ()=>{
+  const {localStorage,window}=loadWorkshopDataWithEnv({[V5_KEY]:JSON.stringify(minimalState({version:5}))});
+  const seen=[];
+  window.addEventListener('workshop:data',e=>seen.push(e.detail&&e.detail.reason));
+  const otherTabState=minimalState({version:5,customers:[{id:2,no:'C-002',name:'Beta Co'}]});
+  localStorage.setItem(V5_KEY,JSON.stringify(otherTabState));
+  window.dispatchEvent({type:'storage',key:V5_KEY,newValue:JSON.stringify(otherTabState)});
+  assert.equal(seen.length,1);
+  assert.equal(seen[0],'Updated in another tab');
+});
+
+test('cross-tab reload: a storage event for an UNRELATED key is ignored (no reload, no re-dispatch)', ()=>{
+  const {WD,localStorage,window}=loadWorkshopDataWithEnv({[V5_KEY]:JSON.stringify(minimalState({version:5,customers:[{id:1,no:'C-001',name:'Alpha Co'}]}))});
+  const seen=[];
+  window.addEventListener('workshop:data',e=>seen.push(e));
+  localStorage.setItem('some.other.app.key','{"unrelated":true}');
+  window.dispatchEvent({type:'storage',key:'some.other.app.key',newValue:'{"unrelated":true}'});
+  assert.equal(WD.get().customers[0].name,'Alpha Co','must not reload for a key this module does not own');
+  assert.equal(seen.length,0,'must not re-dispatch workshop:data for an unrelated key');
+});
+
+test('cross-tab reload: a storage event with key:null (matches the browser\'s localStorage.clear() shape) still reloads', ()=>{
+  const {WD,localStorage,window}=loadWorkshopDataWithEnv({[V5_KEY]:JSON.stringify(minimalState({version:5,customers:[{id:1,no:'C-001',name:'Alpha Co'}]}))});
+  const otherTabState=minimalState({version:5,customers:[{id:2,no:'C-002',name:'Beta Co'}]});
+  localStorage.setItem(V5_KEY,JSON.stringify(otherTabState));
+  window.dispatchEvent({type:'storage',key:null,newValue:null});
+  assert.equal(WD.get().customers[0].name,'Beta Co');
+});
+
+test('cross-tab reload: the Node test harness\'s window stub omitting addEventListener does not crash module load (mirrors the guard workshop-data.js uses)', ()=>{
+  // loadWorkshopData()'s plain buildEnv() (used by every other test in this file) does define
+  // addEventListener now, so this specifically re-checks the guard itself never assumes it exists.
+  assert.doesNotThrow(()=>{
+    const g={};g.window=g;g.localStorage=new MemoryLocalStorage();g.dispatchEvent=()=>{};
+    g.CustomEvent=function(type,init){this.type=type;this.detail=init&&init.detail;};
+    g.QualityGates=require('../quality-gates.js');g.EquipmentGates=require('../equipment-gates.js');g.JobcardEquipmentRules=require('../jobcard-equipment-rules.js');
+    const src=fs.readFileSync(path.join(__dirname,'..','workshop-data.js'),'utf8');
+    new Function('window',src+'\nreturn window.WorkshopData;')(g);
+  });
 });

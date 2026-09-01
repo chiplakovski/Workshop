@@ -17,7 +17,14 @@ function buildEnv(seedEntries,customLocalStorage){
   const g={};
   g.localStorage=customLocalStorage||new MemoryLocalStorage();
   g.window=g;
-  g.dispatchEvent=()=>{};
+  // A real (if minimal) pub-sub, not a no-op - workshop-data.js registers a 'storage' listener and
+  // dispatches 'workshop:data' on both a local save() and a reload triggered by that listener;
+  // tests need to actually observe both to verify the cross-tab reload mechanism, not just confirm
+  // it doesn't throw.
+  const listeners={};
+  g.addEventListener=(type,fn)=>{(listeners[type]=listeners[type]||[]).push(fn);};
+  g.removeEventListener=(type,fn)=>{if(listeners[type])listeners[type]=listeners[type].filter(f=>f!==fn);};
+  g.dispatchEvent=(evt)=>{(listeners[evt.type]||[]).forEach(fn=>fn(evt));};
   g.CustomEvent=function(type,init){this.type=type;this.detail=init&&init.detail;};
   // Mirrors the real browser's <script src="quality-gates.js"></script> / <script
   // src="equipment-gates.js"></script> loading BEFORE workshop-data.js, so workshop-data.js's
@@ -52,4 +59,14 @@ function loadWorkshopDataWithStorage(seedEntries,customLocalStorage){
   return {WD:fn(g),localStorage:g.localStorage};
 }
 
-module.exports={loadWorkshopData,loadWorkshopDataWithStorage,MemoryLocalStorage};
+// Same as loadWorkshopData, but also returns the raw `window` stub itself (localStorage +
+// addEventListener/dispatchEvent), so a test can simulate a real browser 'storage' event firing
+// (as another tab's write would trigger) and observe any event WorkshopData dispatches in response.
+function loadWorkshopDataWithEnv(seedEntries,customLocalStorage){
+  const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
+  const g=buildEnv(seedEntries,customLocalStorage);
+  const fn=new Function('window',src+'\nreturn window.WorkshopData;');
+  return {WD:fn(g),localStorage:g.localStorage,window:g};
+}
+
+module.exports={loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage};
