@@ -1546,14 +1546,16 @@ $('clearFiltBtn').addEventListener('click',()=>{
 $('saveViewBtn').addEventListener('click',()=>{
   const name=prompt('Name this saved view:');
   if(!name)return;
-  const reports=loadSavedReports();
-  reports.push({
+  // Was calling a non-existent saveSavedReports(wholeArray) - a plain ReferenceError that broke
+  // this button entirely (not even the toast fired). WorkshopData.saveReport() persists ONE record
+  // at a time, exactly like every sibling save action on this page (confirmSavedModal, rename,
+  // duplicate, toggleFavourite) already does correctly.
+  WorkshopData.saveReport({
     id:'view-'+Date.now(),name:esc(name).slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
     filters:{dateFilter:currentFilter,...activeFilters},columns:[],sorting:null,grouping:null,chartType:null,
     visibility:'private',favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
     section:currentSection,type:'view'
   });
-  saveSavedReports(reports);
   renderSavedReports();
   notify('View saved to Saved Reports.');
 });
@@ -2786,14 +2788,14 @@ function previewBuilderReport(){
 function saveBuilderReport(duplicate){
   if(!builderState.source){notify('Select a data source first.');return;}
   const name=$('builder-name').value.trim()||('Custom report '+new Date().toISOString().slice(0,10));
-  const reports=loadSavedReports()||[];
-  reports.push({
+  // Same non-existent-function crash as saveViewBtn above, same fix: one real
+  // WorkshopData.saveReport() call instead of a whole-array push into a function that never existed.
+  WorkshopData.saveReport({
     id:(duplicate?'dup-':'custom-')+Date.now(),name:esc(name).slice(0,80),category:'Custom',
     filters:{dateFilter:currentFilter,...activeFilters},builder:JSON.parse(JSON.stringify(builderState)),
     favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
     section:'builder',type:'custom',archived:false
   });
-  saveSavedReports(reports);
   notify('Report definition saved.');
 }
 function exportBuilderCsv(){
