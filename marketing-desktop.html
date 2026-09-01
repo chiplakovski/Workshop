@@ -712,19 +712,19 @@ function renderLeads(){
     <div class="phead"><h3>${tt.v_leads_t}</h3><button class="tbtn primary small" onclick="openLeadForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newlead}</button></div>
     <div class="filterbar">
       <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="leadSearch" type="text" placeholder="${tt.search_leads}" value="${esc(leadQuery)}"></div>
-      <select id="leadFStatus" onchange="leadFilterStatus=this.value;renderApp();">
+      <select id="leadFStatus" aria-label="Filter by status" onchange="leadFilterStatus=this.value;renderApp();">
         <option value="all" ${leadFilterStatus==='all'?'selected':''}>${tt.filt_allstatus}</option>
         ${['new','contacted','qualified','disqualified','converted'].map(s=>`<option value="${s}" ${leadFilterStatus===s?'selected':''}>${tt['ls_'+s]}</option>`).join('')}
       </select>
-      <select id="leadFIndustry" onchange="leadFilterIndustry=this.value;renderApp();">
+      <select id="leadFIndustry" aria-label="Filter by industry" onchange="leadFilterIndustry=this.value;renderApp();">
         <option value="all" ${leadFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>
         ${industries.map(i=>`<option value="${esc(i)}" ${leadFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}
       </select>
-      <select id="leadFOwner" onchange="leadFilterOwner=this.value;renderApp();">
+      <select id="leadFOwner" aria-label="Filter by owner" onchange="leadFilterOwner=this.value;renderApp();">
         <option value="all" ${leadFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>
         ${ownerOptions().map(o=>`<option value="${o.v}" ${leadFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}
       </select>
-      <select id="leadFPriority" onchange="leadFilterPriority=this.value;renderApp();">
+      <select id="leadFPriority" aria-label="Filter by priority" onchange="leadFilterPriority=this.value;renderApp();">
         <option value="all" ${leadFilterPriority==='all'?'selected':''}>${tt.filt_allpriorities}</option>
         ${['high','medium','low'].map(p=>`<option value="${p}" ${leadFilterPriority===p?'selected':''}>${tt['pr_'+p]}</option>`).join('')}
       </select>
@@ -875,10 +875,10 @@ function renderOpportunities(){
       </div></div>
     <div class="filterbar">
       <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="oppSearch" type="text" placeholder="${tt.search_opps}" value="${esc(oppQuery)}"></div>
-      <select onchange="oppFilterStage=this.value;renderApp();"><option value="all" ${oppFilterStage==='all'?'selected':''}>${tt.filt_allstages}</option>${STAGES.map(s=>`<option value="${s}" ${oppFilterStage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select>
-      <select onchange="oppFilterOwner=this.value;renderApp();"><option value="all" ${oppFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>${ownerOptions().map(o=>`<option value="${o.v}" ${oppFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}</select>
-      <select onchange="oppFilterIndustry=this.value;renderApp();"><option value="all" ${oppFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>${oppIndustryList().map(i=>`<option value="${esc(i)}" ${oppFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}</select>
-      <select onchange="oppFilterFollowup=this.value;renderApp();"><option value="all" ${oppFilterFollowup==='all'?'selected':''}>${tt.filt_followup}</option><option value="overdue" ${oppFilterFollowup==='overdue'?'selected':''}>${tt.filt_overdue}</option><option value="upcoming" ${oppFilterFollowup==='upcoming'?'selected':''}>${tt.filt_upcoming}</option></select>
+      <select aria-label="Filter by stage" onchange="oppFilterStage=this.value;renderApp();"><option value="all" ${oppFilterStage==='all'?'selected':''}>${tt.filt_allstages}</option>${STAGES.map(s=>`<option value="${s}" ${oppFilterStage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select>
+      <select aria-label="Filter by owner" onchange="oppFilterOwner=this.value;renderApp();"><option value="all" ${oppFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>${ownerOptions().map(o=>`<option value="${o.v}" ${oppFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}</select>
+      <select aria-label="Filter by industry" onchange="oppFilterIndustry=this.value;renderApp();"><option value="all" ${oppFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>${oppIndustryList().map(i=>`<option value="${esc(i)}" ${oppFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}</select>
+      <select aria-label="Filter by follow-up" onchange="oppFilterFollowup=this.value;renderApp();"><option value="all" ${oppFilterFollowup==='all'?'selected':''}>${tt.filt_followup}</option><option value="overdue" ${oppFilterFollowup==='overdue'?'selected':''}>${tt.filt_overdue}</option><option value="upcoming" ${oppFilterFollowup==='upcoming'?'selected':''}>${tt.filt_upcoming}</option></select>
     </div>
     ${oppView==='table'?renderOppTable(rows):renderOppKanban(rows)}
   </div>`;
@@ -917,7 +917,7 @@ function openOppDetail(id){
       <div class="kv"><div class="k">${tt.fl_nextaction}</div><div class="v">${esc(o.nextAction)}</div></div>
     </div>
     <div class="frow"><label>${tt.fl_scope}</label><div style="font-size:12.5px;color:var(--steel-300);">${esc(o.scope)}</div></div>
-    <div class="frow"><label>${tt.act_movestage}</label><select id="oppStageSel">${STAGES.map(s=>`<option value="${s}" ${o.stage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select></div>
+    <div class="frow"><label for="oppStageSel">${tt.act_movestage}</label><select id="oppStageSel">${STAGES.map(s=>`<option value="${s}" ${o.stage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select></div>
     ${o.activity&&o.activity.length?`<div class="timeline" style="margin-top:10px;">${o.activity.slice().reverse().map(a=>`<div class="tlrow"><div class="tldot"></div><div class="tlbody"><div class="tld">${fmtDate(a.date)}</div><div class="tlt">${esc(a.text)}</div></div></div>`).join('')}</div>`:''}
     <div class="fbtns" style="justify-content:flex-start;flex-wrap:wrap;">
       <button class="tbtn small" onclick="closeModal();openOppForm(${o.id})">${tt.act_editopp}</button>
