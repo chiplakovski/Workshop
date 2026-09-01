@@ -810,6 +810,16 @@ function syncEstimation(e){
   e.sharedId=saved.id;
   return saved;
 }
+// Estimation attachments used to live only inside e.documents. Keep those older records visible,
+// but read new shared metadata live so attachments created here also appear in Documents and
+// records linked from that module appear back on the estimation without a reload.
+function estimationDocumentRows(e){
+  const live=(window.WorkshopData?WorkshopData.getDocuments():[]).filter(d=>d.module==='Estimations'&&d.record===e.no);
+  const liveNames=new Set(live.map(d=>String(d.name).trim().toLowerCase()));
+  const iconType=name=>{const ext=String(name).split('.').pop().toLowerCase();return ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':ext==='zip'?'zip':'doc'};
+  return live.map(d=>({name:d.name,type:iconType(d.name),date:(d.updated||'').slice(0,10)}))
+    .concat((e.documents||[]).filter(d=>!liveNames.has(String(d.name).trim().toLowerCase())));
+}
 function stageIndex(status){if(status==='declined'||status==='expired')return 3;return STAGES.indexOf(status);}
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -1226,7 +1236,7 @@ function renderRight(e){
     </div>
     <div class="panel">
       <div class="phead"><h3>${esc(t.documents)}</h3><button class="tbtn small" onclick="openUpload(${e.id})">${esc(t.upload)}</button></div>
-      ${(e.documents||[]).map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${esc(t.empty_docs)}</div>`}
+      ${estimationDocumentRows(e).map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${esc(t.empty_docs)}</div>`}
       <div class="disclaimer2">${esc(t.demo_upload)}</div>
     </div>
     <div class="panel">
@@ -1587,7 +1597,8 @@ function saveAddNote(id){
   closeModal();renderAll();
 }
 
-// File upload is a frontend demonstration only — no file is actually read, stored or transmitted.
+// File content remains a frontend demonstration (no bytes are read, stored or transmitted), but
+// the document metadata itself is a real shared Documents record.
 function openUpload(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${esc(t.ud_title)}</h2><p class="fsub">${esc(getEst(id).no)} · ${esc(t.demo_upload)}</p>
@@ -1599,8 +1610,8 @@ function openUpload(id){
 function saveUpload(id){
   const t=T[LANG];clearAllFieldErrors();const name=$("udName").value.trim();
   if(!name){showFieldError('udName','udErr',t.err_required);return;}
-  const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':(ext==='zip')?'zip':'doc';
-  const e=getEst(id);e.documents.push({name,type,date:todayISO()});
+  const e=getEst(id);
+  WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.'});
   e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
   syncEstimation(e);
   closeModal();renderAll();
