@@ -255,7 +255,17 @@
     refreshEqLang();tick();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   const proj=document.getElementById('project'),item=document.getElementById('item');
-  (WorkshopData.listProjects()||[]).forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+  // Named (not inline at load only) so it can be re-run on workshop:data - a project created
+  // elsewhere now appears in this dropdown without a full reload. Resets to the placeholder option
+  // first (rather than appending again) so a repeat call never duplicates the list; preserves the
+  // current selection across the refresh so a user mid-entry isn't silently reset.
+  function populateProjects(){
+    const prevValue=proj.value;
+    proj.innerHTML='<option value="">—</option>';
+    (WorkshopData.listProjects()||[]).forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+    if([...proj.options].some(o=>o.value===prevValue))proj.value=prevValue;
+  }
+  populateProjects();
   // Item = a real Jobcard operation (falls back to "(whole jobcard)" when the jobcard has none),
   // grouped by jobcard — mirrors jobcard-desktop.html's own opOpts/machineOpts construction. Never
   // the old page-local fake {n,est} list.
@@ -403,4 +413,9 @@
   (function(){var lc=document.getElementById('langc'),lt=document.getElementById('langtoggle');
     if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});
     document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+  // Picks up a project created elsewhere, and refreshes the Item/equipment dropdowns for whichever
+  // project is currently selected (loadItems()/populateEqSelect() already read WorkshopData live on
+  // every call - see loadItems()'s own comment - the only gap was nothing triggering that refresh
+  // on an external change).
+  window.addEventListener('workshop:data',()=>{populateProjects();loadItems();});
 </script></body></html>
