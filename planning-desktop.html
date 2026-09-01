@@ -867,7 +867,7 @@ function ganttPanelHead(title){
     <div class="ganttctrls">
       <span class="gzlbl">${t.zoomlbl}</span>
       <input type="range" min="30" max="365" value="${daysBetween(gRangeStart,gRangeEnd)}" class="gzoomslider" oninput="gSetZoomSpan(parseInt(this.value))">
-      <select class="grandrop" onchange="gSetGranularity(this.value)">
+      <select class="grandrop" aria-label="Timeline granularity" onchange="gSetGranularity(this.value)">
         <option value="1" ${ganttTickDays===1?'selected':''}>${t.gran_day}</option>
         <option value="7" ${ganttTickDays===7?'selected':''}>${t.gran_week}</option>
         <option value="30" ${ganttTickDays===30?'selected':''}>${t.gran_month}</option>
