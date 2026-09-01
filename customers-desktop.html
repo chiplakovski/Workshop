@@ -310,13 +310,21 @@ const PROJECTS=[
   {no:"P-26-0009",name:"HMI Upgrade",customerId:2,status:"planned",quotedValue:31000,deadline:"2026-09-18"}
 ];
 // Pull shared records into the Customer UI while preserving this screen's richer demo set.
-(function hydrateSharedCustomers(){
+// Named (not an IIFE) so it can be re-run on workshop:data (see the listener near the bottom of
+// this file) - a customer, project or quote/estimation created elsewhere now reaches this page
+// without a full reload (workshop-data.js reloads on the browser's native 'storage' event and
+// re-dispatches workshop:data - see that file's own comment). Insert-only-if-missing (matches
+// CUSTOMERS.some(c=>c.name===sc.name)/PROJECTS.some(p=>p.no===sp.no) below) is unchanged and
+// deliberate: fields this page lets the user edit locally must never be silently overwritten by a
+// re-hydration reacting to an unrelated external change.
+function hydrateSharedCustomers(){
   if(!window.WorkshopData)return;const shared=WorkshopData.get();
   shared.customers.forEach(sc=>{if(CUSTOMERS.some(c=>c.name===sc.name))return;const id=nextCustId++;
     CUSTOMERS.push({id,sharedId:sc.id,name:sc.name,city:sc.city||"—",country:sc.country||"Sweden",status:sc.status||"active",org:sc.org||"—",email:sc.email||"—",phone:sc.phone||"—",website:sc.website||"—",since:sc.since||new Date().toISOString().slice(0,10),terms:sc.terms||"30 days",credit:sc.credit||0,currency:sc.currency||"SEK",industry:sc.industry||"—",ctype:sc.type||"Company",vat:sc.vat||"—",preferred:sc.preferred||"Email",pricelist:sc.priceList||"Standard Price List",deliveryTerms:sc.deliveryTerms||"—",discountAgreement:sc.discountAgreement||"—",remarks:sc.remarks||"",billing:sc.billing||[sc.name,"—"],shipping:sc.shipping||sc.billing||[sc.name,"—"],contacts:sc.contacts||[],quotes:shared.estimations.filter(e=>e.customerId===sc.id).map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status})),invoices:[],notes:sc.notes||[],documents:sc.documents||[]});
   });
   shared.projects.forEach(sp=>{const c=CUSTOMERS.find(x=>x.name===sp.customer);if(c&&!PROJECTS.some(p=>p.no===sp.no))PROJECTS.push({no:sp.no,name:sp.name,customerId:c.id,status:sp.status,quotedValue:(shared.estimations.find(e=>e.id===sp.estimationId)||{}).sellingPrice||0,deadline:sp.deadline})});
-})();
+}
+hydrateSharedCustomers();
 const OPEN_STATUSES=["quotation","approved","planned","active","hold"];
 const STATUS_CLASS={draft:"n",quotation:"b",approved:"b",planned:"b",active:"b",hold:"w",completed:"g",closed:"n",cancelled:"r"};
 const STATUS_WORD_CLASS={active:"b",completed:"g","in production":"b",hold:"w"};
@@ -766,6 +774,11 @@ document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('cli
 function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
   try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
 setLang("en");setInterval(tick,10000);
+// Picks up a customer/project created elsewhere (another tab or another action on this page)
+// without a full reload - see hydrateSharedCustomers()'s own comment for why this stays
+// insert-only. customerQuoteRows() (Pass 3.10) already reads estimations live on every render, so
+// this mainly benefits the customer/project lists.
+window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();renderAll();});
 
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
