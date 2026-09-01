@@ -520,7 +520,15 @@ let nextEstId=10;
 // Reads every field this module itself persists back from WorkshopData, so notes, documents, work items,
 // options, terms, exclusions and status all survive a page refresh — for BOTH the hardcoded seed estimates
 // (which re-run their literal JS object on every load) and estimates created purely in this session.
-(function hydrateSharedEstimations(){
+// Named (not an IIFE) so it can be re-run on workshop:data (see the listener near the bottom of
+// this file) - an estimation created/updated elsewhere (e.g. Customers' "New Quote", Pass 3.10, or
+// another tab entirely - workshop-data.js reloads on the browser's native 'storage' event and
+// re-dispatches workshop:data, see that file's own comment) now reaches this page without a full
+// reload. Already safe to re-run as-is: for an estimation this module has already seen it adopts
+// the shared record's fields verbatim (see the comment a few lines below - syncEstimation() always
+// writes the complete field set, so there is never local-only unsaved state to lose), and for a
+// genuinely new one it hydrates fresh.
+function hydrateSharedEstimations(){
   if(!window.WorkshopData)return;
   const shared=WorkshopData.get();
   shared.estimations.forEach(se=>{
@@ -560,7 +568,8 @@ let nextEstId=10;
     nextEstId=Math.max(nextEstId,se.id+1);
   });
   ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)});
-})();
+}
+hydrateSharedEstimations();
 
 const STAGES=["draft","review","sent","accepted"];
 function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
@@ -1699,6 +1708,9 @@ document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('cli
 function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
   try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
 setLang("en");setInterval(tick,10000);
+// Picks up an estimation created/updated elsewhere (another tab, or another module such as
+// Customers' "New Quote") without a full reload - see hydrateSharedEstimations()'s own comment.
+window.addEventListener('workshop:data',()=>{hydrateSharedEstimations();renderAll();});
 
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
