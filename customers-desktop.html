@@ -345,7 +345,7 @@ const T={
     ac_title:"Add Contact",ac_name:"Name",ac_role:"Role",ac_email:"Email",ac_phone:"Phone",ac_primary:"Set as primary contact",ac_save:"Add contact",
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
-    nq_title:"New Quote",nq_value:"Value (SEK)",nq_save:"Add quote",
+    nq_title:"New Quote",nq_desc:"Description",nq_value:"Value (SEK)",nq_save:"Add quote",
     ni_title:"New Invoice",ni_value:"Value (SEK)",ni_save:"Add invoice",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
@@ -371,7 +371,7 @@ const T={
     ac_title:"Lägg till kontakt",ac_name:"Namn",ac_role:"Roll",ac_email:"E-post",ac_phone:"Telefon",ac_primary:"Ange som primär kontakt",ac_save:"Lägg till kontakt",
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
-    nq_title:"Ny offert",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
+    nq_title:"Ny offert",nq_desc:"Beskrivning",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
     ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_save:"Lägg till faktura",
     locale:"sv-SE"},
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
@@ -397,7 +397,7 @@ const T={
     ac_title:"Dodaj kontakt",ac_name:"Ime",ac_role:"Uloga",ac_email:"E-pošta",ac_phone:"Telefon",ac_primary:"Postavi kako primaren kontakt",ac_save:"Dodaj kontakt",
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
-    nq_title:"Nova ponuda",nq_value:"Vrednost (SEK)",nq_save:"Dodaj ponuda",
+    nq_title:"Nova ponuda",nq_desc:"Opis",nq_value:"Vrednost (SEK)",nq_save:"Dodaj ponuda",
     ni_title:"Nova faktura",ni_value:"Vrednost (SEK)",ni_save:"Dodaj faktura",
     locale:"mk"}
 };
@@ -406,6 +406,26 @@ let LANG="en",selectedId=2,activeTab="overview",query="",filterStatus="all";
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
 function getCust(id){return CUSTOMERS.find(c=>c.id===id);}
+// "New Quote" pushed into c.quotes (a page-local array) and syncCustomer()'s explicit field
+// whitelist never included quotes, so a new quote was invisible outside this session - purely lost
+// on reload. hydrateSharedCustomers() above already proves the right shape (it derives a hydrated
+// customer's initial c.quotes from live WorkshopData.listEstimations(), mapped to
+// {no,date,value,status}) - this re-derives the SAME thing live on every render, same pattern as
+// Suppliers' supplierOrderRows()/supplierDocRows() (Pass 3.7/3.8). Draft estimations are excluded:
+// this tab is the customer-facing "quotes sent to them" view, and a draft has not been sent yet
+// (it also has no qs_draft translation, since it was never meant to reach a customer's eyes here).
+// Matched by NAME, not c.sharedId: sharedId is only set in-memory for the current session (either
+// by hydrateSharedCustomers() at load, or by syncCustomer() the first time this customer is
+// written to) and is never itself persisted - a customer whose name already exists in this page's
+// own hardcoded demo list never gets hydrated with one at all. Matching by e.customer===c.name
+// (exactly how upsertEstimation() and this page's own syncCustomer()/upsertCustomer() already
+// resolve identity) is what actually survives a reload.
+function customerQuoteRows(c){
+  const live=(window.WorkshopData?WorkshopData.listEstimations():[]).filter(e=>e.customer===c.name&&e.status!=='draft');
+  const liveNos=new Set(live.map(e=>e.no));
+  return live.map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status}))
+    .concat((c.quotes||[]).filter(q=>!liveNos.has(q.no)));
+}
 function syncCustomer(c){if(!window.WorkshopData||!c)return;const rec=WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents});if(rec){c.sharedId=rec.id;c.sharedNo=rec.no;}}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
 function custStats(id){const ps=custProjects(id);
@@ -463,7 +483,7 @@ function renderLeft(){
 function renderMiddle(c){
   const t=T[LANG];
   const tabs=["overview","contacts","projects","quotes","invoices","notes"];
-  const counts={overview:null,contacts:c.contacts.length,projects:custProjects(c.id).length,quotes:c.quotes.length,invoices:c.invoices.length,notes:c.notes.length};
+  const counts={overview:null,contacts:c.contacts.length,projects:custProjects(c.id).length,quotes:customerQuoteRows(c).length,invoices:c.invoices.length,notes:c.notes.length};
   return `
     <div class="panel">
       <div class="dhead2">
@@ -518,7 +538,7 @@ function renderTab(c){
     const rows=ps.map(p=>`<tr class="click" onclick="location.href='projects-desktop.html'"><td class="pnum2">${esc(p.no)}</td><td>${esc(p.name)}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${esc(fmtD(p.deadline))}</td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_name}</th><th>${t.th_status}</th><th>${t.th_value}</th><th>${t.th_deadline}</th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="empty3">${t.empty_projects}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='quotes'){
-    const rows=c.quotes.map(q=>`<tr><td class="pnum2">${esc(q.no)}</td><td class="rnum">${esc(fmtD(q.date))}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
+    const rows=customerQuoteRows(c).map(q=>`<tr><td class="pnum2">${esc(q.no)}</td><td class="rnum">${esc(fmtD(q.date))}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_date}</th><th>${t.th_value}</th><th>${t.th_status}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="empty3">${t.empty_quotes}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='invoices'){
     const rows=c.invoices.map(iv=>`<tr><td class="pnum2">${esc(iv.no)}</td><td class="rnum">${esc(fmtD(iv.date))}</td><td class="rnum">${fmt(iv.value)}</td><td><span class="tagpill ${iv.status==='paid'?'g':iv.status==='overdue'?'r':'w'}">${t["is_"+iv.status]}</span></td></tr>`).join("");
@@ -701,15 +721,24 @@ function saveUpload(id){
 function openNewQuote(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.nq_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
+    <div class="frow"><label for="nqDesc">${t.nq_desc}</label><input id="nqDesc" type="text"></div>
     <div class="frow"><label for="nqValue">${t.nq_value}</label><input id="nqValue" type="number"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewQuote(${id})">${t.nq_save}</button></div>`;
   $("fov").classList.add("show");
 }
+// Was pushing into c.quotes (a page-local array never read back by WorkshopData.upsertCustomer's
+// explicit field whitelist in syncCustomer()) - a new quote looked saved but vanished on reload.
+// WorkshopData.upsertEstimation() is the real backing function (same one estimations-desktop.html
+// itself uses); customerQuoteRows() above now derives the display live from it, so this only needs
+// to create the real record. 'sent' is a genuine Estimation status (matches the status this form
+// already claimed, unchanged) - this quote was just created and handed to the customer, not saved
+// as an internal draft.
 function saveNewQuote(id){
   const value=parseFloat($("nqValue").value)||0;
-  const c=getCust(id);const no="Q-2026-"+String(20+c.quotes.length+1).padStart(4,'0');
-  c.quotes.push({no,date:new Date().toISOString().slice(0,10),value,status:"sent"});
-  syncCustomer(c);
+  const desc=$("nqDesc").value.trim();
+  const c=getCust(id);
+  if(!c.sharedId)syncCustomer(c);
+  WorkshopData.upsertEstimation({customerId:c.sharedId,customer:c.name,title:desc||`Quote for ${c.name}`,status:'sent',sellingPrice:value,totalCost:value,currency:'SEK',created:new Date().toISOString().slice(0,10)});
   closeModal();activeTab='quotes';renderAll();
 }
 function openNewInvoice(id){
