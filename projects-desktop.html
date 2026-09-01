@@ -317,7 +317,7 @@ const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Servic
 const HOLD_REASONS=["material","customer","drawing","approval","breakdown","external","other"];
 const NOTE_TAGS=["general","customer","workshop","quality","purchase","important"];
 
-let seqProject=10, seqJobcard=39, seqPO=19, seqReport=3;
+let seqProject=10, seqPO=19, seqReport=3;
 // Derives the next number from the currently loaded (shared) PROJECTS rather than trusting the
 // page-local seqProject counter alone — PROJECTS now reflects prior sessions' real data, and
 // upsertProject() matches by `no`, so a stale/repeating counter could silently overwrite an
@@ -327,7 +327,6 @@ function projNo(){
   seqProject=Math.max(seqProject,...existingNums)+1;
   return "P-26-"+String(seqProject++).padStart(4,'0');
 }
-function jcNo(){return "JC-26-"+String(seqJobcard++).padStart(4,'0');}
 function poNo(){return "PO-26-"+String(seqPO++).padStart(4,'0');}
 function rptNo(){return "RPT-26-"+String(seqReport++).padStart(4,'0');}
 
@@ -357,8 +356,8 @@ const {STATUS_ORDER,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canCl
 function getProject(id){return PROJECTS.find(p=>p.id===id);}
 // Resolves via WorkshopData's central Quality Hold gate (quality-gates.js) — this covers BOTH a
 // Project-scoped hold on p.no AND a Jobcard-scoped hold on any real jobcard-desktop.html Jobcard
-// linked by projectNo, regardless of this page's own unrelated, page-local "Items" (p.jobcards)
-// planning list. Read-only: the actual enforcement happens in WorkshopData.upsertProject/updateProject.
+// linked by projectNo, including the live Jobcards surfaced in this page's Items view below.
+// Read-only: the actual enforcement happens in WorkshopData.upsertProject/updateProject.
 function projQualityGate(p){return (p&&window.WorkshopData?.getProjectQualityGate)?WorkshopData.getProjectQualityGate(p.no):{blocked:false,holds:[],reasons:[]};}
 // Surfaces a rejected WorkshopData mutation (active Quality Hold) as a translated alert, matching
 // this page's existing alert()-based error pattern (see the store-reservation error handling above).
@@ -381,12 +380,52 @@ function qualityHoldBanner(p){
   </div>`;
 }
 
-function jcTotals(p){const est=p.jobcards.reduce((a,b)=>a+b.est,0),act=p.jobcards.reduce((a,b)=>a+b.act,0),completed=p.jobcards.filter(j=>j.status==='completed').length;return{est,act,completed,total:p.jobcards.length};}
-function itemEstMaterialTotal(p){return p.jobcards.reduce((a,b)=>a+(b.estMaterial||0),0);}
+// Pass 3.30: Projects' old "Items" were lightweight, page-local Jobcard summaries. The production
+// Jobcard module has a richer schema, so this adapter deliberately maps only the compatible fields
+// and keeps Projects-only commercial data (estimatedMaterialCost) as an additive overlay. Real
+// Jobcards remain authoritative for identity, lifecycle, workers, progress and operation hours;
+// legacy local Items remain visible until first edited, when submitJobcard() safely creates their
+// real counterpart using the same number. Archived real Jobcards still reserve their numbers in
+// the dedup set so a retained local fallback cannot resurrect after deletion.
+function realJobcardStatusToLocal(s){
+  if(s==='completed'||s==='closed')return'completed';
+  if(s==='cancelled')return'cancelled';
+  if(['in-progress','inspection','paused','blocked'].includes(s))return'active';
+  return'planned';
+}
+function localJobcardStatusToReal(s){return{planned:'draft',active:'in-progress',completed:'completed',cancelled:'cancelled'}[s]||'draft';}
+function projectWorkerToShared(name){return{Aleksandar:'Aleksandar C.',Marko:'Marko K.',Elena:'Elena N.'}[name]||name;}
+function sharedWorkerToProject(name){
+  return{'Aleksandar C.':'Aleksandar','Marko K.':'Marko','Elena N.':'Elena'}[name]||PEOPLE.find(n=>name===n||String(name).startsWith(n+' '))||name||'';
+}
+function realJobcardHours(j,local){
+  const ops=j.operations||[];
+  return ops.length?ops.reduce((sum,op)=>sum+(Number(op.loggedHours)||0),0):Number(j.actualHours!=null?j.actualHours:(local?local.act:0))||0;
+}
+function projectJobcardRows(p){
+  const localRows=p.jobcards||[];
+  const localByNo=new Map(localRows.map(j=>[j.no,j]));
+  const live=(window.WorkshopData?.listJobcards?WorkshopData.listJobcards():[]).filter(j=>j.projectNo===p.no);
+  const rows=live.filter(j=>!j.archived).map(j=>{
+    const local=localByNo.get(j.no);
+    const workers=j.workers||[];
+    const assigned=workers.length>1?'Team':(workers.length===1?sharedWorkerToProject(workers[0]):(local?local.assigned:''));
+    return{no:j.no,desc:j.title||j.item||(local?local.desc:j.no),assigned,status:realJobcardStatusToLocal(j.status),
+      est:Number(j.plannedHours!=null?j.plannedHours:(local?local.est:0))||0,act:realJobcardHours(j,local),
+      progress:Number(j.progress!=null?j.progress:(local?local.progress:0))||0,
+      estMaterial:Number(j.estimatedMaterialCost!=null?j.estimatedMaterialCost:(local?local.estMaterial:0))||0,
+      _sharedId:j.id,_sharedStatus:j.status,_sharedWorkers:workers.slice()};
+  });
+  const liveNos=new Set(live.map(j=>j.no));
+  localRows.forEach(j=>{if(!liveNos.has(j.no))rows.push(j)});
+  return rows;
+}
+function jcTotals(p){const rows=projectJobcardRows(p),est=rows.reduce((a,b)=>a+b.est,0),act=rows.reduce((a,b)=>a+b.act,0),completed=rows.filter(j=>j.status==='completed').length;return{est,act,completed,total:rows.length};}
+function itemEstMaterialTotal(p){return projectJobcardRows(p).reduce((a,b)=>a+(b.estMaterial||0),0);}
 function itemMaterialActual(p,itemNo){return p.materials.filter(m=>m.jobcard===itemNo).reduce((a,b)=>a+b.cost,0);}
 function itemEstPrice(item){return item.est*RATE+(item.estMaterial||0);}
 function itemActualCost(p,item){return item.act*RATE+itemMaterialActual(p,item.no);}
-function progressOf(p){if(!p.jobcards.length)return 0;const est=p.jobcards.reduce((a,b)=>a+b.est,0);if(!est)return 0;const done=p.jobcards.reduce((a,b)=>a+b.est*(b.status==='completed'?1:(b.progress||0)/100),0);return Math.round(done/est*100);}
+function progressOf(p){const rows=projectJobcardRows(p);if(!rows.length)return 0;const est=rows.reduce((a,b)=>a+b.est,0);if(!est)return 0;const done=rows.reduce((a,b)=>a+b.est*(b.status==='completed'?1:(b.progress||0)/100),0);return Math.round(done/est*100);}
 function actLabourHours(p){return p.hours.reduce((a,b)=>a+b.hours,0);}
 function actMaterialStore(p){return p.materials.filter(m=>m.source==='store').reduce((a,b)=>a+b.cost,0);}
 // Pass 3.29: all three read the same live-merged view as renderPurchases() (projectPoRows(),
@@ -426,14 +465,14 @@ function inspectionReports(p){return projectDocRows(p)["Inspection Reports"]||[]
 // server-side regardless of what the override path here does.
 function qualityIssues(p){const t=T[LANG];return projQualityGate(p).holds.map(h=>t.qh_issue.replace('{holds}',h.no));}
 function completeIssues(p){const t=T[LANG],iss=qualityIssues(p);
-  const openJc=p.jobcards.filter(j=>j.status!=='completed');
+  const items=projectJobcardRows(p),openJc=items.filter(j=>j.status!=='completed'&&j.status!=='cancelled');
   if(openJc.length)iss.push(t.iss_open_jc.replace('{n}',openJc.length));
   const undel=projectPoRows(p).filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
   if(undel.length)iss.push(t.iss_po_undelivered.replace('{n}',undel.length));
-  if(!inspectionReports(p).length && p.jobcards.length)iss.push(t.iss_report_missing);
+  if(!inspectionReports(p).length && items.length)iss.push(t.iss_report_missing);
   return iss;}
 function closeIssues(p){const t=T[LANG],iss=qualityIssues(p);
-  const openJc=p.jobcards.filter(j=>j.status!=='completed');
+  const openJc=projectJobcardRows(p).filter(j=>j.status!=='completed'&&j.status!=='cancelled');
   if(openJc.length)iss.push(t.iss_jc_not_complete.replace('{n}',openJc.length));
   const undel=projectPoRows(p).filter(x=>x.status!=='delivered'&&x.status!=='cancelled');
   if(undel.length)iss.push(t.iss_po_unresolved.replace('{n}',undel.length));
@@ -787,13 +826,13 @@ function renderOverview(p){
 let openItemRows={};
 function renderJobcards(p){
   const t=T[LANG],ro=isReadonly(p);
-  const rows=p.jobcards.map(j=>{
+  const rows=projectJobcardRows(p).map(j=>{
     const open=openItemRows[j.no];
     const price=itemEstPrice(j),cost=itemActualCost(p,j),matAct=itemMaterialActual(p,j.no),margin=price?((price-cost)/price*100):0;
     return `<div class="folder ${open?'open':''}">
       <div class="fh" onclick="toggleItemRow('${j.no}')">
         <span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>${j.no} — ${esc(j.desc)}</span>
-        <span style="display:flex;align-items:center;gap:14px;"><span class="pcust2">${j.assigned}</span>${statusBadge(j.status)}<span class="rnum ${j.act>j.est?'over':''}">${j.act} / ${j.est} h</span></span>
+        <span style="display:flex;align-items:center;gap:14px;"><span class="pcust2">${esc(j.assigned)}</span>${statusBadge(j.status)}<span class="rnum ${j.act>j.est?'over':''}">${j.act} / ${j.est} h</span></span>
       </div>
       <div class="fb"><table class="subtable" style="margin-top:6px;"><thead><tr><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.m_material}</th><th>${t.c_margin}</th></tr></thead>
         <tbody><tr><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum">${fmt(matAct)} / ${fmt(j.estMaterial||0)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr></tbody></table>
@@ -902,7 +941,7 @@ function renderDocuments(p){
 function toggleFolder(f){openFolders[f]=!openFolders[f];renderDocuments(getProject(currentId));}
 
 function renderCosts(p){
-  const t=T[LANG],c=costs(p),jt=jcTotals(p);
+  const t=T[LANG],c=costs(p),jt=jcTotals(p),items=projectJobcardRows(p);
   $("tabpanel").innerHTML=`<div class="costgrid">
     <div class="costcol"><h4>${t.c_estimated}</h4>
       <div class="costline"><span class="lk">${t.c_labour}</span><span>${jt.est} h × ${RATE} = ${fmt(c.estLabour)}</span></div>
@@ -923,9 +962,9 @@ function renderCosts(p){
       <div class="costline profit ${c.actProfit<0?'neg':''}"><span>${t.c_profit}</span><span>${fmt(c.actProfit)}</span></div>
       <div class="costline"><span class="lk">${t.c_margin}</span><span>${c.actMargin.toFixed(1)}%</span></div></div>
   </div>
-  ${p.jobcards.length?`<div class="card2" style="margin-top:20px;"><div class="tabhead"><h3>${t.c_itemrevenue}</h3></div>
+  ${items.length?`<div class="card2" style="margin-top:20px;"><div class="tabhead"><h3>${t.c_itemrevenue}</h3></div>
     <table class="subtable"><thead><tr><th>${t.jc_desc}</th><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.c_margin}</th></tr></thead>
-    <tbody>${p.jobcards.map(j=>{const price=itemEstPrice(j),cost=itemActualCost(p,j),margin=price?((price-cost)/price*100):0;
+    <tbody>${items.map(j=>{const price=itemEstPrice(j),cost=itemActualCost(p,j),margin=price?((price-cost)/price*100):0;
       return `<tr><td>${esc(j.desc)}<div class="pcust2">${j.no}</div></td><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr>`;}).join("")}</tbody></table></div>`:""}`;
 }
 
@@ -948,7 +987,7 @@ $("fov").addEventListener('click',e=>{if(e.target===$("fov"))closeModal();});
 function printOffer(id){
   const t=T[LANG],p=getProject(id);if(!p)return;
   const VAT=0.25;let sub=0;
-  const rows=p.jobcards.map(j=>{const amt=itemEstPrice(j);sub+=amt;
+  const rows=projectJobcardRows(p).map(j=>{const amt=itemEstPrice(j);sub+=amt;
     return `<tr><td>${esc(j.desc)}</td><td class="n">${j.est}</td><td class="n">${fmt(j.estMaterial||0)}</td><td class="n">${fmt(amt)}</td></tr>`;}).join("");
   const vat=sub*VAT,tot=sub+vat;const today=new Date().toLocaleDateString(t.locale);
   const cust=custObj(p.customerId);
@@ -1089,13 +1128,41 @@ function reopenProjectFormAfterCustomer(newId){
   buildProjectForm(editingId?t.np_edit_title:t.np_title,v);
 }
 
+function sharedWorkersForProjectItem(assigned,p,existing){
+  if(!assigned)return[];
+  if(assigned==='Team'){
+    if(existing&&(existing.workers||[]).length)return existing.workers.slice();
+    return[...new Set((p.workers||[]).map(projectWorkerToShared).filter(w=>w&&w!=='Team'))];
+  }
+  return[projectWorkerToShared(assigned)];
+}
+function projectItemJobcardPayload(p,item,existing){
+  const type=String((p.types||[])[0]||'other').toLowerCase();
+  const allowed=['fabrication','repair','modification','assembly','installation','welding','cutting','machining','maintenance','inspection','other'];
+  const customer=custObj(p.customerId);
+  return{projectId:p.id,projectNo:p.no,customerId:customer?p.customerId:null,customer:customer?customer.name:null,title:item.desc,item:item.desc,
+    quantity:1,revision:0,drawingNo:'',workType:allowed.includes(type)?type:'other',location:'workshop',priority:'medium',
+    responsible:(existing&&existing.responsible)||projectWorkerToShared(p.pm||'Aleksandar')||'Aleksandar C.',
+    workers:sharedWorkersForProjectItem(item.assigned,p,existing),plannedStart:p.plannedStart||todayISO(),
+    plannedCompletion:p.plannedCompletion||p.deadline||null,actualStart:item.status==='active'?(p.actualStart||null):null,
+    actualCompletion:item.status==='completed'?(p.actualCompletion||todayISO()):null,plannedHours:item.est,progress:item.progress||0,
+    status:localJobcardStatusToReal(item.status),materialReadiness:'not-checked',inspectionRequired:false,
+    deliveryTarget:p.plannedCompletion||p.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
+    estimatedMaterialCost:item.estMaterial||0,actualHours:item.act||0};
+}
+function handleJobcardSaveError(result){
+  if(handleQualityBlocked(result))return true;
+  if(result&&result.error){alert(result.error);return true;}
+  return!result;
+}
 let editJcNo=null;
 function openJobcardForm(no){
   const t=T[LANG];editJcNo=no||null;
-  const p=getProject(currentId);const j=no?p.jobcards.find(x=>x.no===no):null;
+  const p=getProject(currentId);const j=no?projectJobcardRows(p).find(x=>x.no===no):null;
+  const assignedOptions=PEOPLE.concat(j&&j.assigned&&!PEOPLE.includes(j.assigned)?[j.assigned]:[]);
   showModal(`<h2>${t.jc_modal_title}</h2>
     <div class="frow"><label for="jcDesc">${t.jcf_desc}</label><input id="jcDesc" value="${esc(j?j.desc:'')}"></div>
-    <div class="frow2"><div><label for="jcAssigned">${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${PEOPLE.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${n}</option>`).join("")}</select></div>
+    <div class="frow2"><div><label for="jcAssigned">${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${assignedOptions.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${esc(n)}</option>`).join("")}</select></div>
       <div><label for="jcEst">${t.jcf_est}</label><input type="number" step="0.5" min="0" id="jcEst" value="${j?j.est:0}"></div></div>
     <div class="frow"><label for="jcEstMat">${t.jcf_estmat}</label><input type="number" step="1" min="0" id="jcEstMat" value="${j?(j.estMaterial||0):0}"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitJobcard()">${t.save_generic}</button></div>`);
@@ -1103,19 +1170,38 @@ function openJobcardForm(no){
 function submitJobcard(){
   const desc=$("jcDesc").value.trim();if(!desc)return;
   const p=getProject(currentId);
+  const input={desc,assigned:$("jcAssigned").value,est:parseFloat($("jcEst").value)||0,estMaterial:parseFloat($("jcEstMat").value)||0};
+  p.jobcards=p.jobcards||[];
   if(editJcNo){
-    const j=p.jobcards.find(x=>x.no===editJcNo);
-    Object.assign(j,{desc,assigned:$("jcAssigned").value,est:parseFloat($("jcEst").value)||0,estMaterial:parseFloat($("jcEstMat").value)||0});
+    const row=projectJobcardRows(p).find(x=>x.no===editJcNo);
+    if(!row){alert(T[LANG].err_row_changed);closeModal();render();return;}
+    const existing=window.WorkshopData?.findJobcard?WorkshopData.findJobcard(editJcNo):null;
+    if(existing&&existing.projectNo!==p.no){alert('This Jobcard number already belongs to another project.');return;}
+    const item={...row,...input};
+    const result=existing
+      ?WorkshopData.updateJobcard(editJcNo,{title:desc,item:desc,plannedHours:item.est,estimatedMaterialCost:item.estMaterial,workers:sharedWorkersForProjectItem(item.assigned,p,existing)})
+      :WorkshopData.upsertJobcard({...projectItemJobcardPayload(p,item,null),no:item.no});
+    if(handleJobcardSaveError(result))return;
+    let local=p.jobcards.find(x=>x.no===editJcNo);
+    if(local)Object.assign(local,input);
+    else p.jobcards.push({no:item.no,status:item.status,act:item.act,progress:item.progress,...input});
     pushActivity(p,"Item edited: "+desc);
   }else{
-    p.jobcards.push({no:jcNo(),desc,assigned:$("jcAssigned").value,status:"planned",est:parseFloat($("jcEst").value)||0,act:0,progress:0,estMaterial:parseFloat($("jcEstMat").value)||0});
+    const item={...input,status:'planned',act:0,progress:0};
+    const created=WorkshopData.upsertJobcard(projectItemJobcardPayload(p,item,null));
+    if(handleJobcardSaveError(created))return;
+    p.jobcards.push({no:created.no,...item});
     pushActivity(p,"Item created: "+desc);
   }
   syncSharedProject(p);closeModal();activeTab="jobcards";render();
 }
 function deleteJobcard(no){
   if(!confirm(T[LANG].confirm_delete))return;
-  const p=getProject(currentId);p.jobcards=p.jobcards.filter(x=>x.no!==no);
+  const p=getProject(currentId),row=projectJobcardRows(p).find(x=>x.no===no);
+  if(!row){alert(T[LANG].err_row_changed);render();return;}
+  const existing=window.WorkshopData?.findJobcard?WorkshopData.findJobcard(no):null;
+  if(existing&&existing.projectNo===p.no){WorkshopData.archiveJobcard(no);WorkshopData.recordJobcardActivity(no,{action:`Archived from Projects: ${p.no}`});}
+  p.jobcards=(p.jobcards||[]).filter(x=>x.no!==no);
   pushActivity(p,"Item deleted: "+no);syncSharedProject(p);render();
 }
 function openDocForm(){
@@ -1140,7 +1226,7 @@ let editMatIdx=null;
 function openMaterialForm(idx){
   const t=T[LANG],p=getProject(currentId);editMatIdx=(idx!==undefined)?idx:null;
   const m=editMatIdx!==null?p.materials[editMatIdx]:null;
-  const itemOpts=p.jobcards.map(j=>`<option value="${j.no}" ${m&&m.jobcard===j.no?'selected':''}>${j.no} — ${esc(j.desc)}</option>`).join("");
+  const itemOpts=projectJobcardRows(p).map(j=>`<option value="${j.no}" ${m&&m.jobcard===j.no?'selected':''}>${j.no} — ${esc(j.desc)}</option>`).join("");
   showModal(`<h2>${t.m_new}</h2>
     <div class="frow2"><div><label for="matName">${t.m_material}</label><input id="matName" value="${esc(m?m.name:'')}"></div><div><label for="matSpec">${t.m_spec}</label><input id="matSpec" value="${esc(m?m.spec:'')}"></div></div>
     <div class="frow3"><div><label for="matQty">${t.m_qty}</label><input type="number" step="0.1" min="0" id="matQty" value="${m?m.qty:0}"></div>
@@ -1291,15 +1377,22 @@ function openDuplicateConfirm(p){
 }
 function doDuplicate(id){
   const src=getProject(id);
+  const sourceItems=projectJobcardRows(src);
   const dup={no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
     notes:[],types:src.types.slice(),pm:src.pm,workshop:src.workshop,sales:src.sales,
     createdDate:todayISO(),plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
     quotedValue:0,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
-    status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
-    jobcards:src.jobcards.map(j=>({no:jcNo(),desc:j.desc,assigned:"",status:"planned",est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0})),
+    status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",jobcards:[],
     hours:[],materials:[],purchases:[],documents:{},activity:[{date:todayISO(),time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
   syncSharedProject(dup);
-  PROJECTS.unshift(dup);closeModal();currentId=dup.id;activeTab="overview";render();
+  // Each duplicated Item is a real draft Jobcard too. WorkshopData owns the new numbers; no
+  // production status, operation progress, worker assignment or history is copied.
+  dup.jobcards=sourceItems.map(j=>{
+    const item={desc:j.desc,assigned:'',status:'planned',est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0};
+    const created=WorkshopData.upsertJobcard(projectItemJobcardPayload(dup,item,null));
+    return{no:created.no,...item};
+  });
+  syncSharedProject(dup);refreshProjectsFromShared();closeModal();currentId=dup.id;activeTab="overview";render();
 }
 function openHoldForm(p){
   const t=T[LANG];
