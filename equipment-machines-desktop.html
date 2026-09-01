@@ -396,16 +396,16 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"></circle><path d="M16 16l5 5"></path></svg>
               <input id="searchBox" type="text" data-i-placeholder="searchPlaceholder" placeholder="Search equipment..." />
             </div>
-            <select id="categoryFilter" class="control"></select>
-            <select id="statusFilter" class="control"></select>
-            <select id="locationFilter" class="control"></select>
-            <select id="responsibleFilter" class="control"></select>
-            <select id="projectFilter" class="control"></select>
-            <select id="maintenanceFilter" class="control"></select>
-            <select id="inspectionFilter" class="control"></select>
-            <select id="certFilter" class="control"></select>
+            <select id="categoryFilter" class="control" aria-label="Filter by category"></select>
+            <select id="statusFilter" class="control" aria-label="Filter by status"></select>
+            <select id="locationFilter" class="control" aria-label="Filter by location"></select>
+            <select id="responsibleFilter" class="control" aria-label="Filter by responsible person"></select>
+            <select id="projectFilter" class="control" aria-label="Filter by project"></select>
+            <select id="maintenanceFilter" class="control" aria-label="Filter by maintenance state"></select>
+            <select id="inspectionFilter" class="control" aria-label="Filter by inspection state"></select>
+            <select id="certFilter" class="control" aria-label="Filter by certification state"></select>
             <div class="sort-row">
-              <select id="sortSelect" class="control">
+              <select id="sortSelect" class="control" aria-label="Sort equipment list by">
                 <option value="equipmentId" data-i="sortEquipmentId">Equipment ID</option>
                 <option value="name" data-i="sortName">Name</option>
                 <option value="category" data-i="sortCategory">Category</option>
