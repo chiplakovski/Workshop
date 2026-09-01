@@ -434,6 +434,18 @@ function customerQuoteRows(c){
   return live.map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status}))
     .concat((c.quotes||[]).filter(q=>!liveNos.has(q.no)));
 }
+// The customer Documents panel had the same split-brain problem already fixed for Suppliers:
+// it rendered only c.documents and saveUpload() wrote only that nested customer field, so the
+// dedicated Documents module never saw uploads made here (and documents linked to a customer in
+// that module never appeared here). Read the shared collection live, while retaining the older
+// nested records as a deduplicated legacy fallback so existing demonstration data is not lost.
+function customerDocumentRows(c){
+  const live=(window.WorkshopData?WorkshopData.getDocuments():[]).filter(d=>d.module==='Customers'&&d.record===c.name);
+  const liveNames=new Set(live.map(d=>String(d.name).trim().toLowerCase()));
+  const iconType=name=>{const ext=String(name).split('.').pop().toLowerCase();return ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc'};
+  return live.map(d=>({name:d.name,type:iconType(d.name),date:(d.updated||'').slice(0,10)}))
+    .concat((c.documents||[]).filter(d=>!liveNames.has(String(d.name).trim().toLowerCase())));
+}
 function syncCustomer(c){if(!window.WorkshopData||!c)return;const rec=WorkshopData.upsertCustomer({id:c.sharedId,name:c.name,status:c.status,city:c.city,country:c.country,org:c.org,vat:c.vat,email:c.email,phone:c.phone,website:c.website,since:c.since,terms:c.terms,credit:c.credit,currency:c.currency,industry:c.industry,type:c.ctype,preferred:c.preferred,priceList:c.pricelist,deliveryTerms:c.deliveryTerms||"—",discountAgreement:c.discountAgreement||"—",billing:c.billing,shipping:c.shipping||c.billing,contacts:c.contacts,notes:c.notes,documents:c.documents});if(rec){c.sharedId=rec.id;c.sharedNo=rec.no;}}
 function custProjects(id){return PROJECTS.filter(p=>p.customerId===id);}
 function custStats(id){const ps=custProjects(id);
@@ -594,7 +606,7 @@ function renderRight(c){
     </div>
     <div class="panel">
       <div class="phead"><h3>${t.p_docs}</h3><button class="tbtn small" onclick="openUpload(${c.id})">${t.upload}</button></div>
-      ${c.documents.map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
+      ${customerDocumentRows(c).map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${t.empty_docs}</div>`}
     </div>`;
 }
 
@@ -721,8 +733,8 @@ function openUpload(id){
 }
 function saveUpload(id){
   const name=$("udName").value.trim();if(!name)return;
-  const ext=name.split('.').pop().toLowerCase();const type=ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':'doc';
-  const c=getCust(id);c.documents.push({name,type,date:new Date().toISOString().slice(0,10)});syncCustomer(c);
+  const c=getCust(id);
+  WorkshopData.upsertDocument({name,type:'Document',module:'Customers',record:c.name,category:'Customer Documents',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.'});
   closeModal();renderAll();
 }
 
