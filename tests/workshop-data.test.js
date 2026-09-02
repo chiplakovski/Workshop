@@ -3747,3 +3747,32 @@ test('inventory: duplicate, incomplete, invalid and over-reserved items are reje
   assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',category:'Plate',unit:'EA',location:'A1',stock:1,reserved:2}).error);
   assert.equal(WD.get().inventory.length,before);
 });
+
+// ── Pass 3.36: Purchasing RFQs and supplier invoices ───────────────────────────────
+test('purchasing: RFQ create/update/archive persists a real shared workflow record', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const rfq=WD.upsertPurchaseRfq({supplier:'SteelSupply AB',project:'P-2026-014',items:'8 sheets AISI 304',dueDate:'2026-09-10',status:'Sent'});
+  assert.match(rfq.no,/^RFQ-\d{4}-\d{4}$/);assert.equal(rfq.status,'Sent');
+  assert.equal(WD.updatePurchaseRfq(rfq.no,{status:'Replied'}).status,'Replied');
+  assert.equal(loadWorkshopData(null,localStorage).findPurchaseRfq(rfq.no).supplier,'SteelSupply AB');
+  assert.equal(WD.archivePurchaseRfq(rfq.id).archived,true);
+});
+
+test('purchasing: supplier invoice is positive, status-validated and linked only to a real PO', ()=>{
+  const WD=loadWorkshopData(),po=WD.getPurchaseOrders()[0],before=WD.listSupplierInvoices().length;
+  const invoice=WD.upsertSupplierInvoice({supplier:po.supplier,poNo:po.no,supplierReference:'EXT-991',amount:4500,status:'pending'});
+  assert.match(invoice.no,/^SINV-\d{4}-\d{4}$/);assert.equal(invoice.poNo,po.no);
+  assert.equal(WD.updateSupplierInvoice(invoice.id,{status:'approved'}).status,'approved');
+  assert.ok(WD.upsertSupplierInvoice({supplier:'X',poNo:'PO-MISSING',amount:1}).error);
+  assert.ok(WD.upsertSupplierInvoice({supplier:'X',amount:0}).error);
+  assert.ok(WD.upsertSupplierInvoice({supplier:'X',amount:1,status:'invented'}).error);
+  assert.equal(WD.listSupplierInvoices().length,before+1);
+  assert.equal(WD.archiveSupplierInvoice(invoice.no).archived,true);
+});
+
+test('backup validation and normalization include purchase RFQs and supplier invoices', ()=>{
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(minimalState({version:5}))});
+  assert.deepEqual(WD.getPurchaseRfqs(),[]);assert.deepEqual(WD.listSupplierInvoices(),[]);
+  assert.equal(WD.validateBackup({purchaseRfqs:'bad'}).valid,false);
+  assert.equal(WD.validateBackup({supplierInvoices:'bad'}).valid,false);
+});

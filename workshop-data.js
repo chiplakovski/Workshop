@@ -22,7 +22,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -242,6 +242,8 @@
       {"id":5,"no":"PO-2026-0141","supplier":"SvetsTeknik i Malmö AB","project":"P-2026-008","date":"2026-08-06","expected":"2026-08-31","value":138750,"buyer":"Anna Berg","status":"Awaiting Approval","items":"Welding equipment"},
       {"id":6,"no":"PO-2026-0140","supplier":"Lager & Verktyg i Sverige AB","project":"P-2026-007","date":"2026-08-05","expected":"2026-09-04","value":58920,"buyer":"Marcus Lind","status":"Awaiting Approval","items":"Bearings and tools"}
     ],
+    purchaseRfqs:[],
+    supplierInvoices:[],
     documents:[
       {"id":1,"name":"Material Certificate MTC-240516.pdf","type":"Certificate","module":"Purchasing","record":"PO-2026-0145","category":"Materials","updated":"2026-08-28T10:24:00","status":"Valid","expiry":"2026-09-12","revision":"1","author":"Anna Berg"},
       {"id":2,"name":"Project Drawing Rev B.pdf","type":"Drawing","module":"Projects","record":"P-2026-014","category":"Drawings","updated":"2026-08-27T14:12:00","status":"Review Soon","expiry":"","revision":"B","author":"Marcus Lind"},
@@ -299,7 +301,7 @@
   // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
   const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
     'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs',
-    'purchaseOrders','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
+    'purchaseOrders','purchaseRfqs','supplierInvoices','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
   function safeParseJSON(raw){
     if(!raw)return null;
     try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
@@ -509,6 +511,8 @@
     if(!Array.isArray(s.qualityReleases))s.qualityReleases=[];
     if(!Array.isArray(s.supplierQuality))s.supplierQuality=base.supplierQuality;
     if(!Array.isArray(s.purchaseOrders))s.purchaseOrders=base.purchaseOrders;
+    if(!Array.isArray(s.purchaseRfqs))s.purchaseRfqs=[];
+    if(!Array.isArray(s.supplierInvoices))s.supplierInvoices=[];
     if(!Array.isArray(s.documents))s.documents=base.documents;
     if(!Array.isArray(s.documentFolders))s.documentFolders=[];
     if(!Array.isArray(s.invoices))s.invoices=[];
@@ -627,6 +631,10 @@
       if(d.mimeType==null)d.mimeType='';
       if(d.fileSize==null)d.fileSize=0;
     });
+    s.purchaseRfqs.forEach(r=>{if(r.status==null)r.status='Draft';if(r.archived==null)r.archived=false;});
+    s.supplierInvoices.forEach(i=>{if(i.status==null)i.status='pending';if(i.currency==null)i.currency='SEK';if(i.archived==null)i.archived=false;});
+    if(s.counters&&s.counters.purchaseRfq==null)s.counters.purchaseRfq=s.purchaseRfqs.length;
+    if(s.counters&&s.counters.supplierInvoice==null)s.counters.supplierInvoice=s.supplierInvoices.length;
     s.documentFolders.forEach(f=>{if(f.archived==null)f.archived=false;});
     s.invoices.forEach(i=>{if(i.archived==null)i.archived=false;if(i.status==null)i.status='pending';if(i.currency==null)i.currency='SEK';});
     if(s.counters&&s.counters.documentFolder==null)s.counters.documentFolder=s.documentFolders.length;
@@ -2845,10 +2853,49 @@
       return clone(po);
     },
 
-    // ── Documents: shared metadata plus optional browser-stored file content. ──
-    // localStorage has a small per-origin quota, so content is deliberately capped. The UI reads
-    // files as data URLs; legacy/metadata-only documents remain valid and simply have no content
-    // to download until a file is attached.
+    // Purchasing workflows that sit alongside purchase orders.
+    getPurchaseRfqs:()=>clone(state.purchaseRfqs),
+    findPurchaseRfq:idOrNo=>clone(state.purchaseRfqs.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    upsertPurchaseRfq(payload){
+      if(!payload||!String(payload.supplier||'').trim())return{error:'An RFQ supplier is required'};
+      if(!String(payload.items||'').trim())return{error:'RFQ items or scope are required'};
+      const status=String(payload.status||'Draft');
+      if(!['Draft','Sent','Replied','Closed','Cancelled'].includes(status))return{error:'Invalid RFQ status'};
+      let rfq=state.purchaseRfqs.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);data.supplier=String(data.supplier).trim();data.items=String(data.items).trim();data.status=status;
+      if(rfq)Object.assign(rfq,data);
+      else{
+        rfq=Object.assign({id:(state.counters.purchaseRfq=(state.counters.purchaseRfq||0)+1),no:`RFQ-${new Date().getFullYear()}-${String(state.counters.purchaseRfq).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',project:'',buyer:'Aleksandar C.',archived:false},data);
+        state.purchaseRfqs.unshift(rfq);
+      }
+      save(`Purchase RFQ saved: ${rfq.no}`);return clone(rfq);
+    },
+    updatePurchaseRfq(idOrNo,patch){const rfq=state.purchaseRfqs.find(x=>x.id===idOrNo||x.no===idOrNo);if(!rfq)return{error:'RFQ not found'};return api.upsertPurchaseRfq(Object.assign({},rfq,clone(patch||{})));},
+    archivePurchaseRfq(idOrNo){const rfq=state.purchaseRfqs.find(x=>x.id===idOrNo||x.no===idOrNo);if(!rfq)return{error:'RFQ not found'};rfq.archived=true;save(`Purchase RFQ archived: ${rfq.no}`);return clone(rfq);},
+
+    listSupplierInvoices:()=>clone(state.supplierInvoices),
+    findSupplierInvoice:idOrNo=>clone(state.supplierInvoices.find(x=>x.id===idOrNo||x.no===idOrNo||x.supplierReference===idOrNo)),
+    upsertSupplierInvoice(payload){
+      if(!payload||!String(payload.supplier||'').trim())return{error:'An invoice supplier is required'};
+      const amount=Number(payload.amount);
+      if(!Number.isFinite(amount)||amount<=0)return{error:'Invoice amount must be greater than zero'};
+      const status=String(payload.status||'pending').toLowerCase();
+      if(!['pending','approved','paid','disputed','cancelled'].includes(status))return{error:'Invalid supplier invoice status'};
+      if(payload.poNo&&!state.purchaseOrders.some(po=>po.no===payload.poNo))return{error:'Linked purchase order not found'};
+      let invoice=state.supplierInvoices.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
+      const data=clone(payload);data.supplier=String(data.supplier).trim();data.amount=amount;data.status=status;
+      if(invoice)Object.assign(invoice,data);
+      else{
+        invoice=Object.assign({id:(state.counters.supplierInvoice=(state.counters.supplierInvoice||0)+1),no:`SINV-${new Date().getFullYear()}-${String(state.counters.supplierInvoice).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',poNo:'',supplierReference:'',currency:'SEK',notes:'',archived:false},data);
+        state.supplierInvoices.unshift(invoice);
+      }
+      save(`Supplier invoice saved: ${invoice.no}`);return clone(invoice);
+    },
+    updateSupplierInvoice(idOrNo,patch){const invoice=state.supplierInvoices.find(x=>x.id===idOrNo||x.no===idOrNo);if(!invoice)return{error:'Supplier invoice not found'};return api.upsertSupplierInvoice(Object.assign({},invoice,clone(patch||{})));},
+    archiveSupplierInvoice(idOrNo){const invoice=state.supplierInvoices.find(x=>x.id===idOrNo||x.no===idOrNo);if(!invoice)return{error:'Supplier invoice not found'};invoice.archived=true;save(`Supplier invoice archived: ${invoice.no}`);return clone(invoice);},
+
+    // Documents: shared metadata plus optional browser-stored file content. localStorage has a
+    // small per-origin quota, so content is deliberately capped.
     maxDocumentFileBytes:768*1024,
     maxDocumentStorageBytes:2*1024*1024,
     getDocuments:()=>clone(state.documents),
