@@ -1341,6 +1341,33 @@
       return clone(p);
     },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
+    createInventoryItem(payload){
+      const data=clone(payload||{});
+      data.code=String(data.code||'').trim().toUpperCase();
+      data.description=String(data.description||'').trim();
+      data.category=String(data.category||'').trim();
+      data.unit=String(data.unit||'').trim().toUpperCase();
+      data.location=String(data.location||'').trim();
+      if(!data.code)return{error:'Item code is required'};
+      if(!/^[A-Z0-9][A-Z0-9._/-]*$/.test(data.code))return{error:'Item code contains unsupported characters'};
+      if(state.inventory.some(item=>String(item.code||'').trim().toUpperCase()===data.code))return{error:`Item ${data.code} already exists`};
+      if(!data.description)return{error:'Description is required'};
+      if(!data.category)return{error:'Category is required'};
+      if(!data.unit)return{error:'Unit is required'};
+      if(!data.location)return{error:'Location is required'};
+      const numeric=['stock','reserved','minStock','reorderQty','avgCost','lastPrice'];
+      for(const field of numeric){
+        const value=Number(data[field]||0);
+        if(!Number.isFinite(value)||value<0)return{error:`${field} must be zero or greater`};
+        data[field]=value;
+      }
+      if(data.reserved>data.stock)return{error:'Reserved quantity cannot exceed stock'};
+      const rec=Object.assign({grade:'',dimensions:'',supplier:'',heat:'',certificate:null,status:'good'},data);
+      rec.status=rec.stock-rec.reserved<=rec.minStock?'low':'good';
+      state.inventory.push(rec);
+      save(`Inventory item created: ${rec.code}`);
+      return clone(rec);
+    },
     reserveItem(input){const inv=inventory(input.code),p=project(input.projectNo);if(!inv||!p)return{error:'Item or project not found'};const requested=Math.max(0,Number(input.qty)||0),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(requested,free);if(!qty)return{error:'No available stock to reserve'};inv.reserved+=qty;let line=(p.bom||[]).find(x=>x.code===inv.code);if(!line){line={code:inv.code,description:inv.description,required:qty,reserved:0,issued:0,unit:inv.unit};p.bom=p.bom||[];p.bom.push(line)}line.reserved=(line.reserved||0)+qty;addMovement({action:'RESERVED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:p.no,projectNo:p.no,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`Material reserved: ${inv.code}`);return{item:clone(inv),project:clone(p),reserved:qty,readiness:clone(r)}},
     reserveBom(no){const p=project(no);if(!p)return null;(p.bom||[]).forEach(line=>{const inv=inventory(line.code);if(!inv)return;const need=Math.max(0,line.required-(line.reserved||0)),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(need,free);line.reserved=(line.reserved||0)+qty;inv.reserved+=qty;if(qty)addMovement({action:'RESERVED',code:line.code,qty,unit:line.unit,from:inv.location,to:no,projectNo:no})});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`BOM reserved: ${no}`);return clone(r)},
     resolveBarcode:code=>state.barcodeLinks[code]||null,

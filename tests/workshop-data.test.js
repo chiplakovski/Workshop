@@ -3725,3 +3725,25 @@ test('backup validation and old-state normalization include documentFolders and 
   assert.equal(WD.validateBackup({documentFolders:'bad'}).valid,false);
   assert.equal(WD.validateBackup({invoices:'bad'}).valid,false);
 });
+
+// ── Pass 3.35: real Store item creation ─────────────────────────────────────────────
+test('inventory: create item persists a normalized, immediately usable Store record', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const created=WD.createInventoryItem({code:' test-item-01 ',description:'Test plate',category:'Plate',unit:'ea',location:'Z1-01',stock:12,reserved:2,minStock:4,reorderQty:10,avgCost:25,lastPrice:27,supplier:'Test Supplier'});
+  assert.equal(created.code,'TEST-ITEM-01');
+  assert.equal(created.unit,'EA');
+  assert.equal(created.status,'good');
+  assert.equal(WD.get().inventory.find(x=>x.code==='TEST-ITEM-01').stock,12);
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.equal(reloaded.get().inventory.find(x=>x.code==='TEST-ITEM-01').location,'Z1-01');
+});
+
+test('inventory: duplicate, incomplete, invalid and over-reserved items are rejected atomically', ()=>{
+  const WD=loadWorkshopData();
+  const before=WD.get().inventory.length;
+  assert.ok(WD.createInventoryItem({code:'SS-SHT-304-2.0',description:'Duplicate',category:'Plate',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-1',category:'Plate',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW ITEM',description:'Bad code',category:'Plate',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',category:'Plate',unit:'EA',location:'A1',stock:1,reserved:2}).error);
+  assert.equal(WD.get().inventory.length,before);
+});
