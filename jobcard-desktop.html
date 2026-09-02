@@ -758,7 +758,7 @@ function renderList(){
   return `<div class="panel">
     <div class="phead"><h3>${esc(title)}</h3><button class="tbtn primary small" onclick="openNewJobcardMenu()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(tt.nav_newjc)}</button></div>
     <div class="filterbar">
-      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="jcSearch" type="text" placeholder="${esc(tt.searchph)}" value="${esc(jcQuery)}"></div>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="jcSearch" type="text" placeholder="${esc(tt.searchph)}" aria-label="${esc(tt.searchph)}" value="${esc(jcQuery)}"></div>
       <select aria-label="${esc(tt.f_status)}" onchange="jcFilterStatus=this.value;renderApp();"><option value="all" ${jcFilterStatus==='all'?'selected':''}>${esc(tt.filt_allstatus)}</option>${MAIN_STAGES.concat(SIDE_STATUSES).map(s=>`<option value="${s}" ${jcFilterStatus===s?'selected':''}>${esc(tt['st_'+s])}</option>`).join('')}</select>
       <select aria-label="${esc(tt.f_priority)}" onchange="jcFilterPriority=this.value;renderApp();"><option value="all" ${jcFilterPriority==='all'?'selected':''}>${esc(tt.filt_allpriorities)}</option>${['high','medium','low'].map(p=>`<option value="${p}" ${jcFilterPriority===p?'selected':''}>${esc(tt['pr_'+p])}</option>`).join('')}</select>
       <button class="tbtn small" onclick="moreFiltersOpen=!moreFiltersOpen;renderApp();">${esc(tt.morefilters)}</button>
@@ -962,9 +962,9 @@ function openOpForm(jcId,opId){
   const equipmentLocked=!!(op&&op.status==='in-progress');
   $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${op?esc(tt.m_editop):esc(tt.m_addop)}</h2><p class="fsub">${esc(j.no)}</p>
-    <div class="frow"><label>${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
+    <div class="frow"><label for="opDesc">${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
     <div id="opDescErr" class="errmsg" style="display:none;"></div>
-    <div class="frow"><label>${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
+    <div class="frow"><label for="opInstr">${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
     <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!OWNER_OPTIONS.includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
       ${fieldSelect('opMachine',tt.op_machine,machineOpts,machineSelected,equipmentLocked)}
       ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.filter(s=>(s!=='in-progress'||(op&&op.status==='in-progress'))&&(!jcQualityGate(j).blocked||s===(op?op.status:'pending')||!OPERATION_UNSAFE_STATUSES.includes(s))).map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
@@ -974,7 +974,7 @@ function openOpForm(jcId,opId){
       ${field('opPlannedStart',tt.op_plannedstart,op?op.plannedStart:'','date')}</div>
     <div class="frow2">${fieldSelect('opDependency',tt.op_dependency,[{v:'',l:tt.ji_none}].concat(others.map(o=>({v:o.id,l:o.desc}))),op?op.dependency:'')}
       <div class="checkrow" style="align-items:flex-end;padding-bottom:9px;"><input type="checkbox" id="opInspection" ${op&&op.inspectionCheckpoint?'checked':''}><label for="opInspection" style="margin:0;">${esc(tt.op_inspectioncheckpoint)}</label></div></div>
-    <div class="frow"><label>${esc(tt.op_notes)}</label><textarea id="opNotes">${esc(op?op.notes:'')}</textarea></div>
+    <div class="frow"><label for="opNotes">${esc(tt.op_notes)}</label><textarea id="opNotes">${esc(op?op.notes:'')}</textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveOpForm(${jcId}${op?','+op.id:''})">${esc(tt.nc_save)}</button></div>`;
   $('fov').classList.add('show');
 }
@@ -1800,7 +1800,7 @@ function openJcForm(id){
   $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${j?esc(tt.nc_edit_title):esc(tt.nc_title)}</h2><p class="fsub">${j?esc(j.no):esc(tt.msub)}</p>
     <div class="frow2">${fieldSelect('jfCustomer',tt.ji_customer,SHARED.customers.map(c=>({v:c.id,l:c.name})),j?j.customerId:(SHARED.customers[0]?SHARED.customers[0].id:''))}${fieldSelect('jfProject',tt.ji_project,projectOptions(true),j?j.projectNo:'')}</div>
-    <div class="frow"><label>${esc(tt.ji_title)}</label><input id="jfTitle" value="${esc(j?j.title:'')}"></div>
+    <div class="frow"><label for="jfTitle">${esc(tt.ji_title)}</label><input id="jfTitle" value="${esc(j?j.title:'')}"></div>
     <div id="jfTitleErr" class="errmsg" style="display:none;"></div>
     <div class="frow2">${field('jfItem',tt.ji_item,j?j.item:'')}${field('jfQty',tt.ji_qty,j?j.quantity:1,'number')}</div>
     <div class="frow2">${field('jfRevision',tt.ji_revision,j?j.revision:0,'number')}${field('jfDrawing',tt.ji_drawingno,j?j.drawingNo:'')}</div>
