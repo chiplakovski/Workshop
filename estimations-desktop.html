@@ -961,7 +961,7 @@ function renderLeft(){
     <div class="panel">
       <div class="phead"><h3>${t.p_list}</h3></div>
       <div class="listtoolbar">
-        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" value="${esc(query)}"></div>
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" aria-label="${esc(t.searchph)}" value="${esc(query)}"></div>
       </div>
       <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewEst()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newest}</button>
       <div class="segtabs">
@@ -1183,8 +1183,8 @@ function openEditWorkItem(id,idx){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   const wi=e.workItems[idx];if(!wi)return;
   $("fcard").innerHTML=`<h2>${esc(t.act_editwi)}</h2>
-    <div class="frow"><label>${esc(t.wi_no)}</label><input id="ewNo" value="${esc(wi.no)}"></div>
-    <div class="frow"><label>${esc(t.wi_desc)}</label><input id="ewDesc" value="${esc(wi.desc)}"></div>
+    <div class="frow"><label for="ewNo">${esc(t.wi_no)}</label><input id="ewNo" value="${esc(wi.no)}"></div>
+    <div class="frow"><label for="ewDesc">${esc(t.wi_desc)}</label><input id="ewDesc" value="${esc(wi.desc)}"></div>
     <div id="ewErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditWorkItem(${id},${idx})">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
@@ -1285,7 +1285,7 @@ function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const t=T[
 function openRevision(id){
   const t=T[LANG];const e=getEst(id);
   $("fcard").innerHTML=`<h2>${esc(t.rev_create_title)} ${Number(e.revision||0)+1}</h2><p class="fsub">${esc(e.no)}</p>
-    <div class="frow"><label>${esc(t.rev_reason)}</label><textarea id="revReason" placeholder="${esc(t.rev_reason_ph)}"></textarea></div>
+    <div class="frow"><label for="revReason">${esc(t.rev_reason)}</label><textarea id="revReason" placeholder="${esc(t.rev_reason_ph)}"></textarea></div>
     <div id="revErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveRevision(${id})">${esc(t.rev_create_btn)}</button></div>`;
   $("fov").classList.add("show");
@@ -1396,14 +1396,14 @@ function openNewEst(){
   const projOpts=`<option value="">${esc(t.ne_none)}</option>`+Object.keys(PROJECTS).map(no=>`<option value="${no}">${esc(no)} — ${esc(PROJECTS[no].name)}</option>`).join("");
   const today=todayISO();
   $("fcard").innerHTML=`<h2>${esc(t.nc_title)}</h2><p class="fsub">${esc(t.esub)}</p>
-    <div class="frow2"><div><label for="neCustomer">${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label>${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
+    <div class="frow2"><div><label for="neCustomer">${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label for="neTitle">${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
     <div id="neErr1" class="errmsg" style="display:none;"></div>
-    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label for="neProject">${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label for="neEstimator">${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
-    <div class="frow3"><div><label>${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label>${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label>${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
+    <div class="frow2"><div><label for="neOppRef">${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label for="neProject">${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
+    <div class="frow2"><div><label for="neRfq">${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label for="neEstimator">${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
+    <div class="frow3"><div><label for="neCreated">${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label for="neValid">${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label for="neReqDelivery">${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
     <div id="neErr2" class="errmsg" style="display:none;"></div>
-    <div class="frow3"><div><label>${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label for="neCurrency">${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label>${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
+    <div class="frow3"><div><label for="neDelivery">${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label for="neCurrency">${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label for="neTerms">${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
+    <div class="frow2"><div><label for="neIncoterms">${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
     <div class="frow"><label for="neTemplate">${esc(t.ne_startmethod)}</label><select id="neTemplate">
       <option value="blank" selected>${esc(t.ne_blank)}</option>
       <option value="fabrication">${esc(t.ne_tpl_fab)}</option>
@@ -1440,10 +1440,10 @@ function saveNewEst(){
 function openEditEst(id){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.no)}</h2>
-    <div class="frow2"><div><label>${esc(t.ei_oppref)}</label><input id="eeOppRef" value="${esc(e.opportunityRef)}"></div><div><label>${esc(t.ei_rfq)}</label><input id="eeRfq" value="${esc(e.customerRfq)}"></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_valid)}</label><input id="eeValid" type="date" value="${esc(e.validUntil)}"></div><div><label>${esc(t.ei_reqdelivery)}</label><input id="eeReqDelivery" type="date" value="${esc(e.requestedDelivery)}"></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_delivery)}</label><input id="eeDelivery" value="${esc(e.deliveryTime)}"></div><div><label>${esc(t.ei_terms)}</label><input id="eeTerms" value="${esc(e.paymentTerms)}"></div></div>
-    <div class="frow2"><div><label>${esc(t.ei_incoterms)}</label><input id="eeIncoterms" value="${esc(e.incoterms)}"></div><div><label>${esc(t.ei_estimator)}</label><input id="eeEstimator" value="${esc(e.estimator||e.createdBy)}"></div></div>
+    <div class="frow2"><div><label for="eeOppRef">${esc(t.ei_oppref)}</label><input id="eeOppRef" value="${esc(e.opportunityRef)}"></div><div><label for="eeRfq">${esc(t.ei_rfq)}</label><input id="eeRfq" value="${esc(e.customerRfq)}"></div></div>
+    <div class="frow2"><div><label for="eeValid">${esc(t.ei_valid)}</label><input id="eeValid" type="date" value="${esc(e.validUntil)}"></div><div><label for="eeReqDelivery">${esc(t.ei_reqdelivery)}</label><input id="eeReqDelivery" type="date" value="${esc(e.requestedDelivery)}"></div></div>
+    <div class="frow2"><div><label for="eeDelivery">${esc(t.ei_delivery)}</label><input id="eeDelivery" value="${esc(e.deliveryTime)}"></div><div><label for="eeTerms">${esc(t.ei_terms)}</label><input id="eeTerms" value="${esc(e.paymentTerms)}"></div></div>
+    <div class="frow2"><div><label for="eeIncoterms">${esc(t.ei_incoterms)}</label><input id="eeIncoterms" value="${esc(e.incoterms)}"></div><div><label for="eeEstimator">${esc(t.ei_estimator)}</label><input id="eeEstimator" value="${esc(e.estimator||e.createdBy)}"></div></div>
     <div id="eeErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditEst(${id})">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
@@ -1470,9 +1470,9 @@ function openConvertEst(id){
   const tot=computeTotals(e);
   $("fcard").innerHTML=`<h2>${esc(t.convert_title)}</h2><p class="fsub">${esc(e.no)} · ${esc(CUSTOMERS[e.customerId].name)}</p>
     <div class="fnote">${esc(t.convert_note)}</div>
-    <div class="frow"><label>${esc(t.convert_projtitle)}</label><input id="cpTitle" value="${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no)}"></div>
-    <div class="frow2"><div><label>${esc(t.convert_hours)}</label><input id="cpHours" type="number" min="0" value="${esc(e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0))}"></div><div><label>${esc(t.convert_delivery)}</label><input id="cpDate" type="date" value="${esc(e.deliveryTarget||e.validUntil)}"></div></div>
-    <div class="frow"><label>${esc(t.convert_value)}</label><input value="${fmt0(tot.sellingPrice)}" disabled></div>
+    <div class="frow"><label for="cpTitle">${esc(t.convert_projtitle)}</label><input id="cpTitle" value="${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no)}"></div>
+    <div class="frow2"><div><label for="cpHours">${esc(t.convert_hours)}</label><input id="cpHours" type="number" min="0" value="${esc(e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0))}"></div><div><label for="cpDate">${esc(t.convert_delivery)}</label><input id="cpDate" type="date" value="${esc(e.deliveryTarget||e.validUntil)}"></div></div>
+    <div class="frow"><label for="cpValue">${esc(t.convert_value)}</label><input id="cpValue" value="${fmt0(tot.sellingPrice)}" disabled></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="confirmConvertEst(${id})">${esc(t.convert_create)}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1495,8 +1495,8 @@ function openPricingSettings(id){
   const tot=computeTotals(e);
   $("fcard").innerHTML=`<h2>${esc(t.pricing_title)}</h2><p class="fsub">${esc(e.no)}</p>
     <p class="fnote">${esc(t.pricing_note)}</p>
-    <div class="frow2"><div><label>${esc(t.cb_overhead)} %</label><input id="psOverhead" type="number" min="0" step="any" value="${esc(e.overheadPct)}"></div><div><label>${esc(t.cb_contingency)} %</label><input id="psContingency" type="number" min="0" step="any" value="${esc(e.contingencyPct)}"></div></div>
-    <div class="frow"><label>${esc(t.ps_discount)} (SEK, ${esc(t.discount_max)} ${fmt0(tot.sellSubtotal)})</label><input id="psDiscount" type="number" min="0" max="${tot.sellSubtotal}" step="any" value="${esc(e.discount)}"></div>
+    <div class="frow2"><div><label for="psOverhead">${esc(t.cb_overhead)} %</label><input id="psOverhead" type="number" min="0" step="any" value="${esc(e.overheadPct)}"></div><div><label for="psContingency">${esc(t.cb_contingency)} %</label><input id="psContingency" type="number" min="0" step="any" value="${esc(e.contingencyPct)}"></div></div>
+    <div class="frow"><label for="psDiscount">${esc(t.ps_discount)} (SEK, ${esc(t.discount_max)} ${fmt0(tot.sellSubtotal)})</label><input id="psDiscount" type="number" min="0" max="${tot.sellSubtotal}" step="any" value="${esc(e.discount)}"></div>
     <div id="psErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="savePricingSettings(${id})">${esc(t.nc_save)}</button></div>`;
   $("fov").classList.add("show");
@@ -1517,8 +1517,8 @@ function savePricingSettings(id){
 function openAddWorkItem(id){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   $("fcard").innerHTML=`<h2>${esc(t.addworkitem)}</h2><p class="fsub">${esc(e.no)}</p>
-    <div class="frow"><label>${esc(t.wi_no)}</label><input id="awNo" placeholder="JC-2026-00XX"></div>
-    <div class="frow"><label>${esc(t.wi_desc)}</label><input id="awDesc"></div>
+    <div class="frow"><label for="awNo">${esc(t.wi_no)}</label><input id="awNo" placeholder="JC-2026-00XX"></div>
+    <div class="frow"><label for="awDesc">${esc(t.wi_desc)}</label><input id="awDesc"></div>
     <div id="awErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddWorkItem(${id})">${esc(t.addworkitem)}</button></div>`;
   $("fov").classList.add("show");
@@ -1545,13 +1545,13 @@ function openLineForm(id,wiIdx,lIdx){
   const line=editing?wi.lines[lIdx]:{desc:'',category:'material',qty:1,unit:'pcs',cost:0,sell:0,disc:0,tax:25,waste:0};
   const cats=['material','labour','machine','subcontractor','consumable','logistics','other'];
   $("fcard").innerHTML=`<h2>${editing?esc(t.act_editline):esc(t.addline)}</h2><p class="fsub">${esc(wi.desc)}</p>
-    <div class="frow"><label>${esc(t.th_item)}</label><input id="aiDesc" value="${esc(line.desc)}"></div>
+    <div class="frow"><label for="aiDesc">${esc(t.th_item)}</label><input id="aiDesc" value="${esc(line.desc)}"></div>
     <div id="aiDescErr" class="errmsg" style="display:none;"></div>
     <div class="frow"><label for="aiCat">${esc(t.th_category)}</label><select id="aiCat">${cats.map(c=>`<option value="${c}" ${line.category===c?'selected':''}>${esc(catLabel(c))}</option>`).join('')}</select></div>
-    <div class="frow3"><div><label>${esc(t.th_qty)}</label><input id="aiQty" type="number" min="0.0001" step="any" value="${esc(line.qty)}"></div><div><label>${esc(t.th_unit)}</label><input id="aiUnit" value="${esc(line.unit)}"></div><div><label>${esc(t.th_price)}</label><input id="aiSell" type="number" min="0" step="any" value="${esc(line.sell)}"></div></div>
+    <div class="frow3"><div><label for="aiQty">${esc(t.th_qty)}</label><input id="aiQty" type="number" min="0.0001" step="any" value="${esc(line.qty)}"></div><div><label for="aiUnit">${esc(t.th_unit)}</label><input id="aiUnit" value="${esc(line.unit)}"></div><div><label for="aiSell">${esc(t.th_price)}</label><input id="aiSell" type="number" min="0" step="any" value="${esc(line.sell)}"></div></div>
     <div id="aiNumErr" class="errmsg" style="display:none;"></div>
-    <div class="frow3"><div><label>${esc(t.internal_cost)}</label><input id="aiCost" type="number" min="0" step="any" value="${esc(line.cost)}"></div><div><label>${esc(t.th_disc)}</label><input id="aiDisc" type="number" min="0" max="100" step="any" value="${esc(line.disc||0)}"></div><div><label>${esc(t.th_tax)}</label><input id="aiTax" type="number" min="0" max="100" step="any" value="${esc(line.tax!==undefined?line.tax:25)}"></div></div>
-    <div class="frow"><label>${esc(t.waste_pct_material)}</label><input id="aiWaste" type="number" min="0" max="100" step="any" value="${esc(line.waste||0)}"></div>
+    <div class="frow3"><div><label for="aiCost">${esc(t.internal_cost)}</label><input id="aiCost" type="number" min="0" step="any" value="${esc(line.cost)}"></div><div><label for="aiDisc">${esc(t.th_disc)}</label><input id="aiDisc" type="number" min="0" max="100" step="any" value="${esc(line.disc||0)}"></div><div><label for="aiTax">${esc(t.th_tax)}</label><input id="aiTax" type="number" min="0" max="100" step="any" value="${esc(line.tax!==undefined?line.tax:25)}"></div></div>
+    <div class="frow"><label for="aiWaste">${esc(t.waste_pct_material)}</label><input id="aiWaste" type="number" min="0" max="100" step="any" value="${esc(line.waste||0)}"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveLineForm(${id},${wiIdx}${editing?','+lIdx:''})">${editing?esc(t.nc_save):esc(t.addline)}</button></div>`;
   $("fov").classList.add("show");
 }
@@ -1592,7 +1592,7 @@ function openEditText(id,field){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   const isExcl=field==='exclusions';
   $("fcard").innerHTML=`<h2>${isExcl?esc(t.excl_title):esc(t.terms_title)}</h2>
-    <div class="frow"><textarea id="etText" style="min-height:120px;"></textarea></div>
+    <div class="frow"><textarea id="etText" style="min-height:120px;" aria-label="${isExcl?esc(t.excl_title):esc(t.terms_title)}"></textarea></div>
     <div id="etErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditText(${id},'${field}')">${esc(t.nc_save)}</button></div>`;
   // Set the textarea's value via direct DOM assignment rather than interpolating into innerHTML.
@@ -1612,7 +1612,7 @@ function saveEditText(id,field){
 function openAddNote(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${esc(t.an_title)}</h2><p class="fsub">${esc(getEst(id).no)}</p>
-    <div class="frow"><label>${esc(t.an_text)}</label><textarea id="anText"></textarea></div>
+    <div class="frow"><label for="anText">${esc(t.an_text)}</label><textarea id="anText"></textarea></div>
     <div id="anErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${esc(t.an_save)}</button></div>`;
   $("fov").classList.add("show");
@@ -1631,7 +1631,7 @@ function openUpload(id){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${esc(t.ud_title)}</h2><p class="fsub">${esc(getEst(id).no)} · ${esc(t.demo_upload)}</p>
     <div class="frow"><label for="udFile">File</label><input id="udFile" type="file" onchange="if(this.files[0]&&!document.getElementById('udName').value)document.getElementById('udName').value=this.files[0].name"></div>
-    <div class="frow"><label>${esc(t.ud_name)}</label><input id="udName" placeholder="Document.pdf"></div>
+    <div class="frow"><label for="udName">${esc(t.ud_name)}</label><input id="udName" placeholder="Document.pdf"></div>
     <div id="udErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveUpload(${id})">${esc(t.ud_save)}</button></div>`;
   $("fov").classList.add("show");
