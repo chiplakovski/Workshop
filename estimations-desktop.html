@@ -1794,6 +1794,8 @@ function setLang(code){LANG=code;
 document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
 function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
   try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+const requestedEstimation=new URLSearchParams(location.search).get('estimation');
+if(requestedEstimation){const requested=ESTIMATIONS.find(e=>e.no===requestedEstimation||String(e.sharedId)===requestedEstimation);if(requested)selectedId=requested.id;}
 setLang("en");setInterval(tick,10000);
 // Picks up an estimation created/updated elsewhere (another tab, or another module such as
 // Customers' "New Quote") without a full reload - see hydrateSharedEstimations()'s own comment.

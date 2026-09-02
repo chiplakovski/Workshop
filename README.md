@@ -74,7 +74,7 @@ npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge a
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Projects/Planning,
                       # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers, and
-                      # Documents/Reports workflows
+                      # Documents/Reports and Marketing/Sales workflows
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download

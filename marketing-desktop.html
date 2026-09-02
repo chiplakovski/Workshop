@@ -807,7 +807,9 @@ function saveLeadForm(id){
   if(id){const l=getLead(id);Object.assign(l,data);l.activity.push({date:currentDate().toISOString().slice(0,10),type:'edit',text:'Lead details updated.'});syncLead(l);}
   else{
     const l=Object.assign({status:'new',created:currentDate().toISOString().slice(0,10),lastContact:currentDate().toISOString().slice(0,10),linkedCustomerId:null,linkedOpportunityId:null,notes:[],activity:[{date:currentDate().toISOString().slice(0,10),type:'created',text:'Lead created manually.'}]},data);
-    syncLead(l);LEADS.unshift(l);selectedLeadId=l.id;
+    // save() synchronously dispatches workshop:data, whose listener refreshes LEADS from the
+    // authoritative shared state. Adding the same object locally again would render a duplicate.
+    syncLead(l);selectedLeadId=l.id;
   }
   closeModal();renderApp();
 }
@@ -833,7 +835,13 @@ function completeLeadFollowup(id){const l=getLead(id);const dt=currentDate().toI
 function openQualifyLead(id){const tt=t();const html=`<h2>${tt.m_qualify_t}</h2>${fieldTextarea('qualNote',tt.f_qualnote,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveQualifyLead(${id})">${tt.act_qualify}</button></div>`;openModal(html);}
 function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});syncLead(l);closeModal();renderApp();}
+  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});
+  let opportunity=l.linkedOpportunityId?getOpp(l.linkedOpportunityId):OPPORTUNITIES.find(o=>o.leadId===l.id);
+  if(!opportunity){
+    opportunity={leadId:l.id,customerId:l.linkedCustomerId||null,company:l.company,contact:l.contact,title:l.service||`Opportunity for ${l.company}`,industry:l.industry,scope:l.service||'',value:Number(l.value)||0,probability:50,stage:'qualified',expectedDecision:'',requiredDelivery:'',owner:l.owner||'Aleksandar C.',competitor:'',nextAction:'Prepare scope and quotation',services:l.service?[l.service]:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:l.nextFollowUp||null,activity:[{date:dt,text:`Created from qualified lead ${l.no}.`}]};
+    syncOpportunity(opportunity);
+  }
+  l.linkedOpportunityId=opportunity.id;syncLead(l);closeModal();renderApp();}
 function openDisqualifyLead(id){const tt=t();const html=`<h2>${tt.m_disqualify_t}</h2>${fieldTextarea('disqReason',tt.f_disqreason,'')}
   <div class="frow checkrow"><input type="checkbox" id="disqDnc"><label for="disqDnc" style="margin:0;">${tt.fl_dnc}</label></div>
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveDisqualifyLead(${id})">${tt.act_disqualify}</button></div>`;openModal(html);}
@@ -849,11 +857,14 @@ function openConvertLead(id){const tt=t();const l=getLead(id);
 function saveConvertLead(id){const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
   let custId=null;
   if(window.WorkshopData){
-    const existing=SHARED.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
+    const currentShared=WorkshopData.get();
+    const existing=currentShared.customers.find(c=>c.name.toLowerCase()===l.company.toLowerCase());
     if(existing){custId=existing.id;}
     else{const saved=WorkshopData.upsertCustomer({name:l.company,status:'active',city:l.city,country:l.country,email:l.email,phone:l.phone,industry:l.industry,type:'Company',since:dt,terms:'30 days',credit:0,currency:'SEK',contacts:[{name:l.contact,role:'Contact',primary:true,email:l.email,phone:l.phone}],notes:[],documents:[]});
       SHARED.customers=WorkshopData.get().customers;custId=saved.id;}
   }
+  const opportunity=l.linkedOpportunityId?getOpp(l.linkedOpportunityId):null;
+  if(opportunity){opportunity.customerId=custId;opportunity.company=l.company;opportunity.contact=l.contact;opportunity.activity.push({date:dt,text:`Linked to converted customer ${l.company}.`});syncOpportunity(opportunity);}
   l.status='converted';l.linkedCustomerId=custId;l.nextFollowUp=null;l.activity.push({date:dt,type:'convert',text:'Converted to customer record'+(custId?' (ID '+custId+').':'.')});
   syncLead(l);closeModal();renderApp();}
 
@@ -923,7 +934,7 @@ function openOppDetail(id){
       <button class="tbtn small" onclick="closeModal();openOppForm(${o.id})">${tt.act_editopp}</button>
       <button class="tbtn small" onclick="applyOppStage(${o.id})">${tt.act_movestage}</button>
       ${cust?`<button class="tbtn small" onclick="location.href='customers-desktop.html'">${tt.act_opencustomer}</button>`:''}
-      <button class="tbtn small" onclick="location.href='estimations-desktop.html'">${tt.act_openestimation}</button>
+      <button class="tbtn small" onclick="openOpportunityEstimation(${o.id})">${tt.act_openestimation}</button>
       <button class="tbtn small" onclick="markOppWon(${o.id})">${tt.act_markwon}</button>
       <button class="tbtn small" onclick="closeModal();openMarkLost(${o.id})">${tt.act_marklost}</button>
       <button class="tbtn small" onclick="closeModal();openRescheduleOpp(${o.id})">${tt.act_addfollowup}</button>
@@ -936,6 +947,17 @@ function applyOppStage(id){const sel=$('oppStageSel');if(!sel)return;const o=get
   o.stage=newStage;if(newStage==='won'){o.probability=100;o.followUpDate=null;}syncOpportunity(o);closeModal();renderApp();}
 function markOppWon(id){const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);o.stage='won';o.probability=100;o.followUpDate=null;
   o.activity.push({date:dt,text:'Marked as won.'});syncOpportunity(o);closeModal();renderApp();}
+function openOpportunityEstimation(id){
+  const o=getOpp(id);if(!o||!window.WorkshopData)return;
+  let estimation=o.linkedEstimateNo?WorkshopData.listEstimations().find(e=>e.no===o.linkedEstimateNo):null;
+  if(!estimation){
+    const created=currentDate(),valid=new Date(created.getTime()+30*86400000).toISOString().slice(0,10);
+    estimation=WorkshopData.upsertEstimation({customerId:o.customerId||null,customer:o.company,title:o.title,status:'draft',revision:0,created:created.toISOString().slice(0,10),validUntil:valid,currency:'SEK',sellingPrice:Number(o.value)||0,totalCost:0,opportunityRef:o.no,requestedDelivery:o.requiredDelivery||'',deliveryTarget:o.requiredDelivery||'',estimator:o.owner||'Aleksandar C.'});
+    o.linkedEstimateNo=estimation.no;o.activity.push({date:created.toISOString().slice(0,10),text:`Estimation ${estimation.no} created.`});syncOpportunity(o);
+  }
+  const shared=WorkshopData.get();SHARED.customers=shared.customers;SHARED.estimations=shared.estimations;SHARED.projects=shared.projects;
+  location.href='estimations-desktop.html?estimation='+encodeURIComponent(estimation.no);
+}
 function openMarkLost(id){const tt=t();const html=`<h2>${tt.m_marklost_t}</h2>${fieldTextarea('lostReason',tt.fl_decisionreason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveMarkLost(${id})">${tt.act_marklost}</button></div>`;openModal(html);}
 function saveMarkLost(id){const reason=$('lostReason').value.trim();const o=getOpp(id);const dt=currentDate().toISOString().slice(0,10);
@@ -970,7 +992,8 @@ function saveOppForm(id){
   if(id){const o=getOpp(id);Object.assign(o,data);o.activity.push({date:dt,text:'Opportunity details updated.'});syncOpportunity(o);}
   else{
     const o=Object.assign({leadId:null,customerId:null,services:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:null,activity:[{date:dt,text:'Opportunity created manually.'}]},data);
-    syncOpportunity(o);OPPORTUNITIES.unshift(o);
+    // workshop:data already refreshed OPPORTUNITIES with this saved record.
+    syncOpportunity(o);
   }
   closeModal();renderApp();
 }
@@ -1079,7 +1102,8 @@ function saveCampaignForm(id){
   if(id){const c=getCampaign(id);Object.assign(c,data);syncCampaign(c);}
   else{
     const c=Object.assign({targetServices:[],leads:0,qualified:0,estimates:0,wonValue:0,activity:[{date:dt,text:'Campaign created.'}]},data);
-    syncCampaign(c);CAMPAIGNS.unshift(c);
+    // workshop:data already refreshed CAMPAIGNS with this saved record.
+    syncCampaign(c);
   }
   closeModal();renderApp();
 }
@@ -1300,6 +1324,10 @@ function renderApp(){
 // Refresh from shared data whenever another module (or another tab) changes it, rather than
 // keeping a page-level copy that could go stale or overwrite newer shared state.
 function refreshMarketingFromShared(){
+  const shared=WorkshopData.get();
+  SHARED.customers=shared.customers;
+  SHARED.estimations=shared.estimations;
+  SHARED.projects=shared.projects;
   LEADS=WorkshopData.getMarketingLeads();
   OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
   CAMPAIGNS=WorkshopData.getMarketingCampaigns();
