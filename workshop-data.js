@@ -622,6 +622,8 @@
     s.purchaseOrders.forEach(po=>{
       if(po.status==null)po.status='Draft';
       if(po.items==null)po.items='';
+      if(po.receivedQty==null)po.receivedQty=0;
+      if(po.receivedValue==null)po.receivedValue=0;
     });
     s.documents.forEach(d=>{
       if(!Array.isArray(d.notes))d.notes=[];
@@ -1380,7 +1382,31 @@
     reserveBom(no){const p=project(no);if(!p)return null;(p.bom||[]).forEach(line=>{const inv=inventory(line.code);if(!inv)return;const need=Math.max(0,line.required-(line.reserved||0)),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(need,free);line.reserved=(line.reserved||0)+qty;inv.reserved+=qty;if(qty)addMovement({action:'RESERVED',code:line.code,qty,unit:line.unit,from:inv.location,to:no,projectNo:no})});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`BOM reserved: ${no}`);return clone(r)},
     resolveBarcode:code=>state.barcodeLinks[code]||null,
     linkBarcode(barcode,itemCode){if(!inventory(itemCode))return false;state.barcodeLinks[barcode]=itemCode;save(`Barcode linked: ${barcode}`);return true},
-    receive(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};inv.stock+=qty;if(input.location)inv.location=input.location;if(input.supplier)inv.supplier=input.supplier;if(input.heat)inv.heat=input.heat;if(input.certificate)inv.certificate=input.certificate;inv.lastPrice=Number(input.lastPrice)||inv.lastPrice;addMovement({action:'RECEIVED',code:inv.code,qty,unit:inv.unit,from:`${input.supplier||inv.supplier} / ${input.po||'No PO'}`,to:inv.location,user:input.user||'John Smith',heat:input.heat,certificate:input.certificate});return clone(inv)},
+    receive(input){
+      const inv=inventory(input.code),qty=quantity(input.qty),poNo=String(input.po||'').trim();
+      if(!inv)return{error:'Item not found'};
+      if(!qty)return{error:'Quantity must be greater than zero'};
+      const linkedPo=poNo?state.purchaseOrders.find(po=>po.no===poNo):null;
+      if(linkedPo&&linkedPo.status==='Cancelled')return{error:`Purchase order ${poNo} is cancelled`};
+      if(linkedPo&&linkedPo.itemCode&&linkedPo.itemCode!==inv.code)return{error:`Purchase order ${poNo} is for ${linkedPo.itemCode}`};
+      inv.stock+=qty;
+      if(input.location)inv.location=input.location;
+      if(input.supplier)inv.supplier=input.supplier;
+      if(input.heat)inv.heat=input.heat;
+      if(input.certificate)inv.certificate=input.certificate;
+      inv.lastPrice=Number(input.lastPrice)||inv.lastPrice;
+      inv.status=inv.stock-inv.reserved<=inv.minStock?'low':'good';
+      if(linkedPo){
+        linkedPo.receivedQty=(Number(linkedPo.receivedQty)||0)+qty;
+        linkedPo.receivedValue=(Number(linkedPo.receivedValue)||0)+qty*(Number(input.lastPrice)||Number(inv.lastPrice)||0);
+        linkedPo.lastReceiptDate=now().slice(0,10);
+        linkedPo.lastDeliveryNote=String(input.deliveryNote||'').trim();
+        const orderedQty=Number(linkedPo.orderedQty)||0;
+        linkedPo.status=orderedQty>0&&linkedPo.receivedQty>=orderedQty?'Received':'Partially Received';
+      }
+      addMovement({action:'RECEIVED',code:inv.code,qty,unit:inv.unit,from:`${input.supplier||inv.supplier} / ${poNo||'No PO'}`,to:inv.location,user:input.user||'John Smith',heat:input.heat,certificate:input.certificate,purchaseOrderNo:linkedPo?linkedPo.no:null,deliveryNote:String(input.deliveryNote||'').trim()});
+      return clone(inv);
+    },
     issue(input){const inv=inventory(input.code),p=project(input.projectNo),qty=quantity(input.qty);if(!inv||!p)return{error:'Item or project not found'};if(!qty)return{error:'Quantity must be greater than zero'};const available=inv.stock-inv.reserved;if(qty>available&&qty>inv.reserved)return{error:'Quantity exceeds available stock'};inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});return{item:clone(inv),project:clone(p)}},
     move(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};const from=inv.location;if(input.action==='RETURN')inv.stock+=qty;if(input.action==='SCRAP')inv.stock=Math.max(0,inv.stock-qty);if(input.action==='TRANSFER'&&input.to)inv.location=input.to;addMovement({action:input.action,code:inv.code,qty,unit:inv.unit,from,to:input.to||inv.location,projectNo:input.projectNo,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});return clone(inv)},
     addOffcut(offcut){offcut=clone(offcut);offcut.id=state.counters.offcut++;offcut.code=offcut.code||`OFF-${String(offcut.id).padStart(4,'0')}`;offcut.created=now().slice(0,10);offcut.status='available';state.offcuts.unshift(offcut);save(`Offcut created: ${offcut.code}`);return clone(offcut)},
@@ -2835,6 +2861,12 @@
       if(!payload||!payload.supplier)return{error:'A supplier is required'};
       let po=state.purchaseOrders.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
       const data=clone(payload);
+      for(const field of ['orderedQty','receivedQty','receivedValue']){
+        if(data[field]==null)continue;
+        const value=Number(data[field]);
+        if(!Number.isFinite(value)||value<0)return{error:`${field} must be zero or greater`};
+        data[field]=value;
+      }
       if(po){Object.assign(po,data);}
       else{
         po=data;

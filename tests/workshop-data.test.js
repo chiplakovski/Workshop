@@ -3787,3 +3787,41 @@ test('backup validation and normalization include purchase RFQs and supplier inv
   assert.equal(WD.validateBackup({purchaseRfqs:'bad'}).valid,false);
   assert.equal(WD.validateBackup({supplierInvoices:'bad'}).valid,false);
 });
+
+// â”€â”€ Pass 3.42: Store receipt closes the linked Purchasing lifecycle â”€â”€
+test('receiving: linked PO progresses from partial to received and persists receipt evidence', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  WD.createInventoryItem({code:'PO-RECEIPT-ITEM',description:'Receipt test plate',category:'Plate',unit:'EA',location:'R1-01',stock:0,minStock:2,reorderQty:10,avgCost:20,lastPrice:25,supplier:'Receipt Supplier'});
+  const po=WD.upsertPurchaseOrder({supplier:'Receipt Supplier',itemCode:'PO-RECEIPT-ITEM',items:'Receipt test plate',orderedQty:10,receivedQty:0,receivedValue:0,status:'Confirmed'});
+
+  const partial=WD.receive({code:'PO-RECEIPT-ITEM',qty:4,supplier:'Receipt Supplier',po:po.no,deliveryNote:'DN-PART',location:'R1-02',lastPrice:25,user:'Store User'});
+  assert.equal(partial.stock,4);
+  assert.equal(partial.status,'good');
+  assert.equal(WD.findPurchaseOrder(po.no).status,'Partially Received');
+  assert.equal(WD.findPurchaseOrder(po.no).receivedQty,4);
+  assert.equal(WD.findPurchaseOrder(po.no).receivedValue,100);
+
+  WD.receive({code:'PO-RECEIPT-ITEM',qty:6,supplier:'Receipt Supplier',po:po.no,deliveryNote:'DN-FINAL',location:'R1-02',lastPrice:25,user:'Store User'});
+  const completed=WD.findPurchaseOrder(po.no);
+  assert.equal(completed.status,'Received');
+  assert.equal(completed.receivedQty,10);
+  assert.equal(completed.receivedValue,250);
+  assert.equal(completed.lastDeliveryNote,'DN-FINAL');
+  const movements=WD.get().movements.filter(m=>m.purchaseOrderNo===po.no);
+  assert.equal(movements.length,2);
+  assert.equal(movements[0].deliveryNote,'DN-FINAL');
+
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.equal(reloaded.findPurchaseOrder(po.no).status,'Received');
+  assert.equal(reloaded.get().inventory.find(i=>i.code==='PO-RECEIPT-ITEM').stock,10);
+});
+
+test('receiving: cancelled or wrong-item linked POs are rejected before stock changes', ()=>{
+  const WD=loadWorkshopData();
+  WD.createInventoryItem({code:'PO-SAFE-ITEM',description:'Safe receipt item',category:'Parts',unit:'EA',location:'R1',stock:0,minStock:0});
+  const cancelled=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'PO-SAFE-ITEM',items:'Safe item',orderedQty:2,status:'Cancelled'});
+  const wrong=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'OTHER-ITEM',items:'Other item',orderedQty:2,status:'Confirmed'});
+  assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:cancelled.no}).error,/cancelled/);
+  assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:wrong.no}).error,/OTHER-ITEM/);
+  assert.equal(WD.get().inventory.find(i=>i.code==='PO-SAFE-ITEM').stock,0);
+});

@@ -40,7 +40,8 @@
     return{supplier,project:projectNo||null,date:orderDate.toISOString().slice(0,10),
       expected:defaultExpectedDate(orderDate,DEFAULT_LEAD_DAYS),
       value:purchaseOrderValueFor(qty,lastPrice,avgCost),buyer:buyer||'Aleksandar C.',
-      status:'Awaiting Approval',items:buildReorderItemsText(description,code)};
+      status:'Awaiting Approval',items:buildReorderItemsText(description,code),itemCode:code,
+      orderedQty:Number(qty)||0,receivedQty:0,receivedValue:0};
   }
   const StorePurchasingRules={buildReorderItemsText,extractMaterialCode,isOpenPurchaseOrderStatus,
     findOpenReorderPO,suggestedReorderQty,purchaseOrderValueFor,defaultExpectedDate,

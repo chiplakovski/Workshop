@@ -106,7 +106,8 @@ test('buildReorderPurchaseOrderPayload: composes the full real PO shape, always 
   assert.deepEqual(payload,{
     supplier:'Acme',project:null,date:'2026-08-20',expected:'2026-09-03',
     value:1250,buyer:'Aleksandar C.',status:'Awaiting Approval',
-    items:'Reorder: Grinding disc 4.5" (GRD-DISC-4.5)'
+    items:'Reorder: Grinding disc 4.5" (GRD-DISC-4.5)',itemCode:'GRD-DISC-4.5',
+    orderedQty:100,receivedQty:0,receivedValue:0
   });
 });
 test('buildReorderPurchaseOrderPayload: sets project when given, defaults buyer when omitted', ()=>{
@@ -116,4 +117,6 @@ test('buildReorderPurchaseOrderPayload: sets project when given, defaults buyer 
   assert.equal(payload.buyer,'Aleksandar C.');
   assert.equal(payload.value,1485); // 33*45
   assert.equal(payload.status,'Awaiting Approval');
+  assert.equal(payload.orderedQty,33);
+  assert.equal(payload.receivedQty,0);
 });
