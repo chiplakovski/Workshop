@@ -7,7 +7,7 @@
     "test": "node --test tests/estimation-rules.test.js tests/jobcard-rules.test.js tests/project-rules.test.js tests/quality-gates.test.js tests/equipment-gates.test.js tests/jobcard-equipment-rules.test.js tests/store-purchasing-rules.test.js tests/workshop-data.test.js",
     "test:syntax": "node tests/syntax-check.js",
     "test:browser": "node tests/browser-smoke.js",
-    "test:e2e": "node tests/customers-estimations.e2e.js"
+    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"

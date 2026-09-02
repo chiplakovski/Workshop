@@ -458,7 +458,37 @@ function sharedTaskTemplate(start,leadDays){return[
 // Planning's own to edit locally (see setPhase/shiftTask, which push out to WorkshopData
 // themselves) - re-hydrating must never clobber an in-progress local edit with a stale/unrelated
 // external snapshot. Only genuinely NEW projects/accepted-estimations are picked up.
-function hydrateSharedPlanning(){if(!window.WorkshopData)return;const shared=WorkshopData.get();shared.customers.forEach(c=>{if(!Object.values(CUSTOMERS).includes(c.name))CUSTOMERS[100+c.id]=c.name});shared.projects.forEach(sp=>{if(PROJECTS.some(p=>p.no===sp.no))return;const customerKey=Object.keys(CUSTOMERS).find(k=>CUSTOMERS[k]===sp.customer);PROJECTS.push({no:sp.no,sharedNo:sp.no,name:sp.name,customerId:+customerKey||null,customerName:sp.customer,start:sp.start,deadline:sp.deadline,progress:sp.progress||0,plannedHours:sp.plannedHours||0,usedHours:sp.usedHours||0,phase:sp.phase||'design',materialStatus:sp.materialStatus||'Unchecked',responsible:sp.responsible||'Aleksandar C.',workers:sp.workers||[],machines:sp.machines||[],dependencyNote:'Imported from connected Project / Estimation',problems:[],updatedCompletion:sp.expectedCompletion||sp.deadline,tasks:(sp.tasks&&sp.tasks.length?sp.tasks:sharedTaskTemplate(sp.start,7)),milestones:(sp.milestones&&sp.milestones.length?sp.milestones:[{name:'Customer approval',date:sp.start,done:true},{name:'Material delivered',date:fmtISO(addDays(d(sp.start),12)),done:false},{name:'FAT / inspection',date:sp.deadline,done:false}])})});shared.estimations.filter(e=>e.status==='accepted'&&!e.projectId).forEach(e=>{if(FUTURE.some(f=>f.sharedEstimationId===e.id))return;FUTURE.unshift({id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Accepted ${e.no} — ready to convert`,priority:'high'})})}
+function hydrateSharedPlanning(){
+  if(!window.WorkshopData)return;
+  const shared=WorkshopData.get();
+  shared.customers.forEach(c=>{if(!Object.values(CUSTOMERS).includes(c.name))CUSTOMERS[100+c.id]=c.name});
+  shared.projects.forEach(sp=>{
+    if(PROJECTS.some(p=>p.no===sp.no))return;
+    // Projects owns the canonical schedule as plannedStart/plannedCompletion. Older shared records
+    // still use start/expectedCompletion, so Planning accepts both without ever constructing an
+    // Invalid Date for a newly-created Project.
+    const start=sp.plannedStart||sp.start||sp.createdDate||TODAY_ISO;
+    const deadline=sp.deadline||sp.plannedCompletion||start;
+    const updatedCompletion=sp.expectedCompletion||sp.plannedCompletion||deadline;
+    const sharedCustomer=shared.customers.find(c=>c.id===sp.customerId);
+    const customerName=sp.customer||(sharedCustomer&&sharedCustomer.name)||'';
+    const customerKey=Object.keys(CUSTOMERS).find(k=>CUSTOMERS[k]===customerName);
+    PROJECTS.push({no:sp.no,sharedNo:sp.no,name:sp.name,customerId:+customerKey||null,customerName,start,deadline,
+      progress:sp.progress||0,plannedHours:sp.plannedHours||sp.estLabourHours||0,usedHours:sp.usedHours||0,
+      phase:sp.phase||'design',materialStatus:sp.materialStatus||'Unchecked',responsible:sp.responsible||sp.pm||'Aleksandar C.',
+      workers:sp.workers||[],machines:sp.machines||[],dependencyNote:'Imported from connected Project / Estimation',
+      problems:[],updatedCompletion,tasks:(sp.tasks&&sp.tasks.length?sp.tasks:sharedTaskTemplate(start,7)),
+      milestones:(sp.milestones&&sp.milestones.length?sp.milestones:[{name:'Customer approval',date:start,done:true},
+        {name:'Material delivered',date:fmtISO(addDays(d(start),12)),done:false},{name:'FAT / inspection',date:deadline,done:false}])});
+  });
+  shared.estimations.filter(e=>e.status==='accepted'&&!e.projectId).forEach(e=>{
+    if(FUTURE.some(f=>f.sharedEstimationId===e.id))return;
+    FUTURE.unshift({id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,
+      expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',
+      probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],
+      materialLeadTime:'3 weeks',dependencyNote:`Accepted ${e.no} — ready to convert`,priority:'high'});
+  });
+}
 hydrateSharedPlanning();
 
 // Scheduling engine: task start = max(end of dependencies) + manual shift; only the root
