@@ -816,7 +816,7 @@
         <div class="kpi"><div class="kl" data-i="fpr">First-Pass Rate</div><div class="kv" id="qual-fpr">—</div></div>
         <div class="kpi"><div class="kl" data-i="missing_certs">Missing Certificates</div><div class="kv warn" id="qual-missing-cert">—</div></div>
       </div>
-      <div class="dq-note" data-i="quality_module_note" style="margin-bottom:14px;">A dedicated Quality module is not yet implemented — figures below use inspection and material-certificate records already stored on jobcards. Future Quality integration will add NCRs, welding/NDT logs and corrective actions.</div>
+      <div class="dq-note" data-i="quality_module_note" style="margin-bottom:14px;">Figures below are drawn from the real Quality module — inspections, welds and NDT results — linked to NCRs and corrective actions where applicable.</div>
 
       <div class="tab-container">
         <div class="tabs">
@@ -835,7 +835,7 @@
           <table class="table"><thead><tr><th data-i="jobcard">Jobcard</th><th data-i="material">Material</th><th data-i="heat_batch">Heat/Batch</th><th data-i="certificate">Certificate</th></tr></thead><tbody id="qual-cert-body"></tbody></table>
         </div>
         <div id="qual-weld" class="tabpanel">
-          <p class="dq-note" style="margin-bottom:10px;">Filtered from existing inspection records whose type mentions welding or NDT — no dedicated weld-map/NDT module exists yet.</p>
+          <p class="dq-note" style="margin-bottom:10px;">Drawn from the dedicated Weld and NDT quality records, linked to their originating jobcard and project.</p>
           <table class="table"><thead><tr><th data-i="project">Project</th><th data-i="jobcard">Jobcard</th><th data-i="type">Type</th><th data-i="status">Status</th><th data-i="date">Date</th></tr></thead><tbody id="qual-weld-body"></tbody></table>
         </div>
       </div>
@@ -1117,7 +1117,7 @@ const i18n={
     criticality:'Criticality',certification_expiry:'Certification Expiry',equipment_assignments:'Assignments',
     calibration_date:'Calibration Date',calibration_overdue:'Calibration Overdue',assigned_project:'Assigned Project',
     assigned_jobcard:'Assigned Jobcard',operator:'Operator',pending_insp:'Pending',missing_certs:'Missing Certificates',
-    quality_module_note:'A dedicated Quality module is not yet implemented — figures below use inspection and material-certificate records already stored on jobcards. Future Quality integration will add NCRs, welding/NDT logs and corrective actions.',
+    quality_module_note:'Figures below are drawn from the real Quality module — inspections, welds and NDT results — linked to NCRs and corrective actions where applicable.',
     inspection_status:'Inspection Status',ncr_by_project:'Inspections by Project',certificate_completeness:'Certificate Completeness',
     jobcard:'Jobcard',material:'Material',quoted_value:'Quoted Value',accepted_value:'Accepted Value',project_value:'Project Value',
     customer_invoice_note:'Invoiced values come from the shared customer invoice register. Payment status is user-recorded and is not reconciled against an external accounting service.',
@@ -1222,7 +1222,7 @@ const i18n={
     criticality:'Kritikalitet',certification_expiry:'Certifikat Förfaller',equipment_assignments:'Tilldelningar',
     calibration_date:'Kalibreringsdatum',calibration_overdue:'Kalibrering Försenad',assigned_project:'Tilldelat Projekt',
     assigned_jobcard:'Tilldelat Arbetskort',operator:'Operatör',pending_insp:'Väntande',missing_certs:'Saknade Certifikat',
-    quality_module_note:'En dedikerad kvalitetsmodul är ännu inte implementerad — siffrorna nedan använder inspektions- och materialcertifikatposter som redan finns på arbetskort. Framtida kvalitetsintegration lägger till avvikelser, svets-/NDT-loggar och åtgärder.',
+    quality_module_note:'Siffrorna nedan kommer från den verkliga kvalitetsmodulen — inspektioner, svetsar och NDT-resultat — länkade till avvikelser och åtgärder där det är tillämpligt.',
     inspection_status:'Inspektionsstatus',ncr_by_project:'Inspektioner Per Projekt',certificate_completeness:'Certifikatfullständighet',
     jobcard:'Arbetskort',material:'Material',quoted_value:'Offererat Värde',accepted_value:'Accepterat Värde',project_value:'Projektvärde',
     customer_invoice_note:'Fakturerade värden kommer från det delade kundfakturaregistret. Betalningsstatus registreras av användaren och stäms inte av mot ett externt ekonomisystem.',
@@ -1327,7 +1327,7 @@ const i18n={
     criticality:'Критичност',certification_expiry:'Сертификат Истекува',equipment_assignments:'Доделувања',
     calibration_date:'Датум на калибрација',calibration_overdue:'Калибрација Задоцнета',assigned_project:'Доделен Проект',
     assigned_jobcard:'Доделена Работна Картичка',operator:'Оператор',pending_insp:'Во исчекување',missing_certs:'Недостасувачки Сертификати',
-    quality_module_note:'Посветен модул за квалитет сè уште не е имплементиран — бројките подолу користат записи за инспекции и сертификати за материјал веќе зачувани на работните картички. Идната интеграција на квалитет ќе додаде НЦР, заварување/НДТ логови и корективни дејствија.',
+    quality_module_note:'Бројките подолу доаѓаат од вистинскиот модул за квалитет — инспекции, заварувања и НДТ резултати — поврзани со НЦР и корективни дејствија каде што е применливо.',
     inspection_status:'Статус на инспекција',ncr_by_project:'Инспекции по Проект',certificate_completeness:'Комплетност на сертификати',
     jobcard:'Работна картичка',material:'Материјал',quoted_value:'Понудена Вредност',accepted_value:'Прифатена Вредност',project_value:'Вредност на проект',
     customer_invoice_note:'Фактурираните вредности доаѓаат од заедничкиот регистар на фактури. Статусот на плаќање го внесува корисникот и не се усогласува со надворешен сметководствен систем.',
@@ -2444,22 +2444,28 @@ function renderEquipment(data,range){
 
 // ══════════════ QUALITY & INSPECTIONS ══════════════
 function renderQuality(data,range){
+  const inspections=data.qualityInspections||[];
+  const welds=data.qualityWelds||[];
+  const ndt=data.qualityNdt||[];
   const jobcards=data.jobcards||[];
-  let total=0,passed=0,failed=0,pending=0,missingCert=0;
-  const byProjectRows=[];
-  const certRows=[];
+  const qClass=v=>(v==='passed'||v==='passed-observations'||v==='accepted')?'ready':(v==='failed'||v==='rejected'||v==='repair-required')?'overdue':'pending';
+
+  let passed=0,failed=0,pending=0;
+  const byProjectRows=inspections.map(i=>{
+    const status=i.result||i.status;
+    if(status==='passed'||status==='passed-observations')passed++;else if(status==='failed')failed++;else pending++;
+    return{project:i.projectNo,jobcard:i.jobcard,type:i.type,status,date:i.actualDate||i.plannedDate||'N/A'};
+  });
+  const total=inspections.length;
+  const decided=passed+failed;
+
+  const certRows=[];let missingCert=0;
   jobcards.forEach(j=>{
-    (j.inspections||[]).forEach(i=>{
-      total++;
-      if(i.result==='passed')passed++;else if(i.result==='failed')failed++;else pending++;
-      byProjectRows.push({project:j.projectNo,jobcard:j.no,type:i.type,status:i.result,date:i.date||'N/A'});
-    });
     (j.materials||[]).forEach(m=>{
       if(!m.certificate)missingCert++;
       certRows.push({jobcard:j.no,material:m.description||m.code,heat:m.heat||'N/A',cert:m.certificate});
     });
   });
-  const decided=passed+failed;
 
   $('qual-inspect').textContent=total;
   $('qual-passed').textContent=passed;
@@ -2471,16 +2477,17 @@ function renderQuality(data,range){
   $('qual-list-body').innerHTML=`<tr><td>Passed</td><td>${passed}</td></tr><tr><td>Failed</td><td>${failed}</td></tr><tr><td>Pending</td><td>${pending}</td></tr>`;
 
   $('qual-byproject-body').innerHTML=byProjectRows.map(r=>
-    `<tr><td>${esc(r.project||'N/A')}</td><td>${esc(r.jobcard)}</td><td>${esc(r.type||'N/A')}</td><td><span class="badge ${r.status==='passed'?'ready':r.status==='failed'?'overdue':'pending'}">${esc(r.status)}</span></td><td>${esc(r.date)}</td></tr>`
+    `<tr><td>${esc(r.project||'N/A')}</td><td>${esc(r.jobcard||'N/A')}</td><td>${esc(r.type||'N/A')}</td><td><span class="badge ${qClass(r.status)}">${esc(r.status)}</span></td><td>${esc(r.date)}</td></tr>`
   ).join('')||'<tr class="emptyrow"><td colspan="5">No inspection records</td></tr>';
 
   $('qual-cert-body').innerHTML=certRows.map(r=>
     `<tr><td>${esc(r.jobcard)}</td><td>${esc(r.material)}</td><td>${naOr(r.heat)}</td><td>${r.cert?esc(r.cert):'<span style="color:var(--danger)">Missing</span>'}</td></tr>`
   ).join('')||'<tr class="emptyrow"><td colspan="4">No material certificate records</td></tr>';
 
-  const weldRows=byProjectRows.filter(r=>/weld|ndt|nd-test/i.test(r.type||''));
+  const weldRows=welds.map(w=>({project:w.projectNo,jobcard:w.jobcard,type:'Weld: '+(w.jointType||w.process||'—'),status:(w.finalResult&&w.finalResult!=='pending')?w.finalResult:w.status,date:w.weldDate||'N/A'}))
+    .concat(ndt.map(n=>({project:n.projectNo,jobcard:n.jobcard,type:'NDT: '+(n.method||'—'),status:n.result||n.status,date:n.inspectionDate||'N/A'})));
   $('qual-weld-body').innerHTML=weldRows.map(r=>
-    `<tr><td>${esc(r.project||'N/A')}</td><td>${esc(r.jobcard)}</td><td>${esc(r.type||'N/A')}</td><td><span class="badge ${r.status==='passed'?'ready':r.status==='failed'?'overdue':'pending'}">${esc(r.status)}</span></td><td>${esc(r.date)}</td></tr>`
+    `<tr><td>${esc(r.project||'N/A')}</td><td>${esc(r.jobcard||'N/A')}</td><td>${esc(r.type||'N/A')}</td><td><span class="badge ${qClass(r.status)}">${esc(r.status)}</span></td><td>${esc(r.date)}</td></tr>`
   ).join('')||'<tr class="emptyrow"><td colspan="5">No welding or NDT inspection records found</td></tr>';
 }
 
