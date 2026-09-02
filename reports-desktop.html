@@ -743,11 +743,11 @@
         <div class="kpi"><div class="kl" data-i="avg_rating">Avg Demo Rating</div><div class="kv" id="supp-quality">—</div></div>
         <div class="kpi"><div class="kl" data-i="total_spend">Total Spend (Purchasing)</div><div class="kv" id="supp-spend">—</div></div>
       </div>
-      <div class="dq-note" data-i="supplier_ontime_note" style="margin-bottom:14px;">On-time delivery % and quality NCRs are not computed here — no delivery event history is recorded per supplier in this prototype. Demo ratings shown are catalogue values, not computed rankings.</div>
+      <div class="dq-note" data-i="supplier_ontime_note" style="margin-bottom:14px;">On-time delivery % is not computed here — no delivery event history is recorded per supplier in this prototype. Demo Rating is a catalogue value, not a computed ranking; Open NCRs comes from the real Quality module's supplier reviews where one exists.</div>
 
       <div class="panel">
         <div class="phead"><h3 data-i="supplier_performance">Supplier Performance</h3></div>
-        <table class="table"><thead><tr><th data-i="name">Name</th><th data-i="status">Status</th><th data-i="demo_rating">Demo Rating</th><th data-i="po_count">PO Count</th><th data-i="spend">Spend (SEK)</th></tr></thead><tbody id="supp-list-body"></tbody></table>
+        <table class="table"><thead><tr><th data-i="name">Name</th><th data-i="status">Status</th><th data-i="demo_rating">Demo Rating</th><th data-i="po_count">PO Count</th><th data-i="spend">Spend (SEK)</th><th data-i="open_ncrs">Open NCRs</th></tr></thead><tbody id="supp-list-body"></tbody></table>
       </div>
 
       <div class="panel">
@@ -1111,8 +1111,8 @@ const i18n={
     awaiting_approval:'Awaiting Approval',partially_delivered:'Partially Delivered',po_status:'PO Status',late_pos:'Late Purchase Orders',
     spend_by_supplier:'Spend by Supplier',spend_by_project:'Spend by Project',expected:'Expected',days_late:'Days Late',
     preferred_suppliers:'Preferred Suppliers',avg_rating:'Avg Demo Rating',
-    supplier_ontime_note:'On-time delivery % and quality NCRs are not computed here — no delivery event history is recorded per supplier in this prototype. Demo ratings shown are catalogue values, not computed rankings.',
-    demo_rating:'Demo Rating',po_count:'PO Count',spend:'Spend (SEK)',
+    supplier_ontime_note:'On-time delivery % is not computed here — no delivery event history is recorded per supplier in this prototype. Demo Rating is a catalogue value, not a computed ranking; Open NCRs comes from the real Quality module\'s supplier reviews where one exists.',
+    demo_rating:'Demo Rating',po_count:'PO Count',spend:'Spend (SEK)',open_ncrs:'Open NCRs',
     equip_util_note:'Downtime, breakdown frequency and utilisation hours require usage-session logging that is not yet recorded per equipment item — shown as Data unavailable.',
     criticality:'Criticality',certification_expiry:'Certification Expiry',equipment_assignments:'Assignments',
     calibration_date:'Calibration Date',calibration_overdue:'Calibration Overdue',assigned_project:'Assigned Project',
@@ -1216,8 +1216,8 @@ const i18n={
     awaiting_approval:'Väntar På Godkännande',partially_delivered:'Delvis Levererad',po_status:'Orderstatus',late_pos:'Sena Inköpsordrar',
     spend_by_supplier:'Kostnad Per Leverantör',spend_by_project:'Kostnad Per Projekt',expected:'Förväntad',days_late:'Dagar Sen',
     preferred_suppliers:'Föredragna Leverantörer',avg_rating:'Genomsnittligt Demobetyg',
-    supplier_ontime_note:'Leveranspunktlighet % och kvalitetsavvikelser beräknas inte här — ingen leveranshistorik registreras per leverantör i denna prototyp. Visade demobetyg är katalogvärden, inte beräknade rankningar.',
-    demo_rating:'Demobetyg',po_count:'Antal Ordrar',spend:'Kostnad (SEK)',
+    supplier_ontime_note:'Leveranspunktlighet % beräknas inte här — ingen leveranshistorik registreras per leverantör i denna prototyp. Demobetyg är ett katalogvärde, inte en beräknad rankning; Öppna Avvikelser kommer från kvalitetsmodulens verkliga leverantörsgranskningar där sådan finns.',
+    demo_rating:'Demobetyg',po_count:'Antal Ordrar',spend:'Kostnad (SEK)',open_ncrs:'Öppna Avvikelser',
     equip_util_note:'Stillestånd, haverifrekvens och nyttjandetimmar kräver användningsloggning som ännu inte registreras per utrustning — visas som Data ej tillgänglig.',
     criticality:'Kritikalitet',certification_expiry:'Certifikat Förfaller',equipment_assignments:'Tilldelningar',
     calibration_date:'Kalibreringsdatum',calibration_overdue:'Kalibrering Försenad',assigned_project:'Tilldelat Projekt',
@@ -1321,8 +1321,8 @@ const i18n={
     awaiting_approval:'Чека Одобрување',partially_delivered:'Делумно Испорачано',po_status:'Статус на нарачка',late_pos:'Задоцнети Нарачки',
     spend_by_supplier:'Потрошувачка по Добавувач',spend_by_project:'Потрошувачка по Проект',expected:'Очекувано',days_late:'Денови Задоцнување',
     preferred_suppliers:'Преферирани Добавувачи',avg_rating:'Просечна Демо Оценка',
-    supplier_ontime_note:'Навременост на испорака % и жалби за квалитет не се пресметуваат тука — не се бележи историја на испораки по добавувач во оваа прототип. Прикажаните демо оценки се каталошки вредности, не пресметани рангирања.',
-    demo_rating:'Демо Оценка',po_count:'Број на Нарачки',spend:'Потрошувачка (SEK)',
+    supplier_ontime_note:'Навременост на испорака % не се пресметува тука — не се бележи историја на испораки по добавувач во оваа прототип. Демо Оценката е каталошка вредност, не пресметано рангирање; Отворени НЦР доаѓа од вистинските прегледи на добавувачи во модулот за квалитет каде што постои.',
+    demo_rating:'Демо Оценка',po_count:'Број на Нарачки',spend:'Потрошувачка (SEK)',open_ncrs:'Отворени НЦР',
     equip_util_note:'Застој, зачестеност на дефекти и часови на искористеност бараат логирање на употреба кое сè уште не се бележи по опрема — прикажано како Податокот не е достапен.',
     criticality:'Критичност',certification_expiry:'Сертификат Истекува',equipment_assignments:'Доделувања',
     calibration_date:'Датум на калибрација',calibration_overdue:'Калибрација Задоцнета',assigned_project:'Доделен Проект',
@@ -2391,11 +2391,13 @@ function renderSuppliers(data,range){
   $('supp-quality').textContent=rated.length>0?(rated.reduce((a,s)=>a+s.rating,0)/rated.length).toFixed(1)+'/5':'N/A';
   $('supp-spend').textContent=purch.connected?sekStr(purch.orders.reduce((s,o)=>s+(num(o.value)||0),0)):'N/A';
 
+  const supplierQuality=data.supplierQuality||[];
   $('supp-list-body').innerHTML=suppliers.map(s=>{
     const spendOrders=purch.connected?purch.orders.filter(o=>o.supplier===s.name):[];
     const spend=spendOrders.reduce((a,o)=>a+(num(o.value)||0),0);
-    return `<tr><td>${esc(s.name)}</td><td><span class="badge ${s.status==='preferred'?'ready':s.status==='inactive'?'draft':'active'}">${esc(s.status||'N/A')}</span></td><td>${num(s.rating)!=null?s.rating+'/5':'N/A'}</td><td>${purch.connected?spendOrders.length:'N/A'}</td><td>${purch.connected?sekStr(spend):'N/A'}</td></tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="5">No supplier records saved via the Suppliers module yet</td></tr>';
+    const sq=supplierQuality.find(x=>x.supplier===s.name);
+    return `<tr><td>${esc(s.name)}</td><td><span class="badge ${s.status==='preferred'?'ready':s.status==='inactive'?'draft':'active'}">${esc(s.status||'N/A')}</span></td><td>${num(s.rating)!=null?s.rating+'/5':'N/A'}</td><td>${purch.connected?spendOrders.length:'N/A'}</td><td>${purch.connected?sekStr(spend):'N/A'}</td><td>${sq?sq.openNcrs:'—'}</td></tr>`;
+  }).join('')||'<tr class="emptyrow"><td colspan="6">No supplier records saved via the Suppliers module yet</td></tr>';
 
   const inventory=data.inventory||[];
   const single=inventory.filter(i=>i.supplier);
