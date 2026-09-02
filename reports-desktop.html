@@ -963,7 +963,7 @@
 
             <div id="builder-step6" class="tabpanel">
               <div class="filtrow">
-                <label data-i="report_name">Report name:</label><input class="filtsel" id="builder-name" style="min-width:220px;" placeholder="My custom report">
+                <label data-i="report_name" for="builder-name">Report name:</label><input class="filtsel" id="builder-name" style="min-width:220px;" placeholder="My custom report">
                 <button class="fbtn primary" onclick="previewBuilderReport()" data-i="preview">Preview</button>
               </div>
               <div id="builder-preview" style="margin:14px 0;"></div>
@@ -996,7 +996,7 @@
   <div class="mcard">
     <h2 id="savedModalTitle" data-i="new_report">New Report</h2>
     <div class="mrow">
-      <label data-i="report_name">Report name</label>
+      <label data-i="report_name" for="savedNameInput">Report name</label>
       <input id="savedNameInput" type="text" maxlength="80">
     </div>
     <div class="mrow">
@@ -2717,7 +2717,7 @@ function renderBuilderFilterRows(){
     <div class="filtrow" style="margin:0;">
       <select class="filtsel" aria-label="Filter ${i+1} field" onchange="builderState.filters[${i}].field=this.value">${def.fields.map(fl=>`<option value="${fl}" ${fl===f.field?'selected':''}>${esc(fl)}</option>`).join('')}</select>
       <select class="filtsel" aria-label="Filter ${i+1} operator" onchange="builderState.filters[${i}].op=this.value">${FILTER_OPERATORS.map(([v,l])=>`<option value="${v}" ${v===f.op?'selected':''}>${l}</option>`).join('')}</select>
-      <input class="filtsel" value="${esc(f.value)}" oninput="builderState.filters[${i}].value=this.value" placeholder="Value">
+      <input class="filtsel" value="${esc(f.value)}" oninput="builderState.filters[${i}].value=this.value" placeholder="Value" aria-label="Filter ${i+1} value">
       <button class="fbtn" onclick="removeBuilderFilterRow(${i})">✕</button>
     </div>`).join('');
 }
