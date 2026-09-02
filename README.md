@@ -34,8 +34,9 @@ Shared logic used across modules:
   the customers/estimations/projects/inventory/jobcards/equipment/quality records, the v3→v4
   migration and backup/import safeguards described below.
 - `workshop-forms.js` — shared form helpers.
-- `jobcard-rules.js`, `estimation-rules.js` — small pure business-rule modules shared between a
-  page and the automated test suite (see **Tests** below).
+- `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
+  `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
+  business-rule modules shared between a page and the automated test suite (see **Tests** below).
 
 ## Access model
 - Worker logs in → Hours module only (demo only, not enforced by any backend)
@@ -63,8 +64,8 @@ Open any `.html` file in a browser, or use the VS Code **Live Server** extension
 
 ## Tests
 A lightweight test suite (Node's built-in test runner, no external dependencies) covers data
-migration, backup/import safety, Equipment assignment rules, Quality workflow rules, and pure
-Jobcard/Estimation business-rule helpers. It requires Node.js 18+ on your PATH.
+migration, backup/import safety, and pure business-rule helpers for Jobcards, Estimation,
+Projects, Quality, Equipment, and Store/Purchasing. It requires Node.js 18+ on your PATH.
 
 ```
 npm test          # runs tests/*.test.js via node --test
