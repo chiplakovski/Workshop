@@ -72,6 +72,7 @@ npm run test:syntax   # checks every .js file and every HTML page's inline scrip
                        # and that every literal internal .html link resolves to a real file
 npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge and exercises
                       # safe tabs/views/filters/language controls while checking browser errors
+npm run test:e2e      # runs persisted Customers/Estimations CRUD and cross-module browser workflows
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download

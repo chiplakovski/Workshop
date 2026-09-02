@@ -99,6 +99,7 @@
   .dhead3{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
   .dhead3 .idn{display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
   .dhead3 h2{font-family:'Sora';font-weight:700;font-size:19px;letter-spacing:-.01em;}
+  .dhead3 .esttitle{flex-basis:100%;font-family:'Sora';font-size:13px;font-weight:600;color:var(--steel-300);}
   .dhead3 .dbtns{display:flex;gap:8px;flex-wrap:wrap;}
 
   .stpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;font-weight:700;white-space:nowrap;border:1px solid;}
@@ -357,7 +358,27 @@ const CUSTOMERS={
   6:{name:"Ystad Bageri",city:"Ystad",address:"Bagerigatan 2, 271 41 Ystad, Sweden",contact:"Nina H.",email:"nina@ystadbageri.se",phone:"+46 70 678 90 12",org:"556990-2201",status:"active"},
   7:{name:"Trelleborg Snacks",city:"Trelleborg",address:"Fabriksgatan 15, 231 62 Trelleborg, Sweden",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se",phone:"+46 70 789 01 23",org:"559333-6654",status:"inactive"}
 };
-if(window.WorkshopData){const marine=WorkshopData.get().customers.find(c=>c.name==='MarineVent AB');if(marine)CUSTOMERS[8]={name:marine.name,city:marine.city,address:(marine.billing||[]).join(', '),contact:(marine.contacts&&marine.contacts[0]?marine.contacts[0].name:'—'),email:marine.email,phone:marine.phone,org:marine.org,status:marine.status}}
+// Estimations used to expose only its seven hardcoded customers plus a one-off MarineVent record.
+// Merge every shared customer instead, while preserving the local numeric ids referenced by the
+// detailed seed estimates. sharedId (or organisation number/name on first load) keeps updates and
+// renames attached to the same local option; genuinely new customers receive the next free local id.
+function hydrateSharedCustomers(){
+  if(!window.WorkshopData)return;
+  let nextLocalId=Math.max(0,...Object.keys(CUSTOMERS).map(Number));
+  WorkshopData.getCustomers().forEach(sc=>{
+    const key=Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].sharedId===sc.id)||
+      Object.keys(CUSTOMERS).find(id=>sc.org&&sc.org!=='—'&&CUSTOMERS[id].org===sc.org)||
+      Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===sc.name)||String(++nextLocalId);
+    const current=CUSTOMERS[key]||{},primary=(sc.contacts||[]).find(c=>c.primary)||(sc.contacts||[])[0];
+    CUSTOMERS[key]={...current,sharedId:sc.id,name:sc.name,city:sc.city||'—',address:(sc.billing||[]).join(', ')||current.address||'—',
+      contact:primary?primary.name:'—',email:sc.email||'—',phone:sc.phone||'—',org:sc.org||'—',status:sc.status||'active'};
+  });
+}
+function localCustomerIdForShared(sharedId,name){
+  const key=Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].sharedId===sharedId)||Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===name);
+  return Number(key||Object.keys(CUSTOMERS)[0]);
+}
+hydrateSharedCustomers();
 const PROJECTS={
   "P-26-0001":{name:"Bakery Conveyor Modification",type:"Stainless Fabrication & Installation",status:"active"},
   "P-26-0002":{name:"Folding Machine Retrofit",type:"Machine Retrofit",status:"quotation"},
@@ -537,7 +558,7 @@ function hydrateSharedEstimations(){
       // A record with this number already exists locally (seed data or this session) — this shared
       // record is what WE last saved for it (syncEstimation always writes the full field set below),
       // so adopt it verbatim rather than rebuilding anything from an invented value.
-      existing.sharedId=se.id;existing.status=se.status;existing.revision=se.revision||0;
+      existing.sharedId=se.id;existing.customerId=localCustomerIdForShared(se.customerId,se.customer);existing.status=se.status;existing.revision=se.revision||0;
       existing.created=se.created;existing.validUntil=se.validUntil;existing.currency=se.currency||existing.currency;
       if(Array.isArray(se.workItems))existing.workItems=se.workItems;
       if(Array.isArray(se.options))existing.options=se.options;
@@ -553,6 +574,12 @@ function hydrateSharedEstimations(){
       if(se.opportunityRef!==undefined)existing.opportunityRef=se.opportunityRef;
       if(se.requestedDelivery!==undefined)existing.requestedDelivery=se.requestedDelivery;
       if(se.estimator!==undefined)existing.estimator=se.estimator;
+      if(se.title!==undefined)existing.projectTitle=se.title;
+      if(se.deliveryTime!==undefined)existing.deliveryTime=se.deliveryTime;
+      if(se.paymentTerms!==undefined)existing.paymentTerms=se.paymentTerms;
+      if(se.priceList!==undefined)existing.priceList=se.priceList;
+      if(se.incoterms!==undefined)existing.incoterms=se.incoterms;
+      if(se.createdBy!==undefined)existing.createdBy=se.createdBy;
       if(se.projectNo!==undefined)existing.projectNo=se.projectNo;
       if(Array.isArray(se.history)&&se.history.length)existing.history=se.history;
       if(Array.isArray(se.revisionSnapshots))existing.revisionSnapshots=se.revisionSnapshots;
@@ -561,10 +588,10 @@ function hydrateSharedEstimations(){
     }
     // Genuinely new shared estimation this module has never seen locally (e.g. created from another
     // module such as Planning). Hydrate directly from its own real fields — never from an invented value.
-    const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=Number(Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===se.customer))||8;
+    const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=localCustomerIdForShared(se.customerId,se.customer);
     const hasDetail=Array.isArray(se.bom)&&se.bom.length>0;
     const workItems=hasDetail?[{no:'',desc:'Bill of Materials',lines:se.bom.map(b=>({desc:b.description||b.code,category:'material',qty:Number(b.qty)||1,unit:b.unit||'EA',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25}))}]:[{no:'',desc:'Work items',lines:[]}];
-    ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:null,projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:'4–5 weeks',paymentTerms:'30 days',priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',reference:'—',customerRfq:'',opportunityRef:'',requestedDelivery:se.deliveryTarget||'',createdBy:'Aleksandar C.',estimator:'Aleksandar C.',overheadPct:8,contingencyPct:5,discount:0,workItems,options:[],exclusions:[],terms:'Prices valid for 30 days.',documents:[],history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:[],revision:se.revision||0,revisionSnapshots:[],sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});
+    ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:(se.projectNo||null),projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:se.deliveryTime||'4–5 weeks',paymentTerms:se.paymentTerms||'30 days',priceList:se.priceList||'Standard Price List 2026',incoterms:se.incoterms||'EXW Marieholm',reference:se.reference||'—',customerRfq:se.customerRfq||'',opportunityRef:se.opportunityRef||'',requestedDelivery:se.requestedDelivery||se.deliveryTarget||'',createdBy:se.createdBy||'Aleksandar C.',estimator:se.estimator||'Aleksandar C.',overheadPct:se.overheadPct===undefined?8:se.overheadPct,contingencyPct:se.contingencyPct===undefined?5:se.contingencyPct,discount:se.discount||0,workItems:Array.isArray(se.workItems)?se.workItems:workItems,options:Array.isArray(se.options)?se.options:[],exclusions:Array.isArray(se.exclusions)?se.exclusions:[],terms:se.terms||'Prices valid for 30 days.',documents:Array.isArray(se.documents)?se.documents:[],history:Array.isArray(se.history)&&se.history.length?se.history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:Array.isArray(se.notes)?se.notes:[],revision:se.revision||0,revisionSnapshots:Array.isArray(se.revisionSnapshots)?se.revisionSnapshots:[],sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});
     nextEstId=Math.max(nextEstId,se.id+1);
   });
   ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)});
@@ -805,7 +832,8 @@ function syncEstimation(e){
     workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,notes:e.notes,documents:e.documents,
     overheadPct:e.overheadPct,contingencyPct:e.contingencyPct,discount:e.discount,reference:e.reference,
     customerRfq:e.customerRfq,opportunityRef:e.opportunityRef,requestedDelivery:e.requestedDelivery,estimator:e.estimator,
-    projectNo:e.projectNo,history:e.history,revisionSnapshots:e.revisionSnapshots,archived:!!e.archived};
+    projectNo:e.projectNo,deliveryTime:e.deliveryTime,paymentTerms:e.paymentTerms,priceList:e.priceList,incoterms:e.incoterms,
+    createdBy:e.createdBy,history:e.history,revisionSnapshots:e.revisionSnapshots,archived:!!e.archived};
   const saved=WorkshopData.upsertEstimation(payload);
   e.sharedId=saved.id;
   return saved;
@@ -988,7 +1016,7 @@ function renderMiddle(e){
     <div class="panel">
       ${isLocked(e)?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.locked_banner)}<button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>`:''}
       <div class="dhead3">
-        <div class="idn"><h2>${esc(e.no)}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span></div>
+        <div class="idn"><h2>${esc(e.no)}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
         <div class="dbtns">
           <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
           <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.duplicate)}</button>
@@ -1769,7 +1797,7 @@ function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('s
 setLang("en");setInterval(tick,10000);
 // Picks up an estimation created/updated elsewhere (another tab, or another module such as
 // Customers' "New Quote") without a full reload - see hydrateSharedEstimations()'s own comment.
-window.addEventListener('workshop:data',()=>{hydrateSharedEstimations();renderAll();});
+window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();hydrateSharedEstimations();renderAll();});
 
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
