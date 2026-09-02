@@ -1551,7 +1551,7 @@ $('saveViewBtn').addEventListener('click',()=>{
   // at a time, exactly like every sibling save action on this page (confirmSavedModal, rename,
   // duplicate, toggleFavourite) already does correctly.
   WorkshopData.saveReport({
-    id:'view-'+Date.now(),name:esc(name).slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
+    id:'view-'+Date.now(),name:name.trim().slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
     filters:{dateFilter:currentFilter,...activeFilters},columns:[],sorting:null,grouping:null,chartType:null,
     visibility:'private',favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
     section:currentSection,type:'view'
@@ -2582,7 +2582,7 @@ function renameSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
   const name=prompt('Rename report:',r.name);
   if(!name)return;
-  WorkshopData.saveReport(Object.assign({},r,{name:esc(name).slice(0,80)}));
+  WorkshopData.saveReport(Object.assign({},r,{name:name.trim().slice(0,80)}));
   renderSavedReports();
   notify('Report renamed.');
 }
@@ -2619,7 +2619,7 @@ function confirmSavedModal(){
   const name=$('savedNameInput').value.trim();
   if(!name){notify('Please enter a report name.');return;}
   WorkshopData.saveReport({
-    name:esc(name).slice(0,80),category:$('savedCategoryInput').value,
+    name:name.slice(0,80),category:$('savedCategoryInput').value,
     filters:{dateFilter:currentFilter,...activeFilters},favourite:false,
     section:currentSection,type:'view',archived:false
   });
@@ -2793,7 +2793,7 @@ function saveBuilderReport(duplicate){
   // Same non-existent-function crash as saveViewBtn above, same fix: one real
   // WorkshopData.saveReport() call instead of a whole-array push into a function that never existed.
   WorkshopData.saveReport({
-    id:(duplicate?'dup-':'custom-')+Date.now(),name:esc(name).slice(0,80),category:'Custom',
+    id:(duplicate?'dup-':'custom-')+Date.now(),name:name.slice(0,80),category:'Custom',
     filters:{dateFilter:currentFilter,...activeFilters},builder:JSON.parse(JSON.stringify(builderState)),
     favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
     section:'builder',type:'custom',archived:false
