@@ -394,7 +394,7 @@
           <div class="list-controls">
             <div class="search-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"></circle><path d="M16 16l5 5"></path></svg>
-              <input id="searchBox" type="text" data-i-placeholder="searchPlaceholder" placeholder="Search equipment..." />
+              <input id="searchBox" type="text" data-i-placeholder="searchPlaceholder" placeholder="Search equipment..." aria-label="Search equipment..." />
             </div>
             <select id="categoryFilter" class="control" aria-label="Filter by category"></select>
             <select id="statusFilter" class="control" aria-label="Filter by status"></select>
@@ -733,7 +733,7 @@
       <h3 data-i="scannerTitle">Demo scanner</h3>
       <div class="demo-note" data-i="scannerNote">Demo scanner – camera and hardware scanning require a future integration.</div>
       <div class="scan-input">
-        <input id="scanValue" type="text" placeholder="Scan or enter QR/barcode value" />
+        <input id="scanValue" type="text" placeholder="Scan or enter QR/barcode value" aria-label="Scan or enter QR/barcode value" />
         <button class="primary-btn" type="button" id="scanLookupBtn" data-i="scanLookupBtn">Find equipment</button>
       </div>
       <div class="scan-area" data-i="scannerArea">Manual demo scan area</div>
@@ -1047,7 +1047,7 @@
         document.querySelectorAll('[data-i-placeholder]').forEach((el) => {
           const key = el.getAttribute('data-i-placeholder');
           const value = getLanguageText(key);
-          if (value) el.setAttribute('placeholder', value);
+          if (value) { el.setAttribute('placeholder', value); el.setAttribute('aria-label', value); }
         });
         const langCurrent = document.getElementById('langCurrent');
         if (langCurrent) langCurrent.textContent = state.language.toUpperCase();

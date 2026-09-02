@@ -169,7 +169,7 @@
         <div class="msg"><div class="mav">EN</div><div><div class="mname">Elena N.<span>09:40</span></div><div class="mtext">Steel delivery for the bakery line arrives Thursday.</div></div></div>
         <div class="msg"><div class="mav">AK</div><div><div class="mname">Aleksandar<span>10:05</span></div><div class="mtext">Good. Log plasma cutter hours on that job please.</div></div></div>
       </div>
-      <div class="tt-input"><input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…"><button type="button" id="ttSend"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
+      <div class="tt-input"><input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…" aria-label="Write to team…"><button type="button" id="ttSend" aria-label="Send"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
     </div>
   </div>
 
@@ -227,7 +227,7 @@
   let current="en";
   function setLang(code){current=code;const t=T[code];
     document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t[el.getAttribute('data-i')]);
-    document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
+    document.querySelectorAll('[data-i-ph]').forEach(el=>{const v=t[el.getAttribute('data-i-ph')];el.placeholder=v;el.setAttribute('aria-label',v);});
     document.documentElement.lang=code==="mk"?"mk-Latn":code;
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
     var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();tick();}

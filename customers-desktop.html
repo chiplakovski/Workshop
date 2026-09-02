@@ -484,7 +484,7 @@ function renderLeft(){
     <div class="panel">
       <div class="phead"><h3>${t.p_list}</h3></div>
       <div class="listtoolbar">
-        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${t.searchph}" aria-label="${t.searchph}" value="${query.replace(/"/g,'&quot;')}"></div>
         <button class="tbtn primary small" onclick="openNewCustomer()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newcust}</button>
       </div>
       <div class="segtabs">

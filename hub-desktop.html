@@ -283,8 +283,8 @@
         <div class="msg"><div class="mav">AK</div><div class="mbody"><div class="mname">Aleksandar<span>10:05</span></div><div class="mtext">Good. Log plasma cutter hours on that job please.</div></div></div>
       </div>
       <div class="tt-input">
-        <input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…">
-        <button type="button" id="ttSend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        <input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…" aria-label="Write to team…">
+        <button type="button" id="ttSend" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </div>
     </div>
   </div>
@@ -296,7 +296,7 @@
     <div id="stationList"></div>
     <div class="vol">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
-      <input type="range" id="radioVol" min="0" max="1" step="0.05" value="0.7">
+      <input type="range" id="radioVol" min="0" max="1" step="0.05" value="0.7" aria-label="Volume">
     </div>
   </div>
   <div class="radio-bar">
@@ -363,7 +363,7 @@
   let current="en";
   function setLang(code){current=code;const t=T[code];
     document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t[el.getAttribute('data-i')]);
-    document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
+    document.querySelectorAll('[data-i-ph]').forEach(el=>{const v=t[el.getAttribute('data-i-ph')];el.placeholder=v;el.setAttribute('aria-label',v);});
     document.documentElement.lang=code==="mk"?"mk-Latn":code;
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
     var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();

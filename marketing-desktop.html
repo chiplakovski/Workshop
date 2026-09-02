@@ -711,7 +711,7 @@ function renderLeads(){
   return `<div class="panel">
     <div class="phead"><h3>${tt.v_leads_t}</h3><button class="tbtn primary small" onclick="openLeadForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newlead}</button></div>
     <div class="filterbar">
-      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="leadSearch" type="text" placeholder="${tt.search_leads}" value="${esc(leadQuery)}"></div>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="leadSearch" type="text" placeholder="${tt.search_leads}" aria-label="${tt.search_leads}" value="${esc(leadQuery)}"></div>
       <select id="leadFStatus" aria-label="Filter by status" onchange="leadFilterStatus=this.value;renderApp();">
         <option value="all" ${leadFilterStatus==='all'?'selected':''}>${tt.filt_allstatus}</option>
         ${['new','contacted','qualified','disqualified','converted'].map(s=>`<option value="${s}" ${leadFilterStatus===s?'selected':''}>${tt['ls_'+s]}</option>`).join('')}
@@ -885,7 +885,7 @@ function renderOpportunities(){
         <button class="tbtn primary small" onclick="openOppForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newopp}</button>
       </div></div>
     <div class="filterbar">
-      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="oppSearch" type="text" placeholder="${tt.search_opps}" value="${esc(oppQuery)}"></div>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="oppSearch" type="text" placeholder="${tt.search_opps}" aria-label="${tt.search_opps}" value="${esc(oppQuery)}"></div>
       <select aria-label="Filter by stage" onchange="oppFilterStage=this.value;renderApp();"><option value="all" ${oppFilterStage==='all'?'selected':''}>${tt.filt_allstages}</option>${STAGES.map(s=>`<option value="${s}" ${oppFilterStage===s?'selected':''}>${tt['stg_'+s]}</option>`).join('')}</select>
       <select aria-label="Filter by owner" onchange="oppFilterOwner=this.value;renderApp();"><option value="all" ${oppFilterOwner==='all'?'selected':''}>${tt.filt_allowners}</option>${ownerOptions().map(o=>`<option value="${o.v}" ${oppFilterOwner===o.v?'selected':''}>${o.l}</option>`).join('')}</select>
       <select aria-label="Filter by industry" onchange="oppFilterIndustry=this.value;renderApp();"><option value="all" ${oppFilterIndustry==='all'?'selected':''}>${tt.filt_allindustries}</option>${oppIndustryList().map(i=>`<option value="${esc(i)}" ${oppFilterIndustry===i?'selected':''}>${esc(i)}</option>`).join('')}</select>
@@ -1005,7 +1005,7 @@ function renderTenders(){
   const tt=t();const rows=filteredTenders().slice().sort((a,b)=>d(a.deadline)-d(b.deadline));
   return `<div class="panel">
     <div class="phead"><h3>${tt.v_tenders_t}</h3><button class="tbtn primary small" onclick="openTenderForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newtender}</button></div>
-    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tenderSearch" type="text" placeholder="${tt.search_tenders}" value="${esc(tenderQuery)}"></div></div>
+    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tenderSearch" type="text" placeholder="${tt.search_tenders}" aria-label="${tt.search_tenders}" value="${esc(tenderQuery)}"></div></div>
     ${rows.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_ref}</th><th>${tt.th_company}</th><th>${tt.th_industry}</th><th>${tt.th_deadline}</th><th>${tt.th_value}</th><th>${tt.th_bid}</th><th>${tt.th_status}</th><th>${tt.th_responsible}</th><th>${tt.th_actions}</th></tr></thead><tbody>
       ${rows.map(x=>`<tr class="${deadlineClass(x.deadline)}"><td><b>${esc(x.ref)}</b></td><td>${esc(x.company)}</td><td>${esc(x.industry)}</td>
         <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmt(x.value)}</td>
@@ -1045,7 +1045,7 @@ function renderCampaigns(){
   const tt=t();const rows=filteredCampaigns();
   return `<div class="panel">
     <div class="phead"><h3>${tt.v_campaigns_t}</h3><button class="tbtn primary small" onclick="openCampaignForm()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${tt.btn_newcampaign}</button></div>
-    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="campaignSearch" type="text" placeholder="${tt.search_campaigns}" value="${esc(campaignQuery)}"></div></div>
+    <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="campaignSearch" type="text" placeholder="${tt.search_campaigns}" aria-label="${tt.search_campaigns}" value="${esc(campaignQuery)}"></div></div>
     ${renderCampaignGrid(rows)}
   </div>`;
 }
