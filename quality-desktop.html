@@ -286,7 +286,7 @@
 
   <div class="filtbar">
     <div class="filtrow">
-      <span class="filtlbl" data-i="search">Search:</span>
+      <label class="filtlbl" data-i="search" for="qSearch">Search:</label>
       <input class="filtinput" type="text" id="qSearch" placeholder="ID, project, jobcard, description…">
       <label class="filtlbl" for="filtProject" data-i="filt_project">Project:</label>
       <select class="filtsel" id="filtProject"><option value="" data-i="all_projects">All Projects</option></select>
@@ -671,29 +671,29 @@
       <div><label data-i="jobcard" for="ins_jobcard">Jobcard</label><select id="ins_jobcard"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="operation">Operation</label><input id="ins_operation" type="text"></div>
-      <div><label data-i="component">Component / Item</label><input id="ins_component" type="text"></div>
+      <div><label data-i="operation" for="ins_operation">Operation</label><input id="ins_operation" type="text"></div>
+      <div><label data-i="component" for="ins_component">Component / Item</label><input id="ins_component" type="text"></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="drawing_no">Drawing No.</label><input id="ins_drawing" type="text"></div>
-      <div><label data-i="drawing_rev">Revision</label><input id="ins_rev" type="text"></div>
+      <div><label data-i="drawing_no" for="ins_drawing">Drawing No.</label><input id="ins_drawing" type="text"></div>
+      <div><label data-i="drawing_rev" for="ins_rev">Revision</label><input id="ins_rev" type="text"></div>
     </div>
     <div class="mrow2">
       <div><label data-i="inspection_type" for="ins_type">Inspection Type</label><select id="ins_type"></select></div>
-      <div><label data-i="method">Method</label><input id="ins_method" type="text" placeholder="e.g. Visual, Callipers, PT"></div>
+      <div><label data-i="method" for="ins_method">Method</label><input id="ins_method" type="text" placeholder="e.g. Visual, Callipers, PT"></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="planned_date">Planned Date</label><input id="ins_planned" type="date"></div>
-      <div><label data-i="responsible_inspector">Responsible Inspector</label><input id="ins_inspector" type="text" placeholder="Aleksandar C."></div>
+      <div><label data-i="planned_date" for="ins_planned">Planned Date</label><input id="ins_planned" type="date"></div>
+      <div><label data-i="responsible_inspector" for="ins_inspector">Responsible Inspector</label><input id="ins_inspector" type="text" placeholder="Aleksandar C."></div>
     </div>
     <div class="mrow">
-      <label data-i="acceptance_criteria">Acceptance Criteria</label><input id="ins_criteria" type="text">
+      <label data-i="acceptance_criteria" for="ins_criteria">Acceptance Criteria</label><input id="ins_criteria" type="text">
     </div>
     <div class="mrow2">
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="ins_witness" style="width:auto;"> <span data-i="customer_witness_required">Customer witness required</span></label></div>
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="ins_matready" style="width:auto;"> <span data-i="material_traceability_ok">Material traceability confirmed</span></label></div>
     </div>
-    <div class="mrow"><label data-i="notes">Notes</label><textarea id="ins_notes"></textarea></div>
+    <div class="mrow"><label data-i="notes" for="ins_notes">Notes</label><textarea id="ins_notes"></textarea></div>
     <div class="mformerr" id="insFormErr"></div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('inspModal')" data-i="cancel">Cancel</button>
@@ -716,7 +716,7 @@
       <div><label data-i="result" for="exec_result">Result</label><select id="exec_result"></select></div>
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;margin-top:22px;"><input type="checkbox" id="exec_critical" style="width:auto;"> <span data-i="critical_failure">Critical failure (applies Quality Hold)</span></label></div>
     </div>
-    <div class="mrow"><label data-i="findings">Findings / Comments</label><textarea id="exec_findings"></textarea></div>
+    <div class="mrow"><label data-i="findings" for="exec_findings">Findings / Comments</label><textarea id="exec_findings"></textarea></div>
     <div class="mformerr" id="execFormErr"></div>
     <div id="execActivityLog" style="margin-top:14px;"></div>
     <div class="mbtns">
@@ -731,7 +731,7 @@
 <div class="modal" id="ncrModal">
   <div class="mcard">
     <h2 data-i="new_ncr">New NCR</h2>
-    <div class="mrow"><label data-i="title">Title</label><input id="ncr_title" type="text"></div>
+    <div class="mrow"><label data-i="title" for="ncr_title">Title</label><input id="ncr_title" type="text"></div>
     <div class="mrow2">
       <div><label data-i="project" for="ncr_project">Project</label><select id="ncr_project"></select></div>
       <div><label data-i="jobcard" for="ncr_jobcard">Jobcard</label><select id="ncr_jobcard"><option value="">—</option></select></div>
@@ -742,12 +742,12 @@
     </div>
     <div class="mrow2">
       <div><label data-i="supplier" for="ncr_supplier">Supplier (if applicable)</label><select id="ncr_supplier"><option value="">—</option></select></div>
-      <div><label data-i="component">Component / Item</label><input id="ncr_component" type="text"></div>
+      <div><label data-i="component" for="ncr_component">Component / Item</label><input id="ncr_component" type="text"></div>
     </div>
-    <div class="mrow"><label data-i="description">Description</label><textarea id="ncr_description"></textarea></div>
+    <div class="mrow"><label data-i="description" for="ncr_description">Description</label><textarea id="ncr_description"></textarea></div>
     <div class="mrow2">
-      <div><label data-i="responsible">Responsible Person</label><input id="ncr_responsible" type="text"></div>
-      <div><label data-i="due_date">Due Date</label><input id="ncr_due" type="date"></div>
+      <div><label data-i="responsible" for="ncr_responsible">Responsible Person</label><input id="ncr_responsible" type="text"></div>
+      <div><label data-i="due_date" for="ncr_due">Due Date</label><input id="ncr_due" type="date"></div>
     </div>
     <p class="dq-note" data-i="ncr_severity_note">Major and Critical NCRs require a responsible person and due date. Critical NCRs automatically apply a Quality Hold.</p>
     <div class="mformerr" id="ncrFormErr"></div>
@@ -775,36 +775,36 @@
   <div class="mcard wide">
     <h2 data-i="new_corrective_action">New Corrective Action</h2>
     <div class="mrow2">
-      <div><label data-i="related_ref">Related NCR / Complaint / Inspection</label><input id="capa_related" type="text" placeholder="NCR-2026-001"></div>
-      <div><label data-i="responsible">Responsible Person</label><input id="capa_responsible" type="text"></div>
+      <div><label data-i="related_ref" for="capa_related">Related NCR / Complaint / Inspection</label><input id="capa_related" type="text" placeholder="NCR-2026-001"></div>
+      <div><label data-i="responsible" for="capa_responsible">Responsible Person</label><input id="capa_responsible" type="text"></div>
     </div>
-    <div class="mrow"><label data-i="problem_statement">Problem Statement</label><textarea id="capa_problem"></textarea></div>
-    <div class="mrow"><label data-i="immediate_correction">Immediate Correction</label><textarea id="capa_correction"></textarea></div>
-    <div class="mrow"><label data-i="root_cause">Root Cause</label><textarea id="capa_rootcause"></textarea></div>
-    <div class="mrow"><label data-i="corrective_action">Corrective Action</label><textarea id="capa_action"></textarea></div>
-    <div class="mrow"><label data-i="preventive_action">Preventive Action</label><textarea id="capa_preventive"></textarea></div>
+    <div class="mrow"><label data-i="problem_statement" for="capa_problem">Problem Statement</label><textarea id="capa_problem"></textarea></div>
+    <div class="mrow"><label data-i="immediate_correction" for="capa_correction">Immediate Correction</label><textarea id="capa_correction"></textarea></div>
+    <div class="mrow"><label data-i="root_cause" for="capa_rootcause">Root Cause</label><textarea id="capa_rootcause"></textarea></div>
+    <div class="mrow"><label data-i="corrective_action" for="capa_action">Corrective Action</label><textarea id="capa_action"></textarea></div>
+    <div class="mrow"><label data-i="preventive_action" for="capa_preventive">Preventive Action</label><textarea id="capa_preventive"></textarea></div>
     <div class="mrow2">
-      <div><label data-i="start_date">Start Date</label><input id="capa_start" type="date"></div>
-      <div><label data-i="due_date">Due Date</label><input id="capa_due" type="date"></div>
+      <div><label data-i="start_date" for="capa_start">Start Date</label><input id="capa_start" type="date"></div>
+      <div><label data-i="due_date" for="capa_due">Due Date</label><input id="capa_due" type="date"></div>
     </div>
     <div class="phead" style="margin-top:6px;"><h3 style="font-size:12px;" data-i="five_whys">5 Whys (optional)</h3></div>
     <div class="mrow" id="fiveWhysWrap">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 1?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 2?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 3?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 4?">
-      <input type="text" placeholder="Why 5?">
+      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 1?" aria-label="Why 1?">
+      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 2?" aria-label="Why 2?">
+      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 3?" aria-label="Why 3?">
+      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 4?" aria-label="Why 4?">
+      <input type="text" placeholder="Why 5?" aria-label="Why 5?">
     </div>
     <div class="phead" style="margin-top:14px;"><h3 style="font-size:12px;" data-i="fishbone">Fishbone Category Notes (optional)</h3></div>
     <div class="mrow3">
-      <div><label data-i="fb_people">People</label><input id="fb_people" type="text"></div>
-      <div><label data-i="fb_machine">Machine</label><input id="fb_machine" type="text"></div>
-      <div><label data-i="fb_material">Material</label><input id="fb_material" type="text"></div>
+      <div><label data-i="fb_people" for="fb_people">People</label><input id="fb_people" type="text"></div>
+      <div><label data-i="fb_machine" for="fb_machine">Machine</label><input id="fb_machine" type="text"></div>
+      <div><label data-i="fb_material" for="fb_material">Material</label><input id="fb_material" type="text"></div>
     </div>
     <div class="mrow3">
-      <div><label data-i="fb_method">Method</label><input id="fb_method" type="text"></div>
-      <div><label data-i="fb_measurement">Measurement</label><input id="fb_measurement" type="text"></div>
-      <div><label data-i="fb_environment">Environment</label><input id="fb_environment" type="text"></div>
+      <div><label data-i="fb_method" for="fb_method">Method</label><input id="fb_method" type="text"></div>
+      <div><label data-i="fb_measurement" for="fb_measurement">Measurement</label><input id="fb_measurement" type="text"></div>
+      <div><label data-i="fb_environment" for="fb_environment">Environment</label><input id="fb_environment" type="text"></div>
     </div>
     <div class="mformerr" id="capaFormErr"></div>
     <div class="mbtns">
@@ -821,12 +821,12 @@
     <div class="mrow3">
       <div><label data-i="project" for="wld_project">Project</label><select id="wld_project"></select></div>
       <div><label data-i="jobcard" for="wld_jobcard">Jobcard</label><select id="wld_jobcard"><option value="">—</option></select></div>
-      <div><label data-i="weld_position">Weld Map Position</label><input id="wld_position" type="text"></div>
+      <div><label data-i="weld_position" for="wld_position">Weld Map Position</label><input id="wld_position" type="text"></div>
     </div>
     <div class="mrow3">
-      <div><label data-i="joint_type">Joint Type</label><input id="wld_joint" type="text"></div>
-      <div><label data-i="base_material">Base Material</label><input id="wld_material" type="text"></div>
-      <div><label data-i="thickness">Thickness (mm)</label><input id="wld_thickness" type="number" step="0.1" min="0"></div>
+      <div><label data-i="joint_type" for="wld_joint">Joint Type</label><input id="wld_joint" type="text"></div>
+      <div><label data-i="base_material" for="wld_material">Base Material</label><input id="wld_material" type="text"></div>
+      <div><label data-i="thickness" for="wld_thickness">Thickness (mm)</label><input id="wld_thickness" type="number" step="0.1" min="0"></div>
     </div>
     <div class="mrow3">
       <div><label data-i="process" for="wld_process">Welding Process</label><select id="wld_process"></select></div>
@@ -837,7 +837,7 @@
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="wld_visual" style="width:auto;" checked> <span data-i="visual_inspection_required">Visual inspection required</span></label></div>
       <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="wld_ndt" style="width:auto;"> <span data-i="ndt_required">NDT required</span></label></div>
     </div>
-    <div class="mrow"><label data-i="weld_date">Weld Date</label><input id="wld_date" type="date"></div>
+    <div class="mrow"><label data-i="weld_date" for="wld_date">Weld Date</label><input id="wld_date" type="date"></div>
     <p class="dq-note" data-i="weld_wps_note">Final approval is blocked when the selected WPS or welder qualification is missing or expired, or when required NDT is incomplete.</p>
     <div class="mformerr" id="wldFormErr"></div>
     <div class="mbtns">
@@ -857,13 +857,13 @@
     </div>
     <div class="mrow2">
       <div><label data-i="method" for="ndt_method">Method</label><select id="ndt_method"></select></div>
-      <div><label data-i="technician">Technician</label><input id="ndt_tech" type="text"></div>
+      <div><label data-i="technician" for="ndt_tech">Technician</label><input id="ndt_tech" type="text"></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="inspection_date">Inspection Date</label><input id="ndt_date" type="date"></div>
-      <div><label data-i="acceptance_criteria">Acceptance Criteria</label><input id="ndt_criteria" type="text"></div>
+      <div><label data-i="inspection_date" for="ndt_date">Inspection Date</label><input id="ndt_date" type="date"></div>
+      <div><label data-i="acceptance_criteria" for="ndt_criteria">Acceptance Criteria</label><input id="ndt_criteria" type="text"></div>
     </div>
-    <div class="mrow"><label data-i="findings">Findings</label><textarea id="ndt_findings"></textarea></div>
+    <div class="mrow"><label data-i="findings" for="ndt_findings">Findings</label><textarea id="ndt_findings"></textarea></div>
     <div class="mrow"><label data-i="result" for="ndt_result">Result</label><select id="ndt_result"></select></div>
     <p class="dq-note" data-i="ndt_reject_note">A Rejected mandatory NDT result blocks the related weld, operation and final release until resolved.</p>
     <div class="mformerr" id="ndtFormErr"></div>
@@ -880,9 +880,9 @@
     <h2 data-i="new_itp">New ITP</h2>
     <div class="mrow2">
       <div><label data-i="project" for="itp_project">Project</label><select id="itp_project"></select></div>
-      <div><label data-i="prepared_by">Prepared By</label><input id="itp_prepared" type="text" value="Aleksandar C."></div>
+      <div><label data-i="prepared_by" for="itp_prepared">Prepared By</label><input id="itp_prepared" type="text" value="Aleksandar C."></div>
     </div>
-    <div class="mrow"><label data-i="effective_date">Effective Date</label><input id="itp_effective" type="date"></div>
+    <div class="mrow"><label data-i="effective_date" for="itp_effective">Effective Date</label><input id="itp_effective" type="date"></div>
     <div class="mformerr" id="itpFormErr"></div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('itpModal')" data-i="cancel">Cancel</button>
@@ -896,13 +896,13 @@
   <div class="mcard">
     <h2 data-i="add_itp_line">Add ITP Line</h2>
     <div class="mrow2">
-      <div><label data-i="phase">Phase</label><input id="line_phase" type="text"></div>
+      <div><label data-i="phase" for="line_phase">Phase</label><input id="line_phase" type="text"></div>
       <div><label data-i="jobcard" for="line_jobcard">Jobcard</label><select id="line_jobcard"><option value="">—</option></select></div>
     </div>
-    <div class="mrow"><label data-i="activity">Inspection Activity</label><input id="line_activity" type="text"></div>
-    <div class="mrow"><label data-i="acceptance_criteria">Acceptance Criteria</label><input id="line_criteria" type="text"></div>
+    <div class="mrow"><label data-i="activity" for="line_activity">Inspection Activity</label><input id="line_activity" type="text"></div>
+    <div class="mrow"><label data-i="acceptance_criteria" for="line_criteria">Acceptance Criteria</label><input id="line_criteria" type="text"></div>
     <div class="mrow2">
-      <div><label data-i="responsible">Responsible Party</label><input id="line_responsible" type="text"></div>
+      <div><label data-i="responsible" for="line_responsible">Responsible Party</label><input id="line_responsible" type="text"></div>
       <div><label data-i="point_type" for="line_type">Inspection Point Type</label><select id="line_type">
         <option value="H" data-i="hold_point">H — Hold Point</option>
         <option value="W" data-i="witness_point">W — Witness Point</option>
@@ -911,8 +911,8 @@
       </select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="customer_involvement">Customer Involvement</label><input id="line_customer" type="text"></div>
-      <div><label data-i="planned_date">Planned Date</label><input id="line_planned" type="date"></div>
+      <div><label data-i="customer_involvement" for="line_customer">Customer Involvement</label><input id="line_customer" type="text"></div>
+      <div><label data-i="planned_date" for="line_planned">Planned Date</label><input id="line_planned" type="date"></div>
     </div>
     <div class="mformerr" id="lineFormErr"></div>
     <div class="mbtns">
@@ -931,13 +931,13 @@
       <div><label data-i="project" for="cmp_project">Project</label><select id="cmp_project"><option value="">—</option></select></div>
     </div>
     <div class="mrow2">
-      <div><label data-i="delivered_item">Delivered Item</label><input id="cmp_item" type="text"></div>
+      <div><label data-i="delivered_item" for="cmp_item">Delivered Item</label><input id="cmp_item" type="text"></div>
       <div><label data-i="severity" for="cmp_severity">Severity</label><select id="cmp_severity"></select></div>
     </div>
-    <div class="mrow"><label data-i="description">Description</label><textarea id="cmp_description"></textarea></div>
+    <div class="mrow"><label data-i="description" for="cmp_description">Description</label><textarea id="cmp_description"></textarea></div>
     <div class="mrow2">
-      <div><label data-i="responsible">Responsible Person</label><input id="cmp_responsible" type="text" value="Aleksandar C."></div>
-      <div><label data-i="due_date">Due Date</label><input id="cmp_due" type="date"></div>
+      <div><label data-i="responsible" for="cmp_responsible">Responsible Person</label><input id="cmp_responsible" type="text" value="Aleksandar C."></div>
+      <div><label data-i="due_date" for="cmp_due">Due Date</label><input id="cmp_due" type="date"></div>
     </div>
     <div class="mformerr" id="cmpFormErr"></div>
     <div class="mbtns">
@@ -962,8 +962,8 @@
   <div class="mcard">
     <h2 data-i="release_quality_hold">Release Quality Hold</h2>
     <div class="msub" id="holdReleaseSub"></div>
-    <div class="mrow"><label data-i="release_authority">Release Authority</label><input id="hold_authority" type="text" placeholder="Aleksandar C. — Quality Manager"></div>
-    <div class="mrow"><label data-i="release_reason">Resolution Evidence / Release Reason</label><textarea id="hold_reason"></textarea></div>
+    <div class="mrow"><label data-i="release_authority" for="hold_authority">Release Authority</label><input id="hold_authority" type="text" placeholder="Aleksandar C. — Quality Manager"></div>
+    <div class="mrow"><label data-i="release_reason" for="hold_reason">Resolution Evidence / Release Reason</label><textarea id="hold_reason"></textarea></div>
     <div class="mformerr" id="holdFormErr"></div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('holdReleaseModal')" data-i="cancel">Cancel</button>
@@ -976,7 +976,7 @@
 <div class="modal" id="noteModal">
   <div class="mcard">
     <h2 data-i="add_note">Add Note</h2>
-    <div class="mrow"><label data-i="note">Note</label><textarea id="note_text"></textarea></div>
+    <div class="mrow"><label data-i="note" for="note_text">Note</label><textarea id="note_text"></textarea></div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('noteModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitNote()" data-i="save">Save</button>
@@ -1875,9 +1875,9 @@ function ncrShowAction(no,action){
   const area=$('ncrActionArea');
   const forms={
     containment:`<div class="mrow"><label>Containment Action</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitContainment('${esc(no)}')">Save Containment</button>`,
-    disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label>Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
+    disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label for="ncrActRef">Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
     capa:`<div class="mrow"><label>Corrective Action Reference (CAPA No.)</label><input id="ncrActInput" type="text" placeholder="CAPA-2026-001"></div><button class="mbtn primary" onclick="ncrSubmitCapaLink('${esc(no)}')">Assign</button>`,
-    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label>Verified By</label><input id="ncrActRef" type="text" value="Aleksandar C."></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
+    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label for="ncrActRef">Verified By</label><input id="ncrActRef" type="text" value="Aleksandar C."></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
     close:`<div class="mrow"><label>Closure Approval Reference</label><input id="ncrActInput" type="text" placeholder="Approved by Quality Manager — ref #"></div><button class="mbtn primary" onclick="ncrSubmitClose('${esc(no)}')">Close NCR</button>`,
     reopen:`<div class="mrow"><label>Reason for Reopening</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitReopen('${esc(no)}')">Reopen NCR</button>`
   };
@@ -1951,7 +1951,7 @@ function openCapaDetail(no){
     <div class="mrow2"><div><b>Status</b>: ${badge(c.status,genericLabel(c.status))}</div><div><b>Verified By</b>: ${esc(c.verifiedBy||'Not verified')}</div></div>
     ${c.fiveWhys&&c.fiveWhys.length?('<div class="mrow"><b>5 Whys</b>: <ol>'+c.fiveWhys.map(w=>`<li>${esc(w)}</li>`).join('')+'</ol></div>'):''}
     <div class="phead" style="margin-top:10px;"><h3 style="font-size:12px;">Verify Effectiveness</h3></div>
-    <div class="mrow"><label>Effectiveness Check Evidence</label><textarea id="capaVerifyInput"></textarea></div>
+    <div class="mrow"><label for="capaVerifyInput">Effectiveness Check Evidence</label><textarea id="capaVerifyInput"></textarea></div>
     <div class="mbtns" style="justify-content:flex-start;">
       <button class="mbtn" onclick="submitCapaVerify('${esc(c.no)}','ineffective')">Mark Ineffective</button>
       <button class="mbtn primary" onclick="submitCapaVerify('${esc(c.no)}','effective')">Mark Effective</button>
@@ -2264,9 +2264,9 @@ function renderReleaseDetail(){
       <option value="released" ${blockingReasons.length>0?'disabled':''}>Released</option>
       <option value="released-conditions">Released with Conditions</option>
       <option value="not-released">Not Released</option>
-    </select></div><div><label>Released By</label><input id="rel_by" type="text" value="Aleksandar C."></div></div>
-    <div class="mrow2"><div><label>Conditions (required for Released with Conditions)</label><input id="rel_conditions" type="text"></div><div><label>Approval Reference</label><input id="rel_approval" type="text"></div></div>
-    <div class="mrow"><label>Notes</label><textarea id="rel_notes"></textarea></div>
+    </select></div><div><label for="rel_by">Released By</label><input id="rel_by" type="text" value="Aleksandar C."></div></div>
+    <div class="mrow2"><div><label for="rel_conditions">Conditions (required for Released with Conditions)</label><input id="rel_conditions" type="text"></div><div><label for="rel_approval">Approval Reference</label><input id="rel_approval" type="text"></div></div>
+    <div class="mrow"><label for="rel_notes">Notes</label><textarea id="rel_notes"></textarea></div>
     <div class="mformerr" id="releaseFormErr"></div>
     <button class="fbtn primary" onclick="submitRelease('${esc(projectNo)}','${esc(jobcardNo||'')}')">Issue Release</button>
     </div>
