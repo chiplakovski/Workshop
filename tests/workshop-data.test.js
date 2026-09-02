@@ -334,6 +334,17 @@ test('equipment gate: usage is blocked without a matching passed pre-use check w
   const ok=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Marko K.',date:EQ_ASOF});
   assert.ok(!ok.error);
 });
+test('equipment gate: successful assigned usage transitions Reserved equipment to In Use and records an audit entry', ()=>{
+  const WD=loadWorkshopData();
+  const assigned=WD.assignEquipment('E-1007',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  assert.equal(assigned.status,'Reserved');
+  const used=WD.logEquipmentUsage('E-1007',{hours:2.5,worker:'Marko K.',date:EQ_ASOF,project:'P-2026-014',jobcard:'JC-2026-0001'});
+  assert.ok(!used.error);
+  assert.equal(used.status,'In Use');
+  assert.equal(used.usageHistory[0].duration,2.5);
+  assert.equal(used.usageHistory[0].meterAfter-used.usageHistory[0].meterBefore,2.5);
+  assert.match(used.activity[0].action,/usage logged/i);
+});
 test('equipment gate: a failed pre-use check immediately blocks usage and is recorded as audit history (never a single toggle)', ()=>{
   const WD=loadWorkshopData();
   const res=WD.recordEquipmentPreUseCheck('E-1001',{result:'failed',checkedBy:'Marko K.',date:EQ_ASOF,notes:'Guard missing'});

@@ -1975,7 +1975,10 @@
         project:usage.project||item.assignedProject||null,
         jobcard:usage.jobcard||item.assignedJobcard||null,
         worker:usage.worker||item.operator||'Unassigned',
-        duration:usage.duration||0,
+        // Every caller supplies the validated `hours`; duration is the same usage interval unless
+        // an explicit positive duration was provided. Keeping this at 0 made the Equipment Usage
+        // tab disagree with the hour meter and the Jobcard/Hours records.
+        duration:Number.isFinite(Number(usage.duration))&&Number(usage.duration)>0?Number(usage.duration):hours,
         meterBefore:Number(item.operatingHourMeter)||0,
         meterAfter:Number(item.operatingHourMeter||0) + hours,
         fuelOrEnergy:usage.fuelOrEnergy||'n/a',
@@ -1984,6 +1987,12 @@
       };
       item.usageHistory=item.usageHistory||[]; item.usageHistory.unshift(record);
       item.operatingHourMeter=Number(item.operatingHourMeter||0)+hours;
+      // Assignment deliberately leaves equipment Reserved; the first successfully safety-gated
+      // usage is the authoritative transition into real operation. Without this, equipment with
+      // meter/usage history continued to look merely Reserved in every Equipment view.
+      item.status='In Use';
+      item.activity=item.activity||[];
+      item.activity.unshift({timestamp:now(),action:'Equipment usage logged',user:record.worker,reference:item.equipmentId,details:`${hours} h${record.jobcard?' / '+record.jobcard:''}`});
       item.lastActivity=now();
       save(`Equipment usage logged: ${equipmentId}`);
       return clone(item);
