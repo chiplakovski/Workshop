@@ -70,7 +70,14 @@ Jobcard/Estimation business-rule helpers. It requires Node.js 18+ on your PATH.
 npm test          # runs tests/*.test.js via node --test
 npm run test:syntax   # checks every .js file and every HTML page's inline scripts parse,
                        # and that every literal internal .html link resolves to a real file
+npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge and exercises
+                      # safe tabs/views/filters/language controls while checking browser errors
 ```
+
+The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
+a separate browser. Set `PLAYWRIGHT_CHROME_PATH` when the browser is installed in a non-standard
+location. External resources are stubbed during the run so the result does not depend on internet
+access.
 
 ## Status
 Frontend prototype. No production backend, database, secure file storage or real permission
