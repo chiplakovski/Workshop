@@ -1,22 +1,36 @@
-// Varmak Workshop backend — Phase 0A schema.
+// Varmak Workshop backend — Phase 0A schema, corrected in Phase 0A-R1.
 // Implements the approved Backend Architecture Contract (Decisions 1-9).
 // Schema only: no seed data, no business logic. See backend/README.md.
 //
 // Conventions applied throughout, per the contract's Database Rules:
-// - Every model has a database-native UUID primary key (gen_random_uuid(), Postgres 13+ built-in).
-// - Every human-readable business number ("no") is a separate, uniquely-indexed field, never the PK.
+// - Every model has a database-native UUID primary key (gen_random_uuid(), Postgres 13+ built-in),
+//   without exception. Prior to Phase 0A-R1, InventoryItem and BarcodeLink used their human-readable
+//   business key (`code`, `barcode`) as the primary key itself — corrected: both now have a real
+//   `id` UUID primary key, with `code`/`barcode` demoted to a separate unique business-key column,
+//   and every relationship that referenced them now uses a real UUID foreign key
+//   (`inventoryItemId`), never the business code.
+// - Every human-readable business identifier — "no" fields, and business keys like
+//   InventoryItem.code, BarcodeLink.barcode, Equipment.equipmentId, Offcut.code — is a separate,
+//   uniquely-indexed column, never the primary key and never used as a relationship target.
 // - timestamptz for events/instants; plain `Date` (@db.Date) for calendar dates.
 // - Decimal (never Float) for money, quantities, rates and measured values.
 // - Currency is stored explicitly beside every monetary field.
 // - No polymorphic entityType/entityId soft links, with one explicitly-justified exception:
 //   AuditLog.entityType is a label used only for filtering/display, never a join or an
-//   authorization decision — see the comment on AuditLog below.
-// - onDelete: Restrict on every relation in this phase — nothing cascades. This is a deliberate,
+//   authorization decision — see the comment on AuditLog below. SafetyEvent's prior use of the
+//   same pattern was removed in Phase 0A-R1 in favor of explicit typed foreign keys (see the
+//   comment on SafetyEvent below) — SafetyEvent has none of this exception left.
+// - onDelete: Restrict on every relation in this schema — nothing cascades. This is a deliberate,
 //   conservative default consistent with the app's "archive, never hard-delete" convention; it can
 //   be relaxed later, per relation, with explicit review once real deletion workflows exist.
-// - createdAt/updatedAt on every model. `version` (optimistic concurrency) on entities with
+// - createdAt/updatedAt on every mutable model. `version` (optimistic concurrency) on entities with
 //   meaningful concurrent-edit risk, matching the stale-index race class documented in the
-//   frontend audit (Pass 3.27).
+//   frontend audit (Pass 3.27). Immutable/append-only models (SafetyEvent, QualityRelease) omit
+//   `updatedAt` entirely and are enforced insert-only at the database level — see their comments.
+// - Actor references (who performed an action) are real, named, indexed foreign keys to User —
+//   e.g. PurchaseRequisition.requestedById/approvedById, QualityHold.appliedById/releasedById,
+//   EquipmentBreakdown.resolvedById, QualityRelease.releasedById,
+//   MigrationReconciliationRecord.resolvedById — never a bare, unrelated UUID column.
 
 generator client {
   provider = "prisma-client"
@@ -113,10 +127,10 @@ enum SupplierStatus {
   INACTIVE
 }
 
-/// New entity (Decision 5) — lifecycle not explicitly enumerated in the contract text;
-/// this is a reasonable minimal design filled in for Phase 0A, flagged for review.
+/// New entity (Decision 5). Phase 0A-R1: `SUGGESTED` removed — a persisted PurchaseRequisition
+/// always starts at DRAFT; see the lifecycle comment on PurchaseRequisition.
 enum RequisitionStatus {
-  SUGGESTED
+  DRAFT
   SUBMITTED
   APPROVED
   REJECTED
@@ -397,6 +411,11 @@ enum OffcutStatus {
 }
 
 /// Decision 7/8 — every gate/version event this system must never let go missing or be edited.
+/// Phase 0A-R1: `HOURS_ENTRY_CORRECTED` moved to the general AuditLog (action = "hours_entry_corrected")
+/// — an hours-entry correction is a business-data change, not a safety-gate decision or piece of
+/// protected safety evidence, so it does not belong in this table. See the comment on SafetyEvent
+/// for how each remaining kind maps to exactly one typed target (equipmentId / qualityHoldId /
+/// qualityReleaseId).
 enum SafetyEventKind {
   EQUIPMENT_BLOCK
   EQUIPMENT_PASS
@@ -405,7 +424,16 @@ enum SafetyEventKind {
   RELEASE_GRANT
   RELEASE_REJECT
   DOCUMENT_SUPERSEDED
-  HOURS_ENTRY_CORRECTED
+}
+
+/// Phase 0A-R1 — no anonymous safety action is allowed: every SafetyEvent has a real User actor
+/// (`userId` set, actorType = USER) or an explicit SYSTEM actor representation (`userId` NULL,
+/// actorType = SYSTEM, e.g. an automated gate re-evaluation with no human trigger). Enforced by a
+/// CHECK constraint added in the migration SQL. SYSTEM is a real, named actor value — never a
+/// silently-nullable "unknown".
+enum SafetyActorType {
+  USER
+  SYSTEM
 }
 
 /// Decision 2 — Planning/customer reconciliation, and (per §J of the contract) reused for the
@@ -421,32 +449,45 @@ enum ReconciliationResolution {
 // IDENTITY & ACCESS — Decision 4
 // ══════════════════════════════════════════════════════════════════════════
 
+/// Phase 0A-R1: `email` is no longer `@unique` in Prisma's declarative sense — Prisma's schema
+/// language cannot express a case-insensitive (functional) unique index, and email uniqueness in
+/// this system must be case-insensitive (two users cannot register "A@x.com" and "a@x.com" as
+/// distinct accounts). The real constraint is `CREATE UNIQUE INDEX ... ON "User" (LOWER(email))`,
+/// added directly in the migration SQL; `@@index([email])` below only covers plain lookups.
 model User {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique @db.VarChar(254)
+  email        String   @db.VarChar(254)
   passwordHash String   @db.VarChar(255)
   fullName     String   @db.VarChar(200)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @db.Timestamptz
   updatedAt    DateTime @updatedAt @db.Timestamptz
 
-  userRoles                    UserRole[]
-  teamMemberships              TeamMembership[]
-  jobcardWorkerAssignments     JobcardWorker[]
-  assignedOperations           JobcardOperation[]            @relation("OperationAssignedUser")
-  supervisorSiteAssignments    SupervisorSiteAssignment[]
-  supervisorTeamAssignments    SupervisorTeamAssignment[]
-  supervisorProjectAssignments SupervisorProjectAssignment[]
-  supervisorJobcardAssignments SupervisorJobcardAssignment[]
-  hoursEntries                 HoursEntry[]
-  uploadedDocuments            Document[]
-  auditLogEntries              AuditLog[]
-  safetyEventEntries           SafetyEvent[]
-  stockMovements               StockMovement[]
-  stockCounts                  StockCount[]
-  qualityWelderQuals           QualityWelderQual[]
+  userRoles                              UserRole[]
+  teamMemberships                        TeamMembership[]
+  jobcardWorkerAssignments               JobcardWorker[]
+  assignedOperations                     JobcardOperation[]              @relation("OperationAssignedUser")
+  supervisorSiteAssignments              SupervisorSiteAssignment[]
+  supervisorTeamAssignments              SupervisorTeamAssignment[]
+  supervisorProjectAssignments           SupervisorProjectAssignment[]
+  supervisorJobcardAssignments           SupervisorJobcardAssignment[]
+  hoursEntries                           HoursEntry[]
+  uploadedDocuments                      Document[]
+  auditLogEntries                        AuditLog[]
+  safetyEventEntries                     SafetyEvent[]
+  stockMovements                         StockMovement[]
+  stockCounts                            StockCount[]
+  qualityWelderQuals                     QualityWelderQual[]
+  requisitionsRequested                  PurchaseRequisition[]           @relation("PurchaseRequisitionRequestedBy")
+  requisitionsApproved                   PurchaseRequisition[]           @relation("PurchaseRequisitionApprovedBy")
+  equipmentBreakdownsResolved            EquipmentBreakdown[]
+  qualityHoldsApplied                    QualityHold[]                   @relation("QualityHoldAppliedBy")
+  qualityHoldsReleased                   QualityHold[]                   @relation("QualityHoldReleasedBy")
+  qualityReleasesReleased                QualityRelease[]
+  migrationReconciliationRecordsResolved MigrationReconciliationRecord[]
 
   @@index([active])
+  @@index([email])
 }
 
 model Role {
@@ -818,21 +859,21 @@ model Project {
 }
 
 model ProjectBomLine {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId String   @db.Uuid
-  itemCode  String   @db.VarChar(60)
-  required  Decimal  @default(0) @db.Decimal(12, 3)
-  reserved  Decimal  @default(0) @db.Decimal(12, 3)
-  issued    Decimal  @default(0) @db.Decimal(12, 3)
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId       String   @db.Uuid
+  inventoryItemId String   @db.Uuid
+  required        Decimal  @default(0) @db.Decimal(12, 3)
+  reserved        Decimal  @default(0) @db.Decimal(12, 3)
+  issued          Decimal  @default(0) @db.Decimal(12, 3)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
 
   project             Project                   @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  inventoryItem       InventoryItem             @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  inventoryItem       InventoryItem             @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   requisitionLinesFor PurchaseRequisitionLine[]
 
   @@index([projectId])
-  @@index([itemCode])
+  @@index([inventoryItemId])
 }
 
 model Jobcard {
@@ -957,7 +998,8 @@ model JobcardInspectionLegacy {
 // ══════════════════════════════════════════════════════════════════════════
 
 model InventoryItem {
-  code        String   @id @db.VarChar(60)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(60)
   description String   @db.VarChar(300)
   stock       Decimal  @default(0) @db.Decimal(12, 3)
   reserved    Decimal  @default(0) @db.Decimal(12, 3)
@@ -986,39 +1028,39 @@ model InventoryItem {
 /// carried heat/batch as flat strings on inventory items/material lines, with no dedicated
 /// lot entity to attach a certificate to.
 model InventoryLot {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemCode       String    @db.VarChar(60)
-  lotNumber      String    @db.VarChar(100)
-  supplierId     String?   @db.Uuid
-  receivedDate   DateTime? @db.Date
-  certificateRef String?   @db.VarChar(200)
-  createdAt      DateTime  @default(now()) @db.Timestamptz
-  updatedAt      DateTime  @updatedAt @db.Timestamptz
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inventoryItemId String    @db.Uuid
+  lotNumber       String    @db.VarChar(100)
+  supplierId      String?   @db.Uuid
+  receivedDate    DateTime? @db.Date
+  certificateRef  String?   @db.VarChar(200)
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
 
-  inventoryItem InventoryItem          @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  inventoryItem InventoryItem          @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   supplier      Supplier?              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   documentLinks InventoryLotDocument[]
 
-  @@unique([itemCode, lotNumber])
+  @@unique([inventoryItemId, lotNumber])
   @@index([supplierId])
 }
 
 model StockMovement {
-  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemCode   String              @db.VarChar(60)
-  action     StockMovementAction
-  qty        Decimal             @db.Decimal(12, 3)
-  projectId  String?             @db.Uuid
-  jobcardId  String?             @db.Uuid
-  userId     String?             @db.Uuid
-  occurredAt DateTime            @default(now()) @db.Timestamptz
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inventoryItemId String              @db.Uuid
+  action          StockMovementAction
+  qty             Decimal             @db.Decimal(12, 3)
+  projectId       String?             @db.Uuid
+  jobcardId       String?             @db.Uuid
+  userId          String?             @db.Uuid
+  occurredAt      DateTime            @default(now()) @db.Timestamptz
 
-  item    InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  item    InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   project Project?      @relation(fields: [projectId], references: [id], onDelete: Restrict)
   jobcard Jobcard?      @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
   user    User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  @@index([itemCode])
+  @@index([inventoryItemId])
   @@index([action])
   @@index([projectId])
   @@index([jobcardId])
@@ -1028,47 +1070,48 @@ model StockMovement {
 model Offcut {
   id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   code            String       @unique @db.VarChar(60)
-  itemCode        String       @db.VarChar(60)
+  inventoryItemId String       @db.Uuid
   status          OffcutStatus @default(AVAILABLE)
   sourceProjectId String?      @db.Uuid
   createdAt       DateTime     @default(now()) @db.Timestamptz
   updatedAt       DateTime     @updatedAt @db.Timestamptz
 
-  item          InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  item          InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   sourceProject Project?      @relation(fields: [sourceProjectId], references: [id], onDelete: Restrict)
 
   @@index([status])
-  @@index([itemCode])
+  @@index([inventoryItemId])
   @@index([sourceProjectId])
 }
 
 model StockCount {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemCode   String   @db.VarChar(60)
-  counted    Decimal  @db.Decimal(12, 3)
-  systemQty  Decimal  @db.Decimal(12, 3)
-  difference Decimal  @db.Decimal(12, 3)
-  scope      String?  @db.VarChar(60)
-  userId     String?  @db.Uuid
-  countedAt  DateTime @default(now()) @db.Timestamptz
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inventoryItemId String   @db.Uuid
+  counted         Decimal  @db.Decimal(12, 3)
+  systemQty       Decimal  @db.Decimal(12, 3)
+  difference      Decimal  @db.Decimal(12, 3)
+  scope           String?  @db.VarChar(60)
+  userId          String?  @db.Uuid
+  countedAt       DateTime @default(now()) @db.Timestamptz
 
-  item InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   user User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  @@index([itemCode])
+  @@index([inventoryItemId])
   @@index([userId])
 }
 
 model BarcodeLink {
-  barcode    String   @id @db.VarChar(100)
-  itemCode   String   @db.VarChar(60)
-  supplierId String?  @db.Uuid
-  createdAt  DateTime @default(now()) @db.Timestamptz
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barcode         String   @unique @db.VarChar(100)
+  inventoryItemId String   @db.Uuid
+  supplierId      String?  @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz
 
-  item     InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  item     InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   supplier Supplier?     @relation(fields: [supplierId], references: [id], onDelete: Restrict)
 
-  @@index([itemCode])
+  @@index([inventoryItemId])
   @@index([supplierId])
 }
 
@@ -1159,28 +1202,44 @@ model SupplierInvoice {
 }
 
 /// Decision 5 — real, persistent, auditable entity (not derived from BOM gaps at request time).
+///
+/// Phase 0A-R1: `SUGGESTED` was removed as a persisted state. BOM-shortage suggestions remain
+/// purely derived/computed data (e.g. "these BOM lines currently have unmet quantity") and are
+/// never written as a PurchaseRequisition row — a real requisition only exists once a user
+/// explicitly creates one, starting at `DRAFT`.
+///
+/// Allowed lifecycle transitions (documented here; enforcement is a Phase 0B service concern,
+/// consistent with Phase 0A carrying no business logic):
+///   DRAFT      -> SUBMITTED | CANCELLED
+///   SUBMITTED  -> APPROVED | REJECTED | CANCELLED
+///   APPROVED   -> CONVERTED | CANCELLED
+///   CONVERTED, REJECTED, CANCELLED are terminal.
 model PurchaseRequisition {
-  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  no          String            @unique @db.VarChar(40)
-  projectId   String?           @db.Uuid
-  status      RequisitionStatus @default(SUGGESTED)
-  requestedBy String?           @db.Uuid
-  approvedBy  String?           @db.Uuid
-  createdAt   DateTime          @default(now()) @db.Timestamptz
-  updatedAt   DateTime          @updatedAt @db.Timestamptz
-  version     Int               @default(0)
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no            String            @unique @db.VarChar(40)
+  projectId     String?           @db.Uuid
+  status        RequisitionStatus @default(DRAFT)
+  requestedById String?           @db.Uuid
+  approvedById  String?           @db.Uuid
+  createdAt     DateTime          @default(now()) @db.Timestamptz
+  updatedAt     DateTime          @updatedAt @db.Timestamptz
+  version       Int               @default(0)
 
-  project Project?                  @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  lines   PurchaseRequisitionLine[]
+  project     Project?                  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  requestedBy User?                     @relation("PurchaseRequisitionRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedBy  User?                     @relation("PurchaseRequisitionApprovedBy", fields: [approvedById], references: [id], onDelete: Restrict)
+  lines       PurchaseRequisitionLine[]
 
   @@index([status])
   @@index([projectId])
+  @@index([requestedById])
+  @@index([approvedById])
 }
 
 model PurchaseRequisitionLine {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   requisitionId   String   @db.Uuid
-  itemCode        String   @db.VarChar(60)
+  inventoryItemId String   @db.Uuid
   qtyRequested    Decimal  @db.Decimal(12, 3)
   sourceBomLineId String?  @db.Uuid
   purchaseOrderId String?  @db.Uuid
@@ -1188,12 +1247,12 @@ model PurchaseRequisitionLine {
   updatedAt       DateTime @updatedAt @db.Timestamptz
 
   requisition   PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
-  item          InventoryItem       @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  item          InventoryItem       @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   sourceBomLine ProjectBomLine?     @relation(fields: [sourceBomLineId], references: [id], onDelete: Restrict)
   purchaseOrder PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
 
   @@index([requisitionId])
-  @@index([itemCode])
+  @@index([inventoryItemId])
   @@index([sourceBomLineId])
   @@index([purchaseOrderId])
 }
@@ -1218,6 +1277,7 @@ model Equipment {
   usageSessions EquipmentUsageSession[]
   operations    JobcardOperation[]
   documentLinks DocumentEquipment[]
+  safetyEvents  SafetyEvent[]
 
   @@index([status])
 }
@@ -1238,18 +1298,20 @@ model EquipmentInspection {
 }
 
 model EquipmentBreakdown {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  equipmentId String   @db.Uuid
-  reason      String   @db.VarChar(1000)
-  resolved    Boolean  @default(false)
-  resolvedBy  String?  @db.Uuid
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId  String   @db.Uuid
+  reason       String   @db.VarChar(1000)
+  resolved     Boolean  @default(false)
+  resolvedById String?  @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
 
-  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  resolvedBy User?     @relation(fields: [resolvedById], references: [id], onDelete: Restrict)
 
   @@index([equipmentId])
   @@index([resolved])
+  @@index([resolvedById])
 }
 
 model EquipmentPreUseCheck {
@@ -1356,6 +1418,14 @@ model QualityNdt {
   @@index([inspectionId])
 }
 
+/// Phase 0A-R1: `capaId` here is the single authoritative NCR-CAPA link — "this NCR is
+/// remediated by this CAPA." The prior reverse-direction QualityCapa.ncrId column (an
+/// independently-settable "this CAPA originated from this NCR" pointer) was removed: the two
+/// could disagree (NCR#1.capaId = CAPA#5 while CAPA#5.ncrId = NCR#2), since nothing enforced
+/// them to agree. A CAPA's originating/linked NCRs are now purely the reverse of this one
+/// column (QualityCapa.ncrsLinkedToThisCapa) — one CAPA can remediate zero, one, or many NCRs,
+/// and there is exactly one place in the schema where that fact is recorded, so it cannot
+/// contradict itself.
 model QualityNcr {
   id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no          String          @unique @db.VarChar(40)
@@ -1377,8 +1447,7 @@ model QualityNcr {
   jobcard       Jobcard?           @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
   supplier      Supplier?          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   customer      Customer?          @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  capa          QualityCapa?       @relation("NcrCapa", fields: [capaId], references: [id], onDelete: Restrict)
-  capasRaised   QualityCapa[]      @relation("CapaFromNcr")
+  capa          QualityCapa?       @relation(fields: [capaId], references: [id], onDelete: Restrict)
   holds         QualityHold[]
   complaints    QualityComplaint[]
   documentLinks NcrDocument[]
@@ -1395,44 +1464,65 @@ model QualityNcr {
 model QualityCapa {
   id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no        String     @unique @db.VarChar(40)
-  ncrId     String?    @db.Uuid
   status    CapaStatus @default(OPEN)
   fiveWhys  String[]
   fishbone  Json?
   createdAt DateTime   @default(now()) @db.Timestamptz
   updatedAt DateTime   @updatedAt @db.Timestamptz
 
-  originatingNcr    QualityNcr?  @relation("CapaFromNcr", fields: [ncrId], references: [id], onDelete: Restrict)
-  ncrsUsingThisCapa QualityNcr[] @relation("NcrCapa")
+  /// Purely the reverse of QualityNcr.capaId — see the comment on QualityNcr. Not a second
+  /// source of truth: this array has no field of its own, it is just every QualityNcr row
+  /// whose capaId points here.
+  ncrsLinkedToThisCapa QualityNcr[]
 
   @@index([status])
-  @@index([ncrId])
 }
 
+/// Phase 0A-R1: target-scope integrity is enforced by a CHECK constraint added in the migration
+/// SQL (Prisma's schema language has no `@@check` attribute — confirmed against 7.10.0): PROJECT
+/// scope requires projectId and forbids jobcardId; JOBCARD scope requires jobcardId and forbids
+/// projectId. A hold can never exist without a valid target.
+///
+/// "Keep release history immutable": once a hold's status is RELEASED, a second migration-SQL
+/// trigger rejects any further change to status, releasedById, releasedAt, releaseReason or
+/// releaseEvidenceRef on that row — the release fact, once recorded, is locked. This is narrower
+/// than SafetyEvent's full insert-only trigger because QualityHold's own ACTIVE -> RELEASED
+/// transition is a legitimate, required UPDATE; only the release fact itself is made immutable
+/// after it is set. The full historical trail of apply/release actions is additionally recorded,
+/// unconditionally immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
 model QualityHold {
-  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  no         String            @unique @db.VarChar(40)
-  scope      QualityHoldScope
-  projectId  String?           @db.Uuid
-  jobcardId  String?           @db.Uuid
-  ncrId      String?           @db.Uuid
-  status     QualityHoldStatus @default(ACTIVE)
-  appliedBy  String?           @db.Uuid
-  releasedBy String?           @db.Uuid
-  createdAt  DateTime          @default(now()) @db.Timestamptz
-  updatedAt  DateTime          @updatedAt @db.Timestamptz
-  version    Int               @default(0)
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no                 String            @unique @db.VarChar(40)
+  scope              QualityHoldScope
+  projectId          String?           @db.Uuid
+  jobcardId          String?           @db.Uuid
+  ncrId              String?           @db.Uuid
+  status             QualityHoldStatus @default(ACTIVE)
+  appliedById        String?           @db.Uuid
+  appliedAt          DateTime?         @db.Timestamptz
+  releasedById       String?           @db.Uuid
+  releasedAt         DateTime?         @db.Timestamptz
+  releaseReason      String?           @db.VarChar(1000)
+  releaseEvidenceRef String?           @db.VarChar(500)
+  createdAt          DateTime          @default(now()) @db.Timestamptz
+  updatedAt          DateTime          @updatedAt @db.Timestamptz
+  version            Int               @default(0)
 
   project       Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
   jobcard       Jobcard?              @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
   ncr           QualityNcr?           @relation(fields: [ncrId], references: [id], onDelete: Restrict)
+  appliedBy     User?                 @relation("QualityHoldAppliedBy", fields: [appliedById], references: [id], onDelete: Restrict)
+  releasedBy    User?                 @relation("QualityHoldReleasedBy", fields: [releasedById], references: [id], onDelete: Restrict)
   documentLinks QualityHoldDocument[]
+  safetyEvents  SafetyEvent[]
 
   @@index([status])
   @@index([scope])
   @@index([projectId])
   @@index([jobcardId])
   @@index([ncrId])
+  @@index([appliedById])
+  @@index([releasedById])
 }
 
 model QualityWps {
@@ -1543,28 +1633,46 @@ model QualityItpLine {
   @@index([status])
 }
 
-/// Decision 7 (server-side gate authority) + Decision 8 (immutable supersession — see
-/// FinalReleaseDocument / Document.previousVersionId). `blockingReasons` is always
-/// server-computed by ReleaseGateService in a later phase; no field here is ever
-/// client-writable in the future API.
+/// Decision 7 (server-side gate authority) + Decision 8 (immutable supersession). `blockingReasons`
+/// and `gateResultSnapshot` are always server-computed by the Phase 0B ReleaseGateService — no
+/// field here is ever client-writable in the future API; Phase 0A does not implement that service.
+///
+/// Phase 0A-R1: QualityRelease now represents immutable safety evidence in the same sense as
+/// SafetyEvent and Document. It is enforced insert-only at the database level (the same
+/// BEFORE UPDATE/DELETE trigger pattern as SafetyEvent, added in the migration SQL) — an existing
+/// release row can never be edited or deleted. A correction, replacement or revocation creates a
+/// new QualityRelease row whose `previousVersionId` points at the one it supersedes (identical
+/// self-referential version-chain pattern to Document.previousVersionId, including the same
+/// one-hop self-reference CHECK constraint; full multi-hop cycle prevention is, likewise, deferred
+/// to application-level validation and tests). `version` (optimistic-concurrency) is removed:
+/// an immutable row is never concurrently updated, so there is nothing for it to protect.
 model QualityRelease {
-  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  no              String             @unique @db.VarChar(40)
-  projectId       String             @db.Uuid
-  jobcardId       String?            @db.Uuid
-  result          FinalReleaseResult
-  blockingReasons Json?
-  createdAt       DateTime           @default(now()) @db.Timestamptz
-  updatedAt       DateTime           @updatedAt @db.Timestamptz
-  version         Int                @default(0)
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no                 String             @unique @db.VarChar(40)
+  projectId          String             @db.Uuid
+  jobcardId          String?            @db.Uuid
+  result             FinalReleaseResult
+  blockingReasons    Json?
+  gateVersion        String             @db.VarChar(40)
+  gateResultSnapshot Json?
+  releasedById       String?            @db.Uuid
+  releasedAt         DateTime?          @db.Timestamptz
+  previousVersionId  String?            @unique @db.Uuid
+  supersededAt       DateTime?          @db.Timestamptz
+  createdAt          DateTime           @default(now()) @db.Timestamptz
 
-  project       Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  jobcard       Jobcard?               @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
-  documentLinks FinalReleaseDocument[]
+  project         Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  jobcard         Jobcard?               @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  releasedBy      User?                  @relation(fields: [releasedById], references: [id], onDelete: Restrict)
+  previousVersion QualityRelease?        @relation("QualityReleaseVersionChain", fields: [previousVersionId], references: [id], onDelete: Restrict)
+  supersededBy    QualityRelease?        @relation("QualityReleaseVersionChain")
+  documentLinks   FinalReleaseDocument[]
+  safetyEvents    SafetyEvent[]
 
   @@index([result])
   @@index([projectId])
   @@index([jobcardId])
+  @@index([releasedById])
 }
 
 model SupplierQuality {
@@ -1856,20 +1964,44 @@ model AuditLog {
 /// Decision 7/8/9 — append-only. PostgreSQL-level protection (a trigger rejecting UPDATE/DELETE)
 /// is added in the migration SQL, since Prisma's schema language has no attribute for this —
 /// see backend/README.md for exactly what is and is not enforced at the database level.
+///
+/// Phase 0A-R1: the prior `entityType`/`entityId` polymorphic soft link — unverified at the
+/// database level, unlike AuditLog.entityType which is explicitly documented and accepted as a
+/// label-only exception — is removed. Every SafetyEvent now targets exactly one real, typed,
+/// indexed foreign key, enforced by a CHECK constraint added in the migration SQL:
+///   - EQUIPMENT_BLOCK / EQUIPMENT_PASS  -> equipmentId only
+///   - HOLD_APPLY / HOLD_RELEASE         -> qualityHoldId only
+///   - RELEASE_GRANT / RELEASE_REJECT    -> qualityReleaseId only
+///   - DOCUMENT_SUPERSEDED               -> exactly one of qualityHoldId / qualityReleaseId
+///                                          (protected safety evidence only — a superseded
+///                                          document with no safety-evidence link does not
+///                                          belong in this table at all)
+/// `reasons`, `gateVersion` and `decisionSnapshot` record the gate decision itself: the reason
+/// code(s), which version of the gate/rule logic produced the decision, and a snapshot of the
+/// inputs the decision was based on — all for later audit, since Phase 0B's gate services are not
+/// implemented yet and their exact output shape isn't finalized.
 model SafetyEvent {
-  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  occurredAt DateTime        @default(now()) @db.Timestamptz
-  kind       SafetyEventKind
-  entityType String          @db.VarChar(60)
-  entityId   String          @db.VarChar(100)
-  gateResult Json?
-  reason     String?         @db.VarChar(1000)
-  userId     String?         @db.Uuid
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt       DateTime        @default(now()) @db.Timestamptz
+  kind             SafetyEventKind
+  equipmentId      String?         @db.Uuid
+  qualityHoldId    String?         @db.Uuid
+  qualityReleaseId String?         @db.Uuid
+  reasons          Json?
+  gateVersion      String          @db.VarChar(40)
+  decisionSnapshot Json?
+  actorType        SafetyActorType
+  userId           String?         @db.Uuid
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+  equipment      Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  qualityHold    QualityHold?    @relation(fields: [qualityHoldId], references: [id], onDelete: Restrict)
+  qualityRelease QualityRelease? @relation(fields: [qualityReleaseId], references: [id], onDelete: Restrict)
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([kind])
-  @@index([entityType, entityId])
+  @@index([equipmentId])
+  @@index([qualityHoldId])
+  @@index([qualityReleaseId])
   @@index([occurredAt])
   @@index([userId])
 }
@@ -1883,10 +2015,13 @@ model MigrationReconciliationRecord {
   sourceKey        String                   @db.VarChar(300)
   candidateMatches Json?
   resolution       ReconciliationResolution @default(PENDING)
-  resolvedBy       String?                  @db.Uuid
+  resolvedById     String?                  @db.Uuid
   resolvedAt       DateTime?                @db.Timestamptz
   createdAt        DateTime                 @default(now()) @db.Timestamptz
 
+  resolvedBy User? @relation(fields: [resolvedById], references: [id], onDelete: Restrict)
+
   @@index([resolution])
   @@index([sourceCollection])
+  @@index([resolvedById])
 }

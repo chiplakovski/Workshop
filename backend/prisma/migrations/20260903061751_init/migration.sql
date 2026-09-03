@@ -26,7 +26,7 @@ CREATE TYPE "CustomerInvoiceStatus" AS ENUM ('DRAFT', 'PENDING', 'PAID', 'OVERDU
 CREATE TYPE "SupplierStatus" AS ENUM ('ACTIVE', 'PREFERRED', 'INACTIVE');
 
 -- CreateEnum
-CREATE TYPE "RequisitionStatus" AS ENUM ('SUGGESTED', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CONVERTED', 'CANCELLED');
+CREATE TYPE "RequisitionStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CONVERTED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "EquipmentStatus" AS ENUM ('AVAILABLE', 'RESERVED', 'IN_USE', 'OUT_OF_SERVICE', 'QUARANTINED', 'UNDER_MAINTENANCE', 'MAINTENANCE_DUE', 'INSPECTION_REQUIRED', 'RETIRED');
@@ -116,7 +116,10 @@ CREATE TYPE "StockMovementAction" AS ENUM ('RECEIVED', 'ISSUED', 'RESERVED', 'RE
 CREATE TYPE "OffcutStatus" AS ENUM ('AVAILABLE', 'USED');
 
 -- CreateEnum
-CREATE TYPE "SafetyEventKind" AS ENUM ('EQUIPMENT_BLOCK', 'EQUIPMENT_PASS', 'HOLD_APPLY', 'HOLD_RELEASE', 'RELEASE_GRANT', 'RELEASE_REJECT', 'DOCUMENT_SUPERSEDED', 'HOURS_ENTRY_CORRECTED');
+CREATE TYPE "SafetyEventKind" AS ENUM ('EQUIPMENT_BLOCK', 'EQUIPMENT_PASS', 'HOLD_APPLY', 'HOLD_RELEASE', 'RELEASE_GRANT', 'RELEASE_REJECT', 'DOCUMENT_SUPERSEDED');
+
+-- CreateEnum
+CREATE TYPE "SafetyActorType" AS ENUM ('USER', 'SYSTEM');
 
 -- CreateEnum
 CREATE TYPE "ReconciliationResolution" AS ENUM ('PENDING', 'AUTO_MATCHED', 'MANUALLY_RESOLVED', 'REJECTED');
@@ -401,7 +404,7 @@ CREATE TABLE "Project" (
 CREATE TABLE "ProjectBomLine" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "projectId" UUID NOT NULL,
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "required" DECIMAL(12,3) NOT NULL DEFAULT 0,
     "reserved" DECIMAL(12,3) NOT NULL DEFAULT 0,
     "issued" DECIMAL(12,3) NOT NULL DEFAULT 0,
@@ -487,6 +490,7 @@ CREATE TABLE "JobcardInspectionLegacy" (
 
 -- CreateTable
 CREATE TABLE "InventoryItem" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "code" VARCHAR(60) NOT NULL,
     "description" VARCHAR(300) NOT NULL,
     "stock" DECIMAL(12,3) NOT NULL DEFAULT 0,
@@ -499,13 +503,13 @@ CREATE TABLE "InventoryItem" (
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
-    CONSTRAINT "InventoryItem_pkey" PRIMARY KEY ("code")
+    CONSTRAINT "InventoryItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "InventoryLot" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "lotNumber" VARCHAR(100) NOT NULL,
     "supplierId" UUID,
     "receivedDate" DATE,
@@ -519,7 +523,7 @@ CREATE TABLE "InventoryLot" (
 -- CreateTable
 CREATE TABLE "StockMovement" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "action" "StockMovementAction" NOT NULL,
     "qty" DECIMAL(12,3) NOT NULL,
     "projectId" UUID,
@@ -534,7 +538,7 @@ CREATE TABLE "StockMovement" (
 CREATE TABLE "Offcut" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "code" VARCHAR(60) NOT NULL,
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "status" "OffcutStatus" NOT NULL DEFAULT 'AVAILABLE',
     "sourceProjectId" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -546,7 +550,7 @@ CREATE TABLE "Offcut" (
 -- CreateTable
 CREATE TABLE "StockCount" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "counted" DECIMAL(12,3) NOT NULL,
     "systemQty" DECIMAL(12,3) NOT NULL,
     "difference" DECIMAL(12,3) NOT NULL,
@@ -559,12 +563,13 @@ CREATE TABLE "StockCount" (
 
 -- CreateTable
 CREATE TABLE "BarcodeLink" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "barcode" VARCHAR(100) NOT NULL,
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "supplierId" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "BarcodeLink_pkey" PRIMARY KEY ("barcode")
+    CONSTRAINT "BarcodeLink_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -632,9 +637,9 @@ CREATE TABLE "PurchaseRequisition" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "no" VARCHAR(40) NOT NULL,
     "projectId" UUID,
-    "status" "RequisitionStatus" NOT NULL DEFAULT 'SUGGESTED',
-    "requestedBy" UUID,
-    "approvedBy" UUID,
+    "status" "RequisitionStatus" NOT NULL DEFAULT 'DRAFT',
+    "requestedById" UUID,
+    "approvedById" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 0,
@@ -646,7 +651,7 @@ CREATE TABLE "PurchaseRequisition" (
 CREATE TABLE "PurchaseRequisitionLine" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "requisitionId" UUID NOT NULL,
-    "itemCode" VARCHAR(60) NOT NULL,
+    "inventoryItemId" UUID NOT NULL,
     "qtyRequested" DECIMAL(12,3) NOT NULL,
     "sourceBomLineId" UUID,
     "purchaseOrderId" UUID,
@@ -689,7 +694,7 @@ CREATE TABLE "EquipmentBreakdown" (
     "equipmentId" UUID NOT NULL,
     "reason" VARCHAR(1000) NOT NULL,
     "resolved" BOOLEAN NOT NULL DEFAULT false,
-    "resolvedBy" UUID,
+    "resolvedById" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -797,7 +802,6 @@ CREATE TABLE "QualityNcr" (
 CREATE TABLE "QualityCapa" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "no" VARCHAR(40) NOT NULL,
-    "ncrId" UUID,
     "status" "CapaStatus" NOT NULL DEFAULT 'OPEN',
     "fiveWhys" TEXT[],
     "fishbone" JSONB,
@@ -816,8 +820,12 @@ CREATE TABLE "QualityHold" (
     "jobcardId" UUID,
     "ncrId" UUID,
     "status" "QualityHoldStatus" NOT NULL DEFAULT 'ACTIVE',
-    "appliedBy" UUID,
-    "releasedBy" UUID,
+    "appliedById" UUID,
+    "appliedAt" TIMESTAMPTZ,
+    "releasedById" UUID,
+    "releasedAt" TIMESTAMPTZ,
+    "releaseReason" VARCHAR(1000),
+    "releaseEvidenceRef" VARCHAR(500),
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 0,
@@ -924,9 +932,13 @@ CREATE TABLE "QualityRelease" (
     "jobcardId" UUID,
     "result" "FinalReleaseResult" NOT NULL,
     "blockingReasons" JSONB,
+    "gateVersion" VARCHAR(40) NOT NULL,
+    "gateResultSnapshot" JSONB,
+    "releasedById" UUID,
+    "releasedAt" TIMESTAMPTZ,
+    "previousVersionId" UUID,
+    "supersededAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL,
-    "version" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "QualityRelease_pkey" PRIMARY KEY ("id")
 );
@@ -1124,10 +1136,13 @@ CREATE TABLE "SafetyEvent" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "occurredAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "kind" "SafetyEventKind" NOT NULL,
-    "entityType" VARCHAR(60) NOT NULL,
-    "entityId" VARCHAR(100) NOT NULL,
-    "gateResult" JSONB,
-    "reason" VARCHAR(1000),
+    "equipmentId" UUID,
+    "qualityHoldId" UUID,
+    "qualityReleaseId" UUID,
+    "reasons" JSONB,
+    "gateVersion" VARCHAR(40) NOT NULL,
+    "decisionSnapshot" JSONB,
+    "actorType" "SafetyActorType" NOT NULL,
     "userId" UUID,
 
     CONSTRAINT "SafetyEvent_pkey" PRIMARY KEY ("id")
@@ -1140,7 +1155,7 @@ CREATE TABLE "MigrationReconciliationRecord" (
     "sourceKey" VARCHAR(300) NOT NULL,
     "candidateMatches" JSONB,
     "resolution" "ReconciliationResolution" NOT NULL DEFAULT 'PENDING',
-    "resolvedBy" UUID,
+    "resolvedById" UUID,
     "resolvedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -1148,10 +1163,10 @@ CREATE TABLE "MigrationReconciliationRecord" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE INDEX "User_active_idx" ON "User"("active");
 
 -- CreateIndex
-CREATE INDEX "User_active_idx" ON "User"("active");
+CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
@@ -1280,7 +1295,7 @@ CREATE INDEX "Project_siteId_idx" ON "Project"("siteId");
 CREATE INDEX "ProjectBomLine_projectId_idx" ON "ProjectBomLine"("projectId");
 
 -- CreateIndex
-CREATE INDEX "ProjectBomLine_itemCode_idx" ON "ProjectBomLine"("itemCode");
+CREATE INDEX "ProjectBomLine_inventoryItemId_idx" ON "ProjectBomLine"("inventoryItemId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Jobcard_no_key" ON "Jobcard"("no");
@@ -1328,6 +1343,9 @@ CREATE INDEX "HoursEntry_workDate_idx" ON "HoursEntry"("workDate");
 CREATE INDEX "JobcardInspectionLegacy_jobcardId_idx" ON "JobcardInspectionLegacy"("jobcardId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "InventoryItem_code_key" ON "InventoryItem"("code");
+
+-- CreateIndex
 CREATE INDEX "InventoryItem_status_idx" ON "InventoryItem"("status");
 
 -- CreateIndex
@@ -1337,10 +1355,10 @@ CREATE INDEX "InventoryItem_supplierId_idx" ON "InventoryItem"("supplierId");
 CREATE INDEX "InventoryLot_supplierId_idx" ON "InventoryLot"("supplierId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "InventoryLot_itemCode_lotNumber_key" ON "InventoryLot"("itemCode", "lotNumber");
+CREATE UNIQUE INDEX "InventoryLot_inventoryItemId_lotNumber_key" ON "InventoryLot"("inventoryItemId", "lotNumber");
 
 -- CreateIndex
-CREATE INDEX "StockMovement_itemCode_idx" ON "StockMovement"("itemCode");
+CREATE INDEX "StockMovement_inventoryItemId_idx" ON "StockMovement"("inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "StockMovement_action_idx" ON "StockMovement"("action");
@@ -1361,19 +1379,22 @@ CREATE UNIQUE INDEX "Offcut_code_key" ON "Offcut"("code");
 CREATE INDEX "Offcut_status_idx" ON "Offcut"("status");
 
 -- CreateIndex
-CREATE INDEX "Offcut_itemCode_idx" ON "Offcut"("itemCode");
+CREATE INDEX "Offcut_inventoryItemId_idx" ON "Offcut"("inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "Offcut_sourceProjectId_idx" ON "Offcut"("sourceProjectId");
 
 -- CreateIndex
-CREATE INDEX "StockCount_itemCode_idx" ON "StockCount"("itemCode");
+CREATE INDEX "StockCount_inventoryItemId_idx" ON "StockCount"("inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "StockCount_userId_idx" ON "StockCount"("userId");
 
 -- CreateIndex
-CREATE INDEX "BarcodeLink_itemCode_idx" ON "BarcodeLink"("itemCode");
+CREATE UNIQUE INDEX "BarcodeLink_barcode_key" ON "BarcodeLink"("barcode");
+
+-- CreateIndex
+CREATE INDEX "BarcodeLink_inventoryItemId_idx" ON "BarcodeLink"("inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "BarcodeLink_supplierId_idx" ON "BarcodeLink"("supplierId");
@@ -1427,10 +1448,16 @@ CREATE INDEX "PurchaseRequisition_status_idx" ON "PurchaseRequisition"("status")
 CREATE INDEX "PurchaseRequisition_projectId_idx" ON "PurchaseRequisition"("projectId");
 
 -- CreateIndex
+CREATE INDEX "PurchaseRequisition_requestedById_idx" ON "PurchaseRequisition"("requestedById");
+
+-- CreateIndex
+CREATE INDEX "PurchaseRequisition_approvedById_idx" ON "PurchaseRequisition"("approvedById");
+
+-- CreateIndex
 CREATE INDEX "PurchaseRequisitionLine_requisitionId_idx" ON "PurchaseRequisitionLine"("requisitionId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseRequisitionLine_itemCode_idx" ON "PurchaseRequisitionLine"("itemCode");
+CREATE INDEX "PurchaseRequisitionLine_inventoryItemId_idx" ON "PurchaseRequisitionLine"("inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "PurchaseRequisitionLine_sourceBomLineId_idx" ON "PurchaseRequisitionLine"("sourceBomLineId");
@@ -1458,6 +1485,9 @@ CREATE INDEX "EquipmentBreakdown_equipmentId_idx" ON "EquipmentBreakdown"("equip
 
 -- CreateIndex
 CREATE INDEX "EquipmentBreakdown_resolved_idx" ON "EquipmentBreakdown"("resolved");
+
+-- CreateIndex
+CREATE INDEX "EquipmentBreakdown_resolvedById_idx" ON "EquipmentBreakdown"("resolvedById");
 
 -- CreateIndex
 CREATE INDEX "EquipmentPreUseCheck_equipmentId_idx" ON "EquipmentPreUseCheck"("equipmentId");
@@ -1541,9 +1571,6 @@ CREATE UNIQUE INDEX "QualityCapa_no_key" ON "QualityCapa"("no");
 CREATE INDEX "QualityCapa_status_idx" ON "QualityCapa"("status");
 
 -- CreateIndex
-CREATE INDEX "QualityCapa_ncrId_idx" ON "QualityCapa"("ncrId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "QualityHold_no_key" ON "QualityHold"("no");
 
 -- CreateIndex
@@ -1560,6 +1587,12 @@ CREATE INDEX "QualityHold_jobcardId_idx" ON "QualityHold"("jobcardId");
 
 -- CreateIndex
 CREATE INDEX "QualityHold_ncrId_idx" ON "QualityHold"("ncrId");
+
+-- CreateIndex
+CREATE INDEX "QualityHold_appliedById_idx" ON "QualityHold"("appliedById");
+
+-- CreateIndex
+CREATE INDEX "QualityHold_releasedById_idx" ON "QualityHold"("releasedById");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "QualityWps_no_key" ON "QualityWps"("no");
@@ -1613,6 +1646,9 @@ CREATE UNIQUE INDEX "QualityItpLine_itpId_sequence_key" ON "QualityItpLine"("itp
 CREATE UNIQUE INDEX "QualityRelease_no_key" ON "QualityRelease"("no");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "QualityRelease_previousVersionId_key" ON "QualityRelease"("previousVersionId");
+
+-- CreateIndex
 CREATE INDEX "QualityRelease_result_idx" ON "QualityRelease"("result");
 
 -- CreateIndex
@@ -1620,6 +1656,9 @@ CREATE INDEX "QualityRelease_projectId_idx" ON "QualityRelease"("projectId");
 
 -- CreateIndex
 CREATE INDEX "QualityRelease_jobcardId_idx" ON "QualityRelease"("jobcardId");
+
+-- CreateIndex
+CREATE INDEX "QualityRelease_releasedById_idx" ON "QualityRelease"("releasedById");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SupplierQuality_supplierId_key" ON "SupplierQuality"("supplierId");
@@ -1706,7 +1745,13 @@ CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
 CREATE INDEX "SafetyEvent_kind_idx" ON "SafetyEvent"("kind");
 
 -- CreateIndex
-CREATE INDEX "SafetyEvent_entityType_entityId_idx" ON "SafetyEvent"("entityType", "entityId");
+CREATE INDEX "SafetyEvent_equipmentId_idx" ON "SafetyEvent"("equipmentId");
+
+-- CreateIndex
+CREATE INDEX "SafetyEvent_qualityHoldId_idx" ON "SafetyEvent"("qualityHoldId");
+
+-- CreateIndex
+CREATE INDEX "SafetyEvent_qualityReleaseId_idx" ON "SafetyEvent"("qualityReleaseId");
 
 -- CreateIndex
 CREATE INDEX "SafetyEvent_occurredAt_idx" ON "SafetyEvent"("occurredAt");
@@ -1719,6 +1764,9 @@ CREATE INDEX "MigrationReconciliationRecord_resolution_idx" ON "MigrationReconci
 
 -- CreateIndex
 CREATE INDEX "MigrationReconciliationRecord_sourceCollection_idx" ON "MigrationReconciliationRecord"("sourceCollection");
+
+-- CreateIndex
+CREATE INDEX "MigrationReconciliationRecord_resolvedById_idx" ON "MigrationReconciliationRecord"("resolvedById");
 
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1802,7 +1850,7 @@ ALTER TABLE "Project" ADD CONSTRAINT "Project_siteId_fkey" FOREIGN KEY ("siteId"
 ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Jobcard" ADD CONSTRAINT "Jobcard_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1844,13 +1892,13 @@ ALTER TABLE "JobcardInspectionLegacy" ADD CONSTRAINT "JobcardInspectionLegacy_jo
 ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "InventoryLot" ADD CONSTRAINT "InventoryLot_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "InventoryLot" ADD CONSTRAINT "InventoryLot_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InventoryLot" ADD CONSTRAINT "InventoryLot_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1862,19 +1910,19 @@ ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_jobcardId_fkey" FOREIG
 ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Offcut" ADD CONSTRAINT "Offcut_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Offcut" ADD CONSTRAINT "Offcut_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Offcut" ADD CONSTRAINT "Offcut_sourceProjectId_fkey" FOREIGN KEY ("sourceProjectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "StockCount" ADD CONSTRAINT "StockCount_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "StockCount" ADD CONSTRAINT "StockCount_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StockCount" ADD CONSTRAINT "StockCount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "BarcodeLink" ADD CONSTRAINT "BarcodeLink_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "BarcodeLink" ADD CONSTRAINT "BarcodeLink_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BarcodeLink" ADD CONSTRAINT "BarcodeLink_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1898,10 +1946,16 @@ ALTER TABLE "SupplierInvoice" ADD CONSTRAINT "SupplierInvoice_purchaseOrderId_fk
 ALTER TABLE "PurchaseRequisition" ADD CONSTRAINT "PurchaseRequisition_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "PurchaseRequisition" ADD CONSTRAINT "PurchaseRequisition_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseRequisition" ADD CONSTRAINT "PurchaseRequisition_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "PurchaseRequisitionLine" ADD CONSTRAINT "PurchaseRequisitionLine_requisitionId_fkey" FOREIGN KEY ("requisitionId") REFERENCES "PurchaseRequisition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseRequisitionLine" ADD CONSTRAINT "PurchaseRequisitionLine_itemCode_fkey" FOREIGN KEY ("itemCode") REFERENCES "InventoryItem"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PurchaseRequisitionLine" ADD CONSTRAINT "PurchaseRequisitionLine_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PurchaseRequisitionLine" ADD CONSTRAINT "PurchaseRequisitionLine_sourceBomLineId_fkey" FOREIGN KEY ("sourceBomLineId") REFERENCES "ProjectBomLine"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1914,6 +1968,9 @@ ALTER TABLE "EquipmentInspection" ADD CONSTRAINT "EquipmentInspection_equipmentI
 
 -- AddForeignKey
 ALTER TABLE "EquipmentBreakdown" ADD CONSTRAINT "EquipmentBreakdown_equipmentId_fkey" FOREIGN KEY ("equipmentId") REFERENCES "Equipment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EquipmentBreakdown" ADD CONSTRAINT "EquipmentBreakdown_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EquipmentPreUseCheck" ADD CONSTRAINT "EquipmentPreUseCheck_equipmentId_fkey" FOREIGN KEY ("equipmentId") REFERENCES "Equipment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1964,9 +2021,6 @@ ALTER TABLE "QualityNcr" ADD CONSTRAINT "QualityNcr_customerId_fkey" FOREIGN KEY
 ALTER TABLE "QualityNcr" ADD CONSTRAINT "QualityNcr_capaId_fkey" FOREIGN KEY ("capaId") REFERENCES "QualityCapa"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "QualityCapa" ADD CONSTRAINT "QualityCapa_ncrId_fkey" FOREIGN KEY ("ncrId") REFERENCES "QualityNcr"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1974,6 +2028,12 @@ ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_jobcardId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_ncrId_fkey" FOREIGN KEY ("ncrId") REFERENCES "QualityNcr"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_appliedById_fkey" FOREIGN KEY ("appliedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_releasedById_fkey" FOREIGN KEY ("releasedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QualityWelderQual" ADD CONSTRAINT "QualityWelderQual_welderId_fkey" FOREIGN KEY ("welderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -2004,6 +2064,12 @@ ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_projectId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_jobcardId_fkey" FOREIGN KEY ("jobcardId") REFERENCES "Jobcard"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_releasedById_fkey" FOREIGN KEY ("releasedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_previousVersionId_fkey" FOREIGN KEY ("previousVersionId") REFERENCES "QualityRelease"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SupplierQuality" ADD CONSTRAINT "SupplierQuality_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -2105,21 +2171,61 @@ ALTER TABLE "InventoryLotDocument" ADD CONSTRAINT "InventoryLotDocument_inventor
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_equipmentId_fkey" FOREIGN KEY ("equipmentId") REFERENCES "Equipment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_qualityHoldId_fkey" FOREIGN KEY ("qualityHoldId") REFERENCES "QualityHold"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_qualityReleaseId_fkey" FOREIGN KEY ("qualityReleaseId") REFERENCES "QualityRelease"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- Manual addition (not generated by Prisma): SafetyEvent must be append-only at the
--- PostgreSQL permission level where practical (Decisions 7/8/9). Prisma's schema language has
--- no attribute for this, so it is enforced here with a trigger that rejects UPDATE and DELETE
--- outright, regardless of which role issues them.
---
--- Known limitation, documented per the contract's instruction to state what cannot be expressed
--- directly through Prisma migrations: the ideal enforcement point is a dedicated, low-privilege
--- application database role with INSERT/SELECT-only grants on this table (a true
--- permission-level REVOKE), which this trigger approximates. No such role has been provisioned
--- in this environment yet — Phase 0A has no application database user distinct from the
--- migration/superuser role the local dev server runs as. Provisioning that role, and adding the
--- REVOKE UPDATE, DELETE ON "SafetyEvent" FROM app_user statement alongside it, is deferred to
--- when a real deployment target and connection-pooling role exist.
+-- AddForeignKey
+ALTER TABLE "MigrationReconciliationRecord" ADD CONSTRAINT "MigrationReconciliationRecord_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Phase 0A-R1 manual additions (not generated by Prisma). Prisma's schema
+-- language has no @@check attribute (confirmed against 7.10.0) and no way to
+-- express a functional/partial unique index or a trigger, so every constraint
+-- below is hand-written directly against the tables Prisma just created.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ── SafetyEvent (Blocker 3) ──────────────────────────────────────────────
+-- Exactly one typed safety target per event, matching its kind. Gate-decision
+-- kinds each map to exactly one target type; DOCUMENT_SUPERSEDED targets
+-- protected safety evidence only (a QualityHold or a QualityRelease), never
+-- equipment, and never a document with no safety-evidence link at all.
+ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_exactly_one_target" CHECK (
+  (
+    "kind" IN ('EQUIPMENT_BLOCK', 'EQUIPMENT_PASS')
+    AND "equipmentId" IS NOT NULL AND "qualityHoldId" IS NULL AND "qualityReleaseId" IS NULL
+  ) OR (
+    "kind" IN ('HOLD_APPLY', 'HOLD_RELEASE')
+    AND "qualityHoldId" IS NOT NULL AND "equipmentId" IS NULL AND "qualityReleaseId" IS NULL
+  ) OR (
+    "kind" IN ('RELEASE_GRANT', 'RELEASE_REJECT')
+    AND "qualityReleaseId" IS NOT NULL AND "equipmentId" IS NULL AND "qualityHoldId" IS NULL
+  ) OR (
+    "kind" = 'DOCUMENT_SUPERSEDED'
+    AND "equipmentId" IS NULL
+    AND (("qualityHoldId" IS NOT NULL) <> ("qualityReleaseId" IS NOT NULL))
+  )
+);
+
+-- No anonymous safety action: a real User actor (actorType = USER, userId set) or an explicit
+-- SYSTEM actor (actorType = SYSTEM, userId NULL) — never a silently-nullable "unknown".
+ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_actor_consistency" CHECK (
+  ("actorType" = 'USER' AND "userId" IS NOT NULL) OR
+  ("actorType" = 'SYSTEM' AND "userId" IS NULL)
+);
+
+-- SafetyEvent must be append-only at the PostgreSQL permission level where practical
+-- (Decisions 7/8/9). Known limitation (see backend/README.md): the ideal enforcement is a
+-- dedicated low-privilege application database role with INSERT/SELECT-only grants; no such
+-- role exists yet in this environment, so this trigger is the enforcement mechanism until one is
+-- provisioned.
 CREATE OR REPLACE FUNCTION safety_event_append_only()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -2137,22 +2243,160 @@ CREATE TRIGGER safety_event_no_delete
   FOR EACH ROW
   EXECUTE FUNCTION safety_event_append_only();
 
--- Manual addition (not generated by Prisma): at most one *active* TeamMembership per
--- (userId, teamId) pair ("TeamMembership supports validFrom, validTo and active status" —
--- final Site/Team product decision). A user may still hold multiple historical, non-overlapping
--- memberships on the same team, so this cannot be a plain @@unique([userId, teamId]) in
--- schema.prisma — Prisma's schema language has no attribute for a partial (WHERE-clause)
--- unique index, so it is added here directly.
+-- ── QualityRelease (Blocker 4) ───────────────────────────────────────────
+-- Final Release evidence is immutable: insert-only at the database level, identical mechanism
+-- and identical known limitation to SafetyEvent above.
+CREATE OR REPLACE FUNCTION quality_release_append_only()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'QualityRelease records are immutable and cannot be updated or deleted (id=%)', OLD.id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER quality_release_no_update
+  BEFORE UPDATE ON "QualityRelease"
+  FOR EACH ROW
+  EXECUTE FUNCTION quality_release_append_only();
+
+CREATE TRIGGER quality_release_no_delete
+  BEFORE DELETE ON "QualityRelease"
+  FOR EACH ROW
+  EXECUTE FUNCTION quality_release_append_only();
+
+-- A release cannot supersede itself. One-hop case only; full multi-hop cycle prevention is
+-- deferred to application-level validation and tests, per the contract's own wording — identical
+-- reasoning to Document.previousVersionId.
+ALTER TABLE "QualityRelease"
+  ADD CONSTRAINT "QualityRelease_previousVersionId_not_self"
+  CHECK ("previousVersionId" IS NULL OR "previousVersionId" <> "id");
+
+-- ── QualityHold (Blocker 5) ──────────────────────────────────────────────
+-- Target-scope integrity: PROJECT scope requires projectId and forbids jobcardId; JOBCARD scope
+-- requires jobcardId and forbids projectId. A hold can never exist without a valid target.
+ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_valid_target" CHECK (
+  ("scope" = 'PROJECT' AND "projectId" IS NOT NULL AND "jobcardId" IS NULL) OR
+  ("scope" = 'JOBCARD' AND "jobcardId" IS NOT NULL AND "projectId" IS NULL)
+);
+
+-- Release history immutability: once a hold's status is RELEASED, the release fact itself
+-- (status, releasedById, releasedAt, releaseReason, releaseEvidenceRef) can never change again.
+-- This is narrower than SafetyEvent/QualityRelease's full insert-only trigger because the
+-- ACTIVE -> RELEASED transition on this row is itself a legitimate, required UPDATE — only the
+-- release fact is locked once it exists. The full historical apply/release trail is additionally
+-- recorded, unconditionally immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
+CREATE OR REPLACE FUNCTION quality_hold_release_immutable()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD."status" = 'RELEASED' AND (
+    NEW."status" IS DISTINCT FROM OLD."status" OR
+    NEW."releasedById" IS DISTINCT FROM OLD."releasedById" OR
+    NEW."releasedAt" IS DISTINCT FROM OLD."releasedAt" OR
+    NEW."releaseReason" IS DISTINCT FROM OLD."releaseReason" OR
+    NEW."releaseEvidenceRef" IS DISTINCT FROM OLD."releaseEvidenceRef"
+  ) THEN
+    RAISE EXCEPTION 'QualityHold release fact is immutable once set (id=%)', OLD.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER quality_hold_release_immutable
+  BEFORE UPDATE ON "QualityHold"
+  FOR EACH ROW
+  EXECUTE FUNCTION quality_hold_release_immutable();
+
+-- ── AuditLog (Blocker 8) ─────────────────────────────────────────────────
+-- AuditLog must not support UPDATE or DELETE through the application database role either.
+-- Same trigger pattern and same known limitation as SafetyEvent (see backend/README.md):
+-- corrections must be new AuditLog rows, never mutations of existing audit evidence.
+CREATE OR REPLACE FUNCTION audit_log_append_only()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'AuditLog records are append-only and cannot be updated or deleted (id=%)', OLD.id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_log_no_update
+  BEFORE UPDATE ON "AuditLog"
+  FOR EACH ROW
+  EXECUTE FUNCTION audit_log_append_only();
+
+CREATE TRIGGER audit_log_no_delete
+  BEFORE DELETE ON "AuditLog"
+  FOR EACH ROW
+  EXECUTE FUNCTION audit_log_append_only();
+
+-- ── Document (carried over from Phase 0A) ────────────────────────────────
 CREATE UNIQUE INDEX "TeamMembership_userId_teamId_active_key"
   ON "TeamMembership" ("userId", "teamId")
   WHERE "active" = true;
 
--- Manual addition (not generated by Prisma): a Document cannot supersede itself. This is the
--- one-hop case of Decision 8's cycle-prevention requirement that a plain CHECK constraint can
--- express. Full multi-hop cycle prevention (A supersedes B supersedes A) is not expressible as
--- a SQL constraint on a single self-referential column and is deferred to application-level
--- validation and tests, per the contract's own wording ("cycle prevention handled by validation
--- and tests").
 ALTER TABLE "Document"
   ADD CONSTRAINT "Document_previousVersionId_not_self"
   CHECK ("previousVersionId" IS NULL OR "previousVersionId" <> "id");
+
+-- ── User (Blocker 9) ─────────────────────────────────────────────────────
+-- Case-insensitive email uniqueness: Prisma's declarative @unique cannot express a functional
+-- index, so the real constraint is written directly here.
+CREATE UNIQUE INDEX "User_email_lower_key" ON "User" (LOWER("email"));
+
+-- ── Blocker 9: percentages/probabilities between 0 and 100 ──────────────
+ALTER TABLE "EstimationLine" ADD CONSTRAINT "EstimationLine_discountPct_range" CHECK ("discountPct" >= 0 AND "discountPct" <= 100);
+ALTER TABLE "EstimationLine" ADD CONSTRAINT "EstimationLine_taxPct_range" CHECK ("taxPct" >= 0 AND "taxPct" <= 100);
+ALTER TABLE "EstimationLine" ADD CONSTRAINT "EstimationLine_wastePct_range" CHECK ("wastePct" >= 0 AND "wastePct" <= 100);
+ALTER TABLE "MarketingOpportunity" ADD CONSTRAINT "MarketingOpportunity_probability_range" CHECK ("probability" IS NULL OR ("probability" >= 0 AND "probability" <= 100));
+
+-- ── Blocker 9: quantities and hours must not be negative ────────────────
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_stock_nonneg" CHECK ("stock" >= 0);
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_reserved_nonneg" CHECK ("reserved" >= 0);
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_minStock_nonneg" CHECK ("minStock" >= 0);
+ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_required_nonneg" CHECK ("required" >= 0);
+ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_reserved_nonneg" CHECK ("reserved" >= 0);
+ALTER TABLE "ProjectBomLine" ADD CONSTRAINT "ProjectBomLine_issued_nonneg" CHECK ("issued" >= 0);
+ALTER TABLE "Project" ADD CONSTRAINT "Project_plannedHours_nonneg" CHECK ("plannedHours" >= 0);
+ALTER TABLE "Project" ADD CONSTRAINT "Project_usedHours_nonneg" CHECK ("usedHours" >= 0);
+ALTER TABLE "JobcardOperation" ADD CONSTRAINT "JobcardOperation_plannedHours_nonneg" CHECK ("plannedHours" >= 0);
+ALTER TABLE "JobcardOperation" ADD CONSTRAINT "JobcardOperation_loggedHours_nonneg" CHECK ("loggedHours" >= 0);
+ALTER TABLE "HoursEntry" ADD CONSTRAINT "HoursEntry_hours_nonneg" CHECK ("hours" >= 0);
+ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_qty_nonneg" CHECK ("qty" >= 0);
+ALTER TABLE "StockCount" ADD CONSTRAINT "StockCount_counted_nonneg" CHECK ("counted" >= 0);
+ALTER TABLE "StockCount" ADD CONSTRAINT "StockCount_systemQty_nonneg" CHECK ("systemQty" >= 0);
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_receivedQty_nonneg" CHECK ("receivedQty" >= 0);
+ALTER TABLE "PurchaseRequisitionLine" ADD CONSTRAINT "PurchaseRequisitionLine_qtyRequested_nonneg" CHECK ("qtyRequested" >= 0);
+ALTER TABLE "EstimationLine" ADD CONSTRAINT "EstimationLine_qty_nonneg" CHECK ("qty" >= 0);
+ALTER TABLE "EquipmentUsageSession" ADD CONSTRAINT "EquipmentUsageSession_hours_nonneg" CHECK ("hours" >= 0);
+ALTER TABLE "EquipmentUsageSession" ADD CONSTRAINT "EquipmentUsageSession_meterBefore_nonneg" CHECK ("meterBefore" IS NULL OR "meterBefore" >= 0);
+ALTER TABLE "EquipmentUsageSession" ADD CONSTRAINT "EquipmentUsageSession_meterAfter_nonneg" CHECK ("meterAfter" IS NULL OR "meterAfter" >= 0);
+
+-- ── Blocker 9: validTo not earlier than validFrom ────────────────────────
+ALTER TABLE "TeamMembership" ADD CONSTRAINT "TeamMembership_validTo_after_validFrom" CHECK ("validTo" IS NULL OR "validTo" >= "validFrom");
+
+-- ── Blocker 9: meterAfter not lower than meterBefore ─────────────────────
+ALTER TABLE "EquipmentUsageSession" ADD CONSTRAINT "EquipmentUsageSession_meterAfter_gte_meterBefore" CHECK ("meterBefore" IS NULL OR "meterAfter" IS NULL OR "meterAfter" >= "meterBefore");
+
+-- ── Blocker 9: normalized (non-empty, non-whitespace-only) business codes ─
+ALTER TABLE "Customer" ADD CONSTRAINT "Customer_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "Estimation" ADD CONSTRAINT "Estimation_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "Project" ADD CONSTRAINT "Project_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "Jobcard" ADD CONSTRAINT "Jobcard_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_code_normalized" CHECK (length(btrim("code")) > 0);
+ALTER TABLE "Offcut" ADD CONSTRAINT "Offcut_code_normalized" CHECK (length(btrim("code")) > 0);
+ALTER TABLE "BarcodeLink" ADD CONSTRAINT "BarcodeLink_barcode_normalized" CHECK (length(btrim("barcode")) > 0);
+ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "PurchaseRfq" ADD CONSTRAINT "PurchaseRfq_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "SupplierInvoice" ADD CONSTRAINT "SupplierInvoice_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "PurchaseRequisition" ADD CONSTRAINT "PurchaseRequisition_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "Equipment" ADD CONSTRAINT "Equipment_equipmentId_normalized" CHECK (length(btrim("equipmentId")) > 0);
+ALTER TABLE "QualityInspection" ADD CONSTRAINT "QualityInspection_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityWeld" ADD CONSTRAINT "QualityWeld_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityNdt" ADD CONSTRAINT "QualityNdt_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityNcr" ADD CONSTRAINT "QualityNcr_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityCapa" ADD CONSTRAINT "QualityCapa_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityHold" ADD CONSTRAINT "QualityHold_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityWps" ADD CONSTRAINT "QualityWps_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityComplaint" ADD CONSTRAINT "QualityComplaint_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityDossier" ADD CONSTRAINT "QualityDossier_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityItp" ADD CONSTRAINT "QualityItp_no_normalized" CHECK (length(btrim("no")) > 0);
+ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_no_normalized" CHECK (length(btrim("no")) > 0);
