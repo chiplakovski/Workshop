@@ -1,0 +1,1892 @@
+// Varmak Workshop backend — Phase 0A schema.
+// Implements the approved Backend Architecture Contract (Decisions 1-9).
+// Schema only: no seed data, no business logic. See backend/README.md.
+//
+// Conventions applied throughout, per the contract's Database Rules:
+// - Every model has a database-native UUID primary key (gen_random_uuid(), Postgres 13+ built-in).
+// - Every human-readable business number ("no") is a separate, uniquely-indexed field, never the PK.
+// - timestamptz for events/instants; plain `Date` (@db.Date) for calendar dates.
+// - Decimal (never Float) for money, quantities, rates and measured values.
+// - Currency is stored explicitly beside every monetary field.
+// - No polymorphic entityType/entityId soft links, with one explicitly-justified exception:
+//   AuditLog.entityType is a label used only for filtering/display, never a join or an
+//   authorization decision — see the comment on AuditLog below.
+// - onDelete: Restrict on every relation in this phase — nothing cascades. This is a deliberate,
+//   conservative default consistent with the app's "archive, never hard-delete" convention; it can
+//   be relaxed later, per relation, with explicit review once real deletion workflows exist.
+// - createdAt/updatedAt on every model. `version` (optimistic concurrency) on entities with
+//   meaningful concurrent-edit risk, matching the stale-index race class documented in the
+//   frontend audit (Pass 3.27).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ENUMS
+// ══════════════════════════════════════════════════════════════════════════
+
+enum ProjectStatus {
+  DRAFT
+  QUOTATION
+  APPROVED
+  PLANNED
+  ACTIVE
+  HOLD
+  COMPLETED
+  CLOSED
+  CANCELLED
+}
+
+enum JobcardStatus {
+  DRAFT
+  RELEASED
+  READY
+  IN_PROGRESS
+  INSPECTION
+  COMPLETED
+  CLOSED
+  PAUSED
+  BLOCKED
+  CANCELLED
+  ARCHIVED
+}
+
+enum JobcardOperationStatus {
+  PENDING
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  SKIPPED
+}
+
+enum EstimationStatus {
+  DRAFT
+  REVIEW
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  AWAITING_APPROVAL
+  CONFIRMED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  OVERDUE
+  CANCELLED
+}
+
+enum PurchaseRfqStatus {
+  DRAFT
+  SENT
+  REPLIED
+  CLOSED
+  CANCELLED
+}
+
+enum SupplierInvoiceStatus {
+  PENDING
+  APPROVED
+  PAID
+  DISPUTED
+  CANCELLED
+}
+
+enum CustomerInvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum SupplierStatus {
+  ACTIVE
+  PREFERRED
+  INACTIVE
+}
+
+/// New entity (Decision 5) — lifecycle not explicitly enumerated in the contract text;
+/// this is a reasonable minimal design filled in for Phase 0A, flagged for review.
+enum RequisitionStatus {
+  SUGGESTED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CONVERTED
+  CANCELLED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  RESERVED
+  IN_USE
+  OUT_OF_SERVICE
+  QUARANTINED
+  UNDER_MAINTENANCE
+  MAINTENANCE_DUE
+  INSPECTION_REQUIRED
+  RETIRED
+}
+
+enum DocumentStatus {
+  DRAFT
+  VALID
+  APPROVED
+  REVIEW_SOON
+  EXPIRED
+  ARCHIVED
+}
+
+enum DocumentType {
+  DOCUMENT
+  CERTIFICATE
+  DRAWING
+  REPORT
+  TEMPLATE
+  IMAGE
+}
+
+enum QualityInspectionType {
+  INCOMING_MATERIAL
+  VISUAL
+  DIMENSIONAL
+  FITUP
+  WELDING
+  FINAL
+  FUNCTIONAL
+  PRESSURE
+  LEAK
+  COATING
+  CUSTOMER
+  SUPPLIER
+  PRE_DELIVERY
+  RETURN_TO_SERVICE
+  OTHER
+}
+
+enum QualityInspectionStatus {
+  DRAFT
+  REQUESTED
+  PLANNED
+  READY
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  COMPLETED
+  REINSPECTION_REQUIRED
+  CANCELLED
+}
+
+enum QualityInspectionResult {
+  PENDING
+  PASSED
+  PASSED_OBSERVATIONS
+  FAILED
+  NOT_APPLICABLE
+}
+
+enum WeldProcess {
+  TIG
+  MIG
+  MAG
+  MMA
+  FCAW
+  SAW
+  OTHER
+}
+
+enum WeldStatus {
+  PLANNED
+  READY
+  IN_PROGRESS
+  AWAITING_VISUAL
+  AWAITING_NDT
+  ACCEPTED
+  REPAIR_REQUIRED
+  REPAIRED
+  REJECTED
+}
+
+enum NdtMethod {
+  VT
+  PT
+  MT
+  UT
+  RT
+  LEAK
+  PRESSURE
+  OTHER
+}
+
+enum NdtStatus {
+  REQUIRED
+  REQUESTED
+  PLANNED
+  IN_PROGRESS
+  WAITING_REPORT
+  ACCEPTED
+  REJECTED
+  REINSPECTION_REQUIRED
+  CANCELLED
+}
+
+enum NdtResult {
+  PENDING
+  ACCEPTED
+  ACCEPTED_OBSERVATIONS
+  REJECTED
+  NOT_APPLICABLE
+}
+
+enum NcrCategory {
+  MATERIAL
+  DIMENSION
+  WELDING
+  DOCUMENTATION
+  SUPPLIER
+  PROCESS
+  EQUIPMENT
+  SURFACE_COATING
+  CUSTOMER_REQUIREMENT
+  TRACEABILITY
+  SAFETY
+  OTHER
+}
+
+enum NcrSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum NcrStatus {
+  DRAFT
+  OPEN
+  CONTAINMENT_REQUIRED
+  UNDER_INVESTIGATION
+  DISPOSITION_REQUIRED
+  CORRECTIVE_ACTION
+  WAITING_VERIFICATION
+  CLOSED
+  REJECTED
+  REOPENED
+}
+
+enum NcrDisposition {
+  REWORK
+  REPAIR
+  USE_AS_IS
+  RETURN_TO_SUPPLIER
+  SCRAP
+  REPLACE
+  RECLASSIFY
+  PENDING
+}
+
+enum CapaStatus {
+  OPEN
+  PLANNED
+  IN_PROGRESS
+  WAITING_EVIDENCE
+  WAITING_VERIFICATION
+  EFFECTIVE
+  INEFFECTIVE
+  CLOSED
+  OVERDUE
+}
+
+enum QualityHoldScope {
+  PROJECT
+  JOBCARD
+}
+
+enum QualityHoldStatus {
+  ACTIVE
+  RELEASED
+}
+
+enum ComplaintStatus {
+  RECEIVED
+  ACKNOWLEDGED
+  UNDER_INVESTIGATION
+  CORRECTIVE_ACTION
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+  REOPENED
+}
+
+enum ItpLinePointType {
+  HOLD
+  WITNESS
+  REVIEW
+  SURVEILLANCE
+}
+
+enum ItpLineStatus {
+  OPEN
+  RESOLVED
+  SKIPPED
+}
+
+enum FinalReleaseResult {
+  RELEASED
+  RELEASED_WITH_CONDITIONS
+  NOT_RELEASED
+}
+
+enum SupplierQualityApprovalStatus {
+  APPROVED
+  CONDITIONALLY_APPROVED
+  UNDER_REVIEW
+  SUSPENDED
+  NOT_APPROVED
+}
+
+enum MarketingLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DISQUALIFIED
+  CONVERTED
+}
+
+enum MarketingOpportunityStage {
+  DISCOVERY
+  QUALIFIED
+  RFQ
+  PREPARING
+  QUOTE_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum MarketingCampaignStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  PLANNED
+}
+
+enum SavedReportType {
+  VIEW
+  CUSTOM
+}
+
+enum StockMovementAction {
+  RECEIVED
+  ISSUED
+  RESERVED
+  RETURN
+  SCRAP
+  TRANSFER
+  ADJUSTED
+}
+
+enum OffcutStatus {
+  AVAILABLE
+  USED
+}
+
+/// Decision 7/8 — every gate/version event this system must never let go missing or be edited.
+enum SafetyEventKind {
+  EQUIPMENT_BLOCK
+  EQUIPMENT_PASS
+  HOLD_APPLY
+  HOLD_RELEASE
+  RELEASE_GRANT
+  RELEASE_REJECT
+  DOCUMENT_SUPERSEDED
+  HOURS_ENTRY_CORRECTED
+}
+
+/// Decision 2 — Planning/customer reconciliation, and (per §J of the contract) reused for the
+/// Decision 9 worker/personnel name-resolution migration addendum.
+enum ReconciliationResolution {
+  PENDING
+  AUTO_MATCHED
+  MANUALLY_RESOLVED
+  REJECTED
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// IDENTITY & ACCESS — Decision 4
+// ══════════════════════════════════════════════════════════════════════════
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @db.VarChar(255)
+  fullName     String   @db.VarChar(200)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  userRoles                    UserRole[]
+  teamMemberships              TeamMembership[]
+  jobcardWorkerAssignments     JobcardWorker[]
+  assignedOperations           JobcardOperation[]            @relation("OperationAssignedUser")
+  supervisorSiteAssignments    SupervisorSiteAssignment[]
+  supervisorTeamAssignments    SupervisorTeamAssignment[]
+  supervisorProjectAssignments SupervisorProjectAssignment[]
+  supervisorJobcardAssignments SupervisorJobcardAssignment[]
+  hoursEntries                 HoursEntry[]
+  uploadedDocuments            Document[]
+  auditLogEntries              AuditLog[]
+  safetyEventEntries           SafetyEvent[]
+  stockMovements               StockMovement[]
+  stockCounts                  StockCount[]
+  qualityWelderQuals           QualityWelderQual[]
+
+  @@index([active])
+}
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// module.resource.action, e.g. "quality.release.execute" — see contract §G.
+  key         String   @unique @db.VarChar(150)
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+/// Multiple roles per user (Decision 4).
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ACCESS SCOPING — Decision 9 (row-level authorization)
+// ══════════════════════════════════════════════════════════════════════════
+
+/// "Site represents a physical or operational location." (final product decision)
+model Site {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique @db.VarChar(200)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  teams                     Team[]
+  projects                  Project[]
+  jobcards                  Jobcard[]
+  supervisorSiteAssignments SupervisorSiteAssignment[]
+}
+
+/// "Every Team has one homeSite." "A Team does not need to change its homeSite to work
+/// elsewhere" — cross-site work is represented on Project/Jobcard/Supervisor assignments instead.
+model Team {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(200)
+  homeSiteId String   @db.Uuid
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+
+  homeSite                  Site                       @relation(fields: [homeSiteId], references: [id], onDelete: Restrict)
+  memberships               TeamMembership[]
+  supervisorTeamAssignments SupervisorTeamAssignment[]
+
+  @@unique([name, homeSiteId])
+  @@index([homeSiteId])
+}
+
+/// "A User may have multiple TeamMembership records." "TeamMembership supports validFrom,
+/// validTo and active status." No uniqueness on (userId, teamId) alone — a user may rejoin a
+/// team in a later, non-overlapping period. A partial unique index prevents more than one
+/// simultaneously-*active* membership per (user, team) pair — see migration.sql addendum,
+/// documented in backend/README.md, since Prisma's schema language cannot express a partial
+/// (WHERE-clause) unique index directly.
+model TeamMembership {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  teamId    String    @db.Uuid
+  validFrom DateTime  @db.Date
+  validTo   DateTime? @db.Date
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([active])
+}
+
+/// Row-scope source for Workshop Supervisor — Decision 9, explicit assignment tables only.
+model SupervisorSiteAssignment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  siteId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, siteId])
+  @@index([siteId])
+}
+
+model SupervisorTeamAssignment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  teamId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, teamId])
+  @@index([teamId])
+}
+
+model SupervisorProjectAssignment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  projectId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+}
+
+model SupervisorJobcardAssignment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  jobcardId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  jobcard Jobcard @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, jobcardId])
+  @@index([jobcardId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CRM / SALES
+// ══════════════════════════════════════════════════════════════════════════
+
+model Customer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String   @unique @db.VarChar(40)
+  name      String   @db.VarChar(300)
+  status    String   @db.VarChar(30)
+  org       String?  @db.VarChar(60)
+  vat       String?  @db.VarChar(60)
+  email     String?  @db.VarChar(254)
+  phone     String?  @db.VarChar(60)
+  terms     String?  @db.VarChar(100)
+  credit    Decimal? @db.Decimal(14, 2)
+  currency  String?  @db.Char(3)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  contacts               CustomerContact[]
+  estimations            Estimation[]
+  invoices               Invoice[]
+  projects               Project[]
+  marketingLeads         MarketingLead[]
+  marketingOpportunities MarketingOpportunity[]
+  qualityNcrs            QualityNcr[]
+  qualityComplaints      QualityComplaint[]
+  documentLinks          DocumentCustomer[]
+
+  @@index([status])
+  @@index([name])
+}
+
+model CustomerContact {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String   @db.Uuid
+  name       String   @db.VarChar(200)
+  role       String?  @db.VarChar(100)
+  email      String?  @db.VarChar(254)
+  phone      String?  @db.VarChar(60)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+}
+
+model MarketingLead {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status              MarketingLeadStatus @default(NEW)
+  priority            String?             @db.VarChar(20)
+  source              String?             @db.VarChar(40)
+  doNotContact        Boolean             @default(false)
+  customerId          String?             @db.Uuid
+  linkedOpportunityId String?             @unique @db.Uuid
+  createdAt           DateTime            @default(now()) @db.Timestamptz
+  updatedAt           DateTime            @updatedAt @db.Timestamptz
+
+  customer    Customer?             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  opportunity MarketingOpportunity? @relation("LeadOpportunity", fields: [linkedOpportunityId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([customerId])
+}
+
+model MarketingOpportunity {
+  id           String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stage        MarketingOpportunityStage @default(DISCOVERY)
+  probability  Int?
+  customerId   String                    @db.Uuid
+  estimationId String?                   @unique @db.Uuid
+  createdAt    DateTime                  @default(now()) @db.Timestamptz
+  updatedAt    DateTime                  @updatedAt @db.Timestamptz
+  version      Int                       @default(0)
+
+  customer        Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  estimation      Estimation?    @relation(fields: [estimationId], references: [id], onDelete: Restrict)
+  originatingLead MarketingLead? @relation("LeadOpportunity")
+
+  @@index([stage])
+  @@index([customerId])
+}
+
+model MarketingCampaign {
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String                  @db.VarChar(200)
+  status           MarketingCampaignStatus @default(PLANNED)
+  channels         String[]
+  targetIndustries String[]
+  createdAt        DateTime                @default(now()) @db.Timestamptz
+  updatedAt        DateTime                @updatedAt @db.Timestamptz
+
+  @@index([status])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// COMMERCIAL
+// ══════════════════════════════════════════════════════════════════════════
+
+model Estimation {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no           String           @unique @db.VarChar(40)
+  customerId   String           @db.Uuid
+  title        String           @db.VarChar(300)
+  status       EstimationStatus @default(DRAFT)
+  revision     Int              @default(0)
+  totalCost    Decimal          @default(0) @db.Decimal(14, 2)
+  sellingPrice Decimal          @default(0) @db.Decimal(14, 2)
+  currency     String           @default("SEK") @db.Char(3)
+  projectId    String?          @unique @db.Uuid
+  createdAt    DateTime         @default(now()) @db.Timestamptz
+  updatedAt    DateTime         @updatedAt @db.Timestamptz
+  version      Int              @default(0)
+
+  customer    Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  project     Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  lines       EstimationLine[]
+  opportunity MarketingOpportunity?
+
+  @@index([status])
+  @@index([customerId])
+}
+
+model EstimationLine {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  estimationId String   @db.Uuid
+  category     String   @db.VarChar(30)
+  description  String   @db.VarChar(500)
+  qty          Decimal  @db.Decimal(12, 3)
+  unitCost     Decimal  @db.Decimal(14, 4)
+  unitSell     Decimal  @db.Decimal(14, 4)
+  discountPct  Decimal  @default(0) @db.Decimal(5, 2)
+  taxPct       Decimal  @default(0) @db.Decimal(5, 2)
+  wastePct     Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  estimation Estimation @relation(fields: [estimationId], references: [id], onDelete: Restrict)
+
+  @@index([estimationId])
+}
+
+/// Customer-facing invoice. Named `Invoice` to match the contract's entity inventory
+/// (distinct from SupplierInvoice, the payable-side entity under Procurement below).
+model Invoice {
+  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no         String                @unique @db.VarChar(40)
+  customerId String                @db.Uuid
+  status     CustomerInvoiceStatus @default(DRAFT)
+  value      Decimal               @db.Decimal(14, 2)
+  currency   String                @default("SEK") @db.Char(3)
+  dueDate    DateTime?             @db.Date
+  archived   Boolean               @default(false)
+  createdAt  DateTime              @default(now()) @db.Timestamptz
+  updatedAt  DateTime              @updatedAt @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([customerId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PRODUCTION
+// ══════════════════════════════════════════════════════════════════════════
+
+model Project {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no             String        @unique @db.VarChar(40)
+  customerId     String        @db.Uuid
+  siteId         String?       @db.Uuid
+  name           String        @db.VarChar(300)
+  status         ProjectStatus @default(DRAFT)
+  phase          String?       @db.VarChar(40)
+  plannedHours   Decimal       @default(0) @db.Decimal(10, 2)
+  usedHours      Decimal       @default(0) @db.Decimal(10, 2)
+  materialStatus String?       @db.VarChar(30)
+  archived       Boolean       @default(false)
+  createdAt      DateTime      @default(now()) @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @db.Timestamptz
+  version        Int           @default(0)
+
+  customer              Customer                      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  site                  Site?                         @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  estimation            Estimation?
+  jobcards              Jobcard[]
+  bomLines              ProjectBomLine[]
+  purchaseOrders        PurchaseOrder[]
+  requisitions          PurchaseRequisition[]
+  qualityInspections    QualityInspection[]
+  qualityWelds          QualityWeld[]
+  qualityNcrs           QualityNcr[]
+  qualityDossiers       QualityDossier[]
+  qualityItps           QualityItp[]
+  qualityReleases       QualityRelease[]
+  documentLinks         DocumentProject[]
+  documentFolders       DocumentFolder[]
+  supervisorAssignments SupervisorProjectAssignment[]
+  stockMovements        StockMovement[]
+  offcuts               Offcut[]
+  equipmentPreUseChecks EquipmentPreUseCheck[]
+  qualityHolds          QualityHold[]
+  qualityComplaints     QualityComplaint[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([siteId])
+}
+
+model ProjectBomLine {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId String   @db.Uuid
+  itemCode  String   @db.VarChar(60)
+  required  Decimal  @default(0) @db.Decimal(12, 3)
+  reserved  Decimal  @default(0) @db.Decimal(12, 3)
+  issued    Decimal  @default(0) @db.Decimal(12, 3)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  project             Project                   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  inventoryItem       InventoryItem             @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  requisitionLinesFor PurchaseRequisitionLine[]
+
+  @@index([projectId])
+  @@index([itemCode])
+}
+
+model Jobcard {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no                String        @unique @db.VarChar(40)
+  projectId         String        @db.Uuid
+  siteId            String?       @db.Uuid
+  status            JobcardStatus @default(DRAFT)
+  materialReadiness String?       @db.VarChar(30)
+  archived          Boolean       @default(false)
+  createdAt         DateTime      @default(now()) @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @db.Timestamptz
+  version           Int           @default(0)
+
+  project                Project                       @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site                   Site?                         @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  operations             JobcardOperation[]
+  workers                JobcardWorker[]
+  hoursEntries           HoursEntry[]
+  legacyInspections      JobcardInspectionLegacy[]
+  qualityInspections     QualityInspection[]
+  qualityWelds           QualityWeld[]
+  qualityNcrs            QualityNcr[]
+  equipmentPreUseChecks  EquipmentPreUseCheck[]
+  equipmentUsageSessions EquipmentUsageSession[]
+  documentLinks          DocumentJobcard[]
+  qualityReleases        QualityRelease[]
+  supervisorAssignments  SupervisorJobcardAssignment[]
+  stockMovements         StockMovement[]
+  qualityHolds           QualityHold[]
+
+  @@index([status])
+  @@index([projectId])
+  @@index([siteId])
+}
+
+model JobcardOperation {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobcardId      String                 @db.Uuid
+  sequence       Int
+  description    String                 @db.VarChar(500)
+  status         JobcardOperationStatus @default(PENDING)
+  plannedHours   Decimal                @default(0) @db.Decimal(10, 2)
+  loggedHours    Decimal                @default(0) @db.Decimal(10, 2)
+  dependencyId   String?                @db.Uuid
+  equipmentId    String?                @db.Uuid
+  assignedUserId String?                @db.Uuid
+  createdAt      DateTime               @default(now()) @db.Timestamptz
+  updatedAt      DateTime               @updatedAt @db.Timestamptz
+  version        Int                    @default(0)
+
+  jobcard      Jobcard            @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  dependency   JobcardOperation?  @relation("OperationDependency", fields: [dependencyId], references: [id], onDelete: Restrict)
+  dependents   JobcardOperation[] @relation("OperationDependency")
+  equipment    Equipment?         @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  assignedUser User?              @relation("OperationAssignedUser", fields: [assignedUserId], references: [id], onDelete: Restrict)
+  hoursEntries HoursEntry[]
+
+  @@unique([jobcardId, sequence])
+  @@index([status])
+  @@index([equipmentId])
+  @@index([assignedUserId])
+  @@index([dependencyId])
+}
+
+/// Row-scope source for Workshop Worker — Decision 9. Replaces the frontend's free-text
+/// `workers[]` array with a real many-to-many relation.
+model JobcardWorker {
+  jobcardId String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  jobcard Jobcard @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([jobcardId, userId])
+  @@index([userId])
+}
+
+model HoursEntry {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobcardId   String   @db.Uuid
+  operationId String?  @db.Uuid
+  userId      String   @db.Uuid
+  hours       Decimal  @db.Decimal(8, 2)
+  workDate    DateTime @db.Date
+  billable    Boolean?
+  overtime    Boolean?
+  notes       String?  @db.VarChar(1000)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  jobcard   Jobcard           @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  operation JobcardOperation? @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([jobcardId])
+  @@index([operationId])
+  @@index([userId])
+  @@index([workDate])
+}
+
+/// Decision 3 — legacy per-jobcard inspection checklist, migrated in as read-only history only.
+/// No create/update path is exposed for this model past migration; QualityInspection is the
+/// sole authoritative inspection system going forward.
+model JobcardInspectionLegacy {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobcardId    String    @db.Uuid
+  legacyType   String    @db.VarChar(60)
+  legacyStatus String    @db.VarChar(60)
+  legacyResult String?   @db.VarChar(60)
+  legacyDate   DateTime? @db.Date
+  migratedAt   DateTime  @default(now()) @db.Timestamptz
+
+  jobcard Jobcard @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+
+  @@index([jobcardId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MATERIALS
+// ══════════════════════════════════════════════════════════════════════════
+
+model InventoryItem {
+  code        String   @id @db.VarChar(60)
+  description String   @db.VarChar(300)
+  stock       Decimal  @default(0) @db.Decimal(12, 3)
+  reserved    Decimal  @default(0) @db.Decimal(12, 3)
+  minStock    Decimal  @default(0) @db.Decimal(12, 3)
+  avgCost     Decimal  @default(0) @db.Decimal(14, 4)
+  currency    String   @default("SEK") @db.Char(3)
+  supplierId  String?  @db.Uuid
+  status      String?  @db.VarChar(20)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  supplier         Supplier?                 @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lots             InventoryLot[]
+  bomLines         ProjectBomLine[]
+  movements        StockMovement[]
+  stockCounts      StockCount[]
+  barcodeLinks     BarcodeLink[]
+  offcuts          Offcut[]
+  requisitionLines PurchaseRequisitionLine[]
+
+  @@index([status])
+  @@index([supplierId])
+}
+
+/// New entity required by Decision 8 to host InventoryLotDocument — the frontend only ever
+/// carried heat/batch as flat strings on inventory items/material lines, with no dedicated
+/// lot entity to attach a certificate to.
+model InventoryLot {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemCode       String    @db.VarChar(60)
+  lotNumber      String    @db.VarChar(100)
+  supplierId     String?   @db.Uuid
+  receivedDate   DateTime? @db.Date
+  certificateRef String?   @db.VarChar(200)
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @db.Timestamptz
+
+  inventoryItem InventoryItem          @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  supplier      Supplier?              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  documentLinks InventoryLotDocument[]
+
+  @@unique([itemCode, lotNumber])
+  @@index([supplierId])
+}
+
+model StockMovement {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemCode   String              @db.VarChar(60)
+  action     StockMovementAction
+  qty        Decimal             @db.Decimal(12, 3)
+  projectId  String?             @db.Uuid
+  jobcardId  String?             @db.Uuid
+  userId     String?             @db.Uuid
+  occurredAt DateTime            @default(now()) @db.Timestamptz
+
+  item    InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  project Project?      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  jobcard Jobcard?      @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  user    User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([itemCode])
+  @@index([action])
+  @@index([projectId])
+  @@index([jobcardId])
+  @@index([userId])
+}
+
+model Offcut {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String       @unique @db.VarChar(60)
+  itemCode        String       @db.VarChar(60)
+  status          OffcutStatus @default(AVAILABLE)
+  sourceProjectId String?      @db.Uuid
+  createdAt       DateTime     @default(now()) @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @db.Timestamptz
+
+  item          InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  sourceProject Project?      @relation(fields: [sourceProjectId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([itemCode])
+  @@index([sourceProjectId])
+}
+
+model StockCount {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemCode   String   @db.VarChar(60)
+  counted    Decimal  @db.Decimal(12, 3)
+  systemQty  Decimal  @db.Decimal(12, 3)
+  difference Decimal  @db.Decimal(12, 3)
+  scope      String?  @db.VarChar(60)
+  userId     String?  @db.Uuid
+  countedAt  DateTime @default(now()) @db.Timestamptz
+
+  item InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  user User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([itemCode])
+  @@index([userId])
+}
+
+model BarcodeLink {
+  barcode    String   @id @db.VarChar(100)
+  itemCode   String   @db.VarChar(60)
+  supplierId String?  @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  item     InventoryItem @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  supplier Supplier?     @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([itemCode])
+  @@index([supplierId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROCUREMENT
+// ══════════════════════════════════════════════════════════════════════════
+
+model Supplier {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String         @unique @db.VarChar(40)
+  name      String         @db.VarChar(300)
+  status    SupplierStatus @default(ACTIVE)
+  createdAt DateTime       @default(now()) @db.Timestamptz
+  updatedAt DateTime       @updatedAt @db.Timestamptz
+
+  inventoryItems   InventoryItem[]
+  inventoryLots    InventoryLot[]
+  barcodeLinks     BarcodeLink[]
+  purchaseOrders   PurchaseOrder[]
+  purchaseRfqs     PurchaseRfq[]
+  supplierInvoices SupplierInvoice[]
+  qualityNcrs      QualityNcr[]
+  supplierQuality  SupplierQuality?
+  documentLinks    DocumentSupplier[]
+
+  @@index([status])
+}
+
+model PurchaseOrder {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no            String              @unique @db.VarChar(40)
+  supplierId    String              @db.Uuid
+  projectId     String?             @db.Uuid
+  status        PurchaseOrderStatus @default(DRAFT)
+  value         Decimal             @default(0) @db.Decimal(14, 2)
+  currency      String              @default("SEK") @db.Char(3)
+  receivedQty   Decimal             @default(0) @db.Decimal(12, 3)
+  receivedValue Decimal             @default(0) @db.Decimal(14, 2)
+  expectedDate  DateTime?           @db.Date
+  createdAt     DateTime            @default(now()) @db.Timestamptz
+  updatedAt     DateTime            @updatedAt @db.Timestamptz
+  version       Int                 @default(0)
+
+  supplier         Supplier                  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  project          Project?                  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  supplierInvoices SupplierInvoice[]
+  requisitionLines PurchaseRequisitionLine[]
+  documentLinks    DocumentPurchaseOrder[]
+
+  @@index([status])
+  @@index([supplierId])
+  @@index([projectId])
+}
+
+model PurchaseRfq {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no         String            @unique @db.VarChar(40)
+  supplierId String            @db.Uuid
+  status     PurchaseRfqStatus @default(DRAFT)
+  archived   Boolean           @default(false)
+  createdAt  DateTime          @default(now()) @db.Timestamptz
+  updatedAt  DateTime          @updatedAt @db.Timestamptz
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([supplierId])
+}
+
+model SupplierInvoice {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no              String                @unique @db.VarChar(40)
+  supplierId      String                @db.Uuid
+  purchaseOrderId String?               @db.Uuid
+  amount          Decimal               @db.Decimal(14, 2)
+  currency        String                @default("SEK") @db.Char(3)
+  status          SupplierInvoiceStatus @default(PENDING)
+  archived        Boolean               @default(false)
+  createdAt       DateTime              @default(now()) @db.Timestamptz
+  updatedAt       DateTime              @updatedAt @db.Timestamptz
+
+  supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+}
+
+/// Decision 5 — real, persistent, auditable entity (not derived from BOM gaps at request time).
+model PurchaseRequisition {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no          String            @unique @db.VarChar(40)
+  projectId   String?           @db.Uuid
+  status      RequisitionStatus @default(SUGGESTED)
+  requestedBy String?           @db.Uuid
+  approvedBy  String?           @db.Uuid
+  createdAt   DateTime          @default(now()) @db.Timestamptz
+  updatedAt   DateTime          @updatedAt @db.Timestamptz
+  version     Int               @default(0)
+
+  project Project?                  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  lines   PurchaseRequisitionLine[]
+
+  @@index([status])
+  @@index([projectId])
+}
+
+model PurchaseRequisitionLine {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requisitionId   String   @db.Uuid
+  itemCode        String   @db.VarChar(60)
+  qtyRequested    Decimal  @db.Decimal(12, 3)
+  sourceBomLineId String?  @db.Uuid
+  purchaseOrderId String?  @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
+
+  requisition   PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  item          InventoryItem       @relation(fields: [itemCode], references: [code], onDelete: Restrict)
+  sourceBomLine ProjectBomLine?     @relation(fields: [sourceBomLineId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
+  @@index([requisitionId])
+  @@index([itemCode])
+  @@index([sourceBomLineId])
+  @@index([purchaseOrderId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// EQUIPMENT
+// ══════════════════════════════════════════════════════════════════════════
+
+model Equipment {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId String          @unique @db.VarChar(60)
+  name        String          @db.VarChar(200)
+  status      EquipmentStatus @default(AVAILABLE)
+  qrCode      String?         @unique @db.VarChar(100)
+  createdAt   DateTime        @default(now()) @db.Timestamptz
+  updatedAt   DateTime        @updatedAt @db.Timestamptz
+  version     Int             @default(0)
+
+  inspections   EquipmentInspection[]
+  breakdowns    EquipmentBreakdown[]
+  preUseChecks  EquipmentPreUseCheck[]
+  usageSessions EquipmentUsageSession[]
+  operations    JobcardOperation[]
+  documentLinks DocumentEquipment[]
+
+  @@index([status])
+}
+
+model EquipmentInspection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId String   @db.Uuid
+  result      String   @db.VarChar(30)
+  critical    Boolean  @default(false)
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId])
+  @@index([resolved])
+}
+
+model EquipmentBreakdown {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId String   @db.Uuid
+  reason      String   @db.VarChar(1000)
+  resolved    Boolean  @default(false)
+  resolvedBy  String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId])
+  @@index([resolved])
+}
+
+model EquipmentPreUseCheck {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId String   @db.Uuid
+  checkDate   DateTime @db.Date
+  result      String   @db.VarChar(20)
+  jobcardId   String?  @db.Uuid
+  projectId   String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  jobcard   Jobcard?  @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId])
+  @@index([jobcardId])
+  @@index([projectId])
+}
+
+model EquipmentUsageSession {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId String   @db.Uuid
+  jobcardId   String   @db.Uuid
+  hours       Decimal  @db.Decimal(8, 2)
+  meterBefore Decimal? @db.Decimal(12, 2)
+  meterAfter  Decimal? @db.Decimal(12, 2)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  jobcard   Jobcard   @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId])
+  @@index([jobcardId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// QUALITY
+// ══════════════════════════════════════════════════════════════════════════
+
+model QualityInspection {
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no          String                  @unique @db.VarChar(40)
+  jobcardId   String?                 @db.Uuid
+  projectId   String?                 @db.Uuid
+  type        QualityInspectionType
+  status      QualityInspectionStatus @default(DRAFT)
+  result      QualityInspectionResult @default(PENDING)
+  plannedDate DateTime?               @db.Date
+  actualDate  DateTime?               @db.Date
+  createdAt   DateTime                @default(now()) @db.Timestamptz
+  updatedAt   DateTime                @updatedAt @db.Timestamptz
+  version     Int                     @default(0)
+
+  jobcard       Jobcard?                    @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  project       Project?                    @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  ndtRecords    QualityNdt[]
+  documentLinks QualityInspectionDocument[]
+
+  @@index([status])
+  @@index([jobcardId])
+  @@index([projectId])
+}
+
+model QualityWeld {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no          String      @unique @db.VarChar(40)
+  jobcardId   String?     @db.Uuid
+  projectId   String?     @db.Uuid
+  process     WeldProcess
+  status      WeldStatus  @default(PLANNED)
+  finalResult String?     @db.VarChar(20)
+  weldDate    DateTime?   @db.Date
+  createdAt   DateTime    @default(now()) @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @db.Timestamptz
+
+  jobcard    Jobcard?     @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  project    Project?     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  ndtRecords QualityNdt[]
+
+  @@index([status])
+  @@index([jobcardId])
+  @@index([projectId])
+}
+
+model QualityNdt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no             String    @unique @db.VarChar(40)
+  weldId         String?   @db.Uuid
+  inspectionId   String?   @db.Uuid
+  method         NdtMethod
+  status         NdtStatus @default(REQUIRED)
+  result         NdtResult @default(PENDING)
+  inspectionDate DateTime? @db.Date
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @db.Timestamptz
+
+  weld          QualityWeld?        @relation(fields: [weldId], references: [id], onDelete: Restrict)
+  inspection    QualityInspection?  @relation(fields: [inspectionId], references: [id], onDelete: Restrict)
+  documentLinks NdtRecordDocument[]
+
+  @@index([status])
+  @@index([weldId])
+  @@index([inspectionId])
+}
+
+model QualityNcr {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no          String          @unique @db.VarChar(40)
+  title       String          @db.VarChar(300)
+  projectId   String?         @db.Uuid
+  jobcardId   String?         @db.Uuid
+  supplierId  String?         @db.Uuid
+  customerId  String?         @db.Uuid
+  capaId      String?         @db.Uuid
+  category    NcrCategory
+  severity    NcrSeverity
+  status      NcrStatus       @default(DRAFT)
+  disposition NcrDisposition?
+  createdAt   DateTime        @default(now()) @db.Timestamptz
+  updatedAt   DateTime        @updatedAt @db.Timestamptz
+  version     Int             @default(0)
+
+  project       Project?           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  jobcard       Jobcard?           @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  supplier      Supplier?          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  customer      Customer?          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  capa          QualityCapa?       @relation("NcrCapa", fields: [capaId], references: [id], onDelete: Restrict)
+  capasRaised   QualityCapa[]      @relation("CapaFromNcr")
+  holds         QualityHold[]
+  complaints    QualityComplaint[]
+  documentLinks NcrDocument[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([projectId])
+  @@index([jobcardId])
+  @@index([supplierId])
+  @@index([customerId])
+  @@index([capaId])
+}
+
+model QualityCapa {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String     @unique @db.VarChar(40)
+  ncrId     String?    @db.Uuid
+  status    CapaStatus @default(OPEN)
+  fiveWhys  String[]
+  fishbone  Json?
+  createdAt DateTime   @default(now()) @db.Timestamptz
+  updatedAt DateTime   @updatedAt @db.Timestamptz
+
+  originatingNcr    QualityNcr?  @relation("CapaFromNcr", fields: [ncrId], references: [id], onDelete: Restrict)
+  ncrsUsingThisCapa QualityNcr[] @relation("NcrCapa")
+
+  @@index([status])
+  @@index([ncrId])
+}
+
+model QualityHold {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no         String            @unique @db.VarChar(40)
+  scope      QualityHoldScope
+  projectId  String?           @db.Uuid
+  jobcardId  String?           @db.Uuid
+  ncrId      String?           @db.Uuid
+  status     QualityHoldStatus @default(ACTIVE)
+  appliedBy  String?           @db.Uuid
+  releasedBy String?           @db.Uuid
+  createdAt  DateTime          @default(now()) @db.Timestamptz
+  updatedAt  DateTime          @updatedAt @db.Timestamptz
+  version    Int               @default(0)
+
+  project       Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  jobcard       Jobcard?              @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  ncr           QualityNcr?           @relation(fields: [ncrId], references: [id], onDelete: Restrict)
+  documentLinks QualityHoldDocument[]
+
+  @@index([status])
+  @@index([scope])
+  @@index([projectId])
+  @@index([jobcardId])
+  @@index([ncrId])
+}
+
+model QualityWps {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String   @unique @db.VarChar(40)
+  status    String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  documentLinks WpsDocument[]
+
+  @@index([status])
+}
+
+model QualityWelderQual {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  welderId   String?   @db.Uuid
+  welderName String    @db.VarChar(200)
+  process    String    @db.VarChar(30)
+  expiryDate DateTime? @db.Date
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  welder        User?                         @relation(fields: [welderId], references: [id], onDelete: Restrict)
+  documentLinks WelderQualificationDocument[]
+
+  @@index([expiryDate])
+  @@index([welderId])
+}
+
+model QualityComplaint {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no         String          @unique @db.VarChar(40)
+  customerId String          @db.Uuid
+  projectId  String?         @db.Uuid
+  status     ComplaintStatus @default(RECEIVED)
+  severity   NcrSeverity?
+  ncrId      String?         @db.Uuid
+  createdAt  DateTime        @default(now()) @db.Timestamptz
+  updatedAt  DateTime        @updatedAt @db.Timestamptz
+
+  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  project  Project?    @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  ncr      QualityNcr? @relation(fields: [ncrId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([customerId])
+  @@index([projectId])
+  @@index([ncrId])
+}
+
+model QualityDossier {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String   @unique @db.VarChar(40)
+  projectId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  project Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  items   QualityDossierItem[]
+
+  @@index([projectId])
+}
+
+model QualityDossierItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dossierId String   @db.Uuid
+  name      String   @db.VarChar(200)
+  required  Boolean  @default(true)
+  status    String   @db.VarChar(30)
+  reference String?  @db.VarChar(300)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  dossier QualityDossier @relation(fields: [dossierId], references: [id], onDelete: Restrict)
+
+  @@index([dossierId])
+}
+
+model QualityItp {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no        String   @unique @db.VarChar(40)
+  projectId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  project Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  lines   QualityItpLine[]
+
+  @@index([projectId])
+}
+
+model QualityItpLine {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itpId       String           @db.Uuid
+  sequence    Int
+  pointType   ItpLinePointType
+  status      ItpLineStatus    @default(OPEN)
+  result      String?          @db.VarChar(30)
+  plannedDate DateTime?        @db.Date
+  actualDate  DateTime?        @db.Date
+  createdAt   DateTime         @default(now()) @db.Timestamptz
+  updatedAt   DateTime         @updatedAt @db.Timestamptz
+
+  itp QualityItp @relation(fields: [itpId], references: [id], onDelete: Restrict)
+
+  @@unique([itpId, sequence])
+  @@index([status])
+}
+
+/// Decision 7 (server-side gate authority) + Decision 8 (immutable supersession — see
+/// FinalReleaseDocument / Document.previousVersionId). `blockingReasons` is always
+/// server-computed by ReleaseGateService in a later phase; no field here is ever
+/// client-writable in the future API.
+model QualityRelease {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  no              String             @unique @db.VarChar(40)
+  projectId       String             @db.Uuid
+  jobcardId       String?            @db.Uuid
+  result          FinalReleaseResult
+  blockingReasons Json?
+  createdAt       DateTime           @default(now()) @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @db.Timestamptz
+  version         Int                @default(0)
+
+  project       Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  jobcard       Jobcard?               @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+  documentLinks FinalReleaseDocument[]
+
+  @@index([result])
+  @@index([projectId])
+  @@index([jobcardId])
+}
+
+model SupplierQuality {
+  id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supplierId     String                        @unique @db.Uuid
+  approvalStatus SupplierQualityApprovalStatus @default(UNDER_REVIEW)
+  openNcrs       Int                           @default(0)
+  rating         Decimal?                      @db.Decimal(3, 2)
+  createdAt      DateTime                      @default(now()) @db.Timestamptz
+  updatedAt      DateTime                      @updatedAt @db.Timestamptz
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([approvalStatus])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// DOCUMENTS — Decision 1 (real FK relation tables, no polymorphic soft-link)
+//             + Decision 8 (named quality/safety relation models, immutable supersession)
+// ══════════════════════════════════════════════════════════════════════════
+
+/// `previousVersionId` implements Decision 8's immutable-supersession chain: a safety-linked
+/// document is never hard-deleted, only replaced by inserting a new Document row that points
+/// back at the one it supersedes. The self-referential FK's simple self-reference case
+/// (id != previousVersionId) is enforced by a CHECK constraint added in the migration SQL
+/// (Prisma's schema language has no `@check` attribute); full multi-hop cycle prevention
+/// (A -> B -> A across more than one hop) is NOT expressible as a plain SQL constraint and is
+/// explicitly deferred to application-level validation and tests, per the contract's own
+/// instruction ("cycle prevention handled by validation and tests") — see backend/README.md.
+model Document {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String         @db.VarChar(300)
+  type              DocumentType   @default(DOCUMENT)
+  category          String?        @db.VarChar(100)
+  status            DocumentStatus @default(DRAFT)
+  storageKey        String?        @unique @db.VarChar(500)
+  mimeType          String?        @db.VarChar(150)
+  fileSize          BigInt?
+  checksum          String?        @db.VarChar(128)
+  uploadedById      String?        @db.Uuid
+  previousVersionId String?        @unique @db.Uuid
+  supersededAt      DateTime?      @db.Timestamptz
+  createdAt         DateTime       @default(now()) @db.Timestamptz
+  updatedAt         DateTime       @updatedAt @db.Timestamptz
+  version           Int            @default(0)
+
+  uploadedBy      User?     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  previousVersion Document? @relation("DocumentVersionChain", fields: [previousVersionId], references: [id], onDelete: Restrict)
+  supersededBy    Document? @relation("DocumentVersionChain")
+
+  customerLinks            DocumentCustomer[]
+  supplierLinks            DocumentSupplier[]
+  projectLinks             DocumentProject[]
+  jobcardLinks             DocumentJobcard[]
+  equipmentLinks           DocumentEquipment[]
+  purchaseOrderLinks       DocumentPurchaseOrder[]
+  qualityInspectionLinks   QualityInspectionDocument[]
+  ncrLinks                 NcrDocument[]
+  qualityHoldLinks         QualityHoldDocument[]
+  wpsLinks                 WpsDocument[]
+  welderQualificationLinks WelderQualificationDocument[]
+  ndtRecordLinks           NdtRecordDocument[]
+  finalReleaseLinks        FinalReleaseDocument[]
+  inventoryLotLinks        InventoryLotDocument[]
+
+  @@index([status])
+  @@index([type])
+  @@index([uploadedById])
+}
+
+model DocumentFolder {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(200)
+  projectId String?  @db.Uuid
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([name, projectId])
+  @@index([projectId])
+}
+
+model DocumentCustomer {
+  documentId String @db.Uuid
+  customerId String @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, customerId])
+  @@index([customerId])
+}
+
+model DocumentSupplier {
+  documentId String @db.Uuid
+  supplierId String @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, supplierId])
+  @@index([supplierId])
+}
+
+model DocumentProject {
+  documentId String @db.Uuid
+  projectId  String @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, projectId])
+  @@index([projectId])
+}
+
+model DocumentJobcard {
+  documentId String @db.Uuid
+  jobcardId  String @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  jobcard  Jobcard  @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, jobcardId])
+  @@index([jobcardId])
+}
+
+model DocumentEquipment {
+  documentId  String @db.Uuid
+  equipmentId String @db.Uuid
+
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, equipmentId])
+  @@index([equipmentId])
+}
+
+model DocumentPurchaseOrder {
+  documentId      String @db.Uuid
+  purchaseOrderId String @db.Uuid
+
+  document      Document      @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, purchaseOrderId])
+  @@index([purchaseOrderId])
+}
+
+/// Decision 8 — named explicitly; do not replace with a generic qualityType/entityId column.
+model QualityInspectionDocument {
+  documentId          String @db.Uuid
+  qualityInspectionId String @db.Uuid
+
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  qualityInspection QualityInspection @relation(fields: [qualityInspectionId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityInspectionId])
+  @@index([qualityInspectionId])
+}
+
+model NcrDocument {
+  documentId String @db.Uuid
+  ncrId      String @db.Uuid
+
+  document Document   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  ncr      QualityNcr @relation(fields: [ncrId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, ncrId])
+  @@index([ncrId])
+}
+
+model QualityHoldDocument {
+  documentId    String @db.Uuid
+  qualityHoldId String @db.Uuid
+
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  qualityHold QualityHold @relation(fields: [qualityHoldId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityHoldId])
+  @@index([qualityHoldId])
+}
+
+model WpsDocument {
+  documentId   String @db.Uuid
+  qualityWpsId String @db.Uuid
+
+  document Document   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  wps      QualityWps @relation(fields: [qualityWpsId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityWpsId])
+  @@index([qualityWpsId])
+}
+
+model WelderQualificationDocument {
+  documentId          String @db.Uuid
+  qualityWelderQualId String @db.Uuid
+
+  document   Document          @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  welderQual QualityWelderQual @relation(fields: [qualityWelderQualId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityWelderQualId])
+  @@index([qualityWelderQualId])
+}
+
+model NdtRecordDocument {
+  documentId   String @db.Uuid
+  qualityNdtId String @db.Uuid
+
+  document Document   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  ndt      QualityNdt @relation(fields: [qualityNdtId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityNdtId])
+  @@index([qualityNdtId])
+}
+
+/// Decision 8 — Final Release evidence is never hard-deleted; see Document.previousVersionId.
+model FinalReleaseDocument {
+  documentId       String @db.Uuid
+  qualityReleaseId String @db.Uuid
+
+  document Document       @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  release  QualityRelease @relation(fields: [qualityReleaseId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, qualityReleaseId])
+  @@index([qualityReleaseId])
+}
+
+model InventoryLotDocument {
+  documentId     String @db.Uuid
+  inventoryLotId String @db.Uuid
+
+  document Document     @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  lot      InventoryLot @relation(fields: [inventoryLotId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, inventoryLotId])
+  @@index([inventoryLotId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// REPORTING & SYSTEM
+// ══════════════════════════════════════════════════════════════════════════
+
+model SavedReport {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String          @db.VarChar(200)
+  type       SavedReportType @default(VIEW)
+  favourite  Boolean         @default(false)
+  archived   Boolean         @default(false)
+  definition Json?
+  createdAt  DateTime        @default(now()) @db.Timestamptz
+  updatedAt  DateTime        @updatedAt @db.Timestamptz
+
+  @@index([type])
+}
+
+/// General business changelog — the Quality shape from the original audit (§4/§H of the
+/// contract), the richest of the three legacy shapes, used as the one canonical audit table.
+///
+/// `entityType` is a label used only for filtering/display; it never drives a join or a
+/// write-time authorization decision, and no code path treats (entityType, entityId) as a
+/// trusted foreign key. This is the one explicitly-justified exception to the "no polymorphic
+/// entityType/entityId soft link" rule, carried over verbatim from the approved contract (§D) —
+/// every *load-bearing* relationship in this schema (Documents included) uses a real FK.
+///
+/// `entityId` is a plain VarChar, not @db.Uuid: not every loggable entity has a UUID primary
+/// key (e.g. InventoryItem.code, BarcodeLink.barcode are human-assigned VarChar identifiers),
+/// and this column must be able to hold either.
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt DateTime @default(now()) @db.Timestamptz
+  entityType String   @db.VarChar(60)
+  entityId   String   @db.VarChar(100)
+  action     String   @db.VarChar(200)
+  fromValue  String?  @db.VarChar(500)
+  toValue    String?  @db.VarChar(500)
+  reference  String?  @db.VarChar(200)
+  reason     String?  @db.VarChar(1000)
+  userId     String?  @db.Uuid
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@index([userId])
+}
+
+/// Decision 7/8/9 — append-only. PostgreSQL-level protection (a trigger rejecting UPDATE/DELETE)
+/// is added in the migration SQL, since Prisma's schema language has no attribute for this —
+/// see backend/README.md for exactly what is and is not enforced at the database level.
+model SafetyEvent {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt DateTime        @default(now()) @db.Timestamptz
+  kind       SafetyEventKind
+  entityType String          @db.VarChar(60)
+  entityId   String          @db.VarChar(100)
+  gateResult Json?
+  reason     String?         @db.VarChar(1000)
+  userId     String?         @db.Uuid
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([kind])
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@index([userId])
+}
+
+/// Decision 2 (Planning/customer collisions) and its Decision 9 addendum (worker/personnel
+/// name resolution) both use this one mechanism: auto-migrate only deterministic matches,
+/// write everything else here for a human to resolve, never silently merge.
+model MigrationReconciliationRecord {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceCollection String                   @db.VarChar(100)
+  sourceKey        String                   @db.VarChar(300)
+  candidateMatches Json?
+  resolution       ReconciliationResolution @default(PENDING)
+  resolvedBy       String?                  @db.Uuid
+  resolvedAt       DateTime?                @db.Timestamptz
+  createdAt        DateTime                 @default(now()) @db.Timestamptz
+
+  @@index([resolution])
+  @@index([sourceCollection])
+}

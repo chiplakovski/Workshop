@@ -1,0 +1,24 @@
+# Local development Postgres only. Not a production deployment definition.
+# Matches the connection string in .env.example.
+#
+# Usage: docker compose up -d
+# Docker itself was not available in the environment this file was authored and verified in;
+# schema/migration verification for Phase 0A instead used `npx prisma dev` (Prisma's own local
+# Postgres server), a genuine local/temporary PostgreSQL database per the same allowance this
+# file exists to satisfy. See backend/README.md.
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: workshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - workshop_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  workshop_postgres_data:
