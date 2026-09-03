@@ -10,6 +10,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.integration-spec.ts'],
-    testTimeout: 20000,
+    // Same cold-node_modules headroom reasoning as vitest.config.ts's hookTimeout — see there.
+    hookTimeout: 30000,
+    testTimeout: 30000,
   },
 });

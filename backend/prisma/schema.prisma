@@ -1486,18 +1486,26 @@ model QualityCapa {
 /// Phase 0A-R1 review-correction: apply and release each carry their own actor-type/actor pair —
 /// `appliedActorType`/`appliedById` (required: every hold must record who or what applied it) and
 /// `releasedActorType`/`releasedById` (nullable until released), each with the same USER-requires-
-/// actor / SYSTEM-forbids-actor CHECK as SafetyEvent. Three further CHECK constraints, added in
-/// the migration SQL, keep the release-fact fields internally consistent with `status`: an ACTIVE
+/// actor / SYSTEM-forbids-actor CHECK as SafetyEvent. A further CHECK constraint, added in
+/// the migration SQL, keeps the release-fact fields internally consistent with `status`: an ACTIVE
 /// row must have every release field NULL; a RELEASED row must have every release field populated
 /// (actor type, actor consistency, releasedAt, and non-blank releaseReason/releaseEvidenceRef) —
 /// this applies to every INSERT as much as every UPDATE, so a row can never be inserted directly
-/// as RELEASED with incomplete release facts either. "Keep release history immutable": once a
-/// hold's status is RELEASED, a trigger rejects any further change to status or any release field
-/// on that row — the release fact, once recorded, is locked. This is narrower than SafetyEvent's
-/// full insert-only trigger because QualityHold's own ACTIVE -> RELEASED transition is itself a
-/// legitimate, required UPDATE; only the release fact itself is made immutable after it is set.
-/// The full historical trail of apply/release actions is additionally recorded, unconditionally
-/// immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
+/// as RELEASED with incomplete release facts either.
+///
+/// Phase 0A-R1 final integrity pass: `quality_hold_immutability()` (the migration-SQL trigger
+/// backing all of this) was widened from "lock the release fact once RELEASED" to full identity
+/// and lifecycle immutability, because the narrower version still let `no`, `scope`, `projectId`,
+/// `jobcardId`, `ncrId`, `appliedActorType`, `appliedById`, `appliedAt` and `createdAt` change
+/// freely at any time — an existing safety hold could be silently retargeted to a different
+/// Project/Jobcard or made to claim a different applying actor. Now: those nine columns can never
+/// change after INSERT, under any circumstance; while ACTIVE, the only permitted change to the
+/// row is the complete ACTIVE -> RELEASED transition (plus the always-free technical `updatedAt`/
+/// `version` fields); and once `status` is RELEASED, the trigger rejects *every* UPDATE to the
+/// row outright — full stop, the same terminal immutability as SafetyEvent/QualityRelease/
+/// AuditLog, just reached via one legitimate prior UPDATE instead of being insert-only from
+/// creation. The full historical trail of apply/release actions is additionally recorded,
+/// unconditionally immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
 model QualityHold {
   id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no                 String            @unique @db.VarChar(40)
@@ -1664,12 +1672,28 @@ model QualityItpLine {
 /// not just NOT_RELEASED — now carries full decision-level attribution: `decisionActorType`
 /// (required) with the same USER-requires-actor / SYSTEM-forbids-actor CHECK used by SafetyEvent
 /// and QualityHold; `decidedAt` (required, not nullable); `gateVersion` (required, non-blank,
-/// CHECK-enforced); `gateResultSnapshot` (required — plain NOT NULL is sufficient here, since a
-/// decision can never exist without recording what it was based on); `blockingReasons` (required
-/// JSON, defaulting to `[]` when there are none — never NULL, so "no reasons" and "reasons not
-/// recorded" cannot be confused). `RELEASED_WITH_CONDITIONS` carrying actual conditions is a
-/// content-shape rule on an arbitrary JSON blob — deliberately left to the future
-/// ReleaseGateService rather than a brittle SQL check, per instruction.
+/// CHECK-enforced); `gateResultSnapshot` (required — plain NOT NULL alone is not sufficient, see
+/// below); `blockingReasons` (required JSON, defaulting to `[]` when there are none — never NULL,
+/// so "no reasons" and "reasons not recorded" cannot be confused). `RELEASED_WITH_CONDITIONS`
+/// carrying actual conditions is a content-shape rule on an arbitrary JSON blob — deliberately
+/// left to the future ReleaseGateService rather than a brittle SQL check, per instruction.
+///
+/// Phase 0A-R1 final integrity pass, two further gaps closed:
+///
+/// 1. PostgreSQL's `NOT NULL` accepts JSONB `null` (the JSON value, not the SQL NULL) — a row
+///    could satisfy every NOT NULL constraint while still carrying no real evidence at all. CHECK
+///    constraints added in the migration SQL now require `jsonb_typeof(gateResultSnapshot) =
+///    'object'` and `jsonb_typeof(blockingReasons) = 'array'`, which reject both JSON `null` and
+///    any wrong type in one check (`jsonb_typeof('null'::jsonb)` is the *string* `'null'`, never
+///    `'object'`/`'array'`) — an empty array is fine, a `null` or an array-instead-of-object is
+///    not.
+/// 2. `previousVersionId` only guaranteed the chain doesn't reference itself — it never checked
+///    that the release being superseded actually belongs to the same Project/Jobcard. A
+///    `BEFORE INSERT` trigger (`quality_release_supersession_context_check()` — this needs a
+///    cross-row lookup a plain CHECK constraint cannot perform) now rejects any new release whose
+///    `previousVersionId` points at a release with a different `projectId`, or a `jobcardId` that
+///    doesn't match exactly (including NULL-vs-NULL) — a QualityRelease can never be superseded
+///    across Project or Jobcard boundaries.
 model QualityRelease {
   id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no                 String             @unique @db.VarChar(40)
@@ -2015,6 +2039,23 @@ model AuditLog {
 /// QualityRelease context a document supersession happened in, without naming the two actual
 /// Document rows involved — `previousDocumentId`/`newDocumentId` (real FKs to Document) fix that;
 /// this kind no longer uses qualityHoldId/qualityReleaseId/equipmentId at all.
+///
+/// Phase 0A-R1 final integrity pass, two further gaps closed:
+///
+/// 1. `gateVersion` gained the same non-blank CHECK QualityRelease already had
+///    (`SafetyEvent_gateVersion_normalized` — this was an oversight in the prior pass, present on
+///    QualityRelease but not here). `reasons`/`decisionSnapshot` gained the same JSON-shape CHECKs
+///    as QualityRelease's `blockingReasons`/`gateResultSnapshot`
+///    (`jsonb_typeof(reasons) = 'array'`, `jsonb_typeof(decisionSnapshot) = 'object'`) — plain
+///    `NOT NULL` accepts JSONB `null`, which is not valid evidence; these reject both JSON `null`
+///    and any wrong type.
+/// 2. The exactly-one-target CHECK only verified that `previousDocumentId`/`newDocumentId` were
+///    two different, real `Document` rows — it never verified the new document actually
+///    supersedes the stated previous one. A `BEFORE INSERT` trigger
+///    (`safety_event_document_supersession_check()` — a cross-row lookup a plain CHECK cannot
+///    perform) now rejects any `DOCUMENT_SUPERSEDED` event where
+///    `newDocument.previousVersionId <> previousDocumentId`: the event can no longer claim a
+///    supersession that the Document version chain itself does not agree with.
 model SafetyEvent {
   id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   occurredAt         DateTime        @default(now()) @db.Timestamptz

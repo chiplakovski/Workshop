@@ -7,5 +7,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    // Same cold-node_modules headroom reasoning as vitest.config.ts's hookTimeout — see there.
+    hookTimeout: 30000,
+    testTimeout: 30000,
   },
 });

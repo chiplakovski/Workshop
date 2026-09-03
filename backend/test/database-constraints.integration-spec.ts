@@ -187,6 +187,72 @@ describe('Phase 0A-R1 database constraints', () => {
       ).rejects.toThrow();
     });
 
+    it('rejects a blank gateVersion', async () => {
+      await expect(
+        prisma.safetyEvent.create({
+          data: { kind: 'EQUIPMENT_BLOCK', equipmentId, gateVersion: '   ', decisionSnapshot: {}, actorType: 'SYSTEM' },
+        }),
+      ).rejects.toThrow();
+    });
+
+    describe('review-correction: reasons/decisionSnapshot must be the right JSON shape, not just non-SQL-NULL', () => {
+      it('rejects a JSON `null` (not SQL NULL) reasons value via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "SafetyEvent" (id, kind, "equipmentId", reasons, "gateVersion", "decisionSnapshot", "actorType")
+             VALUES ($1, 'EQUIPMENT_BLOCK', $2, 'null'::jsonb, 'v1', '{}'::jsonb, 'SYSTEM')`,
+            id,
+            equipmentId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects a JSON `null` (not SQL NULL) decisionSnapshot value via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "SafetyEvent" (id, kind, "equipmentId", reasons, "gateVersion", "decisionSnapshot", "actorType")
+             VALUES ($1, 'EQUIPMENT_BLOCK', $2, '[]'::jsonb, 'v1', 'null'::jsonb, 'SYSTEM')`,
+            id,
+            equipmentId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects reasons stored as a JSON object instead of an array via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "SafetyEvent" (id, kind, "equipmentId", reasons, "gateVersion", "decisionSnapshot", "actorType")
+             VALUES ($1, 'EQUIPMENT_BLOCK', $2, '{}'::jsonb, 'v1', '{}'::jsonb, 'SYSTEM')`,
+            id,
+            equipmentId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects decisionSnapshot stored as a JSON array instead of an object via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "SafetyEvent" (id, kind, "equipmentId", reasons, "gateVersion", "decisionSnapshot", "actorType")
+             VALUES ($1, 'EQUIPMENT_BLOCK', $2, '[]'::jsonb, 'v1', '[]'::jsonb, 'SYSTEM')`,
+            id,
+            equipmentId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('accepts an empty reasons array and an empty decisionSnapshot object (the valid "nothing to report" shape)', async () => {
+        const evt = await prisma.safetyEvent.create({
+          data: { kind: 'EQUIPMENT_PASS', equipmentId, gateVersion: 'v1', reasons: [], decisionSnapshot: {}, actorType: 'SYSTEM' },
+        });
+        expect(evt.reasons).toEqual([]);
+        expect(evt.decisionSnapshot).toEqual({});
+      });
+    });
+
     it('remains append-only: rejects UPDATE and DELETE', async () => {
       const evt = await prisma.safetyEvent.create({
         data: { kind: 'EQUIPMENT_BLOCK', equipmentId, gateVersion: 'v1', decisionSnapshot: {}, actorType: 'SYSTEM' },
@@ -298,6 +364,65 @@ describe('Phase 0A-R1 database constraints', () => {
             },
           }),
         ).rejects.toThrow();
+      });
+
+      describe('review-correction: the event must match the real Document version chain', () => {
+        it('rejects DOCUMENT_SUPERSEDED when newDocument.previousVersionId does not point at previousDocumentId (unrelated documents)', async () => {
+          const unrelatedOld = await prisma.document.create({ data: { name: 'unrelated-old.pdf' } });
+          // newDoc has no previousVersionId at all — it does not supersede anything.
+          const newDoc = await prisma.document.create({ data: { name: 'standalone-new.pdf' } });
+          await expect(
+            prisma.safetyEvent.create({
+              data: {
+                kind: 'DOCUMENT_SUPERSEDED',
+                previousDocumentId: unrelatedOld.id,
+                newDocumentId: newDoc.id,
+                gateVersion: 'v1',
+                decisionSnapshot: {},
+                actorType: 'SYSTEM',
+              },
+            }),
+          ).rejects.toThrow();
+        });
+
+        it('rejects DOCUMENT_SUPERSEDED when newDocument.previousVersionId points at a THIRD document, not the stated previousDocumentId', async () => {
+          const realPrevious = await prisma.document.create({ data: { name: 'real-previous.pdf' } });
+          const decoyPrevious = await prisma.document.create({ data: { name: 'decoy-previous.pdf' } });
+          const newDoc = await prisma.document.create({
+            data: { name: 'actually-supersedes-real.pdf', previousVersionId: realPrevious.id },
+          });
+          // Claim the decoy was superseded, when the Document chain actually says realPrevious was.
+          await expect(
+            prisma.safetyEvent.create({
+              data: {
+                kind: 'DOCUMENT_SUPERSEDED',
+                previousDocumentId: decoyPrevious.id,
+                newDocumentId: newDoc.id,
+                gateVersion: 'v1',
+                decisionSnapshot: {},
+                actorType: 'SYSTEM',
+              },
+            }),
+          ).rejects.toThrow();
+        });
+
+        it('accepts DOCUMENT_SUPERSEDED when newDocument.previousVersionId genuinely equals previousDocumentId', async () => {
+          const previous = await prisma.document.create({ data: { name: 'genuine-previous.pdf' } });
+          const newDoc = await prisma.document.create({
+            data: { name: 'genuine-new.pdf', previousVersionId: previous.id },
+          });
+          const evt = await prisma.safetyEvent.create({
+            data: {
+              kind: 'DOCUMENT_SUPERSEDED',
+              previousDocumentId: previous.id,
+              newDocumentId: newDoc.id,
+              gateVersion: 'v1',
+              decisionSnapshot: {},
+              actorType: 'SYSTEM',
+            },
+          });
+          expect(evt.id).toBeDefined();
+        });
       });
     });
   });
@@ -473,6 +598,209 @@ describe('Phase 0A-R1 database constraints', () => {
       expect(replacement.previousVersionId).toBe(original.id);
       expect('supersededAt' in replacement).toBe(false);
     });
+
+    describe('review-correction: supersession context — previousVersionId must stay in the same project/jobcard', () => {
+      it('rejects supersession across two different projects', async () => {
+        const otherCustomer = await prisma.customer.create({ data: { no: `IT-C2-${Date.now()}`, name: 'Other Co', status: 'ACTIVE' } });
+        const otherProject = await prisma.project.create({ data: { no: `IT-P2-${Date.now()}`, customerId: otherCustomer.id, name: 'Other Project' } });
+        const original = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-XPROJ-${Date.now()}-orig`,
+            projectId,
+            result: 'NOT_RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v1',
+            gateResultSnapshot: {},
+          },
+        });
+        await expect(
+          prisma.qualityRelease.create({
+            data: {
+              no: `IT-REL-XPROJ-${Date.now()}-new`,
+              projectId: otherProject.id,
+              result: 'RELEASED',
+              decisionActorType: 'SYSTEM',
+              decidedAt: new Date(),
+              gateVersion: 'v2',
+              gateResultSnapshot: {},
+              previousVersionId: original.id,
+            },
+          }),
+        ).rejects.toThrow();
+      });
+
+      it('rejects supersession across two different jobcards within the same project', async () => {
+        const otherJobcard = await prisma.jobcard.create({ data: { no: `IT-J2-${Date.now()}`, projectId } });
+        const original = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-XJOB-${Date.now()}-orig`,
+            projectId,
+            jobcardId,
+            result: 'NOT_RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v1',
+            gateResultSnapshot: {},
+          },
+        });
+        await expect(
+          prisma.qualityRelease.create({
+            data: {
+              no: `IT-REL-XJOB-${Date.now()}-new`,
+              projectId,
+              jobcardId: otherJobcard.id,
+              result: 'RELEASED',
+              decisionActorType: 'SYSTEM',
+              decidedAt: new Date(),
+              gateVersion: 'v2',
+              gateResultSnapshot: {},
+              previousVersionId: original.id,
+            },
+          }),
+        ).rejects.toThrow();
+      });
+
+      it('rejects supersession where the previous release has a jobcard but the new one has none', async () => {
+        const original = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-NULLJOB-${Date.now()}-orig`,
+            projectId,
+            jobcardId,
+            result: 'NOT_RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v1',
+            gateResultSnapshot: {},
+          },
+        });
+        await expect(
+          prisma.qualityRelease.create({
+            data: {
+              no: `IT-REL-NULLJOB-${Date.now()}-new`,
+              projectId,
+              // jobcardId omitted — mismatches the original's jobcardId
+              result: 'RELEASED',
+              decisionActorType: 'SYSTEM',
+              decidedAt: new Date(),
+              gateVersion: 'v2',
+              gateResultSnapshot: {},
+              previousVersionId: original.id,
+            },
+          }),
+        ).rejects.toThrow();
+      });
+
+      it('accepts supersession within the same project and the same jobcard', async () => {
+        const original = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-OK-${Date.now()}-orig`,
+            projectId,
+            jobcardId,
+            result: 'NOT_RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v1',
+            gateResultSnapshot: {},
+          },
+        });
+        const replacement = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-OK-${Date.now()}-new`,
+            projectId,
+            jobcardId,
+            result: 'RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v2',
+            gateResultSnapshot: {},
+            previousVersionId: original.id,
+          },
+        });
+        expect(replacement.previousVersionId).toBe(original.id);
+      });
+
+      it('accepts supersession within the same project when both releases have no jobcard', async () => {
+        const original = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-OKNULL-${Date.now()}-orig`,
+            projectId,
+            result: 'NOT_RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v1',
+            gateResultSnapshot: {},
+          },
+        });
+        const replacement = await prisma.qualityRelease.create({
+          data: {
+            no: `IT-REL-OKNULL-${Date.now()}-new`,
+            projectId,
+            result: 'RELEASED',
+            decisionActorType: 'SYSTEM',
+            decidedAt: new Date(),
+            gateVersion: 'v2',
+            gateResultSnapshot: {},
+            previousVersionId: original.id,
+          },
+        });
+        expect(replacement.previousVersionId).toBe(original.id);
+      });
+    });
+
+    describe('review-correction: gateResultSnapshot/blockingReasons must be the right JSON shape, not just non-SQL-NULL', () => {
+      it('rejects a JSON `null` (not SQL NULL) gateResultSnapshot value via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "QualityRelease" (id, no, "projectId", result, "decisionActorType", "decidedAt", "gateVersion", "gateResultSnapshot", "blockingReasons")
+             VALUES ($1, $2, $3, 'NOT_RELEASED', 'SYSTEM', now(), 'v1', 'null'::jsonb, '[]'::jsonb)`,
+            id,
+            `IT-REL-JSONNULL-${Date.now()}`,
+            projectId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects a JSON `null` (not SQL NULL) blockingReasons value via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "QualityRelease" (id, no, "projectId", result, "decisionActorType", "decidedAt", "gateVersion", "gateResultSnapshot", "blockingReasons")
+             VALUES ($1, $2, $3, 'NOT_RELEASED', 'SYSTEM', now(), 'v1', '{}'::jsonb, 'null'::jsonb)`,
+            id,
+            `IT-REL-JSONNULL2-${Date.now()}`,
+            projectId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects gateResultSnapshot stored as a JSON array instead of an object via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "QualityRelease" (id, no, "projectId", result, "decisionActorType", "decidedAt", "gateVersion", "gateResultSnapshot", "blockingReasons")
+             VALUES ($1, $2, $3, 'NOT_RELEASED', 'SYSTEM', now(), 'v1', '[]'::jsonb, '[]'::jsonb)`,
+            id,
+            `IT-REL-WRONGTYPE-${Date.now()}`,
+            projectId,
+          ),
+        ).rejects.toThrow();
+      });
+
+      it('rejects blockingReasons stored as a JSON object instead of an array via raw SQL', async () => {
+        const id = crypto.randomUUID();
+        await expect(
+          prisma.$executeRawUnsafe(
+            `INSERT INTO "QualityRelease" (id, no, "projectId", result, "decisionActorType", "decidedAt", "gateVersion", "gateResultSnapshot", "blockingReasons")
+             VALUES ($1, $2, $3, 'NOT_RELEASED', 'SYSTEM', now(), 'v1', '{}'::jsonb, '{}'::jsonb)`,
+            id,
+            `IT-REL-WRONGTYPE2-${Date.now()}`,
+            projectId,
+          ),
+        ).rejects.toThrow();
+      });
+    });
   });
 
   describe('Blocker 5 / review-correction: QualityHold lifecycle consistency', () => {
@@ -640,6 +968,100 @@ describe('Phase 0A-R1 database constraints', () => {
       await expect(
         prisma.qualityHold.update({ where: { id: hold.id }, data: { releaseReason: 'changed my mind' } }),
       ).rejects.toThrow();
+    });
+
+    describe('review-correction: full identity immutability — a hold can never be retargeted or reassigned', () => {
+      it('allows updatedAt/version-only changes while ACTIVE (technical fields stay free)', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-ctrl`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        const updated = await prisma.qualityHold.update({ where: { id: hold.id }, data: { version: { increment: 1 } } });
+        expect(updated.version).toBe(hold.version + 1);
+      });
+
+      it('rejects changing `no` while ACTIVE', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-no`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { no: `IT-H-IMM-CHANGED-${Date.now()}` } })).rejects.toThrow();
+      });
+
+      it('rejects retargeting a JOBCARD-scoped hold to a different jobcardId while ACTIVE', async () => {
+        const otherJobcard = await prisma.jobcard.create({ data: { no: `IT-J-IMM-${Date.now()}`, projectId } });
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-jc`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { jobcardId: otherJobcard.id } })).rejects.toThrow();
+      });
+
+      it('rejects retargeting a PROJECT-scoped hold to a different projectId while ACTIVE', async () => {
+        const otherCustomer = await prisma.customer.create({ data: { no: `IT-C-IMM-${Date.now()}`, name: 'Imm Co', status: 'ACTIVE' } });
+        const otherProject = await prisma.project.create({ data: { no: `IT-P-IMM-${Date.now()}`, customerId: otherCustomer.id, name: 'Imm Project' } });
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-proj`, scope: 'PROJECT', projectId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { projectId: otherProject.id } })).rejects.toThrow();
+      });
+
+      it('rejects changing scope while ACTIVE', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-scope`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { scope: 'PROJECT', projectId } })).rejects.toThrow();
+      });
+
+      it('rejects changing ncrId while ACTIVE', async () => {
+        const ncr = await prisma.qualityNcr.create({ data: { no: `IT-NCR-IMM-${Date.now()}`, title: 't', category: 'PROCESS', severity: 'MINOR' } });
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-ncr`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { ncrId: ncr.id } })).rejects.toThrow();
+      });
+
+      it('rejects reassigning appliedActorType/appliedById (claiming a different applying actor) while ACTIVE', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-actor`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(
+          prisma.qualityHold.update({ where: { id: hold.id }, data: { appliedActorType: 'USER', appliedById: userId } }),
+        ).rejects.toThrow();
+      });
+
+      it('rejects changing appliedAt while ACTIVE', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-appliedAt`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date('2026-01-01') },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { appliedAt: new Date('2026-06-01') } })).rejects.toThrow();
+      });
+
+      it('rejects changing createdAt while ACTIVE', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-createdAt`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { createdAt: new Date('2020-01-01') } })).rejects.toThrow();
+      });
+
+      it('rejects EVERY update once RELEASED, including identity fields', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-rel1`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await prisma.qualityHold.update({
+          where: { id: hold.id },
+          data: { status: 'RELEASED', releasedActorType: 'SYSTEM', releasedAt: new Date(), releaseReason: 'fixed', releaseEvidenceRef: 'ref' },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { no: `IT-H-IMM-RENAMED-${Date.now()}` } })).rejects.toThrow();
+      });
+
+      it('rejects EVERY update once RELEASED, even a pure technical version bump', async () => {
+        const hold = await prisma.qualityHold.create({
+          data: { no: `IT-H-IMM-${Date.now()}-rel2`, scope: 'JOBCARD', jobcardId, appliedActorType: 'SYSTEM', appliedAt: new Date() },
+        });
+        await prisma.qualityHold.update({
+          where: { id: hold.id },
+          data: { status: 'RELEASED', releasedActorType: 'SYSTEM', releasedAt: new Date(), releaseReason: 'fixed', releaseEvidenceRef: 'ref' },
+        });
+        await expect(prisma.qualityHold.update({ where: { id: hold.id }, data: { version: { increment: 1 } } })).rejects.toThrow();
+      });
     });
   });
 

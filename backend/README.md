@@ -56,6 +56,26 @@ talks to the database directly (no Nest bootstrap) specifically to prove the han
 constraints below actually work; run it against a freshly-migrated database before any release
 that touches `prisma/schema.prisma` or the migration.
 
+## Cold-install test timing (Phase 0A-R1 final integrity pass)
+
+Earlier reports in this project's history noted "known cold-cache Vitest flakiness" on `npm test`
+without root-causing it. Investigated properly: a fresh `npm ci` writes a large `node_modules`
+tree, and the *first* process to read through it (Node module resolution, TypeScript's project
+scan, Vite's own file-system work) pays real first-access disk I/O + antivirus-scan cost on
+Windows that can exceed Vitest's 10s default `hookTimeout`, even though the test itself completes
+in well under a second once the files are warm in the OS cache.
+
+This is **not** Vite's own dependency-pre-bundling cache: clearing only `node_modules/.vite`
+while leaving the rest of `node_modules` warm on disk did not reproduce the slowdown (717ms, same
+as a normal warm run) — isolating the cause to the freshly-written `node_modules` tree itself, not
+anything Vite-internal.
+
+Fix: `hookTimeout`/`testTimeout` raised to 30000ms in all three `vitest.config*.ts` files. This
+costs nothing on a warm run (real test time is ~130ms) and absorbs the one-time cold-start cost
+completely. Verified reproducible: 5 separate `rm -rf node_modules && npm ci` cycles in this pass,
+each immediately followed by `npm test` — every run passed, cold durations ranging 10.0s–24.4s
+(all comfortably under the new 30s ceiling, none anywhere near the old 10s one).
+
 ## Database protections that are not expressed in schema.prisma
 
 Prisma's schema language cannot express every constraint this project's database rules require —
@@ -95,6 +115,18 @@ Prisma-generated DDL, and are exercised by `npm run test:integration`:
    actual `Document` rows involved. `previousDocumentId`/`newDocumentId` fix that — this kind no
    longer touches `equipmentId`/`qualityHoldId`/`qualityReleaseId` at all.
 
+   *Phase 0A-R1 final integrity pass, two further gaps*: (a) the CHECK above only proved
+   `previousDocumentId`/`newDocumentId` were two different, real `Document` rows — it never
+   proved the new document actually supersedes the stated previous one. A `BEFORE INSERT` trigger
+   (`safety_event_document_supersession_check()` — a cross-row lookup a CHECK constraint cannot
+   perform) now rejects any `DOCUMENT_SUPERSEDED` event where
+   `newDocument.previousVersionId <> previousDocumentId`. (b) `gateVersion` gained the same
+   non-blank CHECK QualityRelease already had (`SafetyEvent_gateVersion_normalized` — an oversight
+   in the prior pass); `reasons`/`decisionSnapshot` gained `jsonb_typeof` CHECKs
+   (`SafetyEvent_reasons_is_array`, `SafetyEvent_decisionSnapshot_is_object`) — plain `NOT NULL`
+   accepts the JSONB value `null`, which is not valid evidence; these reject both JSON `null` and
+   any wrong type.
+
 3. **`QualityRelease.previousVersionId` and `Document.previousVersionId` cannot reference their
    own row.** A `CHECK` constraint on each (`previousVersionId IS NULL OR previousVersionId <>
    id`). This is only the one-hop case of Decision 8's cycle-prevention requirement. Full
@@ -121,6 +153,18 @@ Prisma-generated DDL, and are exercised by `npm run test:integration`:
    JSON blob — deliberately left to the future Phase 0B `ReleaseGateService` rather than a brittle
    SQL check, per instruction.
 
+   *Phase 0A-R1 final integrity pass, two further gaps*: (a) `gateResultSnapshot`/
+   `blockingReasons` gained `jsonb_typeof` CHECKs (`QualityRelease_gateResultSnapshot_is_object`,
+   `QualityRelease_blockingReasons_is_array`) — plain `NOT NULL` accepts the JSONB value `null`,
+   which is not valid evidence; these reject both JSON `null` and any wrong type (an empty array
+   is still valid; a `null` or an array-instead-of-object is not). (b) `previousVersionId` only
+   ever guaranteed the chain doesn't reference itself — it never checked that the release being
+   superseded actually belongs to the same Project/Jobcard. A `BEFORE INSERT` trigger
+   (`quality_release_supersession_context_check()` — a cross-row lookup a CHECK constraint cannot
+   perform) now rejects any new release whose `previousVersionId` points at a release with a
+   different `projectId`, or a `jobcardId` that doesn't match exactly (including NULL-vs-NULL) —
+   a QualityRelease can never be superseded across Project or Jobcard boundaries.
+
 5. **`QualityHold` target-scope integrity.** A CHECK constraint (`QualityHold_valid_target`)
    enforces that `PROJECT` scope requires `projectId` and forbids `jobcardId`, and `JOBCARD` scope
    requires `jobcardId` and forbids `projectId` — a hold can never exist without a valid target.
@@ -139,14 +183,25 @@ Prisma-generated DDL, and are exercised by `npm run test:integration`:
    incomplete facts, and equally impossible to populate any release field while `status` is still
    `ACTIVE` (via either INSERT or UPDATE — a CHECK constraint applies to both).
 
-   A narrower trigger than #1 above: the `ACTIVE -> RELEASED` transition itself is a legitimate,
-   required UPDATE (unlike SafetyEvent, QualityRelease and AuditLog, which are insert-only from the
-   start), but once `status` is `RELEASED`, a trigger (`quality_hold_release_immutable()`) rejects
-   any further change to `status` or any release field (including `releasedActorType`) on that row.
-   The full historical apply/release trail is additionally recorded, unconditionally immutably, in
-   `SafetyEvent` (kind `HOLD_APPLY` / `HOLD_RELEASE`).
+   The full historical apply/release trail is additionally recorded, unconditionally immutably,
+   in `SafetyEvent` (kind `HOLD_APPLY` / `HOLD_RELEASE`).
 
-   A note on writing these two CHECK constraints (and the analogous ones on QualityRelease/
+   *Phase 0A-R1 final integrity pass — full identity and lifecycle immutability.* The prior
+   trigger (`quality_hold_release_immutable()`) only locked the five release-fact fields once
+   `RELEASED`; it still let `no`, `scope`, `projectId`, `jobcardId`, `ncrId`, `appliedActorType`,
+   `appliedById` and `appliedAt` change freely at any time — an existing safety hold could be
+   silently retargeted to a different Project/Jobcard, or made to claim a different applying
+   actor. Replaced with `quality_hold_immutability()`, which enforces two rules: (a) once `status`
+   is `RELEASED`, **every** UPDATE to the row is rejected, full stop — the same terminal
+   immutability as SafetyEvent/QualityRelease/AuditLog, just reached via one legitimate prior
+   UPDATE instead of being insert-only from creation; (b) while `ACTIVE`, nine columns — `no`,
+   `scope`, `projectId`, `jobcardId`, `ncrId`, `appliedActorType`, `appliedById`, `appliedAt`,
+   `createdAt` — can never change under any circumstance, regardless of what else is being
+   updated. `updatedAt`/`version` remain free to change while `ACTIVE` (technical bookkeeping, not
+   safety state); the `ACTIVE -> RELEASED` transition itself is governed entirely by
+   `QualityHold_release_fields_consistency` above, which this trigger does not duplicate.
+
+   A note on writing these CHECK constraints (and the analogous ones on QualityRelease/
    SafetyEvent): **a Postgres CHECK expression that evaluates to NULL is treated as *satisfied*,
    not failed.** A naive `length(btrim(releaseReason)) > 0` on a nullable column would silently
    pass when `releaseReason` is NULL (`btrim(NULL)` is NULL, and `NULL > 0` is NULL, not FALSE).
