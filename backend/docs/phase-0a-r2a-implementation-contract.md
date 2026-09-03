@@ -1,496 +1,622 @@
 # Phase 0A-R2A Implementation Contract
 
-Design-only. Resolves thirteen specific inconsistencies identified during independent review of
-the *Phase 0A-R2 Gap Analysis — Review Correction*. That document's ten binding decisions and
-overall direction are accepted; this contract makes the identity/access/document-security
-schema design in M2 and M4 internally consistent and precise enough to actually implement.
+Design-only. This revision corrects eight further issues found on independent review of the prior
+contract (commit `c17839c5bc0fca4616f83ebeb0e77f24578d3fdb`) — most critically, an algorithm error
+that would have let a Worker/Supervisor role silently reach company-wide row access, violating
+Decision 9. This document fully replaces the prior contract's content; nothing below should be
+read as a diff against it.
 
 **Branch:** `r2-design-review` (this document only; `backend-foundation`/`main` untouched)
 **Parent for this analysis:** `backend-foundation` @ `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87`
-**Prior commit on this branch:** `bd11f6c490ff7f6e591ca268f3e485a26583af38`
+**Prior commits on this branch:** `bd11f6c490ff7f6e591ca268f3e485a26583af38`,
+`c17839c5bc0fca4616f83ebeb0e77f24578d3fdb` (neither amended by this revision)
 
 ---
 
-## 1. Permission catalogue and access-package versioning
+## 0. What this revision corrects
 
-**Resolved design.** `UserPermissionGrant.permissionId` is a real FK to the existing `Permission`
-table (Decision 4, already schema-approved — `Permission.key`, e.g. `"quality.release.execute"`,
-is the one controlled vocabulary). No `moduleKey`/`action` string pair is added anywhere —
-that would have duplicated `Permission.key` with a second, uncontrolled representation of the
-same fact.
-
-**New models:**
-- `AccessPackage` — stable identity only: `id`, `name`, `description`, `createdAt`. Never joined
-  at authorization-check time.
-- `AccessPackageVersion` — `accessPackageVersionId` PK, `accessPackageId` FK, `versionNumber Int`,
-  `createdById` FK, `createdAt`, `publishedAt` (nullable while draft). **Immutable after
-  publication**: a `BEFORE UPDATE/DELETE` trigger rejects any change once `publishedAt IS NOT
-  NULL` — the same conditional-immutability pattern already proven for `QualityHold`'s
-  release-fact lock in Phase 0A-R1 (lock activates on a state transition, not from row creation).
-  A draft version (`publishedAt IS NULL`) may be freely edited/deleted before publication.
-- `AccessPackagePermissionTemplate` — `accessPackageVersionId` FK, `permissionId` FK,
-  `scopeKind` (§2), `siteId`/`teamId` nullable per the same scope-consistency CHECK as
-  `UserPermissionGrant`. Template rows for module/record permissions.
-- `AccessPackageDocumentClassificationTemplate` — `accessPackageVersionId` FK, `classification`
-  (§7's enum), `action` (`DocumentGrantAction`, §7). Template rows for document-classification
-  defaults — added here because §7 removes the ordinal "clearance ceiling" a package could
-  previously grant in one field; a package now templates explicit `(classification, action)`
-  pairs instead, materializing into real `DocumentPermissionGrant`/`DocumentPermissionGrantAction`
-  rows exactly like the module-permission templates do.
-- `UserAccessPackageAssignment` — `userId` FK, `accessPackageVersionId` FK, `assignedById` FK,
-  `reason`, `validFrom`, `validTo` nullable, `revokedAt` nullable, `revokedById` nullable,
-  `createdAt`.
-
-**Materialization and provenance.** Assigning a package version is a first-class event
-(`UserAccessPackageAssignment` row), not a template read. It writes one `UserPermissionGrant` row
-per `AccessPackagePermissionTemplate` row and one `DocumentPermissionGrant` (+
-`DocumentPermissionGrantAction`) row per `AccessPackageDocumentClassificationTemplate` row, each
-carrying `sourceAssignmentId` (a real FK to the `UserAccessPackageAssignment` that produced it —
-not a loose pointer at the mutable template).
-
-**Revocation scope.** Revoking one `UserAccessPackageAssignment` must revoke only the grants it
-sourced. This is enforced, not merely conventional: a `BEFORE UPDATE` trigger on
-`UserAccessPackageAssignment` — when `revokedAt` transitions from NULL to non-NULL — cascades
-`revokedAt`/`revokedById` onto every `UserPermissionGrant` and `DocumentPermissionGrant` row whose
-`sourceAssignmentId` matches, in the same statement. Grants from a *different* assignment (or
-created ad-hoc, with `sourceAssignmentId IS NULL`) are untouched. This is a legitimate
-cross-row-effect trigger, the same class of mechanism already used for the SafetyEvent
-document-supersession check in Phase 0A-R1.
-
-**Role/UserRole/RolePermission.** Stays fully separate — no non-drifting provenance design is
-attempted here, and none is needed for R2A. `UserRole`/`RolePermission` (Decision 4, Phase 0A) is
-an independent, pre-existing, **unscoped** authority path: it predates row-scope entirely and was
-never designed to carry it. `UserPermissionGrant` is a second, independent, **scoped** authority
-path. Both are checked in the effective-authorization algorithm (§2) as alternatives — a
-permission is granted if *either* path yields it — rather than one being silently folded into or
-deprecated by the other. Whether `Role`/`UserRole` should eventually be retired in favor of
-package-only grants is a genuine Phase 0B+ product decision, not resolved here, and not needed to
-be resolved for R2A's schema to be internally consistent.
+1. **CRITICAL** — the effective-authorization algorithm no longer treats `RolePermission` as
+   implicit `COMPANY` scope. Row scope is now always separately, mandatorily resolved regardless
+   of which path established permission eligibility.
+2. Published-package immutability now covers the template child rows, not only the version
+   header.
+3. The R2A-2 → R2A-3 forward reference is removed: `AccessPackageDocumentClassificationTemplate`
+   moves to R2A-3, alongside the model it targets.
+4. Every R2A-1 model now has a complete, final field inventory — types, nullability, defaults,
+   FKs, unique constraints, indexes, and lifecycle CHECKs.
+5. MFA relational integrity (one TOTP credential per TOTP enrollment, many WebAuthn credentials
+   with globally-unique IDs, no cross-method references) is now specified with real constraints.
+6. The migration-strategy contradiction is resolved: one strategy, stated once, referenced
+   everywhere.
+7. Document-security edge cases (multi-linked documents, unlinked documents, derivative
+   inheritance, provenance mutual exclusivity, a real cryptographic device identifier) are now
+   each resolved with one explicit rule.
+8. Acceptance-criteria test lists are expanded to cover every new constraint introduced by this
+   revision.
 
 ---
 
-## 2. Corrected ASSIGNED row-scope semantics
+## 1. CRITICAL — the corrected effective-authorization algorithm
 
-**Corrected `UserPermissionGrant` scope shape.** Two typed FK columns only: `siteId`, `teamId`.
-`projectId`/`jobcardId` are removed entirely from this table — specific project/jobcard
-authorization is never a property of a general grant; it flows exclusively through the existing
-typed assignment tables from Decision 9 (`SupervisorProjectAssignment`,
-`SupervisorJobcardAssignment`, `JobcardWorker`, `JobcardOperation.assignedUserId`).
+**The error being corrected:** the prior contract said an unscoped `UserRole → RolePermission`
+match should be "treated as `COMPANY` scope by definition." This is wrong and is withdrawn — it
+would give any user whose Role includes a given Permission full company-wide row access to every
+record that permission touches, the instant that Role is assigned, with no Decision-9 assignment
+fact required at all. For a Workshop Worker or Supervisor role, that is a direct violation of
+Decision 9's row-scope model.
 
-`scopeKind{OWN,ASSIGNED,TEAM,SITE,COMPANY}` with a CHECK constraint:
-- `OWN` / `ASSIGNED` / `COMPANY` ⇒ `siteId IS NULL AND teamId IS NULL`.
-- `TEAM` ⇒ `teamId IS NOT NULL AND siteId IS NULL`.
-- `SITE` ⇒ `siteId IS NOT NULL AND teamId IS NULL`.
+**The fix separates two questions that were previously conflated:** *is this action in the user's
+toolkit at all* (permission **eligibility**) is a different question from *which rows can they use
+it on* (row **scope**), and the two must never be resolved by the same fact. `RolePermission` may
+answer the first question. It never, by itself, answers the second.
 
-No `scopeType`/`scopeId` polymorphic column exists anywhere in this design.
+### Corrected algorithm
 
-**What each scope kind means, precisely:**
-- `OWN` — records where the target record's own designated "owner" field (module-specific, e.g.
-  `Estimation.ownerId`) equals the authenticated user.
-- `ASSIGNED` — records dynamically reachable through an approved typed assignment table for the
-  authenticated user (`JobcardWorker`, `JobcardOperation.assignedUserId`,
-  `SupervisorProjectAssignment`, `SupervisorJobcardAssignment`, and any future table of the same
-  kind) — computed at query time by joining against those tables, never by a static FK stored on
-  the grant.
-- `TEAM` — the record's owning Team (resolved per-module — e.g. via the record's Project/Jobcard
-  → Site → Team path, or a direct Team link where one exists) equals `grant.teamId`, **and** the
-  requesting user currently holds an active `TeamMembership` in that team (defense in depth: the
-  grant names a team, but the user must also currently belong to it).
-- `SITE` — the record's Site equals `grant.siteId`.
-- `COMPANY` — always passes.
+1. `User.approvalStatus = ACTIVE`. Otherwise deny immediately.
+2. **Permission eligibility.** The user is eligible for `Permission.key` if *either* (a) an active
+   `UserRole → RolePermission` chain names it, *or* (b) a currently-valid, non-revoked
+   `UserPermissionGrant` names it. If neither, deny — no scope check is even attempted.
+3. **Row-scope resolution — mandatory, and independent of which path in step 2 supplied
+   eligibility.** Compute the set of scope facts that apply to this user for this permission/
+   module as the **union** of:
+   - Every currently-valid, non-revoked `UserPermissionGrant` naming this permission, contributing
+     its own `scopeKind` (`OWN`, `ASSIGNED`, `TEAM`+`teamId`, `SITE`+`siteId`, or `COMPANY`).
+     **`COMPANY` is contributed *only* by an explicit `UserPermissionGrant` row with
+     `scopeKind='COMPANY'` — never inferred from Role membership, and never inferred from
+     unioning smaller scopes.**
+   - The Decision-9 native assignment facts, **always** additionally consulted regardless of which
+     path supplied eligibility: active `TeamMembership` rows (→ `TEAM` scope for that team);
+     `SupervisorSiteAssignment` / `SupervisorTeamAssignment` / `SupervisorProjectAssignment` /
+     `SupervisorJobcardAssignment` rows (→ `SITE` / `TEAM` / `ASSIGNED`-project /
+     `ASSIGNED`-jobcard scope respectively); `JobcardWorker` / `JobcardOperation.assignedUserId`
+     rows (→ `ASSIGNED` scope). This is exactly how a Workshop Worker or Supervisor's access is
+     computed, and it applies whether their permission eligibility came from a Role or a grant —
+     there is no separate "Role users get one algorithm, grant users get another."
+   - **If this union is empty — no scope-granting fact exists at all for this user and this
+     permission — deny, even though step 2 passed.** This is the specific fix: a Role granting
+     eligibility with zero accompanying Decision-9 assignment facts and zero accompanying
+     `UserPermissionGrant` now yields access to *no* rows, not every row.
+   - Multiple roles and multiple grants each contribute their own scope fact to the same union —
+     "multi-role results union allowed scopes" — but since `COMPANY` is only ever contributed by
+     one specific, explicit grant row, no combination of smaller scopes (however many) can ever
+     produce it by accident.
+4. The requested record must match **at least one** scope fact from the step-3 union: `OWN` ⇒
+   the record's owner field equals the user; `ASSIGNED` ⇒ the record is reachable through one of
+   the listed assignment tables for this user; `TEAM` ⇒ the record's team is among the `TEAM`
+   facts; `SITE` ⇒ the record's site is among the `SITE` facts; `COMPANY` ⇒ always matches, for any
+   record, once contributed.
+5. Document operations additionally require the document action/classification check (§6) —
+   independent of, and required in addition to, steps 2–4.
+6. If the winning grant(s) carry `requiresTrustedDevice` and/or `requiresMfa` (with an optional
+   `stepUpMaxAgeSeconds` freshness window), the corresponding evidence (§4 of the prior contract's
+   MFA design, §6 below for documents) must be present and current.
+7. Otherwise: deny. Default-deny, no exceptions, in every branch above.
 
-**Effective-authorization algorithm** (server-computed, every request):
-1. `User.approvalStatus = ACTIVE`. Otherwise deny immediately — this single check is also why a
-   `SUSPENDED` user's retained historical grant rows are inert (§3): nothing downstream of this
-   step is ever reached for a non-`ACTIVE` user.
-2. The user holds the required `Permission` through an approved authority path: **either** (a) an
-   active `UserRole` → `RolePermission` chain naming this `Permission.key` (unscoped — treated as
-   `COMPANY` scope by definition, matching how Role/Permission has always behaved since Decision
-   4, since no row-scope concept was ever attached to it), **or** (b) a currently-valid
-   (`validFrom ≤ now ≤ validTo` or `validTo IS NULL`), non-revoked `UserPermissionGrant` naming
-   this `Permission.key` (this path also supplies the scope used in step 3).
-3. The requested record passes server-computed row scope per whichever grant(s) yielded the
-   permission in step 2 (the five scope-kind rules above; the unscoped Role path is `COMPANY` and
-   always passes this step).
-4. For document operations specifically: the request must **additionally** pass document
-   action/classification policy (§7) — module/record permission and document permission are two
-   independent checks, both required, never substitutable for each other.
-5. If the matching grant carries `requiresTrustedDevice` and/or `requiresMfa`
-   (with an optional `stepUpMaxAgeSeconds` freshness window), the corresponding trusted-device
-   (§11) and/or step-up MFA (§5) evidence must be present and current.
-6. Otherwise: deny. Default-deny, no exceptions.
+**This is the complete, final algorithm design for R2A** — not a placeholder and not deferred to a
+Phase 0B product decision. What remains for Phase 0B is exclusively *executing* this
+already-fully-specified algorithm against live HTTP requests (the AuthGuard implementation),
+never *designing* it.
 
----
-
-## 3. Database protection for pending users
-
-**Triggers rejecting creation for `PENDING_APPROVAL`/`REJECTED` users**, each a `BEFORE INSERT`
-trigger on the target table that looks up `NEW.userId`'s `User.approvalStatus` and raises an
-exception if it is `PENDING_APPROVAL` or `REJECTED`:
-- `UserRole`
-- `UserPermissionGrant`
-- `DocumentPermissionGrant`
-
-**`UserSession` gets a broader trigger** — `BEFORE INSERT`, rejecting `PENDING_APPROVAL`,
-`REJECTED`, **and** `SUSPENDED` (three states, not two) — matching the explicit requirement that
-new sessions must be rejected for suspended users too, distinct from the three grant-adjacent
-tables above (a `SUSPENDED` user's *existing* rows are retained, and an administrator may still
-need to adjust their grants in preparation for reinstatement without that implying they can log
-in).
-
-**Activation requires `emailVerifiedAt`.** Same-row CHECK constraint on `User` — both columns
-live on the same table, so this is directly CHECK-expressible, no trigger needed:
-`CHECK (approvalStatus <> 'ACTIVE' OR emailVerifiedAt IS NOT NULL)`. A row cannot be `ACTIVE`
-without a non-null `emailVerifiedAt`, enforced unconditionally at the database layer.
-
-**`SUSPENDED` users:**
-- Historical `UserRole`/`UserPermissionGrant`/`DocumentPermissionGrant` rows are **not** deleted
-  or revoked by suspension itself — they remain as a factual record.
-- They become unusable purely as a consequence of algorithm step 1 (§2): a non-`ACTIVE` user never
-  reaches the grant-checking steps at all. No separate "mark grants unusable" mechanism is needed
-  or added.
-- Revoking active sessions on suspension is a Phase 0B **service-layer transaction** (flip
-  `approvalStatus` to `SUSPENDED` and set `revokedAt` on every active `UserSession` for that user,
-  atomically) — not a database trigger, since "suspend a user" is an application-initiated,
-  multi-row operation, not a fact derivable from a single row's own state transition.
-- New sessions are rejected by the `UserSession` trigger above.
-
-**Database-enforced vs. Phase 0B tests — explicit split for this section:**
-- *Database-enforced (R2A):* the `CHECK` rejects setting `approvalStatus='ACTIVE'` with a null
-  `emailVerifiedAt`; the four triggers reject row creation for the disallowed states.
-- *Phase 0B only:* that a suspension request actually revokes sessions transactionally; that the
-  AuthGuard actually refuses a request carrying a suspended user's still-valid-looking session
-  token.
+`RolePermission` retains a real, legitimate purpose under this design: a coarse "is this action
+available to this role at all" gate, useful for UI feature-flagging and administrative bulk
+assignment — but it is now structurally incapable of granting row access on its own, in every
+case, for every role, without exception.
 
 ---
 
-## 4. Registration and email verification
+## 2. Published package immutability, including contents
 
-**Corrected lifecycle** (replaces the ambiguous `requestedByEmail`-or-`requestedByUserId` design):
-1. Registration creates a `User` row immediately, `approvalStatus = PENDING_APPROVAL`,
-   `emailVerifiedAt = NULL`. There is no pre-account, email-only intermediate state.
-2. `EmailVerificationToken` (new): `userId` FK (required — always a real, already-existing User),
-   `tokenHash` (never the raw token), `expiresAt`, `consumedAt` nullable, `createdAt`. One-time
-   use: consuming the token (service layer, one transaction) sets `consumedAt` on the token and
-   `emailVerifiedAt` on the User together.
-3. `AccessRequest.userId` is a **required** FK to that same real, already-existing `PENDING_APPROVAL`
-   User — never an email string, never an either/or. `AccessRequest` records "this pending user is
-   requesting access," full stop; it does not itself create or represent the user.
-4. Admin approval is one transaction: `UPDATE User SET approvalStatus='ACTIVE'` (rejected by the
-   §3 CHECK if `emailVerifiedAt` is still null — real enforcement, not merely a process step) +
-   create the `UserAccessPackageAssignment` and its materialized grants (§1) +
-   `UPDATE AccessRequest SET status='APPROVED', decidedById=..., decidedAt=now()`.
+**The gap being closed:** locking `AccessPackageVersion` alone left its child template rows
+(`AccessPackagePermissionTemplate`, and — as of §3's split —
+`AccessPackageDocumentClassificationTemplate`) freely insertable/editable/deletable after the
+parent was marked published, silently changing what a "published, immutable" version actually
+grants.
 
-**Status/timestamp consistency constraints:**
-- `AccessRequest`: `CHECK (status <> 'APPROVED' OR (decidedById IS NOT NULL AND decidedAt IS NOT
-  NULL))` and `CHECK (status <> 'PENDING' OR (decidedById IS NULL AND decidedAt IS NULL))`.
-- `UserInvitation`: gains `acceptedAt` (nullable — not present in the prior draft, needed for this
-  check): `CHECK (status <> 'ACCEPTED' OR acceptedAt IS NOT NULL)`.
-- `EmailVerificationToken`: self-consistent via the single `consumedAt` nullable timestamp; no
-  separate status enum needed.
-- `UserSession`: `CHECK (revokedAt IS NULL OR revokedAt >= createdAt)` — a basic temporal sanity
-  constraint alongside the state-rejection trigger in §3.
+**Fix — per-child-table triggers, cross-row lookup to the parent:**
 
----
+```sql
+CREATE FUNCTION access_package_template_immutable() RETURNS TRIGGER AS $$
+DECLARE parent_published_at timestamptz;
+BEGIN
+  SELECT "publishedAt" INTO parent_published_at
+  FROM "AccessPackageVersion"
+  WHERE "id" = COALESCE(NEW."accessPackageVersionId", OLD."accessPackageVersionId");
 
-## 5. Corrected MFA storage
+  IF parent_published_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Cannot modify template rows of a published AccessPackageVersion (id=%)',
+      COALESCE(NEW."accessPackageVersionId", OLD."accessPackageVersionId");
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+```
 
-A TOTP secret must be **reversible by the server** (it re-derives the expected code from the
-secret at verification time) — a one-way hash cannot serve this purpose at all. Corrected design:
+Attached as `BEFORE INSERT OR UPDATE OR DELETE` on `AccessPackagePermissionTemplate` in R2A-2, and
+(per §3) additionally on `AccessPackageDocumentClassificationTemplate` when it is introduced in
+R2A-3, reusing this same function.
 
-- `MfaEnrollment` — `userId` FK, `method{TOTP,WEBAUTHN}`, `status{ACTIVE,REVOKED}`, `revokedAt`
-  nullable, `createdAt`.
-- `MfaTotpCredential` (only for `method=TOTP`) — `mfaEnrollmentId` FK, `encryptedSecret` (bytes,
-  encrypted via an application-managed key/KMS — never plaintext, never a one-way hash),
-  `encryptionKeyVersion` (supports key rotation without invalidating existing enrollments),
-  `createdAt`.
-- `MfaWebAuthnCredential` (only for `method=WEBAUTHN`) — `mfaEnrollmentId` FK, `credentialId`,
-  `publicKey` (bytes — genuinely safe to store in the clear; this is the point of public-key
-  crypto, no secret is ever held server-side for this method), `signCount`, `attestationFormat`,
-  `createdAt`.
-- `MfaRecoveryCode` — `userId` FK, `codeHash` (one-way hash is *correct* here — a recovery code is
-  a single-use bearer secret compared like a password, never re-derived), `usedAt` nullable,
-  `createdAt`.
+**Additional constraints specified for `AccessPackageVersion`:**
+- `@@unique([accessPackageId, versionNumber])` — no two versions of one package may share a
+  version number.
+- Publication lifecycle: `publishedAt` transitions exactly once, `NULL → non-NULL` (enforced by
+  the existing conditional-immutability trigger from the prior contract, which already rejects any
+  further change once `publishedAt IS NOT NULL` — this includes re-nulling it). Whether
+  `versionNumber` values must be *gapless and sequential* per package is explicitly **not**
+  database-enforced — that is a service-layer numbering concern, not a correctness invariant the
+  database needs to guarantee; only *uniqueness* is a real invariant, and that is CHECK/unique
+  enforced.
 
-**MFA requirement, two independent levers:**
-- `User.mfaRequired Boolean` — an administrator can mandate MFA for a specific user regardless of
-  what they're doing.
-- `UserPermissionGrant.requiresMfa Boolean` / `DocumentPermissionGrant.requiresMfa Boolean`, each
-  with an optional `stepUpMaxAgeSeconds Int` — a specific sensitive grant can demand a *fresh*
-  MFA check (verified within the last N seconds), not merely "MFA was done at some point this
-  session."
+**`UserAccessPackageAssignment` consistency (restated precisely as CHECK constraints):**
+- `CHECK ("revokedAt" IS NULL) = ("revokedById" IS NULL)` — together or neither.
+- `CHECK ("revokedAt" IS NULL OR "revokedAt" >= "createdAt")`.
+- `CHECK ("validTo" IS NULL OR "validTo" >= "validFrom")`.
 
-**Absolute rule, restated:** plaintext is never stored for MFA secrets, invitation tokens, refresh
-tokens, or document-open tokens (§8) — every one of these is hash-only or KMS-encrypted-only,
-consistently, across this entire contract.
+**Source-assignment provenance constraint (`UserPermissionGrant`):** `sourceAssignmentId` is the
+grant's only provenance field (unlike `DocumentPermissionGrant`, which has two — see §6's
+mutual-exclusivity rule); no additional constraint is needed beyond the existing plain nullable FK.
 
 ---
 
-## 6. Reliable transactional outbox
+## 3. R2A-2 / R2A-3 split corrected — no forward references
 
-`OutboxEvent`, corrected: `aggregateType`, `aggregateId`, `eventType`, `payload` (Json),
-`idempotencyKey` (**unique** — the same logical event can never be enqueued twice, even if the
-triggering service call is accidentally retried), `status{PENDING,PROCESSING,SENT,FAILED,
-DEAD_LETTER}`, `attemptCount Int default 0`, `nextAttemptAt` (nullable, for backoff scheduling),
-`lockedAt`/`lockedBy` (nullable — lets multiple dispatcher instances claim rows without
-double-processing, a standard job-queue claim pattern), `processedAt` nullable, `lastError`
-(nullable text), `createdAt`.
+**The error being corrected:** the prior contract placed
+`AccessPackageDocumentClassificationTemplate` in R2A-2 and described it materializing/revoking
+`DocumentPermissionGrant` rows — but `DocumentPermissionGrant` is not introduced until R2A-3. No
+migration or trigger may reference a table that does not yet exist at that point in the sequence.
 
-Note explicitly: unlike every append-only table elsewhere in this contract, `OutboxEvent` is
-**intentionally mutable** (`status`/`attemptCount`/`lockedAt` all change over a row's life) — it
-is a job queue, not an audit trail, and must not be built on the insert-only trigger pattern used
-for SafetyEvent/AuditLog/DocumentAccessEvent/etc.
+**Fix:**
+- **R2A-2** introduces `AccessPackagePermissionTemplate` and `UserPermissionGrant` only, for
+  module/record permissions. Its assignment-revocation-cascade trigger touches
+  **`UserPermissionGrant` alone** — it has nothing else to cascade to yet.
+- **R2A-3** introduces `AccessPackageDocumentClassificationTemplate` alongside
+  `DocumentPermissionGrant` (the model it targets), and **replaces** the R2A-2 cascade trigger
+  function (`CREATE OR REPLACE FUNCTION`, same function name, same trigger object — no drop/
+  recreate of the trigger itself is needed) so that its body additionally cascades revocation onto
+  `DocumentPermissionGrant` rows sharing the same `sourceAssignmentId`. From R2A-3 onward, one
+  `UserAccessPackageAssignment` revocation correctly cascades to both grant kinds it may have
+  sourced; before R2A-3, it could only ever have sourced the one kind that existed.
 
-Dispatcher implementation (the process that reads `PENDING`/due-`nextAttemptAt` rows, sends the
-actual email, and marks them `SENT` or backs off with `FAILED`+`nextAttemptAt`) is explicitly
-Phase 0B+ — this section is schema only, sized to make a retry-safe, dedup-safe dispatcher
-possible, not to build one.
-
----
-
-## 7. Corrected document authorization and row-scope intersection
-
-**The ordinal "clearance ceiling" is removed entirely.** `INTERNAL < CONFIDENTIAL < RESTRICTED <
-NDA_LEGAL < SAFETY_CRITICAL` is not a safe linear ladder — a grant covering "up to RESTRICTED"
-cannot correctly imply anything about NDA_LEGAL or SAFETY_CRITICAL, which carry qualitatively
-different handling requirements (immutability, §9), not just "more" sensitivity. There is no
-`documentClearance` field anywhere in this design. Access is always an explicit
-`(documentId OR classification, action)` grant — never a numeric ceiling standing in for one.
-
-**Final `DocumentPermissionGrant` shape:**
-- `userId` FK (required, always a real user — never ambiguous, per the original correction).
-- Exactly one of `documentId` (FK — a specific document version) or `classification` (enum — a
-  classification-wide default) populated; CHECK-enforced.
-- Actions via the normalized child table `DocumentPermissionGrantAction(grantId, action)`,
-  `unique(grantId, action)`, `action` drawn from `DocumentGrantAction{VIEW_METADATA,PREVIEW,
-  NATIVE_OPEN,DOWNLOAD,EDIT,NEW_VERSION,PRINT,SHARE,APPROVE,ARCHIVE,MANAGE_ACCESS}`.
-- When `classification` is populated: `scopeKind{TEAM,SITE,COMPANY}` + matching `teamId`/`siteId`
-  (same exactly-one-consistent-with-scopeKind CHECK as §2's module grants) — this is what
-  prevents a classification grant from silently exposing every document of that classification
-  company-wide. A document's Team/Site context for this check is resolved through its existing
-  link tables (`DocumentProject`/`DocumentJobcard`/etc. → `Project.siteId`/`Jobcard.siteId`), not
-  a direct field on `Document` itself. When `documentId` is populated instead, no scope columns
-  are used — naming one exact document is already maximally specific.
-- `sourceAssignmentId` nullable FK (§1) and/or `sourceAccessRequestId` nullable FK — provenance;
-  an ad-hoc admin grant has neither.
-- `validFrom`, `validTo` nullable, `grantedById`, `revokedAt`/`revokedById` nullable, `reason`.
-- `requiresTrustedDevice Boolean`, `requiresMfa Boolean`, `stepUpMaxAgeSeconds` nullable (§5).
-
-**Document access requires BOTH checks, always** — restated from §2 step 4: (a) ordinary
-module/record permission on whatever the document is linked to, under current row scope, **and**
-(b) a matching `DocumentPermissionGrant` action/classification grant. Neither substitutes for the
-other.
+**Materialization vs. revocation — which is database-enforced:** the *revocation cascade* is
+database-enforced (a trigger, specified above) because it is simple, deterministic, and
+safety-critical enough to warrant that guarantee regardless of which service code path triggers
+it. **Materialization — reading an `AccessPackageVersion`'s template rows and writing the
+resulting `UserPermissionGrant`/`DocumentPermissionGrant` rows when a package is first assigned —
+is Phase 0B service-layer logic, not a database function, in this contract.** No database function
+performing materialization is included or tested here; if a future revision chooses to add one, it
+must be explicitly specified and tested as such, not silently assumed.
 
 ---
 
-## 8. Document derivatives and open tokens — one resolved design
+## 4. R2A-1 models — complete, implementation-exact field inventory
 
-**Chosen resolution: derivatives are immutable `Document` rows, not a separate model.** The prior
-draft's `DocumentDerivative` as a standalone table is retired — it would have forced every
-document-access table (`DocumentPermissionGrant`, `DocumentOpenToken`, `DocumentAccessEvent`) to
-carry a second, parallel "or a derivative" target, doubling every exactly-one CHECK in this
-contract for no structural benefit, since a derivative is, semantically, just another file with
-its own storage/checksum/scan lifecycle — exactly what `Document` already models, with its
-version-chain machinery already built and proven in Phase 0A-R1.
+General rules applied uniformly across every model below unless stated otherwise: UUID primary
+keys via `gen_random_uuid()`; `onDelete: Restrict` on every FK; every `*At` timestamp pair gets a
+"later-than-creation" CHECK; every terminal/decided status gets a "status implies exactly these
+fields are/aren't populated" CHECK, in both directions.
 
-`Document` gains: `derivedFromDocumentId` (nullable self-FK — distinct from `previousVersionId`,
-which means *supersedes*; this one means *was generated from*, e.g. a watermarked preview
-generated from the original) and `derivativeKind` (nullable enum: null = an original file,
-`WATERMARKED_PREVIEW` / `REDACTED_COPY` otherwise). A derivative goes through the identical
-`uploadLifecycleStatus` clean-scan discipline as any other Document row.
+### `User` (extends the existing, already-approved Phase 0A-R1 model)
 
-**Consequence:** `DocumentPermissionGrant.documentId`, `DocumentOpenToken.documentId`, and
-`DocumentAccessEvent`'s target are all just `documentId` — one FK, one column, everywhere. No dual
-target type exists in this design at all.
+| Field | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` | existing |
+| email | VarChar(254) | no | — | existing; case-insensitive unique index, unchanged |
+| passwordHash | VarChar(255) | no | — | existing |
+| fullName | VarChar(200) | no | — | existing |
+| ~~active~~ | — | — | — | **removed** — superseded by `approvalStatus` |
+| approvalStatus | UserApprovalStatus | no | `PENDING_APPROVAL` | new |
+| emailVerifiedAt | Timestamptz | yes | — | new |
+| mfaRequired | Boolean | no | `false` | new |
+| createdAt | Timestamptz | no | `now()` | existing |
+| updatedAt | Timestamptz | no | auto | existing |
 
-**Final `DocumentOpenToken` shape:** `tokenHash` only (never the raw bearer value — same
-discipline as every other token in this contract), `userId` FK, `documentId` FK (the exact
-immutable version or derivative — both are Document rows), `action{OPEN,DOWNLOAD}`, `expiresAt`,
-`consumedAt` nullable, `revokedAt` nullable, `trustedDeviceId` nullable FK, `stepUpVerifiedAt`
-nullable (records *when* the fresh MFA check for this specific token happened, compared against
-the authorizing grant's `stepUpMaxAgeSeconds`).
+CHECK: `"approvalStatus" <> 'ACTIVE' OR "emailVerifiedAt" IS NOT NULL`.
+Index: `@@index([approvalStatus])`.
+
+### `EmailVerificationToken`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| userId | Uuid (FK → User) | no | — |
+| tokenHash | VarChar(255) | no | — |
+| expiresAt | Timestamptz | no | — |
+| consumedAt | Timestamptz | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `tokenHash`. CHECK: `"expiresAt" > "createdAt"`;
+`"consumedAt" IS NULL OR "consumedAt" >= "createdAt"`. Index: `@@index([userId])`.
+
+### `AccessRequest`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| userId | Uuid (FK → User) | no | — |
+| justification | VarChar(1000) | no | — |
+| status | AccessRequestStatus | no | `PENDING` |
+| decidedById | Uuid (FK → User) | yes | — |
+| decidedAt | Timestamptz | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+CHECK: `"status" = 'PENDING' OR "status" = 'EXPIRED' OR ("decidedById" IS NOT NULL AND "decidedAt"
+IS NOT NULL)` (APPROVED **and** REJECTED both require a decision actor and time — the prior
+contract only stated this for APPROVED; corrected here). CHECK: `"status" NOT IN ('PENDING',
+'EXPIRED') OR ("decidedById" IS NULL AND "decidedAt" IS NULL)` (PENDING and EXPIRED both have no
+decision fields — EXPIRED means the request timed out with no decision ever made). CHECK:
+`"decidedAt" IS NULL OR "decidedAt" >= "createdAt"`. Index: `@@index([userId])`,
+`@@index([status])`.
+
+### `UserInvitation`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| invitedEmail | VarChar(254) | no | — |
+| invitedById | Uuid (FK → User) | no | — |
+| tokenHash | VarChar(255) | no | — |
+| status | InvitationStatus | no | `PENDING` |
+| expiresAt | Timestamptz | no | — |
+| acceptedAt | Timestamptz | yes | — |
+| revokedAt | Timestamptz | yes | — |
+| revokedById | Uuid (FK → User) | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `tokenHash`. CHECK: `"expiresAt" > "createdAt"`. CHECK: `"status" = 'ACCEPTED' =
+("acceptedAt" IS NOT NULL)` (bidirectional). CHECK: `"status" = 'REVOKED' = ("revokedAt" IS NOT
+NULL AND "revokedById" IS NOT NULL)`. CHECK: `"status" IN ('PENDING','EXPIRED') = ("acceptedAt" IS
+NULL AND "revokedAt" IS NULL)`. CHECK: `NOT ("acceptedAt" IS NOT NULL AND "revokedAt" IS NOT
+NULL)` (mutually exclusive terminal outcomes). CHECK: `"acceptedAt" IS NULL OR "acceptedAt" >=
+"createdAt"`. CHECK: `"revokedAt" IS NULL OR "revokedAt" >= "createdAt"`. Index:
+`@@index([invitedEmail])`, `@@index([status])`.
+
+### `UserSession`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| userId | Uuid (FK → User) | no | — |
+| refreshTokenHash | VarChar(255) | no | — |
+| userAgent | VarChar(500) | yes | — |
+| ipAddressHash | VarChar(255) | yes | — |
+| expiresAt | Timestamptz | no | — |
+| revokedAt | Timestamptz | yes | — |
+| revokedById | Uuid (FK → User) | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `refreshTokenHash`. CHECK: `"expiresAt" > "createdAt"`; `"revokedAt" IS NULL OR
+"revokedAt" >= "createdAt"`. **Deliberate deviation from the together-or-neither pattern used
+elsewhere:** `revokedById` is *not* required whenever `revokedAt` is set — a session may be
+auto-revoked by an automated process (e.g. anomaly detection, or a cascading suspension performed
+under a service identity rather than one specific admin) with no individual human actor to record;
+`revokedById`, when present, is best-effort attribution, not a completeness guarantee. This is
+stated explicitly as an intentional exception, not an oversight, and applies to this table only —
+every grant-revocation elsewhere in this contract (always administrator-initiated) keeps the
+strict together-or-neither rule. Index: `@@index([userId])`, `@@index([expiresAt])`.
+
+### `MfaEnrollment`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| userId | Uuid (FK → User) | no | — |
+| method | MfaMethod | no | — |
+| status | MfaEnrollmentStatus | no | `ACTIVE` |
+| revokedAt | Timestamptz | yes | — |
+| revokedById | Uuid (FK → User) | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+CHECK: `"status" = 'REVOKED' = ("revokedAt" IS NOT NULL AND "revokedById" IS NOT NULL)`. CHECK:
+`"revokedAt" IS NULL OR "revokedAt" >= "createdAt"`. Index: `@@index([userId, method])`.
+
+### `MfaTotpCredential` — §5 relational-integrity detail below
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| mfaEnrollmentId | Uuid (FK → MfaEnrollment) | no | — |
+| encryptedSecret | Bytes | no | — |
+| encryptionKeyVersion | VarChar(50) | no | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `mfaEnrollmentId` (exactly one TOTP credential per TOTP enrollment — see §5). CHECK:
+`octet_length("encryptedSecret") > 0`. CHECK: `length(btrim("encryptionKeyVersion")) > 0`.
+
+### `MfaWebAuthnCredential`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| mfaEnrollmentId | Uuid (FK → MfaEnrollment) | no | — |
+| credentialId | VarChar(500) | no | — |
+| publicKey | Bytes | no | — |
+| signCount | BigInt | no | `0` |
+| attestationFormat | VarChar(100) | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `credentialId` (globally, across all users — see §5). CHECK: `octet_length("publicKey") >
+0`. Index: `@@index([mfaEnrollmentId])`.
+
+### `MfaRecoveryCode`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| userId | Uuid (FK → User) | no | — |
+| codeHash | VarChar(255) | no | — |
+| usedAt | Timestamptz | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+Unique: `codeHash`. CHECK: `"usedAt" IS NULL OR "usedAt" >= "createdAt"`. Index:
+`@@index([userId])`. **Explicit limitation:** the database guarantees `codeHash` uniqueness and
+that `usedAt` is a real, queryable fact, but it does not by itself prevent a race between two
+concurrent redemption attempts of the same still-unused code — that requires a service-layer
+transaction with row locking (`SELECT ... FOR UPDATE`) at verification time. Stated here rather
+than implied as fully database-enforced.
+
+### `Notification`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| recipientUserId | Uuid (FK → User) | no | — |
+| kind | VarChar(100) | no | — |
+| payload | Json | no | `'{}'` |
+| readAt | Timestamptz | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+CHECK: `jsonb_typeof("payload") = 'object'` (same JSON-shape discipline as the R2 gap analysis).
+CHECK: `"readAt" IS NULL OR "readAt" >= "createdAt"`. Index: `@@index([recipientUserId,
+readAt])`.
+
+### `OutboxEvent`
+
+| Field | Type | Nullable | Default |
+|---|---|---|---|
+| id | Uuid | no | `gen_random_uuid()` |
+| aggregateType | VarChar(100) | no | — |
+| aggregateId | Uuid | no | — |
+| eventType | VarChar(150) | no | — |
+| payload | Json | no | — |
+| idempotencyKey | VarChar(255) | no | — |
+| status | OutboxEventStatus | no | `PENDING` |
+| attemptCount | Int | no | `0` |
+| nextAttemptAt | Timestamptz | yes | — |
+| lockedAt | Timestamptz | yes | — |
+| lockedBy | VarChar(200) | yes | — |
+| processedAt | Timestamptz | yes | — |
+| lastError | VarChar(2000) | yes | — |
+| createdAt | Timestamptz | no | `now()` |
+
+`aggregateType`/`aggregateId` are a label-only pair, deliberately reusing the same
+explicitly-accepted polymorphic-label exception already approved for `AuditLog.entityType`/
+`entityId` in Phase 0A-R1 — never a join, never an authorization input, generic by design since
+Outbox spans every aggregate type in the system. `lockedBy` identifies a dispatcher *process*
+instance, not a `User` — no FK. Unique: `idempotencyKey`. CHECK: `jsonb_typeof("payload") =
+'object'`. CHECK: `"attemptCount" >= 0`. CHECK: `"status" = 'SENT' = ("processedAt" IS NOT
+NULL)`. CHECK: `"status" = 'PENDING' OR "processedAt" IS NOT NULL OR "status" <> 'SENT'`
+(equivalent restated: `status='PENDING' ⇒ processedAt IS NULL`). CHECK: `"processedAt" IS NULL OR
+"processedAt" >= "createdAt"`. CHECK: `"lockedAt" IS NULL OR "lockedAt" >= "createdAt"`. Index:
+`@@index([status, nextAttemptAt])`.
+
+### Enums (R2A-1, final)
+
+`UserApprovalStatus{PENDING_APPROVAL,ACTIVE,SUSPENDED,REJECTED}` ·
+`AccessRequestStatus{PENDING,APPROVED,REJECTED,EXPIRED}` ·
+`InvitationStatus{PENDING,ACCEPTED,EXPIRED,REVOKED}` · `MfaMethod{TOTP,WEBAUTHN}` ·
+`MfaEnrollmentStatus{ACTIVE,REVOKED}` ·
+`OutboxEventStatus{PENDING,PROCESSING,SENT,FAILED,DEAD_LETTER}`.
 
 ---
 
-## 9. Immutable sensitive documents — restored
+## 5. MFA relational integrity
 
-For `NDA_LEGAL` and `SAFETY_CRITICAL` documents, once `uploadLifecycleStatus = CLEAN` (and, where
-the workflow requires it, `status = APPROVED`), the file's protected identity/content fields
-become locked: `storageKey`, `checksum`, `classification`. A `BEFORE UPDATE` trigger on `Document`
-rejects any change to these three columns once `OLD.classification IN ('NDA_LEGAL',
-'SAFETY_CRITICAL') AND OLD.uploadLifecycleStatus = 'CLEAN'` — the same conditional-lock pattern as
-`AccessPackageVersion` (§1) and `QualityHold`'s release-fact lock (Phase 0A-R1). This trivially
-also satisfies "classification cannot be silently downgraded," since classification cannot change
-*at all* once locked — the strictest reading, not merely a one-directional guard.
+- **One TOTP credential per TOTP enrollment:** `MfaTotpCredential.mfaEnrollmentId` is `@unique` — a
+  plain unique constraint makes a second row for the same enrollment impossible.
+- **Many WebAuthn credentials per WebAuthn enrollment, globally unique credential IDs:**
+  `MfaWebAuthnCredential.mfaEnrollmentId` is a plain (non-unique) FK — many rows allowed;
+  `credentialId` is `@unique` **globally** (not scoped per-enrollment), matching how WebAuthn
+  credential IDs are actually meant to be unique across the whole system.
+- **No cross-method references:** a `BEFORE INSERT` trigger on each of `MfaTotpCredential` and
+  `MfaWebAuthnCredential` looks up the referenced `MfaEnrollment.method` and rejects the insert if
+  it does not match (`MfaTotpCredential` requires `method = 'TOTP'`; `MfaWebAuthnCredential`
+  requires `method = 'WEBAUTHN'`) — a cross-row check, hence a trigger rather than a CHECK.
+- **Enrollment status/revokedAt consistency:** covered in §4's `MfaEnrollment` CHECK.
+- **Recovery-code hash uniqueness/use-consistency:** covered in §4's `MfaRecoveryCode` spec,
+  including the explicit note on what remains a service-layer concurrency concern.
+- **`stepUpMaxAgeSeconds` positivity:** `UserPermissionGrant`/`DocumentPermissionGrant` CHECK:
+  `"stepUpMaxAgeSeconds" IS NULL OR "stepUpMaxAgeSeconds" > 0`.
+- **`encryptedSecret`/`encryptionKeyVersion` required and non-empty:** covered in §4's
+  `MfaTotpCredential` CHECK (`octet_length > 0`, `length(btrim(...)) > 0`).
+- **No plaintext secret anywhere:** `encryptedSecret` is KMS-encrypted bytes (§5 of the prior
+  contract, unchanged); `MfaRecoveryCode.codeHash`, every `*tokenHash`/`refreshTokenHash` field in
+  this contract, and `DocumentOpenToken.tokenHash` (§6) are all one-way hashes; `publicKey`
+  (WebAuthn) is genuinely non-secret by design and is the one credential field correctly stored in
+  the clear.
 
-**The trigger explicitly permits exactly one further change on a locked row:** `supersededAt`
-transitioning from `NULL` to a real timestamp. This is deliberate — supersession is the one
-legitimate fact that must still be recordable on an otherwise-locked row, and it does not violate
-the row's own immutability (the file content/identity never changes; only a "this has been
-superseded" marker is added). Everything else stays rejected. A correction always creates a new
-`Document` row via `previousVersionId` (existing pattern, unchanged); the old row's `supersededAt`
-is set in the same transaction as the new row's insert.
-
-Older versions of a document remain reachable only according to whatever `DocumentPermissionGrant`
-rows apply to that specific `documentId` — no separate mechanism is needed, since access is always
-per-version already (§7).
-
-**Required negative database tests (added to R2A-3's scope, §13):**
-- A locked document's `storageKey`/`checksum`/`classification` cannot be changed.
-- A locked document's `supersededAt` *can* still be set (the one permitted transition).
-- A non-`CLEAN` or non-`NDA_LEGAL`/`SAFETY_CRITICAL` document is unaffected by the lock (positive
-  control).
+Negative database tests for all of the above are enumerated in §8, folded into R2A-1's test list.
 
 ---
 
-## 10. DocumentAccessEvent completeness
+## 6. Document-security edge semantics — resolved
 
-Revised to record **both allowed and denied** attempts (the prior draft implicitly only covered
-successful access): `documentId` FK, `userId` FK, `action` (`DocumentGrantAction`, reused),
-`result{ALLOWED,DENIED}`, `denialReasonCode` nullable (e.g. `NO_GRANT`, `EXPIRED`,
-`CLASSIFICATION_MISMATCH`, `DEVICE_UNTRUSTED`, `MFA_REQUIRED`), `tokenId` nullable FK →
-`DocumentOpenToken`, `trustedDeviceId` nullable FK, `correlationId` (ties to the platform
-foundation's request/correlation-ID work), `occurredAt`. Insert-only — the same `BEFORE UPDATE/
-DELETE`-rejecting trigger pattern as `SafetyEvent`/`QualityRelease`/`AuditLog`.
+**Provenance mutual exclusivity (`DocumentPermissionGrant`):**
+`CHECK (NOT ("sourceAssignmentId" IS NOT NULL AND "sourceAccessRequestId" IS NOT NULL))` — at most
+one of the two populated; both null means an audited ad-hoc administrator grant (still fully
+attributed via `grantedById`/`reason`, just not sourced from a package assignment or an access
+request).
 
----
+**Validity/revocation consistency (`DocumentPermissionGrant`, restated as exact CHECKs, matching
+§2's pattern for `UserAccessPackageAssignment`):** `("revokedAt" IS NULL) = ("revokedById" IS
+NULL)`; `"revokedAt" IS NULL OR "revokedAt" >= "createdAt"`; `"validTo" IS NULL OR "validTo" >=
+"validFrom"`.
 
-## 11. Trusted-device evidence
+**Documents linked to multiple records/sites/teams.** A document-access request is always
+evaluated **in the context of one specific linked record** the requester names (e.g. "documents
+for Project A"), and the §1 row-scope check runs against *that* record only. Passing the check for
+one linked record never grants blanket access to the document merely because it happens to *also*
+be linked to some other record the same document is attached to — each linked-record context is
+checked independently. **When a request has no stated linked-record context at all** (a direct
+`documentId` lookup), the system must resolve and check the row-scope policy against **every**
+record the document is linked to, and deny by default unless **all** of them pass — a document is
+never treated as generally accessible on the strength of a partial match.
 
-Split into a stable-identity table and an append-only evidence log — consistent with this
-contract's general preference for pairing a mutable current-state row with an immutable event
-trail:
+**Unlinked documents.** A document with no rows in any `Document*` link table (`DocumentProject`,
+`DocumentJobcard`, `DocumentCustomer`, etc.) has no linked-record row-scope check to run at all —
+it can only ever be reached through a `documentId`-targeted `DocumentPermissionGrant`. A
+classification-wide grant cannot authorize access to an unlinked document, since §1 step 5's
+module/record permission check has no target to evaluate and correctly fails closed.
 
-- `TrustedDevice` — `userId` FK, `deviceIdentifier` (stable — a hardware-backed key thumbprint or
-  platform device identifier), `providerSubject` (the identity the attestation provider assigns to
-  this device), `status{ACTIVE,REVOKED}`, `trustExpiresAt`, `lastSeenAt`, `revokedAt` nullable,
-  `revokedById` nullable, `createdAt`.
-- `DeviceAttestation` (append-only) — `trustedDeviceId` FK, `attestationProvider`
-  (provider-neutral string, e.g. `"entra-id"` — no vendor is hardcoded, matching Decision 4 of the
-  gap analysis), `evidenceHash` (a hash/reference to the attestation evidence — never the raw
-  evidence or a secret), `attestedAt`, `createdAt`. Insert-only trigger, same pattern as
-  `DocumentAccessEvent`.
+**Derivative inheritance — one explicit rule, chosen:** a derivative does **not** automatically
+inherit grants from its source document via `derivedFromDocumentId`. There is no cascading
+inheritance relation at all. What *does* apply uniformly is that a derivative is created with the
+**same `classification`** as its source (a watermarked copy of a RESTRICTED document is still
+RESTRICTED) — so a classification-wide grant that already covers that classification+scope
+combination applies to the derivative exactly as it would to any other `Document` row of that
+classification, simply because the derivative *is* a `Document` row. A grant scoped to the
+source's specific `documentId`, however, does **not** extend to the derivative's own, different
+`documentId` — it would need its own explicit grant.
 
-Raw attestation secrets are never stored anywhere in this design — only `evidenceHash`.
+**`DocumentOpenToken` — complete consistency:** gains an explicit `createdAt Timestamptz @default
+(now())` (present in spirit before, not stated as a field). Unique: `tokenHash`. CHECK:
+`"expiresAt" > "createdAt"`; `"consumedAt" IS NULL OR "consumedAt" >= "createdAt"`; `"revokedAt"
+IS NULL OR "revokedAt" >= "createdAt"`; `NOT ("consumedAt" IS NOT NULL AND "revokedAt" IS NOT
+NULL)` (mutually exclusive terminal states — a token that was successfully consumed cannot also be
+separately revoked, and vice versa).
 
----
-
-## 12. Corrected R2A acceptance criteria
-
-**This document does not claim runtime default-deny is proven by a schema-only phase.** The split
-below is explicit and final for R2A:
-
-**Provable by R2A database tests:**
-- Field/target/scope consistency (every exactly-one/scope-kind CHECK in this contract).
-- Append-only behavior (`DocumentAccessEvent`, `DeviceAttestation`, and the carried-over
-  `SafetyEvent`/`QualityRelease`/`AuditLog` triggers).
-- Token uniqueness (`tokenHash`/`idempotencyKey` unique constraints).
-- Immutable protected records (§9's conditional lock, including that `supersededAt` remains
-  settable).
-- Pending/rejected-user grant and session rejection — **because** a DB trigger is implemented for
-  it in this contract (§3), not merely asserted.
-- Lifecycle timestamp consistency (§4's status-implies-timestamp CHECKs).
-
-**Provable only by future Phase 0B service/e2e tests, not here:**
-- HTTP 401/403 behavior.
-- AuthGuard default-deny against live traffic.
-- Real, current row-scope enforcement (the dynamic `ASSIGNED`/`TEAM`/`SITE` joins actually
-  filtering query results correctly for a live request).
-- Session rejection at the middleware layer.
-- Step-up MFA challenge flow.
-- Trusted-device enforcement against a live request.
-- Suspension's transactional session revocation actually executing.
+**`TrustedDevice` — a real cryptographic identifier, not a generic string.** The prior contract's
+`deviceIdentifier` is replaced with `deviceKeyThumbprint VarChar(128)` — the SHA-256 (or
+equivalent) thumbprint of the device's public key or platform certificate, `@unique` (globally —
+two distinct devices should never collide), `CHECK (length("deviceKeyThumbprint") = 64)` (fixed
+hex-encoded SHA-256 length; adjust the literal length if a different digest is chosen, but the
+principle — a fixed-length, non-empty, verifiable hex string, not a free-text label — is the
+requirement). All other fields from the prior contract's `TrustedDevice`/`DeviceAttestation`
+design (`providerSubject`, `status`, `trustExpiresAt`, `lastSeenAt`, `revokedAt`/`revokedById`,
+and the append-only `DeviceAttestation` evidence log with `evidenceHash`) are unchanged.
 
 ---
 
-## 13. R2A split into bounded implementation passes
+## 7. Migration strategy — one statement, stated once
 
-Each sub-pass is its own commit, its own migration, its own verification battery, and its own
-independent-review stop — none proceeds until the previous one is reviewed and approved, exactly
-as every prior Phase 0A-R1 pass and the R2 design documents have been gated.
+**The contradiction being corrected:** the prior contract simultaneously said each sub-pass "has
+its own migration" and that each evolves "the single `<timestamp>_init/migration.sql`" — those
+cannot both be literally true as separate, cumulative migration files.
+
+**The one strategy, matching exactly how every Phase 0A-R1 pass and both prior R2 design documents
+were actually produced:** because `backend-foundation` remains unmerged and undeployed, **every
+R2A sub-pass continues to evolve the same single initial migration file** — there is no second or
+third migration file. Each sub-pass is still its own commit and its own independent-review stop;
+what changes between sub-passes is the *schema.prisma* content and the regenerated migration SQL
+appended to it, not the number of migration files. Only once the backend is actually deployed does
+this project switch to genuinely additive, cumulative migrations — not before, and not within
+R2A. This is the one and only migration statement in this contract; every sub-pass section below
+references it rather than restating it.
+
+---
+
+## 8. Corrected R2A-1 / R2A-2 / R2A-3 sub-passes
 
 ### R2A-1 — User lifecycle, verification, sessions, MFA, Notification, Outbox
 
-**Exact models & fields:** `User` (+ `approvalStatus`, + `emailVerifiedAt`, + `mfaRequired`, minus
-`active` as an independent column — per the original gap-analysis correction);
-`EmailVerificationToken`; `AccessRequest` (+ required `userId` FK, replacing the ambiguous
-either/or); `UserInvitation` (+ `acceptedAt`); `UserSession`; `MfaEnrollment`;
-`MfaTotpCredential`; `MfaWebAuthnCredential`; `MfaRecoveryCode`; `Notification`; `OutboxEvent`.
+**Exact models & fields:** exactly the eleven models specified in full in §4, with the enums
+listed there.
 
-**Exact enums:** `UserApprovalStatus{PENDING_APPROVAL,ACTIVE,SUSPENDED,REJECTED}`,
-`AccessRequestStatus{PENDING,APPROVED,REJECTED,EXPIRED}`,
-`InvitationStatus{PENDING,ACCEPTED,EXPIRED,REVOKED}`, `MfaMethod{TOTP,WEBAUTHN}`,
-`MfaEnrollmentStatus{ACTIVE,REVOKED}`, `OutboxEventStatus{PENDING,PROCESSING,SENT,FAILED,
-DEAD_LETTER}`.
+**FK & delete behaviour:** `onDelete: Restrict` throughout.
 
-**FK & delete behaviour:** `onDelete: Restrict` throughout, consistent with the whole schema.
+**CHECK constraints, unique/partial indexes, triggers:** exactly as specified per-model in §4 and
+per-integrity-rule in §5 (MFA method-matching triggers).
 
-**CHECK constraints:** `User`: `approvalStatus='ACTIVE' ⇒ emailVerifiedAt IS NOT NULL`.
-`AccessRequest`: status-implies-decidedBy/decidedAt (both directions). `UserInvitation`:
-`status='ACCEPTED' ⇒ acceptedAt IS NOT NULL`. `UserSession`:
-`revokedAt IS NULL OR revokedAt >= createdAt`.
+**Migration implications:** per §7, one strategy — this evolves the single initial migration.
+Removing `User.active` remains the one backward-incompatible change to an already-approved model.
 
-**Unique / partial indexes:** `EmailVerificationToken.tokenHash`, `UserSession.refreshTokenHash`,
-`UserInvitation.tokenHash`, `OutboxEvent.idempotencyKey`.
-
-**Triggers:** `UserSession` `BEFORE INSERT` — reject `PENDING_APPROVAL`/`REJECTED`/`SUSPENDED`.
-
-**Database tests:** activation blocked without `emailVerifiedAt` (CHECK violation); session
-creation rejected for each of the three disallowed states (trigger, one test per state);
-`idempotencyKey` uniqueness rejects a duplicate; every status-implies-timestamp CHECK rejects its
-inconsistent case.
+**Database-enforceable acceptance tests (expanded per item 8 of this review):**
+- `User` cannot become `ACTIVE` with a null `emailVerifiedAt` (CHECK).
+- `UserSession` insert is rejected for `PENDING_APPROVAL`, `REJECTED`, and `SUSPENDED` users —
+  three separate tests, one per state (trigger).
+- `EmailVerificationToken`: `expiresAt <= createdAt` rejected; `consumedAt < createdAt` rejected;
+  duplicate `tokenHash` rejected.
+- `AccessRequest`: `APPROVED`/`REJECTED` without `decidedById`+`decidedAt` rejected; `PENDING`/
+  `EXPIRED` *with* a decision actor/time rejected; `decidedAt < createdAt` rejected.
+- `UserInvitation`: `ACCEPTED` without `acceptedAt` rejected; `REVOKED` without
+  `revokedAt`+`revokedById` rejected; both `acceptedAt` and `revokedAt` set simultaneously
+  rejected; each temporal-ordering CHECK rejected individually; duplicate `tokenHash` rejected.
+- `UserSession`: `expiresAt <= createdAt` rejected; `revokedAt < createdAt` rejected; duplicate
+  `refreshTokenHash` rejected.
+- `MfaEnrollment`: `REVOKED` without `revokedAt`+`revokedById` rejected.
+- `MfaTotpCredential`: a second row for the same `mfaEnrollmentId` rejected (unique); insert
+  against a `WEBAUTHN`-method enrollment rejected (trigger); empty `encryptedSecret` rejected;
+  empty `encryptionKeyVersion` rejected.
+- `MfaWebAuthnCredential`: insert against a `TOTP`-method enrollment rejected (trigger); a second
+  row with a duplicate `credentialId` (even under a different enrollment) rejected (global
+  unique); empty `publicKey` rejected. A *second* WebAuthn credential for the *same* enrollment
+  with a *different* `credentialId` **succeeds** (positive control proving the "many allowed"
+  half of the rule).
+- `MfaRecoveryCode`: duplicate `codeHash` rejected; `usedAt < createdAt` rejected.
+- `UserPermissionGrant`/`DocumentPermissionGrant`: `stepUpMaxAgeSeconds <= 0` rejected (this test
+  is deferred to R2A-2/R2A-3 respectively, where those tables are introduced, but the constraint
+  itself is specified once here in §5).
+- `Notification`: non-object `payload` rejected; `readAt < createdAt` rejected.
+- `OutboxEvent`: duplicate `idempotencyKey` rejected; non-object `payload` rejected; negative
+  `attemptCount` rejected; `status='SENT'` without `processedAt` rejected; `processedAt <
+  createdAt` rejected.
 
 **Future Phase 0B tests:** real registration → verify → request → approve flow end-to-end; real
-login issuing a session; real MFA enrollment/challenge; outbox dispatcher retry/backoff/dedup
-behavior against a live queue.
+login issuing a session; real MFA enrollment/challenge against both TOTP and WebAuthn; outbox
+dispatcher retry/backoff/dedup behavior against a live queue.
 
 **Dependencies:** none beyond the current, approved Phase 0A-R1 schema.
 
-**Exact files expected to change:** `backend/prisma/schema.prisma`,
-`backend/prisma/migrations/<ts>_init/migration.sql` (one evolved migration, consistent with every
-prior pass), `backend/test/database-constraints.integration-spec.ts`, `backend/README.md`.
+**Exact files expected to change:** `backend/prisma/schema.prisma`, the single evolved
+`backend/prisma/migrations/<ts>_init/migration.sql` (§7), `backend/test/database-constraints.
+integration-spec.ts`, `backend/README.md`.
 
-**Parent commit:** `backend-foundation` HEAD at the time R2A-1 begins (currently
-`9cdd8f3ec4167e33b94dd85340d1c46829a5ad87`; will be re-verified immediately before any
-implementation work starts, per the same pre-implementation discipline used for every prior pass).
+**Parent commit:** `backend-foundation` HEAD, re-verified immediately before implementation begins
+(currently `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87`).
 
-**Go/no-go criteria:** all database tests above pass on two independently-created fresh
-PostgreSQL databases plus an idempotent second `migrate deploy`; full lint/build/unit/e2e/
+**Go/no-go criteria:** every test above passes on two independently-created fresh PostgreSQL
+databases plus an idempotent second `migrate deploy`; full lint/build/unit/e2e/
 production-packaging-audit battery; independent review sign-off before R2A-2 begins.
 
 ### R2A-2 — Permission FK grants, access-package versions/assignments, corrected row scope
 
-**Exact models & fields:** `AccessPackage`; `AccessPackageVersion`;
-`AccessPackagePermissionTemplate`; `AccessPackageDocumentClassificationTemplate`;
-`UserAccessPackageAssignment`; `UserPermissionGrant` (`permissionId` FK, `scopeKind`, `siteId`/
-`teamId` only, `sourceAssignmentId`, `requiresMfa`, `stepUpMaxAgeSeconds`,
-`requiresTrustedDevice`, `validFrom`/`validTo`/`revokedAt`/`revokedById`/`grantedById`/`reason`).
+**Exact models & fields:** `AccessPackage`; `AccessPackageVersion` (+ `@@unique([accessPackageId,
+versionNumber])`, §2); `AccessPackagePermissionTemplate` (module/record permission templates
+**only** — `AccessPackageDocumentClassificationTemplate` moved to R2A-3, §3);
+`UserAccessPackageAssignment` (+ the three CHECK constraints from §2); `UserPermissionGrant`
+(`permissionId` FK — §1 of the prior contract, unchanged; `scopeKind`; `siteId`/`teamId` only;
+`sourceAssignmentId`; `requiresMfa`; `stepUpMaxAgeSeconds` with the `> 0` CHECK from §5;
+`requiresTrustedDevice`; `validFrom`/`validTo`/`revokedAt`/`revokedById`/`grantedById`/`reason`).
 
 **Exact enums:** `GrantScopeKind{OWN,ASSIGNED,TEAM,SITE,COMPANY}`.
 
 **FK & delete behaviour:** Restrict throughout.
 
-**CHECK constraints:** `UserPermissionGrant` scope-kind-vs-FK consistency (§2's three-way rule);
-`revokedAt`/`revokedById` set together or neither.
+**CHECK constraints:** `UserPermissionGrant` scope-kind-vs-FK consistency (three-way rule,
+unchanged from the prior contract); `stepUpMaxAgeSeconds > 0` when present; `revokedAt`/
+`revokedById` together or neither.
 
-**Triggers:** `AccessPackageVersion` conditional immutability-after-publication;
-`UserAccessPackageAssignment` revocation cascade onto sourced grants (§1);
-`UserPermissionGrant`/`UserRole` `BEFORE INSERT` — reject `PENDING_APPROVAL`/`REJECTED` (§3,
-implemented here since `UserPermissionGrant` is introduced in this pass).
+**Triggers:** `AccessPackageVersion` conditional immutability-after-publication (unchanged);
+`AccessPackagePermissionTemplate` published-parent lock (§2, new); `UserAccessPackageAssignment`
+revocation cascade — **`UserPermissionGrant` only** at this stage (§3); `UserPermissionGrant`/
+`UserRole` `BEFORE INSERT` reject `PENDING_APPROVAL`/`REJECTED`.
 
 **Database tests:** malformed scope-kind/FK combinations rejected (one test per invalid
-combination); revoking an assignment cascades only to its own sourced grants, verified against a
-second, untouched assignment's grants; a published `AccessPackageVersion` rejects UPDATE/DELETE; a
-draft version accepts edits; grant creation rejected for a pending/rejected user.
+combination); `stepUpMaxAgeSeconds <= 0` rejected; revoking an assignment cascades only to its own
+sourced `UserPermissionGrant` rows, verified against a second, untouched assignment's grants; a
+published `AccessPackageVersion` rejects UPDATE/DELETE; its published child template rows also
+reject INSERT/UPDATE/DELETE (§2, new test); a draft version and its (still-draft) template rows
+accept edits; grant creation rejected for a pending/rejected user; duplicate `(accessPackageId,
+versionNumber)` rejected.
 
-**Future Phase 0B tests:** the full effective-authorization algorithm (§2) end-to-end, both the
-Role-path and Grant-path branches; `ASSIGNED`-scope dynamic-join correctness verified per module
-against real assignment-table data.
+**Future Phase 0B tests:** the full corrected effective-authorization algorithm (§1) end-to-end,
+including the specific regression case this revision exists to prevent — a user whose *only*
+authority path is a Role containing a given permission, with zero Decision-9 assignment facts and
+zero `UserPermissionGrant` rows, must be denied access to every record, not granted access to all
+of them.
 
-**Dependencies:** requires R2A-1 (real `User.approvalStatus`, real actor FKs for
-`grantedById`/`assignedById`).
+**Dependencies:** requires R2A-1.
 
-**Exact files expected to change:** same pattern as R2A-1.
+**Exact files expected to change:** per §7's one migration strategy — same evolved
+`schema.prisma`/migration.sql, extended integration-spec.ts, README.md additions.
 
 **Parent commit:** R2A-1's own final, reviewed commit.
 
@@ -498,51 +624,84 @@ against real assignment-table data.
 
 ### R2A-3 — Document classification, grants, access requests/events, trusted devices
 
-**Exact models & fields:** `Document` (+ `classification`, + `uploadLifecycleStatus`, +
-`derivedFromDocumentId`, + `derivativeKind`); `DocumentPermissionGrant`;
-`DocumentPermissionGrantAction`; `DocumentAccessRequest`; `DocumentAccessRequestAction`;
-`DocumentAccessEvent`; `DocumentOpenToken`; `DocumentCheckout`; `TrustedDevice`;
-`DeviceAttestation`.
+**Exact models & fields:** `Document` (+ `classification`, `uploadLifecycleStatus`,
+`derivedFromDocumentId`, `derivativeKind`); `AccessPackageDocumentClassificationTemplate` (moved
+here per §3); `DocumentPermissionGrant` (+ the provenance-mutual-exclusivity and validity/
+revocation CHECKs from §6); `DocumentPermissionGrantAction`; `DocumentAccessRequest`;
+`DocumentAccessRequestAction`; `DocumentAccessEvent`; `DocumentOpenToken` (+ `createdAt` and the
+consistency CHECKs from §6); `DocumentCheckout`; `TrustedDevice` (with `deviceKeyThumbprint` per
+§6); `DeviceAttestation`.
 
 **Exact enums:** `DocumentClassification{INTERNAL,CONFIDENTIAL,RESTRICTED,NDA_LEGAL,
-SAFETY_CRITICAL}`, `DocumentGrantAction` (the eleven, §7), `DocumentAccessRequestStatus{PENDING,
-APPROVED,REJECTED,EXPIRED,REVOKED}`, `UploadLifecycleStatus{UPLOADING,QUARANTINED,SCANNING,CLEAN,
-REJECTED}`, `DocumentOpenTokenAction{OPEN,DOWNLOAD}`, `TrustedDeviceStatus{ACTIVE,REVOKED}`.
+SAFETY_CRITICAL}`, `DocumentGrantAction` (the eleven, unchanged), `DocumentAccessRequestStatus`,
+`UploadLifecycleStatus`, `DocumentOpenTokenAction`, `TrustedDeviceStatus`.
 
-**FK & delete behaviour:** Restrict throughout; `DocumentOpenToken.documentId` is a single FK
-(§8's resolved design — no dual target anywhere).
+**FK & delete behaviour:** Restrict throughout; `DocumentOpenToken.documentId` single FK
+(unchanged, §8 of the prior contract).
 
-**CHECK constraints:** `DocumentPermissionGrant` exactly-one(`documentId`, `classification`);
-`DocumentPermissionGrant` classification-scope-kind-vs-FK consistency (§7); `Document`
-`previousVersionId`/`derivedFromDocumentId` self-reference guards (one-hop, per the existing
-Document precedent).
+**CHECK constraints:** `DocumentPermissionGrant` exactly-one(`documentId`,`classification`);
+provenance mutual exclusivity (§6); validity/revocation consistency (§6); classification-scope-
+kind-vs-FK consistency; `stepUpMaxAgeSeconds > 0` when present; `Document`
+`previousVersionId`/`derivedFromDocumentId` one-hop self-reference guards; `TrustedDevice.
+deviceKeyThumbprint` fixed-length CHECK (§6); `DocumentOpenToken` full consistency set (§6).
 
-**Triggers:** `DocumentAccessEvent` append-only; `Document` classification-lock (§9, permitting
-only the `supersededAt` transition); `DocumentOpenToken` issuance requires
-`Document.uploadLifecycleStatus = CLEAN` (cross-row, `BEFORE INSERT`); `DocumentPermissionGrant`/
-`DocumentAccessRequest` `BEFORE INSERT` — reject grantee in `PENDING_APPROVAL`/`REJECTED`;
-`DeviceAttestation` append-only.
+**Triggers:** `DocumentAccessEvent` append-only (now recording both `ALLOWED` and `DENIED`, §10 of
+the prior contract, unchanged); `Document` classification-lock permitting only the `supersededAt`
+transition (unchanged); `DocumentOpenToken` issuance requires `uploadLifecycleStatus = CLEAN`
+(cross-row, unchanged); `DocumentPermissionGrant`/`DocumentAccessRequest` `BEFORE INSERT` reject a
+grantee in `PENDING_APPROVAL`/`REJECTED`; `DeviceAttestation` append-only;
+`AccessPackageDocumentClassificationTemplate` published-parent lock (§2's pattern, reused); the
+`UserAccessPackageAssignment` revocation-cascade function **replaced** (`CREATE OR REPLACE`, same
+function/trigger) to additionally cascade onto `DocumentPermissionGrant` (§3).
 
-**Database tests:** a locked `NDA_LEGAL`/`SAFETY_CRITICAL` `CLEAN` document rejects
-storageKey/checksum/classification changes; the same document accepts a `supersededAt` transition;
-a non-`CLEAN` document cannot have a `DocumentOpenToken` issued; `DocumentAccessEvent` records both
-`ALLOWED` and `DENIED` rows and rejects UPDATE/DELETE; the exactly-one CHECK rejects both-populated
-and neither-populated grants; a grant for a pending/rejected user is rejected.
+**Database tests:** every test listed in the prior contract's §9/§10/§11 test lists (locked-
+document field rejection with `supersededAt` still permitted; token-issuance-requires-CLEAN;
+`DocumentAccessEvent` records both outcomes and rejects UPDATE/DELETE; grant exactly-one CHECK) —
+**plus**, new for this revision: provenance mutual-exclusivity rejected when both source fields
+are populated; `DocumentOpenToken`'s mutually-exclusive-terminal-state CHECK rejected when both
+`consumedAt` and `revokedAt` are set; `TrustedDevice.deviceKeyThumbprint` wrong-length value
+rejected; duplicate `deviceKeyThumbprint` across two different `TrustedDevice` rows rejected;
+`AccessPackageDocumentClassificationTemplate` published-parent lock rejects INSERT/UPDATE/DELETE
+once its version is published; the replaced revocation-cascade function correctly cascades to
+*both* `UserPermissionGrant` and `DocumentPermissionGrant` rows sharing one `sourceAssignmentId`,
+verified against a second, untouched assignment's rows of each kind.
 
 **Future Phase 0B tests:** real classification+row-scope intersection enforcement against a live
-request; real trusted-device/step-up enforcement; the real native-open/download token issuance and
-consumption flow, including the Desktop Launcher handoff.
+request, including the multi-linked-document and unlinked-document rules from §6; real trusted-
+device/step-up enforcement; the real native-open/download token issuance and consumption flow,
+including the Desktop Launcher handoff; the derivative-inheritance rule from §6 verified against a
+live request (classification-wide grant reaches a derivative; document-specific grant on the
+source does not).
 
-**Dependencies:** requires R2A-1 and R2A-2 (document grants reference real Users, real
-Permissions, real assignments).
+**Dependencies:** requires R2A-1 and R2A-2.
 
-**Exact files expected to change:** same pattern as R2A-1/R2A-2.
+**Exact files expected to change:** per §7 — same evolved schema.prisma/migration.sql, extended
+integration-spec.ts, README.md additions.
 
 **Parent commit:** R2A-2's own final, reviewed commit.
 
 **Go/no-go criteria:** same bar as R2A-1/R2A-2. After R2A-3's independent review sign-off, R2A as
-a whole is considered complete and ready for the next explicitly-authorized phase (R2B) — not
-before.
+a whole is complete and ready for the next explicitly-authorized phase — not before.
+
+---
+
+## 9. Internal-contradiction and forward-reference re-read
+
+Performed against this revision specifically:
+- §1's algorithm is referenced, not restated, everywhere else it matters (§8's R2A-2 future-tests
+  entry) — no second, conflicting description of it exists in this document.
+- §3's split is reflected consistently in §8: R2A-2's model list, trigger list, and test list all
+  omit `AccessPackageDocumentClassificationTemplate`/`DocumentPermissionGrant`; R2A-3's model list
+  introduces both together with the replaced trigger function that references them.
+- §7's one migration statement is referenced (not restated) from all three sub-passes in §8.
+- Every model introduced in §4/§6 appears in exactly one sub-pass's "exact models & fields" list
+  in §8, with no model referenced by an earlier sub-pass's triggers/CHECKs before its own
+  introduction.
+- No open product decision remains that blocks starting R2A-1: §1's algorithm, §3's split, §6's
+  derivative/multi-link/unlinked-document rules, and §7's migration strategy were the four
+  previously-ambiguous points, and each now has exactly one stated design.
+
+**No unresolved architecture decision remains that is required to start R2A-1.**
 
 ---
 
@@ -551,8 +710,9 @@ before.
 - Branch: `backend-foundation` — unaffected by this document. HEAD:
   `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87` (unchanged).
 - `origin/main`: `6dc9de2a827d2902f5d14870ab8dc1560174832b` (unchanged, never merged into).
-- This document is committed only to `r2-design-review`, as a **new** commit on top of the
-  existing `bd11f6c490ff7f6e591ca268f3e485a26583af38` (the prior design commit is not amended).
+- This document is committed only to `r2-design-review`, as a **new** commit on top of
+  `c17839c5bc0fca4616f83ebeb0e77f24578d3fdb` (which is not amended); the branch's full history
+  remains `9cdd8f3` → `bd11f6c` → `c17839c` → (this commit).
 - No `schema.prisma`, migration, application code, test, or package file is touched by this
   commit.
-- R2A, R2B, R2C, M14, M15, and Phase 0B implementation were not started.
+- R2A-1, R2A-2, R2A-3, R2B, R2C, M14, M15, and Phase 0B implementation were not started.
