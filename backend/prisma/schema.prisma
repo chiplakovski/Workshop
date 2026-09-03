@@ -483,7 +483,7 @@ model User {
   equipmentBreakdownsResolved            EquipmentBreakdown[]
   qualityHoldsApplied                    QualityHold[]                   @relation("QualityHoldAppliedBy")
   qualityHoldsReleased                   QualityHold[]                   @relation("QualityHoldReleasedBy")
-  qualityReleasesReleased                QualityRelease[]
+  qualityReleasesDecided                 QualityRelease[]
   migrationReconciliationRecordsResolved MigrationReconciliationRecord[]
 
   @@index([active])
@@ -1483,13 +1483,21 @@ model QualityCapa {
 /// scope requires projectId and forbids jobcardId; JOBCARD scope requires jobcardId and forbids
 /// projectId. A hold can never exist without a valid target.
 ///
-/// "Keep release history immutable": once a hold's status is RELEASED, a second migration-SQL
-/// trigger rejects any further change to status, releasedById, releasedAt, releaseReason or
-/// releaseEvidenceRef on that row — the release fact, once recorded, is locked. This is narrower
-/// than SafetyEvent's full insert-only trigger because QualityHold's own ACTIVE -> RELEASED
-/// transition is a legitimate, required UPDATE; only the release fact itself is made immutable
-/// after it is set. The full historical trail of apply/release actions is additionally recorded,
-/// unconditionally immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
+/// Phase 0A-R1 review-correction: apply and release each carry their own actor-type/actor pair —
+/// `appliedActorType`/`appliedById` (required: every hold must record who or what applied it) and
+/// `releasedActorType`/`releasedById` (nullable until released), each with the same USER-requires-
+/// actor / SYSTEM-forbids-actor CHECK as SafetyEvent. Three further CHECK constraints, added in
+/// the migration SQL, keep the release-fact fields internally consistent with `status`: an ACTIVE
+/// row must have every release field NULL; a RELEASED row must have every release field populated
+/// (actor type, actor consistency, releasedAt, and non-blank releaseReason/releaseEvidenceRef) —
+/// this applies to every INSERT as much as every UPDATE, so a row can never be inserted directly
+/// as RELEASED with incomplete release facts either. "Keep release history immutable": once a
+/// hold's status is RELEASED, a trigger rejects any further change to status or any release field
+/// on that row — the release fact, once recorded, is locked. This is narrower than SafetyEvent's
+/// full insert-only trigger because QualityHold's own ACTIVE -> RELEASED transition is itself a
+/// legitimate, required UPDATE; only the release fact itself is made immutable after it is set.
+/// The full historical trail of apply/release actions is additionally recorded, unconditionally
+/// immutably, in SafetyEvent (kind HOLD_APPLY / HOLD_RELEASE).
 model QualityHold {
   id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no                 String            @unique @db.VarChar(40)
@@ -1498,8 +1506,10 @@ model QualityHold {
   jobcardId          String?           @db.Uuid
   ncrId              String?           @db.Uuid
   status             QualityHoldStatus @default(ACTIVE)
+  appliedActorType   SafetyActorType
   appliedById        String?           @db.Uuid
-  appliedAt          DateTime?         @db.Timestamptz
+  appliedAt          DateTime          @db.Timestamptz
+  releasedActorType  SafetyActorType?
   releasedById       String?           @db.Uuid
   releasedAt         DateTime?         @db.Timestamptz
   releaseReason      String?           @db.VarChar(1000)
@@ -1637,7 +1647,7 @@ model QualityItpLine {
 /// and `gateResultSnapshot` are always server-computed by the Phase 0B ReleaseGateService — no
 /// field here is ever client-writable in the future API; Phase 0A does not implement that service.
 ///
-/// Phase 0A-R1: QualityRelease now represents immutable safety evidence in the same sense as
+/// Phase 0A-R1: QualityRelease represents immutable safety evidence in the same sense as
 /// SafetyEvent and Document. It is enforced insert-only at the database level (the same
 /// BEFORE UPDATE/DELETE trigger pattern as SafetyEvent, added in the migration SQL) — an existing
 /// release row can never be edited or deleted. A correction, replacement or revocation creates a
@@ -1645,25 +1655,39 @@ model QualityItpLine {
 /// self-referential version-chain pattern to Document.previousVersionId, including the same
 /// one-hop self-reference CHECK constraint; full multi-hop cycle prevention is, likewise, deferred
 /// to application-level validation and tests). `version` (optimistic-concurrency) is removed:
-/// an immutable row is never concurrently updated, so there is nothing for it to protect.
+/// an immutable row is never concurrently updated, so there is nothing for it to protect. There is
+/// deliberately no `supersededAt` here either (Phase 0A-R1 review-correction): an immutable,
+/// insert-only row can never later be UPDATEd to record when it was superseded — that fact is
+/// carried entirely by the *new* row's own `previousVersionId` and `createdAt`/`decidedAt`.
+///
+/// Phase 0A-R1 review-correction: every result — including RELEASED and RELEASED_WITH_CONDITIONS,
+/// not just NOT_RELEASED — now carries full decision-level attribution: `decisionActorType`
+/// (required) with the same USER-requires-actor / SYSTEM-forbids-actor CHECK used by SafetyEvent
+/// and QualityHold; `decidedAt` (required, not nullable); `gateVersion` (required, non-blank,
+/// CHECK-enforced); `gateResultSnapshot` (required — plain NOT NULL is sufficient here, since a
+/// decision can never exist without recording what it was based on); `blockingReasons` (required
+/// JSON, defaulting to `[]` when there are none — never NULL, so "no reasons" and "reasons not
+/// recorded" cannot be confused). `RELEASED_WITH_CONDITIONS` carrying actual conditions is a
+/// content-shape rule on an arbitrary JSON blob — deliberately left to the future
+/// ReleaseGateService rather than a brittle SQL check, per instruction.
 model QualityRelease {
   id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   no                 String             @unique @db.VarChar(40)
   projectId          String             @db.Uuid
   jobcardId          String?            @db.Uuid
   result             FinalReleaseResult
-  blockingReasons    Json?
+  decisionActorType  SafetyActorType
+  decidedById        String?            @db.Uuid
+  decidedAt          DateTime           @db.Timestamptz
   gateVersion        String             @db.VarChar(40)
-  gateResultSnapshot Json?
-  releasedById       String?            @db.Uuid
-  releasedAt         DateTime?          @db.Timestamptz
+  gateResultSnapshot Json
+  blockingReasons    Json               @default("[]")
   previousVersionId  String?            @unique @db.Uuid
-  supersededAt       DateTime?          @db.Timestamptz
   createdAt          DateTime           @default(now()) @db.Timestamptz
 
   project         Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
   jobcard         Jobcard?               @relation(fields: [jobcardId], references: [id], onDelete: Restrict)
-  releasedBy      User?                  @relation(fields: [releasedById], references: [id], onDelete: Restrict)
+  decidedBy       User?                  @relation(fields: [decidedById], references: [id], onDelete: Restrict)
   previousVersion QualityRelease?        @relation("QualityReleaseVersionChain", fields: [previousVersionId], references: [id], onDelete: Restrict)
   supersededBy    QualityRelease?        @relation("QualityReleaseVersionChain")
   documentLinks   FinalReleaseDocument[]
@@ -1672,7 +1696,7 @@ model QualityRelease {
   @@index([result])
   @@index([projectId])
   @@index([jobcardId])
-  @@index([releasedById])
+  @@index([decidedById])
 }
 
 model SupplierQuality {
@@ -1737,6 +1761,8 @@ model Document {
   ndtRecordLinks           NdtRecordDocument[]
   finalReleaseLinks        FinalReleaseDocument[]
   inventoryLotLinks        InventoryLotDocument[]
+  safetyEventsAsPrevious   SafetyEvent[]                 @relation("SafetyEventPreviousDocument")
+  safetyEventsAsNew        SafetyEvent[]                 @relation("SafetyEventNewDocument")
 
   @@index([status])
   @@index([type])
@@ -1968,40 +1994,55 @@ model AuditLog {
 /// Phase 0A-R1: the prior `entityType`/`entityId` polymorphic soft link — unverified at the
 /// database level, unlike AuditLog.entityType which is explicitly documented and accepted as a
 /// label-only exception — is removed. Every SafetyEvent now targets exactly one real, typed,
-/// indexed foreign key, enforced by a CHECK constraint added in the migration SQL:
+/// indexed foreign key (or, for DOCUMENT_SUPERSEDED, a typed pair), enforced by a CHECK
+/// constraint added in the migration SQL:
 ///   - EQUIPMENT_BLOCK / EQUIPMENT_PASS  -> equipmentId only
 ///   - HOLD_APPLY / HOLD_RELEASE         -> qualityHoldId only
 ///   - RELEASE_GRANT / RELEASE_REJECT    -> qualityReleaseId only
-///   - DOCUMENT_SUPERSEDED               -> exactly one of qualityHoldId / qualityReleaseId
-///                                          (protected safety evidence only — a superseded
-///                                          document with no safety-evidence link does not
-///                                          belong in this table at all)
+///   - DOCUMENT_SUPERSEDED               -> previousDocumentId AND newDocumentId, both set,
+///                                          both required to differ from each other, and every
+///                                          other target column NULL
 /// `reasons`, `gateVersion` and `decisionSnapshot` record the gate decision itself: the reason
 /// code(s), which version of the gate/rule logic produced the decision, and a snapshot of the
 /// inputs the decision was based on — all for later audit, since Phase 0B's gate services are not
 /// implemented yet and their exact output shape isn't finalized.
+///
+/// Phase 0A-R1 review-correction: `reasons` and `decisionSnapshot` are now required — a
+/// successful gate decision may record an empty `reasons` array (`@default("[]")`; "no blocking
+/// reasons" and "reasons not recorded" must never be confused as the same NULL), but
+/// `decisionSnapshot` has no such empty-case default: every event, success or failure, records
+/// what it was based on. DOCUMENT_SUPERSEDED previously identified only the QualityHold/
+/// QualityRelease context a document supersession happened in, without naming the two actual
+/// Document rows involved — `previousDocumentId`/`newDocumentId` (real FKs to Document) fix that;
+/// this kind no longer uses qualityHoldId/qualityReleaseId/equipmentId at all.
 model SafetyEvent {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  occurredAt       DateTime        @default(now()) @db.Timestamptz
-  kind             SafetyEventKind
-  equipmentId      String?         @db.Uuid
-  qualityHoldId    String?         @db.Uuid
-  qualityReleaseId String?         @db.Uuid
-  reasons          Json?
-  gateVersion      String          @db.VarChar(40)
-  decisionSnapshot Json?
-  actorType        SafetyActorType
-  userId           String?         @db.Uuid
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt         DateTime        @default(now()) @db.Timestamptz
+  kind               SafetyEventKind
+  equipmentId        String?         @db.Uuid
+  qualityHoldId      String?         @db.Uuid
+  qualityReleaseId   String?         @db.Uuid
+  previousDocumentId String?         @db.Uuid
+  newDocumentId      String?         @db.Uuid
+  reasons            Json            @default("[]")
+  gateVersion        String          @db.VarChar(40)
+  decisionSnapshot   Json
+  actorType          SafetyActorType
+  userId             String?         @db.Uuid
 
-  equipment      Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
-  qualityHold    QualityHold?    @relation(fields: [qualityHoldId], references: [id], onDelete: Restrict)
-  qualityRelease QualityRelease? @relation(fields: [qualityReleaseId], references: [id], onDelete: Restrict)
-  user           User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  equipment        Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  qualityHold      QualityHold?    @relation(fields: [qualityHoldId], references: [id], onDelete: Restrict)
+  qualityRelease   QualityRelease? @relation(fields: [qualityReleaseId], references: [id], onDelete: Restrict)
+  previousDocument Document?       @relation("SafetyEventPreviousDocument", fields: [previousDocumentId], references: [id], onDelete: Restrict)
+  newDocument      Document?       @relation("SafetyEventNewDocument", fields: [newDocumentId], references: [id], onDelete: Restrict)
+  user             User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([kind])
   @@index([equipmentId])
   @@index([qualityHoldId])
   @@index([qualityReleaseId])
+  @@index([previousDocumentId])
+  @@index([newDocumentId])
   @@index([occurredAt])
   @@index([userId])
 }
