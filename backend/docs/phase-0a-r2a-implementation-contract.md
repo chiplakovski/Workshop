@@ -1,58 +1,53 @@
 # Phase 0A-R2A Implementation Contract
 
-Design-only. This revision corrects seven further issues found on independent review of the prior
-contract (commit `626324b6b1c25da23591ada454e0f2d4c09b0457`). This document fully replaces the
-prior contract's content; nothing below should be read as a diff against it. Every prior fix not
-named below (the CRITICAL row-scope/eligibility decoupling, the R2A-2/R2A-3 split, the migration
-strategy) is carried forward unchanged and is restated in full for completeness, not silently
-dropped.
+Design-only. The prior revision (commit `a963958503d91ac2dbef07f76c36d7b6ba2cd1ad`) fixed seven
+issues and was accepted on every point except two remaining MFA integrity bypasses, addressed by
+this revision. Everything else in the prior revision — including its own seven fixes — is carried
+forward unchanged and restated in full for completeness, not silently dropped.
 
 **Branch:** `r2-design-review` (this document only; `backend-foundation`/`main` untouched)
 **Parent for this analysis:** `backend-foundation` @ `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87`
 **Prior commits on this branch:** `bd11f6c490ff7f6e591ca268f3e485a26583af38`,
-`c17839c5bc0fca4616f83ebeb0e77f24578d3fdb`, `626324b6b1c25da23591ada454e0f2d4c09b0457`
-(none amended by this revision)
+`c17839c5bc0fca4616f83ebeb0e77f24578d3fdb`, `626324b6b1c25da23591ada454e0f2d4c09b0457`,
+`a963958503d91ac2dbef07f76c36d7b6ba2cd1ad` (none amended by this revision)
 
 ---
 
 ## 0. What this revision corrects
 
-1. Replaces every status-vs-boolean-equality lifecycle CHECK (of the form
-   `status = 'X' = (a IS NOT NULL AND b IS NOT NULL)`) with an explicit, mutually exclusive,
-   per-status state-shape CHECK. The equality form silently accepted partially populated terminal
-   fields on non-terminal rows because the right-hand `AND` can be `FALSE` for a reason unrelated
-   to the left-hand status comparison, making the two sides coincidentally equal. Applied to
-   `UserInvitation`, `MfaEnrollment`, and (newly, for consistency) `AccessRequest`; `UserSession`'s
-   asymmetric rule, previously stated only in prose, is now a real CHECK.
-2. Gives `AccessRequest` a real, durable `EXPIRED` time fact (`expiresAt` + terminal `expiredAt`),
-   matching the approach already used — and now completed — for `UserInvitation`. Adds ordering
-   CHECKs so a token/invitation can never be recorded as consumed or accepted after its own
-   expiry.
-3. Replaces the unenforceable "at most one" TOTP-credential invariant with a real activation
-   lifecycle: a new `PENDING_SETUP` enrollment state, an activation-gate trigger that refuses to
-   let an enrollment become `ACTIVE` without a matching credential, method immutability, and
-   credential method-matching/delete-guard triggers that close every update and delete bypass.
-4. Fixes a real security bug in the published-template-immutability trigger: on `UPDATE` it
-   inspected only `NEW`'s parent, so a template row could be silently moved out of a published
-   `AccessPackageVersion` into a draft one (or vice versa) undetected. The trigger now checks
-   `OLD`'s parent on `UPDATE`/`DELETE` and `NEW`'s parent on `INSERT`/`UPDATE`, independently.
-5. Replaces the two-path (context-specific vs. context-free) multi-linked-document rule with one
-   uniform rule: every document access enumerates *all* current typed links and requires *all* of
-   them to pass, regardless of which link the request was routed through. Gives unlinked documents
-   a real two-part authority path (a new `documents.unlinked.access` permission *and* a
-   document-specific grant, both required) instead of a document-specific grant alone conflicting
-   with the otherwise-mandatory module-permission rule.
-6. Corrects three token/device rules: `DocumentOpenToken.consumedAt` may not exceed `expiresAt`;
-   atomic one-time consumption is now defined as an exact Phase 0B conditional-update pattern;
-   `TrustedDevice.deviceKeyThumbprint` is now content-validated (normalized lowercase hex), and its
-   uniqueness is scoped per-user rather than global, per an explicit, reasoned decision about
-   shared physical devices.
-7. Replaces `OutboxEvent`'s redundant/incomplete lifecycle CHECKs with one exhaustive, mutually
-   exclusive per-status state-shape CHECK covering all five statuses, including a new
-   `deadLetteredAt` fact for the `DEAD_LETTER` terminal state.
+**This revision's two remaining MFA bypasses (§5, substantially rewritten):**
+
+1. **Direct-ACTIVE-insert bypass.** The activation gate from the prior revision was a
+   `BEFORE UPDATE` trigger only, so a caller could `INSERT` an `MfaEnrollment` row with
+   `status = 'ACTIVE'` and zero credentials directly, never touching the gate at all. Fixed with a
+   new `BEFORE INSERT` trigger that rejects any insert whose `status` is not `PENDING_SETUP`, so
+   `ACTIVE` is reachable only through the already-gated `PENDING_SETUP → ACTIVE` transition.
+2. **Credential-reassignment bypass.** The prior revision's method-matching trigger fired on both
+   `INSERT` and `UPDATE` but only ever validated a credential's **new** enrollment — so a
+   credential could be `UPDATE`d to re-point `mfaEnrollmentId` at a different, compatible-method
+   enrollment, leaving its original `ACTIVE` enrollment with zero credentials without ever
+   triggering the delete guard (which only fires on `DELETE`, and this was an `UPDATE`). Fixed by
+   making `mfaEnrollmentId` unconditionally immutable after creation on both credential tables —
+   not merely re-validated, but never changeable at all, closing the bypass regardless of whether
+   the destination enrollment's method matches.
+
+Alongside these two fixes, this revision also makes the `MfaEnrollment` status transition graph an
+explicit, database-enforced whitelist (only `PENDING_SETUP → ACTIVE`, `PENDING_SETUP → REVOKED`,
+`ACTIVE → REVOKED`, and same-status updates that leave `revokedAt`/`revokedById` unchanged are
+permitted — the transition graph is what the direct-insert and reassignment fixes above are
+instances of, made explicit as one whitelist rather than left implicit across several separate
+triggers), and documents and closes a concurrency race between activation and credential deletion
+using an explicit row-locking protocol, with two new R2A-1-level database integration tests that
+actually exercise that locking under real concurrency.
+
+**Everything from the prior revision not touched above is carried forward unchanged:** the
+CRITICAL row-scope/eligibility decoupling (§1); the corrected published-template trigger (§2); the
+R2A-2/R2A-3 split (§3); the seven lifecycle/EXPIRED/document-link/token/`OutboxEvent` fixes from
+the prior revision (§4, §6); the migration strategy (§7).
 
 Every negative test implied by the above has been hand-evaluated against how PostgreSQL actually
-resolves `NULL` in each branch (§9 documents this check).
+resolves `NULL` in each branch, and every trigger's `INSERT`/`UPDATE`/`DELETE`/concurrent-operation
+paths have been re-traced (§9 documents both).
 
 ---
 
@@ -377,9 +372,10 @@ CHECK (
 `PENDING_SETUP` and `ACTIVE` share an identical shape on this axis (neither is revoked), so they
 are combined in one branch via `IN (...)`; this remains exhaustive and mutually exclusive across
 all three enum values. Plus: `"revokedAt" IS NULL OR "revokedAt" >= "createdAt"`. Index:
-`@@index([userId, method])`. Full activation-gate and immutability triggers are specified in §5.
+`@@index([userId, method])`. The full status transition graph, activation gate, and creation
+constraint are specified in §5.
 
-### `MfaTotpCredential` (§5 for the activation-gate and delete-guard triggers)
+### `MfaTotpCredential` (§5 for the transition graph, immutability, and delete-guard triggers)
 
 | Field | Type | Nullable | Default |
 |---|---|---|---|
@@ -522,49 +518,104 @@ nextAttemptAt])`.
 
 ---
 
-## 5. MFA relational integrity and activation lifecycle (item 3 — substantially rewritten)
+## 5. MFA relational integrity and activation lifecycle
 
-**The gap being fixed:** `MfaTotpCredential.mfaEnrollmentId @unique` proves at most one credential
-row can exist per enrollment; it proves nothing about whether an `ACTIVE` enrollment has *any*
-credential at all. Nothing previously stopped an `MfaEnrollment` from being created directly as
-`ACTIVE` with zero credential rows, or from staying `ACTIVE` after its only credential was
-deleted. The fix is a real setup lifecycle plus triggers that gate every path that could violate
-it.
+This revision closes two bypasses, makes the transition graph explicit, and adds a
+concurrency-locking protocol.
 
-**Lifecycle:** every `MfaEnrollment` is created as `PENDING_SETUP`. Credential rows
-(`MfaTotpCredential` / `MfaWebAuthnCredential`) may be created — or, for WebAuthn, added — while
-the enrollment is in either `PENDING_SETUP` or already `ACTIVE`; there is no restriction requiring
-credential creation to happen only during setup, since legitimately adding a second WebAuthn
-security key to an already-active enrollment is a normal, desirable operation, and TOTP's own
-`@unique` constraint already makes a second TOTP row impossible regardless of enrollment status.
-What *is* gated is the **transition into `ACTIVE`** and every path that could **remove** the
-credential(s) an `ACTIVE` enrollment depends on.
+**The two bypasses being fixed, exactly:**
+- **Direct-ACTIVE-insert.** Every trigger in the prior revision that protected the "`ACTIVE`
+  requires a credential" invariant fired on `UPDATE` only. A plain `INSERT INTO "MfaEnrollment"
+  ("userId", "method", "status", ...) VALUES (..., 'ACTIVE', ...)` never passes through an
+  `UPDATE` at all — `OLD` doesn't exist for an `INSERT` — so no trigger ever ran, and a
+  zero-credential `ACTIVE` enrollment could be created in one statement.
+- **Credential reassignment.** The prior method-matching trigger fired on `BEFORE INSERT OR
+  UPDATE` and, on `UPDATE`, re-validated the credential's method against its (possibly just
+  changed) `mfaEnrollmentId`. That validates *compatibility*, not *stability* — it happily allowed
+  `UPDATE "MfaTotpCredential" SET "mfaEnrollmentId" = <a different TOTP enrollment's id> WHERE id =
+  ...`, silently detaching the credential from its original enrollment. If that original
+  enrollment was `ACTIVE`, it was left with zero credentials — and the delete-guard trigger from
+  the prior revision never fired, because no row was deleted; it was re-parented.
 
-**1. Method immutability (`BEFORE UPDATE` on `MfaEnrollment`):**
+**Both are closed by tightening what is allowed to happen at each statement type, rather than by
+re-validating after the fact:** an `MfaEnrollment` may only ever be *inserted* as `PENDING_SETUP`
+(new `BEFORE INSERT` trigger, below); once a credential row exists, its `mfaEnrollmentId` may never
+be *changed* by any `UPDATE`, to any target, compatible or not (new `BEFORE UPDATE` trigger, per
+credential table, below) — the only way to detach a credential from its enrollment is to `DELETE`
+it, which the existing delete-guards already gate.
+
+**Lifecycle (unchanged from the prior revision, now database-enforced end to end rather than only
+at the `UPDATE` step):** every `MfaEnrollment` is created as `PENDING_SETUP`. Credential rows may
+be created — or, for WebAuthn, added — while the enrollment is in either `PENDING_SETUP` or already
+`ACTIVE`; there is no restriction requiring credential creation to happen only during setup, since
+legitimately adding a second WebAuthn security key to an already-active enrollment is a normal,
+desirable operation, and TOTP's own `@unique` constraint already makes a second TOTP row impossible
+regardless of enrollment status. What is gated is the **transition into `ACTIVE`**, **direct
+creation as anything other than `PENDING_SETUP`**, and every path that could **remove or detach**
+the credential(s) an `ACTIVE` enrollment depends on.
+
+### The explicit `MfaEnrollment` status transition graph
+
+**Allowed:** `PENDING_SETUP → ACTIVE` (gated on a matching credential existing); `PENDING_SETUP →
+REVOKED`; `ACTIVE → REVOKED`; a same-status update, but only if `revokedAt` and `revokedById` are
+both left unchanged (protects `REVOKED`'s evidentiary fields — `revokedAt`/`revokedById` — from
+being silently rewritten by a later update that doesn't change `status`).
+**Rejected:** `ACTIVE → PENDING_SETUP` (no legitimate reason to step backward); every transition
+*out of* `REVOKED` (revocation is terminal — re-enrollment means creating a new `MfaEnrollment`
+row, never reviving an old one); direct creation as anything other than `PENDING_SETUP` (the
+direct-ACTIVE-insert bypass this revision closes, generalized to reject direct creation as
+`REVOKED` too, which is equally illegitimate).
+
+**1. Creation constraint (`BEFORE INSERT` on `MfaEnrollment` — new, closes the direct-insert
+bypass):**
 
 ```sql
-CREATE FUNCTION mfa_enrollment_method_immutable() RETURNS TRIGGER AS $$
+CREATE FUNCTION mfa_enrollment_insert_must_be_pending_setup() RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW."method" <> OLD."method" THEN
-    RAISE EXCEPTION 'MfaEnrollment.method is immutable (id=%)', OLD."id";
+  IF NEW."status" <> 'PENDING_SETUP' THEN
+    RAISE EXCEPTION
+      'MfaEnrollment must be created with status = PENDING_SETUP (got %)', NEW."status";
   END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- BEFORE INSERT ON "MfaEnrollment"
 ```
 
-`method` is unconditionally immutable after creation — not merely "immutable once credentials
-exist." There is no legitimate reason to ever convert a TOTP enrollment into a WebAuthn one in
-place; the correct operation is to create a new enrollment, which the design already supports.
-Unconditional immutability is simpler than a conditional rule and has no real downside.
+This is unconditional — no field combination on the inserted row changes the outcome. Whatever
+else the row carries (`revokedAt`/`revokedById` set or unset, either `method`), `status <>
+'PENDING_SETUP'` alone is sufficient to reject it, which is also why no INSERT-time credential
+check is needed here: a `PENDING_SETUP` row can never carry `ACTIVE`'s obligations at the moment
+it is created. (A caller cannot route around this by pre-creating a credential row first and
+pointing it at a not-yet-existing enrollment id either — `MfaTotpCredential.mfaEnrollmentId` and
+`MfaWebAuthnCredential.mfaEnrollmentId` are immediate, non-deferrable foreign keys, so the
+credential insert would itself fail with a foreign-key violation before the enrollment row exists;
+the enrollment row must exist first, and by the time it does, this trigger has already forced its
+`status` to `PENDING_SETUP`.)
 
-**2. Activation gate (`BEFORE UPDATE` on `MfaEnrollment`):**
+**2. Transition guard (`BEFORE UPDATE` on `MfaEnrollment` — replaces the prior revision's two
+separate triggers, `mfa_enrollment_method_immutable` and
+`mfa_enrollment_activation_requires_credential`, with one function that is the sole authority over
+every `UPDATE`-time invariant on this table, including the explicit transition whitelist):**
 
 ```sql
-CREATE FUNCTION mfa_enrollment_activation_requires_credential() RETURNS TRIGGER AS $$
+CREATE FUNCTION mfa_enrollment_transition_guard() RETURNS TRIGGER AS $$
 DECLARE credential_count int;
 BEGIN
-  IF NEW."status" = 'ACTIVE' AND OLD."status" <> 'ACTIVE' THEN
+  IF NEW."method" <> OLD."method" THEN
+    RAISE EXCEPTION 'MfaEnrollment.method is immutable (id=%)', OLD."id";
+  END IF;
+
+  IF NEW."status" = OLD."status" THEN
+    IF NEW."revokedAt" IS DISTINCT FROM OLD."revokedAt"
+       OR NEW."revokedById" IS DISTINCT FROM OLD."revokedById" THEN
+      RAISE EXCEPTION
+        'MfaEnrollment revocation facts are immutable once set (id=%)', OLD."id";
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF OLD."status" = 'PENDING_SETUP' AND NEW."status" = 'ACTIVE' THEN
     IF NEW."method" = 'TOTP' THEN
       SELECT count(*) INTO credential_count
       FROM "MfaTotpCredential" WHERE "mfaEnrollmentId" = NEW."id";
@@ -576,20 +627,34 @@ BEGIN
       RAISE EXCEPTION
         'Cannot activate MfaEnrollment % without at least one matching credential', NEW."id";
     END IF;
+    RETURN NEW;
+  ELSIF OLD."status" = 'PENDING_SETUP' AND NEW."status" = 'REVOKED' THEN
+    RETURN NEW;
+  ELSIF OLD."status" = 'ACTIVE' AND NEW."status" = 'REVOKED' THEN
+    RETURN NEW;
+  ELSE
+    RAISE EXCEPTION
+      'Illegal MfaEnrollment status transition % -> % (id=%)', OLD."status", NEW."status", NEW."id";
   END IF;
-  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- BEFORE UPDATE ON "MfaEnrollment"
 ```
 
-Fires only on the specific transition *into* `ACTIVE` (`NEW.status = 'ACTIVE' AND OLD.status <>
-'ACTIVE'`), so re-saving an already-`ACTIVE` row performs no redundant check. Because
-`MfaTotpCredential.mfaEnrollmentId` is unique, `credential_count >= 1` for TOTP means exactly 1 —
-this trigger is what actually proves "exactly one" for the moment of activation; the `@unique`
-constraint alone only ever proved "at most one."
+Method immutability runs first and unconditionally, exactly as in the prior revision. The
+same-status branch now additionally rejects a same-status update that changes `revokedAt`/
+`revokedById` — a `REVOKED` row's revocation facts can never be quietly rewritten by a later,
+status-preserving update, matching this project's standing append-only-evidence discipline
+elsewhere (`SafetyEvent`, `QualityHold`). Every differing-status update is checked against the
+explicit three-pair whitelist; anything not named — `ACTIVE → PENDING_SETUP`, any `OLD.status =
+'REVOKED'` row with a different `NEW.status`, or any other combination — falls to the final `ELSE`
+and is rejected. `PENDING_SETUP → ACTIVE` is the only pair that additionally re-checks credentials,
+exactly as the prior revision's activation gate did; because `MfaTotpCredential.mfaEnrollmentId` is
+unique, `credential_count >= 1` for TOTP means exactly 1.
 
-**3. Credential method-matching — now covers `INSERT` *and* `UPDATE` (closing the prior
-INSERT-only gap):**
+**3. Credential method-matching — INSERT only now (the prior revision's UPDATE-side re-check is
+retired, not merely narrowed, because item 2 below now makes `mfaEnrollmentId` unconditionally
+immutable — a strictly stronger guarantee that supersedes it):**
 
 ```sql
 CREATE FUNCTION mfa_totp_credential_method_check() RETURNS TRIGGER AS $$
@@ -597,7 +662,7 @@ DECLARE enrollment_method "MfaMethod";
 DECLARE enrollment_status "MfaEnrollmentStatus";
 BEGIN
   SELECT "method", "status" INTO enrollment_method, enrollment_status
-  FROM "MfaEnrollment" WHERE "id" = NEW."mfaEnrollmentId";
+  FROM "MfaEnrollment" WHERE "id" = NEW."mfaEnrollmentId" FOR UPDATE;
   IF enrollment_method IS DISTINCT FROM 'TOTP' THEN
     RAISE EXCEPTION 'MfaTotpCredential.mfaEnrollmentId must reference a TOTP MfaEnrollment';
   END IF;
@@ -607,26 +672,46 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
--- BEFORE INSERT OR UPDATE ON "MfaTotpCredential" (mirrored for MfaWebAuthnCredential,
--- checking method = 'WEBAUTHN')
+-- BEFORE INSERT ON "MfaTotpCredential" (mirrored for MfaWebAuthnCredential, checking
+-- method = 'WEBAUTHN'). The FOR UPDATE clause is the concurrency-locking protocol — see below.
 ```
 
-Firing on `UPDATE` as well as `INSERT` closes the exact bypass the review names: an existing
-credential's `mfaEnrollmentId` can no longer be repointed at an enrollment of the wrong method (the
-re-check re-runs against the *new* target enrollment), and the added `REVOKED` check stops a
-credential from being attached — by insert or by re-pointing — to a revoked enrollment.
+**4. Credential parent immutability (`BEFORE UPDATE` on each credential table — new; this is the
+"safest design" fix for the reassignment bypass, per the review's own framing: unconditional
+immutability, not re-validated compatibility):**
 
-**4. Delete guards, preventing an `ACTIVE` enrollment from losing the credential(s) it depends on
-(new — not explicitly requested by name, but required to make "ACTIVE requires a credential" hold
-at all times, not only at the instant of activation; extends the same invariant to deletion, the
-one remaining path that could silently violate it):**
+```sql
+CREATE FUNCTION mfa_totp_credential_parent_immutable() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."mfaEnrollmentId" IS DISTINCT FROM OLD."mfaEnrollmentId" THEN
+    RAISE EXCEPTION 'MfaTotpCredential.mfaEnrollmentId is immutable (id=%)', OLD."id";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- BEFORE UPDATE ON "MfaTotpCredential" (mirrored for MfaWebAuthnCredential)
+```
+
+This rejects re-pointing `mfaEnrollmentId` to *any* other enrollment — including one of the
+correct method — closing the exact scenario the review names for all four combinations (TOTP →
+another TOTP enrollment, TOTP → WebAuthn, WebAuthn → another WebAuthn enrollment, WebAuthn → TOTP)
+with one unconditional check, rather than four cases of "is the destination compatible." Every
+other field on the row — `signCount`, `attestationFormat` on `MfaWebAuthnCredential`;
+`encryptedSecret`, `encryptionKeyVersion` on `MfaTotpCredential` — is untouched by this trigger and
+remains freely updatable, since the `IF` only inspects `mfaEnrollmentId`. Credential replacement
+is now only possible through the approved lifecycle: create a new credential row (subject to the
+method-match/uniqueness rules above) and, if the old one must go, delete it (subject to the
+delete-guards below) — never by re-parenting the existing row.
+
+**5. Delete guards (unchanged in logic from the prior revision; the `SELECT` each performs is now
+part of the concurrency-locking protocol below):**
 
 ```sql
 CREATE FUNCTION mfa_totp_credential_delete_guard() RETURNS TRIGGER AS $$
 DECLARE enrollment_status "MfaEnrollmentStatus";
 BEGIN
   SELECT "status" INTO enrollment_status
-  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId";
+  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId" FOR UPDATE;
   IF enrollment_status = 'ACTIVE' THEN
     RAISE EXCEPTION
       'Cannot delete the credential of an ACTIVE TOTP MfaEnrollment; revoke it first';
@@ -641,7 +726,7 @@ DECLARE enrollment_status "MfaEnrollmentStatus";
 DECLARE remaining_count int;
 BEGIN
   SELECT "status" INTO enrollment_status
-  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId";
+  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId" FOR UPDATE;
   IF enrollment_status = 'ACTIVE' THEN
     SELECT count(*) INTO remaining_count FROM "MfaWebAuthnCredential"
       WHERE "mfaEnrollmentId" = OLD."mfaEnrollmentId" AND "id" <> OLD."id";
@@ -656,18 +741,72 @@ $$ LANGUAGE plpgsql;
 -- BEFORE DELETE ON "MfaWebAuthnCredential"
 ```
 
-TOTP's guard is unconditional on delete-while-`ACTIVE` (since it can only ever have exactly one
-credential, deleting it always breaks the invariant); WebAuthn's guard only blocks deleting the
+TOTP's guard is unconditional on delete-while-`ACTIVE`; WebAuthn's guard only blocks deleting the
 *last remaining* credential, correctly allowing removal of one of several while keeping others.
+With `mfaEnrollmentId` now immutable (item 4), deletion is the *only* remaining way a credential
+can leave an enrollment, which is exactly why these guards — and the locking protocol below — are
+the last line of defense for the "`ACTIVE` requires a credential" invariant.
+
+### Concurrency-locking protocol
+
+New. Makes the invariant safe under real concurrent access, not just under a single serial
+writer.
+
+**The race being closed:** every check above reasons from a plain `SELECT` unless stated otherwise
+— and a plain `SELECT` inside a trigger takes no row lock. Under PostgreSQL's default `READ
+COMMITTED` isolation, two concurrent transactions can each read a pre-commit snapshot of the
+other's target row, both find their own precondition satisfied, and both commit — leaving the
+database in a state neither transaction individually would have produced. Concretely: transaction
+T1 activates an enrollment (its `BEFORE UPDATE` transition guard counts 1 credential, decides to
+proceed) while transaction T2 concurrently deletes that same, sole credential (its delete guard
+reads the enrollment's status as still `PENDING_SETUP`, since T1 hasn't committed `ACTIVE` yet, and
+allows the delete). If both commit, the enrollment ends up `ACTIVE` with zero credentials — the
+exact outcome every trigger above exists to prevent, reached anyway because the two checks never
+knew about each other.
+
+**The fix — every trigger above that reads across tables now serializes on the `MfaEnrollment`
+row itself, using `SELECT ... FOR UPDATE`:**
+- The transition guard (item 2) needs no explicit lock of its own: it is a `BEFORE UPDATE` trigger
+  *on* `MfaEnrollment`, so the `UPDATE` statement that fires it already holds PostgreSQL's normal
+  row-level write lock on that exact enrollment row for the rest of the transaction — this is what
+  every other operation below serializes against.
+- The credential method-check trigger (item 3, `INSERT`-only) and both delete-guard triggers
+  (item 5) each now explicitly `SELECT ... FOR UPDATE` the parent `MfaEnrollment` row before
+  reading its `status`/`method`. If a concurrent activation `UPDATE` is already in flight, this
+  blocks until that transaction commits or rolls back, then reads the now-final, committed status
+  — never a stale pre-commit value. Symmetrically, if the credential-side transaction acquires the
+  lock first, the concurrent activation `UPDATE` blocks (an `UPDATE` must itself acquire that same
+  row lock to proceed) until the credential-side transaction resolves, and only then evaluates the
+  credential count — which by then correctly reflects whatever the credential-side transaction did.
+- Re-running the race above with this fix in place: whichever of T1 (activation) or T2 (deletion)
+  reaches the `MfaEnrollment` row first — T1 via its own `UPDATE`, T2 via its guard's explicit
+  `FOR UPDATE` — forces the other to wait for it to fully commit or roll back before proceeding.
+  There is no interleaving left in which both read a pre-commit snapshot of the other.
+- **No deadlock is possible under this protocol:** every one of these triggers acquires at most one
+  lock, and always on the same single row (the `MfaEnrollment` row named by
+  `mfaEnrollmentId`/`id`) — no trigger anywhere in this design locks a credential row and then
+  waits on an enrollment lock held by a second transaction that is itself waiting on a credential
+  lock the first transaction holds. A single lock target per transaction path cannot form a wait
+  cycle.
+- **Why credential `INSERT` is included even though adding a credential can only help the
+  "at-least-one" invariant, never hurt it:** the `FOR UPDATE` there protects a different, smaller
+  race — a credential being inserted at the same moment its target enrollment is concurrently being
+  revoked (`ACTIVE → REVOKED`). Without the lock, the insert's plain read of `status` could observe
+  a stale `ACTIVE` value and attach a new credential to an enrollment that has, by the time both
+  transactions commit, already become `REVOKED`.
+
+Positive and negative tests for every path above — including two database-level tests that
+actually exercise this locking under real concurrency — are enumerated in §8's R2A-1 test list.
+A broader concurrency/load test remains a Phase 0B concern (also listed in §8); the two tests here
+are the ones that can be deterministically proven with two ordinary database connections and are
+therefore included now, at R2A-1, rather than deferred.
 
 **Other MFA integrity facts (unchanged from the prior revision):** `stepUpMaxAgeSeconds > 0` when
 present, on both `UserPermissionGrant` and `DocumentPermissionGrant`; `encryptedSecret`/
 `encryptionKeyVersion` non-empty CHECKs; `MfaRecoveryCode` hash uniqueness with the explicit,
-honest note that true single-use-under-concurrency needs a Phase 0B atomic update (§6 now states
-the exact pattern); no plaintext secret anywhere (`encryptedSecret` is KMS-encrypted, `codeHash`/
-every `*tokenHash` field is one-way-hashed, WebAuthn `publicKey` is correctly stored in the clear).
-
-Positive and negative tests for every path above are enumerated in §8's R2A-1 test list.
+honest note that true single-use-under-concurrency needs a Phase 0B atomic update (§6 states the
+exact pattern); no plaintext secret anywhere (`encryptedSecret` is KMS-encrypted, `codeHash`/every
+`*tokenHash` field is one-way-hashed, WebAuthn `publicKey` is correctly stored in the clear).
 
 ---
 
@@ -841,26 +980,60 @@ per-integrity-rule in §5.
   rejected; **`acceptedAt > expiresAt` rejected (new)**; `expiredAt < expiresAt` rejected;
   `expiresAt <= createdAt` rejected; duplicate `tokenHash` rejected.
 - `MfaEnrollment`: `PENDING_SETUP`/`ACTIVE` with either `revokedAt` or `revokedById` set (not both)
-  rejected — **this is the exact case the review identified as previously silently passing (new,
-  two separate tests for "only revokedAt" and "only revokedById")**; `REVOKED` with either field
-  NULL rejected (two separate tests); **`UPDATE ... SET method = ...` on an existing row rejected
-  regardless of status (new)**; **transitioning `PENDING_SETUP → ACTIVE` with zero matching
-  credentials rejected, tested separately for TOTP and WebAuthn (new, two tests)**; **the same
-  transition with exactly one matching credential (TOTP) or at least one (WebAuthn) succeeds —
-  positive controls (new, two tests)**.
+  rejected (two separate tests for "only revokedAt" and "only revokedById"); `REVOKED` with either
+  field NULL rejected (two separate tests); `UPDATE ... SET method = ...` on an existing row
+  rejected regardless of status; transitioning `PENDING_SETUP → ACTIVE` with zero matching
+  credentials rejected, tested separately for TOTP and WebAuthn (two tests); the same transition
+  with exactly one matching credential (TOTP) or at least one (WebAuthn) succeeds — positive
+  controls (two tests). **New in this revision:** **direct `INSERT INTO "MfaEnrollment" (...)
+  VALUES (..., 'ACTIVE', ...)` rejected — the exact bypass this revision closes** — tested with
+  every feasible field combination on the inserted row to confirm none bypasses the gate: `ACTIVE`
+  with `revokedAt`/`revokedById` both `NULL` and `method = 'TOTP'` rejected; the same with
+  `method = 'WEBAUTHN'` rejected; `ACTIVE` with `revokedAt`/`revokedById` both set (an attempt to
+  look simultaneously `ACTIVE` and `REVOKED`-shaped) rejected (fails on this trigger and,
+  independently, on §4's shape CHECK — both are confirmed to reject it); direct `INSERT ... VALUES
+  (..., 'REVOKED', ...)` also rejected, confirming the creation constraint is not `ACTIVE`-specific
+  but rejects any non-`PENDING_SETUP` value; a plain `INSERT` with `status` omitted (using the
+  `PENDING_SETUP` default) succeeds — positive control. **Transition-graph tests (new):**
+  `ACTIVE → PENDING_SETUP` rejected; `REVOKED → ACTIVE` rejected; `REVOKED → PENDING_SETUP`
+  rejected; a same-status (`ACTIVE → ACTIVE`) update that changes `revokedById` rejected even
+  though `revokedAt`/`revokedById` are otherwise both still non-null-consistent (proves revocation
+  facts are immutable, not just their null-ness shape); `PENDING_SETUP → ACTIVE`,
+  `PENDING_SETUP → REVOKED`, and `ACTIVE → REVOKED` each succeed — positive controls (three tests).
 - `MfaTotpCredential`: duplicate `mfaEnrollmentId` rejected (unique, unchanged); insert against a
   `WEBAUTHN`-method enrollment rejected; empty `encryptedSecret`/`encryptionKeyVersion` rejected;
-  **`UPDATE ... SET "mfaEnrollmentId" = <a WebAuthn enrollment's id>` on an existing credential
-  rejected (new — closes the update-bypass named by the review)**; **insert against a `REVOKED`
-  enrollment rejected (new)**; **deleting the sole credential of an `ACTIVE` enrollment rejected
-  (new)**.
+  insert against a `REVOKED` enrollment rejected; deleting the sole credential of an `ACTIVE`
+  enrollment rejected. **New in this revision — the reassignment-bypass fix:** `UPDATE ...
+  SET "mfaEnrollmentId" = <a different TOTP enrollment's id>` on an existing credential rejected;
+  `UPDATE ... SET "mfaEnrollmentId" = <a WebAuthn enrollment's id>` rejected; after each rejected
+  move, re-querying confirms the credential's `mfaEnrollmentId` is unchanged and the original
+  `ACTIVE` enrollment still owns exactly one credential (two tests, one per rejected move above).
 - `MfaWebAuthnCredential`: insert against a `TOTP`-method enrollment rejected; duplicate
   `credentialId` (even under a different enrollment) rejected; empty `publicKey` rejected; a second
   WebAuthn credential for the same enrollment with a different `credentialId` succeeds (positive
-  control, unchanged); **`UPDATE` of `mfaEnrollmentId` to a TOTP enrollment rejected (new)**;
-  **insert against a `REVOKED` enrollment rejected (new)**; **deleting the last credential of an
-  `ACTIVE` enrollment (with only one) rejected (new)**; **deleting one of two credentials of an
-  `ACTIVE` enrollment, leaving one, succeeds — positive control (new)**.
+  control); insert against a `REVOKED` enrollment rejected; deleting the last credential of an
+  `ACTIVE` enrollment (with only one) rejected; deleting one of two credentials of an `ACTIVE`
+  enrollment, leaving one, succeeds — positive control. **New in this revision:** `UPDATE ...
+  SET "mfaEnrollmentId" = <a different WebAuthn enrollment's id>` rejected; `UPDATE ...
+  SET "mfaEnrollmentId" = <a TOTP enrollment's id>` rejected; after each, re-querying confirms the
+  credential still belongs to its original `ACTIVE` enrollment (two tests); `UPDATE ... SET
+  "signCount" = signCount + 1` on an existing credential succeeds without touching
+  `mfaEnrollmentId` — positive control proving legitimate non-parent updates remain possible.
+  **Concurrency tests (new — the two tests from §5's locking protocol that are provable at R2A-1
+  with two ordinary database connections, no application server required):** (1) open connection A,
+  begin a transaction that deletes an `ACTIVE` enrollment's sole `MfaWebAuthnCredential` but does
+  not yet commit; from connection B, with a short `lock_timeout` set, attempt the
+  `PENDING_SETUP → ACTIVE` transition on a *different* enrollment sharing no rows with A's
+  transaction — succeeds immediately, proving the lock is scoped to the specific `MfaEnrollment`
+  row and does not serialize unrelated enrollments against each other; repeat with connection B
+  targeting the *same* enrollment A is deleting the credential of — B's `UPDATE` blocks until A
+  commits or rolls back (observed via B's `lock_timeout` expiring while A is still open, then B
+  succeeding once A resolves), and the final state is consistent with whichever of A/B committed
+  first (if A's delete commits first, B's activation then correctly fails on zero credentials; if A
+  rolls back, B's activation correctly succeeds). (2) The symmetric case: connection A begins the
+  `PENDING_SETUP → ACTIVE` transition (holds the enrollment's write lock via its own `UPDATE`) but
+  does not yet commit; connection B attempts to delete that enrollment's sole credential and blocks
+  until A resolves, then proceeds consistently with A's outcome.
 - `MfaRecoveryCode`: duplicate `codeHash` rejected; `usedAt < createdAt` rejected.
 - `Notification`: non-object `payload` rejected; `readAt < createdAt` rejected.
 - `OutboxEvent`: **for each of the five state-shape branches, the correctly shaped row is accepted
@@ -881,7 +1054,11 @@ the `PENDING_SETUP → ACTIVE` transition performed by the actual enrollment end
 conditional-`UPDATE` atomic-consumption pattern from §6, exercised under real concurrency for both
 `MfaRecoveryCode` and `DocumentOpenToken`; the Phase 0B expiry sweep for `AccessRequest` and
 `UserInvitation`; outbox dispatcher retry/backoff/dedup behavior against a live queue, including a
-real transition into `DEAD_LETTER`.
+real transition into `DEAD_LETTER`. **New in this revision:** a broader MFA concurrency/load test —
+many simultaneous activation and credential-mutation attempts across many enrollments under
+realistic application load, verifying throughput and lock-wait behavior under contention — as
+distinct from the two deterministic two-connection tests already included at R2A-1 above, which
+prove the specific serialization invariant but not broader system behavior under load.
 
 **Dependencies:** none beyond the current, approved Phase 0A-R1 schema.
 
@@ -994,6 +1171,38 @@ concrete failure traced in §4 (`UserInvitation`'s `ACCEPTED`-with-a-dangling-`r
   a bare comparison against a nullable column would let PostgreSQL treat a `NULL` result as
   satisfied rather than failed.
 
+**Trigger-path re-read for this revision — `INSERT`, `UPDATE`, `DELETE`, and concurrent
+operations, traced explicitly per the review's closing instruction:**
+- `MfaEnrollment` `INSERT`: only `mfa_enrollment_insert_must_be_pending_setup` fires (there is no
+  `BEFORE INSERT ... OR UPDATE` combined trigger anywhere in this design); it inspects only
+  `NEW.status`, so every other field combination on the row is irrelevant to its verdict — traced
+  explicitly in §5 and exercised by §8's "every feasible field combination" test group.
+- `MfaEnrollment` `UPDATE`: only `mfa_enrollment_transition_guard` fires; it is the sole authority
+  for method immutability, revocation-fact immutability, and the transition whitelist. It replaces
+  the prior revision's two separate `UPDATE` triggers on this table, removing any question of
+  firing order between them (there is now exactly one).
+- `MfaEnrollment` has no `DELETE` trigger and none is introduced — enrollments are never deleted,
+  only revoked (a `REVOKED` row is retained as a permanent record, consistent with this project's
+  standing evidence-retention discipline).
+- `MfaTotpCredential`/`MfaWebAuthnCredential` `INSERT`: only the method-check trigger fires
+  (`mfa_totp_credential_method_check` / the mirrored WebAuthn function) — the parent-immutability
+  trigger is `BEFORE UPDATE` only and cannot fire on `INSERT`, where there is no `OLD` row to
+  compare against; nothing is skipped, since the immutability check has nothing to protect until a
+  row already exists.
+- `MfaTotpCredential`/`MfaWebAuthnCredential` `UPDATE`: only the new parent-immutability trigger
+  fires — the method-check trigger no longer fires on `UPDATE` at all (retired, per §5's item 3),
+  so there is no risk of the two triggers disagreeing or firing in an order-dependent way; exactly
+  one trigger owns `UPDATE`, exactly one owns `INSERT`, and they check disjoint things.
+- `MfaTotpCredential`/`MfaWebAuthnCredential` `DELETE`: only the respective delete-guard fires,
+  unchanged in logic from the prior revision, now locking the parent row via `FOR UPDATE`.
+- **Concurrent operations:** every trigger above that reads a fact from a *different* row now
+  either (a) is itself invoked by an `UPDATE` on that row (`MfaEnrollment`'s own transition guard,
+  which therefore already holds the row's write lock) or (b) explicitly acquires
+  `SELECT ... FOR UPDATE` on that row before reading it (the credential-table `INSERT` and
+  `DELETE` triggers). No trigger in this design reads a cross-row fact without one of these two
+  guarantees, which is the property the locking protocol in §5 depends on; confirmed by inspecting
+  every `SELECT ... FROM "MfaEnrollment"` in this section's trigger bodies individually.
+
 **Re-read for internal contradictions and forward references, specific to this revision's
 changes:**
 - §2's corrected trigger function is referenced (not restated) from §8's R2A-2 and R2A-3 sections.
@@ -1022,7 +1231,7 @@ changes:**
   `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87` (unchanged).
 - `origin/main`: `6dc9de2a827d2902f5d14870ab8dc1560174832b` (unchanged, never merged into).
 - This document is committed only to `r2-design-review`, as a **new** commit on top of
-  `626324b6b1c25da23591ada454e0f2d4c09b0457` (which is not amended); the branch's full history
-  remains `9cdd8f3` → `bd11f6c` → `c17839c` → `626324b` → (this commit).
+  `a963958503d91ac2dbef07f76c36d7b6ba2cd1ad` (which is not amended); the branch's full history
+  remains `9cdd8f3` → `bd11f6c` → `c17839c` → `626324b` → `a963958` → (this commit).
 - No `schema.prisma`, migration, application code, test, or package file is touched by this commit.
 - R2A-1, R2A-2, R2A-3, R2B, R2C, M14, M15, and Phase 0B implementation were not started.
