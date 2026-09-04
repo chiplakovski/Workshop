@@ -1,53 +1,53 @@
 # Phase 0A-R2A Implementation Contract
 
-Design-only. The prior revision (commit `a963958503d91ac2dbef07f76c36d7b6ba2cd1ad`) fixed seven
-issues and was accepted on every point except two remaining MFA integrity bypasses, addressed by
-this revision. Everything else in the prior revision — including its own seven fixes — is carried
-forward unchanged and restated in full for completeness, not silently dropped.
+Design-only. The prior revision (commit `20a814edd07fddd32c55eaad43a25981d46b63d5`) fixed the two
+remaining MFA integrity bypasses, and the MFA architecture and trigger design themselves are now
+approved. That revision's independent review found two of its R2A-1 acceptance-test *descriptions*
+— not the triggers or schema they test — were internally impossible fixtures; this revision
+corrects only those two test descriptions. No architecture, trigger, CHECK, or field changes from
+any prior revision are touched.
 
 **Branch:** `r2-design-review` (this document only; `backend-foundation`/`main` untouched)
 **Parent for this analysis:** `backend-foundation` @ `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87`
 **Prior commits on this branch:** `bd11f6c490ff7f6e591ca268f3e485a26583af38`,
 `c17839c5bc0fca4616f83ebeb0e77f24578d3fdb`, `626324b6b1c25da23591ada454e0f2d4c09b0457`,
-`a963958503d91ac2dbef07f76c36d7b6ba2cd1ad` (none amended by this revision)
+`a963958503d91ac2dbef07f76c36d7b6ba2cd1ad`, `20a814edd07fddd32c55eaad43a25981d46b63d5`
+(none amended by this revision)
 
 ---
 
 ## 0. What this revision corrects
 
-**This revision's two remaining MFA bypasses (§5, substantially rewritten):**
+**Two R2A-1 acceptance-test fixtures in §8, both internally impossible as previously written —
+the underlying triggers and CHECKs they test are unchanged and approved:**
 
-1. **Direct-ACTIVE-insert bypass.** The activation gate from the prior revision was a
-   `BEFORE UPDATE` trigger only, so a caller could `INSERT` an `MfaEnrollment` row with
-   `status = 'ACTIVE'` and zero credentials directly, never touching the gate at all. Fixed with a
-   new `BEFORE INSERT` trigger that rejects any insert whose `status` is not `PENDING_SETUP`, so
-   `ACTIVE` is reachable only through the already-gated `PENDING_SETUP → ACTIVE` transition.
-2. **Credential-reassignment bypass.** The prior revision's method-matching trigger fired on both
-   `INSERT` and `UPDATE` but only ever validated a credential's **new** enrollment — so a
-   credential could be `UPDATE`d to re-point `mfaEnrollmentId` at a different, compatible-method
-   enrollment, leaving its original `ACTIVE` enrollment with zero credentials without ever
-   triggering the delete guard (which only fires on `DELETE`, and this was an `UPDATE`). Fixed by
-   making `mfaEnrollmentId` unconditionally immutable after creation on both credential tables —
-   not merely re-validated, but never changeable at all, closing the bypass regardless of whether
-   the destination enrollment's method matches.
+1. **The concurrency-test fixture** described connection A deleting a credential from an already
+   `ACTIVE` enrollment while connection B concurrently performed `PENDING_SETUP → ACTIVE` on that
+   *same* enrollment — impossible, since one row cannot be `ACTIVE` (per A's framing) and mid-
+   `PENDING_SETUP → ACTIVE` (per B's framing) at once, and the delete-guard trigger would already
+   unconditionally reject deleting a credential from a genuinely `ACTIVE` enrollment regardless of
+   concurrency, leaving nothing for the two transactions to actually race over. Corrected to the
+   only scenario both transactions can legitimately contend over — both starting from
+   `PENDING_SETUP`, with commit and rollback variants for each of the two symmetric orderings — and
+   restated correctly how `lock_timeout` may and may not be used to demonstrate blocking (a
+   lock-timeout failure aborts that transaction; the same statement does not later resume on its
+   own once the lock frees).
+2. **The same-status revocation-immutability test** described an `ACTIVE → ACTIVE` update that
+   changes a revocation field — impossible, since §4's state-shape CHECK already requires an
+   `ACTIVE` row's `revokedAt`/`revokedById` to both be `NULL`, leaving nothing non-null to change
+   in that scenario. Corrected to `REVOKED → REVOKED`, the only same-status case where the
+   revocation fields are actually populated and therefore can be tested for immutability, with an
+   `ACTIVE → ACTIVE` value-preserving update kept as the positive control.
 
-Alongside these two fixes, this revision also makes the `MfaEnrollment` status transition graph an
-explicit, database-enforced whitelist (only `PENDING_SETUP → ACTIVE`, `PENDING_SETUP → REVOKED`,
-`ACTIVE → REVOKED`, and same-status updates that leave `revokedAt`/`revokedById` unchanged are
-permitted — the transition graph is what the direct-insert and reassignment fixes above are
-instances of, made explicit as one whitelist rather than left implicit across several separate
-triggers), and documents and closes a concurrency race between activation and credential deletion
-using an explicit row-locking protocol, with two new R2A-1-level database integration tests that
-actually exercise that locking under real concurrency.
+**Everything else is carried forward unchanged:** the CRITICAL row-scope/eligibility decoupling
+(§1); the corrected published-template trigger (§2); the R2A-2/R2A-3 split (§3); the lifecycle/
+EXPIRED/document-link/token/`OutboxEvent` fixes (§4, §6); the full MFA trigger design — creation
+constraint, transition guard, credential immutability, delete guards, locking protocol (§5); the
+migration strategy (§7).
 
-**Everything from the prior revision not touched above is carried forward unchanged:** the
-CRITICAL row-scope/eligibility decoupling (§1); the corrected published-template trigger (§2); the
-R2A-2/R2A-3 split (§3); the seven lifecycle/EXPIRED/document-link/token/`OutboxEvent` fixes from
-the prior revision (§4, §6); the migration strategy (§7).
-
-Every negative test implied by the above has been hand-evaluated against how PostgreSQL actually
-resolves `NULL` in each branch, and every trigger's `INSERT`/`UPDATE`/`DELETE`/concurrent-operation
-paths have been re-traced (§9 documents both).
+Both corrected fixtures have been re-checked against how PostgreSQL actually evaluates the
+triggers and CHECKs they exercise, including the transaction-abort behavior of a `lock_timeout`
+failure (§9 documents this).
 
 ---
 
@@ -996,10 +996,24 @@ per-integrity-rule in §5.
   but rejects any non-`PENDING_SETUP` value; a plain `INSERT` with `status` omitted (using the
   `PENDING_SETUP` default) succeeds — positive control. **Transition-graph tests (new):**
   `ACTIVE → PENDING_SETUP` rejected; `REVOKED → ACTIVE` rejected; `REVOKED → PENDING_SETUP`
-  rejected; a same-status (`ACTIVE → ACTIVE`) update that changes `revokedById` rejected even
-  though `revokedAt`/`revokedById` are otherwise both still non-null-consistent (proves revocation
-  facts are immutable, not just their null-ness shape); `PENDING_SETUP → ACTIVE`,
-  `PENDING_SETUP → REVOKED`, and `ACTIVE → REVOKED` each succeed — positive controls (three tests).
+  rejected. **Revocation-immutability test, corrected in this revision** (the prior fixture —
+  changing a revocation field on an `ACTIVE → ACTIVE` update — was internally impossible, since
+  §4's state-shape CHECK requires an `ACTIVE` row's `revokedAt`/`revokedById` to both already be
+  `NULL`, leaving nothing non-null to "change" in that scenario; corrected to the only fixture that
+  can actually exist): create a properly `REVOKED` enrollment (`revokedAt`/`revokedById` both
+  non-null, per the shape CHECK); attempt a same-status `REVOKED → REVOKED` update that changes
+  `revokedAt` to a different non-null timestamp — rejected by the transition guard's same-status
+  branch (`IS DISTINCT FROM` on `revokedAt` is `TRUE`); separately, attempt `REVOKED → REVOKED`
+  changing only `revokedById` to a different user — also rejected. **Positive control:** an ordinary
+  same-status `ACTIVE → ACTIVE` update that leaves `revokedAt`/`revokedById` unchanged (both remain
+  `NULL → NULL`, satisfying the same-status branch's guard) succeeds. `MfaEnrollment` currently has
+  no other freely mutable field besides the lifecycle ones already covered by dedicated tests above
+  (`method` is separately, unconditionally immutable; `userId`/`createdAt` are creation-time facts
+  never intended to change), so this positive control demonstrates the same-status branch permits a
+  value-preserving update rather than rejecting every same-status write outright — which is the
+  actual property being tested, not a change to some unrelated business field this table does not
+  yet have. `PENDING_SETUP → ACTIVE`, `PENDING_SETUP → REVOKED`, and `ACTIVE → REVOKED` each
+  succeed — positive controls (three tests).
 - `MfaTotpCredential`: duplicate `mfaEnrollmentId` rejected (unique, unchanged); insert against a
   `WEBAUTHN`-method enrollment rejected; empty `encryptedSecret`/`encryptionKeyVersion` rejected;
   insert against a `REVOKED` enrollment rejected; deleting the sole credential of an `ACTIVE`
@@ -1019,21 +1033,47 @@ per-integrity-rule in §5.
   credential still belongs to its original `ACTIVE` enrollment (two tests); `UPDATE ... SET
   "signCount" = signCount + 1` on an existing credential succeeds without touching
   `mfaEnrollmentId` — positive control proving legitimate non-parent updates remain possible.
-  **Concurrency tests (new — the two tests from §5's locking protocol that are provable at R2A-1
-  with two ordinary database connections, no application server required):** (1) open connection A,
-  begin a transaction that deletes an `ACTIVE` enrollment's sole `MfaWebAuthnCredential` but does
-  not yet commit; from connection B, with a short `lock_timeout` set, attempt the
-  `PENDING_SETUP → ACTIVE` transition on a *different* enrollment sharing no rows with A's
-  transaction — succeeds immediately, proving the lock is scoped to the specific `MfaEnrollment`
-  row and does not serialize unrelated enrollments against each other; repeat with connection B
-  targeting the *same* enrollment A is deleting the credential of — B's `UPDATE` blocks until A
-  commits or rolls back (observed via B's `lock_timeout` expiring while A is still open, then B
-  succeeding once A resolves), and the final state is consistent with whichever of A/B committed
-  first (if A's delete commits first, B's activation then correctly fails on zero credentials; if A
-  rolls back, B's activation correctly succeeds). (2) The symmetric case: connection A begins the
-  `PENDING_SETUP → ACTIVE` transition (holds the enrollment's write lock via its own `UPDATE`) but
-  does not yet commit; connection B attempts to delete that enrollment's sole credential and blocks
-  until A resolves, then proceeds consistently with A's outcome.
+  **Concurrency tests, corrected in this revision** (the prior fixtures described an enrollment
+  that was simultaneously `ACTIVE`, per the deleting transaction, and mid-`PENDING_SETUP → ACTIVE`,
+  per the activating transaction — impossible, since a single row has exactly one `status` at a
+  time; the delete against a genuinely `ACTIVE` enrollment would also already be unconditionally
+  rejected by the delete guard regardless of concurrency, leaving nothing left to race. Both
+  scenarios are corrected below to start from the one state both transactions can legitimately
+  contend over: `PENDING_SETUP`, where the delete guard permits the delete and the activation gate
+  has not yet run):
+  - **Scenario (1) — deletion racing activation, both starting from `PENDING_SETUP`:** create
+    enrollment E as `PENDING_SETUP` with exactly one matching `MfaWebAuthnCredential`. Transaction
+    A begins `DELETE FROM "MfaWebAuthnCredential" WHERE id = ...` for that credential; its delete
+    guard locks E via `SELECT ... FOR UPDATE`, reads `status = 'PENDING_SETUP'` (not `ACTIVE`), and
+    permits the delete — but A does not commit yet, so it continues to hold E's row lock.
+    Transaction B attempts `UPDATE "MfaEnrollment" SET status = 'ACTIVE' WHERE id = E.id`
+    (`PENDING_SETUP → ACTIVE`) on the *same* E; B's `UPDATE` must itself acquire E's row lock and
+    therefore blocks behind A. **Commit variant:** A commits (credential now deleted); B resumes,
+    its transition guard counts credentials for E, finds zero, and rejects the activation.
+    **Rollback variant (separate run):** A rolls back (credential deletion undone); B resumes,
+    counts one credential, and the activation succeeds.
+  - **Scenario (2) — the symmetric case, activation racing deletion:** create a fresh enrollment E
+    as `PENDING_SETUP` with one credential. Transaction A begins
+    `UPDATE "MfaEnrollment" SET status = 'ACTIVE' WHERE id = E.id`; being an `UPDATE` on E, this
+    itself acquires E's row lock, and A's transition guard finds one credential and permits the
+    activation — but A does not commit yet, so the lock persists. Transaction B attempts to delete
+    E's sole credential; its delete guard's `SELECT ... FOR UPDATE` on E blocks behind A.
+    **Commit variant:** A commits (E is now `ACTIVE`); B resumes, its delete guard now reads
+    `status = 'ACTIVE'` and rejects the deletion. **Rollback variant (separate run):** A rolls back
+    (E remains `PENDING_SETUP`); B resumes, reads `status = 'PENDING_SETUP'`, and the deletion
+    succeeds, leaving E `PENDING_SETUP` with zero credentials.
+  - **On using `lock_timeout` to demonstrate blocking, stated correctly:** a short `lock_timeout`
+    may be used as a separate smoke check that B is genuinely blocked rather than proceeding
+    immediately — attempt B's statement with e.g. `SET LOCAL lock_timeout = '2s'` while A is still
+    open, and expect it to fail with a lock-timeout error. That failure aborts B's transaction for
+    all further statements (PostgreSQL puts an aborted transaction into an error state until
+    `ROLLBACK`); the same timed-out statement does **not** later resume or continue automatically
+    once A commits or rolls back. Proving blocking this way and observing the eventual commit/
+    rollback outcome are therefore two separate steps, not one: after a `lock_timeout` probe fails,
+    that transaction must be rolled back, and B's real attempt — the one whose outcome the
+    commit/rollback variants above actually check — must be issued as a fresh statement (a new
+    transaction, or the same connection after `ROLLBACK`) that waits on the lock without an
+    artificially short timeout, or in autocommit.
 - `MfaRecoveryCode`: duplicate `codeHash` rejected; `usedAt < createdAt` rejected.
 - `Notification`: non-object `payload` rejected; `readAt < createdAt` rejected.
 - `OutboxEvent`: **for each of the five state-shape branches, the correctly shaped row is accepted
@@ -1221,6 +1261,27 @@ changes:**
   and referenced, not restated, everywhere else — confirmed no second, drifted description of any
   of the three exists anywhere in this revision.
 
+**This revision's two corrected fixtures, re-checked specifically:**
+- The corrected concurrency-test scenarios (§8) both start from `PENDING_SETUP` for both
+  transactions, matching what the delete guard and transition guard actually permit at that
+  status; neither scenario asserts a row is simultaneously in two different `status` values, and
+  each commit/rollback variant's asserted outcome was traced against the trigger bodies in §5:
+  scenario (1)'s commit variant relies on the transition guard's credential count read seeing A's
+  committed deletion (guaranteed, since B's `UPDATE` cannot proceed past A's lock until A resolves,
+  and a fresh read after acquiring a previously-contended lock sees the latest committed data under
+  `READ COMMITTED`); scenario (2)'s commit variant relies on the delete guard's `FOR UPDATE` read of
+  `status` seeing A's committed `ACTIVE` value for the identical reason.
+- The `lock_timeout` caveat added to the concurrency-test description is consistent with
+  PostgreSQL's documented behavior: a statement that errors out (including on `lock_timeout`)
+  aborts the enclosing transaction, which then rejects all further statements until `ROLLBACK` —
+  nothing in this document elsewhere claims or relies on a timed-out statement resuming on its own.
+- The corrected revocation-immutability test (`REVOKED → REVOKED`) exercises the transition guard's
+  same-status branch against a row where `revokedAt`/`revokedById` are actually non-null (only
+  possible for `REVOKED`, per §4's shape CHECK), which is the only status value where "changing a
+  revocation field" is a constructible fixture at all — confirmed no other status admits a non-null
+  `revokedAt`/`revokedById` to begin with, so no equivalent test is missing for `PENDING_SETUP` or
+  `ACTIVE`.
+
 **No unresolved architecture decision remains that is required to start R2A-1.**
 
 ---
@@ -1231,7 +1292,7 @@ changes:**
   `9cdd8f3ec4167e33b94dd85340d1c46829a5ad87` (unchanged).
 - `origin/main`: `6dc9de2a827d2902f5d14870ab8dc1560174832b` (unchanged, never merged into).
 - This document is committed only to `r2-design-review`, as a **new** commit on top of
-  `a963958503d91ac2dbef07f76c36d7b6ba2cd1ad` (which is not amended); the branch's full history
-  remains `9cdd8f3` → `bd11f6c` → `c17839c` → `626324b` → `a963958` → (this commit).
+  `20a814edd07fddd32c55eaad43a25981d46b63d5` (which is not amended); the branch's full history
+  remains `9cdd8f3` → `bd11f6c` → `c17839c` → `626324b` → `a963958` → `20a814e` → (this commit).
 - No `schema.prisma`, migration, application code, test, or package file is touched by this commit.
 - R2A-1, R2A-2, R2A-3, R2B, R2C, M14, M15, and Phase 0B implementation were not started.
