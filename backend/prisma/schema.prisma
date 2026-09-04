@@ -2245,6 +2245,10 @@ model UserInvitation {
 /// auto-revoked by an automated process with no individual human actor. `revokedAt` alone is
 /// legitimate; `revokedById` without `revokedAt` never is — see
 /// `UserSession_revokedById_requires_revokedAt` in the migration.
+///
+/// `userId` is unconditionally immutable after creation (`user_session_userId_immutable()`) —
+/// otherwise an already-valid session could be re-pointed at a different user by UPDATE,
+/// bypassing the INSERT-time `user_session_insert_requires_active_user()` check entirely.
 model UserSession {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId           String    @db.Uuid
@@ -2266,8 +2270,10 @@ model UserSession {
 
 /// Created only as `PENDING_SETUP` (`mfa_enrollment_insert_must_be_pending_setup()`); the
 /// transition into `ACTIVE` is gated on a matching credential existing
-/// (`mfa_enrollment_transition_guard()`), which also enforces `method` immutability and the full
-/// transition whitelist. See the R2A-1 Implementation Contract §5.
+/// (`mfa_enrollment_transition_guard()`), which also enforces `userId`/`method` immutability and
+/// the full transition whitelist — without `userId` immutability, an enrollment (and, once
+/// `ACTIVE`, everything it proves — its credentials, its lifecycle status) could be silently
+/// transferred to a different user by UPDATE. See the R2A-1 Implementation Contract §5.
 model MfaEnrollment {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String              @db.Uuid

@@ -262,8 +262,8 @@ by `npm run test:integration`.
    after its own expiry (`EmailVerificationToken.consumedAt`, `UserInvitation.acceptedAt`,
    `DocumentOpenToken.consumedAt` — the last is R2A-3 scope, not yet implemented).
 
-3. **`MfaEnrollment` real activation lifecycle and status transition graph**, closing two integrity
-   bypasses independent-review found:
+3. **`MfaEnrollment` real activation lifecycle and status transition graph**, closing three
+   integrity bypasses independent-review found:
    - *Direct-ACTIVE-insert bypass*: a `BEFORE INSERT` trigger
      (`mfa_enrollment_insert_must_be_pending_setup()`) unconditionally rejects any `MfaEnrollment`
      row inserted with `status <> 'PENDING_SETUP'` — `ACTIVE` is reachable only through the
@@ -273,14 +273,19 @@ by `npm run test:integration`.
      (`mfa_totp_credential_parent_immutable()` / `mfa_webauthn_credential_parent_immutable()`) — a
      credential can never be re-pointed at a different enrollment by `UPDATE`, correct method or
      not; the only way to detach one is `DELETE`, which the delete-guard triggers gate.
+   - *Ownership bypass*: `userId` is unconditionally immutable after creation. Without this, a
+     `PENDING_SETUP`, `ACTIVE` or `REVOKED` enrollment — and, for `ACTIVE`, everything it proves:
+     its credentials, its lifecycle status — could be silently transferred to a different user by
+     `UPDATE`, in any status, even though every other integrity check on this table remained
+     satisfied.
    - One `BEFORE UPDATE` trigger (`mfa_enrollment_transition_guard()`) is the sole authority over
-     every update-time invariant on `MfaEnrollment`: unconditional `method` immutability; a
-     same-status update may never change `revokedAt`/`revokedById` (a `REVOKED` row's revocation
-     facts are permanently immutable once set, matching the append-only-evidence discipline used
-     for `SafetyEvent`/`QualityHold`); and every differing-status update is checked against an
-     explicit whitelist — only `PENDING_SETUP -> ACTIVE`, `PENDING_SETUP -> REVOKED`, and
-     `ACTIVE -> REVOKED` are permitted, so `ACTIVE -> PENDING_SETUP` and every transition out of
-     `REVOKED` (revocation is terminal) are rejected.
+     every update-time invariant on `MfaEnrollment`: unconditional `userId` and `method`
+     immutability; a same-status update may never change `revokedAt`/`revokedById` (a `REVOKED`
+     row's revocation facts are permanently immutable once set, matching the append-only-evidence
+     discipline used for `SafetyEvent`/`QualityHold`); and every differing-status update is checked
+     against an explicit whitelist — only `PENDING_SETUP -> ACTIVE`, `PENDING_SETUP -> REVOKED`,
+     and `ACTIVE -> REVOKED` are permitted, so `ACTIVE -> PENDING_SETUP` and every transition out
+     of `REVOKED` (revocation is terminal) are rejected.
    - Delete guards (`mfa_totp_credential_delete_guard()`, `mfa_webauthn_credential_delete_guard()`)
      prevent an `ACTIVE` enrollment from losing the credential(s) it depends on: TOTP's guard is
      unconditional while `ACTIVE` (it can only ever have exactly one credential); WebAuthn's guard
@@ -303,11 +308,18 @@ by `npm run test:integration`.
    without committing while a second, concurrent transaction attempts the conflicting operation and
    is shown to block, not merely to observe a stale value).
 
-5. **`UserSession` insert requires a currently-`ACTIVE` user.** A `BEFORE INSERT` trigger
-   (`user_session_insert_requires_active_user()`) — a cross-row lookup a CHECK constraint cannot
-   perform — rejects creating a session for a `PENDING_APPROVAL`, `SUSPENDED` or `REJECTED` user.
-   `User_approvalStatus_requires_emailVerifiedAt` additionally ensures a user cannot become `ACTIVE`
-   without a verified email in the first place.
+5. **`UserSession` insert requires a currently-`ACTIVE` user, and ownership is immutable
+   afterward.** A `BEFORE INSERT` trigger (`user_session_insert_requires_active_user()`) — a
+   cross-row lookup a CHECK constraint cannot perform — rejects creating a session for a
+   `PENDING_APPROVAL`, `SUSPENDED` or `REJECTED` user. `User_approvalStatus_requires_emailVerifiedAt`
+   additionally ensures a user cannot become `ACTIVE` without a verified email in the first place.
+   *Ownership bypass fix (independent-review finding)*: the INSERT-time check alone left an
+   already-valid session's `userId` freely changeable by `UPDATE`, which could silently re-point it
+   at a different user — including a `PENDING_APPROVAL`, `SUSPENDED` or `REJECTED` one — entirely
+   bypassing the INSERT-time guard. A `BEFORE UPDATE` trigger (`user_session_userId_immutable()`)
+   now makes `UserSession.userId` unconditionally immutable after creation, regardless of the
+   target user's `approvalStatus` (even reassignment between two `ACTIVE` users is rejected — the
+   invariant is unconditional ownership immutability, not merely a non-`ACTIVE`-target guard).
 
 6. **`OutboxEvent` five-state shape**, covering `PENDING`/`PROCESSING`/`SENT`/`FAILED`/
    `DEAD_LETTER` in one CHECK. `PROCESSING` deliberately does not constrain `lastError` either way

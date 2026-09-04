@@ -2872,6 +2872,24 @@ CREATE TRIGGER user_session_requires_active_user
   FOR EACH ROW
   EXECUTE FUNCTION user_session_insert_requires_active_user();
 
+-- UserSession.userId is unconditionally immutable after creation — the INSERT-time check above
+-- only proves the session belonged to an ACTIVE user at creation; without this, an UPDATE could
+-- silently re-point an existing, already-valid session at a different user (including one that
+-- is PENDING_APPROVAL, SUSPENDED or REJECTED), bypassing the INSERT-time guard entirely.
+CREATE FUNCTION user_session_userId_immutable() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."userId" IS DISTINCT FROM OLD."userId" THEN
+    RAISE EXCEPTION 'UserSession.userId is immutable (id=%)', OLD."id";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER user_session_userId_immutable_trigger
+  BEFORE UPDATE ON "UserSession"
+  FOR EACH ROW
+  EXECUTE FUNCTION user_session_userId_immutable();
+
 -- ── EmailVerificationToken ───────────────────────────────────────────────
 ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_expiresAt_after_createdAt" CHECK ("expiresAt" > "createdAt");
 ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_consumedAt_after_createdAt" CHECK ("consumedAt" IS NULL OR "consumedAt" >= "createdAt");
@@ -2965,17 +2983,24 @@ CREATE TRIGGER mfa_enrollment_creation_pending_setup_only
   EXECUTE FUNCTION mfa_enrollment_insert_must_be_pending_setup();
 
 -- Transition guard: the sole authority over every UPDATE-time invariant on MfaEnrollment.
--- 1. method is unconditionally immutable after creation.
--- 2. A same-status update may never change revokedAt/revokedById (a REVOKED row's revocation
+-- 1. userId is unconditionally immutable after creation — without this, a PENDING_SETUP, ACTIVE
+--    or REVOKED enrollment (and, for ACTIVE, everything it proves — its credentials, its
+--    lifecycle status) could be silently transferred to a different user by UPDATE.
+-- 2. method is unconditionally immutable after creation.
+-- 3. A same-status update may never change revokedAt/revokedById (a REVOKED row's revocation
 --    facts can never be quietly rewritten by a later, status-preserving update — the same
 --    append-only-evidence discipline as SafetyEvent/QualityHold elsewhere in this migration).
--- 3. Every differing-status update is checked against the explicit transition whitelist:
+-- 4. Every differing-status update is checked against the explicit transition whitelist:
 --    PENDING_SETUP -> ACTIVE (gated on a matching credential existing), PENDING_SETUP ->
 --    REVOKED, ACTIVE -> REVOKED. Anything else — ACTIVE -> PENDING_SETUP, any transition out of
 --    REVOKED, or any other combination — falls through to the final ELSE and is rejected.
 CREATE FUNCTION mfa_enrollment_transition_guard() RETURNS TRIGGER AS $$
 DECLARE credential_count int;
 BEGIN
+  IF NEW."userId" <> OLD."userId" THEN
+    RAISE EXCEPTION 'MfaEnrollment.userId is immutable (id=%)', OLD."id";
+  END IF;
+
   IF NEW."method" <> OLD."method" THEN
     RAISE EXCEPTION 'MfaEnrollment.method is immutable (id=%)', OLD."id";
   END IF;

@@ -1321,6 +1321,97 @@ describe('R2A-1 database constraints', () => {
       });
       expect(session.revokedById).toBeNull();
     });
+
+    describe('userId immutability (ownership bypass fix)', () => {
+      it('rejects reassigning to a PENDING_APPROVAL user, and leaves the original session unchanged', async () => {
+        const owner = await createActiveUser('sess-owner-vs-pending');
+        const target = await prisma.user.create({
+          data: { email: `it-r2a1-sess-target-pending-${uniqueSuffix()}@example.invalid`, passwordHash: 'x', fullName: 'x' },
+        });
+        const session = await prisma.userSession.create({
+          data: { userId: owner.id, refreshTokenHash: `rt-${uniqueSuffix()}`, expiresAt: new Date(Date.now() + 3_600_000) },
+        });
+
+        await expect(
+          prisma.userSession.update({ where: { id: session.id }, data: { userId: target.id } }),
+        ).rejects.toThrow();
+
+        const stillOwned = await prisma.userSession.findUniqueOrThrow({ where: { id: session.id } });
+        expect(stillOwned.userId).toBe(owner.id);
+      });
+
+      it('rejects reassigning to a SUSPENDED user, and leaves the original session unchanged', async () => {
+        const owner = await createActiveUser('sess-owner-vs-suspended');
+        const target = await prisma.user.create({
+          data: {
+            email: `it-r2a1-sess-target-suspended-${uniqueSuffix()}@example.invalid`,
+            passwordHash: 'x',
+            fullName: 'x',
+            approvalStatus: 'SUSPENDED',
+          },
+        });
+        const session = await prisma.userSession.create({
+          data: { userId: owner.id, refreshTokenHash: `rt-${uniqueSuffix()}`, expiresAt: new Date(Date.now() + 3_600_000) },
+        });
+
+        await expect(
+          prisma.userSession.update({ where: { id: session.id }, data: { userId: target.id } }),
+        ).rejects.toThrow();
+
+        const stillOwned = await prisma.userSession.findUniqueOrThrow({ where: { id: session.id } });
+        expect(stillOwned.userId).toBe(owner.id);
+      });
+
+      it('rejects reassigning to a REJECTED user, and leaves the original session unchanged', async () => {
+        const owner = await createActiveUser('sess-owner-vs-rejected');
+        const target = await prisma.user.create({
+          data: {
+            email: `it-r2a1-sess-target-rejected-${uniqueSuffix()}@example.invalid`,
+            passwordHash: 'x',
+            fullName: 'x',
+            approvalStatus: 'REJECTED',
+          },
+        });
+        const session = await prisma.userSession.create({
+          data: { userId: owner.id, refreshTokenHash: `rt-${uniqueSuffix()}`, expiresAt: new Date(Date.now() + 3_600_000) },
+        });
+
+        await expect(
+          prisma.userSession.update({ where: { id: session.id }, data: { userId: target.id } }),
+        ).rejects.toThrow();
+
+        const stillOwned = await prisma.userSession.findUniqueOrThrow({ where: { id: session.id } });
+        expect(stillOwned.userId).toBe(owner.id);
+      });
+
+      it('rejects reassigning to another ACTIVE user, and leaves the original session unchanged — proves immutability is unconditional, not merely a non-ACTIVE-target guard', async () => {
+        const owner = await createActiveUser('sess-owner-vs-active');
+        const target = await createActiveUser('sess-target-active');
+        const session = await prisma.userSession.create({
+          data: { userId: owner.id, refreshTokenHash: `rt-${uniqueSuffix()}`, expiresAt: new Date(Date.now() + 3_600_000) },
+        });
+
+        await expect(
+          prisma.userSession.update({ where: { id: session.id }, data: { userId: target.id } }),
+        ).rejects.toThrow();
+
+        const stillOwned = await prisma.userSession.findUniqueOrThrow({ where: { id: session.id } });
+        expect(stillOwned.userId).toBe(owner.id);
+      });
+
+      it('accepts an ordinary update that leaves userId unchanged — positive control', async () => {
+        const owner = await createActiveUser('sess-noop-update');
+        const session = await prisma.userSession.create({
+          data: { userId: owner.id, refreshTokenHash: `rt-${uniqueSuffix()}`, expiresAt: new Date(Date.now() + 3_600_000) },
+        });
+        const updated = await prisma.userSession.update({
+          where: { id: session.id },
+          data: { userId: owner.id, revokedAt: new Date() },
+        });
+        expect(updated.userId).toBe(owner.id);
+        expect(updated.revokedAt).not.toBeNull();
+      });
+    });
   });
 
   // ── EmailVerificationToken ──────────────────────────────────────────────
@@ -2039,6 +2130,71 @@ describe('R2A-1 database constraints', () => {
       await expect(
         prisma.mfaEnrollment.update({ where: { id: enrollment.id }, data: { method: 'WEBAUTHN' } }),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('MfaEnrollment: userId immutability (ownership bypass fix)', () => {
+    it('rejects reassigning userId on a PENDING_SETUP row, and leaves the owner and credential unchanged', async () => {
+      const owner = await createActiveUser('mfa-owner-pending');
+      const otherUser = await createActiveUser('mfa-owner-pending-target');
+      const enrollment = await prisma.mfaEnrollment.create({ data: { userId: owner.id, method: 'TOTP' } });
+      const credential = await prisma.mfaTotpCredential.create({
+        data: { mfaEnrollmentId: enrollment.id, encryptedSecret: Buffer.from('s'), encryptionKeyVersion: 'v1' },
+      });
+
+      await expect(
+        prisma.mfaEnrollment.update({ where: { id: enrollment.id }, data: { userId: otherUser.id } }),
+      ).rejects.toThrow();
+
+      const stillOwned = await prisma.mfaEnrollment.findUniqueOrThrow({ where: { id: enrollment.id } });
+      expect(stillOwned.userId).toBe(owner.id);
+      expect(stillOwned.status).toBe('PENDING_SETUP');
+      const survivingCredential = await prisma.mfaTotpCredential.findUniqueOrThrow({ where: { id: credential.id } });
+      expect(survivingCredential.mfaEnrollmentId).toBe(enrollment.id);
+    });
+
+    it('rejects reassigning userId on an ACTIVE row, and leaves the owner and credential unchanged', async () => {
+      const { enrollment, user, credential } = await createActiveTotpEnrollment('mfa-owner-active');
+      const otherUser = await createActiveUser('mfa-owner-active-target');
+
+      await expect(
+        prisma.mfaEnrollment.update({ where: { id: enrollment.id }, data: { userId: otherUser.id } }),
+      ).rejects.toThrow();
+
+      const stillOwned = await prisma.mfaEnrollment.findUniqueOrThrow({ where: { id: enrollment.id } });
+      expect(stillOwned.userId).toBe(user.id);
+      expect(stillOwned.status).toBe('ACTIVE');
+      const survivingCredential = await prisma.mfaTotpCredential.findUniqueOrThrow({ where: { id: credential.id } });
+      expect(survivingCredential.mfaEnrollmentId).toBe(enrollment.id);
+    });
+
+    it('rejects reassigning userId on a REVOKED row, and leaves the owner and credential unchanged', async () => {
+      const { enrollment, user, credential } = await createActiveTotpEnrollment('mfa-owner-revoked');
+      await prisma.mfaEnrollment.update({
+        where: { id: enrollment.id },
+        data: { status: 'REVOKED', revokedAt: new Date(), revokedById: user.id },
+      });
+      const otherUser = await createActiveUser('mfa-owner-revoked-target');
+
+      await expect(
+        prisma.mfaEnrollment.update({ where: { id: enrollment.id }, data: { userId: otherUser.id } }),
+      ).rejects.toThrow();
+
+      const stillOwned = await prisma.mfaEnrollment.findUniqueOrThrow({ where: { id: enrollment.id } });
+      expect(stillOwned.userId).toBe(user.id);
+      expect(stillOwned.status).toBe('REVOKED');
+      const survivingCredential = await prisma.mfaTotpCredential.findUniqueOrThrow({ where: { id: credential.id } });
+      expect(survivingCredential.mfaEnrollmentId).toBe(enrollment.id);
+    });
+
+    it('accepts an ordinary update that leaves userId unchanged — positive control', async () => {
+      const owner = await createActiveUser('mfa-owner-noop');
+      const enrollment = await prisma.mfaEnrollment.create({ data: { userId: owner.id, method: 'TOTP' } });
+      const updated = await prisma.mfaEnrollment.update({
+        where: { id: enrollment.id },
+        data: { userId: owner.id, method: 'TOTP' },
+      });
+      expect(updated.userId).toBe(owner.id);
     });
   });
 
