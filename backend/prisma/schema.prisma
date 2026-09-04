@@ -445,6 +445,52 @@ enum ReconciliationResolution {
   REJECTED
 }
 
+// R2A-1 — see the R2A-1 Implementation Contract §4 (approved, r2-design-review @
+// fac7b7d788f3bb6055280900282eaeb35fbd50e1).
+enum UserApprovalStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum MfaMethod {
+  TOTP
+  WEBAUTHN
+}
+
+/// `PENDING_SETUP` is the only allowed creation state — see
+/// `mfa_enrollment_insert_must_be_pending_setup()` in the migration. The transition graph
+/// (`PENDING_SETUP -> ACTIVE`, `PENDING_SETUP -> REVOKED`, `ACTIVE -> REVOKED`, same-status only
+/// otherwise) is enforced by `mfa_enrollment_transition_guard()`.
+enum MfaEnrollmentStatus {
+  PENDING_SETUP
+  ACTIVE
+  REVOKED
+}
+
+enum OutboxEventStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  DEAD_LETTER
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // IDENTITY & ACCESS — Decision 4
 // ══════════════════════════════════════════════════════════════════════════
@@ -454,14 +500,22 @@ enum ReconciliationResolution {
 /// this system must be case-insensitive (two users cannot register "A@x.com" and "a@x.com" as
 /// distinct accounts). The real constraint is `CREATE UNIQUE INDEX ... ON "User" (LOWER(email))`,
 /// added directly in the migration SQL; `@@index([email])` below only covers plain lookups.
+///
+/// R2A-1: `active` is removed, replaced by `approvalStatus` — see the R2A-1 Implementation
+/// Contract §4/§8 (approved, r2-design-review @ fac7b7d788f3bb6055280900282eaeb35fbd50e1). A user
+/// must be `ACTIVE` (not `PENDING_APPROVAL`/`SUSPENDED`/`REJECTED`) and email-verified before a
+/// `UserSession` can be created for them — see `User_approvalStatus_requires_emailVerifiedAt` and
+/// the `user_session_insert_requires_active_user()` trigger in the migration.
 model User {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @db.VarChar(254)
-  passwordHash String   @db.VarChar(255)
-  fullName     String   @db.VarChar(200)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @db.Timestamptz
-  updatedAt    DateTime @updatedAt @db.Timestamptz
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String             @db.VarChar(254)
+  passwordHash    String             @db.VarChar(255)
+  fullName        String             @db.VarChar(200)
+  approvalStatus  UserApprovalStatus @default(PENDING_APPROVAL)
+  emailVerifiedAt DateTime?          @db.Timestamptz
+  mfaRequired     Boolean            @default(false)
+  createdAt       DateTime           @default(now()) @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @db.Timestamptz
 
   userRoles                              UserRole[]
   teamMemberships                        TeamMembership[]
@@ -486,7 +540,20 @@ model User {
   qualityReleasesDecided                 QualityRelease[]
   migrationReconciliationRecordsResolved MigrationReconciliationRecord[]
 
-  @@index([active])
+  // R2A-1
+  emailVerificationTokens EmailVerificationToken[]
+  accessRequestsSubmitted AccessRequest[]          @relation("AccessRequestUser")
+  accessRequestsDecided   AccessRequest[]          @relation("AccessRequestDecidedBy")
+  invitationsSent         UserInvitation[]         @relation("UserInvitationInvitedBy")
+  invitationsRevoked      UserInvitation[]         @relation("UserInvitationRevokedBy")
+  sessions                UserSession[]            @relation("UserSessionUser")
+  sessionsRevoked         UserSession[]            @relation("UserSessionRevokedBy")
+  mfaEnrollments          MfaEnrollment[]          @relation("MfaEnrollmentUser")
+  mfaEnrollmentsRevoked   MfaEnrollment[]          @relation("MfaEnrollmentRevokedBy")
+  mfaRecoveryCodes        MfaRecoveryCode[]
+  notifications           Notification[]
+
+  @@index([approvalStatus])
   @@index([email])
 }
 
@@ -2106,4 +2173,201 @@ model MigrationReconciliationRecord {
   @@index([resolution])
   @@index([sourceCollection])
   @@index([resolvedById])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// R2A-1 — USER LIFECYCLE, VERIFICATION, SESSIONS, MFA, NOTIFICATION, OUTBOX
+// Implements the approved R2A-1 Implementation Contract (r2-design-review @
+// fac7b7d788f3bb6055280900282eaeb35fbd50e1, §4/§5/§8). Every CHECK constraint, trigger and
+// functional/partial index referenced below is hand-written SQL appended to the migration —
+// see backend/README.md, "R2A-1 database protections not expressed in schema.prisma".
+// ══════════════════════════════════════════════════════════════════════════
+
+model EmailVerificationToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @db.VarChar(255)
+  expiresAt  DateTime  @db.Timestamptz
+  consumedAt DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([tokenHash])
+  @@index([userId])
+}
+
+/// `expiresAt`/`expiredAt` give the stored `EXPIRED` status a durable time fact rather than
+/// relying on a live `expiresAt < now()` computation; the `PENDING -> EXPIRED` transition itself
+/// is Phase 0B service-layer logic (a scheduled sweep or lazy check-on-read), never a trigger.
+model AccessRequest {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String              @db.Uuid
+  justification String              @db.VarChar(1000)
+  status        AccessRequestStatus @default(PENDING)
+  expiresAt     DateTime            @db.Timestamptz
+  expiredAt     DateTime?           @db.Timestamptz
+  decidedById   String?             @db.Uuid
+  decidedAt     DateTime?           @db.Timestamptz
+  createdAt     DateTime            @default(now()) @db.Timestamptz
+
+  user      User  @relation("AccessRequestUser", fields: [userId], references: [id], onDelete: Restrict)
+  decidedBy User? @relation("AccessRequestDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model UserInvitation {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitedEmail String           @db.VarChar(254)
+  invitedById  String           @db.Uuid
+  tokenHash    String           @db.VarChar(255)
+  status       InvitationStatus @default(PENDING)
+  expiresAt    DateTime         @db.Timestamptz
+  expiredAt    DateTime?        @db.Timestamptz
+  acceptedAt   DateTime?        @db.Timestamptz
+  revokedAt    DateTime?        @db.Timestamptz
+  revokedById  String?          @db.Uuid
+  createdAt    DateTime         @default(now()) @db.Timestamptz
+
+  invitedBy User  @relation("UserInvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("UserInvitationRevokedBy", fields: [revokedById], references: [id], onDelete: Restrict)
+
+  @@unique([tokenHash])
+  @@index([invitedEmail])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+/// `revokedById` is deliberately *not* required whenever `revokedAt` is set — a session may be
+/// auto-revoked by an automated process with no individual human actor. `revokedAt` alone is
+/// legitimate; `revokedById` without `revokedAt` never is — see
+/// `UserSession_revokedById_requires_revokedAt` in the migration.
+model UserSession {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String    @db.VarChar(255)
+  userAgent        String?   @db.VarChar(500)
+  ipAddressHash    String?   @db.VarChar(255)
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  revokedById      String?   @db.Uuid
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  user      User  @relation("UserSessionUser", fields: [userId], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("UserSessionRevokedBy", fields: [revokedById], references: [id], onDelete: Restrict)
+
+  @@unique([refreshTokenHash])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Created only as `PENDING_SETUP` (`mfa_enrollment_insert_must_be_pending_setup()`); the
+/// transition into `ACTIVE` is gated on a matching credential existing
+/// (`mfa_enrollment_transition_guard()`), which also enforces `method` immutability and the full
+/// transition whitelist. See the R2A-1 Implementation Contract §5.
+model MfaEnrollment {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String              @db.Uuid
+  method      MfaMethod
+  status      MfaEnrollmentStatus @default(PENDING_SETUP)
+  revokedAt   DateTime?           @db.Timestamptz
+  revokedById String?             @db.Uuid
+  createdAt   DateTime            @default(now()) @db.Timestamptz
+
+  user      User  @relation("MfaEnrollmentUser", fields: [userId], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("MfaEnrollmentRevokedBy", fields: [revokedById], references: [id], onDelete: Restrict)
+
+  totpCredential      MfaTotpCredential?
+  webAuthnCredentials MfaWebAuthnCredential[]
+
+  @@index([userId, method])
+}
+
+/// `mfaEnrollmentId` is `@unique` (at most one row per enrollment) *and*, per the migration's
+/// `mfa_totp_credential_parent_immutable()` trigger, unconditionally immutable after creation —
+/// the `@unique` alone only proves "at most one"; the activation-gate trigger on `MfaEnrollment`
+/// proves "at least one" at the moment of activation. See the R2A-1 Implementation Contract §5.
+model MfaTotpCredential {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mfaEnrollmentId      String   @unique @db.Uuid
+  encryptedSecret      Bytes
+  encryptionKeyVersion String   @db.VarChar(50)
+  createdAt            DateTime @default(now()) @db.Timestamptz
+
+  mfaEnrollment MfaEnrollment @relation(fields: [mfaEnrollmentId], references: [id], onDelete: Restrict)
+}
+
+/// Many rows per enrollment are allowed (unlike TOTP); `credentialId` is unique globally, not
+/// per-enrollment. `mfaEnrollmentId` is unconditionally immutable after creation, identically to
+/// `MfaTotpCredential` — see `mfa_webauthn_credential_parent_immutable()` in the migration.
+model MfaWebAuthnCredential {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mfaEnrollmentId   String   @db.Uuid
+  credentialId      String   @db.VarChar(500)
+  publicKey         Bytes
+  signCount         BigInt   @default(0)
+  attestationFormat String?  @db.VarChar(100)
+  createdAt         DateTime @default(now()) @db.Timestamptz
+
+  mfaEnrollment MfaEnrollment @relation(fields: [mfaEnrollmentId], references: [id], onDelete: Restrict)
+
+  @@unique([credentialId])
+  @@index([mfaEnrollmentId])
+}
+
+/// True single-use-under-concurrency is a Phase 0B service-layer concern (an atomic conditional
+/// `UPDATE ... WHERE "usedAt" IS NULL`, not a CHECK) — see the R2A-1 Implementation Contract §6.
+model MfaRecoveryCode {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  codeHash  String    @db.VarChar(255)
+  usedAt    DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([codeHash])
+  @@index([userId])
+}
+
+model Notification {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientUserId String    @db.Uuid
+  kind            String    @db.VarChar(100)
+  payload         Json      @default("{}")
+  readAt          DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+
+  recipient User @relation(fields: [recipientUserId], references: [id], onDelete: Restrict)
+
+  @@index([recipientUserId, readAt])
+}
+
+/// `aggregateType`/`aggregateId` are a label-only pair reusing the pre-approved `AuditLog`
+/// polymorphic-label exception — never a join, never an authorization input. `lockedBy`
+/// identifies a dispatcher *process*, not a `User` — no FK. Five-state shape (`PENDING`,
+/// `PROCESSING`, `SENT`, `FAILED`, `DEAD_LETTER`) is CHECK-enforced in the migration — see the
+/// R2A-1 Implementation Contract §4.
+model OutboxEvent {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  aggregateType  String            @db.VarChar(100)
+  aggregateId    String            @db.Uuid
+  eventType      String            @db.VarChar(150)
+  payload        Json
+  idempotencyKey String            @db.VarChar(255)
+  status         OutboxEventStatus @default(PENDING)
+  attemptCount   Int               @default(0)
+  nextAttemptAt  DateTime?         @db.Timestamptz
+  lockedAt       DateTime?         @db.Timestamptz
+  lockedBy       String?           @db.VarChar(200)
+  processedAt    DateTime?         @db.Timestamptz
+  lastError      String?           @db.VarChar(2000)
+  deadLetteredAt DateTime?         @db.Timestamptz
+  createdAt      DateTime          @default(now()) @db.Timestamptz
+
+  @@unique([idempotencyKey])
+  @@index([status, nextAttemptAt])
 }

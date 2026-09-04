@@ -1,8 +1,10 @@
 # Varmak Workshop — Backend
 
-Phase 0A (corrected in Phase 0A-R1): backend foundation and database schema only. There is no
-authentication, no business CRUD, and no frontend integration in this phase — see "Phase 0A scope"
-below.
+Phase 0A (corrected in Phase 0A-R1), extended by R2A-1: backend foundation and database schema
+only. R2A-1 adds the User-lifecycle/verification/session/MFA/Notification/Outbox schema and its
+database-level protections (below) — still schema and migration only, no services, controllers,
+guards, or authentication endpoints. There is no authentication, no business CRUD, and no frontend
+integration in this phase — see "Phase 0A scope" below.
 
 ## Stack
 
@@ -230,6 +232,97 @@ Prisma-generated DDL, and are exercised by `npm run test:integration`:
    every `no` field, plus `InventoryItem.code`, `BarcodeLink.barcode`, `Offcut.code`,
    `Equipment.equipmentId` — has a `CHECK (length(btrim(col)) > 0)` constraint, rejecting empty or
    whitespace-only values.
+
+## R2A-1 database protections (User lifecycle, verification, sessions, MFA, Notification, Outbox)
+
+Implements the approved R2A-1 Implementation Contract (`r2-design-review` @
+`fac7b7d788f3bb6055280900282eaeb35fbd50e1`). Ten new models — `EmailVerificationToken`,
+`AccessRequest`, `UserInvitation`, `UserSession`, `MfaEnrollment`, `MfaTotpCredential`,
+`MfaWebAuthnCredential`, `MfaRecoveryCode`, `Notification`, `OutboxEvent` — plus `User` gaining
+`approvalStatus`/`emailVerifiedAt`/`mfaRequired` in place of the removed `active` boolean. Exercised
+by `npm run test:integration`.
+
+1. **Exhaustive, mutually exclusive per-status state-shape CHECKs**, on `AccessRequest`,
+   `UserInvitation`, `MfaEnrollment` and `OutboxEvent`. Each branch is a pure conjunction of
+   `IS [NOT] NULL` tests naming every relevant field, ORed across every possible status value —
+   deliberately never a `status = 'X' = (a IS NOT NULL AND b IS NOT NULL)` boolean-equality form,
+   which silently passes a partially-populated row whenever the right-hand `AND` is independently
+   `FALSE` for an unrelated reason (traced in detail in the R2A-1 contract §9). `UserSession` uses
+   a narrower, deliberately asymmetric CHECK instead of the shape pattern: `revokedById IS NULL OR
+   revokedAt IS NOT NULL` — a system-initiated revocation may set `revokedAt` alone, but an actor
+   can never be recorded without the timestamp it acted at.
+
+2. **`AccessRequest`/`UserInvitation` durable `EXPIRED` time facts.** Both carry a required
+   `expiresAt` deadline plus a nullable, terminal `expiredAt` populated only at the moment a row is
+   actually transitioned to `EXPIRED`. That transition (`PENDING -> EXPIRED` once `expiresAt` has
+   passed) is Phase 0B service-layer logic — a scheduled sweep or lazy check-on-read issuing a real
+   `UPDATE ... SET status='EXPIRED', "expiredAt"=now()` — never a trigger, since Postgres CHECK/
+   trigger evaluation happens only at write time and has no notion of elapsed wall-clock time.
+   Ordering CHECKs additionally ensure a token/invitation is never recorded as consumed or accepted
+   after its own expiry (`EmailVerificationToken.consumedAt`, `UserInvitation.acceptedAt`,
+   `DocumentOpenToken.consumedAt` — the last is R2A-3 scope, not yet implemented).
+
+3. **`MfaEnrollment` real activation lifecycle and status transition graph**, closing two integrity
+   bypasses independent-review found:
+   - *Direct-ACTIVE-insert bypass*: a `BEFORE INSERT` trigger
+     (`mfa_enrollment_insert_must_be_pending_setup()`) unconditionally rejects any `MfaEnrollment`
+     row inserted with `status <> 'PENDING_SETUP'` — `ACTIVE` is reachable only through the
+     `PENDING_SETUP -> ACTIVE` transition, which is itself gated on a matching credential existing.
+   - *Credential-reassignment bypass*: `mfaEnrollmentId` is unconditionally immutable after
+     creation on both `MfaTotpCredential` and `MfaWebAuthnCredential`
+     (`mfa_totp_credential_parent_immutable()` / `mfa_webauthn_credential_parent_immutable()`) — a
+     credential can never be re-pointed at a different enrollment by `UPDATE`, correct method or
+     not; the only way to detach one is `DELETE`, which the delete-guard triggers gate.
+   - One `BEFORE UPDATE` trigger (`mfa_enrollment_transition_guard()`) is the sole authority over
+     every update-time invariant on `MfaEnrollment`: unconditional `method` immutability; a
+     same-status update may never change `revokedAt`/`revokedById` (a `REVOKED` row's revocation
+     facts are permanently immutable once set, matching the append-only-evidence discipline used
+     for `SafetyEvent`/`QualityHold`); and every differing-status update is checked against an
+     explicit whitelist — only `PENDING_SETUP -> ACTIVE`, `PENDING_SETUP -> REVOKED`, and
+     `ACTIVE -> REVOKED` are permitted, so `ACTIVE -> PENDING_SETUP` and every transition out of
+     `REVOKED` (revocation is terminal) are rejected.
+   - Delete guards (`mfa_totp_credential_delete_guard()`, `mfa_webauthn_credential_delete_guard()`)
+     prevent an `ACTIVE` enrollment from losing the credential(s) it depends on: TOTP's guard is
+     unconditional while `ACTIVE` (it can only ever have exactly one credential); WebAuthn's guard
+     only blocks deleting the *last remaining* credential, correctly allowing removal of one of
+     several while keeping others.
+
+4. **Concurrency-locking protocol for the MFA invariant above.** A plain `SELECT` inside a trigger
+   takes no row lock, so under `READ COMMITTED` two concurrent transactions (one activating an
+   enrollment, one deleting its sole credential) could each read a pre-commit snapshot of the
+   other's target row and both proceed, leaving an `ACTIVE` enrollment with zero credentials —
+   the exact outcome every trigger above exists to prevent. Fixed by having every trigger that
+   reads a fact from the `MfaEnrollment` row from a *different* table's trigger
+   (`mfa_totp_credential_method_check()`, both delete guards) explicitly `SELECT ... FOR UPDATE`
+   that row before reading it; the transition guard itself needs no explicit lock, since it fires
+   from an `UPDATE` on `MfaEnrollment`, which already holds that row's normal write lock for the
+   rest of the transaction. Whichever side reaches the row first forces the other to wait for it to
+   fully commit or roll back. No deadlock is possible: every one of these triggers acquires at most
+   one lock, always on the same single row. Proven under real concurrency by two dedicated
+   integration tests using genuinely concurrent Prisma interactive transactions (one holds a lock
+   without committing while a second, concurrent transaction attempts the conflicting operation and
+   is shown to block, not merely to observe a stale value).
+
+5. **`UserSession` insert requires a currently-`ACTIVE` user.** A `BEFORE INSERT` trigger
+   (`user_session_insert_requires_active_user()`) — a cross-row lookup a CHECK constraint cannot
+   perform — rejects creating a session for a `PENDING_APPROVAL`, `SUSPENDED` or `REJECTED` user.
+   `User_approvalStatus_requires_emailVerifiedAt` additionally ensures a user cannot become `ACTIVE`
+   without a verified email in the first place.
+
+6. **`OutboxEvent` five-state shape**, covering `PENDING`/`PROCESSING`/`SENT`/`FAILED`/
+   `DEAD_LETTER` in one CHECK. `PROCESSING` deliberately does not constrain `lastError` either way
+   (a retry after a prior failure legitimately carries the previous error forward as diagnostic
+   history); `SENT` forces `lastError IS NULL` (a successfully delivered event should not display a
+   stale error). "`lockedAt` and `lockedBy` together or neither" is not restated as a separate
+   CHECK — it is already structurally guaranteed by the shape CHECK's `PROCESSING` branch requiring
+   both and every other branch requiring neither.
+
+7. **JSON-shape and non-empty-content CHECKs.** `Notification.payload`/`OutboxEvent.payload` use
+   the same `jsonb_typeof(col) = 'object'` pattern as Phase 0A-R1's `SafetyEvent`/`QualityRelease`
+   fields, for the same reason (a `NOT NULL` `Json` column can still hold the JSONB value `null`).
+   `MfaTotpCredential.encryptedSecret`/`MfaWebAuthnCredential.publicKey` use
+   `octet_length(col) > 0`; `MfaTotpCredential.encryptionKeyVersion` uses the same
+   `length(btrim(col)) > 0` pattern as the business-code normalization checks above.
 
 ## UUID identity (Phase 0A-R1)
 

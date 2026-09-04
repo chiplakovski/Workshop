@@ -124,13 +124,33 @@ CREATE TYPE "SafetyActorType" AS ENUM ('USER', 'SYSTEM');
 -- CreateEnum
 CREATE TYPE "ReconciliationResolution" AS ENUM ('PENDING', 'AUTO_MATCHED', 'MANUALLY_RESOLVED', 'REJECTED');
 
+-- CreateEnum
+CREATE TYPE "UserApprovalStatus" AS ENUM ('PENDING_APPROVAL', 'ACTIVE', 'SUSPENDED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "AccessRequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "InvitationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED');
+
+-- CreateEnum
+CREATE TYPE "MfaMethod" AS ENUM ('TOTP', 'WEBAUTHN');
+
+-- CreateEnum
+CREATE TYPE "MfaEnrollmentStatus" AS ENUM ('PENDING_SETUP', 'ACTIVE', 'REVOKED');
+
+-- CreateEnum
+CREATE TYPE "OutboxEventStatus" AS ENUM ('PENDING', 'PROCESSING', 'SENT', 'FAILED', 'DEAD_LETTER');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" VARCHAR(254) NOT NULL,
     "passwordHash" VARCHAR(255) NOT NULL,
     "fullName" VARCHAR(200) NOT NULL,
-    "active" BOOLEAN NOT NULL DEFAULT true,
+    "approvalStatus" "UserApprovalStatus" NOT NULL DEFAULT 'PENDING_APPROVAL',
+    "emailVerifiedAt" TIMESTAMPTZ,
+    "mfaRequired" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -1166,8 +1186,148 @@ CREATE TABLE "MigrationReconciliationRecord" (
     CONSTRAINT "MigrationReconciliationRecord_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "EmailVerificationToken" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "tokenHash" VARCHAR(255) NOT NULL,
+    "expiresAt" TIMESTAMPTZ NOT NULL,
+    "consumedAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EmailVerificationToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AccessRequest" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "justification" VARCHAR(1000) NOT NULL,
+    "status" "AccessRequestStatus" NOT NULL DEFAULT 'PENDING',
+    "expiresAt" TIMESTAMPTZ NOT NULL,
+    "expiredAt" TIMESTAMPTZ,
+    "decidedById" UUID,
+    "decidedAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AccessRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserInvitation" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "invitedEmail" VARCHAR(254) NOT NULL,
+    "invitedById" UUID NOT NULL,
+    "tokenHash" VARCHAR(255) NOT NULL,
+    "status" "InvitationStatus" NOT NULL DEFAULT 'PENDING',
+    "expiresAt" TIMESTAMPTZ NOT NULL,
+    "expiredAt" TIMESTAMPTZ,
+    "acceptedAt" TIMESTAMPTZ,
+    "revokedAt" TIMESTAMPTZ,
+    "revokedById" UUID,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UserInvitation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserSession" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "refreshTokenHash" VARCHAR(255) NOT NULL,
+    "userAgent" VARCHAR(500),
+    "ipAddressHash" VARCHAR(255),
+    "expiresAt" TIMESTAMPTZ NOT NULL,
+    "revokedAt" TIMESTAMPTZ,
+    "revokedById" UUID,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UserSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MfaEnrollment" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "method" "MfaMethod" NOT NULL,
+    "status" "MfaEnrollmentStatus" NOT NULL DEFAULT 'PENDING_SETUP',
+    "revokedAt" TIMESTAMPTZ,
+    "revokedById" UUID,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MfaEnrollment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MfaTotpCredential" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "mfaEnrollmentId" UUID NOT NULL,
+    "encryptedSecret" BYTEA NOT NULL,
+    "encryptionKeyVersion" VARCHAR(50) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MfaTotpCredential_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MfaWebAuthnCredential" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "mfaEnrollmentId" UUID NOT NULL,
+    "credentialId" VARCHAR(500) NOT NULL,
+    "publicKey" BYTEA NOT NULL,
+    "signCount" BIGINT NOT NULL DEFAULT 0,
+    "attestationFormat" VARCHAR(100),
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MfaWebAuthnCredential_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MfaRecoveryCode" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "codeHash" VARCHAR(255) NOT NULL,
+    "usedAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MfaRecoveryCode_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Notification" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "recipientUserId" UUID NOT NULL,
+    "kind" VARCHAR(100) NOT NULL,
+    "payload" JSONB NOT NULL DEFAULT '{}',
+    "readAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OutboxEvent" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "aggregateType" VARCHAR(100) NOT NULL,
+    "aggregateId" UUID NOT NULL,
+    "eventType" VARCHAR(150) NOT NULL,
+    "payload" JSONB NOT NULL,
+    "idempotencyKey" VARCHAR(255) NOT NULL,
+    "status" "OutboxEventStatus" NOT NULL DEFAULT 'PENDING',
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "nextAttemptAt" TIMESTAMPTZ,
+    "lockedAt" TIMESTAMPTZ,
+    "lockedBy" VARCHAR(200),
+    "processedAt" TIMESTAMPTZ,
+    "lastError" VARCHAR(2000),
+    "deadLetteredAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "OutboxEvent_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
-CREATE INDEX "User_active_idx" ON "User"("active");
+CREATE INDEX "User_approvalStatus_idx" ON "User"("approvalStatus");
 
 -- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");
@@ -1778,6 +1938,69 @@ CREATE INDEX "MigrationReconciliationRecord_sourceCollection_idx" ON "MigrationR
 -- CreateIndex
 CREATE INDEX "MigrationReconciliationRecord_resolvedById_idx" ON "MigrationReconciliationRecord"("resolvedById");
 
+-- CreateIndex
+CREATE INDEX "EmailVerificationToken_userId_idx" ON "EmailVerificationToken"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailVerificationToken_tokenHash_key" ON "EmailVerificationToken"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "AccessRequest_userId_idx" ON "AccessRequest"("userId");
+
+-- CreateIndex
+CREATE INDEX "AccessRequest_status_idx" ON "AccessRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "AccessRequest_expiresAt_idx" ON "AccessRequest"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "UserInvitation_invitedEmail_idx" ON "UserInvitation"("invitedEmail");
+
+-- CreateIndex
+CREATE INDEX "UserInvitation_status_idx" ON "UserInvitation"("status");
+
+-- CreateIndex
+CREATE INDEX "UserInvitation_expiresAt_idx" ON "UserInvitation"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserInvitation_tokenHash_key" ON "UserInvitation"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "UserSession_userId_idx" ON "UserSession"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserSession_expiresAt_idx" ON "UserSession"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSession_refreshTokenHash_key" ON "UserSession"("refreshTokenHash");
+
+-- CreateIndex
+CREATE INDEX "MfaEnrollment_userId_method_idx" ON "MfaEnrollment"("userId", "method");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MfaTotpCredential_mfaEnrollmentId_key" ON "MfaTotpCredential"("mfaEnrollmentId");
+
+-- CreateIndex
+CREATE INDEX "MfaWebAuthnCredential_mfaEnrollmentId_idx" ON "MfaWebAuthnCredential"("mfaEnrollmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MfaWebAuthnCredential_credentialId_key" ON "MfaWebAuthnCredential"("credentialId");
+
+-- CreateIndex
+CREATE INDEX "MfaRecoveryCode_userId_idx" ON "MfaRecoveryCode"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MfaRecoveryCode_codeHash_key" ON "MfaRecoveryCode"("codeHash");
+
+-- CreateIndex
+CREATE INDEX "Notification_recipientUserId_readAt_idx" ON "Notification"("recipientUserId", "readAt");
+
+-- CreateIndex
+CREATE INDEX "OutboxEvent_status_nextAttemptAt_idx" ON "OutboxEvent"("status", "nextAttemptAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OutboxEvent_idempotencyKey_key" ON "OutboxEvent"("idempotencyKey");
+
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -2201,6 +2424,44 @@ ALTER TABLE "SafetyEvent" ADD CONSTRAINT "SafetyEvent_userId_fkey" FOREIGN KEY (
 -- AddForeignKey
 ALTER TABLE "MigrationReconciliationRecord" ADD CONSTRAINT "MigrationReconciliationRecord_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_decidedById_fkey" FOREIGN KEY ("decidedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_revokedById_fkey" FOREIGN KEY ("revokedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_revokedById_fkey" FOREIGN KEY ("revokedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MfaEnrollment" ADD CONSTRAINT "MfaEnrollment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MfaEnrollment" ADD CONSTRAINT "MfaEnrollment_revokedById_fkey" FOREIGN KEY ("revokedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MfaTotpCredential" ADD CONSTRAINT "MfaTotpCredential_mfaEnrollmentId_fkey" FOREIGN KEY ("mfaEnrollmentId") REFERENCES "MfaEnrollment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MfaWebAuthnCredential" ADD CONSTRAINT "MfaWebAuthnCredential_mfaEnrollmentId_fkey" FOREIGN KEY ("mfaEnrollmentId") REFERENCES "MfaEnrollment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MfaRecoveryCode" ADD CONSTRAINT "MfaRecoveryCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_recipientUserId_fkey" FOREIGN KEY ("recipientUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Phase 0A-R1 final integrity-pass manual additions (not generated by Prisma).
 -- Prisma's schema language has no @@check attribute (confirmed against 7.10.0)
@@ -2566,3 +2827,378 @@ ALTER TABLE "QualityComplaint" ADD CONSTRAINT "QualityComplaint_no_normalized" C
 ALTER TABLE "QualityDossier" ADD CONSTRAINT "QualityDossier_no_normalized" CHECK (length(btrim("no")) > 0);
 ALTER TABLE "QualityItp" ADD CONSTRAINT "QualityItp_no_normalized" CHECK (length(btrim("no")) > 0);
 ALTER TABLE "QualityRelease" ADD CONSTRAINT "QualityRelease_no_normalized" CHECK (length(btrim("no")) > 0);
+-- ═══════════════════════════════════════════════════════════════════════════
+-- R2A-1 manual additions (not generated by Prisma). Same two standing rules
+-- as the Phase 0A-R1 section above apply throughout: a CHECK expression that
+-- evaluates to NULL is treated as SATISFIED, not failed, so every
+-- conditional "required when X" check below uses an explicit
+-- "col IS NOT NULL AND ..." guard; a NOT NULL Json column can still hold the
+-- JSONB value `null`, so `jsonb_typeof(col) = 'object'` is used to reject
+-- both JSON null and any wrong type in one check.
+--
+-- Implements the approved R2A-1 Implementation Contract
+-- (r2-design-review @ fac7b7d788f3bb6055280900282eaeb35fbd50e1, §4/§5/§8).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ── User ──────────────────────────────────────────────────────────────────
+-- A user cannot be ACTIVE without a verified email.
+ALTER TABLE "User" ADD CONSTRAINT "User_approvalStatus_requires_emailVerifiedAt" CHECK ("approvalStatus" <> 'ACTIVE' OR "emailVerifiedAt" IS NOT NULL);
+
+-- ── UserSession ───────────────────────────────────────────────────────────
+ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_expiresAt_after_createdAt" CHECK ("expiresAt" > "createdAt");
+ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_revokedAt_after_createdAt" CHECK ("revokedAt" IS NULL OR "revokedAt" >= "createdAt");
+-- Deliberate asymmetry (the one exception to the together-or-neither pattern used everywhere
+-- else in this migration): revokedAt alone is legitimate (an automated, non-human revocation);
+-- revokedById without revokedAt never is (an actor can never be recorded without the timestamp
+-- it acted at).
+ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_revokedById_requires_revokedAt" CHECK ("revokedById" IS NULL OR "revokedAt" IS NOT NULL);
+
+-- A UserSession can only ever be created for a currently-ACTIVE user — PENDING_APPROVAL,
+-- SUSPENDED and REJECTED users can never obtain a session. This is a cross-row lookup a CHECK
+-- constraint cannot perform, hence a BEFORE INSERT trigger.
+CREATE FUNCTION user_session_insert_requires_active_user() RETURNS TRIGGER AS $$
+DECLARE user_status "UserApprovalStatus";
+BEGIN
+  SELECT "approvalStatus" INTO user_status FROM "User" WHERE "id" = NEW."userId";
+  IF user_status <> 'ACTIVE' THEN
+    RAISE EXCEPTION 'Cannot create a UserSession for a non-ACTIVE user (userId=%, approvalStatus=%)', NEW."userId", user_status;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER user_session_requires_active_user
+  BEFORE INSERT ON "UserSession"
+  FOR EACH ROW
+  EXECUTE FUNCTION user_session_insert_requires_active_user();
+
+-- ── EmailVerificationToken ───────────────────────────────────────────────
+ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_expiresAt_after_createdAt" CHECK ("expiresAt" > "createdAt");
+ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_consumedAt_after_createdAt" CHECK ("consumedAt" IS NULL OR "consumedAt" >= "createdAt");
+-- A token cannot be recorded as consumed after its own expiry. This table has no revoked*
+-- concept, so this one ordering CHECK is the complete "cannot have been expired" rule for it.
+ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_consumedAt_before_expiresAt" CHECK ("consumedAt" IS NULL OR "consumedAt" <= "expiresAt");
+
+-- ── AccessRequest ─────────────────────────────────────────────────────────
+-- One exhaustive, mutually exclusive, per-status shape CHECK — each branch is a pure
+-- conjunction of IS [NOT] NULL tests naming every relevant field, never a boolean equality
+-- compared against an independently-FALSE-able expression (the latter form is what let a
+-- partially-populated row through in an earlier draft of this design; see the R2A-1
+-- Implementation Contract §9 for the full trace).
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_state_shape" CHECK (
+  (
+    "status" = 'PENDING'
+    AND "decidedById" IS NULL AND "decidedAt" IS NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'APPROVED'
+    AND "decidedById" IS NOT NULL AND "decidedAt" IS NOT NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'REJECTED'
+    AND "decidedById" IS NOT NULL AND "decidedAt" IS NOT NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'EXPIRED'
+    AND "decidedById" IS NULL AND "decidedAt" IS NULL AND "expiredAt" IS NOT NULL
+  )
+);
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_expiresAt_after_createdAt" CHECK ("expiresAt" > "createdAt");
+-- A row cannot be marked expired before its own deadline.
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_expiredAt_after_expiresAt" CHECK ("expiredAt" IS NULL OR "expiredAt" >= "expiresAt");
+ALTER TABLE "AccessRequest" ADD CONSTRAINT "AccessRequest_decidedAt_after_createdAt" CHECK ("decidedAt" IS NULL OR "decidedAt" >= "createdAt");
+-- Deliberately not added: a decidedAt <= expiresAt ordering CHECK. An administrator may
+-- legitimately decide a request after its nominal deadline has passed (their action wins over a
+-- not-yet-run expiry sweep); the state-shape CHECK above already makes APPROVED/REJECTED and
+-- EXPIRED mutually exclusive by status, so a decided request can never simultaneously carry the
+-- EXPIRED shape — no extra ordering rule is needed.
+
+-- ── UserInvitation ────────────────────────────────────────────────────────
+-- Same exhaustive per-status shape pattern as AccessRequest, across all four statuses.
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_state_shape" CHECK (
+  (
+    "status" = 'PENDING'
+    AND "acceptedAt" IS NULL AND "revokedAt" IS NULL AND "revokedById" IS NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'ACCEPTED'
+    AND "acceptedAt" IS NOT NULL AND "revokedAt" IS NULL AND "revokedById" IS NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'REVOKED'
+    AND "acceptedAt" IS NULL AND "revokedAt" IS NOT NULL AND "revokedById" IS NOT NULL AND "expiredAt" IS NULL
+  ) OR (
+    "status" = 'EXPIRED'
+    AND "acceptedAt" IS NULL AND "revokedAt" IS NULL AND "revokedById" IS NULL AND "expiredAt" IS NOT NULL
+  )
+);
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_expiresAt_after_createdAt" CHECK ("expiresAt" > "createdAt");
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_acceptedAt_after_createdAt" CHECK ("acceptedAt" IS NULL OR "acceptedAt" >= "createdAt");
+-- An invitation cannot be recorded as accepted after its own expiry.
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_acceptedAt_before_expiresAt" CHECK ("acceptedAt" IS NULL OR "acceptedAt" <= "expiresAt");
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_expiredAt_after_expiresAt" CHECK ("expiredAt" IS NULL OR "expiredAt" >= "expiresAt");
+ALTER TABLE "UserInvitation" ADD CONSTRAINT "UserInvitation_revokedAt_after_createdAt" CHECK ("revokedAt" IS NULL OR "revokedAt" >= "createdAt");
+
+-- ── MfaEnrollment ─────────────────────────────────────────────────────────
+-- PENDING_SETUP and ACTIVE share an identical shape on this axis (neither is revoked); REVOKED
+-- requires both revocation fields populated. Exhaustive and mutually exclusive across all three
+-- enum values.
+ALTER TABLE "MfaEnrollment" ADD CONSTRAINT "MfaEnrollment_state_shape" CHECK (
+  ("status" IN ('PENDING_SETUP', 'ACTIVE') AND "revokedAt" IS NULL AND "revokedById" IS NULL)
+  OR ("status" = 'REVOKED' AND "revokedAt" IS NOT NULL AND "revokedById" IS NOT NULL)
+);
+ALTER TABLE "MfaEnrollment" ADD CONSTRAINT "MfaEnrollment_revokedAt_after_createdAt" CHECK ("revokedAt" IS NULL OR "revokedAt" >= "createdAt");
+
+-- Creation constraint: every MfaEnrollment must be inserted as PENDING_SETUP. Unconditional — no
+-- field combination on the inserted row changes the outcome, closing the direct-ACTIVE-insert
+-- bypass (a caller cannot route around this by pre-creating a credential row first either:
+-- MfaTotpCredential.mfaEnrollmentId / MfaWebAuthnCredential.mfaEnrollmentId are immediate,
+-- non-deferrable foreign keys, so the enrollment row must exist — as PENDING_SETUP — before any
+-- credential referencing it can be inserted).
+CREATE FUNCTION mfa_enrollment_insert_must_be_pending_setup() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."status" <> 'PENDING_SETUP' THEN
+    RAISE EXCEPTION 'MfaEnrollment must be created with status = PENDING_SETUP (got %)', NEW."status";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_enrollment_creation_pending_setup_only
+  BEFORE INSERT ON "MfaEnrollment"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_enrollment_insert_must_be_pending_setup();
+
+-- Transition guard: the sole authority over every UPDATE-time invariant on MfaEnrollment.
+-- 1. method is unconditionally immutable after creation.
+-- 2. A same-status update may never change revokedAt/revokedById (a REVOKED row's revocation
+--    facts can never be quietly rewritten by a later, status-preserving update — the same
+--    append-only-evidence discipline as SafetyEvent/QualityHold elsewhere in this migration).
+-- 3. Every differing-status update is checked against the explicit transition whitelist:
+--    PENDING_SETUP -> ACTIVE (gated on a matching credential existing), PENDING_SETUP ->
+--    REVOKED, ACTIVE -> REVOKED. Anything else — ACTIVE -> PENDING_SETUP, any transition out of
+--    REVOKED, or any other combination — falls through to the final ELSE and is rejected.
+CREATE FUNCTION mfa_enrollment_transition_guard() RETURNS TRIGGER AS $$
+DECLARE credential_count int;
+BEGIN
+  IF NEW."method" <> OLD."method" THEN
+    RAISE EXCEPTION 'MfaEnrollment.method is immutable (id=%)', OLD."id";
+  END IF;
+
+  IF NEW."status" = OLD."status" THEN
+    IF NEW."revokedAt" IS DISTINCT FROM OLD."revokedAt"
+       OR NEW."revokedById" IS DISTINCT FROM OLD."revokedById" THEN
+      RAISE EXCEPTION 'MfaEnrollment revocation facts are immutable once set (id=%)', OLD."id";
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF OLD."status" = 'PENDING_SETUP' AND NEW."status" = 'ACTIVE' THEN
+    IF NEW."method" = 'TOTP' THEN
+      SELECT count(*) INTO credential_count
+      FROM "MfaTotpCredential" WHERE "mfaEnrollmentId" = NEW."id";
+    ELSE
+      SELECT count(*) INTO credential_count
+      FROM "MfaWebAuthnCredential" WHERE "mfaEnrollmentId" = NEW."id";
+    END IF;
+    IF credential_count < 1 THEN
+      RAISE EXCEPTION 'Cannot activate MfaEnrollment % without at least one matching credential', NEW."id";
+    END IF;
+    RETURN NEW;
+  ELSIF OLD."status" = 'PENDING_SETUP' AND NEW."status" = 'REVOKED' THEN
+    RETURN NEW;
+  ELSIF OLD."status" = 'ACTIVE' AND NEW."status" = 'REVOKED' THEN
+    RETURN NEW;
+  ELSE
+    RAISE EXCEPTION 'Illegal MfaEnrollment status transition % -> % (id=%)', OLD."status", NEW."status", NEW."id";
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_enrollment_transition_guard_trigger
+  BEFORE UPDATE ON "MfaEnrollment"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_enrollment_transition_guard();
+
+-- ── MfaTotpCredential ─────────────────────────────────────────────────────
+ALTER TABLE "MfaTotpCredential" ADD CONSTRAINT "MfaTotpCredential_encryptedSecret_nonempty" CHECK (octet_length("encryptedSecret") > 0);
+ALTER TABLE "MfaTotpCredential" ADD CONSTRAINT "MfaTotpCredential_encryptionKeyVersion_normalized" CHECK (length(btrim("encryptionKeyVersion")) > 0);
+
+-- Method-matching + not-REVOKED check, INSERT only (the reassignment bypass this used to also
+-- guard against on UPDATE is now closed more strongly by unconditional parent immutability
+-- below, which supersedes it — a credential can never be re-pointed at any other enrollment at
+-- all, correct or not, so re-validating compatibility on UPDATE is no longer needed).
+-- FOR UPDATE locks the parent MfaEnrollment row — this is the concurrency-locking protocol: it
+-- serializes this insert against a concurrent activation/revocation UPDATE on the same row
+-- (which already holds that row's write lock via its own UPDATE statement) rather than reading
+-- a possibly-stale pre-commit snapshot of its method/status.
+CREATE FUNCTION mfa_totp_credential_method_check() RETURNS TRIGGER AS $$
+DECLARE enrollment_method "MfaMethod";
+DECLARE enrollment_status "MfaEnrollmentStatus";
+BEGIN
+  SELECT "method", "status" INTO enrollment_method, enrollment_status
+  FROM "MfaEnrollment" WHERE "id" = NEW."mfaEnrollmentId" FOR UPDATE;
+  IF enrollment_method IS DISTINCT FROM 'TOTP' THEN
+    RAISE EXCEPTION 'MfaTotpCredential.mfaEnrollmentId must reference a TOTP MfaEnrollment';
+  END IF;
+  IF enrollment_status = 'REVOKED' THEN
+    RAISE EXCEPTION 'Cannot attach a credential to a REVOKED MfaEnrollment';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_totp_credential_method_check_trigger
+  BEFORE INSERT ON "MfaTotpCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_totp_credential_method_check();
+
+-- Parent immutability: mfaEnrollmentId may never change by any UPDATE, to any target, compatible
+-- method or not — the "safest design" fix for the credential-reassignment bypass. Every other
+-- field (encryptedSecret, encryptionKeyVersion) remains freely updatable, since this only
+-- inspects mfaEnrollmentId.
+CREATE FUNCTION mfa_totp_credential_parent_immutable() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."mfaEnrollmentId" IS DISTINCT FROM OLD."mfaEnrollmentId" THEN
+    RAISE EXCEPTION 'MfaTotpCredential.mfaEnrollmentId is immutable (id=%)', OLD."id";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_totp_credential_parent_immutable_trigger
+  BEFORE UPDATE ON "MfaTotpCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_totp_credential_parent_immutable();
+
+-- Delete guard: since mfaEnrollmentId is now immutable, DELETE is the only remaining way a
+-- credential can leave an enrollment — this is the last line of defense for "ACTIVE requires a
+-- credential". Unconditional while ACTIVE, since TOTP can only ever have exactly one credential.
+-- FOR UPDATE is the same concurrency-locking protocol as above, in the other direction: it
+-- serializes this delete against a concurrent activation UPDATE on the same enrollment row.
+CREATE FUNCTION mfa_totp_credential_delete_guard() RETURNS TRIGGER AS $$
+DECLARE enrollment_status "MfaEnrollmentStatus";
+BEGIN
+  SELECT "status" INTO enrollment_status
+  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId" FOR UPDATE;
+  IF enrollment_status = 'ACTIVE' THEN
+    RAISE EXCEPTION 'Cannot delete the credential of an ACTIVE TOTP MfaEnrollment; revoke it first';
+  END IF;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_totp_credential_delete_guard_trigger
+  BEFORE DELETE ON "MfaTotpCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_totp_credential_delete_guard();
+
+-- ── MfaWebAuthnCredential ─────────────────────────────────────────────────
+ALTER TABLE "MfaWebAuthnCredential" ADD CONSTRAINT "MfaWebAuthnCredential_publicKey_nonempty" CHECK (octet_length("publicKey") > 0);
+
+-- Mirrors MfaTotpCredential's three triggers exactly, checking method = 'WEBAUTHN' and allowing
+-- many rows per enrollment (no delete-guard unconditionality — see below).
+CREATE FUNCTION mfa_webauthn_credential_method_check() RETURNS TRIGGER AS $$
+DECLARE enrollment_method "MfaMethod";
+DECLARE enrollment_status "MfaEnrollmentStatus";
+BEGIN
+  SELECT "method", "status" INTO enrollment_method, enrollment_status
+  FROM "MfaEnrollment" WHERE "id" = NEW."mfaEnrollmentId" FOR UPDATE;
+  IF enrollment_method IS DISTINCT FROM 'WEBAUTHN' THEN
+    RAISE EXCEPTION 'MfaWebAuthnCredential.mfaEnrollmentId must reference a WEBAUTHN MfaEnrollment';
+  END IF;
+  IF enrollment_status = 'REVOKED' THEN
+    RAISE EXCEPTION 'Cannot attach a credential to a REVOKED MfaEnrollment';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_webauthn_credential_method_check_trigger
+  BEFORE INSERT ON "MfaWebAuthnCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_webauthn_credential_method_check();
+
+CREATE FUNCTION mfa_webauthn_credential_parent_immutable() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."mfaEnrollmentId" IS DISTINCT FROM OLD."mfaEnrollmentId" THEN
+    RAISE EXCEPTION 'MfaWebAuthnCredential.mfaEnrollmentId is immutable (id=%)', OLD."id";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_webauthn_credential_parent_immutable_trigger
+  BEFORE UPDATE ON "MfaWebAuthnCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_webauthn_credential_parent_immutable();
+
+-- Delete guard only blocks deleting the *last remaining* credential while ACTIVE, correctly
+-- allowing removal of one of several while keeping others. Same FOR UPDATE locking protocol.
+CREATE FUNCTION mfa_webauthn_credential_delete_guard() RETURNS TRIGGER AS $$
+DECLARE enrollment_status "MfaEnrollmentStatus";
+DECLARE remaining_count int;
+BEGIN
+  SELECT "status" INTO enrollment_status
+  FROM "MfaEnrollment" WHERE "id" = OLD."mfaEnrollmentId" FOR UPDATE;
+  IF enrollment_status = 'ACTIVE' THEN
+    SELECT count(*) INTO remaining_count FROM "MfaWebAuthnCredential"
+      WHERE "mfaEnrollmentId" = OLD."mfaEnrollmentId" AND "id" <> OLD."id";
+    IF remaining_count < 1 THEN
+      RAISE EXCEPTION 'Cannot delete the last credential of an ACTIVE WebAuthn MfaEnrollment; revoke it first';
+    END IF;
+  END IF;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER mfa_webauthn_credential_delete_guard_trigger
+  BEFORE DELETE ON "MfaWebAuthnCredential"
+  FOR EACH ROW
+  EXECUTE FUNCTION mfa_webauthn_credential_delete_guard();
+
+-- ── MfaRecoveryCode ───────────────────────────────────────────────────────
+-- True single-use-under-concurrency is a Phase 0B service-layer concern (an atomic conditional
+-- UPDATE ... WHERE "usedAt" IS NULL, not a CHECK) — see the R2A-1 Implementation Contract §6.
+ALTER TABLE "MfaRecoveryCode" ADD CONSTRAINT "MfaRecoveryCode_usedAt_after_createdAt" CHECK ("usedAt" IS NULL OR "usedAt" >= "createdAt");
+
+-- ── Notification ──────────────────────────────────────────────────────────
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_payload_is_object" CHECK (jsonb_typeof("payload") = 'object');
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_readAt_after_createdAt" CHECK ("readAt" IS NULL OR "readAt" >= "createdAt");
+
+-- ── OutboxEvent ───────────────────────────────────────────────────────────
+-- One exhaustive, mutually exclusive, per-status shape CHECK covering all five statuses.
+-- PROCESSING deliberately does not constrain lastError either way (a retry after a prior failure
+-- legitimately carries the previous attempt's error forward as diagnostic history). SENT does
+-- force lastError IS NULL (a successfully delivered event should not display a stale error).
+-- "lockedAt and lockedBy together or neither" is not a separate CHECK — it is already
+-- structurally guaranteed by this shape CHECK: the only branch requiring either non-NULL
+-- (PROCESSING) requires both, and every other branch requires both NULL.
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_state_shape" CHECK (
+  (
+    "status" = 'PENDING'
+    AND "lockedAt" IS NULL AND "lockedBy" IS NULL
+    AND "processedAt" IS NULL AND "deadLetteredAt" IS NULL
+    AND "lastError" IS NULL AND "nextAttemptAt" IS NULL
+  ) OR (
+    "status" = 'PROCESSING'
+    AND "lockedAt" IS NOT NULL AND "lockedBy" IS NOT NULL
+    AND "processedAt" IS NULL AND "deadLetteredAt" IS NULL
+  ) OR (
+    "status" = 'SENT'
+    AND "processedAt" IS NOT NULL
+    AND "lockedAt" IS NULL AND "lockedBy" IS NULL
+    AND "deadLetteredAt" IS NULL AND "lastError" IS NULL
+  ) OR (
+    "status" = 'FAILED'
+    AND "lastError" IS NOT NULL AND "nextAttemptAt" IS NOT NULL
+    AND "lockedAt" IS NULL AND "lockedBy" IS NULL
+    AND "processedAt" IS NULL AND "deadLetteredAt" IS NULL
+  ) OR (
+    "status" = 'DEAD_LETTER'
+    AND "lastError" IS NOT NULL AND "deadLetteredAt" IS NOT NULL
+    AND "nextAttemptAt" IS NULL
+    AND "lockedAt" IS NULL AND "lockedBy" IS NULL AND "processedAt" IS NULL
+  )
+);
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_payload_is_object" CHECK (jsonb_typeof("payload") = 'object');
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_attemptCount_nonneg" CHECK ("attemptCount" >= 0);
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_processedAt_after_createdAt" CHECK ("processedAt" IS NULL OR "processedAt" >= "createdAt");
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_lockedAt_after_createdAt" CHECK ("lockedAt" IS NULL OR "lockedAt" >= "createdAt");
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_deadLetteredAt_after_createdAt" CHECK ("deadLetteredAt" IS NULL OR "deadLetteredAt" >= "createdAt");
+ALTER TABLE "OutboxEvent" ADD CONSTRAINT "OutboxEvent_nextAttemptAt_after_createdAt" CHECK ("nextAttemptAt" IS NULL OR "nextAttemptAt" >= "createdAt");
