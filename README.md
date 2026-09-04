@@ -34,6 +34,12 @@ Shared logic used across modules:
   the customers/estimations/projects/inventory/jobcards/equipment/quality records, the v3→v4
   migration and backup/import safeguards described below.
 - `workshop-forms.js` — shared form helpers.
+- `workshop-radio.css` / `workshop-radio.js` — the shared desktop web-radio widget (station list,
+  play/pause, volume, a non-blocking unavailable state when a stream cannot start). Injects its
+  own markup on every desktop application page except `login.html` and the mobile pages, so no
+  page duplicates the widget's CSS, HTML or JS; station/volume selection persists in
+  `localStorage` across navigation. Originally built inline in `hub-desktop.html`, extracted to
+  these shared files in Frontend UX Pass 1A (see **Tests** below for its coverage).
 - `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
   `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
   business-rule modules shared between a page and the automated test suite (see **Tests** below).
@@ -56,7 +62,9 @@ Administration pass.
 
 ## Shared design
 Navy theme (#013179), sharp edges, engineering-grid + spark animation,
-compact SV / EN / MK language switcher, 3K/4K scaling on desktop screens.
+compact SV / EN / MK language switcher, a shared bottom-right radio widget on every desktop
+module page, and desktop screen scaling that accounts for viewport height as well as width (see
+Frontend UX Pass 1A) so a short-but-wide display never clips or scrolls unnecessarily.
 
 ## Run locally
 Open any `.html` file in a browser, or use the VS Code **Live Server** extension
@@ -74,8 +82,9 @@ npm run test:syntax   # checks every .js file and every HTML page's inline scrip
 npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge and exercises
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Projects/Planning,
-                      # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers, and
-                      # Documents/Reports and Marketing/Sales workflows
+                      # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers,
+                      # Documents/Reports, Marketing/Sales workflows, and the
+                      # Frontend UX Pass 1A shared-radio-widget/Hub-viewport suite
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download

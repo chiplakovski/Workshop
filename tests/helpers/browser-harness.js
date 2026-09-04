@@ -92,14 +92,21 @@ async function startBrowserHarness() {
     const port = await listen(server);
     const baseUrl = `http://${HOST}:${port}`;
     browser = await chromium.launch({ executablePath: findBrowser(), headless: true });
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    await context.route('**/*', async (route) => {
-      if (route.request().url().startsWith(baseUrl)) await route.continue();
-      else await route.fulfill({ status: 204, body: '' });
-    });
+
+    async function newContext(options = {}) {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...options });
+      await ctx.route('**/*', async (route) => {
+        if (route.request().url().startsWith(baseUrl)) await route.continue();
+        else await route.fulfill({ status: 204, body: '' });
+      });
+      return ctx;
+    }
+
+    const context = await newContext();
     return {
       baseUrl,
       context,
+      newContext,
       async close() {
         await context.close();
         await browser.close();

@@ -1,12 +1,25 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="workshop-radio.css">
 <title>Varmak — Hub</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
     --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  html{height:100%;}
+  /* Frontend UX Pass 1A — Scope 2: the page shell is a full-viewport flex column so the module
+     hub area (.wrap) always receives exactly "viewport height minus the top bar's natural
+     height" to work with, at any resolution. Tile/team-talk sizing then responds to that actual
+     available height (via CSS Grid's 1fr row distribution, see .tiles below) instead of the
+     previous width-only 3K/4K breakpoints, which sized tiles purely off viewport WIDTH and could
+     make the hub taller than short-but-wide viewports (e.g. 1920x1080, 3840x1080) without any
+     regard for the height actually available — the root cause of the clipping/scrolling this
+     pass corrects. No overflow:hidden is set anywhere in this chain: when a viewport is
+     genuinely too short even at the tiles' minimum comfortable size (see the min-height floors
+     below), normal document flow simply grows past 100vh and the browser's own scrollbar
+     engages — graceful scrolling, not clipped content. */
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;display:flex;flex-direction:column;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
   .bg::before{content:"";position:absolute;inset:0;
     background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),
@@ -23,7 +36,7 @@
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
   /* full-width top bar */
-  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
+  .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;flex:none;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
   .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
   .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
@@ -39,14 +52,20 @@
   .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:34px 40px 90px;}
-  .hubtitle{margin-bottom:20px;}
+  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:34px 40px 34px;width:100%;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+  .hubtitle{margin-bottom:20px;flex:none;}
   .hubtitle h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;}
   .hubtitle p{font-size:12px;color:var(--steel-400);margin-top:2px;}
 
-  .hub{display:grid;grid-template-columns:3fr 1.15fr;gap:18px;align-items:stretch;}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,1fr);gap:18px;}
-  .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:190px;
+  .hub{display:grid;grid-template-columns:3fr 1.15fr;gap:18px;align-items:stretch;flex:1 1 auto;min-height:0;}
+  /* Three rows, matching the nine grid cells combineModuleTiles() always produces at runtime
+     (five tile-stacks + four single tiles) — the previous repeat(5,1fr) sized for five rows that
+     never actually existed, wasting a fifth of the intended height budget on nothing. 1fr rows
+     divide whatever height .tiles actually receives (via the flex chain above) evenly across the
+     real three rows, so tiles grow or shrink to fit any viewport height automatically; the
+     min-height on .tile/.tile-stack below is only the floor for genuinely short viewports. */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:18px;}
+  .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;
     background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;cursor:pointer;overflow:hidden;
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transition:transform .18s,border-color .18s,box-shadow .18s,background .18s;}
   .tile:hover{transform:translateY(-3px);border-color:rgba(74,144,255,.6);background:rgba(74,144,255,.07);box-shadow:0 16px 44px rgba(1,49,121,.5);}
@@ -55,7 +74,7 @@
   .tile p{font-size:12px;color:var(--steel-400);}
   .tile .arrow{position:absolute;top:20px;right:18px;color:var(--steel-400);opacity:0;transform:translateX(-4px);transition:.18s;}
   .tile:hover .arrow{opacity:1;transform:translateX(0);color:var(--spark);}
-  .tile-stack{display:grid;grid-template-rows:1fr 1fr;gap:10px;min-height:190px;}
+  .tile-stack{display:grid;grid-template-rows:1fr 1fr;gap:10px;min-height:150px;}
   .tile-stack .tile{min-height:0;padding:15px 16px;flex-direction:row;align-items:center;justify-content:flex-start;gap:13px;}
   .tile-stack .tile .ic{width:38px;height:38px;flex:none;}
   .tile-stack .tile .arrow{top:50%;right:14px;transform:translate(-4px,-50%);}
@@ -64,8 +83,12 @@
   .tile-stack .tile p{font-size:11px;}
   .tile-stack .tile .art{display:none;}
 
-  /* team talk panel */
-  .teamtalk{display:flex;flex-direction:column;background:rgba(255,255,255,.035);border:1px solid var(--line);
+  /* team talk panel. padding-bottom reserves clearance so the send button/input never sits
+     under the fixed bottom-right radio widget at narrower desktop widths, where the panel's
+     right edge reaches far enough right to share horizontal space with it — this only shifts
+     .tt-feed's own internal flex sizing (teamtalk's outer box height is still fully governed by
+     the grid stretch matching .tiles, so it does not add to the page's total height). */
+  .teamtalk{display:flex;flex-direction:column;min-height:150px;padding-bottom:64px;background:rgba(255,255,255,.035);border:1px solid var(--line);
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);overflow:hidden;}
   .tt-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);}
   .tt-head .ic{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
@@ -105,61 +128,43 @@
   .tt-head,.tt-feed,.tt-input{position:relative;z-index:1;}
 
 
-  /* DAB / web radio widget (bottom-right) */
-  .radio{position:fixed;right:18px;bottom:16px;z-index:40;font-family:'Inter';}
-  .radio-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:rgba(7,26,51,.82);border:1px solid rgba(142,163,192,0.16);
-    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
-  .radio-bar:hover{border-color:rgba(185,198,218,0.35);}
-  .radio .rico{width:16px;height:16px;color:var(--spark);flex:none;}
-  .radio .rstation{font-size:12px;font-weight:600;letter-spacing:.02em;min-width:78px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ice);}
-  .radio .rsub{font-size:9.5px;color:var(--steel-400);letter-spacing:.06em;text-transform:uppercase;}
-  .radio .rmeta{display:flex;flex-direction:column;gap:1px;}
-  .radio .eq{display:flex;align-items:flex-end;gap:2px;height:16px;width:20px;}
-  .radio .eq span{flex:1;background:var(--spark);height:4px;opacity:.5;}
-  .radio.playing .eq span{animation:eq .9s ease-in-out infinite;}
-  .radio .eq span:nth-child(2){animation-delay:.15s;} .radio .eq span:nth-child(3){animation-delay:.3s;} .radio .eq span:nth-child(4){animation-delay:.45s;}
-  @keyframes eq{0%,100%{height:4px;opacity:.45}50%{height:15px;opacity:1}}
-  @media (prefers-reduced-motion:reduce){.radio.playing .eq span{animation:none;height:9px;}}
-  .radio .rbtn{width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
-    background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;transition:.15s;}
-  .radio .rbtn:hover{filter:brightness(1.12);}
-  .radio .rexp{width:28px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;color:var(--steel-400);}
-  .radio .rexp:hover{color:var(--ice);}
-  .radio .rexp svg{transition:transform .18s;} .radio.open .rexp svg{transform:rotate(180deg);}
-  .radio-panel{position:absolute;right:0;bottom:calc(100% + 6px);width:230px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);
-    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
-  .radio.open .radio-panel{opacity:1;visibility:visible;transform:translateY(0);}
-  .radio-panel .ph{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel-400);padding:11px 14px 7px;}
-  .radio-panel .st{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:9px 14px;cursor:pointer;transition:.13s;}
-  .radio-panel .st:hover{background:rgba(74,144,255,.12);color:var(--ice);}
-  .radio-panel .st.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
-  .radio-panel .vol{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(142,163,192,0.14);}
-  .radio-panel .vol svg{width:15px;height:15px;color:var(--steel-400);flex:none;}
-  .radio-panel .vol input{flex:1;accent-color:var(--spark);}
-
   @media(max-width:1000px){
     .hub{grid-template-columns:1fr;} .teamtalk{min-height:420px;}
     .tiles{grid-template-columns:repeat(2,1fr);grid-template-rows:auto;}
   }
   @media(max-width:560px){ .tiles{grid-template-columns:1fr;} .topfull{padding:18px 18px 0;} .wrap{padding:24px 18px 90px;} }
 
-  /* 3K / 4K scaling */
-  @media(min-width:1800px){
-    .wrap{max-width:1620px;padding:48px 60px 100px;}
+  /* Content-area width scales with viewport WIDTH alone (unlike the height-gated block below) —
+     using the extra horizontal room on a short-but-wide display like 3840x1080 is always safe,
+     since it never adds to the page's total HEIGHT the way enlarged tile padding/gaps would. */
+  @media(min-width:1800px){ .wrap{max-width:1620px;} }
+  @media(min-width:2600px){ .wrap{max-width:2200px;} }
+
+  /* 3K / 4K padding/gap/type scaling — gated on min-height:1200px (not just min-width) so a
+     short but wide viewport (1920x1080, 3840x1080 — both ≥1800/2600px wide but well under
+     1200px tall) keeps the compact base sizing instead of the enlarged treatment below, which
+     multiplies across three tile rows and was the actual cause of clipped/scrolling content at
+     those resolutions. A genuinely tall wide display (2560x1440 and above) still gets the
+     fuller-size tiles and type, matching the previous design's intent. Tile/tile-stack
+     min-height is intentionally not overridden here: the base 150px floor plus each row's 1fr
+     share of .tiles' actual (flex-derived) available height already produces generously sized
+     tiles whenever the viewport genuinely has the room, at any width. */
+  @media(min-width:1800px) and (min-height:1200px){
+    .wrap{padding:48px 60px 48px;}
     .topfull{padding:32px 60px 0;}
-    .hub{gap:24px;} .tiles{gap:24px;} .tile{min-height:240px;padding:26px;}
-    .tile-stack{min-height:240px;gap:14px;} .tile-stack .tile{min-height:0;padding:18px 20px;gap:16px;}
+    .hub{gap:24px;} .tiles{gap:24px;} .tile{padding:26px;}
+    .tile-stack{gap:14px;} .tile-stack .tile{padding:18px 20px;gap:16px;}
     .tile-stack .tile .ic{width:46px;height:46px;} .tile-stack .tile h3{font-size:17px;} .tile-stack .tile p{font-size:13px;}
     .tile .ic{width:56px;height:56px;} .tile h3{font-size:20px;} .tile p{font-size:14px;}
     .hubtitle h1{font-size:26px;} .hubtitle p{font-size:14px;}
     .brand .logo{font-size:19px;} .clock .time{font-size:19px;} .clock .date{font-size:13px;}
     .tt-head h3{font-size:17px;} .tt-feed .mtext{font-size:14px;} .tt-input input{font-size:15px;}
   }
-  @media(min-width:2600px){
-    .wrap{max-width:2200px;padding:70px 90px 130px;}
+  @media(min-width:2600px) and (min-height:1200px){
+    .wrap{padding:70px 90px 60px;}
     .topfull{padding:46px 90px 0;}
-    .hub{gap:34px;} .tiles{gap:34px;} .tile{min-height:320px;padding:38px;}
-    .tile-stack{min-height:320px;gap:18px;} .tile-stack .tile{min-height:0;padding:24px 28px;gap:20px;}
+    .hub{gap:34px;} .tiles{gap:34px;} .tile{padding:38px;}
+    .tile-stack{gap:18px;} .tile-stack .tile{padding:24px 28px;gap:20px;}
     .tile-stack .tile .ic{width:58px;height:58px;} .tile-stack .tile h3{font-size:22px;} .tile-stack .tile p{font-size:16px;}
     .tile .ic{width:74px;height:74px;} .tile h3{font-size:27px;} .tile p{font-size:18px;}
     .hubtitle h1{font-size:34px;} .hubtitle p{font-size:18px;}
@@ -290,25 +295,6 @@
   </div>
 </div>
 
-<div class="radio" id="radio">
-  <div class="radio-panel" id="radioPanel">
-    <div class="ph">Stations</div>
-    <div id="stationList"></div>
-    <div class="vol">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
-      <input type="range" id="radioVol" min="0" max="1" step="0.05" value="0.7" aria-label="Volume">
-    </div>
-  </div>
-  <div class="radio-bar">
-    <svg class="rico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16v10H4z"/><circle cx="16" cy="15" r="2.5"/><path d="M8 14h2M8 17h2M4 10l13-5"/></svg>
-    <div class="rmeta"><span class="rstation" id="radioName">P4 Malmöhus</span><span class="rsub">DAB · Live</span></div>
-    <div class="eq"><span></span><span></span><span></span><span></span></div>
-    <button class="rbtn" id="radioBtn" aria-label="Play"><svg id="radioIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-    <button class="rexp" id="radioExp" aria-label="Stations"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
-  </div>
-  <audio id="radioAudio" preload="none"></audio>
-</div>
-
 <div class="langc" id="langc">
   <div class="langmenu" id="langmenu">
     <button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button>
@@ -378,32 +364,6 @@
     if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});
     document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 
-  // ── web radio (DAB stations stream online) ──
-  const STATIONS=[
-    {name:"P4 Malmöhus",url:"https://http-live.sr.se/p4malmo-mp3-192"},
-    {name:"Sveriges Radio P1",url:"https://http-live.sr.se/p1-mp3-192"},
-    {name:"Sveriges Radio P2",url:"https://http-live.sr.se/p2-mp3-192"},
-    {name:"Sveriges Radio P3",url:"https://http-live.sr.se/p3-mp3-192"},
-    {name:"Mix Megapol",url:"https://fm02-icecast.mediatop.se/mix_128"}
-  ];
-  const rAudio=document.getElementById('radioAudio'),rBtn=document.getElementById('radioBtn'),rIcon=document.getElementById('radioIcon'),
-        rName=document.getElementById('radioName'),rExp=document.getElementById('radioExp'),rWrap=document.getElementById('radio'),
-        rPanel=document.getElementById('radioPanel'),rVol=document.getElementById('radioVol'),rList=document.getElementById('stationList');
-  let curStation=0;
-  rAudio.volume=parseFloat(rVol.value);
-  STATIONS.forEach((s,i)=>{const b=document.createElement('button');b.className='st';b.textContent=s.name;b.onclick=()=>{selectStation(i);};rList.appendChild(b);});
-  function markActive(){rList.querySelectorAll('.st').forEach((b,i)=>b.classList.toggle('active',i===curStation));}
-  markActive();
-  const PLAY='<path d="M8 5v14l11-7z"/>', PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-  function play(){rAudio.src=STATIONS[curStation].url;const p=rAudio.play();
-    if(p)p.then(()=>{}).catch(()=>{ /* stream blocked in preview; UI still reflects intent */ });
-    rWrap.classList.add('playing');rIcon.innerHTML=PAUSE;}
-  function pause(){rAudio.pause();rWrap.classList.remove('playing');rIcon.innerHTML=PLAY;}
-  function selectStation(i){curStation=i;rName.textContent=STATIONS[i].name;markActive();play();}
-  rBtn.addEventListener('click',()=>{rWrap.classList.contains('playing')?pause():play();});
-  rExp.addEventListener('click',e=>{e.stopPropagation();rWrap.classList.toggle('open');});
-  document.addEventListener('click',e=>{if(!rWrap.contains(e.target))rWrap.classList.remove('open');});
-  rVol.addEventListener('input',()=>{rAudio.volume=parseFloat(rVol.value);});
   document.querySelectorAll('.tile[role="link"]').forEach(tile=>tile.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();tile.click();}}));
 
   document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
@@ -427,4 +387,5 @@
     ttInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
   })();
 </script>
+<script src="workshop-radio.js"></script>
 </body></html>

@@ -1,0 +1,64 @@
+/* Varmak Workshop — shared desktop radio widget (Frontend UX Pass 1A).
+   Extracted from hub-desktop.html's original inline widget, which remains the visual and
+   functional source of truth. Colors are hardcoded rather than referencing each host page's own
+   CSS custom properties (the 14 desktop module pages each define a different variable-naming
+   scheme — --spark/--ice/--steel-400 on some, --blue/--text/--muted on others) so the widget
+   renders identically everywhere regardless of which page it is loaded on. Values match the
+   Hub's :root palette exactly: spark #4a90ff, ice #e8f0fb, steel-400 #8ea3c0, steel-300 #b9c6da.
+   Loaded on every desktop application page except login.html and the mobile pages. */
+
+.radio{position:fixed;right:18px;bottom:16px;z-index:40;font-family:'Inter',system-ui,sans-serif;}
+.radio-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:rgba(7,26,51,.82);border:1px solid rgba(142,163,192,0.16);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+.radio-bar:hover{border-color:rgba(185,198,218,0.35);}
+.radio .rico{width:16px;height:16px;color:#4a90ff;flex:none;}
+.radio .rstation{font-size:12px;font-weight:600;letter-spacing:.02em;min-width:78px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8f0fb;}
+.radio .rsub{font-size:9.5px;color:#8ea3c0;letter-spacing:.06em;text-transform:uppercase;}
+.radio.unavailable .rsub{color:#ff9a9a;}
+.radio .rmeta{display:flex;flex-direction:column;gap:1px;}
+.radio .eq{display:flex;align-items:flex-end;gap:2px;height:16px;width:20px;}
+.radio .eq span{flex:1;background:#4a90ff;height:4px;opacity:.5;}
+.radio.playing .eq span{animation:workshopRadioEq .9s ease-in-out infinite;}
+.radio .eq span:nth-child(2){animation-delay:.15s;} .radio .eq span:nth-child(3){animation-delay:.3s;} .radio .eq span:nth-child(4){animation-delay:.45s;}
+@keyframes workshopRadioEq{0%,100%{height:4px;opacity:.45}50%{height:15px;opacity:1}}
+@media (prefers-reduced-motion:reduce){.radio.playing .eq span{animation:none;height:9px;}}
+.radio .rbtn{width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;transition:.15s;}
+.radio .rbtn:hover{filter:brightness(1.12);}
+.radio .rexp{width:28px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;color:#8ea3c0;}
+.radio .rexp:hover{color:#e8f0fb;}
+.radio .rexp svg{transition:transform .18s;} .radio.open .rexp svg{transform:rotate(180deg);}
+@media (prefers-reduced-motion:reduce){.radio .rexp svg{transition:none;}}
+.radio-panel{position:absolute;right:0;bottom:calc(100% + 6px);width:230px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+.radio.open .radio-panel{opacity:1;visibility:visible;transform:translateY(0);}
+@media (prefers-reduced-motion:reduce){.radio-panel{transition:opacity .01s,visibility .01s;}}
+.radio-panel .ph{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8ea3c0;padding:11px 14px 7px;}
+.radio-panel .st{display:block;width:100%;text-align:left;background:transparent;border:none;color:#b9c6da;font-family:'Inter',system-ui,sans-serif;font-size:13px;padding:9px 14px;cursor:pointer;transition:.13s;}
+.radio-panel .st:hover{background:rgba(74,144,255,.12);color:#e8f0fb;}
+.radio-panel .st.active{color:#cfe0ff;box-shadow:inset 2px 0 0 #4a90ff;}
+.radio-panel .vol{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(142,163,192,0.14);}
+.radio-panel .vol svg{width:15px;height:15px;color:#8ea3c0;flex:none;}
+.radio-panel .vol input{flex:1;accent-color:#4a90ff;}
+
+/* Keyboard focus must stay visible against the navy backdrop regardless of whether the host page
+   defines its own :focus-visible rule (roughly half of the 14 module pages do not). */
+.radio .rbtn:focus-visible,
+.radio .rexp:focus-visible,
+.radio-panel .st:focus-visible,
+.radio-panel .vol input:focus-visible{outline:2px solid #8bc0ff;outline-offset:2px;}
+
+@media(min-width:1800px){
+  .radio{right:22px;bottom:20px;}
+  .radio-bar{padding:9px 12px 9px 14px;gap:11px;}
+  .radio .rstation{font-size:13px;}
+  .radio-panel{width:250px;}
+  .radio-panel .st{font-size:14px;padding:10px 15px;}
+}
+@media(min-width:2600px){
+  .radio{right:30px;bottom:26px;}
+  .radio-bar{padding:11px 15px 11px 17px;gap:13px;}
+  .radio .rstation{font-size:15px;}
+  .radio-panel{width:280px;}
+  .radio-panel .st{font-size:16px;padding:12px 17px;}
+}
