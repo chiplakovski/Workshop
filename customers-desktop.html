@@ -2,6 +2,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="workshop-radio.css">
+<link rel="stylesheet" href="workshop-desktop-shell.css">
 <title>Varmak — Customers</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
@@ -192,6 +193,19 @@
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
+<style>
+/* Frontend UX Pass 1B-1: static desktop shell — body no longer scrolls; the sidebar (already
+   fixed and correctly viewport-bounded) stays as-is; .wrap becomes the fixed-height column next
+   to it, with .modhead and the relocated action bar pinned and #app as the sole internal vertical
+   scroll owner. .topfull already renders nothing (display:none above), so it needs no flex role. */
+html,body{height:100%;}
+body{height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+@supports (height:100dvh){body{height:100dvh;}}
+.wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+.modhead{flex:none;}
+#app{flex:1 1 auto;min-height:0;overflow-y:auto;}
+.crmgrid>.col{min-width:0;}
+</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
 
@@ -208,7 +222,9 @@
       <div><h1 data-i="ctitle">Customers</h1><p data-i="csub">Contacts & accounts</p></div></div>
   </div>
 
-  <div id="app"></div>
+  <div class="ws-actionbar-slot" id="actionBarSlot"></div>
+
+  <div id="app" class="ws-radio-safe-bottom"></div>
 </div>
 
 <div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
@@ -639,7 +655,10 @@ function renderAll(){
     <div class="col">${renderLeft()}</div>
     <div class="col">${renderMiddle(c)}</div>
     <div class="col">${renderRight(c)}</div>
-  </div>${renderActionBar(c)}`;
+  </div>`;
+  // Frontend UX Pass 1B-1: renderActionBar(c) itself is unchanged — only its mount point moves,
+  // from the end of the scrolling #app content to the always-visible slot above it.
+  $("actionBarSlot").innerHTML=renderActionBar(c);
   $("search").addEventListener('input',e=>{query=e.target.value;renderAll();});
   renderTab(c);
   syncModuleSidebar();
@@ -813,6 +832,30 @@ window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();renderAll(
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 (function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+
+// Frontend UX Pass 1B-1: every modal writes $("fcard").innerHTML = "<h2>...optional .fsub...
+// fields...<div class=\"fbtns\">" and then shows #fov (18 call sites, none touched here). Rather
+// than edit each one, wrap the field content between the leading h2/.fsub and the trailing .fbtns
+// in one ".ws-modal-body" div whenever #fcard's content changes, so workshop-desktop-shell.css can
+// keep the modal's header and Cancel/Save row visible while only the field content scrolls. No
+// field, id, label, handler or validation message is touched or reordered — only grouped.
+(function(){
+  var fcard=$("fcard");
+  if(!fcard)return;
+  function wireModalScroll(){
+    if(fcard.querySelector(':scope > .ws-modal-body'))return;
+    var btns=fcard.querySelector(':scope > .fbtns');
+    var body=document.createElement('div');
+    body.className='ws-modal-body';
+    Array.prototype.slice.call(fcard.children).forEach(function(k){
+      if(k===btns||k.tagName==='H2'||k.classList.contains('fsub'))return;
+      body.appendChild(k);
+    });
+    if(!body.childNodes.length)return;
+    if(btns)fcard.insertBefore(body,btns);else fcard.appendChild(body);
+  }
+  new MutationObserver(wireModalScroll).observe(fcard,{childList:true});
+})();
 </script>
 <script src="workshop-radio.js"></script>
 </body></html>

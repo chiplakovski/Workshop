@@ -1,0 +1,44 @@
+/* Varmak Workshop — shared static desktop application-shell foundation (Frontend UX Pass 1B-1).
+   Loaded only on the pages migrated to the fixed desktop shell so far: customers-desktop.html,
+   suppliers-desktop.html, estimations-desktop.html. Each of those pages keeps its own existing
+   left sidebar (already position:fixed and already correctly bounded to the viewport height on
+   these three pages — nothing here changes that mechanism) and its own existing visual design;
+   this file only adds the new, namespaced "ws-*" scroll-ownership/utility classes plus small
+   additive rules for each page's own pre-existing modal class names (.fcard on Customers and
+   Estimations, .modal-card on Suppliers) so a tall modal keeps its header and action row visible
+   while only its field content scrolls. Normal layout sizing stays entirely CSS-owned — see each
+   page's own <script> for the one-line change that retargets an already-existing render function
+   at a new mount point, not a height calculation.
+*/
+
+/* ---- radio safe area -----------------------------------------------------------------------
+   workshop-radio.css positions the shared widget at right:18px/bottom:16px (base), right:22px/
+   bottom:20px (>=1800px) and right:30px/bottom:26px (>=2600px), with a rendered height around
+   50-52px at every tier. A flat 96px reservation covers the largest tier with real margin, so the
+   scrolling workspace never lets real content settle directly behind the radio at any width. */
+.ws-radio-safe-bottom{padding-bottom:96px;}
+
+/* ---- action-bar relocation slot ------------------------------------------------------------- */
+.ws-actionbar-slot{flex:none;}
+
+/* ---- Customers / Estimations modal scroll pattern -------------------------------------------
+   Both pages already render every modal's field content as $("fcard").innerHTML = "<h2>...
+   optional .fsub ... fields ... .fbtns"; then show #fov. A small MutationObserver already added
+   to each page (see their own <script>) wraps the field content in one ".ws-modal-body" div right
+   after each such assignment, without touching any of the 18 existing render functions' own
+   markup, labels, ids or handlers. This block only defines how that result is laid out. */
+.fcard{display:flex;flex-direction:column;max-height:calc(100vh - 80px);overflow:hidden;}
+@supports (height:100dvh){.fcard{max-height:calc(100dvh - 80px);}}
+.fcard>h2,.fcard>.fsub,.fcard>.fbtns{flex:none;}
+.fcard .ws-modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;}
+
+/* ---- Suppliers modal scroll pattern -----------------------------------------------------------
+   Suppliers reuses one static modal shell (#modal > .modal-card > h2#modalTitle + form#modalForm
+   > #modalFields (dynamic) + .modal-actions (static Cancel/Save)) for every action, so this needs
+   no JS at all — h2/.modal-actions are already separate, always-present elements. */
+.modal-card{display:flex;flex-direction:column;max-height:calc(100vh - 80px);overflow:hidden;}
+@supports (height:100dvh){.modal-card{max-height:calc(100dvh - 80px);}}
+.modal-card>h2{flex:none;}
+.modal-card>form{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+.modal-card>form>#modalFields{flex:1 1 auto;min-height:0;overflow-y:auto;}
+.modal-card>form>.modal-actions{flex:none;}

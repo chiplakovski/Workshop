@@ -40,6 +40,11 @@ Shared logic used across modules:
   page duplicates the widget's CSS, HTML or JS; station/volume selection persists in
   `localStorage` across navigation. Originally built inline in `hub-desktop.html`, extracted to
   these shared files in Frontend UX Pass 1A (see **Tests** below for its coverage).
+- `workshop-desktop-shell.css` — the shared static desktop application-shell foundation (fixed
+  viewport shell, internal scroll ownership, relocated top/sticky action bars, modal
+  header/footer-pinned scrolling, radio-safe-area spacing). Loaded so far on the pages migrated in
+  Frontend UX Pass 1B-1: `customers-desktop.html`, `suppliers-desktop.html` and
+  `estimations-desktop.html`.
 - `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
   `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
   business-rule modules shared between a page and the automated test suite (see **Tests** below).
@@ -83,8 +88,10 @@ npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge a
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Projects/Planning,
                       # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers,
-                      # Documents/Reports, Marketing/Sales workflows, and the
-                      # Frontend UX Pass 1A shared-radio-widget/Hub-viewport suite
+                      # Documents/Reports, Marketing/Sales workflows, the
+                      # Frontend UX Pass 1A shared-radio-widget/Hub-viewport suite, and the
+                      # Frontend UX Pass 1B-1 static desktop shell suite (Customers/
+                      # Suppliers/Estimations)
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
