@@ -41,6 +41,12 @@
 
 html.ws-shell-root,
 html.ws-shell-root body{height:100%;}
+/* Belt-and-suspenders alongside .ws-desktop-shell's own overflow:hidden below: some browsers can
+   still nudge the root <html> element's own scroll position by a few pixels for certain
+   scrollIntoView() alignments (e.g. block:'center') or a same-page hash navigation, even though
+   body's overflow:hidden already prevents it from growing past the viewport — explicitly denying
+   <html> its own overflow closes that gap so the document never becomes a secondary scroll owner. */
+html.ws-shell-root{overflow:hidden;}
 
 .ws-desktop-shell{
   height:100vh;
@@ -85,11 +91,18 @@ html.ws-shell-root body{height:100%;}
 .ws-radio-safe-bottom{margin-bottom:96px;}
 
 /* ---- modal scroll pattern (opt-in via .ws-modal-card only) ----------------------------------
-   Two shapes are supported under the same opt-in class: a "dynamic" shape whose header/fsub/
+   Several shapes are supported under the same opt-in class: a "dynamic" shape whose header/fsub/
    footer are direct children alongside a JS-inserted .ws-modal-body (Customers/Estimations, see
-   workshop-desktop-shell.js), and a "static" shape whose scrollable region lives inside its own
-   <form> alongside a pinned .modal-actions row (Suppliers). Neither selector below matches
-   .fcard or .modal-card on their own — both require the .ws-modal-card opt-in first. */
+   workshop-desktop-shell.js); a "static, nested-form" shape whose scrollable region lives inside
+   its own <form> alongside a pinned .modal-actions row (Suppliers); and a "static, flat" shape
+   whose card element (a <form> or <div>) directly holds a heading, an optional plain paragraph,
+   one scrollable field container and a footer row with no naming convention in common across
+   pages (Store's .phead/.actions, Purchasing/Documents' bare <p>/.modal-actions). Rather than
+   enumerate every such class name, every direct child of .ws-modal-card defaults to flex:none
+   (pinned) and only the one explicitly marked .ws-modal-body is re-enabled to grow and scroll —
+   this covers any current or future header/footer naming with zero page-specific selectors here.
+   Nothing below matches .fcard, .modal-card, .modalcard, .formgrid, .actions or .modal-actions on
+   their own — every rule requires the .ws-modal-card opt-in first. */
 .ws-modal-card{
   display:flex;
   flex-direction:column;
@@ -99,9 +112,7 @@ html.ws-shell-root body{height:100%;}
 @supports (height:100dvh){
   .ws-modal-card{max-height:calc(100dvh - 80px);}
 }
-.ws-modal-card>h2,
-.ws-modal-card>.fsub,
-.ws-modal-card>.fbtns{flex:none;}
+.ws-modal-card>*{flex:none;}
 .ws-modal-card>.ws-modal-body{
   flex:1 1 auto;
   min-height:0;
@@ -147,6 +158,7 @@ html.ws-shell-root body{height:100%;}
   .ws-modal-card>.ws-modal-body,
   .ws-modal-card>form>.ws-modal-body{overflow:visible !important;}
   aside.module-sidebar,
+  aside.sidebar,
   .ws-shell-header,
   .ws-actionbar-slot,
   .langc,

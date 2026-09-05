@@ -46,14 +46,16 @@ Shared logic used across modules:
   gated behind an explicit, namespaced opt-in class (`ws-shell-root`, `ws-desktop-shell`,
   `ws-shell-column`, `ws-shell-header`, `ws-shell-scroll`, `ws-actionbar-slot`,
   `ws-radio-safe-bottom`, `ws-modal-card`, `ws-modal-body`) so loading it on a future page can
-  never restyle an unrelated element that happens to share a generic class name. Loaded so far on
-  the pages migrated in Frontend UX Pass 1B-1: `customers-desktop.html`, `suppliers-desktop.html`
-  and `estimations-desktop.html`.
+  never restyle an unrelated element that happens to share a generic class name. Loaded on the
+  pages migrated in Frontend UX Pass 1B-1 (`customers-desktop.html`, `suppliers-desktop.html`,
+  `estimations-desktop.html`) and Frontend UX Pass 1B-2 (`store-desktop.html`,
+  `purchasing-desktop.html`, `documents-desktop.html`).
 - `workshop-desktop-shell.js` — the shared modal initializer for that same contract: wraps a
   dynamically-rendered modal's field content into `.ws-modal-body` (opt-in via `ws-modal-dyn`),
   guarded against double-initialization and safe across repeated open/close/content-replacement.
-  Loaded only on `customers-desktop.html` and `estimations-desktop.html`; `suppliers-desktop.html`
-  needs no JavaScript for this, since its modal shape is static (only CSS).
+  Loaded only on `customers-desktop.html` and `estimations-desktop.html`; `suppliers-desktop.html`,
+  `store-desktop.html`, `purchasing-desktop.html` and `documents-desktop.html` need no JavaScript
+  for this, since their modal shapes are all static (only CSS).
 - `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
   `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
   business-rule modules shared between a page and the automated test suite (see **Tests** below).
@@ -98,9 +100,10 @@ npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge a
 npm run test:e2e      # runs persisted Customers/Estimations, Projects/Planning,
                       # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers,
                       # Documents/Reports, Marketing/Sales workflows, the
-                      # Frontend UX Pass 1A shared-radio-widget/Hub-viewport suite, and the
+                      # Frontend UX Pass 1A shared-radio-widget/Hub-viewport suite, the
                       # Frontend UX Pass 1B-1 static desktop shell suite (Customers/
-                      # Suppliers/Estimations)
+                      # Suppliers/Estimations), and the Frontend UX Pass 1B-2 static
+                      # desktop shell suite (Store/Purchasing/Documents)
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
