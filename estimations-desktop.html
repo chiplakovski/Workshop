@@ -273,8 +273,22 @@
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
 
-  @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{display:block !important;position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;}
-    #printSheet table{page-break-inside:auto;} #printSheet tr{page-break-inside:avoid;page-break-after:auto;} #printSheet .psection{page-break-inside:avoid;} }
+  @media print{
+    /* The old body *{visibility:hidden} approach left every hidden element still occupying real
+       layout space (visibility never removes a box from flow) — combined with the shared shell's
+       print-time overflow reset, that hidden live workspace could still contribute height to the
+       printed document and produce trailing blank pages. display:none removes each of these
+       entirely from layout instead. .bg is this page's own decorative background/backdrop layer;
+       .wrap is the live header + relocated action bar + workspace (module-sidebar, the radio and
+       the language switcher are already hidden for print by the shared stylesheet); .fov is the
+       modal overlay, in case one happens to be open. */
+    .bg,.wrap,.fov{display:none !important;}
+    /* #printSheet becomes the only printable application content, in normal static document flow
+       (not layered absolutely over now-hidden application content) so the browser's own print
+       pagination can flow it across as many pages as it needs. */
+    #printSheet{display:block !important;visibility:visible;position:static;width:100%;padding:24px;color:#111;background:#fff;}
+    #printSheet table{page-break-inside:auto;} #printSheet tr{page-break-inside:avoid;page-break-after:auto;} #printSheet .psection{page-break-inside:avoid;}
+  }
   button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body class="ws-desktop-shell">
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>

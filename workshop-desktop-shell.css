@@ -151,4 +151,7 @@ html.ws-shell-root body{height:100%;}
   .ws-actionbar-slot,
   .langc,
   #radio{display:none !important;}
+  /* The radio itself never prints, so the screen-only clearance it needs (see the
+     .ws-radio-safe-bottom rule above) would only ever be dead space in print output. */
+  .ws-radio-safe-bottom{margin-bottom:0 !important;}
 }

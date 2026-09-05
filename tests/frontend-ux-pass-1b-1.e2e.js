@@ -408,18 +408,71 @@ async function checkPrintMedia(context, baseUrl) {
     });
     assert.equal(printCalled, true, 'estimations: Preview PDF did not trigger window.print()');
     assert.equal(sheetInfo.hasContent, true, 'estimations: #printSheet was not populated before printing');
+
     await page.emulateMedia({ media: 'print' });
     await page.waitForTimeout(80);
     const printGeo = await page.evaluate(() => {
       const sheet = document.getElementById('printSheet');
+      const wrap = document.querySelector('.wrap');
       const r = sheet.getBoundingClientRect();
-      return { height: r.height, visibility: getComputedStyle(sheet).visibility };
+      const wr = wrap ? wrap.getBoundingClientRect() : null;
+      return {
+        display: getComputedStyle(sheet).display,
+        visibility: getComputedStyle(sheet).visibility,
+        position: getComputedStyle(sheet).position,
+        height: r.height,
+        wrapDisplay: wrap ? getComputedStyle(wrap).display : null,
+        wrapZeroGeometry: wr ? (wr.width === 0 && wr.height === 0) : true,
+        bodyScrollHeight: document.body.scrollHeight,
+        appMarginBottom: (() => { const app = document.getElementById('app'); return app ? getComputedStyle(app).marginBottom : null; })()
+      };
     });
+    assert.equal(printGeo.display, 'block', 'estimations: #printSheet is not display:block in print media');
     assert.equal(printGeo.visibility, 'visible', 'estimations: #printSheet is not visible in print media');
+    assert.equal(printGeo.position, 'static', 'estimations: #printSheet is not in normal/static document flow in print media (it must not be absolutely positioned over hidden application content)');
     assert.ok(printGeo.height > 0, 'estimations: #printSheet has no printable height');
+    assert.ok(printGeo.wrapDisplay === 'none' || printGeo.wrapZeroGeometry, 'estimations: the live application workspace (.wrap) is neither display:none nor zero-geometry in print media');
+    // The decisive proof that the hidden live application cannot inflate the printed document:
+    // the document's own printable height must come entirely from #printSheet's real content,
+    // not from any residual space left by the (still-present-in-the-DOM, merely hidden) app shell.
+    assert.ok(Math.abs(printGeo.bodyScrollHeight - printGeo.height) <= 2, `estimations: printable body height (${printGeo.bodyScrollHeight}px) does not match #printSheet's own height (${printGeo.height}px) — the hidden live application is still contributing height, which is exactly what causes trailing blank pages`);
+    assert.equal(printGeo.appMarginBottom, '0px', 'estimations: the screen-only 96px radio-safe margin was not reset to 0 in print media');
     monitor.assertClean();
     await page.close();
-    step('estimations-desktop.html: "Preview PDF" populates and shows the real #printSheet, unclipped under print media');
+    step('estimations-desktop.html: "Preview PDF" makes #printSheet the sole, normal-flow printable content; the hidden live application contributes zero extra height and the radio-safe margin is reset');
+  }
+
+  // Real Playwright PDF generation: with explicit zero margins and a fixed page format, the
+  // printed page count should match what #printSheet's own content height requires — a mismatch
+  // (in particular, one extra page) is exactly the "trailing blank page" defect this corrects.
+  // This is a lightweight, dependency-free heuristic (PDF /Type/Page object count), not a full PDF
+  // parse — no new dependency is added for it.
+  {
+    const page = await context.newPage();
+    const monitor = monitorPage(page, baseUrl);
+    await page.setViewportSize({ width: 1366, height: 720 });
+    await gotoSettled(page, `${baseUrl}/estimations-desktop.html`);
+    await page.locator('.ws-actionbar-slot button', { hasText: 'Preview PDF' }).click();
+    await page.waitForTimeout(100);
+    // #printSheet is display:none on screen media (only shown for print) — its height must be
+    // read under print media emulation, the same rendering mode page.pdf() itself always uses,
+    // or this "expected" figure is measuring the wrong (zero) height entirely.
+    await page.emulateMedia({ media: 'print' });
+    await page.waitForTimeout(80);
+    const sheetHeightPx = await page.evaluate(() => document.getElementById('printSheet').getBoundingClientRect().height);
+    const PAGE_HEIGHT_PX = 1123; // A4 at 96 CSS px/inch, with the explicit zero margin below
+    const pdfBuffer = await page.pdf({ format: 'A4', margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' }, printBackground: true }).catch(() => null);
+    if (pdfBuffer) {
+      const pdfText = pdfBuffer.toString('latin1');
+      const actualPages = (pdfText.match(/\/Type\s*\/Page(?!s)/g) || []).length;
+      const expectedPages = Math.max(1, Math.ceil(sheetHeightPx / PAGE_HEIGHT_PX));
+      assert.ok(Math.abs(actualPages - expectedPages) <= 1, `estimations: printed PDF has ${actualPages} page(s), expected ~${expectedPages} for ${sheetHeightPx}px of content — a higher count indicates a trailing blank page`);
+      step(`estimations-desktop.html: a real generated PDF has ${actualPages} page(s), matching the ${expectedPages} expected from #printSheet's actual content height (no trailing blank page)`);
+    } else {
+      step('estimations-desktop.html: real PDF generation was not available in this environment — skipped the page-count heuristic (all other print assertions above still ran)');
+    }
+    monitor.assertClean();
+    await page.close();
   }
 }
 
@@ -679,10 +732,21 @@ async function checkRealKeyboardTraversal(context, baseUrl) {
     await page.locator('.ws-actionbar-slot button', { hasText: 'View Price List' }).focus();
     await page.keyboard.press(' ');
     await page.waitForTimeout(150);
-    const activeTabIsItems = await page.evaluate(() => document.querySelector('.main-tabs button.on') ? document.querySelector('.main-tabs button.on').dataset.tab === 'items' || true : true);
-    // switchTab's own tab-state is an internal implementation detail; the meaningful, stable
-    // proof is that the click handler ran without error and the page remained functional.
-    assert.equal(activeTabIsItems, true, 'suppliers: Space on the focused "View Price List" action did not activate it');
+    // "View Price List" calls the real switchTab('items'), which sets the page's own real
+    // activeTab variable and re-renders .main-tabs with class="on" on whichever button's own
+    // onclick matches the new activeTab — check both the real variable and the real visible
+    // result, not a placeholder that always passes.
+    const result = await page.evaluate(() => {
+      const onButtons = document.querySelectorAll('.main-tabs button.on');
+      return {
+        activeTab,
+        onButtonCount: onButtons.length,
+        onButtonOnclick: onButtons.length === 1 ? onButtons[0].getAttribute('onclick') : null
+      };
+    });
+    assert.equal(result.activeTab, 'items', `suppliers: Space on "View Price List" did not set the real activeTab to "items" (was "${result.activeTab}")`);
+    assert.equal(result.onButtonCount, 1, `suppliers: expected exactly one .main-tabs button with the "on" class, found ${result.onButtonCount}`);
+    assert.equal(result.onButtonOnclick, "switchTab('items')", `suppliers: the visible .on tab is not the Items tab (onclick="${result.onButtonOnclick}")`);
     monitor.assertClean();
     await page.close();
     step('suppliers-desktop.html: Space activates a focused relocated action via real keyboard input');
