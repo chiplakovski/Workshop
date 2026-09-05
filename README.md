@@ -42,9 +42,18 @@ Shared logic used across modules:
   these shared files in Frontend UX Pass 1A (see **Tests** below for its coverage).
 - `workshop-desktop-shell.css` — the shared static desktop application-shell foundation (fixed
   viewport shell, internal scroll ownership, relocated top/sticky action bars, modal
-  header/footer-pinned scrolling, radio-safe-area spacing). Loaded so far on the pages migrated in
-  Frontend UX Pass 1B-1: `customers-desktop.html`, `suppliers-desktop.html` and
-  `estimations-desktop.html`.
+  header/footer-pinned scrolling, radio-safe-area spacing, a print-media reset). Every rule is
+  gated behind an explicit, namespaced opt-in class (`ws-shell-root`, `ws-desktop-shell`,
+  `ws-shell-column`, `ws-shell-header`, `ws-shell-scroll`, `ws-actionbar-slot`,
+  `ws-radio-safe-bottom`, `ws-modal-card`, `ws-modal-body`) so loading it on a future page can
+  never restyle an unrelated element that happens to share a generic class name. Loaded so far on
+  the pages migrated in Frontend UX Pass 1B-1: `customers-desktop.html`, `suppliers-desktop.html`
+  and `estimations-desktop.html`.
+- `workshop-desktop-shell.js` — the shared modal initializer for that same contract: wraps a
+  dynamically-rendered modal's field content into `.ws-modal-body` (opt-in via `ws-modal-dyn`),
+  guarded against double-initialization and safe across repeated open/close/content-replacement.
+  Loaded only on `customers-desktop.html` and `estimations-desktop.html`; `suppliers-desktop.html`
+  needs no JavaScript for this, since its modal shape is static (only CSS).
 - `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
   `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
   business-rule modules shared between a page and the automated test suite (see **Tests** below).
