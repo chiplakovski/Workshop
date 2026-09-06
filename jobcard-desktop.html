@@ -1,8 +1,7 @@
-<!DOCTYPE html><html lang="en" class="ws-shell-root"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="workshop-radio.css">
-<link rel="stylesheet" href="workshop-desktop-shell.css">
 <title>Varmak — Jobcards</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
@@ -34,24 +33,6 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:22px 30px 46px;}
-  /* Frontend UX final desktop-shell pass correction: .wrap is now the ws-shell-column (pinned
-     header + scroll owner together, .ws-radio-safe-bottom lives on the inner .ws-shell-scroll
-     instead — see its own markup). .wrap's own padding-bottom would otherwise sit OUTSIDE the
-     scrolling region, permanently shrinking the workspace instead of only appearing once the user
-     scrolls to the end; zeroing it here and re-applying the same 46px as the inner scroll area's
-     own padding-bottom (inline style, next to its markup) keeps the exact original breathing room
-     but inside the one scrollable region, where it belongs. */
-  .wrap.ws-shell-column{padding-bottom:0;}
-  /* Frontend UX final desktop-shell pass correction: the sidebar-adjustment override further down
-     this stylesheet sets .wrap's margin-left to a fixed 205px but never touches margin-right,
-     which is still "auto" from .wrap's own "margin:0 auto" rule above. That was harmless while
-     .wrap was a plain block box (a fixed margin-left plus a normal block's auto-width already
-     fills the remaining space, resolving the leftover auto margin-right to 0) — but now that .wrap
-     is a flex item (.ws-shell-column), flexbox's own auto-margin rule takes over: ANY auto margin
-     on the cross axis (width, since the parent flex column runs vertically) disables stretch
-     entirely and lets the box size to its own content instead, which is exactly the header/tabs
-     overflow this rule closes off by pinning margin-right to a real 0. */
-  .wrap.ws-shell-column{margin-right:0;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;justify-content:space-between;}
@@ -250,19 +231,8 @@
   .obar{display:flex;gap:10px;justify-content:flex-end;width:800px;max-width:100%;margin-bottom:12px;}
   .obar button{font-family:'Sora';font-weight:600;font-size:13px;padding:11px 18px;cursor:pointer;border:none;}
   .obar .pr{background:#2c6bd6;color:#fff;} .obar .cl{background:rgba(255,255,255,.1);color:#e8f0fb;border:1px solid var(--field-line);}
-  /* Frontend UX final desktop-shell pass: the old body *{visibility:hidden} + .overlay{visibility:
-     visible} pattern hides every element's paint but not its LAYOUT BOX, so the live app (.bg,
-     .wrap) still occupies real document height and can push blank pages before/after the sheet.
-     display:none removes that box entirely — only the live app and the .fov form modal are hidden,
-     .overlay is reset from its fixed, viewport-centering overlay to plain static flow so the
-     browser's own pagination can flow the real .sheet content across as many pages as it needs. */
-  @media print{
-    .bg,.wrap,.fov{display:none !important;}
-    .overlay{position:static !important;inset:auto !important;background:none !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;padding:0 !important;display:block !important;overflow:visible !important;}
-    .sheet{box-shadow:none;width:100%;}
-    .obar{display:none;}
-    .sheet table{page-break-inside:auto;} .sheet tr{page-break-inside:avoid;} .sheet .psec{page-break-inside:avoid;}
-  }
+  @media print{body *{visibility:hidden;} .overlay,.overlay *{visibility:visible;} .overlay{position:absolute;inset:0;background:#fff;padding:0;display:block;} .sheet{box-shadow:none;width:100%;} .obar{display:none;}
+    .sheet table{page-break-inside:auto;} .sheet tr{page-break-inside:avoid;} .sheet .psec{page-break-inside:avoid;}}
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -280,7 +250,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:900px){.ovsplit{grid-template-columns:1fr!important;}}
 .barrow2{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--steel-300);}
 .barrow2:last-child{border-bottom:none;}
-</style></head><body class="ws-desktop-shell">
+</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -307,21 +277,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
-<div class="wrap ws-shell-column">
-  <div class="ws-shell-header">
-    <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
-    <div class="modhead">
-      <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
-        <div><h1 data-i="mtitle">Jobcards</h1><p data-i="msub">Workshop production orders</p></div></div>
-    </div>
+<div class="wrap">
+  <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+  <div class="modhead">
+    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
+      <div><h1 data-i="mtitle">Jobcards</h1><p data-i="msub">Workshop production orders</p></div></div>
   </div>
 
-  <div class="ws-shell-scroll ws-radio-safe-bottom" style="padding-bottom:46px;">
   <div id="app"></div>
-  </div>
 </div>
 
-<div class="fov" id="fov"><div class="fcard ws-modal-card ws-modal-dyn" id="fcard"></div></div>
+<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
 <div class="overlay" id="overlay"><div><div class="obar"><button class="cl" onclick="$('overlay').classList.remove('show')" id="ovClose"></button><button class="pr" onclick="window.print()" id="ovPrint"></button></div><div class="sheet" id="sheet"></div></div></div>
 
 <div class="langc" id="langc">
@@ -634,7 +600,7 @@ let selectedJcId=null,detailTab='info';
 let jcQuery='',jcFilterStatus='all',jcFilterProject='all',jcFilterCustomer='all',jcFilterResp='all',jcFilterWorker='all',jcFilterMachine='all',jcFilterPriority='all',jcFilterMaterial='all',jcFilterInspection='all',moreFiltersOpen=false;
 let currentModal=null;
 
-function openModal(html,wide){$('fcard').className='fcard ws-modal-card ws-modal-dyn'+(wide?' wide':'');$('fcard').innerHTML=html;$('fov').classList.add('show');currentModal=true;
+function openModal(html,wide){$('fcard').className='fcard'+(wide?' wide':'');$('fcard').innerHTML=html;$('fov').classList.add('show');currentModal=true;
   const first=$('fcard').querySelector('input,select,textarea,button');if(first)first.focus();}
 function closeModal(){$('fov').classList.remove('show');$('fcard').innerHTML='';currentModal=null;}
 $('fov').addEventListener('click',e=>{if(e.target.id==='fov')closeModal();});
@@ -995,7 +961,7 @@ function openOpForm(jcId,opId){
   // centrally regardless, but the selector is also shown disabled with an explanation so the user is
   // never invited to try. Pause the operation first to change its equipment.
   const equipmentLocked=!!(op&&op.status==='in-progress');
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${op?esc(tt.m_editop):esc(tt.m_addop)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow"><label for="opDesc">${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
     <div id="opDescErr" class="errmsg" style="display:none;"></div>
@@ -1166,7 +1132,7 @@ function renderTabDocuments(j){
 }
 function openAddDoc(jcId){
   const tt=t();
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.tab_documents)}</h2><p class="fsub">${esc(tt.demo_upload)}</p>
     <div class="frow">${field('docName','Name','')}</div>
     <div id="docErr" class="errmsg" style="display:none;"></div>
@@ -1211,7 +1177,7 @@ function renderTabMaterials(j){
 }
 function openMatForm(jcId){
   const tt=t();
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   const invOpts=[{v:'',l:tt.ji_none}].concat(SHARED.inventory.map(i=>({v:i.code,l:`${i.code} — ${i.description}`})));
   $('fcard').innerHTML=`<h2>${esc(tt.m_addmat)}</h2><p class="fsub">${esc(getJC(jcId).no)}</p>
     <div class="frow">${fieldSelect('matCode',tt.mat_code,invOpts,'')}</div>
@@ -1250,7 +1216,7 @@ function deleteMatLine(jcId,idx){
 function openMatOp(jcId,idx,kind){
   const tt=t();const j=getJC(jcId);const m=j.materials[idx];if(!m)return;
   const titles={reserve:tt.m_reservemat,issue:tt.m_issuemat,return:tt.m_returnmat,scrap:tt.m_scrapmat};
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(titles[kind])}</h2><p class="fsub">${esc(m.description)} · ${esc(m.code)||''}</p>
     <div class="frow">${field('matOpQty',tt.f_qty,kind==='issue'?Math.max(0,(m.required||0)-(m.issued||0)):1,'number')}</div>
     <div id="matOpErr" class="errmsg" style="display:none;"></div>
@@ -1282,7 +1248,7 @@ function commitMatOp(jcId,idx,kind){
 // barcode links already used by the Store module. No camera or physical scanner is connected.
 function openScanBarcode(jcId){
   const tt=t();
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_scan)}</h2><p class="fsub">${esc(tt.demo_scan)}</p>
     <div class="frow">${field('scanValue',tt.f_barcode,'')}</div>
     <div id="scanErr" class="errmsg" style="display:none;"></div>
@@ -1304,7 +1270,7 @@ function commitScan(jcId){
 }
 function openAddOffcut(jcId){
   const tt=t();const j=getJC(jcId);
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   const invOpts=SHARED.inventory.map(i=>({v:i.code,l:`${i.code} — ${i.description}`}));
   $('fcard').innerHTML=`<h2>${esc(tt.m_offcut)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldSelect('offcutCode',tt.mat_code,invOpts,invOpts[0]?invOpts[0].v:'')}</div>
@@ -1342,7 +1308,7 @@ function renderTabWorkers(j){
 function openAssignWorker(jcId){
   const tt=t();const j=getJC(jcId);
   const all=[...new Set(OWNER_OPTIONS.concat(j.workers||[]))];
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.ji_workers)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow"><div class="mchips" id="workerChips">${all.map(w=>`<div class="mchip ${((j.workers||[]).includes(w))?'on':''}" data-w="${esc(w)}" onclick="this.classList.toggle('on')">${esc(w)}</div>`).join('')}</div></div>
     <div class="frow">${field('workerCustom','+ '+tt.f_worker,'')}</div>
@@ -1364,7 +1330,7 @@ function openLogTime(jcId){
   // Only equipment already linked to this Jobcard can be selected — never free text — so time
   // logging can be tied to a real equipmentId when relevant.
   const machineOpts=[{v:'',l:tt.ji_none}].concat((j.machines||[]).filter(m=>m.equipmentId).map(m=>({v:m.equipmentId,l:`${m.equipmentId} — ${m.name}`})));
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.wh_logtime)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow2">${fieldSelect('logOp',tt.op_desc,opOpts,opOpts[0]?opOpts[0].v:'')}${fieldSelect('logWorker',tt.f_worker,workerOpts,workerOpts[0]?workerOpts[0].v:'')}</div>
     <div class="frow2">${field('logDate',tt.f_date,todayISO(),'date')}${field('logHours',tt.f_hours,1,'number')}</div>
@@ -1483,7 +1449,7 @@ function openMachineForm(jcId){
       <td><button class="tbtn small primary" ${decision.allowed?'':'disabled'} onclick="openAddMachineDetails(${jcId},'${esc(eq.equipmentId)}')">${esc(tt.mc_add)}</button></td>
     </tr>`;
   }).join('');
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="tblwrap" style="max-height:360px;overflow-y:auto;"><table class="stbl"><thead><tr>
       <th>${esc(tt.mc_equipment)}</th><th>${esc(tt.mc_status)}</th><th>${esc(tt.mc_currentassignment)}</th><th>${esc(tt.mc_safety)}</th><th>${esc(tt.th_actions)}</th>
@@ -1496,7 +1462,7 @@ function openMachineForm(jcId){
 function openAddMachineDetails(jcId,equipmentId){
   const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
   if(!eq)return;
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
     <div class="frow2">${field('mcPlanned',tt.mc_plannedusage,0,'number')}${field('mcOperator',tt.mc_operator,eq.operator||'')}</div>
     <div id="mcErr" class="errmsg" style="display:none;"></div>
@@ -1533,7 +1499,7 @@ function addMachineToJobcard(jcId,equipmentId){
 function openPreUseCheckForm(jcId,equipmentId){
   const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
   if(!eq)return;
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.mc_recordcheck)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
     <div class="frow2">${field('pcDate',tt.f_date,todayISO(),'date')}${field('pcCheckedBy',tt.mc_checkedby,'Aleksandar C.')}</div>
     <div class="frow">${fieldSelect('pcResult',tt.mc_result,[{v:'passed',l:tt.pu_passed},{v:'failed',l:tt.pu_failed}],'passed')}</div>
@@ -1570,7 +1536,7 @@ function savePreUseCheckForm(jcId,equipmentId){
 function openReportBreakdown(jcId,equipmentId){
   const tt=t();const j=getJC(jcId);const eq=SHARED.equipment.find(e=>e.equipmentId===equipmentId);
   if(!eq)return;
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.mc_reportproblem)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
     <div class="frow">${fieldTextarea('brReason',tt.f_reason,'')}</div>
     <div class="frow">${field('brResponsible',tt.mc_responsibleperson,j.responsible||'')}</div>
@@ -1635,7 +1601,7 @@ function renderTabQuality(j){
 function openInspForm(jcId,inspId){
   const tt=t();const j=getJC(jcId);const insp=inspId?j.inspections.find(i=>i.id===inspId):null;
   const opOpts=[{v:'',l:tt.ji_none}].concat((j.operations||[]).map(o=>({v:o.id,l:o.desc})));
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${insp?esc(tt.m_editinsp):esc(tt.m_addinsp)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow2">${fieldSelect('qType',tt.q_type,optList(INSPECTION_TYPES,'it_'),insp?insp.type:'dimensional')}${fieldSelect('qRequirement',tt.q_requirement,[{v:'required',l:tt.req_required},{v:'optional',l:tt.req_optional}],insp?insp.requirement:'required')}</div>
     <div class="frow2">${field('qInspector',tt.q_inspector,insp?insp.inspector:'Aleksandar C.')}${field('qDate',tt.q_date,insp?insp.date:'','date')}</div>
@@ -1666,7 +1632,7 @@ function renderTabNotes(j){
 }
 function openNoteForm(jcId){
   const tt=t();const j=getJC(jcId);if(!j||isLocked(j)){if(j)toast(tpl(tt.locked_msg,{no:j.no,status:tt['st_'+j.status]}),'error');return;}
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.note_add)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldSelect('noteType',tt.note_type,optList(NOTE_TYPES,'nt_'),'general')}</div>
     <div class="frow">${fieldTextarea('noteText',tt.note_text,'')}</div>
@@ -1717,7 +1683,7 @@ function openCompleteCheck(id){
   const pend=pendingInspections(j).length;if(pend)issues.push(tpl(tt.issue_inspections_pending,{n:pend}));
   const failed=failedInspections(j).length;if(failed)issues.push(tpl(tt.issue_inspections_failed,{n:failed}));
   if(!issues.length){if(!confirm(tpl(tt.confirm_status,{s:tt.st_completed})))return;applyStatusChange(id,'completed',{actualCompletion:todayISO()});return;}
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.complete_issues_title)}</h2><p class="fsub">${esc(j.no)}</p>
     <ul class="issuelist">${issues.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
     <div class="fbtns"><button class="tbtn primary" onclick="closeModal()">${esc(tt.complete_goback)}</button></div>`;
@@ -1725,7 +1691,7 @@ function openCompleteCheck(id){
 }
 function openPauseBlock(id,stage){
   const tt=t();const j=getJC(id);
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${stage==='paused'?esc(tt.m_pause_t):esc(tt.m_block_t)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldTextarea('pbReason',tt.f_reason,'')}</div>
     <div id="pbErr" class="errmsg" style="display:none;"></div>
@@ -1746,7 +1712,7 @@ function openResume(id){
   const stored=j._resumeStatus;
   const valid=VALID_RESUME_TARGETS.includes(stored);
   const resumeTo=resumeTargetFor(j);
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_resume_t)}</h2><p class="fsub">${esc(j.no)}</p>
     <p class="fsub" style="margin-top:-6px;">${esc(tpl(tt.resume_target_info,{s:tt['st_'+resumeTo]}))}</p>
     ${!valid?`<div class="errmsg" style="display:block;">${esc(tt.resume_fallback_warning)}</div>`:''}
@@ -1769,7 +1735,7 @@ function saveResume(id){
 }
 function openCancel(id){
   const tt=t();const j=getJC(id);
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_cancel_t)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldTextarea('cancelReason',tt.f_reason,'')}</div>
     <div id="cancelErr" class="errmsg" style="display:none;"></div>
@@ -1786,7 +1752,7 @@ function saveCancel(id){
 function openReopen(id){
   const tt=t();const j=getJC(id);const held=jcQualityGate(j).blocked;
   const reopenTargets=['in-progress','ready','released'].filter(s=>!held||!JOBCARD_UNSAFE_STATUSES.includes(s));
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.m_reopen_t)}</h2><p class="fsub">${esc(j.no)}</p>
     ${held?qualityHoldBanner(j):''}
     <div class="frow">${fieldTextarea('reopenReason',tt.f_reason,'')}</div>
@@ -1819,7 +1785,7 @@ const WORK_TYPES=['fabrication','repair','modification','assembly','installation
 
 function openNewJobcardMenu(){
   const tt=t();
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${esc(tt.nc_pick_t)}</h2><p class="fsub">${esc(tt.nc_pick_sub)}</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button class="tbtn" style="justify-content:flex-start;flex-direction:column;align-items:flex-start;padding:14px 16px;gap:4px;" onclick="closeModal();openJcForm();"><b style="font-family:'Sora';">${esc(tt.nc_blank)}</b><span style="font-weight:400;color:var(--steel-400);font-size:11.5px;">${esc(tt.nc_blank_sub)}</span></button>
@@ -1832,7 +1798,7 @@ function openNewJobcardMenu(){
 
 function openJcForm(id){
   const tt=t();const j=id?getJC(id):null;if(j&&isLocked(j))return;
-  $('fcard').className='fcard wide ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${j?esc(tt.nc_edit_title):esc(tt.nc_title)}</h2><p class="fsub">${j?esc(j.no):esc(tt.msub)}</p>
     <div class="frow2">${fieldSelect('jfCustomer',tt.ji_customer,SHARED.customers.map(c=>({v:c.id,l:c.name})),j?j.customerId:(SHARED.customers[0]?SHARED.customers[0].id:''))}${fieldSelect('jfProject',tt.ji_project,projectOptions(true),j?j.projectNo:'')}</div>
     <div class="frow"><label for="jfTitle">${esc(tt.ji_title)}</label><input id="jfTitle" value="${esc(j?j.title:'')}"></div>
@@ -1875,7 +1841,7 @@ function saveJcForm(id){
 // shared project record to begin with.
 function openFromProjectForm(){
   const tt=t();
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.nc_fromproject)}</h2><p class="fsub">${esc(tt.nc_fromproject_sub)}</p>
     <div class="frow">${fieldSelect('fpProject',tt.ji_project,projectOptions(false),SHARED.projects[0]?SHARED.projects[0].no:'')}</div>
     <div class="frow">${field('fpTitle',tt.ji_title,'')}</div>
@@ -1907,7 +1873,7 @@ function saveFromProject(){
 // "From a project BOM item" — scopes the jobcard to a single material line.
 function openFromBomForm(){
   const tt=t();const defaultProj=SHARED.projects[0];
-  $('fcard').className='fcard ws-modal-card ws-modal-dyn';
+  $('fcard').className='fcard';
   const bomOpts=(p=>p?(p.bom||[]).map(b=>({v:b.code,l:`${b.code} — ${b.description}`})):[])(defaultProj);
   $('fcard').innerHTML=`<h2>${esc(tt.nc_frombom)}</h2><p class="fsub">${esc(tt.nc_frombom_sub)}</p>
     <div class="frow">${fieldSelect('fbProject',tt.ji_project,projectOptions(false),defaultProj?defaultProj.no:'')}</div>
@@ -2027,5 +1993,4 @@ window.addEventListener('workshop:data',()=>{refreshShared();renderApp();});
 setLang('en');
 </script>
 <script src="workshop-radio.js"></script>
-<script src="workshop-desktop-shell.js"></script>
 </body></html>

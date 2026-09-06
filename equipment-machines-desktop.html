@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="ws-shell-root">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="workshop-radio.css">
-  <link rel="stylesheet" href="workshop-desktop-shell.css">
   <style>
     :root {
       --navy-950:#04101f; --navy-900:#071a33; --navy-800:#0a2447; --navy-brand:#013179;
@@ -47,12 +46,6 @@
     @media (prefers-reduced-motion:reduce){ .glow { animation:none; } }
 
     .app-shell { position:relative; z-index:2; display:grid; grid-template-columns:230px minmax(0,1fr); min-height:100vh; }
-    /* Frontend UX final desktop-shell pass: inside the new fixed-viewport shell, .app-shell must
-       fill exactly the height the shell gives it (flex:1 1 auto;min-height:0) instead of forcing
-       at least one viewport (min-height:100vh, which would reintroduce a document scrollbar), and
-       its single implicit grid row needs an explicit 1fr track so .module-main actually stretches
-       to that height instead of sizing to its own content. */
-    .app-shell { flex:1 1 auto; min-height:0; grid-template-rows:minmax(0,1fr); }
     .module-sidebar {
       background:linear-gradient(180deg, rgba(5,22,38,0.98), rgba(4,19,36,0.97));
       border-right:1px solid rgba(74,144,255,0.22);
@@ -275,7 +268,7 @@
     }
   </style>
 </head>
-<body class="ws-desktop-shell">
+<body>
   <div class="bg"><div class="grid"></div><div class="glow"></div></div>
 
   <div class="app-shell">
@@ -317,8 +310,8 @@
       </div>
     </aside>
 
-    <main class="module-main ws-shell-column">
-      <header class="main-head ws-shell-header">
+    <main class="module-main">
+      <header class="main-head">
         <div class="left">
           <button class="back-btn" id="backToHub" type="button">← <span data-i="backToHub">Back to Hub</span></button>
           <div class="head-title">
@@ -343,7 +336,6 @@
         </div>
       </header>
 
-      <div class="ws-shell-scroll ws-radio-safe-bottom">
       <div class="notice" data-i="prototypeNotice">
         This prototype demonstrates workflow and validation. Production safety controls, permissions, audit logging and regulatory records require the future secured backend.
       </div>
@@ -595,12 +587,11 @@
           </form>
         </div>
       </section>
-      </div>
     </main>
   </div>
 
   <div class="detail-modal" id="detailModal" aria-hidden="true">
-    <div class="detail-panel ws-modal-card">
+    <div class="detail-panel">
       <div class="detail-header">
         <div class="detail-header-row">
           <div>
@@ -618,7 +609,7 @@
         <div class="detail-fast" id="detailFastFacts"></div>
         <div class="safety-panel" id="detailSafetyPanel" aria-live="polite"></div>
       </div>
-      <div class="detail-body ws-modal-body">
+      <div class="detail-body">
         <div class="detail-tabs" id="detailTabs">
           <button class="tab-button active" type="button" data-tab="general">General</button>
           <button class="tab-button" type="button" data-tab="assignments">Assignments</button>
@@ -639,12 +630,12 @@
   </div>
 
   <div class="action-modal" id="reserveModal" aria-hidden="true">
-    <div class="action-box ws-modal-card">
+    <div class="action-box">
       <h3 data-i="reserveFormTitle">Reserve equipment</h3>
       <div class="action-sub" id="reserveFormSub"></div>
       <div class="error-summary" id="reserveFormErrors"></div>
       <form id="reserveForm">
-        <div class="form-grid ws-modal-body">
+        <div class="form-grid">
           <div class="field">
             <label for="resProject" data-i="fieldProject">Project</label>
             <select id="resProject" name="project" required></select>
@@ -671,12 +662,12 @@
   </div>
 
   <div class="action-modal" id="assignModal" aria-hidden="true">
-    <div class="action-box ws-modal-card">
+    <div class="action-box">
       <h3 data-i="assignFormTitle">Assign equipment</h3>
       <div class="action-sub" id="assignFormSub"></div>
       <div class="error-summary" id="assignFormErrors"></div>
       <form id="assignForm">
-        <div class="form-grid ws-modal-body">
+        <div class="form-grid">
           <div class="field">
             <label for="asgProject" data-i="fieldProject">Project</label>
             <select id="asgProject" name="project" required></select>
@@ -707,13 +698,13 @@
   </div>
 
   <div class="action-modal" id="returnModal" aria-hidden="true">
-    <div class="action-box ws-modal-card">
+    <div class="action-box">
       <h3 data-i="returnFormTitle">Return equipment</h3>
       <div class="action-sub" id="returnFormSub"></div>
       <div class="error-summary" id="returnFormErrors"></div>
       <div class="paused-ops-note" id="returnPausedNote" hidden></div>
       <form id="returnForm">
-        <div class="form-grid ws-modal-body" id="returnFormFields">
+        <div class="form-grid" id="returnFormFields">
           <div class="field">
             <label for="retLocation" data-i="fieldReturnLocation">Return location</label>
             <input id="retLocation" name="location" type="text" />
@@ -739,7 +730,7 @@
   </div>
 
   <div class="scanner-modal" id="scannerModal" aria-hidden="true">
-    <div class="scanner-box ws-modal-card">
+    <div class="scanner-box">
       <h3 data-i="scannerTitle">Demo scanner</h3>
       <div class="demo-note" data-i="scannerNote">Demo scanner – camera and hardware scanning require a future integration.</div>
       <div class="scan-input">
@@ -747,7 +738,7 @@
         <button class="primary-btn" type="button" id="scanLookupBtn" data-i="scanLookupBtn">Find equipment</button>
       </div>
       <div class="scan-area" data-i="scannerArea">Manual demo scan area</div>
-      <div class="scan-result ws-modal-body" id="scanResult"></div>
+      <div class="scan-result" id="scanResult"></div>
       <div class="toolbar" style="margin-top:16px;">
         <button class="secondary-btn" type="button" id="scannerCloseBtn">Close</button>
       </div>
