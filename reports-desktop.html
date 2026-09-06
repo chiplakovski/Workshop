@@ -1,7 +1,8 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en" class="ws-shell-root"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="workshop-radio.css">
+<link rel="stylesheet" href="workshop-desktop-shell.css">
 <title>Varmak — Reports & Analytics</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
@@ -239,7 +240,7 @@
     .print-header{display:block !important;margin-bottom:16px;}
   }
   .print-header{display:none;}
-</style></head><body>
+</style></head><body class="ws-desktop-shell">
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <a class="skip" href="#main">Skip to reports content</a>
 
@@ -277,8 +278,8 @@
   </div>
 </aside>
 
-<div class="shell" id="main">
-  <header class="top">
+<div class="shell ws-shell-column" id="main">
+  <header class="top ws-shell-header">
     <a class="back" id="backBtn" href="hub-desktop.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></a>
     <div class="ttl" id="headTitle">
       <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg></div>
@@ -286,6 +287,7 @@
     </div>
   </header>
 
+  <div class="ws-shell-scroll ws-radio-safe-bottom">
     <div class="filtbar">
       <div class="filtrow">
         <span class="filtlbl" data-i="filters">Filters:</span>
@@ -977,25 +979,29 @@
         </div>
       </div>
     </div>
+  </div>
 
 </div>
 
 <div class="modal" id="exportModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="export_report">Export Report</h2>
     <div class="msub" data-i="select_format">Select export format:</div>
+    <div class="ws-modal-body">
     <div class="mrow">
       <button class="fbtn" onclick="exportReport('csv')" data-i="export_csv">CSV</button>
       <button class="fbtn" onclick="exportReport('json')" data-i="export_json">JSON</button>
       <button class="fbtn primary" onclick="exportReport('print')" data-i="export_print">Print Preview</button>
+    </div>
     </div>
     <div class="mbtns"><button class="mbtn" onclick="closeModal('exportModal')" data-i="cancel">Cancel</button></div>
   </div>
 </div>
 
 <div class="modal" id="savedModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 id="savedModalTitle" data-i="new_report">New Report</h2>
+    <div class="ws-modal-body">
     <div class="mrow">
       <label data-i="report_name" for="savedNameInput">Report name</label>
       <input id="savedNameInput" type="text" maxlength="80">
@@ -1016,6 +1022,7 @@
         <option value="Marketing">Marketing</option>
         <option value="Custom">Custom</option>
       </select>
+    </div>
     </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('savedModal')" data-i="cancel">Cancel</button>

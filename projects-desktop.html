@@ -1,7 +1,8 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en" class="ws-shell-root"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="workshop-radio.css">
+<link rel="stylesheet" href="workshop-desktop-shell.css">
 <title>Varmak — Projects</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
@@ -34,6 +35,12 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1480px;margin:0 auto;padding:26px 40px 90px;}
+  /* Frontend UX final desktop-shell pass: .wrap's own "margin:0 auto" shorthand sets margin-bottom
+     to 0, which would silently defeat the shared .ws-radio-safe-bottom class's margin-bottom:96px
+     (same specificity, source order would otherwise let this rule win). The compound selector
+     below has higher specificity (two classes) so it wins regardless of source order, restoring
+     the radio-safe clearance without touching the shared stylesheet or .wrap's centering margin. */
+  .wrap.ws-radio-safe-bottom{margin-bottom:96px;}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
@@ -228,7 +235,18 @@
   .obar{display:flex;gap:10px;justify-content:flex-end;width:760px;max-width:100%;margin-bottom:12px;}
   .obar button{font-family:'Sora';font-weight:600;font-size:13px;padding:11px 18px;cursor:pointer;border:none;}
   .obar .pr{background:#2c6bd6;color:#fff;} .obar .cl{background:rgba(255,255,255,.1);color:#e8f0fb;border:1px solid var(--field-line);}
-  @media print{body *{visibility:hidden;} .overlay,.overlay *{visibility:visible;} .overlay{position:absolute;inset:0;background:#fff;padding:0;display:block;} .sheet{box-shadow:none;width:100%;} .obar{display:none;}}
+  /* Frontend UX final desktop-shell pass: the old body *{visibility:hidden} + .overlay{visibility:
+     visible} pattern hides every element's paint but not its LAYOUT BOX, so the live app (.bg,
+     .wrap) still occupies real document height and can push blank pages before/after the sheet.
+     display:none removes that box entirely — only the live app and the .fov form modal are hidden,
+     .overlay is reset from its fixed, viewport-centering overlay to plain static flow so the
+     browser's own pagination can flow the real .sheet content across as many pages as it needs. */
+  @media print{
+    .bg,.wrap,.fov{display:none !important;}
+    .overlay{position:static !important;inset:auto !important;background:none !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;padding:0 !important;display:block !important;overflow:visible !important;}
+    .sheet{box-shadow:none;width:100%;}
+    .obar{display:none;}
+  }
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -241,7 +259,7 @@
   @media(max-width:1050px){.dfacts{gap:16px;} .ovgrid{grid-template-columns:1fr;}}
   @media(min-width:1800px){.wrap{max-width:1760px;padding:34px 60px 100px;} .topfull{padding:32px 60px 0;} .modhead h1{font-size:26px;}}
   @media(min-width:2600px){.wrap{max-width:2300px;padding:48px 90px 130px;} .topfull{padding:46px 90px 0;} .modhead h1{font-size:34px;} .modhead .ic{width:54px;height:54px;}}
-</style></head><body>
+</style></head><body class="ws-desktop-shell">
 <style>.topfull{display:none!important}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -251,7 +269,7 @@
     <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
-<div class="wrap">
+<div class="wrap ws-shell-scroll ws-radio-safe-bottom">
   <div class="modhead">
     <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
@@ -262,7 +280,7 @@
   <div id="detailView" style="display:none;"></div>
 </div>
 
-<div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
+<div class="fov" id="fov"><div class="fcard ws-modal-card ws-modal-dyn" id="fcard"></div></div>
 <div class="overlay" id="overlay"><div><div class="obar"><button class="cl" id="offClose">Close</button><button class="pr" onclick="window.print()">Print</button></div><div class="sheet" id="sheet"></div></div></div>
 
 <div class="langc" id="langc">
@@ -1523,4 +1541,5 @@ document.addEventListener('click',function(e){const mm=document.getElementById('
 window.addEventListener('workshop:data',()=>{refreshCustomersFromShared();refreshProjectsFromShared();render();});
 </script>
 <script src="workshop-radio.js"></script>
+<script src="workshop-desktop-shell.js"></script>
 </body></html>

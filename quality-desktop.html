@@ -1,7 +1,8 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en" class="ws-shell-root"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="workshop-radio.css">
+<link rel="stylesheet" href="workshop-desktop-shell.css">
 <title>Varmak — Quality</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
@@ -234,7 +235,7 @@
     .print-only{display:block !important;}
   }
   .print-only{display:none;}
-</style></head><body>
+</style></head><body class="ws-desktop-shell">
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <a class="skip" href="#main">Skip to quality content</a>
 
@@ -274,8 +275,8 @@
   </div>
 </aside>
 
-<div class="shell" id="main">
-  <header class="top">
+<div class="shell ws-shell-column" id="main">
+  <header class="top ws-shell-header">
     <a class="back" id="backBtn" href="hub-desktop.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></a>
     <div class="ttl">
       <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 5-5"/></svg></div>
@@ -283,6 +284,7 @@
     </div>
   </header>
 
+  <div class="ws-shell-scroll ws-radio-safe-bottom">
   <div class="print-header" id="printHeader"><h2>Varmak AB — <span id="printSectionTitle">Quality Management</span></h2><div id="printMeta"></div></div>
 
   <div class="filtbar">
@@ -659,14 +661,16 @@
       <div id="qr-traceability" class="tabpanel"><div class="barchart" id="qr-traceability-body"></div></div>
     </div>
   </div>
+  </div>
 
 </div>
 
 <!-- NEW / EDIT INSPECTION MODAL -->
 <div class="modal" id="inspModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="new_inspection">New Inspection</h2>
     <div class="msub" data-i="inspection_request_sub">Create an inspection request. It moves through the workflow as work progresses.</div>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="project" for="ins_project">Project</label><select id="ins_project"></select></div>
       <div><label data-i="jobcard" for="ins_jobcard">Jobcard</label><select id="ins_jobcard"><option value="">—</option></select></div>
@@ -696,6 +700,7 @@
     </div>
     <div class="mrow"><label data-i="notes" for="ins_notes">Notes</label><textarea id="ins_notes"></textarea></div>
     <div class="mformerr" id="insFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('inspModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitInspection()" data-i="create_request">Create Request</button>
@@ -705,9 +710,10 @@
 
 <!-- EXECUTE / VIEW INSPECTION MODAL -->
 <div class="modal" id="inspExecModal">
-  <div class="mcard wide">
+  <div class="mcard wide ws-modal-card">
     <h2 id="execInspTitle" data-i="inspection_execution">Inspection Execution</h2>
     <div class="msub" id="execInspSub"></div>
+    <div class="ws-modal-body">
     <div id="execInspSummary" style="font-size:12px;color:var(--steel-300);margin-bottom:14px;"></div>
     <div id="execChecklistWrap">
       <label data-i="checklist">Checklist</label>
@@ -720,6 +726,7 @@
     <div class="mrow"><label data-i="findings" for="exec_findings">Findings / Comments</label><textarea id="exec_findings"></textarea></div>
     <div class="mformerr" id="execFormErr"></div>
     <div id="execActivityLog" style="margin-top:14px;"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('inspExecModal')" data-i="close">Close</button>
       <button class="mbtn" id="execReinspectBtn" onclick="createReinspectionFromModal()" data-i="create_reinspection" style="display:none;">Create Reinspection</button>
@@ -730,8 +737,9 @@
 
 <!-- NCR MODAL (create) -->
 <div class="modal" id="ncrModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="new_ncr">New NCR</h2>
+    <div class="ws-modal-body">
     <div class="mrow"><label data-i="title" for="ncr_title">Title</label><input id="ncr_title" type="text"></div>
     <div class="mrow2">
       <div><label data-i="project" for="ncr_project">Project</label><select id="ncr_project"></select></div>
@@ -752,6 +760,7 @@
     </div>
     <p class="dq-note" data-i="ncr_severity_note">Major and Critical NCRs require a responsible person and due date. Critical NCRs automatically apply a Quality Hold.</p>
     <div class="mformerr" id="ncrFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('ncrModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitNcr()" data-i="create_ncr">Create NCR</button>
@@ -761,10 +770,12 @@
 
 <!-- NCR DETAIL / WORKFLOW MODAL -->
 <div class="modal" id="ncrDetailModal">
-  <div class="mcard wide">
+  <div class="mcard wide ws-modal-card">
     <h2 id="ncrDetailTitle">NCR</h2>
     <div class="msub" id="ncrDetailSub"></div>
+    <div class="ws-modal-body">
     <div id="ncrDetailBody"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('ncrDetailModal')" data-i="close">Close</button>
     </div>
@@ -773,8 +784,9 @@
 
 <!-- CAPA MODAL -->
 <div class="modal" id="capaModal">
-  <div class="mcard wide">
+  <div class="mcard wide ws-modal-card">
     <h2 data-i="new_corrective_action">New Corrective Action</h2>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="related_ref" for="capa_related">Related NCR / Complaint / Inspection</label><input id="capa_related" type="text" placeholder="NCR-2026-001"></div>
       <div><label data-i="responsible" for="capa_responsible">Responsible Person</label><input id="capa_responsible" type="text"></div>
@@ -808,6 +820,7 @@
       <div><label data-i="fb_environment" for="fb_environment">Environment</label><input id="fb_environment" type="text"></div>
     </div>
     <div class="mformerr" id="capaFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('capaModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitCapa()" data-i="create_action">Create Action</button>
@@ -817,8 +830,9 @@
 
 <!-- WELD MODAL -->
 <div class="modal" id="weldModal">
-  <div class="mcard wide">
+  <div class="mcard wide ws-modal-card">
     <h2 data-i="new_weld_record">New Weld Record</h2>
+    <div class="ws-modal-body">
     <div class="mrow3">
       <div><label data-i="project" for="wld_project">Project</label><select id="wld_project"></select></div>
       <div><label data-i="jobcard" for="wld_jobcard">Jobcard</label><select id="wld_jobcard"><option value="">—</option></select></div>
@@ -841,6 +855,7 @@
     <div class="mrow"><label data-i="weld_date" for="wld_date">Weld Date</label><input id="wld_date" type="date"></div>
     <p class="dq-note" data-i="weld_wps_note">Final approval is blocked when the selected WPS or welder qualification is missing or expired, or when required NDT is incomplete.</p>
     <div class="mformerr" id="wldFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('weldModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitWeld()" data-i="create_record">Create Record</button>
@@ -850,8 +865,9 @@
 
 <!-- NDT MODAL -->
 <div class="modal" id="ndtModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="new_ndt_record">New NDT Record</h2>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="project" for="ndt_project">Project</label><select id="ndt_project"></select></div>
       <div><label data-i="weld_component" for="ndt_weld">Weld / Component</label><select id="ndt_weld"><option value="">—</option></select></div>
@@ -868,6 +884,7 @@
     <div class="mrow"><label data-i="result" for="ndt_result">Result</label><select id="ndt_result"></select></div>
     <p class="dq-note" data-i="ndt_reject_note">A Rejected mandatory NDT result blocks the related weld, operation and final release until resolved.</p>
     <div class="mformerr" id="ndtFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('ndtModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitNdt()" data-i="create_record">Create Record</button>
@@ -877,14 +894,16 @@
 
 <!-- ITP MODAL -->
 <div class="modal" id="itpModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="new_itp">New ITP</h2>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="project" for="itp_project">Project</label><select id="itp_project"></select></div>
       <div><label data-i="prepared_by" for="itp_prepared">Prepared By</label><input id="itp_prepared" type="text" value="Aleksandar C."></div>
     </div>
     <div class="mrow"><label data-i="effective_date" for="itp_effective">Effective Date</label><input id="itp_effective" type="date"></div>
     <div class="mformerr" id="itpFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('itpModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitItp()" data-i="create_itp">Create ITP</button>
@@ -894,8 +913,9 @@
 
 <!-- ITP LINE MODAL -->
 <div class="modal" id="itpLineModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="add_itp_line">Add ITP Line</h2>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="phase" for="line_phase">Phase</label><input id="line_phase" type="text"></div>
       <div><label data-i="jobcard" for="line_jobcard">Jobcard</label><select id="line_jobcard"><option value="">—</option></select></div>
@@ -916,6 +936,7 @@
       <div><label data-i="planned_date" for="line_planned">Planned Date</label><input id="line_planned" type="date"></div>
     </div>
     <div class="mformerr" id="lineFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('itpLineModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitItpLine()" data-i="add_line">Add Line</button>
@@ -925,8 +946,9 @@
 
 <!-- COMPLAINT MODAL -->
 <div class="modal" id="complaintModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="new_complaint">New Customer Complaint</h2>
+    <div class="ws-modal-body">
     <div class="mrow2">
       <div><label data-i="customer" for="cmp_customer">Customer</label><select id="cmp_customer"></select></div>
       <div><label data-i="project" for="cmp_project">Project</label><select id="cmp_project"><option value="">—</option></select></div>
@@ -941,6 +963,7 @@
       <div><label data-i="due_date" for="cmp_due">Due Date</label><input id="cmp_due" type="date"></div>
     </div>
     <div class="mformerr" id="cmpFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('complaintModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitComplaint()" data-i="create_complaint">Create Complaint</button>
@@ -950,22 +973,26 @@
 
 <!-- GENERIC DETAIL MODAL (weld / ndt / complaint / supplier quality view) -->
 <div class="modal" id="detailModal">
-  <div class="mcard wide">
+  <div class="mcard wide ws-modal-card">
     <h2 id="detailTitle">Details</h2>
     <div class="msub" id="detailSub"></div>
+    <div class="ws-modal-body">
     <div id="detailBody"></div>
+    </div>
     <div class="mbtns"><button class="mbtn" onclick="closeModal('detailModal')" data-i="close">Close</button></div>
   </div>
 </div>
 
 <!-- HOLD RELEASE MODAL -->
 <div class="modal" id="holdReleaseModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="release_quality_hold">Release Quality Hold</h2>
     <div class="msub" id="holdReleaseSub"></div>
+    <div class="ws-modal-body">
     <div class="mrow"><label data-i="release_authority" for="hold_authority">Release Authority</label><input id="hold_authority" type="text" placeholder="Aleksandar C. — Quality Manager"></div>
     <div class="mrow"><label data-i="release_reason" for="hold_reason">Resolution Evidence / Release Reason</label><textarea id="hold_reason"></textarea></div>
     <div class="mformerr" id="holdFormErr"></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('holdReleaseModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitHoldRelease()" data-i="release_hold">Release Hold</button>
@@ -975,9 +1002,11 @@
 
 <!-- NOTE MODAL -->
 <div class="modal" id="noteModal">
-  <div class="mcard">
+  <div class="mcard ws-modal-card">
     <h2 data-i="add_note">Add Note</h2>
+    <div class="ws-modal-body">
     <div class="mrow"><label data-i="note" for="note_text">Note</label><textarea id="note_text"></textarea></div>
+    </div>
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('noteModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitNote()" data-i="save">Save</button>
