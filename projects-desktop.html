@@ -35,12 +35,13 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1480px;margin:0 auto;padding:26px 40px 90px;}
-  /* Frontend UX final desktop-shell pass: .wrap's own "margin:0 auto" shorthand sets margin-bottom
-     to 0, which would silently defeat the shared .ws-radio-safe-bottom class's margin-bottom:96px
-     (same specificity, source order would otherwise let this rule win). The compound selector
-     below has higher specificity (two classes) so it wins regardless of source order, restoring
-     the radio-safe clearance without touching the shared stylesheet or .wrap's centering margin. */
-  .wrap.ws-radio-safe-bottom{margin-bottom:96px;}
+  /* Frontend UX final desktop-shell pass correction: .wrap is now the ws-shell-column (header +
+     scroll-owner together), so its own padding-bottom would sit OUTSIDE the scrolling region,
+     permanently shrinking the workspace instead of only appearing once the user scrolls to the
+     end. Zeroing it here and re-applying the same 90px as the inner .ws-shell-scroll's own
+     padding-bottom (inline style, next to its markup) keeps the exact original breathing room but
+     inside the one scrollable region, where it belongs. */
+  .wrap.ws-shell-column{padding-bottom:0;}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
@@ -269,15 +270,17 @@
     <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
-<div class="wrap ws-shell-scroll ws-radio-safe-bottom">
-  <div class="modhead">
+<div class="wrap ws-shell-column">
+  <div class="modhead ws-shell-header">
     <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
       <div><h1 data-i="ptitle">Projects</h1><p data-i="psub">Central job container</p></div></div>
   </div>
 
+  <div class="ws-shell-scroll ws-radio-safe-bottom" style="padding-bottom:90px;">
   <div id="listView"></div>
   <div id="detailView" style="display:none;"></div>
+  </div>
 </div>
 
 <div class="fov" id="fov"><div class="fcard ws-modal-card ws-modal-dyn" id="fcard"></div></div>

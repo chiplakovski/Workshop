@@ -34,12 +34,24 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:22px 30px 46px;}
-  /* Frontend UX final desktop-shell pass: .wrap's own "margin:0 auto" shorthand sets margin-bottom
-     to 0, which would silently defeat the shared .ws-radio-safe-bottom class's margin-bottom:96px
-     (same specificity, source order would otherwise let this rule win). The compound selector
-     below has higher specificity (two classes) so it wins regardless of source order, restoring
-     the radio-safe clearance without touching the shared stylesheet or .wrap's centering margin. */
-  .wrap.ws-radio-safe-bottom{margin-bottom:96px;}
+  /* Frontend UX final desktop-shell pass correction: .wrap is now the ws-shell-column (pinned
+     header + scroll owner together, .ws-radio-safe-bottom lives on the inner .ws-shell-scroll
+     instead — see its own markup). .wrap's own padding-bottom would otherwise sit OUTSIDE the
+     scrolling region, permanently shrinking the workspace instead of only appearing once the user
+     scrolls to the end; zeroing it here and re-applying the same 46px as the inner scroll area's
+     own padding-bottom (inline style, next to its markup) keeps the exact original breathing room
+     but inside the one scrollable region, where it belongs. */
+  .wrap.ws-shell-column{padding-bottom:0;}
+  /* Frontend UX final desktop-shell pass correction: the sidebar-adjustment override further down
+     this stylesheet sets .wrap's margin-left to a fixed 205px but never touches margin-right,
+     which is still "auto" from .wrap's own "margin:0 auto" rule above. That was harmless while
+     .wrap was a plain block box (a fixed margin-left plus a normal block's auto-width already
+     fills the remaining space, resolving the leftover auto margin-right to 0) — but now that .wrap
+     is a flex item (.ws-shell-column), flexbox's own auto-margin rule takes over: ANY auto margin
+     on the cross axis (width, since the parent flex column runs vertically) disables stretch
+     entirely and lets the box size to its own content instead, which is exactly the header/tabs
+     overflow this rule closes off by pinning margin-right to a real 0. */
+  .wrap.ws-shell-column{margin-right:0;}
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;justify-content:space-between;}
@@ -262,14 +274,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
-<div class="wrap ws-shell-scroll ws-radio-safe-bottom">
-  <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
-  <div class="modhead">
-    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
-      <div><h1 data-i="mtitle">Marketing &amp; Sales</h1><p data-i="msub">Leads, campaigns &amp; business growth</p></div></div>
+<div class="wrap ws-shell-column">
+  <div class="ws-shell-header">
+    <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
+    <div class="modhead">
+      <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
+        <div><h1 data-i="mtitle">Marketing &amp; Sales</h1><p data-i="msub">Leads, campaigns &amp; business growth</p></div></div>
+    </div>
   </div>
 
+  <div class="ws-shell-scroll ws-radio-safe-bottom" style="padding-bottom:46px;">
   <div id="app"></div>
+  </div>
 </div>
 
 <div class="fov" id="fov"><div class="fcard ws-modal-card ws-modal-dyn" id="fcard"></div></div>

@@ -29,9 +29,13 @@ const VIEWPORTS = [
 const SHORT_VIEWPORT = { name: 'short-900x600', width: 900, height: 600 };
 const ZOOM_PROXY_VIEWPORT = { name: 'zoomproxy-1024x640', width: 1024, height: 640 };
 
-// Per-page facts established while implementing the shell (which pages have a real sidebar / a
-// real pinned header / real print wiring) — used to make each check assert something genuinely
-// true of that page instead of a one-size-fits-all shape none of these pages actually share.
+// Per-page facts established while implementing the shell (which pages have a real sidebar / real
+// print wiring) — used to make each check assert something genuinely true of that page instead of
+// a one-size-fits-all shape none of these pages actually share. Every one of the eight pages has a
+// real pinned header (the corrected header split for Projects/Planning/Jobcards/Marketing put a
+// visible module header outside .ws-shell-scroll, exactly like the other four already had), so the
+// header selector below is a single, uniform ".ws-shell-header" — never redefined per page as "no
+// real header".
 const SIDEBAR_SEL = {
   'projects-desktop.html': null,
   'planning-desktop.html': '.module-sidebar',
@@ -42,12 +46,43 @@ const SIDEBAR_SEL = {
   'marketing-desktop.html': '.module-sidebar',
   'reports-desktop.html': '.module-sidebar'
 };
-const HEADER_SEL = {
-  'hours-desktop.html': '.topfull',
-  'equipment-machines-desktop.html': '.main-head',
-  'quality-desktop.html': '.shell>.top',
-  'reports-desktop.html': '.shell>.top'
-};
+const HEADER_SEL = '.ws-shell-header';
+
+// One representative real modal per page that has one (hours-desktop.html genuinely has none —
+// see checkRepresentativeModals). Shared between the representative-modal check and the
+// radio-overlap check, which also needs a real modal open on each page.
+const MODAL_CASES = [
+  {
+    file: 'projects-desktop.html', open: () => window.openNewProject(),
+    overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2', footerSel: '#fcard .fbtns'
+  },
+  {
+    file: 'planning-desktop.html', open: () => window.setFilterOpen(),
+    overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2', footerSel: '#fcard .fbtns'
+  },
+  {
+    file: 'jobcard-desktop.html', open: () => window.openNewJobcardMenu(),
+    overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2', footerSel: '#fcard .fbtns'
+  },
+  {
+    file: 'quality-desktop.html', clickSel: '#newInspectionNav',
+    overlay: '#inspModal', card: '#inspModal .mcard', bodySel: '#inspModal .ws-modal-body', headingSel: '#inspModal h2', footerSel: '#inspModal .mbtns'
+  },
+  {
+    file: 'marketing-desktop.html', clickSel: '[onclick="openLeadForm()"]',
+    overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2', footerSel: '#fcard .fbtns'
+  },
+  {
+    file: 'reports-desktop.html', clickSel: '#exportBtn',
+    overlay: '#exportModal', card: '#exportModal .mcard', bodySel: '#exportModal .ws-modal-body', headingSel: '#exportModal h2', footerSel: '#exportModal .mbtns'
+  }
+];
+
+async function openModalCase(page, c) {
+  if (c.open) await page.evaluate(c.open);
+  else await page.locator(c.clickSel).first().click();
+  await page.waitForTimeout(200);
+}
 
 function step(message) {
   console.log(`OK   ${message}`);
@@ -97,8 +132,9 @@ function elementsIntersectingRadio() {
 }
 
 // ===================================================================================
-// Shared contract: exactly one shell root/shell/scroll owner; document never scrolls; sidebar
-// (where one exists) stays full viewport height. All 8 pages, all 5 primary resolutions.
+// Shared contract: exactly one shell column, one pinned header, one scroll owner; the header is
+// never nested inside the scroll owner; document never scrolls; sidebar (where one exists) stays
+// full viewport height. All 8 pages, all 5 primary resolutions.
 // ===================================================================================
 async function checkSharedContractAndNoDocumentScroll(context, baseUrl) {
   for (const file of PAGES) {
@@ -113,7 +149,11 @@ async function checkSharedContractAndNoDocumentScroll(context, baseUrl) {
         return {
           shellRoot: de.classList.contains('ws-shell-root'),
           bodyShell: document.body.classList.contains('ws-desktop-shell'),
+          columnCount: document.querySelectorAll('.ws-shell-column').length,
+          bodyIsFlexColumn: getComputedStyle(document.body).display === 'flex' && getComputedStyle(document.body).flexDirection === 'column',
+          headerCount: document.querySelectorAll('.ws-shell-header').length,
           scrollCount: document.querySelectorAll('.ws-shell-scroll').length,
+          headerInsideScroll: document.querySelectorAll('.ws-shell-scroll .ws-shell-header').length,
           docScrollHeight: de.scrollHeight, docClientHeight: de.clientHeight,
           docScrollWidth: de.scrollWidth, docClientWidth: de.clientWidth,
           sidebarHeight: sidebar ? sidebar.getBoundingClientRect().height : null,
@@ -122,7 +162,18 @@ async function checkSharedContractAndNoDocumentScroll(context, baseUrl) {
       }, SIDEBAR_SEL[file]);
       assert.equal(info.shellRoot, true, `${file} @ ${vp.name}: <html> missing ws-shell-root`);
       assert.equal(info.bodyShell, true, `${file} @ ${vp.name}: <body> missing ws-desktop-shell`);
+      // A dedicated .ws-shell-column element only exists to hold a header+scroll pair BESIDE a
+      // fixed sidebar. hours-desktop.html has no sidebar (SIDEBAR_SEL is null) and was not part of
+      // this correction's authorized files, so on that one page body.ws-desktop-shell itself —
+      // verified a real flex column via computed style, not asserted by name alone — plays the
+      // column's role directly, exactly as it already did before this correction. Every other page
+      // (including the other three pages with no sidebar: Projects here, plus Hours itself) must
+      // still have exactly one real .ws-shell-column element.
+      const columnSatisfied = info.columnCount === 1 || (!SIDEBAR_SEL[file] && info.columnCount === 0 && info.bodyIsFlexColumn);
+      assert.ok(columnSatisfied, `${file} @ ${vp.name}: expected exactly one .ws-shell-column (or, on a sidebar-less page, body itself acting as the flex column), found columnCount=${info.columnCount} bodyIsFlexColumn=${info.bodyIsFlexColumn}`);
+      assert.equal(info.headerCount, 1, `${file} @ ${vp.name}: expected exactly one .ws-shell-header, found ${info.headerCount}`);
       assert.equal(info.scrollCount, 1, `${file} @ ${vp.name}: expected exactly one .ws-shell-scroll, found ${info.scrollCount}`);
+      assert.equal(info.headerInsideScroll, 0, `${file} @ ${vp.name}: .ws-shell-header is nested inside .ws-shell-scroll — it would scroll away with the workspace`);
       assert.ok(info.docScrollHeight <= info.docClientHeight + 1, `${file} @ ${vp.name}: document scrolls vertically (${info.docScrollHeight} > ${info.docClientHeight})`);
       assert.ok(info.docScrollWidth <= info.docClientWidth + 1, `${file} @ ${vp.name}: document scrolls horizontally (${info.docScrollWidth} > ${info.docClientWidth})`);
       if (SIDEBAR_SEL[file]) {
@@ -131,14 +182,14 @@ async function checkSharedContractAndNoDocumentScroll(context, baseUrl) {
       monitor.assertClean();
       await page.close();
     }
-    step(`${file}: exactly one ws-shell-scroll, document never scrolls (vertically or horizontally)${SIDEBAR_SEL[file] ? ', sidebar stays full viewport height' : ''}, at all 5 primary resolutions`);
+    step(`${file}: exactly one ws-shell-column/ws-shell-header/ws-shell-scroll, the header is not nested inside the scroll owner, document never scrolls (vertically or horizontally)${SIDEBAR_SEL[file] ? ', sidebar stays full viewport height' : ''}, at all 5 primary resolutions`);
   }
 }
 
 // ===================================================================================
 // The one internal workspace genuinely scrolls (proven scrollTop change), independent of the
-// document — and, on the 4 pages with a real pinned header, the header's geometry is unchanged
-// by that scroll.
+// document — and, on every one of the eight pages, the real pinned header stays fully inside the
+// viewport and its geometry does not move at all while the workspace scrolls.
 // ===================================================================================
 async function checkInternalScrollOwnership(context, baseUrl) {
   for (const file of PAGES) {
@@ -147,7 +198,14 @@ async function checkInternalScrollOwnership(context, baseUrl) {
     await page.setViewportSize({ width: 1366, height: 700 });
     await gotoSettled(page, `${baseUrl}/${file}`);
 
-    const headerBefore = HEADER_SEL[file] ? await page.evaluate((sel) => document.querySelector(sel).getBoundingClientRect(), HEADER_SEL[file]) : null;
+    const readHeaderRect = (sel) => {
+      const r = document.querySelector(sel).getBoundingClientRect();
+      return { top: Math.round(r.top), left: Math.round(r.left), bottom: Math.round(r.bottom), right: Math.round(r.right) };
+    };
+    const headerBefore = await page.evaluate(readHeaderRect, HEADER_SEL);
+    const vw = page.viewportSize().width, vh = page.viewportSize().height;
+    assert.ok(headerBefore.top >= 0 && headerBefore.left >= 0 && headerBefore.bottom <= vh && headerBefore.right <= vw,
+      `${file}: pinned header is not fully within the viewport before scrolling (${JSON.stringify(headerBefore)})`);
 
     const result = await page.evaluate(() => {
       const ws = document.querySelector('.ws-shell-scroll');
@@ -165,14 +223,14 @@ async function checkInternalScrollOwnership(context, baseUrl) {
     assert.ok(result.after.ws > 0, `${file}: workspace scrollTop did not change with injected long content`);
     assert.equal(result.after.doc, 0, `${file}: document scrolled instead of (or in addition to) the workspace`);
 
-    if (HEADER_SEL[file]) {
-      const headerAfter = await page.evaluate((sel) => document.querySelector(sel).getBoundingClientRect().top, HEADER_SEL[file]);
-      assert.equal(Math.round(headerAfter), Math.round(headerBefore.top), `${file}: pinned header moved while the workspace scrolled`);
-    }
+    const headerAfter = await page.evaluate(readHeaderRect, HEADER_SEL);
+    assert.deepEqual(headerAfter, headerBefore, `${file}: pinned header geometry changed while the workspace scrolled (before=${JSON.stringify(headerBefore)}, after=${JSON.stringify(headerAfter)})`);
+    assert.ok(headerAfter.top >= 0 && headerAfter.left >= 0 && headerAfter.bottom <= vh && headerAfter.right <= vw,
+      `${file}: pinned header left the viewport after the workspace scrolled (${JSON.stringify(headerAfter)})`);
 
     monitor.assertClean();
     await page.close();
-    step(`${file}: .ws-shell-scroll is the real internal scroll owner (scrollTop genuinely changes) while the document stays at 0${HEADER_SEL[file] ? ', and the pinned header does not move' : ''}`);
+    step(`${file}: .ws-shell-scroll is the real internal scroll owner (scrollTop genuinely changes) while the document stays at 0, and the pinned header stays fully in the viewport with unchanged geometry`);
   }
 }
 
@@ -202,10 +260,20 @@ async function checkRadioSafety(context, baseUrl) {
       hits = await page.evaluate(elementsIntersectingRadio);
       assert.deepEqual(hits, [], `${file} @ ${vp.name} [scrolled-bottom]: interactive elements overlap the radio: ${JSON.stringify(hits)}`);
 
+      const modalCase = MODAL_CASES.find((c) => c.file === file);
+      if (modalCase) {
+        await page.evaluate(() => { const el = document.querySelector('.ws-shell-scroll'); el.scrollTop = 0; });
+        await openModalCase(page, modalCase);
+        const shown = await page.evaluate((sel) => getComputedStyle(document.querySelector(sel)).display !== 'none', modalCase.overlay);
+        assert.equal(shown, true, `${file} @ ${vp.name}: representative modal did not open for the radio-overlap check`);
+        hits = await page.evaluate(elementsIntersectingRadio);
+        assert.deepEqual(hits, [], `${file} @ ${vp.name} [modal-open]: interactive elements overlap the radio: ${JSON.stringify(hits)}`);
+      }
+
       monitor.assertClean();
       await page.close();
     }
-    step(`${file}: no visible interactive control overlaps the shared radio at initial/scrolled-middle/scrolled-bottom, at 1280x720/1920x1080/3840x1080`);
+    step(`${file}: no visible interactive control overlaps the shared radio at initial/scrolled-middle/scrolled-bottom${MODAL_CASES.some((c) => c.file === file) ? '/modal-open' : ''}, at 1280x720/1920x1080/3840x1080`);
   }
 }
 
@@ -254,42 +322,13 @@ async function checkShortHeightFallback(context, baseUrl) {
 // overflows and scrolls, and header/footer stay within the viewport.
 // ===================================================================================
 async function checkRepresentativeModals(context, baseUrl) {
-  const cases = [
-    {
-      file: 'projects-desktop.html', open: () => window.openNewProject(),
-      overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2'
-    },
-    {
-      file: 'planning-desktop.html', open: () => window.setFilterOpen(),
-      overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2'
-    },
-    {
-      file: 'jobcard-desktop.html', open: () => window.openNewJobcardMenu(),
-      overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2'
-    },
-    {
-      file: 'quality-desktop.html', clickSel: '#newInspectionNav',
-      overlay: '#inspModal', card: '#inspModal .mcard', bodySel: '#inspModal .ws-modal-body', headingSel: '#inspModal h2'
-    },
-    {
-      file: 'marketing-desktop.html', clickSel: '[onclick="openLeadForm()"]',
-      overlay: '#fov', card: '#fcard', bodySel: '#fcard .ws-modal-body', headingSel: '#fcard h2'
-    },
-    {
-      file: 'reports-desktop.html', clickSel: '#exportBtn',
-      overlay: '#exportModal', card: '#exportModal .mcard', bodySel: '#exportModal .ws-modal-body', headingSel: '#exportModal h2'
-    }
-  ];
-
-  for (const c of cases) {
+  for (const c of MODAL_CASES) {
     const page = await context.newPage();
     const monitor = monitorPage(page, baseUrl);
     await page.setViewportSize({ width: 1366, height: 640 });
     await gotoSettled(page, `${baseUrl}/${c.file}`);
 
-    if (c.open) await page.evaluate(c.open);
-    else await page.locator(c.clickSel).first().click();
-    await page.waitForTimeout(200);
+    await openModalCase(page, c);
 
     const shown = await page.evaluate((sel) => getComputedStyle(document.querySelector(sel)).display !== 'none', c.overlay);
     assert.equal(shown, true, `${c.file}: representative modal did not open via its real handler`);
@@ -303,10 +342,11 @@ async function checkRepresentativeModals(context, baseUrl) {
     }, c.bodySel);
     await page.waitForTimeout(50);
 
-    const info = await page.evaluate(({ cardSel, bodySel, headingSel }) => {
+    const info = await page.evaluate(({ cardSel, bodySel, headingSel, footerSel }) => {
       const card = document.querySelector(cardSel);
       const body = document.querySelector(bodySel);
       const heading = document.querySelector(headingSel);
+      const footer = document.querySelector(footerSel);
       const vh = window.innerHeight, vw = window.innerWidth;
       function withinVp(el) { const r = el.getBoundingClientRect(); return r.top >= 0 && r.left >= 0 && r.bottom <= vh && r.right <= vw; }
       const overflows = body.scrollHeight > body.clientHeight;
@@ -317,9 +357,11 @@ async function checkRepresentativeModals(context, baseUrl) {
         cardOverflow: getComputedStyle(card).overflow,
         bodyOverflowY: getComputedStyle(body).overflowY,
         overflows, before, after,
-        headingWithin: heading ? withinVp(heading) : null
+        headingWithin: heading ? withinVp(heading) : null,
+        footerFound: !!footer,
+        footerWithin: footer ? withinVp(footer) : null
       };
-    }, { cardSel: c.card, bodySel: c.bodySel, headingSel: c.headingSel });
+    }, { cardSel: c.card, bodySel: c.bodySel, headingSel: c.headingSel, footerSel: c.footerSel });
 
     assert.equal(info.cardOverflow, 'hidden', `${c.file}: modal card is not bounded (overflow=${info.cardOverflow})`);
     assert.equal(info.bodyOverflowY, 'auto', `${c.file}: modal body is not set up to scroll internally`);
@@ -327,10 +369,12 @@ async function checkRepresentativeModals(context, baseUrl) {
     assert.equal(info.before, 0, `${c.file}: modal body should start unscrolled`);
     assert.ok(info.after > 0, `${c.file}: modal body scrollTop did not actually change`);
     assert.equal(info.headingWithin, true, `${c.file}: modal heading left the viewport while the body scrolled`);
+    assert.equal(info.footerFound, true, `${c.file}: modal footer (${c.footerSel}) was not found`);
+    assert.equal(info.footerWithin, true, `${c.file}: modal footer left the viewport while the body scrolled`);
 
     monitor.assertClean();
     await page.close();
-    step(`${c.file}: representative modal opens via its real handler, is bounded, and its body genuinely overflows and scrolls while the heading stays pinned in the viewport`);
+    step(`${c.file}: representative modal opens via its real handler, is bounded, and its body genuinely overflows and scrolls while the heading and footer both stay pinned in the viewport`);
   }
 }
 
@@ -359,8 +403,14 @@ async function checkRealHandlersConnected(context, baseUrl) {
     await gotoSettled(page, `${baseUrl}/quality-desktop.html`);
     await page.locator('.sideitem[data-section="ncr"]').click();
     await page.waitForTimeout(150);
-    const active = await page.evaluate(() => document.querySelector('.sideitem.on, .sideitem[data-section="ncr"]').classList.contains('on') || document.querySelector('#ncr, [id*="ncr"]') !== null);
-    assert.ok(active, 'quality-desktop.html: NCR sidebar navigation did not switch the active section');
+    const state = await page.evaluate(() => ({
+      navActive: document.querySelector('.sideitem[data-section="ncr"]').classList.contains('active'),
+      sectionDisplay: getComputedStyle(document.getElementById('section-ncr')).display,
+      overviewDisplay: getComputedStyle(document.getElementById('section-overview')).display
+    }));
+    assert.equal(state.navActive, true, 'quality-desktop.html: the NCR nav button did not receive the real "active" class from its real handler');
+    assert.equal(state.sectionDisplay, 'block', 'quality-desktop.html: the real #section-ncr content was not shown by its real handler');
+    assert.equal(state.overviewDisplay, 'none', 'quality-desktop.html: the previous #section-overview content was not hidden when switching to NCR');
     monitor.assertClean();
     await page.close();
     step('quality-desktop.html: sidebar section navigation ("NCR") is still connected to its real handler');
@@ -398,23 +448,24 @@ async function checkRealHandlersConnected(context, baseUrl) {
     const monitor = monitorPage(page, baseUrl);
     await gotoSettled(page, `${baseUrl}/hours-desktop.html`);
     const before = await page.evaluate(() => (WorkshopData.get().hours || []).length);
-    const hasProject = await page.evaluate(() => document.getElementById('project').options.length > 1);
-    if (hasProject) {
-      await page.selectOption('#project', { index: 1 });
-      await page.waitForTimeout(100);
-      const hasItem = await page.evaluate(() => document.getElementById('item').options.length > 0 && document.getElementById('item').options[0].value !== '');
-      if (hasItem) await page.selectOption('#item', { index: 0 });
-      await page.fill('#hours', '1.5');
-      await page.locator('#saveEntry').click();
-      await page.waitForTimeout(150);
-      await page.reload({ waitUntil: 'load' });
-      await page.waitForTimeout(200);
-      const after = await page.evaluate(() => (WorkshopData.get().hours || []).length);
-      assert.ok(after >= before + 1, `hours-desktop.html: logging real hours did not persist across reload (before=${before}, after=${after})`);
-      step('hours-desktop.html: a real hours entry logged via the shell-converted form persists across reload');
-    } else {
-      step('hours-desktop.html: no seed project available to log real hours against — skipped persistence check without failing the suite');
-    }
+    // WorkshopData ships fixed default seed projects/jobcards (see workshop-data.js's own DATA
+    // constant) — a fresh browser context always has real projects/jobcards to log hours against,
+    // so this asserts the fixture explicitly rather than silently skipping if it's ever missing.
+    const projectOptionCount = await page.evaluate(() => document.getElementById('project').options.length);
+    assert.ok(projectOptionCount > 1, `hours-desktop.html: expected at least one real seed project in #project (found ${projectOptionCount - 1}) — WorkshopData's default seed data is missing or #project failed to populate`);
+    await page.selectOption('#project', { index: 1 });
+    await page.waitForTimeout(100);
+    const itemOptionCount = await page.evaluate(() => document.querySelectorAll('#item option[data-jobcard]').length);
+    assert.ok(itemOptionCount > 0, 'hours-desktop.html: expected the selected seed project to have at least one real jobcard/operation in #item');
+    await page.selectOption('#item', { index: 0 });
+    await page.fill('#hours', '1.5');
+    await page.locator('#saveEntry').click();
+    await page.waitForTimeout(150);
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForTimeout(200);
+    const after = await page.evaluate(() => (WorkshopData.get().hours || []).length);
+    assert.ok(after >= before + 1, `hours-desktop.html: logging real hours did not persist across reload (before=${before}, after=${after})`);
+    step('hours-desktop.html: a real hours entry logged via the shell-converted form persists across reload');
     monitor.assertClean();
     await page.close();
   }
