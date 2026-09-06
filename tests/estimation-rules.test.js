@@ -4,7 +4,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {money,lineTotal,baseAndIncludedLines}=require('../estimation-rules.js');
+const {money,lineTotal,baseAndIncludedLines,reconcileWorkItems,averageManpower}=require('../estimation-rules.js');
 
 function sampleEstimation(){
   return {
@@ -60,4 +60,42 @@ test('lineTotal applies the line discount and clamps a negative/absurd discount 
   assert.equal(lineTotal({qty:2,sell:100,disc:10}),180);
   assert.equal(lineTotal({qty:2,sell:100,disc:-50}),200,'a negative discount must not inflate the price');
   assert.equal(lineTotal({qty:2,sell:100,disc:500}),0,'discount is clamped at 100%');
+});
+
+// reconcileWorkItems keeps an Estimation's work items in step with its linked Project's live item
+// list (Projects owns scope, Estimations only ever prices what Projects says exists) — see
+// estimations-desktop.html's reconcileEstimationWithProject/pushEstimationToProject, which are the
+// "pull" and "push" halves of the Project<->Estimation sync this rule makes possible.
+test('reconcileWorkItems adds a new fromProjectItem work item for a project item not yet represented', ()=>{
+  const result=reconcileWorkItems([],[{no:'JC-1',desc:'Cut frame'}]);
+  assert.equal(result.length,1);
+  assert.deepEqual(result[0],{no:'JC-1',desc:'Cut frame',lines:[],peopleRequired:0,locked:false,fromProjectItem:true});
+});
+
+test('reconcileWorkItems removes a fromProjectItem work item whose project item no longer exists', ()=>{
+  const current=[{no:'JC-1',desc:'Cut frame',lines:[],peopleRequired:2,fromProjectItem:true}];
+  const result=reconcileWorkItems(current,[]);
+  assert.equal(result.length,0);
+});
+
+test('reconcileWorkItems updates the desc of a fromProjectItem work item whose project item was renamed, preserving its lines/peopleRequired', ()=>{
+  const current=[{no:'JC-1',desc:'Cut frame',lines:[{desc:'Steel plate',category:'material',qty:1,unit:'EA',sell:100,cost:60}],peopleRequired:3,fromProjectItem:true}];
+  const result=reconcileWorkItems(current,[{no:'JC-1',desc:'Cut frame — revised'}]);
+  assert.equal(result.length,1);
+  assert.equal(result[0].desc,'Cut frame — revised');
+  assert.equal(result[0].peopleRequired,3);
+  assert.equal(result[0].lines.length,1);
+});
+
+test('reconcileWorkItems never touches a manually-added work item without fromProjectItem, even if its no matches nothing live', ()=>{
+  const current=[{no:'',desc:'Contingency',lines:[{desc:'Buffer',category:'other',qty:1,unit:'lot',sell:5000,cost:0}]}];
+  const result=reconcileWorkItems(current,[]);
+  assert.equal(result.length,1);
+  assert.equal(result[0].desc,'Contingency');
+});
+
+test('averageManpower is the mean peopleRequired across fromProjectItem work items only, 0 when none', ()=>{
+  assert.equal(averageManpower([]),0);
+  assert.equal(averageManpower([{fromProjectItem:true,peopleRequired:2},{fromProjectItem:true,peopleRequired:4}]),3);
+  assert.equal(averageManpower([{fromProjectItem:true,peopleRequired:2},{desc:'Contingency',peopleRequired:100}]),2,'a manually-added work item must not skew the average');
 });

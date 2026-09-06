@@ -5,7 +5,6 @@ const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness'
 
 const CUSTOMER_NAME = 'E2E Nordic Fabrication AB';
 const CUSTOMER_EDITED_NAME = 'E2E Nordic Fabrication Group AB';
-const ESTIMATION_TITLE = 'E2E Guard Platform Fabrication';
 
 async function saveModal(page) {
   await page.locator('#fcard .fbtns .primary').click();
@@ -92,74 +91,117 @@ async function estimationWorkflow(page) {
   assert.equal(quoteVisible, true, 'quote created in Customers is not visible to Estimations data');
   step('Estimations: sees the quote created by Customers');
 
-  await page.locator('button[onclick="openNewEst()"]').first().click();
-  await page.locator('#neCustomer').selectOption({ label: CUSTOMER_EDITED_NAME });
-  await page.locator('#neTitle').fill(ESTIMATION_TITLE);
-  await page.locator('#neOppRef').fill('E2E-OPP-39');
-  await page.locator('#neTemplate').selectOption('blank');
-  await saveModal(page);
+  // An Estimation must reference an existing Project (Projects owns the item list; Estimations only
+  // ever prices what Projects says exists) — seed a project with one item, the way Projects' own
+  // "Add item" flow would (see projects-desktop.html's projectItemJobcardPayload: a fresh item always
+  // starts at plannedHours:0/estimatedMaterialCost:0, unestimated).
+  const { projectNo, jobcardNo } = await page.evaluate((name) => {
+    const cust = WorkshopData.getCustomers().find((c) => c.name === name);
+    const project = WorkshopData.upsertProject({ name: 'E2E Guard Platform Project', customerId: cust.id, status: 'draft' });
+    const jobcard = WorkshopData.upsertJobcard({ projectId: project.id, projectNo: project.no, customerId: cust.id, title: 'Cut guard rail stock', item: 'Cut guard rail stock', plannedHours: 0, estimatedMaterialCost: 0, status: 'draft' });
+    return { projectNo: project.no, jobcardNo: jobcard.no };
+  }, CUSTOMER_EDITED_NAME);
+  step('Estimations: seeded a project with one unpriced item to estimate');
 
-  let estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
-  assert.ok(estimation, 'new estimation was not persisted');
+  // Opening a project directly IS pricing it now — there is no separate "New Estimation" step or
+  // document identity (no EST-number, no status workflow). The project just-created via WorkshopData
+  // above already appears as a row in the left list (live, no reload needed).
+  await page.locator(`.estrow[data-project-no="${projectNo}"]`).click();
+
+  let estimation = await page.evaluate((no) => WorkshopData.listEstimations().find((item) => item.projectNo === no), projectNo);
+  assert.ok(estimation, 'opening the project did not create/find its pricing record');
   assert.equal(estimation.customer, CUSTOMER_EDITED_NAME);
-  assert.equal(estimation.status, 'draft');
-  step('Estimations: create persists a shared draft');
+  assert.equal(estimation.projectNo, projectNo, 'estimation must be linked to the selected project');
+  const pulledItem = estimation.workItems.find((item) => item.no === jobcardNo);
+  assert.ok(pulledItem && pulledItem.fromProjectItem, "the project's own item was not pulled in automatically");
+  step('Estimations: opening a project auto-creates/finds its pricing record, populated from its items');
 
   await page.evaluate(() => openEditEst(selectedId));
+  await page.locator('#eeOppRef').fill('E2E-OPP-39');
   await page.locator('#eeRfq').fill('E2E-RFQ-0039');
   await page.locator('#eeDelivery').fill('4 weeks');
   await page.locator('#eeTerms').fill('45 days');
   await saveModal(page);
-  estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
+  estimation = await page.evaluate((no) => WorkshopData.listEstimations().find((item) => item.projectNo === no), projectNo);
+  assert.equal(estimation.opportunityRef, 'E2E-OPP-39');
   assert.equal(estimation.customerRfq, 'E2E-RFQ-0039');
   assert.equal(estimation.deliveryTime, '4 weeks');
   step('Estimations: commercial edit persists');
 
+  // Price the project's own item: a labour line (drives plannedHours) plus setting the crew size.
+  // Manually adding a brand-new work item stays possible too (contingency/delivery-style extras),
+  // and must never feed into the project's crew-size average.
+  const pulledIndex = await page.evaluate((no) => getEst(selectedId).workItems.findIndex((item) => item.no === no), jobcardNo);
+  assert.ok(pulledIndex >= 0);
+  await page.evaluate((index) => openAddLine(selectedId, index), pulledIndex);
+  await page.locator('#aiDesc').fill('Guard rail cutting labour');
+  await page.locator('#aiCat').selectOption('labour');
+  await page.locator('#aiQty').fill('4');
+  await page.locator('#aiUnit').fill('h');
+  await page.locator('#aiSell').fill('500');
+  await page.locator('#aiCost').fill('300');
+  await saveModal(page);
+  await page.evaluate((index) => setWorkItemPeople(selectedId, index, '3'), pulledIndex);
+
+  estimation = await page.evaluate((no) => WorkshopData.listEstimations().find((item) => item.projectNo === no), projectNo);
+  const pricedItem = estimation.workItems.find((item) => item.no === jobcardNo);
+  assert.ok(pricedItem && pricedItem.lines.some((line) => line.desc === 'Guard rail cutting labour' && line.qty === 4));
+  assert.equal(pricedItem.peopleRequired, 3);
+  assert.ok(estimation.sellingPrice > 0, 'cost line did not update the shared estimation total');
+  step('Estimations: pricing and crew size on the project\'s own item persist');
+
+  const jobcardAfterPricing = await page.evaluate((no) => WorkshopData.listJobcards().find((item) => item.no === no), jobcardNo);
+  assert.equal(jobcardAfterPricing.plannedHours, 4, 'labour hours were not pushed onto the shared Jobcard');
+  assert.equal(jobcardAfterPricing.requiredWorkers, 3, 'crew size was not pushed onto the shared Jobcard');
+  const projectAfterPricing = await page.evaluate((no) => WorkshopData.findProject(no), projectNo);
+  assert.ok(projectAfterPricing.quotedValue > 0, 'quoted value was not pushed onto the shared Project');
+  assert.equal(projectAfterPricing.requiredManpower, 3, 'required manpower was not pushed onto the shared Project');
+  step('Estimations → Projects: pricing, hours and crew size flow back automatically');
+
+  // Locking an item freezes its price (lines + crew size) against further edits in Estimations, but
+  // must not stop the automatic desc sync from Projects — proven by the very next block, which
+  // renames this same item while it stays locked.
+  await page.evaluate((index) => toggleWorkItemLock(selectedId, index), pulledIndex);
+  let lockedItem = await page.evaluate((no) => getEst(selectedId).workItems.find((item) => item.no === no), jobcardNo);
+  assert.equal(lockedItem.locked, true, 'lock toggle did not mark the item locked');
+  await page.evaluate((index) => openAddLine(selectedId, index), pulledIndex);
+  const modalOpenWhileLocked = await page.evaluate(() => document.getElementById('fov').classList.contains('show'));
+  assert.equal(modalOpenWhileLocked, false, 'a locked item must refuse to open the add-line form');
+  await page.evaluate((index) => setWorkItemPeople(selectedId, index, '9'), pulledIndex);
+  lockedItem = await page.evaluate((no) => getEst(selectedId).workItems.find((item) => item.no === no), jobcardNo);
+  assert.equal(lockedItem.peopleRequired, 3, 'a locked item must ignore an attempt to change its crew size');
+  step('Estimations: locking an item freezes its price against further edits');
+
+  // Renaming the item in Projects (simulated directly here) must be picked up automatically the next
+  // time this page renders — no manual "sync" action of any kind — even while the item stays locked.
+  await page.evaluate((no) => { WorkshopData.updateJobcard(no, { title: 'Cut guard rail stock — revised', item: 'Cut guard rail stock — revised' }); renderAll(); }, jobcardNo);
+  const renamedItem = await page.evaluate((no) => getEst(selectedId).workItems.find((item) => item.no === no), jobcardNo);
+  assert.equal(renamedItem.desc, 'Cut guard rail stock — revised', "the project's rename was not reconciled automatically");
+  assert.equal(renamedItem.peopleRequired, 3, 'reconciling a rename must not lose already-entered pricing/crew size');
+  assert.equal(renamedItem.locked, true, 'reconciling a rename must not silently unlock a locked item');
+  step('Projects → Estimations: a renamed item updates here automatically, staying locked');
+
   await page.evaluate(() => openAddWorkItem(selectedId));
   await page.locator('#awNo').fill('E2E-WI-01');
-  await page.locator('#awDesc').fill('Guard platform fabrication');
+  await page.locator('#awDesc').fill('Contingency');
   await saveModal(page);
-  const workItemIndex = await page.evaluate(() => getEst(selectedId).workItems.findIndex((item) => item.no === 'E2E-WI-01'));
-  assert.ok(workItemIndex >= 0, 'work item was not added');
-
-  await page.evaluate((index) => openAddLine(selectedId, index), workItemIndex);
-  await page.locator('#aiDesc').fill('Stainless guard rail');
-  await page.locator('#aiCat').selectOption('material');
-  await page.locator('#aiQty').fill('2');
-  await page.locator('#aiUnit').fill('pcs');
-  await page.locator('#aiSell').fill('1500');
-  await page.locator('#aiCost').fill('900');
-  await page.locator('#aiWaste').fill('5');
-  await saveModal(page);
-  estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
-  const workItem = estimation.workItems.find((item) => item.no === 'E2E-WI-01');
-  assert.ok(workItem && workItem.lines.some((line) => line.desc === 'Stainless guard rail' && line.qty === 2));
-  assert.ok(estimation.sellingPrice > 0, 'cost line did not update the shared estimation total');
-  step('Estimations: work item and priced line persist');
-
-  const beforeDuplicate = await page.evaluate(() => WorkshopData.listEstimations().map((item) => item.id));
-  await page.evaluate(() => duplicateEst(selectedId));
-  const duplicated = await page.evaluate((ids) => WorkshopData.listEstimations().find((item) => !ids.includes(item.id)), beforeDuplicate);
-  assert.ok(duplicated, 'duplicate estimation was not created');
-  assert.notEqual(duplicated.no, estimation.no);
-  step('Estimations: duplicate creates an independent shared record');
-
-  page.once('dialog', (dialog) => dialog.accept());
-  await page.evaluate(() => deleteEst(selectedId));
-  const duplicateStillExists = await page.evaluate((id) => WorkshopData.listEstimations().some((item) => item.id === id), duplicated.id);
-  assert.equal(duplicateStillExists, false, 'deleted duplicate remained in shared data');
-  step('Estimations: delete removes the unlinked duplicate from shared data');
+  const manualIndex = await page.evaluate(() => getEst(selectedId).workItems.findIndex((item) => item.no === 'E2E-WI-01'));
+  assert.ok(manualIndex >= 0, 'manually-added work item was not added');
+  const manualItem = await page.evaluate((index) => getEst(selectedId).workItems[index], manualIndex);
+  assert.ok(!manualItem.fromProjectItem, 'a manually-added work item must not be treated as a project item');
+  const manpowerAfterManual = await page.evaluate((no) => WorkshopData.findProject(no).requiredManpower, projectNo);
+  assert.equal(manpowerAfterManual, 3, 'a manually-added work item must not skew the crew-size average');
+  step('Estimations: a manually-added work item stays independent of the project item list');
 
   await page.reload({ waitUntil: 'load' });
-  const restored = await page.evaluate((title) => {
-    const shared = WorkshopData.listEstimations().find((item) => item.title === title);
-    const local = shared && ESTIMATIONS.find((item) => item.sharedId === shared.id);
-    if (local) { selectedId = local.id; renderAll(); }
+  const restored = await page.evaluate((no) => {
+    const shared = WorkshopData.listEstimations().find((item) => item.projectNo === no);
+    if (shared) { selectedId = shared.id; renderAll(); }
     return shared;
-  }, ESTIMATION_TITLE);
-  assert.ok(restored, 'original estimation is missing from shared data after reload');
-  assert.ok((await page.locator('body').innerText()).includes(ESTIMATION_TITLE), 'estimation disappeared after reload');
-  step('Estimations: original record survives reload');
+  }, projectNo);
+  assert.ok(restored, 'project pricing record is missing from shared data after reload');
+  assert.ok((await page.locator('body').innerText()).includes(projectNo), 'project pricing view disappeared after reload');
+  step('Estimations: project pricing record survives reload');
 }
 
 async function main() {

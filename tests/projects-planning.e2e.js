@@ -21,7 +21,6 @@ async function projectWorkflow(page) {
   await page.locator('#fCustomer').selectOption({ label: 'MarineVent AB' });
   await page.locator('#fRef').fill('E2E-CUST-REF-40');
   await page.locator('#fPo').fill('E2E-CUSTOMER-PO');
-  await page.locator('#fQuoted').fill('175000');
   await page.locator('#fDesc').fill('Fabricate and install an E2E packaging platform.');
   await page.locator('#fTypes .mchip[data-t="Fabrication"]').click();
   await page.locator('#fTypes .mchip[data-t="Installation"]').click();
@@ -35,9 +34,11 @@ async function projectWorkflow(page) {
   let project = await page.evaluate((name) => WorkshopData.getProjects().find((item) => item.name === name), PROJECT_NAME);
   assert.ok(project, 'new project was not persisted');
   assert.equal(project.customer, 'MarineVent AB');
-  assert.equal(project.quotedValue, 175000);
+  assert.equal(project.quotedValue, 0, 'a new project has no quoted value until an Estimation prices its items');
   assert.equal(project.plannedStart, '2026-10-01');
-  step('Projects: create persists the customer, commercial data, and dates');
+  const localRowCount = await page.evaluate((no) => PROJECTS.filter((item) => item.no === no).length, project.no);
+  assert.equal(localRowCount, 1, 'creating a project must add exactly one row, not a duplicate with the same number');
+  step('Projects: create persists the customer and dates — pricing is never entered here, no duplicate row');
 
   await page.evaluate(() => openEditProject());
   await page.locator('#fName').fill(PROJECT_EDITED_NAME);
@@ -53,14 +54,12 @@ async function projectWorkflow(page) {
   await page.evaluate(() => openJobcardForm());
   await page.locator('#jcDesc').fill('Fabricate platform frame');
   await page.locator('#jcAssigned').selectOption('Marko');
-  await page.locator('#jcEst').fill('24');
-  await page.locator('#jcEstMat').fill('18500');
   await saveModal(page);
   const jobcard = await page.evaluate((no) => WorkshopData.listJobcards().find((item) => item.projectNo === no && item.title === 'Fabricate platform frame'), project.no);
   assert.ok(jobcard, 'project item did not create a shared Jobcard');
-  assert.equal(jobcard.plannedHours, 24);
+  assert.equal(jobcard.plannedHours, 0, 'a new item is unestimated until Estimations prices it');
   assert.ok(jobcard.workers.includes('Marko K.'));
-  step('Projects → Jobcards: item creates a shared production record');
+  step('Projects → Jobcards: item creates a shared production record, unpriced');
 
   await page.evaluate(() => openDocForm());
   await page.locator('#docFolder').selectOption('Drawings');
@@ -108,6 +107,45 @@ async function projectWorkflow(page) {
   await page.evaluate(() => { activeTab = 'purchases'; render(); });
   assert.ok((await page.locator('body').innerText()).includes('E2E Steel Supply AB'));
   step('Projects: linked records survive reload and render in their tabs');
+
+  // Archive/Delete are exercised on throwaway projects, kept separate from `project` above (which
+  // Planning still needs below).
+  const throwaway = await page.evaluate(() => WorkshopData.upsertProject({ name: 'E2E Throwaway Project', customerId: 1 }));
+  await page.evaluate((id) => { currentId = id; VIEW = 'detail'; activeTab = 'overview'; render(); }, throwaway.id);
+  await page.evaluate(() => handleAction('deleteproject'));
+  await page.locator('#dpConfirm').fill('wrong-number');
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#fcard .fbtns .danger').click();
+  await page.waitForTimeout(70);
+  let stillThere = await page.evaluate((no) => WorkshopData.getProjects().some((item) => item.no === no), throwaway.no);
+  assert.equal(stillThere, true, 'a mismatched confirmation must not delete the project');
+  await page.locator('#dpConfirm').fill(throwaway.no);
+  await page.locator('#fcard .fbtns .danger').click();
+  await page.waitForTimeout(70);
+  stillThere = await page.evaluate((no) => WorkshopData.getProjects().some((item) => item.no === no), throwaway.no);
+  assert.equal(stillThere, false, 'an unlinked project was not deleted after the matching confirmation');
+  step('Projects: Delete project requires a matching confirmation, then removes an unlinked project');
+
+  const linked = await page.evaluate(() => WorkshopData.upsertProject({ name: 'E2E Linked Project', customerId: 1 }));
+  await page.evaluate((p) => WorkshopData.upsertJobcard({ projectId: p.id, projectNo: p.no, customerId: 1, title: 'Linked item', item: 'Linked item' }), linked);
+  await page.evaluate((id) => { currentId = id; VIEW = 'detail'; activeTab = 'overview'; render(); }, linked.id);
+  await page.evaluate(() => handleAction('deleteproject'));
+  await page.locator('#dpConfirm').fill(linked.no);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#fcard .fbtns .danger').click();
+  await page.waitForTimeout(70);
+  const linkedStillThere = await page.evaluate((no) => WorkshopData.getProjects().some((item) => item.no === no), linked.no);
+  assert.equal(linkedStillThere, true, 'a project with a linked Jobcard must not be deletable, even with a matching confirmation');
+  step('Projects: Delete project refuses a project with a linked item');
+
+  await page.evaluate(() => handleAction('archiveproject'));
+  await page.locator('#fcard .fbtns .danger').click();
+  await page.waitForTimeout(70);
+  const archived = await page.evaluate((no) => WorkshopData.getProjects().find((item) => item.no === no), linked.no);
+  assert.equal(archived.archived, true, 'Archive project did not mark the project archived');
+  const hiddenFromList = await page.evaluate((no) => !PROJECTS.some((item) => item.no === no && !item.archived), linked.no);
+  assert.equal(hiddenFromList, true, 'an archived project must not appear as an active row');
+  step('Projects: Archive project hides a linked project from the active list without deleting it');
 
   return restored;
 }

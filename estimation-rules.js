@@ -26,7 +26,35 @@
     const includedOptLines=(e.options||[]).filter(o=>o.included).flatMap(o=>o.lines.map(l=>Object.assign({},l,{fromOption:o.name,optionId:o.id})));
     return base.concat(includedOptLines);
   }
-  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines};
+  // Keeps an Estimation's work-item list in step with its linked Project's live item list (Projects
+  // owns scope/description; Estimations only ever prices what Projects says exists). A work item
+  // gets fromProjectItem:true when it mirrors a project item this way — those are added/renamed/
+  // removed automatically here and must never be hand-edited in Estimations (no/desc changes would
+  // just be overwritten on the next reconcile). Every other (manually-added, e.g. contingency/
+  // delivery) work item is left completely untouched, so nothing here ever discards a line of
+  // pricing the user typed in.
+  function reconcileWorkItems(currentWorkItems,liveProjectItems){
+    const current=currentWorkItems||[];
+    const live=liveProjectItems||[];
+    const liveByNo=new Map(live.map(li=>[li.no,li]));
+    const keep=current.filter(wi=>!wi.fromProjectItem||liveByNo.has(wi.no)).map(wi=>{
+      if(!wi.fromProjectItem)return wi;
+      const li=liveByNo.get(wi.no);
+      return li.desc===wi.desc?wi:Object.assign({},wi,{desc:li.desc});
+    });
+    const knownNos=new Set(keep.map(wi=>wi.no));
+    const added=live.filter(li=>!knownNos.has(li.no)).map(li=>({no:li.no,desc:li.desc,lines:[],peopleRequired:0,locked:false,fromProjectItem:true}));
+    return keep.concat(added);
+  }
+  // Mean "people required" across a project's own work items (fromProjectItem ones) — manually
+  // added extra work items (contingency, delivery, ...) don't represent a crewed project item and
+  // are excluded so they can't skew the figure. 0 when there's nothing to average.
+  function averageManpower(workItems){
+    const items=(workItems||[]).filter(wi=>wi.fromProjectItem);
+    if(!items.length)return 0;
+    return money(items.reduce((a,wi)=>a+(Number(wi.peopleRequired)||0),0)/items.length);
+  }
+  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,reconcileWorkItems,averageManpower};
   root.EstimationRules=EstimationRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimationRules;
 })(typeof window!=='undefined'?window:globalThis);

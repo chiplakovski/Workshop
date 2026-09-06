@@ -1417,6 +1417,44 @@ test('estimation deletion: archiving a linked estimation keeps it present but ma
   assert.ok(WD.get().estimations.some(e=>e.id===saved.id&&e.archived===true));
 });
 
+// ── Project deletion sync (shared-data layer) — mirrors estimation deletion's own guard shape,
+// just checked from the other side (does anything reference this project, rather than does this
+// estimation reference a project) ──────────────────────────────────────────
+test('project deletion: a project with a linked Jobcard cannot be hard-deleted', ()=>{
+  const WD=loadWorkshopData();
+  const proj=WD.upsertProject({name:'Delete Test Project (Jobcard)',customerId:1});
+  WD.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:1,title:'Item',item:'Item'});
+  const res=WD.deleteProject(proj.no);
+  assert.ok(res.error);
+  assert.ok(WD.get().projects.some(p=>p.id===proj.id),'linked project must still be present');
+});
+
+test('project deletion: a project with a linked Estimation cannot be hard-deleted', ()=>{
+  const WD=loadWorkshopData();
+  const proj=WD.upsertProject({name:'Delete Test Project (Estimation)',customerId:1});
+  WD.upsertEstimation({no:'EST-TEST-PROJLINK',customerId:1,customer:'Test',title:'Linked',projectNo:proj.no});
+  const res=WD.deleteProject(proj.no);
+  assert.ok(res.error);
+  assert.ok(WD.get().projects.some(p=>p.id===proj.id),'linked project must still be present');
+});
+
+test('project deletion: an unlinked (empty) project can be hard-deleted and does not reappear', ()=>{
+  const WD=loadWorkshopData();
+  const proj=WD.upsertProject({name:'Delete Test Project (Empty)',customerId:1});
+  const res=WD.deleteProject(proj.no);
+  assert.equal(res.success,true);
+  assert.ok(!WD.get().projects.some(p=>p.id===proj.id),'deleted project must be gone from shared data');
+});
+
+test('project deletion: archiving a linked project keeps it present but marked archived', ()=>{
+  const WD=loadWorkshopData();
+  const proj=WD.upsertProject({name:'Archive Test Project',customerId:1});
+  WD.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:1,title:'Item',item:'Item'});
+  const res=WD.archiveProject(proj.no,'Archived for test');
+  assert.equal(res.archived,true);
+  assert.ok(WD.get().projects.some(p=>p.id===proj.id&&p.archived===true));
+});
+
 // ── Legacy module-data migration (Pass 2) ───────────────────────────────────
 const LEGACY_PROJECTS_KEY='varmak.projects.ui.v1';
 const LEGACY_PURCHASING_KEY='varmak.purchasing.orders';

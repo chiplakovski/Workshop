@@ -1350,6 +1350,20 @@
       save(`Project archived: ${p.no}`);
       return clone(p);
     },
+    // The one exception to "Projects are never hard-deleted" (see archiveProject's own comment,
+    // above): a project with nothing referencing it yet (no Jobcard, no Estimation) has no dangling
+    // reference to leave behind, so a genuine delete is safe. Anything else must be archived instead —
+    // same guard shape as deleteEstimation's own projectId check, just checked from the other side.
+    deleteProject(idOrNo){
+      const p=state.projects.find(x=>x.id===idOrNo||x.no===idOrNo);
+      if(!p)return{error:'Project not found'};
+      const hasJobcards=state.jobcards.some(j=>j.projectNo===p.no||j.projectId===p.id);
+      const hasEstimations=state.estimations.some(e=>e.projectNo===p.no||e.projectId===p.id);
+      if(hasJobcards||hasEstimations)return{error:'This project has linked items or an estimation and cannot be deleted. Archive it instead.'};
+      state.projects=state.projects.filter(x=>x!==p);
+      save(`Project deleted: ${p.no}`);
+      return{success:true};
+    },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
     createInventoryItem(payload){
       const data=clone(payload||{});

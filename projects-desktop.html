@@ -312,7 +312,17 @@ function syncSharedProject(p){
   p.id=saved.id;p.customerId=saved.customerId;
   return saved;
 }
-function refreshProjectsFromShared(){PROJECTS=WorkshopData.getProjects();}
+// A project can reach this page from paths other than its own "New project" form — e.g. Estimation
+// conversion (createProjectFromEstimation) or a project created directly against WorkshopData — none
+// of which seed the page-local-only collections (hours/materials/purchases/notes/activity) or
+// `types` this file assumes always exist. Backfilling them here, once, at the point every project
+// enters PROJECTS, is simpler and safer than guarding every individual read/write site.
+function normalizeProject(p){
+  p.jobcards=p.jobcards||[];p.hours=p.hours||[];p.materials=p.materials||[];p.purchases=p.purchases||[];
+  p.documents=p.documents||{};p.notes=p.notes||[];p.activity=p.activity||[];p.types=p.types||[];
+  return p;
+}
+function refreshProjectsFromShared(){PROJECTS=WorkshopData.getProjects().map(normalizeProject);}
 const PEOPLE=["Aleksandar","Marko","Elena","Sofia","Erik"];
 const TYPES=["Fabrication","Welding","Machining","Repair","Installation","Service","Stainless Steel","Aluminium","Carbon Steel","Piping","CNC Cutting","Electrical","Assembly","Maintenance","Other"];
 const HOLD_REASONS=["material","customer","drawing","approval","breakdown","external","other"];
@@ -333,7 +343,7 @@ function rptNo(){return "RPT-26-"+String(seqReport++).padStart(4,'0');}
 
 // Projects come from the shared v5 state (WorkshopData) — see syncSharedProject()/refreshProjectsFromShared()
 // above. This module no longer holds its own hardcoded seed or persists to a page-local key.
-let PROJECTS=WorkshopData.getProjects();
+let PROJECTS=WorkshopData.getProjects().map(normalizeProject);
 
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function fmtD(iso){if(!iso)return "—";const[y,m,d]=iso.split('-');return d+"-"+m+"-"+y;}
@@ -415,6 +425,7 @@ function projectJobcardRows(p){
       est:Number(j.plannedHours!=null?j.plannedHours:(local?local.est:0))||0,act:realJobcardHours(j,local),
       progress:Number(j.progress!=null?j.progress:(local?local.progress:0))||0,
       estMaterial:Number(j.estimatedMaterialCost!=null?j.estimatedMaterialCost:(local?local.estMaterial:0))||0,
+      requiredWorkers:Number(j.requiredWorkers)||0,
       _sharedId:j.id,_sharedStatus:j.status,_sharedWorkers:workers.slice()};
   });
   const liveNos=new Set(live.map(j=>j.no));
@@ -490,11 +501,11 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  th_no:"Project #",th_name:"Project name",th_customer:"Customer",th_ref:"Customer ref.",th_status:"Status",th_start:"Planned start",th_deadline:"Deadline",th_progress:"Progress",th_responsible:"Responsible",th_quoted:"Quoted value",th_actual:"Actual cost",
  kpi_quoted:"Total quoted",kpi_actual:"Total actual cost",kpi_overdue:"Overdue",kpi_hold:"On hold",
  emptylist:"No projects match your filters.",
- np_title:"New project",np_edit_title:"Edit project",np_number:"Project number",np_name:"Project name",np_customer:"Customer",np_newcustomer:"+ New customer",np_ref:"Customer reference",np_po:"Customer PO number",np_quoted:"Quoted value (SEK)",np_desc:"Project description",np_notes:"Internal notes",np_type:"Project type",np_pm:"Project manager",np_workshop:"Workshop responsible",np_sales:"Sales responsible",np_start:"Planned start date",np_deadline:"Deadline",np_plannedcompletion:"Planned completion",np_save:"Save project",np_cancel:"Cancel",np_printoffer:"Print offer",
+ np_title:"New project",np_edit_title:"Edit project",np_number:"Project number",np_name:"Project name",np_customer:"Customer",np_newcustomer:"+ New customer",np_ref:"Customer reference",np_po:"Customer PO number",np_desc:"Project description",np_notes:"Internal notes",np_type:"Project type",np_pm:"Project manager",np_workshop:"Workshop responsible",np_sales:"Sales responsible",np_start:"Planned start date",np_deadline:"Deadline",np_plannedcompletion:"Planned completion",np_save:"Save project",np_cancel:"Cancel",np_printoffer:"Print offer",
  nc_title:"New customer",nc_name:"Customer name",nc_org:"Org. number",nc_contact:"Contact person",nc_save:"Add customer",nc_cancel:"Cancel",
  tab_overview:"Overview",tab_jobcards:"Items",tab_hours:"Hours",tab_materials:"Materials",tab_purchases:"Purchases",tab_documents:"Documents",tab_reports:"Reports",tab_costs:"Costs",tab_activity:"Activity",
- ov_status:"Status",ov_progress:"Progress",ov_time:"Time",ov_est:"Estimated",ov_used:"Used",ov_remaining:"Remaining",ov_material:"Material",ov_purchases:"Purchases",ov_ordered:"Ordered",ov_delivered:"Delivered",ov_pending:"Pending",ov_deadline:"Deadline",ov_daysremaining:"{d} days remaining",ov_daysoverdue:"{d} days overdue",ov_nodeadline:"No deadline set",ov_warnings:"Warnings",ov_nowarnings:"No warnings — everything on track.",ov_notes:"Pinned note",
- jc_new:"+ Add item",jc_no:"Item #",jc_desc:"Work description",jc_assigned:"Assigned",jc_status:"Status",jc_est:"Est. hours",jc_act:"Actual hours",jc_progress:"Progress",jc_empty:"No items yet.",
+ ov_status:"Status",ov_progress:"Progress",ov_time:"Time",ov_est:"Estimated",ov_used:"Used",ov_remaining:"Remaining",ov_material:"Material",ov_purchases:"Purchases",ov_ordered:"Ordered",ov_delivered:"Delivered",ov_pending:"Pending",ov_deadline:"Deadline",ov_daysremaining:"{d} days remaining",ov_daysoverdue:"{d} days overdue",ov_nodeadline:"No deadline set",ov_warnings:"Warnings",ov_nowarnings:"No warnings — everything on track.",ov_notes:"Pinned note",ov_manpower:"Required manpower",
+ jc_new:"+ Add item",jc_no:"Item #",jc_desc:"Work description",jc_assigned:"Assigned",jc_status:"Status",jc_est:"Est. hours",jc_act:"Actual hours",jc_progress:"Progress",jc_empty:"No items yet.",jc_people:"People needed",jc_notestimated:"Not estimated yet — price this item in Estimations.",
  h_date:"Date",h_worker:"Worker",h_jobcard:"Item",h_desc:"Work description",h_hours:"Hours",h_total:"Total",h_empty:"No hours logged yet.",
  m_material:"Material",m_spec:"Specification",m_qty:"Quantity",m_source:"Source",m_jobcard:"Item",m_cost:"Cost",m_status:"Status",m_empty:"No materials recorded yet.",m_new:"+ Add material",mf_unit:"Unit",
  pu_new:"+ Create purchase",pu_po:"Purchase order #",pu_supplier:"Supplier",pu_date:"Date",pu_items:"Items",pu_ordered:"Ordered value",pu_received:"Received value",pu_status:"Status",pu_expected:"Expected delivery",pu_empty:"No purchases yet.",
@@ -503,7 +514,7 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  c_estimated:"Estimated cost",c_actual:"Actual cost",c_labour:"Labour",c_material:"Material",c_purchased:"Purchased components",c_other:"Other costs",c_total:"Total cost",c_quoted:"Quoted value",c_revenue:"Revenue",c_profit:"Profit",c_margin:"Margin",c_itemrevenue:"Revenue by item",c_estprice:"Est. price",c_actcost:"Actual cost",
  o_title:"OFFER",o_no:"Offer no",o_date:"Date",o_to:"To",o_desc:"Description",o_hrs:"Hrs",o_mat:"Material",o_amount:"Amount",o_subtotal:"Subtotal",o_vat:"VAT 25%",o_total:"Total due",o_valid:"Offer valid 30 days. Prices excl. VAT where not stated.",o_printbtn:"Print",o_close:"Close",
  act_empty:"No activity yet.",note_empty:"No notes yet.",
- a_edit:"Edit",a_createjc:"Create jobcard",a_adddoc:"Add document",a_createpo:"Create purchase",a_addnote:"Add note",a_more:"More",a_duplicate:"Duplicate project",a_hold:"Put on hold",a_resume:"Resume project",a_complete:"Complete project",a_close:"Close project",a_cancel:"Cancel project",a_reopen:"Reopen project",
+ a_edit:"Edit",a_openestimation:"Open Estimation",a_createestimation:"Create Estimation",a_createjc:"Create jobcard",a_adddoc:"Add document",a_createpo:"Create purchase",a_addnote:"Add note",a_more:"More",a_duplicate:"Duplicate project",a_hold:"Put on hold",a_resume:"Resume project",a_complete:"Complete project",a_close:"Close project",a_cancel:"Cancel project",a_reopen:"Reopen project",a_archiveproject:"Archive project",a_deleteproject:"Delete project",
  st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
  hold_title:"Put project on hold",hold_reason:"Hold reason",hold_comment:"Comment",hold_expected:"Expected resume date (optional)",hold_save:"Put on hold",
  hr_material:"Waiting for Material",hr_customer:"Waiting for Customer",hr_drawing:"Waiting for Drawing",hr_approval:"Waiting for Approval",hr_breakdown:"Machine Breakdown",hr_external:"External Delay",hr_other:"Other",
@@ -513,8 +524,10 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  cancel_title:"Cancel project",cancel_reason:"Cancellation reason",cancel_save:"Cancel project",
  reopen_title:"Reopen closed project",reopen_reason:"Reason (required)",reopen_tostatus:"Reopen to status",reopen_save:"Reopen",
  dup_title:"Duplicate project",dup_body:"Creates a new project with the same type, description and jobcard structure. Actual hours, costs, reports, purchases and activity are NOT copied.",dup_confirm:"Duplicate",
+ archiveproject_title:"Archive project",archiveproject_body:"The project will be hidden from the active list but kept for record-keeping. Only an administrator can restore it.",archiveproject_confirm:"Archive",
+ deleteproject_title:"Delete project",deleteproject_warn:"This permanently removes the project. Restricted to an administrator and cannot be undone.",deleteproject_typeconfirm:"Type the project number ({no}) to confirm",deleteproject_mismatch:"Project number did not match — nothing was deleted.",
  note_title:"Add note",note_text:"Note",note_tag:"Classification",note_pin:"Pin to Overview",note_save:"Add note",
- jc_modal_title:"Add item",jcf_desc:"Work description",jcf_assigned:"Assigned to",jcf_est:"Estimated hours",jcf_estmat:"Estimated material cost (SEK)",
+ jc_modal_title:"Add item",jcf_desc:"Work description",jcf_assigned:"Assigned to",jcf_pricingnote:"Pricing, hours and crew size are set in Estimations and appear here automatically.",
  doc_modal_title:"Add document",docf_folder:"Folder",docf_name:"Document name",docf_rev:"Revision",
  po_modal_title:"Create purchase order",pof_supplier:"Supplier",pof_items:"Items",pof_ordered:"Ordered value (SEK)",pof_expected:"Expected delivery",
  save_generic:"Save",cancel_generic:"Cancel",close_generic:"Close",edit_generic:"Edit",delete_generic:"Delete",confirm_delete:"Delete this — are you sure?",
@@ -540,11 +553,11 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  th_no:"Projekt-nr",th_name:"Projektnamn",th_customer:"Kund",th_ref:"Kundref.",th_status:"Status",th_start:"Planerad start",th_deadline:"Deadline",th_progress:"Framsteg",th_responsible:"Ansvarig",th_quoted:"Offertvärde",th_actual:"Verklig kostnad",
  kpi_quoted:"Totalt offertvärde",kpi_actual:"Total verklig kostnad",kpi_overdue:"Försenade",kpi_hold:"Pausade",
  emptylist:"Inga projekt matchar dina filter.",
- np_title:"Nytt projekt",np_edit_title:"Redigera projekt",np_number:"Projektnummer",np_name:"Projektnamn",np_customer:"Kund",np_newcustomer:"+ Ny kund",np_ref:"Kundreferens",np_po:"Kundens ordernummer",np_quoted:"Offertvärde (SEK)",np_desc:"Projektbeskrivning",np_notes:"Interna anteckningar",np_type:"Projekttyp",np_pm:"Projektledare",np_workshop:"Verkstadsansvarig",np_sales:"Säljansvarig",np_start:"Planerat startdatum",np_deadline:"Deadline",np_plannedcompletion:"Planerat klart",np_save:"Spara projekt",np_cancel:"Avbryt",np_printoffer:"Skriv ut offert",
+ np_title:"Nytt projekt",np_edit_title:"Redigera projekt",np_number:"Projektnummer",np_name:"Projektnamn",np_customer:"Kund",np_newcustomer:"+ Ny kund",np_ref:"Kundreferens",np_po:"Kundens ordernummer",np_desc:"Projektbeskrivning",np_notes:"Interna anteckningar",np_type:"Projekttyp",np_pm:"Projektledare",np_workshop:"Verkstadsansvarig",np_sales:"Säljansvarig",np_start:"Planerat startdatum",np_deadline:"Deadline",np_plannedcompletion:"Planerat klart",np_save:"Spara projekt",np_cancel:"Avbryt",np_printoffer:"Skriv ut offert",
  nc_title:"Ny kund",nc_name:"Kundnamn",nc_org:"Org.nr",nc_contact:"Kontaktperson",nc_save:"Lägg till kund",nc_cancel:"Avbryt",
  tab_overview:"Översikt",tab_jobcards:"Poster",tab_hours:"Timmar",tab_materials:"Material",tab_purchases:"Inköp",tab_documents:"Dokument",tab_reports:"Rapporter",tab_costs:"Kostnader",tab_activity:"Aktivitet",
- ov_status:"Status",ov_progress:"Framsteg",ov_time:"Tid",ov_est:"Uppskattat",ov_used:"Använt",ov_remaining:"Kvar",ov_material:"Material",ov_purchases:"Inköp",ov_ordered:"Beställt",ov_delivered:"Levererat",ov_pending:"Väntar",ov_deadline:"Deadline",ov_daysremaining:"{d} dagar kvar",ov_daysoverdue:"{d} dagar försenat",ov_nodeadline:"Ingen deadline satt",ov_warnings:"Varningar",ov_nowarnings:"Inga varningar — allt ligger rätt till.",ov_notes:"Fäst anteckning",
- jc_new:"+ Lägg till post",jc_no:"Post-nr",jc_desc:"Arbetsbeskrivning",jc_assigned:"Tilldelad",jc_status:"Status",jc_est:"Est. timmar",jc_act:"Verkliga timmar",jc_progress:"Framsteg",jc_empty:"Inga poster ännu.",
+ ov_status:"Status",ov_progress:"Framsteg",ov_time:"Tid",ov_est:"Uppskattat",ov_used:"Använt",ov_remaining:"Kvar",ov_material:"Material",ov_purchases:"Inköp",ov_ordered:"Beställt",ov_delivered:"Levererat",ov_pending:"Väntar",ov_deadline:"Deadline",ov_daysremaining:"{d} dagar kvar",ov_daysoverdue:"{d} dagar försenat",ov_nodeadline:"Ingen deadline satt",ov_warnings:"Varningar",ov_nowarnings:"Inga varningar — allt ligger rätt till.",ov_notes:"Fäst anteckning",ov_manpower:"Bemanningsbehov",
+ jc_new:"+ Lägg till post",jc_no:"Post-nr",jc_desc:"Arbetsbeskrivning",jc_assigned:"Tilldelad",jc_status:"Status",jc_est:"Est. timmar",jc_act:"Verkliga timmar",jc_progress:"Framsteg",jc_empty:"Inga poster ännu.",jc_people:"Personer behövs",jc_notestimated:"Ännu inte kalkylerad — prissätt denna post i Kalkyler.",
  h_date:"Datum",h_worker:"Person",h_jobcard:"Post",h_desc:"Arbetsbeskrivning",h_hours:"Timmar",h_total:"Totalt",h_empty:"Inga timmar registrerade ännu.",
  m_material:"Material",m_spec:"Specifikation",m_qty:"Antal",m_source:"Källa",m_jobcard:"Post",m_cost:"Kostnad",m_status:"Status",m_empty:"Inget material registrerat ännu.",m_new:"+ Lägg till material",mf_unit:"Enhet",
  pu_new:"+ Skapa inköp",pu_po:"Inköpsorder-nr",pu_supplier:"Leverantör",pu_date:"Datum",pu_items:"Artiklar",pu_ordered:"Beställt värde",pu_received:"Mottaget värde",pu_status:"Status",pu_expected:"Förväntad leverans",pu_empty:"Inga inköp ännu.",
@@ -553,7 +566,7 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  c_estimated:"Uppskattad kostnad",c_actual:"Verklig kostnad",c_labour:"Arbete",c_material:"Material",c_purchased:"Inköpta komponenter",c_other:"Övriga kostnader",c_total:"Total kostnad",c_quoted:"Offertvärde",c_revenue:"Intäkt",c_profit:"Vinst",c_margin:"Marginal",c_itemrevenue:"Intäkt per post",c_estprice:"Est. pris",c_actcost:"Verklig kostnad",
  o_title:"OFFERT",o_no:"Offertnr",o_date:"Datum",o_to:"Till",o_desc:"Beskrivning",o_hrs:"Tim",o_mat:"Material",o_amount:"Belopp",o_subtotal:"Delsumma",o_vat:"Moms 25%",o_total:"Att betala",o_valid:"Offerten gäller i 30 dagar. Priser exkl. moms där ej annat anges.",o_printbtn:"Skriv ut",o_close:"Stäng",
  act_empty:"Ingen aktivitet ännu.",note_empty:"Inga anteckningar ännu.",
- a_edit:"Redigera",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",
+ a_edit:"Redigera",a_openestimation:"Öppna kalkyl",a_createestimation:"Skapa kalkyl",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",a_archiveproject:"Arkivera projekt",a_deleteproject:"Ta bort projekt",
  st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",
  hold_title:"Pausa projekt",hold_reason:"Anledning",hold_comment:"Kommentar",hold_expected:"Förväntat återupptagningsdatum (valfritt)",hold_save:"Pausa",
  resume_title:"Återuppta projekt",resume_tostatus:"Återuppta till status",resume_save:"Återuppta",
@@ -562,8 +575,10 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  cancel_title:"Avbryt projekt",cancel_reason:"Anledning till avbrott",cancel_save:"Avbryt projekt",
  reopen_title:"Återöppna stängt projekt",reopen_reason:"Anledning (krävs)",reopen_tostatus:"Återöppna till status",reopen_save:"Återöppna",
  dup_title:"Duplicera projekt",dup_body:"Skapar ett nytt projekt med samma typ, beskrivning och jobbkortsstruktur. Verkliga timmar, kostnader, rapporter, inköp och aktivitet kopieras INTE.",dup_confirm:"Duplicera",
+ archiveproject_title:"Arkivera projekt",archiveproject_body:"Projektet döljs från den aktiva listan men behålls för spårbarhet. Endast en administratör kan återställa det.",archiveproject_confirm:"Arkivera",
+ deleteproject_title:"Ta bort projekt",deleteproject_warn:"Detta tar bort projektet permanent. Begränsat till en administratör och kan inte ångras.",deleteproject_typeconfirm:"Skriv projektnumret ({no}) för att bekräfta",deleteproject_mismatch:"Projektnumret stämde inte — inget togs bort.",
  note_title:"Lägg till anteckning",note_text:"Anteckning",note_tag:"Klassificering",note_pin:"Fäst i Översikt",note_save:"Lägg till",
- jc_modal_title:"Lägg till post",jcf_desc:"Arbetsbeskrivning",jcf_assigned:"Tilldelad till",jcf_est:"Uppskattade timmar",jcf_estmat:"Uppskattad materialkostnad (SEK)",
+ jc_modal_title:"Lägg till post",jcf_desc:"Arbetsbeskrivning",jcf_assigned:"Tilldelad till",jcf_pricingnote:"Prissättning, timmar och bemanning anges i Kalkyler och visas här automatiskt.",
  doc_modal_title:"Lägg till dokument",docf_folder:"Mapp",docf_name:"Dokumentnamn",docf_rev:"Revision",
  po_modal_title:"Skapa inköpsorder",pof_supplier:"Leverantör",pof_items:"Artiklar",pof_ordered:"Beställt värde (SEK)",pof_expected:"Förväntad leverans",
  save_generic:"Spara",cancel_generic:"Avbryt",close_generic:"Stäng",edit_generic:"Redigera",delete_generic:"Ta bort",confirm_delete:"Ta bort detta — är du säker?",
@@ -589,11 +604,11 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  th_no:"Proekt br.",th_name:"Ime na proekt",th_customer:"Klient",th_ref:"Referenca",th_status:"Status",th_start:"Planiran početok",th_deadline:"Rok",th_progress:"Napredok",th_responsible:"Odgovoren",th_quoted:"Ponudena vrednost",th_actual:"Realen trošok",
  kpi_quoted:"Vkupno ponudeno",kpi_actual:"Vkupen realen trošok",kpi_overdue:"Docneti",kpi_hold:"Pauzirani",
  emptylist:"Nema proekti što odgovaraat na filtrite.",
- np_title:"Nov proekt",np_edit_title:"Uredi proekt",np_number:"Proekt broj",np_name:"Ime na proekt",np_customer:"Klient",np_newcustomer:"+ Nov klient",np_ref:"Referenca na klient",np_po:"Broj na narudžba na klient",np_quoted:"Ponudena vrednost (SEK)",np_desc:"Opis na proekt",np_notes:"Interni beleški",np_type:"Tip proekt",np_pm:"Menadžer na proekt",np_workshop:"Odgovoren za rabotilnica",np_sales:"Odgovoren za prodažba",np_start:"Planiran datum na početok",np_deadline:"Rok",np_plannedcompletion:"Planirano završuvanje",np_save:"Začuvaj proekt",np_cancel:"Otkaži",np_printoffer:"Pečati ponuda",
+ np_title:"Nov proekt",np_edit_title:"Uredi proekt",np_number:"Proekt broj",np_name:"Ime na proekt",np_customer:"Klient",np_newcustomer:"+ Nov klient",np_ref:"Referenca na klient",np_po:"Broj na narudžba na klient",np_desc:"Opis na proekt",np_notes:"Interni beleški",np_type:"Tip proekt",np_pm:"Menadžer na proekt",np_workshop:"Odgovoren za rabotilnica",np_sales:"Odgovoren za prodažba",np_start:"Planiran datum na početok",np_deadline:"Rok",np_plannedcompletion:"Planirano završuvanje",np_save:"Začuvaj proekt",np_cancel:"Otkaži",np_printoffer:"Pečati ponuda",
  nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"Mat. broj",nc_contact:"Kontakt lice",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
  tab_overview:"Pregled",tab_jobcards:"Stavki",tab_hours:"Časovi",tab_materials:"Materijali",tab_purchases:"Nabavki",tab_documents:"Dokumenti",tab_reports:"Izveštai",tab_costs:"Trošoci",tab_activity:"Aktivnost",
- ov_status:"Status",ov_progress:"Napredok",ov_time:"Vreme",ov_est:"Proceneto",ov_used:"Iskoristeno",ov_remaining:"Preostanato",ov_material:"Materijal",ov_purchases:"Nabavki",ov_ordered:"Naračano",ov_delivered:"Isporačano",ov_pending:"Vo čekanje",ov_deadline:"Rok",ov_daysremaining:"{d} denovi preostanati",ov_daysoverdue:"{d} denovi docnenje",ov_nodeadline:"Nema postaven rok",ov_warnings:"Predupreduvanja",ov_nowarnings:"Nema predupreduvanja — se e vo red.",ov_notes:"Zakačena beleška",
- jc_new:"+ Dodaj stavka",jc_no:"Stavka br.",jc_desc:"Opis na rabota",jc_assigned:"Zadolžen",jc_status:"Status",jc_est:"Proc. časovi",jc_act:"Realni časovi",jc_progress:"Napredok",jc_empty:"Sè ušte nema stavki.",
+ ov_status:"Status",ov_progress:"Napredok",ov_time:"Vreme",ov_est:"Proceneto",ov_used:"Iskoristeno",ov_remaining:"Preostanato",ov_material:"Materijal",ov_purchases:"Nabavki",ov_ordered:"Naračano",ov_delivered:"Isporačano",ov_pending:"Vo čekanje",ov_deadline:"Rok",ov_daysremaining:"{d} denovi preostanati",ov_daysoverdue:"{d} denovi docnenje",ov_nodeadline:"Nema postaven rok",ov_warnings:"Predupreduvanja",ov_nowarnings:"Nema predupreduvanja — se e vo red.",ov_notes:"Zakačena beleška",ov_manpower:"Potrebna rabotna sila",
+ jc_new:"+ Dodaj stavka",jc_no:"Stavka br.",jc_desc:"Opis na rabota",jc_assigned:"Zadolžen",jc_status:"Status",jc_est:"Proc. časovi",jc_act:"Realni časovi",jc_progress:"Napredok",jc_empty:"Sè ušte nema stavki.",jc_people:"Potrebni luge",jc_notestimated:"Sè ušte ne e proceneto — cenete ja ovaa stavka vo Kalkulacii.",
  h_date:"Datum",h_worker:"Rabotnik",h_jobcard:"Stavka",h_desc:"Opis na rabota",h_hours:"Časovi",h_total:"Vkupno",h_empty:"Sè ušte nema zapišani časovi.",
  m_material:"Materijal",m_spec:"Specifikacija",m_qty:"Količina",m_source:"Izvor",m_jobcard:"Stavka",m_cost:"Trošok",m_status:"Status",m_empty:"Sè ušte nema zapišan materijal.",m_new:"+ Dodaj materijal",mf_unit:"Merna edinica",
  pu_new:"+ Kreiraj nabavka",pu_po:"Nabavna narudžba br.",pu_supplier:"Dobavuvač",pu_date:"Datum",pu_items:"Artikli",pu_ordered:"Naračana vrednost",pu_received:"Primena vrednost",pu_status:"Status",pu_expected:"Očekuvana isporaka",pu_empty:"Sè ušte nema nabavki.",
@@ -602,7 +617,7 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  c_estimated:"Procenet trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proceneta cena",c_actcost:"Realen trošok",
  o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Megjuzbir",o_vat:"DDV 25%",o_total:"Za plakjanje",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
  act_empty:"Sè ušte nema aktivnost.",note_empty:"Sè ušte nema beleški.",
- a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",
+ a_edit:"Uredi",a_openestimation:"Otvori kalkulacija",a_createestimation:"Kreiraj kalkulacija",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",a_archiveproject:"Arhiviraj proekt",a_deleteproject:"Izbriši proekt",
  st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
  hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",
  resume_title:"Prodolži proekt",resume_tostatus:"Prodolži do status",resume_save:"Prodolži",
@@ -611,8 +626,10 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  cancel_title:"Otkaži proekt",cancel_reason:"Pričina za otkažuvanje",cancel_save:"Otkaži proekt",
  reopen_title:"Reotvori zatvoren proekt",reopen_reason:"Pričina (zadolžitelno)",reopen_tostatus:"Reotvori do status",reopen_save:"Reotvori",
  dup_title:"Dupliciraj proekt",dup_body:"Kreira nov proekt so ist tip, opis i struktura na rabotni karti. Realnite časovi, trošoci, izveštai, nabavki i aktivnosta NE se kopiraat.",dup_confirm:"Dupliciraj",
+ archiveproject_title:"Arhiviraj proekt",archiveproject_body:"Proektot ke bide skrien od aktivnata lista no začuvan za evidencija. Ova može da go vrati samo administrator.",archiveproject_confirm:"Arhiviraj",
+ deleteproject_title:"Izbriši proekt",deleteproject_warn:"Ova trajno go otstranuva proektot. Akcijava e ograničena samo na administrator i ne može da se vrati.",deleteproject_typeconfirm:"Vnesi go brojot na proektot ({no}) za da potvrdiš",deleteproject_mismatch:"Brojot na proektot ne se soodvetstvuva — ništo ne be izbrišano.",
  note_title:"Dodaj beleška",note_text:"Beleška",note_tag:"Klasifikacija",note_pin:"Zakači vo Pregled",note_save:"Dodaj",
- jc_modal_title:"Dodaj stavka",jcf_desc:"Opis na rabota",jcf_assigned:"Zadolžen na",jcf_est:"Proceneti časovi",jcf_estmat:"Procenet trošok za materijal (SEK)",
+ jc_modal_title:"Dodaj stavka",jcf_desc:"Opis na rabota",jcf_assigned:"Zadolžen na",jcf_pricingnote:"Cenite, časovite i brojot na luge se odreduvaat vo Kalkulacii i se prikažuvaat ovde avtomatski.",
  doc_modal_title:"Dodaj dokument",docf_folder:"Papka",docf_name:"Ime na dokument",docf_rev:"Revizija",
  po_modal_title:"Kreiraj nabavna narudžba",pof_supplier:"Dobavuvač",pof_items:"Artikli",pof_ordered:"Naračana vrednost (SEK)",pof_expected:"Očekuvana isporaka",
  save_generic:"Začuvaj",cancel_generic:"Otkaži",close_generic:"Zatvori",edit_generic:"Uredi",delete_generic:"Izbriši",confirm_delete:"Izbriši go ova — sigurni ste?",
@@ -649,7 +666,7 @@ function statusBadge(s){
 
 function renderList(){
   const t=T[LANG];
-  let rows=PROJECTS.filter(p=>listFilter==="all"||uiStatus(p.status)===listFilter);
+  let rows=PROJECTS.filter(p=>!p.archived).filter(p=>listFilter==="all"||uiStatus(p.status)===listFilter);
   if(listQuery){const q=listQuery.toLowerCase();rows=rows.filter(p=>p.no.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||custName(p.customerId).toLowerCase().includes(q)||(p.customerRef||"").toLowerCase().includes(q));}
   if(listFilters.customer)rows=rows.filter(p=>String(p.customerId)===listFilters.customer);
   if(listFilters.responsible)rows=rows.filter(p=>p.pm===listFilters.responsible||p.workshop===listFilters.responsible||p.sales===listFilters.responsible);
@@ -733,6 +750,18 @@ function safeTab(){if(['hours','reports'].includes(activeTab))activeTab="overvie
 // above (they read p.status through the same uiStatus() adapter statusBadge() uses).
 function isReadonly(p){return isReadonlyStatus(p);}
 
+// Pricing lives in Estimations now (see estimation-rules.js's reconcileWorkItems/averageManpower
+// and estimations-desktop.html's syncEstimation project push) — this just finds/deep-links to the
+// one Estimation linked to this project, if any, so Projects never needs its own pricing UI.
+function linkedEstimationNo(p){
+  const est=(window.WorkshopData?.listEstimations?WorkshopData.listEstimations():[]).find(e=>e.projectNo===p.no&&!e.archived);
+  return est?est.no:null;
+}
+function openLinkedEstimation(){
+  const p=getProject(currentId);
+  location.href=`estimations-desktop.html?project=${encodeURIComponent(p.no)}`;
+}
+
 function renderDetail(){
   safeTab();
   const t=T[LANG],p=getProject(currentId);if(!p){VIEW="list";render();return;}
@@ -747,7 +776,9 @@ function renderDetail(){
     ['complete',t.a_complete,false,canComplete(p)],
     ['close',t.a_close,false,canClose(p)],
     ['cancel',t.a_cancel,true,canCancel(p)],
-    ['reopen',t.a_reopen,false,canReopen(p)]
+    ['reopen',t.a_reopen,false,canReopen(p)],
+    ['archiveproject',t.a_archiveproject,true,true],
+    ['deleteproject',t.a_deleteproject,true,true]
   ].filter(x=>x[3]).map(x=>`<button class="${x[2]?'danger2':''}" onclick="handleAction('${x[0]}')">${x[1]}</button>`).join("");
 
   $("detailView").innerHTML=`
@@ -756,6 +787,7 @@ function renderDetail(){
         <div><div class="pno">${p.no}</div><h2>${esc(p.name)}</h2><div class="dcust">${esc(custName(p.customerId))}${p.customerRef?' · '+esc(p.customerRef):''}</div></div>
         <div class="roactions">
           <button class="tbtn" onclick="openEditProject()" ${ro?'disabled':''}>${t.a_edit}</button>
+          <button class="tbtn" onclick="openLinkedEstimation()">${linkedEstimationNo(p)?t.a_openestimation:t.a_createestimation}</button>
           <button class="tbtn" onclick="printOffer(${p.id})">${t.np_printoffer}</button>
           <button class="tbtn" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.a_createjc}</button>
           <button class="tbtn" onclick="openDocForm()" ${ro?'disabled':''}>${t.a_adddoc}</button>
@@ -806,7 +838,8 @@ function renderOverview(p){
     <div class="ovgrid">
       <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.ov_progress}</h4>
         <div class="ovbig">${prog}%</div><div class="ovbar"><i style="width:${prog}%"></i></div>
-        <div class="ovline"><span class="lk">${t.tab_jobcards}</span><span>${jt.completed} / ${jt.total}</span></div></div>
+        <div class="ovline"><span class="lk">${t.tab_jobcards}</span><span>${jt.completed} / ${jt.total}</span></div>
+        <div class="ovline"><span class="lk">${t.ov_manpower}</span><span>${p.requiredManpower||0}</span></div></div>
       <div class="ovcard"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="9"/></svg>${t.ov_time}</h4>
         <div class="ovline"><span class="lk">${t.ov_est}</span><span>${jt.est} h</span></div>
         <div class="ovline"><span class="lk">${t.ov_used}</span><span class="${over?'over':''}">${c.aLabH} h</span></div>
@@ -830,13 +863,14 @@ function renderJobcards(p){
   const rows=projectJobcardRows(p).map(j=>{
     const open=openItemRows[j.no];
     const price=itemEstPrice(j),cost=itemActualCost(p,j),matAct=itemMaterialActual(p,j.no),margin=price?((price-cost)/price*100):0;
+    const notEstimated=!j.est&&!j.estMaterial;
     return `<div class="folder ${open?'open':''}">
       <div class="fh" onclick="toggleItemRow('${j.no}')">
         <span class="fn"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>${j.no} — ${esc(j.desc)}</span>
         <span style="display:flex;align-items:center;gap:14px;"><span class="pcust2">${esc(j.assigned)}</span>${statusBadge(j.status)}<span class="rnum ${j.act>j.est?'over':''}">${j.act} / ${j.est} h</span></span>
       </div>
-      <div class="fb"><table class="subtable" style="margin-top:6px;"><thead><tr><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.m_material}</th><th>${t.c_margin}</th></tr></thead>
-        <tbody><tr><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum">${fmt(matAct)} / ${fmt(j.estMaterial||0)}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr></tbody></table>
+      <div class="fb">${notEstimated?`<div class="pcust2" style="padding:6px 0;">${t.jc_notestimated}</div>`:""}<table class="subtable" style="margin-top:6px;"><thead><tr><th>${t.c_estprice}</th><th>${t.c_actcost}</th><th>${t.m_material}</th><th>${t.jc_people}</th><th>${t.c_margin}</th></tr></thead>
+        <tbody><tr><td class="rnum">${fmt(price)}</td><td class="rnum ${cost>price?'over':''}">${fmt(cost)}</td><td class="rnum">${fmt(matAct)} / ${fmt(j.estMaterial||0)}</td><td class="rnum">${j.requiredWorkers||0}</td><td class="rnum ${margin<0?'over':''}">${margin.toFixed(0)}%</td></tr></tbody></table>
         ${ro?"":`<div class="rowactions"><button class="tbtn" onclick="event.stopPropagation();openJobcardForm('${j.no}')">${t.edit_generic}</button><button class="tbtn danger" onclick="event.stopPropagation();deleteJobcard('${j.no}')">${t.delete_generic}</button></div>`}</div>
     </div>`;}).join("");
   $("tabpanel").innerHTML=`<div class="card2"><div class="tabhead"><h3>${t.tab_jobcards}</h3><button class="tbtn primary" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.jc_new}</button></div>
@@ -1014,12 +1048,12 @@ function pushActivity(p,action,user){p.activity.push({date:todayISO(),time:new D
 let editingId=null,newProjTypes=[];
 function openNewProject(){
   editingId=null;newProjTypes=[];
-  buildProjectForm(T[LANG].np_title,{no:projNo_peek(),name:"",customerId:"",customerRef:"",poNumber:"",description:"",internalNotes:"",types:[],pm:"",workshop:"",sales:"",plannedStart:"",deadline:"",plannedCompletion:"",quotedValue:0});
+  buildProjectForm(T[LANG].np_title,{no:projNo_peek(),name:"",customerId:"",customerRef:"",poNumber:"",description:"",internalNotes:"",types:[],pm:"",workshop:"",sales:"",plannedStart:"",deadline:"",plannedCompletion:""});
 }
 function projNo_peek(){return "P-26-"+String(seqProject).padStart(4,'0');}
 function openEditProject(){
   const p=getProject(currentId);editingId=p.id;newProjTypes=p.types.slice();
-  buildProjectForm(T[LANG].np_edit_title,{no:p.no,name:p.name,customerId:p.customerId,customerRef:p.customerRef,poNumber:p.poNumber,description:p.description,internalNotes:"",types:p.types,pm:p.pm,workshop:p.workshop,sales:p.sales,plannedStart:p.plannedStart,deadline:p.deadline,plannedCompletion:p.plannedCompletion,quotedValue:p.quotedValue});
+  buildProjectForm(T[LANG].np_edit_title,{no:p.no,name:p.name,customerId:p.customerId,customerRef:p.customerRef,poNumber:p.poNumber,description:p.description,internalNotes:"",types:p.types,pm:p.pm,workshop:p.workshop,sales:p.sales,plannedStart:p.plannedStart,deadline:p.deadline,plannedCompletion:p.plannedCompletion});
 }
 function buildProjectForm(title,v){
   const t=T[LANG];
@@ -1033,10 +1067,9 @@ function buildProjectForm(title,v){
     <div class="frow"><label for="fCustomer">${t.np_customer}</label>
       <select id="fCustomer"><option value="">—</option>${custOpts}</select>
       <span class="fnewlink" id="fNewCustLink">${t.np_newcustomer}</span></div>
-    <div class="frow3">
+    <div class="frow2">
       <div><label for="fRef">${t.np_ref}</label><input id="fRef" value="${esc(v.customerRef)}"></div>
       <div><label for="fPo">${t.np_po}</label><input id="fPo" value="${esc(v.poNumber)}"></div>
-      <div><label for="fQuoted">${t.np_quoted}</label><input type="number" min="0" id="fQuoted" value="${v.quotedValue||0}"></div>
     </div>
     <div class="frow"><label for="fDesc">${t.np_desc}</label><textarea id="fDesc">${esc(v.description)}</textarea></div>
     <div class="frow"><label for="fNotes">${t.np_notes}</label><textarea id="fNotes">${esc(v.internalNotes)}</textarea></div>
@@ -1062,7 +1095,7 @@ function submitProjectForm(){
   const custId=parseInt($("fCustomer").value)||null;
   const vals={name,customerId:custId,customerRef:$("fRef").value.trim(),poNumber:$("fPo").value.trim(),description:$("fDesc").value.trim(),
     types:newProjTypes.slice(),pm:$("fPm").value,workshop:$("fWorkshop").value,sales:$("fSales").value,
-    plannedStart:$("fStart").value,deadline:$("fDeadline").value,plannedCompletion:$("fPlannedC").value,quotedValue:parseFloat($("fQuoted").value)||0};
+    plannedStart:$("fStart").value,deadline:$("fDeadline").value,plannedCompletion:$("fPlannedC").value};
   if(editingId){
     const p=getProject(editingId);Object.assign(p,vals);pushActivity(p,"Project edited");syncSharedProject(p);
   }else{
@@ -1071,8 +1104,11 @@ function submitProjectForm(){
     const p={no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
       createdDate:todayISO(),actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
       jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
+    // syncSharedProject() already triggers refreshProjectsFromShared() (via the workshop:data event
+    // its own save() dispatches), which puts this exact project into PROJECTS from the shared source
+    // of truth — unshifting the local `p` object here too used to add it a SECOND time (two rows,
+    // same number, in the project list) since the two are different JS object references.
     pushActivity(p,"Project Created");syncSharedProject(p);
-    PROJECTS.unshift(p);
     currentId=p.id;VIEW="detail";activeTab="overview";
   }
   closeModal();render();
@@ -1097,8 +1133,7 @@ function captureProjectFormState(){
     sales:$("fSales")?$("fSales").value:"",
     plannedStart:$("fStart")?$("fStart").value:"",
     deadline:$("fDeadline")?$("fDeadline").value:"",
-    plannedCompletion:$("fPlannedC")?$("fPlannedC").value:"",
-    quotedValue:$("fQuoted")?(parseFloat($("fQuoted").value)||0):0
+    plannedCompletion:$("fPlannedC")?$("fPlannedC").value:""
   };
 }
 function openNewCustomerMini(){
@@ -1146,10 +1181,15 @@ function projectItemJobcardPayload(p,item,existing){
     responsible:(existing&&existing.responsible)||projectWorkerToShared(p.pm||'Aleksandar')||'Aleksandar C.',
     workers:sharedWorkersForProjectItem(item.assigned,p,existing),plannedStart:p.plannedStart||todayISO(),
     plannedCompletion:p.plannedCompletion||p.deadline||null,actualStart:item.status==='active'?(p.actualStart||null):null,
-    actualCompletion:item.status==='completed'?(p.actualCompletion||todayISO()):null,plannedHours:item.est,progress:item.progress||0,
+    actualCompletion:item.status==='completed'?(p.actualCompletion||todayISO()):null,
+    // Pricing/hours/crew size are never authored here — a brand-new item starts unestimated and is
+    // only ever priced from Estimations (see syncEstimation()'s project push in
+    // estimations-desktop.html), which pushes plannedHours/estimatedMaterialCost/requiredWorkers
+    // onto this same shared Jobcard once the item has been costed there.
+    plannedHours:0,estimatedMaterialCost:0,requiredWorkers:0,progress:item.progress||0,
     status:localJobcardStatusToReal(item.status),materialReadiness:'not-checked',inspectionRequired:false,
     deliveryTarget:p.plannedCompletion||p.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
-    estimatedMaterialCost:item.estMaterial||0,actualHours:item.act||0};
+    actualHours:item.act||0};
 }
 function handleJobcardSaveError(result){
   if(handleQualityBlocked(result))return true;
@@ -1163,15 +1203,14 @@ function openJobcardForm(no){
   const assignedOptions=PEOPLE.concat(j&&j.assigned&&!PEOPLE.includes(j.assigned)?[j.assigned]:[]);
   showModal(`<h2>${t.jc_modal_title}</h2>
     <div class="frow"><label for="jcDesc">${t.jcf_desc}</label><input id="jcDesc" value="${esc(j?j.desc:'')}"></div>
-    <div class="frow2"><div><label for="jcAssigned">${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${assignedOptions.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${esc(n)}</option>`).join("")}</select></div>
-      <div><label for="jcEst">${t.jcf_est}</label><input type="number" step="0.5" min="0" id="jcEst" value="${j?j.est:0}"></div></div>
-    <div class="frow"><label for="jcEstMat">${t.jcf_estmat}</label><input type="number" step="1" min="0" id="jcEstMat" value="${j?(j.estMaterial||0):0}"></div>
+    <div class="frow"><label for="jcAssigned">${t.jcf_assigned}</label><select id="jcAssigned"><option value="">—</option>${assignedOptions.map(n=>`<option ${j&&j.assigned===n?'selected':''}>${esc(n)}</option>`).join("")}</select></div>
+    <div class="fsub" style="margin:-4px 0 14px;">${t.jcf_pricingnote}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="submitJobcard()">${t.save_generic}</button></div>`);
 }
 function submitJobcard(){
   const desc=$("jcDesc").value.trim();if(!desc)return;
   const p=getProject(currentId);
-  const input={desc,assigned:$("jcAssigned").value,est:parseFloat($("jcEst").value)||0,estMaterial:parseFloat($("jcEstMat").value)||0};
+  const input={desc,assigned:$("jcAssigned").value};
   p.jobcards=p.jobcards||[];
   if(editJcNo){
     const row=projectJobcardRows(p).find(x=>x.no===editJcNo);
@@ -1180,7 +1219,7 @@ function submitJobcard(){
     if(existing&&existing.projectNo!==p.no){alert('This Jobcard number already belongs to another project.');return;}
     const item={...row,...input};
     const result=existing
-      ?WorkshopData.updateJobcard(editJcNo,{title:desc,item:desc,plannedHours:item.est,estimatedMaterialCost:item.estMaterial,workers:sharedWorkersForProjectItem(item.assigned,p,existing)})
+      ?WorkshopData.updateJobcard(editJcNo,{title:desc,item:desc,workers:sharedWorkersForProjectItem(item.assigned,p,existing)})
       :WorkshopData.upsertJobcard({...projectItemJobcardPayload(p,item,null),no:item.no});
     if(handleJobcardSaveError(result))return;
     let local=p.jobcards.find(x=>x.no===editJcNo);
@@ -1370,6 +1409,37 @@ function handleAction(kind){
   if(kind==='close')return openCloseFlow(p);
   if(kind==='cancel')return openCancelForm(p);
   if(kind==='reopen')return openReopenForm(p);
+  if(kind==='archiveproject')return openArchiveProjectConfirm(p);
+  if(kind==='deleteproject')return openDeleteProjectForm(p);
+}
+function openArchiveProjectConfirm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.archiveproject_title}</h2><p class="fsub">${t.archiveproject_body}</p>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn danger" onclick="doArchiveProject(${p.id})">${t.archiveproject_confirm}</button></div>`);
+}
+function doArchiveProject(id){
+  const p=getProject(id);if(!p)return;
+  if(window.WorkshopData?.archiveProject)WorkshopData.archiveProject(p.no,'Archived from Projects');
+  closeModal();VIEW="list";render();
+}
+// Deleting a project is an administrator-only action — this prototype has a single hardcoded user
+// (always shown as "Admin" in the header) and no real role system, so a typed confirmation is the
+// closest meaningful safeguard available here; a future backend must enforce a genuine role check on
+// top of this, not instead of it. WorkshopData.deleteProject() itself still refuses to delete a
+// project that has any linked Jobcard or Estimation, regardless of what happens in this form.
+function openDeleteProjectForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.deleteproject_title}</h2><p class="fsub" style="color:var(--danger);">${t.deleteproject_warn}</p>
+    <div class="frow"><label for="dpConfirm">${t.deleteproject_typeconfirm.replace('{no}',p.no)}</label><input id="dpConfirm" placeholder="${esc(p.no)}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn danger" onclick="doDeleteProject(${p.id})">${t.delete_generic}</button></div>`);
+}
+function doDeleteProject(id){
+  const p=getProject(id);if(!p)return;
+  const typed=$("dpConfirm")?$("dpConfirm").value.trim():'';
+  if(typed!==p.no){alert(T[LANG].deleteproject_mismatch);return;}
+  const result=window.WorkshopData?.deleteProject?WorkshopData.deleteProject(p.no):{error:'Not available'};
+  if(result&&result.error){alert(result.error);return;}
+  closeModal();VIEW="list";refreshProjectsFromShared();render();
 }
 function openDuplicateConfirm(p){
   const t=T[LANG];
@@ -1389,7 +1459,7 @@ function doDuplicate(id){
   // Each duplicated Item is a real draft Jobcard too. WorkshopData owns the new numbers; no
   // production status, operation progress, worker assignment or history is copied.
   dup.jobcards=sourceItems.map(j=>{
-    const item={desc:j.desc,assigned:'',status:'planned',est:j.est,act:0,progress:0,estMaterial:j.estMaterial||0};
+    const item={desc:j.desc,assigned:'',status:'planned',act:0,progress:0};
     const created=WorkshopData.upsertJobcard(projectItemJobcardPayload(dup,item,null));
     return{no:created.no,...item};
   });

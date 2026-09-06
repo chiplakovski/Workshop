@@ -182,7 +182,8 @@
   .itable th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:9px 10px;white-space:nowrap;}
   .itable th.n,.itable td.n{text-align:right;}
   .itable td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
-  .itable tr.sectionrow td{background:rgba(74,144,255,.06);font-family:'Sora';font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ff;padding:8px 10px;}
+  .itable tr.sectionrow td{background:rgba(74,144,255,.06);font-family:'Sora';font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ff;padding:8px 10px;cursor:pointer;}
+  .itable tr.sectionrow.wiselected td{background:rgba(74,144,255,.22);box-shadow:inset 3px 0 0 var(--spark);}
   .itable tr.subtotalrow td{background:rgba(255,255,255,.02);font-weight:600;color:var(--steel-300);border-bottom:1px solid var(--line);}
   .itable tr.optrow td{background:rgba(74,212,138,.05);}
   .itable .grip{color:var(--steel-400);opacity:.5;margin-right:6px;}
@@ -278,7 +279,7 @@
 .module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}</style></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button><button onclick="openNewEst()"><i>＋</i>New Estimation</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>All Projects</button><button data-ms="notpriced" onclick="sidebarEstimate('notpriced')"><i>✎</i>Not Yet Priced</button><button data-ms="priced" onclick="sidebarEstimate('priced')"><i>✓</i>Priced</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Every project's items are priced here directly — cost, hours and crew size flow back into Projects automatically.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -312,7 +313,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 // money, lineTotal, lineCostTotal and baseAndIncludedLines live in estimation-rules.js (loaded
 // above) so this page and the automated tests share exactly one pricing/effective-lines implementation.
-const {money,lineTotal,lineCostTotal,baseAndIncludedLines}=EstimationRules;
+const {money,lineTotal,lineCostTotal,baseAndIncludedLines,reconcileWorkItems,averageManpower}=EstimationRules;
 function fmt(n){return money(n).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
 function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE')+" kr";}
 function todayISO(){return new Date().toISOString().slice(0,10);}
@@ -331,15 +332,6 @@ function isNonNegNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0;}
 function isPositiveNumber(v){const n=Number(v);return Number.isFinite(n)&&n>0;}
 function isPercent(v){const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100;}
 function nowTime(){return new Date().toTimeString().slice(0,5);}
-// ── dynamic estimation numbering: derives the year from the given date (or today) instead of hard-coding it ──
-function nextEstNumber(dateStr){
-  const year=(dateStr?new Date(dateStr):new Date()).getFullYear();
-  const prefix=`EST-${year}-`;
-  const sharedNos=(window.WorkshopData?WorkshopData.get().estimations.map(x=>x.no):[]);
-  const known=new Set([...ESTIMATIONS.map(x=>x.no),...sharedNos]);
-  let n=1;while(known.has(prefix+String(n).padStart(3,'0')))n++;
-  return prefix+String(n).padStart(3,'0');
-}
 // ── lightweight toast for demo-labelled and status messages (replaces silent no-ops / raw alert() where a translated message is needed) ──
 function toast(msg,kind){
   let box=$('toastBox');
@@ -380,17 +372,10 @@ function localCustomerIdForShared(sharedId,name){
   return Number(key||Object.keys(CUSTOMERS)[0]);
 }
 hydrateSharedCustomers();
-const PROJECTS={
-  "P-26-0001":{name:"Bakery Conveyor Modification",type:"Stainless Fabrication & Installation",status:"active"},
-  "P-26-0002":{name:"Folding Machine Retrofit",type:"Machine Retrofit",status:"quotation"},
-  "P-26-0003":{name:"Mixer Overhaul — Preliminary",type:"Repair",status:"draft"},
-  "P-26-0004":{name:"Guard Fabrication",type:"Fabrication & Installation",status:"completed"},
-  "P-26-0005":{name:"Service — Malmö Slicer",type:"Service",status:"closed"},
-  "P-26-0006":{name:"Spiral Mixer Service",type:"Repair & Service",status:"hold"},
-  "P-26-0007":{name:"Packing Line Extension",type:"Fabrication & Installation",status:"cancelled"},
-  "P-26-0008":{name:"Bearing Replacement",type:"Repair",status:"approved"},
-  "P-26-0009":{name:"HMI Upgrade",type:"Electrical",status:"planned"}
-};
+// Projects are authoritative in WorkshopData — this module never keeps its own copy of a project's
+// name/type/status. A project must exist before an estimation can reference it (see ensureEstimationForProject()),
+// so every real projectNo on an estimation resolves live through here.
+function liveProject(no){return no&&window.WorkshopData?.getProjects?WorkshopData.getProjects().find(p=>p.no===no):null;}
 
 function autoItems(total){
   const matSell=Math.round(total*0.28),labSell=Math.round(total*0.55),machSell=Math.round(total-matSell-labSell);
@@ -599,14 +584,33 @@ function hydrateSharedEstimations(){
 }
 hydrateSharedEstimations();
 
-const STAGES=["draft","review","sent","accepted"];
 function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
+// Finds this project's one pricing record, silently creating it (pre-populated from the project's
+// current items) the first time the project is opened here — there is no user-facing "new
+// estimation" step any more, pricing a project's items just IS opening the project. The record's
+// `no` is the project's own no (guaranteed unique 1:1) so hydrateSharedEstimations()'s existing
+// match-by-no logic needs no changes.
+function ensureEstimationForProject(projectNo){
+  let e=ESTIMATIONS.find(x=>x.projectNo===projectNo);
+  if(e)return e;
+  const proj=liveProject(projectNo);
+  const liveItems=(window.WorkshopData?.listJobcards?WorkshopData.listJobcards():[]).filter(j=>j.projectNo===projectNo&&!j.archived).map(j=>({no:j.no,desc:j.title||j.item||j.no}));
+  const validUntil=new Date(Date.now()+30*24*60*60*1000).toISOString().slice(0,10);
+  const rec={id:nextEstId++,no:projectNo,projectNo,projectTitle:proj?proj.name:'',status:'draft',
+    customerId:localCustomerIdForShared(proj?proj.customerId:null,proj?proj.customer:''),
+    created:todayISO(),validUntil,currency:'SEK',deliveryTime:'',paymentTerms:'30 days',priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',
+    reference:'—',customerRfq:'',opportunityRef:'',requestedDelivery:'',createdBy:'Aleksandar C.',estimator:'Aleksandar C.',
+    overheadPct:8,contingencyPct:5,discount:0,workItems:reconcileWorkItems([],liveItems),
+    exclusions:[],terms:'Prices valid for 30 days.',history:[],notes:[]};
+  ESTIMATIONS.push(rec);syncEstimation(rec);return rec;
+}
+function selectProject(no){const rec=ensureEstimationForProject(no);selectedId=rec.id;selectedWorkItemIdx=null;renderAll();}
 
 const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",etitle:"Estimations",esub:"Quotes & costing",
     searchph:"Search estimations…",newest:"New Estimation",
-    f_all:"All",f_draft:"Draft",f_sent:"Sent",f_accepted:"Accepted",f_declined:"Declined",
-    p_list:"Estimation List",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
+    f_all:"All",f_notpriced:"Not Yet Priced",f_priced:"Priced",
+    p_list:"Projects",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
     sum_total:"Total Estimations",sum_value:"Total Value (All)",
     edit:"Edit",duplicate:"Duplicate",print:"Print / PDF",
     st_draft:"Draft",st_review:"In Review",st_sent:"Sent",st_accepted:"Accepted",st_declined:"Declined",st_expired:"Expired",
@@ -616,7 +620,7 @@ const T={
     ei_delivery:"Delivery Time",ei_terms:"Payment Terms",ei_pricelist:"Price List",ei_incoterms:"Incoterms",ei_notes:"Notes",
     pj_location:"Location",pj_type:"Project Type",pj_contact:"Contact Person",pj_status:"Project Status",pj_open:"Open Project",
     items:"Estimation Items",additem:"Add Item",addline:"Add Line",addworkitem:"Add Work Item",addsection:"Add Section",showcost:"Show internal cost & margin",
-    wi_no:"Job / item number (optional)",wi_desc:"Work item description",
+    wi_no:"Job / item number (optional)",wi_desc:"Work item description",wi_people:"People required",
     th_no:"#",th_item:"Item / Description",th_category:"Category",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total (SEK)",
     subtotal_section:"Subtotal",
     cat_material:"Material",cat_labour:"Labour",cat_machine:"Machine",cat_subcontractor:"Subcontractor",cat_consumable:"Consumable",cat_logistics:"Logistics",cat_other:"Other",
@@ -629,7 +633,7 @@ const T={
     mk_material:"Material markup",mk_labour:"Labour margin",mk_sub:"Subcontractor markup",
     documents:"Documents",upload:"Upload",history:"History",notes:"Notes",addnote:"+ Add Note",
     empty_docs:"No documents yet.",empty_notes:"No notes yet.",empty_hist:"No history yet.",
-    act_preview:"Preview PDF",act_email:"Send by Email",act_convert:"Convert to Project",act_open:"Open Project",act_duplicate:"Duplicate",act_export:"Export to Excel",act_delete:"Delete",
+    act_print_priced:"Print (priced)",act_print_scope:"Print (scope only)",act_print_internal:"Print (internal)",pr_internal_badge:"INTERNAL — NOT FOR CUSTOMER",act_email:"Send by Email",act_open:"Open Project",act_export:"Export to Excel",
     nc_title:"New Estimation",nc_customer:"Customer",nc_project:"Project reference",nc_valid:"Valid until",nc_save:"Create",nc_cancel:"Cancel",
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
@@ -639,13 +643,11 @@ const T={
     err_line_changed:"This line was changed or removed elsewhere while you had it open. Please open it again.",
     locked_banner:"This estimation is read-only. Create a new revision to make changes.",
     act_newrevision:"New revision",rev_short:"Rev",
-    not_converted:"Not yet converted to project",not_converted_hint:"A project can be created once this estimation is Accepted.",
-    convert_requires_accepted:"Convert to Project is only available once the estimation is Accepted.",
     active_word:"Active",inactive_word:"Inactive",vat_org:"VAT/Org",
     ei_oppref:"Opportunity / enquiry reference",ei_rfq:"Customer RFQ / reference",ei_reqdelivery:"Requested delivery date",ei_estimator:"Responsible estimator",
     opt_included_title:"Include this option in the customer offer",opt_combined:"Combined selected options",
     preview_only:"Preview only — not included",waste_word:"waste",cost_word:"cost",
-    act_editwi:"Edit work item",act_moveup:"Move up",act_movedown:"Move down",act_deletewi:"Delete work item",
+    act_editwi:"Edit work item",act_moveup:"Move up",act_movedown:"Move down",act_deletewi:"Delete work item",act_lockwi:"Lock item price",act_unlockwi:"Unlock item price",wi_locked_badge:"LOCKED",
     act_editline:"Edit line",act_dupline:"Duplicate line",act_delline:"Delete line",
     th_margin_sek:"Margin (SEK)",th_margin_pct:"Margin %",empty_items:"No items yet — add a work item to get started.",
     err_required:"This field is required.",internal_cost:"Internal cost",waste_pct_material:"Waste % (material lines only)",
@@ -653,9 +655,6 @@ const T={
     err_disc:"Discount must be between 0% and 100%.",err_tax:"Tax must be between 0% and 100%.",
     confirm_delete_wi:"Delete the empty work item \"{n}\"?",confirm_delete_line:"Delete the line \"{n}\"?",
     err_date:"Please enter a valid date.",err_date_order:"Valid-until date cannot be before the estimation date.",
-    convert_title:"Convert to Project",convert_note:"This will reuse the customer, BOM, estimated hours, machines, selling price and delivery target in Projects, Planning and Store.",
-    convert_projtitle:"Project title",convert_hours:"Planned hours",convert_delivery:"Delivery target",convert_value:"Estimated project value",convert_create:"Create connected project",
-    confirm_convert:"Convert {no} to a connected project? This cannot be undone.",
     discount_max:"max",err_overhead:"Overhead cannot be negative.",err_contingency:"Contingency cannot be negative.",err_discount:"Discount must be between 0 and the selling subtotal.",
     demo_upload:"Files up to 768 KB are stored in this browser and shared with Documents.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
     confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
@@ -667,15 +666,13 @@ const T={
     rev_create_title:"Create Revision",rev_reason:"Reason for change",rev_reason_ph:"Customer change, material update, scope revision…",
     rev_create_btn:"Create revision",confirm_revision:"Create a new revision of {no}? The current content will be preserved as a snapshot and the estimation will return to Draft.",
     transition_blocked:"Cannot move from \"{a}\" to \"{b}\" directly.",err_needs_line:"Add at least one valid cost line before sending this estimation.",
-    ne_none:"— None —",ne_title:"Estimate title",ne_title_ph:"e.g. Ventilation duct system",ne_startmethod:"Starting method",
-    ne_blank:"Blank estimate",ne_tpl_fab:"Standard fabrication template",ne_tpl_repair:"Repair / service template",ne_tpl_install:"Installation template",
-    ne_template_note:"Template starting values are for demonstration only and must be reviewed before this estimation is sent.",
+    ne_title:"Estimate title",ne_title_ph:"e.g. Ventilation duct system",ne_noprojects:"No projects available — every project already has an estimation.",
     act_archive:"Archive",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
     searchph:"Sök kalkyler…",newest:"Ny kalkyl",
-    f_all:"Alla",f_draft:"Utkast",f_sent:"Skickad",f_accepted:"Accepterad",f_declined:"Nekad",
-    p_list:"Kalkyllista",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
+    f_all:"Alla",f_notpriced:"Ej prissatt",f_priced:"Prissatt",
+    p_list:"Projekt",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
     sum_total:"Totalt antal kalkyler",sum_value:"Totalt värde (alla)",
     edit:"Redigera",duplicate:"Duplicera",print:"Skriv ut / PDF",
     st_draft:"Utkast",st_review:"Under granskning",st_sent:"Skickad",st_accepted:"Accepterad",st_declined:"Nekad",st_expired:"Utgången",
@@ -685,7 +682,7 @@ const T={
     ei_delivery:"Leveranstid",ei_terms:"Betalningsvillkor",ei_pricelist:"Prislista",ei_incoterms:"Incoterms",ei_notes:"Anteckningar",
     pj_location:"Plats",pj_type:"Projekttyp",pj_contact:"Kontaktperson",pj_status:"Projektstatus",pj_open:"Öppna projekt",
     items:"Kalkylposter",additem:"Lägg till post",addline:"Lägg till rad",addworkitem:"Lägg till arbetsmoment",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
-    wi_no:"Jobb-/artikelnummer (valfritt)",wi_desc:"Beskrivning av arbetsmoment",
+    wi_no:"Jobb-/artikelnummer (valfritt)",wi_desc:"Beskrivning av arbetsmoment",wi_people:"Personer behövs",
     th_no:"#",th_item:"Post / Beskrivning",th_category:"Kategori",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa (SEK)",
     subtotal_section:"Delsumma",
     cat_material:"Material",cat_labour:"Arbete",cat_machine:"Maskin",cat_subcontractor:"Underleverantör",cat_consumable:"Förbrukning",cat_logistics:"Transport",cat_other:"Övrigt",
@@ -698,7 +695,7 @@ const T={
     mk_material:"Materialpåslag",mk_labour:"Arbetsmarginal",mk_sub:"Underleverantörspåslag",
     documents:"Dokument",upload:"Ladda upp",history:"Historik",notes:"Anteckningar",addnote:"+ Lägg till anteckning",
     empty_docs:"Inga dokument ännu.",empty_notes:"Inga anteckningar ännu.",empty_hist:"Ingen historik ännu.",
-    act_preview:"Förhandsgranska PDF",act_email:"Skicka via e-post",act_convert:"Konvertera till projekt",act_open:"Öppna projekt",act_duplicate:"Duplicera",act_export:"Exportera till Excel",act_delete:"Ta bort",
+    act_print_priced:"Skriv ut (med pris)",act_print_scope:"Skriv ut (endast omfattning)",act_print_internal:"Skriv ut (internt)",pr_internal_badge:"INTERNT — EJ FÖR KUND",act_email:"Skicka via e-post",act_open:"Öppna projekt",act_export:"Exportera till Excel",
     nc_title:"Ny kalkyl",nc_customer:"Kund",nc_project:"Projektreferens",nc_valid:"Giltig till",nc_save:"Skapa",nc_cancel:"Avbryt",
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
@@ -708,13 +705,11 @@ const T={
     err_line_changed:"Den här raden ändrades eller togs bort någon annanstans medan du hade den öppen. Öppna den igen.",
     locked_banner:"Denna kalkyl är skrivskyddad. Skapa en ny revision för att göra ändringar.",
     act_newrevision:"Ny revision",rev_short:"Rev",
-    not_converted:"Ännu inte konverterad till projekt",not_converted_hint:"Ett projekt kan skapas när kalkylen är accepterad.",
-    convert_requires_accepted:"Konvertera till projekt är endast tillgängligt när kalkylen är accepterad.",
     active_word:"Aktiv",inactive_word:"Inaktiv",vat_org:"Momsreg.nr/Org.nr",
     ei_oppref:"Affärsmöjlighet / förfrågningsreferens",ei_rfq:"Kundens referens / förfrågan",ei_reqdelivery:"Önskat leveransdatum",ei_estimator:"Ansvarig kalkylator",
     opt_included_title:"Inkludera detta tillval i kunderbjudandet",opt_combined:"Kombinerade valda tillval",
     preview_only:"Endast förhandsvisning — ej inkluderad",waste_word:"spill",cost_word:"kostnad",
-    act_editwi:"Redigera arbetsmoment",act_moveup:"Flytta upp",act_movedown:"Flytta ner",act_deletewi:"Ta bort arbetsmoment",
+    act_editwi:"Redigera arbetsmoment",act_moveup:"Flytta upp",act_movedown:"Flytta ner",act_deletewi:"Ta bort arbetsmoment",act_lockwi:"Lås postens pris",act_unlockwi:"Lås upp postens pris",wi_locked_badge:"LÅST",
     act_editline:"Redigera rad",act_dupline:"Duplicera rad",act_delline:"Ta bort rad",
     th_margin_sek:"Marginal (SEK)",th_margin_pct:"Marginal %",empty_items:"Inga poster ännu — lägg till ett arbetsmoment för att komma igång.",
     err_required:"Detta fält är obligatoriskt.",internal_cost:"Intern kostnad",waste_pct_material:"Spill % (endast materialrader)",
@@ -722,9 +717,6 @@ const T={
     err_disc:"Rabatt måste vara mellan 0% och 100%.",err_tax:"Moms måste vara mellan 0% och 100%.",
     confirm_delete_wi:"Ta bort det tomma arbetsmomentet \"{n}\"?",confirm_delete_line:"Ta bort raden \"{n}\"?",
     err_date:"Ange ett giltigt datum.",err_date_order:"Giltigt-till-datum kan inte vara före kalkyldatumet.",
-    convert_title:"Konvertera till projekt",convert_note:"Detta återanvänder kund, materialspecifikation, uppskattade timmar, maskiner, försäljningspris och leveransmål i Projekt, Planering och Lager.",
-    convert_projtitle:"Projekttitel",convert_hours:"Planerade timmar",convert_delivery:"Leveransmål",convert_value:"Uppskattat projektvärde",convert_create:"Skapa kopplat projekt",
-    confirm_convert:"Konvertera {no} till ett kopplat projekt? Detta kan inte ångras.",
     discount_max:"max",err_overhead:"Omkostnader kan inte vara negativa.",err_contingency:"Osäkerhetsmarginal kan inte vara negativ.",err_discount:"Rabatten måste vara mellan 0 och delsumman.",
     demo_upload:"Filer upp till 768 KB lagras i den här webbläsaren och delas med Dokument.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
     confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
@@ -736,15 +728,13 @@ const T={
     rev_create_title:"Skapa revision",rev_reason:"Anledning till ändring",rev_reason_ph:"Kundändring, materialuppdatering, omfattningsändring…",
     rev_create_btn:"Skapa revision",confirm_revision:"Skapa en ny revision av {no}? Nuvarande innehåll bevaras som en ögonblicksbild och kalkylen återgår till Utkast.",
     transition_blocked:"Kan inte flytta från \"{a}\" till \"{b}\" direkt.",err_needs_line:"Lägg till minst en giltig kostnadsrad innan denna kalkyl skickas.",
-    ne_none:"— Ingen —",ne_title:"Kalkyltitel",ne_title_ph:"t.ex. Ventilationskanalsystem",ne_startmethod:"Startmetod",
-    ne_blank:"Tomt kalkylunderlag",ne_tpl_fab:"Standardmall för tillverkning",ne_tpl_repair:"Mall för reparation/service",ne_tpl_install:"Mall för installation",
-    ne_template_note:"Mallens startvärden är endast för demonstration och måste granskas innan kalkylen skickas.",
+    ne_title:"Kalkyltitel",ne_title_ph:"t.ex. Ventilationskanalsystem",ne_noprojects:"Inga projekt tillgängliga — alla projekt har redan en kalkyl.",
     act_archive:"Arkivera",
     locale:"sv-SE"},
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
     searchph:"Prebaraj kalkulacii…",newest:"Nova kalkulacija",
-    f_all:"Site",f_draft:"Nacrt",f_sent:"Ispratena",f_accepted:"Prifatena",f_declined:"Odbiena",
-    p_list:"Lista na kalkulacii",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
+    f_all:"Site",f_notpriced:"Nè procenети",f_priced:"Proceneti",
+    p_list:"Proekti",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
     sum_total:"Vkupno kalkulacii",sum_value:"Vkupna vrednost (site)",
     edit:"Uredi",duplicate:"Dupliciraj",print:"Pečati / PDF",
     st_draft:"Nacrt",st_review:"Vo pregled",st_sent:"Ispratena",st_accepted:"Prifatena",st_declined:"Odbiena",st_expired:"Istekla",
@@ -754,7 +744,7 @@ const T={
     ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plaќaњe",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
     pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
     items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addworkitem:"Dodaj rabotna stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
-    wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",
+    wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",wi_people:"Potrebni luge",
     th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
     subtotal_section:"Meѓuzbir",
     cat_material:"Materijal",cat_labour:"Rabota",cat_machine:"Mašina",cat_subcontractor:"Podizveduvač",cat_consumable:"Potrošen materijal",cat_logistics:"Transport",cat_other:"Drugo",
@@ -767,7 +757,7 @@ const T={
     mk_material:"Marža na materijal",mk_labour:"Marža na rabota",mk_sub:"Marža na podizveduvač",
     documents:"Dokumenti",upload:"Otpremi",history:"Istorija",notes:"Beleški",addnote:"+ Dodaj beleška",
     empty_docs:"Sè uште nema dokumenti.",empty_notes:"Sè uште nema beleški.",empty_hist:"Sè uште nema istorija.",
-    act_preview:"Pregled na PDF",act_email:"Isprati po e-pošta",act_convert:"Konvertiraj vo proekt",act_open:"Otvori proekt",act_duplicate:"Dupliciraj",act_export:"Izvezi vo Excel",act_delete:"Izbriši",
+    act_print_priced:"Pečati (so cena)",act_print_scope:"Pečati (samo opseg)",act_print_internal:"Pečati (interno)",pr_internal_badge:"INTERNO — NE ZA KLIENT",act_email:"Isprati po e-pošta",act_open:"Otvori proekt",act_export:"Izvezi vo Excel",
     nc_title:"Nova kalkulacija",nc_customer:"Klient",nc_project:"Referenca na proekt",nc_valid:"Važi do",nc_save:"Kreiraj",nc_cancel:"Otkaži",
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
@@ -777,13 +767,11 @@ const T={
     err_line_changed:"Ovaa linija be izmeneta ili otstranata na drugo mesto dodeka ja imavte otvorena. Otvori ja povtorno.",
     locked_banner:"Ovaa kalkulacija e samo za čitanje. Kreiraj nova revizija za da napraviš izmeni.",
     act_newrevision:"Nova revizija",rev_short:"Rev",
-    not_converted:"Sè ušte ne е konvertirana vo proekt",not_converted_hint:"Proekt može da se kreira откако kalkulacijata ke bide prifatena.",
-    convert_requires_accepted:"Konvertiraj vo proekt e dostapno samo koga kalkulacijata e prifatena.",
     active_word:"Aktiven",inactive_word:"Neaktiven",vat_org:"DDV/EMBS",
     ei_oppref:"Referenca na prilika / barañe",ei_rfq:"Referenca / barañe od klientot",ei_reqdelivery:"Baran datum na isporaka",ei_estimator:"Odgovoren kalkulant",
     opt_included_title:"Vkluči ja ovaa opcija vo ponudata za klientot",opt_combined:"Kombinirani izbrani opcii",
     preview_only:"Samo pregled — ne e vklučeno",waste_word:"otpad",cost_word:"cena",
-    act_editwi:"Uredi rabotna stavka",act_moveup:"Premesti nagore",act_movedown:"Premesti nadolu",act_deletewi:"Izbriši rabotna stavka",
+    act_editwi:"Uredi rabotna stavka",act_moveup:"Premesti nagore",act_movedown:"Premesti nadolu",act_deletewi:"Izbriši rabotna stavka",act_lockwi:"Zakluči cena na stavkata",act_unlockwi:"Otkluči cena na stavkata",wi_locked_badge:"ZAKLUČENO",
     act_editline:"Uredi red",act_dupline:"Dupliciraj red",act_delline:"Izbriši red",
     th_margin_sek:"Marža (SEK)",th_margin_pct:"Marža %",empty_items:"Sè ušte nema stavki — dodaj rabotna stavka za да počneš.",
     err_required:"Ова poле е задолжително.",internal_cost:"Interna cena",waste_pct_material:"Otpad % (samo za materijalni redovi)",
@@ -791,9 +779,6 @@ const T={
     err_disc:"Popustot mora da bide pomeѓu 0% i 100%.",err_tax:"DDV mora da bide pomeѓu 0% i 100%.",
     confirm_delete_wi:"Izbriši ja praznata rabotna stavka \"{n}\"?",confirm_delete_line:"Izbriši go redot \"{n}\"?",
     err_date:"Vnesi validen datum.",err_date_order:"Datumot \"važi do\" ne može da bide pred datumot na kalkulacijata.",
-    convert_title:"Konvertiraj vo proekt",convert_note:"Ova ke gi prezeme klientot, specifikacijata na materijali, procenetite časovi, mašinite, prodažnata cena i celta za isporaka vo Proekti, Planiranje i Magacin.",
-    convert_projtitle:"Naslov na proekt",convert_hours:"Planirani časovi",convert_delivery:"Cel za isporaka",convert_value:"Procenета vrednost na proektot",convert_create:"Kreiraj poврзан proekt",
-    confirm_convert:"Konvertiraj {no} vo poврзан proekt? Ova ne može da se vrati.",
     discount_max:"maks",err_overhead:"Režiskite troшoci ne možat da bidat negativni.",err_contingency:"Rezervata za nesigurnost ne može da bide negativna.",err_discount:"Popustot mora da bide pomeѓu 0 i meѓuzbirot.",
     demo_upload:"Fajlovi do 768 KB se začuvuvaat vo ovoj prebaruvač i se delat so Dokumenti.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
     confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
@@ -805,24 +790,21 @@ const T={
     rev_create_title:"Kreiraj revizija",rev_reason:"Pričina za izmena",rev_reason_ph:"Izmena od klient, ažuriraњe na materijal, izmena na opseg…",
     rev_create_btn:"Kreiraj revizija",confirm_revision:"Kreiraj nova revizija na {no}? Tekovnata sodržina ke bide začuvana kako snimka, a kalkulacijata ke se vrati vo Nacrt.",
     transition_blocked:"Ne može da se premine od \"{a}\" vo \"{b}\" direktno.",err_needs_line:"Dodaj barem eden validen trošočen red pred da ja ispratiš ovaa kalkulacija.",
-    ne_none:"— Nikoj —",ne_title:"Naslov na kalkulacija",ne_title_ph:"pr. Sistem za ventilacioni kanali",ne_startmethod:"Metod za početok",
-    ne_blank:"Prazna kalkulacija",ne_tpl_fab:"Standarden šablon za izработка",ne_tpl_repair:"Šablon za popravka/servis",ne_tpl_install:"Šablon za instalacija",
-    ne_template_note:"Početните vrednosti od šablonot se samo za demonstracija i mora da bidat proverени pred da se isprati ovaa kalkulacija.",
+    ne_title:"Naslov na kalkulacija",ne_title_ph:"pr. Sistem za ventilacioni kanali",ne_noprojects:"Nema dostapni proekti — sekoj proekt vekje ima kalkulacija.",
     act_archive:"Arhiviraj",
     locale:"mk"}
 };
 
-let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,activeOptTab="base";
+let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,selectedWorkItemIdx=null;
 
 function getEst(id){return ESTIMATIONS.find(e=>e.id===id);}
-// Pushes the full current state of an estimate into WorkshopData (the one shared browser-data layer).
-// IMPORTANT: this function never changes the revision number itself — see createRevision() for the single,
-// dedicated place a revision is ever incremented, so calling this repeatedly (on every routine save) can
-// never double-count a revision the way the old code did via WorkshopData.updateEstimation(...,reason).
+// Pushes the full current state of an estimate into WorkshopData (the one shared browser-data layer),
+// called after every single edit in this module — there is no separate "save" step.
 function syncEstimation(e){
   if(!window.WorkshopData||!e)return null;
   const c=CUSTOMERS[e.customerId],shared=WorkshopData.get(),sc=shared.customers.find(x=>x.name===c.name),tot=computeTotals(e);
-  const payload={id:e.sharedId,no:e.no,customerId:sc?sc.id:null,customer:c.name,title:e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no,
+  const proj=(shared.projects||[]).find(p=>p.no===e.projectNo);
+  const payload={id:e.sharedId,no:e.no,customerId:sc?sc.id:null,customer:c.name,title:e.projectTitle||(proj?proj.name:e.no),
     status:e.status,revision:e.revision||0,created:e.created,validUntil:e.validUntil,currency:e.currency,
     estimatedMaterial:tot.materialCost,estimatedLabour:tot.labourCost,estimatedMachine:tot.machineCost,
     estimatedOther:tot.subCost+tot.consumableCost+tot.logisticsCost+tot.otherCost,totalCost:tot.totalInternalCost,sellingPrice:tot.sellingPrice,
@@ -833,23 +815,41 @@ function syncEstimation(e){
     workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,notes:e.notes,documents:e.documents,
     overheadPct:e.overheadPct,contingencyPct:e.contingencyPct,discount:e.discount,reference:e.reference,
     customerRfq:e.customerRfq,opportunityRef:e.opportunityRef,requestedDelivery:e.requestedDelivery,estimator:e.estimator,
-    projectNo:e.projectNo,deliveryTime:e.deliveryTime,paymentTerms:e.paymentTerms,priceList:e.priceList,incoterms:e.incoterms,
+    projectId:proj?proj.id:null,projectNo:e.projectNo,deliveryTime:e.deliveryTime,paymentTerms:e.paymentTerms,priceList:e.priceList,incoterms:e.incoterms,
     createdBy:e.createdBy,history:e.history,revisionSnapshots:e.revisionSnapshots,archived:!!e.archived};
   const saved=WorkshopData.upsertEstimation(payload);
   e.sharedId=saved.id;
+  pushEstimationToProject(e,proj,tot);
   return saved;
+}
+// The only place a project item's price/hours/crew size and a project's quoted value/manpower are
+// ever written — Projects itself never authors these numbers, only displays whatever lands here.
+// Only fromProjectItem work items (auto-populated from this project's own Jobcards, see
+// reconcileWorkItems in estimation-rules.js) are pushed down; a manually-added extra work item
+// (contingency, delivery, ...) has no Jobcard to push onto and is excluded from the manpower average.
+function pushEstimationToProject(e,proj,tot){
+  if(!proj)return;
+  (e.workItems||[]).filter(wi=>wi.fromProjectItem).forEach(wi=>{
+    const labourHours=wi.lines.filter(l=>l.category==='labour').reduce((a,l)=>a+(Number(l.qty)||0),0);
+    const nonLabourValue=money(wi.lines.filter(l=>l.category!=='labour').reduce((a,l)=>a+lineTotal(l),0));
+    WorkshopData.updateJobcard(wi.no,{plannedHours:labourHours,estimatedMaterialCost:nonLabourValue,requiredWorkers:Number(wi.peopleRequired)||0});
+  });
+  WorkshopData.updateProject(e.projectNo,{quotedValue:tot.sellingPrice,requiredManpower:averageManpower(e.workItems)});
 }
 // Estimation attachments used to live only inside e.documents. Keep those older records visible,
 // but read new shared metadata live so attachments created here also appear in Documents and
 // records linked from that module appear back on the estimation without a reload.
-function estimationDocumentRows(e){
-  const live=(window.WorkshopData?WorkshopData.getDocuments():[]).filter(d=>d.module==='Estimations'&&d.record===e.no);
-  const liveNames=new Set(live.map(d=>String(d.name).trim().toLowerCase()));
-  const iconType=name=>{const ext=String(name).split('.').pop().toLowerCase();return ext==='pdf'?'pdf':(ext==='xlsx'||ext==='xls')?'xls':ext==='zip'?'zip':'doc'};
-  return live.map(d=>({name:d.name,type:iconType(d.name),date:(d.updated||'').slice(0,10)}))
-    .concat((e.documents||[]).filter(d=>!liveNames.has(String(d.name).trim().toLowerCase())));
+// Keeps e.workItems in step with its linked project's live item list, then persists the result —
+// the "pull" half of the automatic Project<->Estimation sync (pushEstimationToProject is the other
+// half). A no-op whenever nothing actually changed, so this can safely run on every render. Skipped
+// for an estimation whose projectNo doesn't resolve to a real, current WorkshopData project (e.g. the
+// static demo estimations seeded before this project existed).
+function reconcileEstimationWithProject(e){
+  const proj=liveProject(e.projectNo);if(!proj||!window.WorkshopData?.listJobcards)return;
+  const liveItems=WorkshopData.listJobcards().filter(j=>j.projectNo===e.projectNo&&!j.archived).map(j=>({no:j.no,desc:j.title||j.item||j.no}));
+  const next=reconcileWorkItems(e.workItems,liveItems);
+  if(JSON.stringify(next)!==JSON.stringify(e.workItems)){e.workItems=next;syncEstimation(e);}
 }
-function stageIndex(status){if(status==='declined'||status==='expired')return 3;return STAGES.indexOf(status);}
 
 // ─────────────────────────────────────────────────────────────────────────
 // CALCULATION ENGINE — frontend prototype only.
@@ -864,25 +864,6 @@ function stageIndex(status){if(status==='declined'||status==='expired')return 3;
 function lineTax(it){const tax=Math.min(100,Math.max(0,Number(it.tax)||0));return money(lineTotal(it)*tax/100);}
 function lineSellCostDelta(it){return money(lineTotal(it)-lineCostTotal(it));}
 
-// Display-only merge used to PREVIEW an option in the items table without ever touching the saved totals.
-// activeOptTab selects which option (if any) is temporarily shown; computeTotals() never reads this state.
-function mergedWorkItems(e){
-  const replaced=new Set();
-  (e.options||[]).filter(o=>o.included&&Array.isArray(o.replacesDesc)).forEach(o=>o.replacesDesc.forEach(d=>replaced.add(o.intoWorkItem+'|'+d)));
-  const wis=e.workItems.map(wi=>({no:wi.no,desc:wi.desc,lines:wi.lines.filter(l=>!replaced.has(wi.no+'|'+l.desc))}));
-  (e.options||[]).filter(o=>o.included).forEach(opt=>{
-    const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name,optionId:opt.id}));
-    wis.push({no:"",desc:opt.name,lines:optLines,isOption:true});
-  });
-  if(activeOptTab!=="base"){
-    const opt=(e.options||[]).find(o=>o.id===activeOptTab);
-    if(opt&&!opt.included){
-      const optLines=opt.lines.map(l=>Object.assign({},l,{fromOption:opt.name,optionId:opt.id,previewOnly:true}));
-      wis.push({no:"",desc:opt.name,lines:optLines,isOption:true,previewOnly:true});
-    }
-  }
-  return wis;
-}
 function flatLines(e){return baseAndIncludedLines(e);}
 
 function computeTotals(e){
@@ -934,28 +915,26 @@ function computeTotals(e){
     matMarkup,labMargin,subMarkup};
 }
 function marginLabel(tot){return tot.netSellingPrice>0?tot.margin.toFixed(1)+'%':'—';}
-function combinedOptionsValue(e){return money((e.options||[]).filter(o=>o.included).reduce((a,o)=>a+optionDelta(e,o),0));}
-
-function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st_"+s]}</span>`;}
 
 function renderLeft(){
   const t=T[LANG];
   const q=query.trim().toLowerCase();
-  const active=ESTIMATIONS.filter(e=>!e.archived);
-  let rows=active.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
-    .filter(e=>{const c=CUSTOMERS[e.customerId];return !q||e.no.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);})
-    .sort((a,b)=>b.created.localeCompare(a.created));
+  const all=(window.WorkshopData?.getProjects?WorkshopData.getProjects():[]).filter(p=>!p.archived);
+  const totalOf=p=>{const e=ESTIMATIONS.find(x=>x.projectNo===p.no);return e?computeTotals(e).sellingPrice:0;};
+  let rows=all.filter(p=>{const total=totalOf(p);return filterStatus==='all'||(filterStatus==='priced'?total>0:total===0);})
+    .filter(p=>!q||p.no.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||(p.customer||'').toLowerCase().includes(q))
+    .sort((a,b)=>b.no.localeCompare(a.no));
 
-  const counts={draft:0,sent:0,accepted:0,declined:0};
-  active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
-  const totalValue=active.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
-  const valueByStatus=st=>active.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  const pricedCount=all.filter(p=>totalOf(p)>0).length;
+  const notPricedCount=all.length-pricedCount;
+  const totalValue=all.reduce((a,p)=>a+totalOf(p),0);
+  const selectedProjectNo=(getEst(selectedId)||{}).projectNo;
 
-  const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
-    return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-est-id="${e.id}">
-      <div class="er1"><span class="eno">${esc(e.no)}</span>${statusPill(e.status)}</div>
-      <div class="ecust">${esc(c.name)}</div>
-      <div class="er2"><span class="eval">${fmt0(tot.grandTotal)}</span></div>
+  const projRows=rows.map(p=>{const total=totalOf(p);
+    return `<button type="button" class="estrow ${p.no===selectedProjectNo?'sel':''}" data-project-no="${esc(p.no)}">
+      <div class="er1"><span class="eno">${esc(p.no)}</span></div>
+      <div class="ecust">${esc(p.name)} — ${esc(p.customer||'—')}</div>
+      <div class="er2"><span class="eval">${total>0?fmt0(total):'—'}</span></div>
     </button>`;}).join("");
 
   return `
@@ -964,76 +943,58 @@ function renderLeft(){
       <div class="listtoolbar">
         <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" aria-label="${esc(t.searchph)}" value="${esc(query)}"></div>
       </div>
-      <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewEst()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newest}</button>
       <div class="segtabs">
-        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${active.length})</button>
-        <button class="${filterStatus==='draft'?'on':''}" onclick="setFilter('draft')">${t.f_draft} (${counts.draft})</button>
-        <button class="${filterStatus==='sent'?'on':''}" onclick="setFilter('sent')">${t.f_sent} (${counts.sent})</button>
-        <button class="${filterStatus==='accepted'?'on':''}" onclick="setFilter('accepted')">${t.f_accepted} (${counts.accepted})</button>
-        <button class="${filterStatus==='declined'?'on':''}" onclick="setFilter('declined')">${t.f_declined} (${counts.declined})</button>
+        <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${all.length})</button>
+        <button class="${filterStatus==='notpriced'?'on':''}" onclick="setFilter('notpriced')">${t.f_notpriced} (${notPricedCount})</button>
+        <button class="${filterStatus==='priced'?'on':''}" onclick="setFilter('priced')">${t.f_priced} (${pricedCount})</button>
       </div>
-      <div class="estlist">${estRows||`<div class="empty3">—</div>`}</div>
+      <div class="estlist">${projRows||`<div class="empty3">—</div>`}</div>
       <div class="pager"><span>${t.showing.replace('{a}','1').replace('{b}',rows.length).replace('{n}',rows.length)}</span>
         <div class="pnav"><button disabled>‹</button><button class="cur">1</button><button disabled>›</button></div></div>
     </div>
     <div class="panel">
       <div class="phead"><h3>${t.p_summary}</h3></div>
       <div class="sumgrid2">
-        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${active.length}</div></div>
+        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${all.length}</div></div>
           <div style="text-align:right;"><div class="sl">${t.sum_value}</div><div class="sv">${fmt0(totalValue)}</div></div></div>
         <div class="sumbystatus">
-          <div class="ss"><div class="sl">${t.f_draft}</div><div class="sv draft">${counts.draft}</div><div class="ssub">${fmt0(valueByStatus('draft'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_sent}</div><div class="sv sent">${counts.sent}</div><div class="ssub">${fmt0(valueByStatus('sent'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_accepted}</div><div class="sv accepted">${counts.accepted}</div><div class="ssub">${fmt0(valueByStatus('accepted'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_declined}</div><div class="sv declined">${counts.declined}</div><div class="ssub">${fmt0(valueByStatus('declined'))}</div></div>
+          <div class="ss"><div class="sl">${t.f_priced}</div><div class="sv accepted">${pricedCount}</div></div>
+          <div class="ss"><div class="sl">${t.f_notpriced}</div><div class="sv draft">${notPricedCount}</div></div>
         </div>
       </div>
     </div>`;
 }
-// computeTotals() no longer depends on the option-preview tab (previewing never touches saved totals), so this is now a plain alias kept for call-site compatibility.
-function computeTotalsQuiet(e){return computeTotals(e);}
-
-function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
+// Purely a visual aid ("which item am I continuing this estimation for") — selection never gates
+// or changes what can be edited; that's entirely toggleWorkItemLock()'s job.
+function selectWorkItem(idx){selectedWorkItemIdx=selectedWorkItemIdx===idx?null:idx;renderAll();}
+function toggleWorkItemLock(id,idx){
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[idx];if(!wi)return;
+  wi.locked=!wi.locked;
+  e.history.push({date:todayISO(),action:(wi.locked?'Item locked: ':'Item unlocked: ')+wi.desc,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
 function setFilter(f){filterStatus=f;renderAll();}
 
-// A locked estimate (accepted / declined / expired) cannot be edited directly — a revision must be created first.
-function isLocked(e){return e.status==='accepted'||e.status==='declined'||e.status==='expired';}
-function guardEdit(e){if(!isLocked(e))return true;toast(T[LANG].locked_msg.replace('{no}',e.no),'error');return false;}
-
 function renderMiddle(e){
-  const t=T[LANG];const c=CUSTOMERS[e.customerId];const converted=!!e.projectNo;
-  const p=converted?(PROJECTS[e.projectNo]||{name:e.projectTitle||'Project from '+e.no,type:'Estimated project',status:'planned'}):null;
-  const stages=[{k:"draft",lbl:t.st_draft},{k:"review",lbl:t.st_review},{k:"sent",lbl:t.st_sent},{k:"accepted",lbl:t.st_accepted},{k:"declined",lbl:t.st_declined},{k:"expired",lbl:t.st_expired}];
-  const curIdx=STAGES.indexOf(e.status);
-  const stepsHtml=stages.map((s,i)=>{
-    let cls="";
-    if(s.k===e.status)cls="current"+(s.k==='declined'||s.k==='expired'?' declined':'');
-    else if(i<3 && curIdx>=0 && i<curIdx)cls="done";
-    else if(i<3 && (e.status==='accepted'||e.status==='declined'||e.status==='expired'))cls="done";
-    return `<button class="step ${cls}" onclick="requestStageChange(${e.id},'${s.k}')"><span class="sdot">${cls==='done'?'✓':i+1}</span><span class="slabel">${esc(s.lbl)}</span></button>${i<stages.length-1?'<span class="stepline"></span>':''}`;
-  }).join("");
-
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const p=liveProject(e.projectNo);
   return `
     <div class="panel">
-      ${isLocked(e)?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.locked_banner)}<button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>`:''}
       <div class="dhead3">
-        <div class="idn"><h2>${esc(e.no)}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
+        <div class="idn"><h2>${esc(e.projectNo||'—')}</h2>${p?`<div class="esttitle">${esc(p.name)}</div>`:''}</div>
         <div class="dbtns">
           <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
-          <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.duplicate)}</button>
-          <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.print)}</button>
+          <button class="tbtn primary" onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${esc(t.act_open)}</button>
         </div>
       </div>
       <div class="metarow">
         <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${esc(t.m_created)}</div><div class="mv">${esc(e.created)}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${esc(t.m_valid)}</div><div class="mv">${esc(e.validUntil)}</div></div></div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><div><div class="mk">${esc(t.m_valid)}</div><div class="mv">${esc(e.validUntil)||'—'}</div></div></div>
         <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><div><div class="mk">${esc(t.m_customer)}</div><div class="mv">${esc(c.name)}</div></div></div>
-        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/></svg><div><div class="mk">${esc(t.m_project)}</div><div class="mv">${converted?esc(e.projectNo):esc(t.not_converted)}</div></div></div>
         <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><div class="mk">${esc(t.m_createdby)}</div><div class="mv">${esc(e.estimator||e.createdBy)}</div></div></div>
       </div>
-      <div class="stepper">${stepsHtml}</div>
 
-      <div class="infocard3">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
         <div class="icard"><div class="ich"><h4>${esc(t.c_customer)}</h4></div>
           <div class="ilead">${esc(c.name)}</div><div class="istatus">${c.status==='active'?esc(t.active_word):esc(t.inactive_word)}</div>
           <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(c.address)}</div>
@@ -1043,29 +1004,15 @@ function renderMiddle(e){
           <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>${esc(t.vat_org)}: ${esc(c.org)}</div>
         </div>
         <div class="icard"><div class="ich"><h4>${esc(t.c_estinfo)}</h4></div>
-          <div class="irow2"><span class="ik">${esc(t.ei_number)}</span><span class="iv">${esc(e.no)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_oppref)}</span><span class="iv">${esc(e.opportunityRef)||'—'}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_rfq)}</span><span class="iv">${esc(e.customerRfq)||'—'}</span></div>
-          <div class="irow2"><span class="ik">${esc(t.ei_date)}</span><span class="iv">${esc(e.created)}</span></div>
-          <div class="irow2"><span class="ik">${esc(t.ei_valid)}</span><span class="iv">${esc(e.validUntil)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_reqdelivery)}</span><span class="iv">${esc(e.requestedDelivery)||'—'}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_currency)}</span><span class="iv">${esc(e.currency)}</span></div>
-          <div class="irow2"><span class="ik">${esc(t.ei_delivery)}</span><span class="iv">${esc(e.deliveryTime)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_delivery)}</span><span class="iv">${esc(e.deliveryTime)||'—'}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_terms)}</span><span class="iv">${esc(e.paymentTerms)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_pricelist)}</span><span class="iv">${esc(e.priceList)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_incoterms)}</span><span class="iv">${esc(e.incoterms)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_estimator)}</span><span class="iv">${esc(e.estimator||e.createdBy)}</span></div>
-        </div>
-        <div class="icard"><div class="ich"><h4>${esc(t.c_project)}</h4></div>
-          ${converted?`<div class="ilead">${esc(p.name)}</div><div class="istatus">${esc(p.status)}</div>
-          <div class="irow2"><span class="ik">${esc(t.pj_location)}</span><span class="iv">${esc(c.city)}, Sweden</span></div>
-          <div class="irow2"><span class="ik">${esc(t.pj_type)}</span><span class="iv">${esc(p.type)}</span></div>
-          <div class="irow2"><span class="ik">${esc(t.pj_contact)}</span><span class="iv">${esc(c.contact)}</span></div>
-          <div class="irow2"><span class="ik">${esc(t.pj_status)}</span><span class="iv">${esc(p.status)}</span></div>
-          <div style="margin-top:12px;"><button class="tbtn small" style="width:100%;justify-content:center;" onclick="location.href='projects-desktop.html'">${esc(t.pj_open)}</button></div>`
-          :`<div class="ilead" style="color:var(--steel-400);font-size:12.5px;font-weight:500;">${esc(t.not_converted)}</div>
-          <p style="font-size:11.5px;color:var(--steel-400);line-height:1.5;margin-top:6px;">${esc(t.not_converted_hint)}</p>
-          ${e.status==='accepted'?`<div style="margin-top:12px;"><button class="tbtn primary small" style="width:100%;justify-content:center;" onclick="openConvertEst(${e.id})">${esc(t.act_convert)}</button></div>`:`<div style="margin-top:12px;font-size:11px;color:var(--steel-400);">${esc(t.convert_requires_accepted)}</div>`}`}
         </div>
       </div>
 
@@ -1076,7 +1023,6 @@ function renderMiddle(e){
           <button class="tbtn small" onclick="openAddWorkItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(t.addworkitem)}</button>
         </div>
       </div>
-      ${(e.options||[]).length?renderOptionTabs(e):''}
       ${renderItemsTable(e)}
 
       <div class="tccard"><div class="ich"><h4>${esc(t.terms_title)}</h4><button class="tbtn small" onclick="openEditText(${e.id},'terms')">${esc(t.edit_short)}</button></div><p>${esc(e.terms)}</p></div>
@@ -1084,56 +1030,29 @@ function renderMiddle(e){
     </div>`;
 }
 
-// ── options: Base Offer stays separate; each option has an independent "included" toggle and a preview tab.
-// Previewing (activeOptTab) only changes what the items table displays — computeTotals() always reflects
-// Base + every option currently marked included, so previewing never silently changes the saved quotation.
-function renderOptionTabs(e){
-  const t=T[LANG];
-  const combined=combinedOptionsValue(e);
-  return `<div class="opttabs">
-    <div class="opttab ${activeOptTab==='base'?'on':''}" onclick="setOptTab('base')">${esc(t.base_offer)}</div>
-    ${e.options.map(o=>{const d=optionDelta(e,o);
-      return `<div class="opttab ${activeOptTab===o.id?'on':''} ${o.included?'included':''}">
-        <span onclick="setOptTab(${o.id})" style="display:flex;align-items:center;gap:7px;cursor:pointer;">${esc(t.option)} — ${esc(o.name)}<span class="odelta">+${fmt0(d)}</span></span>
-        <label class="optinc" title="${esc(t.opt_included_title)}" onclick="event.stopPropagation();"><input type="checkbox" ${o.included?'checked':''} onchange="toggleOptionIncluded(${e.id},${o.id},this.checked)">${esc(t.include)}</label>
-      </div>`;}).join("")}
-    ${combined>0?`<div class="opttab combined" style="cursor:default;">${esc(t.opt_combined)}<span class="odelta">+${fmt0(combined)}</span></div>`:''}
-  </div>`;
-}
-
-function optionDelta(e,opt){return money(opt.lines.reduce((a,it)=>a+lineTotal(it),0));}
-function toggleOptionIncluded(estId,optId,included){
-  const e=getEst(estId);if(!guardEdit(e))return;
-  const opt=(e.options||[]).find(o=>o.id===optId);if(!opt)return;
-  opt.included=included;
-  e.history.push({date:todayISO(),action:(included?'Option included in offer: ':'Option removed from offer: ')+opt.name,by:'Aleksandar C.'});
-  syncEstimation(e);renderAll();
-}
-
 function renderItemsTable(e){
-  const t=T[LANG];const locked=isLocked(e);
-  const workItems=mergedWorkItems(e);
+  const t=T[LANG];
+  const workItems=e.workItems;
   let rows="";let n=1;
   workItems.forEach((wi,idx)=>{
-    const isBaseWorkItem=idx<e.workItems.length;
-    if(!wi.lines.length&&!isBaseWorkItem)return;
-    const nf=locked?'':'';
-    rows+=`<tr class="sectionrow"><td colspan="${showCost?10:8}">${n}. ${esc(wi.desc.toUpperCase())}${wi.no?` <span style="opacity:.6;font-weight:600;">(${esc(wi.no)})</span>`:''}${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}
-      ${isBaseWorkItem&&!locked?`<span class="wiactions">
-        <button title="${esc(t.act_editwi)}" onclick="openEditWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-        <button title="${esc(t.act_moveup)}" ${idx===0?'disabled':''} onclick="moveWorkItem(${e.id},${idx},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
-        <button title="${esc(t.act_movedown)}" ${idx===e.workItems.length-1?'disabled':''} onclick="moveWorkItem(${e.id},${idx},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
-        ${wi.lines.length===0?`<button title="${esc(t.act_deletewi)}" onclick="deleteWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>`:''}
-      </span>`:''}
+    const wiSelected=idx===selectedWorkItemIdx;
+    rows+=`<tr class="sectionrow${wiSelected?' wiselected':''}" onclick="selectWorkItem(${idx})"><td colspan="${showCost?10:8}">${n}. ${esc(wi.desc.toUpperCase())}${wi.no?` <span style="opacity:.6;font-weight:600;">(${esc(wi.no)})</span>`:''}${wi.locked?` <span class="subtag" style="color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);">${esc(t.wi_locked_badge)}</span>`:''}
+      ${wi.fromProjectItem?`<span style="text-transform:none;letter-spacing:0;font-weight:500;font-size:11px;color:#cfe0ff;margin-left:12px;" onclick="event.stopPropagation();">${esc(t.wi_people)}: <input type="number" min="0" step="1" value="${wi.peopleRequired||0}" ${wi.locked?'disabled':''} style="width:52px;background:rgba(255,255,255,.06);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:11.5px;padding:3px 5px;" onchange="setWorkItemPeople(${e.id},${idx},this.value)"></span>`:''}
+      <span class="wiactions">
+        <button title="${wi.locked?esc(t.act_unlockwi):esc(t.act_lockwi)}" onclick="event.stopPropagation();toggleWorkItemLock(${e.id},${idx})">${wi.locked?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'}</button>
+        ${(wi.fromProjectItem||wi.locked)?'':`<button title="${esc(t.act_editwi)}" onclick="event.stopPropagation();openEditWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>`}
+        <button title="${esc(t.act_moveup)}" ${idx===0?'disabled':''} onclick="event.stopPropagation();moveWorkItem(${e.id},${idx},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        <button title="${esc(t.act_movedown)}" ${idx===e.workItems.length-1?'disabled':''} onclick="event.stopPropagation();moveWorkItem(${e.id},${idx},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+        ${(!wi.fromProjectItem&&wi.lines.length===0&&!wi.locked)?`<button title="${esc(t.act_deletewi)}" onclick="event.stopPropagation();deleteWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>`:''}
+      </span>
     </td></tr>`;
     let sIdx=1;let sectionSell=0;
     wi.lines.forEach((it,lIdx)=>{
       const tot=lineTotal(it);sectionSell+=tot;
-      const isOpt=it.fromOption;
-      const editable=isBaseWorkItem&&!isOpt&&!locked;
-      rows+=`<tr class="${isOpt?'optrow':''} ${it.previewOnly?'previewrow':''}">
+      const editable=!wi.locked;
+      rows+=`<tr>
         <td class="rnum">${n}.${sIdx++}</td>
-        <td><span class="idesc">${esc(it.desc)}</span><span class="cattag cat-${esc(it.category)}">${esc(catLabel(it.category))}</span>${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${esc(it.fromOption)}</span>`:''}${it.previewOnly?`<span class="subtag">${esc(t.preview_only)}</span>`:''}
+        <td><span class="idesc">${esc(it.desc)}</span><span class="cattag cat-${esc(it.category)}">${esc(catLabel(it.category))}</span>
           ${it.weight?`<span class="isub">${esc(it.weight)} kg${it.waste?` · ${esc(it.waste)}% ${esc(t.waste_word)}`:''}</span>`:''}
           ${editable?`<span class="rowactions2">
             <button title="${esc(t.act_editline)}" onclick="openEditLine(${e.id},${idx},${lIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
@@ -1152,7 +1071,7 @@ function renderItemsTable(e){
         <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}" style="text-align:right;">${esc(t.subtotal_section)} — ${esc(wi.desc)}${isBaseWorkItem&&!locked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}" style="text-align:right;">${esc(t.subtotal_section)} — ${esc(wi.desc)}${!wi.locked?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
   return `<div class="itable-wrap"><table class="itable"><thead><tr>
@@ -1164,7 +1083,7 @@ function renderItemsTable(e){
 
 // ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
 function moveWorkItem(id,idx,dir){
-  const e=getEst(id);if(!guardEdit(e))return;
+  const e=getEst(id);if(!e)return;
   const to=idx+dir;
   // Same class of guard as moveLine() (Pass 3.27) - bounds-checking `to` alone does not guarantee
   // idx itself is still valid after a concurrent edit elsewhere reshaped workItems.
@@ -1173,16 +1092,28 @@ function moveWorkItem(id,idx,dir){
   syncEstimation(e);renderAll();
 }
 function deleteWorkItem(id,idx){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[idx];if(!wi||wi.lines.length)return;
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[idx];if(!wi||wi.lines.length||wi.fromProjectItem||wi.locked)return;
   if(!confirm(T[LANG].confirm_delete_wi.replace('{n}',wi.desc)))return;
   e.workItems.splice(idx,1);
   e.history.push({date:todayISO(),action:'Work item removed: '+wi.desc,by:'Aleksandar C.'});
   syncEstimation(e);renderAll();
 }
+// A project-sourced work item's no/desc must mirror its live Jobcard (see reconcileWorkItems in
+// estimation-rules.js) — renaming it here would just be silently overwritten on the next reconcile,
+// so this form (and the wiactions button that opens it) is never offered for one.
+function setWorkItemPeople(id,idx,value){
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[idx];if(!wi||wi.locked)return;
+  const n=Math.max(0,parseFloat(value)||0);
+  if(n===wi.peopleRequired)return;
+  wi.peopleRequired=n;
+  e.history.push({date:todayISO(),action:`People required set to ${n} for ${wi.desc}`,by:'Aleksandar C.'});
+  syncEstimation(e);renderAll();
+}
 function openEditWorkItem(id,idx){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[idx];if(!wi)return;
+  const t=T[LANG];const e=getEst(id);if(!e)return;
+  const wi=e.workItems[idx];if(!wi||wi.fromProjectItem||wi.locked)return;
   $("fcard").innerHTML=`<h2>${esc(t.act_editwi)}</h2>
     <div class="frow"><label for="ewNo">${esc(t.wi_no)}</label><input id="ewNo" value="${esc(wi.no)}"></div>
     <div class="frow"><label for="ewDesc">${esc(t.wi_desc)}</label><input id="ewDesc" value="${esc(wi.desc)}"></div>
@@ -1191,7 +1122,7 @@ function openEditWorkItem(id,idx){
   $("fov").classList.add("show");
 }
 function saveEditWorkItem(id,idx){
-  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!e)return;
   const desc=$("ewDesc").value.trim();
   if(!desc){showFieldError('ewDesc','ewErr',t.err_required);return;}
   // Same class of guard as saveLineForm() (Pass 3.27 bug hunt) - workItems can be replaced
@@ -1202,23 +1133,25 @@ function saveEditWorkItem(id,idx){
   syncEstimation(e);closeModal();renderAll();
 }
 function duplicateLine(id,wiIdx,lIdx){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[wiIdx];if(!wi||wi.locked)return;
+  const line=wi.lines[lIdx];if(!line)return;
   wi.lines.splice(lIdx+1,0,JSON.parse(JSON.stringify(line)));
   e.history.push({date:todayISO(),action:'Line duplicated: '+line.desc,by:'Aleksandar C.'});
   syncEstimation(e);renderAll();
 }
 function deleteLine(id,wiIdx,lIdx){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[wiIdx];if(!wi||wi.locked)return;
+  const line=wi.lines[lIdx];if(!line)return;
   if(!confirm(T[LANG].confirm_delete_line.replace('{n}',line.desc)))return;
   wi.lines.splice(lIdx,1);
   e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:'Aleksandar C.'});
   syncEstimation(e);renderAll();
 }
 function moveLine(id,wiIdx,lIdx,dir){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];if(!wi)return renderAll();
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[wiIdx];if(!wi||wi.locked)return renderAll();
   const to=lIdx+dir;
   // Bounds-checking `to` alone does not guarantee lIdx itself is still valid (e.g. the array
   // shrank from a concurrent edit elsewhere such that lIdx is now out of range but lIdx+dir
@@ -1230,12 +1163,11 @@ function moveLine(id,wiIdx,lIdx,dir){
 }
 
 function renderRight(e){
-  const t=T[LANG];const tot=computeTotals(e);const locked=isLocked(e);const combined=combinedOptionsValue(e);
+  const t=T[LANG];const tot=computeTotals(e);
   return `
     <div class="panel">
       <div class="phead"><h3>${esc(t.price_summary)}</h3></div>
       <div class="pricerow"><span class="pk">${esc(t.ps_subtotal)}</span><span class="pv">${fmt(tot.sellSubtotal)}</span></div>
-      ${combined>0?`<div class="pricerow"><span class="pk">${esc(t.opt_combined)}</span><span class="pv" style="color:var(--ok);">+${fmt(combined)}</span></div>`:''}
       <div class="pricerow"><span class="pk">${esc(t.ps_discount)}</span><span class="pv">−${fmt(tot.discount)}</span></div>
       <div class="pricerow"><span class="pk">${esc(t.ps_tax)}</span><span class="pv">${fmt(tot.taxTotal)}</span></div>
       <div class="pricerow grand"><span class="pk">${esc(t.ps_total)}</span><span class="pv">${fmt(tot.grandTotal)}</span></div>
@@ -1262,78 +1194,41 @@ function renderRight(e){
         <div class="mb"><div class="ml">${esc(t.mk_labour)}</div><div class="mv">${tot.labMargin.toFixed(0)}%</div></div>
         <div class="mb"><div class="ml">${esc(t.mk_sub)}</div><div class="mv">${tot.subCost?tot.subMarkup.toFixed(0):'—'}%</div></div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3>${esc(t.documents)}</h3><button class="tbtn small" onclick="openUpload(${e.id})">${esc(t.upload)}</button></div>
-      ${estimationDocumentRows(e).map(d=>`<div class="docrow2"><div class="dicon ${esc(d.type)}">${esc(d.type.toUpperCase())}</div><div class="dn">${esc(d.name)}</div><div class="dd">${esc(d.date)}</div><a href="#" onclick="return false;" aria-label="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg></a></div>`).join("")||`<div class="empty3">${esc(t.empty_docs)}</div>`}
-      <div class="disclaimer2">${esc(t.demo_upload)}</div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3>${esc(t.history)} · ${esc(t.rev_short)} ${e.revision||0}</h3><button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>
-      ${(e.history||[]).slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${esc(h.date)}${h.time?' '+esc(h.time):''}</div><div><div class="haction">${esc(h.action)}</div><div class="hby">${esc(t.by_word)} ${esc(h.by)}</div></div></div>`).join("")||`<div class="empty3">${esc(t.empty_hist)}</div>`}
-    </div>
-    <div class="panel">
-      <div class="phead"><h3>${esc(t.notes)}</h3><button class="tbtn small" onclick="openAddNote(${e.id})">${esc(t.addnote)}</button></div>
-      ${(e.notes||[]).slice().reverse().map(n=>`<div class="notecard"><b>${esc(n.date)}</b> — ${esc(n.text)}<div style="color:var(--steel-400);margin-top:4px;">– ${esc(n.author)}</div></div>`).join("")||`<div class="empty3">${esc(t.empty_notes)}</div>`}
     </div>`;
 }
 
 function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const t=T[LANG];const shared=WorkshopData.get(),se=shared.estimations.find(x=>x.id===e.sharedId||x.no===e.no),p=se&&shared.projects.find(x=>x.id===se.projectId);if(!p)return'';const actualMat=p.actualMaterialCost||money(tot.materialCost*.92),actualHours=p.usedHours||0,planned=e.plannedHours||p.plannedHours||0;return `<div class="panel"><div class="phead"><h3>${esc(t.actual_vs_est)}</h3><span class="stpill ${p.status==='completed'?'accepted':'sent'}">${esc(p.no)}</span></div><div class="costrow"><span class="ck">${esc(t.cb_material)}</span><span>${fmt0(tot.materialCost)} → <b>${fmt0(actualMat)}</b></span></div><div class="costrow"><span class="ck">${esc(t.actual_hours)}</span><span>${esc(planned)} h → <b>${esc(actualHours)} h</b></span></div><div class="costrow final"><span>${esc(t.actual_variance)}</span><span style="color:${actualMat>tot.materialCost?'var(--danger)':'var(--ok)'}">${actualMat>tot.materialCost?'+':''}${fmt0(actualMat-tot.materialCost)}</span></div></div>`}
 
-// Creates exactly one new revision: an immutable deep-copy snapshot of the previous revision is preserved,
-// the revision number is incremented once, and the estimate returns to Draft so it can be edited again.
-// This is the ONLY place e.revision is ever incremented — routine saves (syncEstimation) never touch it.
-function openRevision(id){
-  const t=T[LANG];const e=getEst(id);
-  $("fcard").innerHTML=`<h2>${esc(t.rev_create_title)} ${Number(e.revision||0)+1}</h2><p class="fsub">${esc(e.no)}</p>
-    <div class="frow"><label for="revReason">${esc(t.rev_reason)}</label><textarea id="revReason" placeholder="${esc(t.rev_reason_ph)}"></textarea></div>
-    <div id="revErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveRevision(${id})">${esc(t.rev_create_btn)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function saveRevision(id){
-  const t=T[LANG];clearAllFieldErrors();const reason=$("revReason").value.trim();
-  if(!reason){showFieldError('revReason','revErr',t.err_required);return;}
-  const e=getEst(id);
-  if(!confirm(t.confirm_revision.replace('{no}',e.no)))return;
-  createRevision(e,reason);
-  closeModal();renderAll();
-}
-function createRevision(e,reason){
-  const snapshot=JSON.parse(JSON.stringify({workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,
-    overheadPct:e.overheadPct,contingencyPct:e.contingencyPct,discount:e.discount,status:e.status,revision:e.revision||0,
-    savedAt:todayISO()}));
-  e.revisionSnapshots=e.revisionSnapshots||[];
-  e.revisionSnapshots.push(snapshot);
-  e.revision=(e.revision||0)+1;
-  e.status=(e.status==='sent'||e.status==='accepted'||e.status==='declined'||e.status==='expired')?'draft':e.status;
-  e.history.push({date:todayISO(),time:nowTime(),action:`Revision ${e.revision} created: ${reason}`,by:'Aleksandar C.'});
-  syncEstimation(e);
-  return e;
-}
 
 function renderActionBar(e){
-  const t=T[LANG];const converted=!!e.projectNo;
+  const t=T[LANG];
   return `<div class="actionbar">
-    <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${esc(t.act_preview)}</button>
+    <button onclick="printEst(${e.id},'customer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${esc(t.act_print_priced)}</button>
+    <button onclick="printEst(${e.id},'customer-scope')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6M9 16h6M9 8h6M5 3h14v18H5z"/></svg>${esc(t.act_print_scope)}</button>
+    <button onclick="printEst(${e.id},'internal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.act_print_internal)}</button>
     <button onclick="sendEmail(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
-    <button onclick="${converted?"location.href='projects-desktop.html'":`openConvertEst(${e.id})`}" ${!converted&&e.status!=='accepted'?`title="${esc(t.convert_requires_accepted)}"`:''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${converted?esc(t.act_open):esc(t.act_convert)}</button>
-    <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.act_duplicate)}</button>
-    <button onclick="exportExcel(${e.id})" title="${esc(t.demo_export).replace('{no}',e.no)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${esc(t.act_export)}</button>
-    <button class="danger" onclick="deleteEst(${e.id})">${converted?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>${esc(t.act_archive)}`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(t.act_delete)}`}</button>
+    <button onclick="exportExcel(${e.id})" title="${esc(t.demo_export).replace('{no}',e.projectNo||'')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${esc(t.act_export)}</button>
+    <button onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${esc(t.act_open)}</button>
   </div>`;
 }
 
 function renderAll(){
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
-  let e=getEst(selectedId);if(!e||e.archived){e=ESTIMATIONS.find(x=>!x.archived)||ESTIMATIONS[0];selectedId=e.id;}
+  let e=getEst(selectedId);
+  if(!e){
+    const firstProject=(window.WorkshopData?.getProjects?WorkshopData.getProjects():[]).filter(p=>!p.archived)[0];
+    e=firstProject?ensureEstimationForProject(firstProject.no):null;
+    if(e)selectedId=e.id;
+  }
+  if(!e){$("app").innerHTML=`<div class="empty3">${esc(t.p_list)}</div>`;return;}
+  reconcileEstimationWithProject(e);
   $("app").innerHTML=`<div class="crmgrid">
     <div class="col">${renderLeft()}</div>
     <div class="col">${renderMiddle(e)}</div>
     <div class="col">${renderRight(e)}</div>
   </div>${renderActionBar(e)}`;
-  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectEst(Number(row.dataset.estId))));
+  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectProject(row.dataset.projectNo)));
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
   syncModuleSidebar();
 }
@@ -1341,106 +1236,12 @@ function renderAll(){
 function syncModuleSidebar(){document.querySelectorAll('#moduleSideNav button[data-ms]').forEach(b=>b.classList.toggle('on',b.dataset.ms===filterStatus));}
 function sidebarEstimate(filter){filterStatus=filter;renderAll();window.scrollTo({top:0,behavior:'smooth'});}
 
-function setOptTab(id){activeOptTab=id;renderAll();}
-
-// ─────────────────────────────────────────────────────────────────────────
-// STATUS WORKFLOW — frontend enforcement only. The future backend must
-// enforce these exact same transition and precondition rules server-side.
-//   Draft → Internal Review → Sent → Accepted
-//   From Sent, also: Declined · Expired · (Revision requested, via createRevision)
-// A Draft can never jump straight to Accepted, and Sent requires ≥1 valid cost line.
-// ─────────────────────────────────────────────────────────────────────────
-const ALLOWED_TRANSITIONS={draft:['review','sent'],review:['draft','sent'],sent:['accepted','declined','expired','review'],accepted:[],declined:[],expired:[]};
-function hasValidCostLine(e){return e.workItems.some(wi=>wi.lines.some(l=>!isBlank(l.desc)&&isPositiveNumber(l.qty)&&isNonNegNumber(l.sell)));}
-function requestStageChange(id,stage){
-  const t=T[LANG];const e=getEst(id);if(!e||e.status===stage)return;
-  if(isLocked(e)){toast(t.locked_msg.replace('{no}',e.no),'error');return;}
-  const allowed=ALLOWED_TRANSITIONS[e.status]||[];
-  if(!allowed.includes(stage)){toast(t.transition_blocked.replace('{a}',t['st_'+e.status]).replace('{b}',t['st_'+stage]),'error');return;}
-  if(stage==='sent'&&!hasValidCostLine(e)){toast(t.err_needs_line,'error');return;}
-  if(!confirm(t.confirm_stage.replace('{s}',t["st_"+stage])))return;
-  e.status=stage;
-  e.history.push({date:todayISO(),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
-  syncEstimation(e);
-  renderAll();
-}
-
 function closeModal(){$("fov").classList.remove("show");}
 $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
 
-// Starting-method templates: structure and category placeholders only, all costs/prices start at zero —
-// never an invented monetary figure. Anything other than Blank gets a visible "review before sending" note.
-function templateBlank(){return [];}
-function templateFabrication(){return [
-  {no:'',desc:'Fabrication & Materials',lines:[
-    {desc:'Steel sheet / plate (specify grade)',category:'material',qty:1,unit:'m²',weight:0,waste:5,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Cutting & forming',category:'machine',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Welding & assembly',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]},
-  {no:'',desc:'Installation',lines:[
-    {desc:'On-site installation',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Delivery',category:'logistics',qty:1,unit:'trip',cost:0,sell:0,disc:0,tax:25}]}];}
-function templateRepair(){return [
-  {no:'',desc:'Diagnosis & Repair',lines:[
-    {desc:'Site visit / diagnosis',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Replacement parts (specify)',category:'material',qty:1,unit:'pcs',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Repair labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
-function templateInstallation(){return [
-  {no:'',desc:'Installation',lines:[
-    {desc:'Equipment / materials supplied',category:'material',qty:1,unit:'set',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Installation labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Commissioning & handover',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
-const START_TEMPLATES={blank:templateBlank,fabrication:templateFabrication,repair:templateRepair,installation:templateInstallation};
-
-function openNewEst(){
-  const t=T[LANG];
-  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${esc(CUSTOMERS[id].name)}</option>`).join("");
-  const projOpts=`<option value="">${esc(t.ne_none)}</option>`+Object.keys(PROJECTS).map(no=>`<option value="${no}">${esc(no)} — ${esc(PROJECTS[no].name)}</option>`).join("");
-  const today=todayISO();
-  $("fcard").innerHTML=`<h2>${esc(t.nc_title)}</h2><p class="fsub">${esc(t.esub)}</p>
-    <div class="frow2"><div><label for="neCustomer">${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label for="neTitle">${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
-    <div id="neErr1" class="errmsg" style="display:none;"></div>
-    <div class="frow2"><div><label for="neOppRef">${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label for="neProject">${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
-    <div class="frow2"><div><label for="neRfq">${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label for="neEstimator">${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
-    <div class="frow3"><div><label for="neCreated">${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label for="neValid">${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label for="neReqDelivery">${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
-    <div id="neErr2" class="errmsg" style="display:none;"></div>
-    <div class="frow3"><div><label for="neDelivery">${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label for="neCurrency">${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label for="neTerms">${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
-    <div class="frow2"><div><label for="neIncoterms">${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
-    <div class="frow"><label for="neTemplate">${esc(t.ne_startmethod)}</label><select id="neTemplate">
-      <option value="blank" selected>${esc(t.ne_blank)}</option>
-      <option value="fabrication">${esc(t.ne_tpl_fab)}</option>
-      <option value="repair">${esc(t.ne_tpl_repair)}</option>
-      <option value="installation">${esc(t.ne_tpl_install)}</option>
-    </select></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveNewEst()">${esc(t.nc_save)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function ownerOptionsHtml(){return ['Aleksandar C.','Elena N.','Marko K.'].map(n=>`<option>${esc(n)}</option>`).join('');}
-function saveNewEst(){
-  const t=T[LANG];clearAllFieldErrors();
-  const title=$("neTitle").value.trim();
-  if(!title){showFieldError('neTitle','neErr1',t.err_required);return;}
-  const created=$("neCreated").value||todayISO(),validUntil=$("neValid").value;
-  if(isBlank(validUntil)){showFieldError('neValid','neErr2',t.err_date);return;}
-  if(validUntil<created){showFieldError('neValid','neErr2',t.err_date_order);return;}
-  const customerId=parseInt($("neCustomer").value);const projectNo=$("neProject").value||null;
-  const templateKey=$("neTemplate").value;const isBlankTpl=templateKey==='blank';
-  const no=nextEstNumber(created);
-  const rec={id:nextEstId++,no,customerId,projectNo,projectTitle:title,status:"draft",created,validUntil,
-    requestedDelivery:$("neReqDelivery").value||'',opportunityRef:$("neOppRef").value.trim(),customerRfq:$("neRfq").value.trim(),
-    currency:$("neCurrency").value,deliveryTime:$("neDelivery").value.trim()||"—",paymentTerms:$("neTerms").value.trim()||"30 days",
-    priceList:"Standard Price List 2026",incoterms:$("neIncoterms").value.trim()||"EXW Marieholm",reference:"—",
-    createdBy:"Aleksandar C.",estimator:$("neEstimator").value,
-    overheadPct:8,contingencyPct:5,discount:0,workItems:(START_TEMPLATES[templateKey]||templateBlank)(),options:[],
-    exclusions:[],terms:"Prices valid for 30 days.",documents:[],revision:0,revisionSnapshots:[],
-    history:[{date:created,action:"Estimation created (Rev 0)",by:"Aleksandar C."}],
-    notes:isBlankTpl?[]:[{date:created,author:'Aleksandar C.',text:t.ne_template_note}]};
-  ESTIMATIONS.push(rec);
-  syncEstimation(rec);closeModal();selectedId=rec.id;renderAll();
-}
-
 function openEditEst(id){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.no)}</h2>
+  const t=T[LANG];const e=getEst(id);if(!e)return;
+  $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.projectNo||'')}</h2>
     <div class="frow2"><div><label for="eeOppRef">${esc(t.ei_oppref)}</label><input id="eeOppRef" value="${esc(e.opportunityRef)}"></div><div><label for="eeRfq">${esc(t.ei_rfq)}</label><input id="eeRfq" value="${esc(e.customerRfq)}"></div></div>
     <div class="frow2"><div><label for="eeValid">${esc(t.ei_valid)}</label><input id="eeValid" type="date" value="${esc(e.validUntil)}"></div><div><label for="eeReqDelivery">${esc(t.ei_reqdelivery)}</label><input id="eeReqDelivery" type="date" value="${esc(e.requestedDelivery)}"></div></div>
     <div class="frow2"><div><label for="eeDelivery">${esc(t.ei_delivery)}</label><input id="eeDelivery" value="${esc(e.deliveryTime)}"></div><div><label for="eeTerms">${esc(t.ei_terms)}</label><input id="eeTerms" value="${esc(e.paymentTerms)}"></div></div>
@@ -1450,7 +1251,7 @@ function openEditEst(id){
   $("fov").classList.add("show");
 }
 function saveEditEst(id){
-  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!e)return;
   const validUntil=$("eeValid").value;
   if(isBlank(validUntil)){showFieldError('eeValid','eeErr',t.err_date);return;}
   e.opportunityRef=$("eeOppRef").value.trim();e.customerRfq=$("eeRfq").value.trim();
@@ -1462,39 +1263,10 @@ function saveEditEst(id){
   closeModal();renderAll();
 }
 
-// Converting to a project is only permitted once the estimate is Accepted — enforced both by hiding the
-// action elsewhere in the UI and by refusing to open this form otherwise (frontend enforcement only;
-// the future backend must repeat this same check server-side).
-function openConvertEst(id){
-  const t=T[LANG];const e=getEst(id);
-  if(e.status!=='accepted'){toast(t.convert_requires_accepted,'error');return;}
-  const tot=computeTotals(e);
-  $("fcard").innerHTML=`<h2>${esc(t.convert_title)}</h2><p class="fsub">${esc(e.no)} · ${esc(CUSTOMERS[e.customerId].name)}</p>
-    <div class="fnote">${esc(t.convert_note)}</div>
-    <div class="frow"><label for="cpTitle">${esc(t.convert_projtitle)}</label><input id="cpTitle" value="${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||'Project from '+e.no)}"></div>
-    <div class="frow2"><div><label for="cpHours">${esc(t.convert_hours)}</label><input id="cpHours" type="number" min="0" value="${esc(e.plannedHours||flatLines(e).filter(x=>x.category==='labour').reduce((a,x)=>a+x.qty,0))}"></div><div><label for="cpDate">${esc(t.convert_delivery)}</label><input id="cpDate" type="date" value="${esc(e.deliveryTarget||e.validUntil)}"></div></div>
-    <div class="frow"><label for="cpValue">${esc(t.convert_value)}</label><input id="cpValue" value="${fmt0(tot.sellingPrice)}" disabled></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="confirmConvertEst(${id})">${esc(t.convert_create)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function confirmConvertEst(id){
-  const t=T[LANG];const e=getEst(id);
-  if(e.status!=='accepted'){toast(t.convert_requires_accepted,'error');closeModal();return;}
-  if(!confirm(t.confirm_convert.replace('{no}',e.no)))return;
-  e.plannedHours=+$('cpHours').value||0;e.deliveryTarget=$('cpDate').value||e.validUntil;e.projectTitle=$('cpTitle').value.trim()||e.projectTitle;
-  const saved=syncEstimation(e);
-  const result=WorkshopData.createProjectFromEstimation(saved.id);
-  if(result.error){toast(result.error,'error');return;}
-  e.projectNo=result.project.no;PROJECTS[e.projectNo]={name:result.project.name,type:'Generated from estimation',status:'planned'};
-  e.history.push({date:todayISO(),action:`Converted to ${e.projectNo}`,by:'Aleksandar C.'});
-  syncEstimation(e);
-  closeModal();renderAll();
-}
-
 function openPricingSettings(id){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];const e=getEst(id);if(!e)return;
   const tot=computeTotals(e);
-  $("fcard").innerHTML=`<h2>${esc(t.pricing_title)}</h2><p class="fsub">${esc(e.no)}</p>
+  $("fcard").innerHTML=`<h2>${esc(t.pricing_title)}</h2><p class="fsub">${esc(e.projectNo||'')}</p>
     <p class="fnote">${esc(t.pricing_note)}</p>
     <div class="frow2"><div><label for="psOverhead">${esc(t.cb_overhead)} %</label><input id="psOverhead" type="number" min="0" step="any" value="${esc(e.overheadPct)}"></div><div><label for="psContingency">${esc(t.cb_contingency)} %</label><input id="psContingency" type="number" min="0" step="any" value="${esc(e.contingencyPct)}"></div></div>
     <div class="frow"><label for="psDiscount">${esc(t.ps_discount)} (SEK, ${esc(t.discount_max)} ${fmt0(tot.sellSubtotal)})</label><input id="psDiscount" type="number" min="0" max="${tot.sellSubtotal}" step="any" value="${esc(e.discount)}"></div>
@@ -1503,7 +1275,7 @@ function openPricingSettings(id){
   $("fov").classList.add("show");
 }
 function savePricingSettings(id){
-  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!e)return;
   const overhead=parseFloat($("psOverhead").value),contingency=parseFloat($("psContingency").value),discount=parseFloat($("psDiscount").value);
   if(!isNonNegNumber(overhead)){showFieldError('psOverhead','psErr',t.err_overhead);return;}
   if(!isNonNegNumber(contingency)){showFieldError('psContingency','psErr',t.err_contingency);return;}
@@ -1516,8 +1288,8 @@ function savePricingSettings(id){
 }
 
 function openAddWorkItem(id){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  $("fcard").innerHTML=`<h2>${esc(t.addworkitem)}</h2><p class="fsub">${esc(e.no)}</p>
+  const t=T[LANG];const e=getEst(id);if(!e)return;
+  $("fcard").innerHTML=`<h2>${esc(t.addworkitem)}</h2><p class="fsub">${esc(e.projectNo||'')}</p>
     <div class="frow"><label for="awNo">${esc(t.wi_no)}</label><input id="awNo" placeholder="JC-2026-00XX"></div>
     <div class="frow"><label for="awDesc">${esc(t.wi_desc)}</label><input id="awDesc"></div>
     <div id="awErr" class="errmsg" style="display:none;"></div>
@@ -1527,8 +1299,8 @@ function openAddWorkItem(id){
 function saveAddWorkItem(id){
   const t=T[LANG];clearAllFieldErrors();const desc=$("awDesc").value.trim();
   if(!desc){showFieldError('awDesc','awErr',t.err_required);return;}
-  const e=getEst(id);if(!guardEdit(e))return;
-  e.workItems.push({no:$("awNo").value.trim(),desc,lines:[]});
+  const e=getEst(id);if(!e)return;
+  e.workItems.push({no:$("awNo").value.trim(),desc,lines:[],locked:false});
   e.history.push({date:todayISO(),action:`Work item added: ${desc}`,by:"Aleksandar C."});
   syncEstimation(e);
   closeModal();renderAll();
@@ -1536,8 +1308,8 @@ function saveAddWorkItem(id){
 
 // Add and Edit share one form. lIdx is omitted for "add a new line", or the index of the line being edited.
 function openLineForm(id,wiIdx,lIdx){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];if(!wi)return;
+  const t=T[LANG];const e=getEst(id);if(!e)return;
+  const wi=e.workItems[wiIdx];if(!wi||wi.locked)return;
   const editing=lIdx!==undefined&&lIdx!==null;
   // Same class of stale-index guard as saveLineForm() (Pass 3.27) - narrower window (the row's
   // onclick fires with the index current at click time), but a workshop:data event landing in that
@@ -1560,8 +1332,8 @@ function openAddLine(id,idx){openLineForm(id,idx);}
 function openEditLine(id,wiIdx,lIdx){openLineForm(id,wiIdx,lIdx);}
 function saveLineForm(id,wiIdx,lIdx){
   const t=T[LANG];clearAllFieldErrors();
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[wiIdx];if(!wi)return;
+  const e=getEst(id);if(!e)return;
+  const wi=e.workItems[wiIdx];if(!wi||wi.locked)return;
   const editing=lIdx!==undefined&&lIdx!==null;
   const desc=$("aiDesc").value.trim();
   if(!desc){showFieldError('aiDesc','aiDescErr',t.err_required);return;}
@@ -1579,7 +1351,7 @@ function saveLineForm(id,wiIdx,lIdx){
   // for the cross-tab sync it exists to support) - if the line this modal was opened for was
   // removed/reordered by a concurrent edit elsewhere in the meantime, wi.lines[lIdx] is now stale
   // and Object.assign(undefined,payload) throws. Same "record no longer exists" class of guard as
-  // guardEdit()/getEst() above, just for the array position specifically.
+  // getEst() above, just for the array position specifically.
   if(editing){
     if(!wi.lines[lIdx]){toast(t.err_line_changed,'error');closeModal();renderAll();return;}
     Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:"Aleksandar C."});
@@ -1590,7 +1362,7 @@ function saveLineForm(id,wiIdx,lIdx){
 }
 
 function openEditText(id,field){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];const e=getEst(id);if(!e)return;
   const isExcl=field==='exclusions';
   $("fcard").innerHTML=`<h2>${isExcl?esc(t.excl_title):esc(t.terms_title)}</h2>
     <div class="frow"><textarea id="etText" style="min-height:120px;" aria-label="${isExcl?esc(t.excl_title):esc(t.terms_title)}"></textarea></div>
@@ -1601,7 +1373,7 @@ function openEditText(id,field){
   $("fov").classList.add("show");
 }
 function saveEditText(id,field){
-  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
+  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!e)return;
   const val=$("etText").value;
   if(isBlank(val)){showFieldError('etText','etErr',t.err_required);return;}
   if(field==='exclusions')e.exclusions=val.split("\n").map(s=>s.trim()).filter(Boolean);else e.terms=val;
@@ -1610,104 +1382,12 @@ function saveEditText(id,field){
   closeModal();renderAll();
 }
 
-function openAddNote(id){
-  const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${esc(t.an_title)}</h2><p class="fsub">${esc(getEst(id).no)}</p>
-    <div class="frow"><label for="anText">${esc(t.an_text)}</label><textarea id="anText"></textarea></div>
-    <div id="anErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddNote(${id})">${esc(t.an_save)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function saveAddNote(id){
-  const t=T[LANG];clearAllFieldErrors();const text=$("anText").value.trim();
-  if(!text){showFieldError('anText','anErr',t.err_required);return;}
-  const e=getEst(id);e.notes.push({date:todayISO(),author:"Aleksandar C.",text});
-  syncEstimation(e);
-  closeModal();renderAll();
-}
-
-// File content remains a frontend demonstration (no bytes are read, stored or transmitted), but
-// the document metadata itself is a real shared Documents record.
-function openUpload(id){
-  const t=T[LANG];
-  $("fcard").innerHTML=`<h2>${esc(t.ud_title)}</h2><p class="fsub">${esc(getEst(id).no)} · ${esc(t.demo_upload)}</p>
-    <div class="frow"><label for="udFile">File</label><input id="udFile" type="file" onchange="if(this.files[0]&&!document.getElementById('udName').value)document.getElementById('udName').value=this.files[0].name"></div>
-    <div class="frow"><label for="udName">${esc(t.ud_name)}</label><input id="udName" placeholder="Document.pdf"></div>
-    <div id="udErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveUpload(${id})">${esc(t.ud_save)}</button></div>`;
-  $("fov").classList.add("show");
-}
-async function saveUpload(id){
-  const t=T[LANG];clearAllFieldErrors();const name=$("udName").value.trim();
-  if(!name){showFieldError('udName','udErr',t.err_required);return;}
-  const e=getEst(id),file=$("udFile").files[0];
-  if(file&&file.size>WorkshopData.maxDocumentFileBytes){showFieldError('udName','udErr',`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`);return;}
-  let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);
-  if(file&&fileData===null){showFieldError('udName','udErr','The selected file could not be read.');return;}
-  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.',fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
-  if(saved.error){showFieldError('udName','udErr',saved.error);return;}
-  e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
-  syncEstimation(e);
-  closeModal();renderAll();
-  toast(t.demo_upload,'ok');
-}
-
-// Duplicating creates a genuinely independent estimate: deep-cloned commercial/cost content, a brand-new
-// local id and estimation number, no shared/project linkage, reset status/revision/dates/history. The
-// original estimate is never touched.
-function duplicateEst(id){
-  const src=getEst(id);
-  const copy=JSON.parse(JSON.stringify(src));
-  const created=todayISO();
-  copy.id=nextEstId++;
-  copy.no=nextEstNumber(created);
-  delete copy.sharedId;                 // never overwrite the original shared estimation
-  copy.projectNo=null;copy.projectTitle=null;copy.deliveryTarget=null;
-  copy.status="draft";
-  copy.revision=0;copy.revisionSnapshots=[];
-  copy.created=created;
-  copy.validUntil=addDaysISO(created,30);
-  copy.documents=[];                    // do not copy uploaded customer-specific documents by default
-  copy.notes=[];
-  copy.history=[{date:created,action:`Duplicated from ${src.no}`,by:"Aleksandar C."}];
-  ESTIMATIONS.push(copy);
-  selectedId=copy.id;
-  syncEstimation(copy);                 // saved as a new, separate shared estimation — the original is untouched
-  renderAll();
-  toast(T[LANG].duplicate_toast.replace('{a}',src.no).replace('{b}',copy.no),'ok');
-}
-function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00");d2.setDate(d2.getDate()+days);return d2.toISOString().slice(0,10);}
-
-// An estimate linked to a project cannot be safely deleted (the project still references it) — offer
-// Archive instead and explain why. Unlinked estimates can be deleted after confirmation.
-function deleteEst(id){
-  const t=T[LANG];const e=getEst(id);if(!e)return;
-  if(e.projectNo){
-    if(!confirm(t.confirm_archive.replace('{no}',e.no).replace('{p}',e.projectNo)))return;
-    e.archived=true;
-    e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:'Aleksandar C.'});
-    syncEstimation(e);
-    if(selectedId===id){const visible=ESTIMATIONS.filter(x=>x.id!==id&&!x.archived);selectedId=visible.length?visible[0].id:null;}
-    renderAll();
-    return;
-  }
-  if(!confirm(t.confirm_delete))return;
-  // Unlinked estimates are removed from BOTH this page's local list and the shared data layer, so the
-  // record cannot reappear on refresh (hydrateSharedEstimations() re-adds anything still present there).
-  if(window.WorkshopData&&e.sharedId){
-    const res=WorkshopData.deleteEstimation(e.sharedId);
-    if(res&&res.error){toast(res.error,'error');return;}
-  }
-  ESTIMATIONS=ESTIMATIONS.filter(x=>x.id!==id);
-  if(selectedId===id)selectedId=ESTIMATIONS.length?ESTIMATIONS[0].id:null;
-  renderAll();
-}
 // Email sending is a frontend demonstration only (opens the OS mail client via mailto:) — no message is
 // actually transmitted and no email service is called.
 function sendEmail(id){
   const t=T[LANG];const e=getEst(id);const c=CUSTOMERS[e.customerId];
   toast(t.demo_email,'ok');
-  location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
+  location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Quote for '+(e.projectNo||'')+' — Varmak AB')}`;
 }
 // A dependency-free Excel export using Microsoft's SpreadsheetML 2003 format. This is a genuine
 // workbook file (not a toast-only simulation) and opens directly in Excel/LibreOffice while
@@ -1716,63 +1396,85 @@ function exportExcel(id){
   const e=getEst(id),c=CUSTOMERS[e.customerId],tot=computeTotals(e),rows=flatLines(e);
   const x=v=>esc(v==null?'':v),cell=(v,type='String')=>`<Cell><Data ss:Type="${type}">${x(v)}</Data></Cell>`;
   const body=[
-    ['Estimation',e.no],['Customer',c.name],['Title',e.projectTitle||e.no],['Status',e.status],['Revision',e.revision||0],['Created',e.created],['Valid Until',e.validUntil],[],
+    ['Project',e.projectNo],['Customer',c.name],['Title',e.projectTitle||''],['Created',e.created],['Valid Until',e.validUntil],[],
     ['Category','Description','Quantity','Unit','Unit Cost','Unit Sell','Discount %','VAT %','Line Total'],
-    ...rows.map(l=>[l.category,l.desc,l.qty,l.unit,l.cost,l.sell,l.discount||0,l.tax||0,lineTotal(l)]),
+    ...rows.map(l=>[l.category,l.desc,l.qty,l.unit,l.cost,l.sell,l.disc||0,l.tax||0,lineTotal(l)]),
     [],['Sell Subtotal',tot.sellSubtotal],['Estimate Discount',tot.discount],['VAT',tot.taxTotal],['Grand Total',tot.grandTotal]
   ];
   const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Estimation"><Table>${body.map(r=>`<Row>${r.map(v=>cell(v,typeof v==='number'&&Number.isFinite(v)?'Number':'String')).join('')}</Row>`).join('')}</Table></Worksheet></Workbook>`;
   const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=e.no+'-estimation.xml';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  a.href=url;a.download=(e.projectNo||'estimation')+'.xml';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast(`Excel workbook downloaded — ${a.download}`,'ok');
 }
-function printEst(id){selectedId=id;renderPrintSheet(getEst(id));window.print();}
+function printEst(id,mode){selectedId=id;renderPrintSheet(getEst(id),mode||'customer');window.print();}
 
-// Customer-facing print preview. Intentionally excludes internal cost, overhead, contingency, profit and
-// margin — only the base-offer / included-options split and the customer-facing totals are shown.
-function printRows(items){
-  return items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.desc)}</td><td style="text-align:right;">${esc(it.qty)}</td><td>${esc(it.unit)}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
+// Three print outputs, all built from the same effective-line set computeTotals() prices
+// (baseAndIncludedLines(e)) so nothing printed can ever disagree with the on-screen totals:
+//  - 'customer': the priced customer offer — item + price only, no internal breakdown.
+//  - 'customer-scope': the same offer with prices withheld — a plain scope-of-work list.
+//  - 'internal': the estimator's own full detail (category/qty/unit/cost) plus the cost/margin breakdown.
+function printRows(items,withPrice){
+  return items.map((it,i)=>withPrice
+    ?`<tr><td>${i+1}</td><td>${esc(it.desc)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`
+    :`<tr><td>${i+1}</td><td>${esc(it.desc)}</td></tr>`).join("");
 }
-function renderPrintSheet(e){
-  const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);
-  // Reuse the same effective-line set computeTotals() uses, so printed rows and printed totals
-  // can never disagree. A replacement option's base line(s) must not be printed twice.
-  const baseItems=baseAndIncludedLines(e).filter(l=>!l.fromOption);
-  const includedOptions=(e.options||[]).filter(o=>o.included);
-  const th=`<tr><th>#</th><th>${esc(t.pr_desc)}</th><th style="text-align:right;">${esc(t.pr_qty)}</th><th>${esc(t.pr_unit)}</th><th style="text-align:right;">${esc(t.pr_price)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr>`;
-  const optionSections=includedOptions.map(o=>`
-    <h3 style="font-family:sans-serif;margin-top:18px;">${esc(t.pr_optional)} — ${esc(o.name)}</h3>
-    <table class="psection" style="width:100%;border-collapse:collapse;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${printRows(o.lines)}</tbody></table>`).join("");
+function printRowsInternal(items){
+  return items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.desc)}</td><td>${esc(catLabel(it.category))}</td><td style="text-align:right;">${esc(it.qty)}</td><td>${esc(it.unit)}</td><td style="text-align:right;">${it.sell.toFixed(2)}</td><td style="text-align:right;">${it.cost.toFixed(2)}</td><td style="text-align:right;">${lineTotal(it).toFixed(2)}</td></tr>`).join("");
+}
+function renderPrintSheet(e,mode){
+  const t=T[LANG];const c=CUSTOMERS[e.customerId];const tot=computeTotals(e);const p=liveProject(e.projectNo);
+  const items=baseAndIncludedLines(e);
+  const withPrice=mode!=='customer-scope';
+  const isInternal=mode==='internal';
+  const th=isInternal
+    ?`<tr><th>#</th><th>${esc(t.pr_desc)}</th><th>${esc(t.th_category)}</th><th style="text-align:right;">${esc(t.pr_qty)}</th><th>${esc(t.pr_unit)}</th><th style="text-align:right;">${esc(t.pr_price)}</th><th style="text-align:right;">${esc(t.internal_cost)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr>`
+    :(withPrice?`<tr><th>#</th><th>${esc(t.pr_desc)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr>`:`<tr><th>#</th><th>${esc(t.pr_desc)}</th></tr>`);
+  const bodyRows=isInternal?printRowsInternal(items):printRows(items,withPrice);
+  const internalBlock=isInternal?`
+    <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.cost_breakdown)}</h3>
+    <table style="width:100%;margin-top:6px;font-family:sans-serif;font-size:12.5px;"><tr><td style="width:60%;"></td><td>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_material)}</span><span>${tot.materialCost.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_labour)}</span><span>${tot.labourCost.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_machine)}</span><span>${tot.machineCost.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_sub)}</span><span>${tot.subCost.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_overhead)} (${e.overheadPct}%)</span><span>${tot.overhead.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_contingency)} (${e.contingencyPct}%)</span><span>${tot.contingency.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid #333;margin-top:6px;padding-top:6px;"><span>${esc(t.cb_internal)}</span><span>${tot.totalInternalCost.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.cb_selling)}</span><span>${tot.sellingPrice.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;color:#1a7d3a;"><span>${esc(t.cb_profit)}</span><span>${tot.grossProfit.toFixed(2)} (${marginLabel(tot)})</span></div>
+    </td></tr></table>`:'';
+  const totalsBlock=(withPrice&&!isInternal)?`
+    <table style="width:100%;margin-top:16px;font-family:sans-serif;font-size:13px;"><tr><td style="width:60%;"></td><td>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_subtotal)}</span><span>${tot.sellSubtotal.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_discount)}</span><span>${tot.discount.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span>${esc(t.pr_vat)}</span><span>${tot.taxTotal.toFixed(2)} ${esc(e.currency)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #333;margin-top:6px;padding-top:6px;"><span>${esc(t.ps_total)}</span><span>${tot.grandTotal.toFixed(2)} ${esc(e.currency)}</span></div>
+    </td></tr></table>`:'';
   $("printSheet").innerHTML=`
     <h1 style="font-family:sans-serif;">Varmak AB</h1>
     <p style="font-family:sans-serif;color:#555;">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</p>
-    <h2 style="font-family:sans-serif;margin-top:14px;">${esc(t.pr_estimate)} ${esc(e.no)} — ${esc(t.rev_short)} ${e.revision||0}</h2>
+    ${isInternal?`<div style="display:inline-block;font-family:sans-serif;font-weight:700;color:#b00;border:1px solid #b00;padding:3px 10px;margin-top:8px;">${esc(t.pr_internal_badge)}</div>`:''}
+    <h2 style="font-family:sans-serif;margin-top:14px;">${esc(t.pr_estimate)} — ${esc(e.projectNo||'')}${p?' · '+esc(p.name):''}</h2>
     <table style="width:100%;margin-top:10px;font-family:sans-serif;font-size:13px;"><tr>
       <td style="vertical-align:top;width:50%;">
         <b>${esc(t.pr_customer)}</b><br>${esc(c.name)}<br>${esc(c.address)}<br>${esc(c.contact)} · ${esc(c.email)} · ${esc(c.phone)}
       </td>
       <td style="vertical-align:top;">
         <b>${esc(t.pr_details)}</b><br>
-        ${esc(t.ei_date)}: ${esc(e.created)}<br>${esc(t.ei_valid)}: ${esc(e.validUntil)}<br>
-        ${esc(t.ei_rfq)}: ${esc(e.customerRfq)||'—'}<br>${esc(t.ei_delivery)}: ${esc(e.deliveryTime)}<br>
+        ${esc(t.ei_date)}: ${esc(e.created)}<br>${esc(t.ei_valid)}: ${esc(e.validUntil)||'—'}<br>
+        ${esc(t.ei_rfq)}: ${esc(e.customerRfq)||'—'}<br>${esc(t.ei_delivery)}: ${esc(e.deliveryTime)||'—'}<br>
         ${esc(t.ei_terms)}: ${esc(e.paymentTerms)}<br>${esc(t.ei_incoterms)}: ${esc(e.incoterms)}
       </td>
     </tr></table>
-    <p style="font-family:sans-serif;margin-top:12px;"><b>${esc(t.pr_scope)}:</b> ${esc(e.projectTitle||(PROJECTS[e.projectNo]||{}).name||e.no)}</p>
+    <p style="font-family:sans-serif;margin-top:12px;"><b>${esc(t.pr_scope)}:</b> ${esc(e.projectTitle||(p?p.name:'')||e.projectNo||'')}</p>
 
     <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.pr_base)}</h3>
-    <table class="psection" style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:12.5px;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${printRows(baseItems)}</tbody></table>
-    ${optionSections}
-
-    <table style="width:100%;margin-top:16px;font-family:sans-serif;font-size:13px;"><tr><td style="width:60%;"></td><td>
-      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_subtotal)}</span><span>${tot.sellSubtotal.toFixed(2)} ${esc(e.currency)}</span></div>
-      <div style="display:flex;justify-content:space-between;"><span>${esc(t.ps_discount)}</span><span>${tot.discount.toFixed(2)} ${esc(e.currency)}</span></div>
-      <div style="display:flex;justify-content:space-between;"><span>${esc(t.pr_vat)}</span><span>${tot.taxTotal.toFixed(2)} ${esc(e.currency)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #333;margin-top:6px;padding-top:6px;"><span>${esc(t.ps_total)}</span><span>${tot.grandTotal.toFixed(2)} ${esc(e.currency)}</span></div>
-    </td></tr></table>
+    <table class="psection" style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:12.5px;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${bodyRows}</tbody></table>
+    ${internalBlock}
+    ${totalsBlock}
 
     <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.pr_delivery)}</h3>
-    <p style="font-family:sans-serif;font-size:12.5px;">${esc(t.ei_delivery)}: ${esc(e.deliveryTime)} · ${esc(t.ei_reqdelivery)}: ${esc(e.requestedDelivery)||'—'}</p>
+    <p style="font-family:sans-serif;font-size:12.5px;">${esc(t.ei_delivery)}: ${esc(e.deliveryTime)||'—'} · ${esc(t.ei_reqdelivery)}: ${esc(e.requestedDelivery)||'—'}</p>
 
     <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.terms_title)}</h3>
     <p style="font-family:sans-serif;font-size:12.5px;white-space:pre-line;">${esc(e.terms)}</p>
@@ -1780,10 +1482,10 @@ function renderPrintSheet(e){
     <h3 style="font-family:sans-serif;margin-top:16px;">${esc(t.excl_title)}</h3>
     <ul style="font-family:sans-serif;font-size:12.5px;">${(e.exclusions||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
 
-    <div class="psection" style="margin-top:30px;font-family:sans-serif;font-size:12.5px;display:flex;gap:60px;">
+    ${isInternal?'':`<div class="psection" style="margin-top:30px;font-family:sans-serif;font-size:12.5px;display:flex;gap:60px;">
       <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_customer)}<br><br>_______________________</div>
       <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_varmak)}<br><br>_______________________</div>
-    </div>`;
+    </div>`}`;
 }
 
 function setLang(code){LANG=code;
@@ -1797,6 +1499,13 @@ function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('s
   try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
 const requestedEstimation=new URLSearchParams(location.search).get('estimation');
 if(requestedEstimation){const requested=ESTIMATIONS.find(e=>e.no===requestedEstimation||String(e.sharedId)===requestedEstimation);if(requested)selectedId=requested.id;}
+// Deep link from Projects' "Open/Create Estimation" button: jump straight to pricing that project's
+// items. ensureEstimationForProject() finds-or-silently-creates the record, so there is no separate
+// "New Estimation" step to route through here — opening the project IS creating/continuing its estimate.
+const requestedProject=new URLSearchParams(location.search).get('project');
+if(requestedProject&&!requestedEstimation&&liveProject(requestedProject)){
+  selectedId=ensureEstimationForProject(requestedProject).id;
+}
 setLang("en");setInterval(tick,10000);
 // Picks up an estimation created/updated elsewhere (another tab, or another module such as
 // Customers' "New Quote") without a full reload - see hydrateSharedEstimations()'s own comment.
