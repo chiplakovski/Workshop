@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="mk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Најава — Workshop</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, sans-serif;
+    background: #f4f5f7;
+  }
+  form {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    width: 100%;
+    max-width: 320px;
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 1.25rem; text-align: center; }
+  label { display: block; font-size: 0.85rem; margin: 0.75rem 0 0.25rem; }
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  button {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.6rem;
+    border: none;
+    border-radius: 4px;
+    background: #013179;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .toggle {
+    margin-top: 0.9rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .toggle a { color: #013179; cursor: pointer; }
+  #message {
+    margin-top: 0.9rem;
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 1.1em;
+  }
+  #message.error { color: #b3261e; }
+  #message.ok { color: #1a7a3c; }
+</style>
+</head>
+<body>
+  <form id="auth-form">
+    <h1 id="form-title">Најава</h1>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="email" />
+
+    <label for="password">Лозинка</label>
+    <input type="password" id="password" required autocomplete="current-password" minlength="6" />
+
+    <button type="submit" id="submit-btn">Најави се</button>
+
+    <div class="toggle">
+      <span id="toggle-text">Немаш сметка? <a id="toggle-link">Регистрирај се</a></span>
+    </div>
+
+    <div id="message"></div>
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let mode = "signin";
+    const form = document.getElementById("auth-form");
+    const title = document.getElementById("form-title");
+    const submitBtn = document.getElementById("submit-btn");
+    const toggleText = document.getElementById("toggle-text");
+    const toggleLink = document.getElementById("toggle-link");
+    const message = document.getElementById("message");
+
+    function setMode(next) {
+      mode = next;
+      const isSignIn = mode === "signin";
+      title.textContent = isSignIn ? "Најава" : "Регистрација";
+      submitBtn.textContent = isSignIn ? "Најави се" : "Регистрирај се";
+      toggleText.innerHTML = isSignIn
+        ? 'Немаш сметка? <a id="toggle-link">Регистрирај се</a>'
+        : 'Веќе имаш сметка? <a id="toggle-link">Најави се</a>';
+      document.getElementById("toggle-link").addEventListener("click", () => {
+        setMode(isSignIn ? "signup" : "signin");
+      });
+      message.textContent = "";
+      message.className = "";
+    }
+    toggleLink.addEventListener("click", () => setMode("signup"));
+
+    // Already logged in? Skip straight to the hub.
+    client.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = "hub.html";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      submitBtn.disabled = true;
+      message.textContent = "";
+      message.className = "";
+
+      const { error } =
+        mode === "signin"
+          ? await client.auth.signInWithPassword({ email, password })
+          : await client.auth.signUp({ email, password });
+
+      submitBtn.disabled = false;
+
+      if (error) {
+        message.textContent = error.message;
+        message.className = "error";
+        return;
+      }
+
+      if (mode === "signup") {
+        message.textContent = "Сметката е направена. Провери го email-от ако е потребна потврда, потоа најави се.";
+        message.className = "ok";
+        setMode("signin");
+        return;
+      }
+
+      window.location.href = "hub.html";
+    });
+  </script>
+</body>
+</html>

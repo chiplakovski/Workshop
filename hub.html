@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="mk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Почетна — Workshop</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #f4f5f7;
+    min-height: 100vh;
+  }
+  header {
+    background: #013179;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 1.1rem; margin: 0; }
+  header button {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.6);
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  main { max-width: 640px; margin: 2rem auto; padding: 0 1.5rem; }
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  .card p { color: #444; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Workshop</h1>
+    <button id="logout-btn">Одјава</button>
+  </header>
+  <main>
+    <div class="card">
+      <p id="welcome">Се вчитува...</p>
+      <p>Основата (најава преку Supabase) работи. Модулите (клиенти, проекти,
+      набавки, работни налози, итн.) ќе се додаваат тука чекор по чекор.</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    client.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        window.location.href = "login.html";
+        return;
+      }
+      document.getElementById("welcome").textContent =
+        "Најавен си како " + data.session.user.email;
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await client.auth.signOut();
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>
