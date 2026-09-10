@@ -49,8 +49,10 @@
   .tbtn.danger:hover{border-color:var(--danger);color:#fff;background:rgba(var(--c-danger-rgb),.1);}
   .tbtn svg{flex:none;width:13px;height:13px;}
 
-  .crmgrid{display:grid;grid-template-columns:300px 1fr 320px;gap:16px;align-items:start;}
-  @media(max-width:1400px){.crmgrid{grid-template-columns:1fr;}}
+  .crmgrid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start;}
+  /* the list and summary columns are compact panels: flow them across the full
+     width instead of leaving them as sparse full-width bars */
+  .crmgrid>.col:first-child,.crmgrid>.col:last-child{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;}
   /* min-width:0 lets a grid track shrink below its content's intrinsic width (the wide items table)
      so .itable-wrap's own overflow-x:auto can scroll internally instead of forcing the whole page wider. */
   .col{display:flex;flex-direction:column;gap:16px;min-width:0;}
@@ -71,7 +73,7 @@
   .segtabs button{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:10.5px;padding:7px 4px;cursor:pointer;transition:.15s;white-space:nowrap;}
   .segtabs button.on{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
 
-  .estlist{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow-y:auto;margin:-4px;padding:4px;}
+  .estlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;max-height:330px;overflow-y:auto;margin:-4px;padding:4px;}
   .estrow{display:block;width:100%;padding:10px 11px;border:1px solid var(--line);cursor:pointer;transition:.14s;text-align:left;color:inherit;background:transparent;font:inherit;}
   .estrow:hover{background:rgba(255,255,255,.03);}
   .estrow.sel{background:rgba(var(--c-accent-rgb),.12);border-color:rgba(var(--c-accent-rgb),.45);}
