@@ -64,8 +64,32 @@ explaining why) rather than fabricating company data. It only auto-fills the for
 backend proxy makes the request succeed and returns the expected JSON shape.
 
 ## Shared design
-Navy theme (#013179), sharp edges, engineering-grid + spark animation,
-compact SV / EN / MK language switcher, 3K/4K scaling on desktop screens.
+Sharp edges, engineering-grid + spark animation, compact SV / EN / MK language switcher,
+3K/4K scaling on desktop screens.
+
+### Themes
+Two themes ship with the prototype:
+
+| Theme | Look | Type |
+|---|---|---|
+| **Navy** (default) | The original navy palette (#013179) | Sora / Inter |
+| **Carbon** | Near-black ground, dimmed ambient wash, white-hot sparks | Space Grotesk / IBM Plex Sans |
+
+The theme toggle lives on `login.html` (bottom-right, next to the language switcher). It writes
+the choice to the `varmak.theme` localStorage key, and every page reads that key in a small
+inline script in `<head>` — before first paint, so there is no flash of the wrong theme — and
+sets `data-theme="carbon"` on `<html>` when it applies.
+
+Theming is entirely CSS-variable driven: each page defines its palette in `:root` and overrides
+the same variable names under `:root[data-theme="carbon"]`. Colours that used to be hardcoded in
+`rgba()`/gradients were given `--c-*` custom properties (with `--c-*-rgb` triplet companions for
+values used at several alpha levels) so both themes flow from one set of declarations. Adding a
+third theme therefore means adding one more `:root[data-theme="..."]` block per page — no
+component CSS has to change.
+
+Two deliberate exceptions: colours built inside `<script>` blocks (a handful of calendar/chart
+accent values) are left alone, as is the print stylesheet Equipment/Machines generates for its
+print window — that one is meant for paper and must stay light.
 
 ## Run locally
 Open any `.html` file in a browser, or use the VS Code **Live Server** extension
