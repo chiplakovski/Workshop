@@ -70,8 +70,7 @@
   .board{display:grid;grid-template-columns:repeat(6,minmax(168px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:10px;}
   .bcol{border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0;transition:.15s;--bs:var(--spark);--bs-rgb:var(--c-accent-rgb);}
   /* One hue per status, shared by the board column and the workflow step strip so a stage looks
-     the same wherever it appears. Draft has no board column but does have a step. */
-  .bcol[data-status="draft"],.pstep[data-status="draft"]{--bs:#8fa3bf;--bs-rgb:143,163,191;}
+     the same wherever it appears. */
   .bcol[data-status="quotation"],.pstep[data-status="quotation"]{--bs:#a78bfa;--bs-rgb:167,139,250;}
   .bcol[data-status="approved"],.pstep[data-status="approved"]{--bs:#22d3ee;--bs-rgb:34,211,238;}
   .bcol[data-status="planned"],.pstep[data-status="planned"]{--bs:#4a90ff;--bs-rgb:74,144,255;}
@@ -369,7 +368,7 @@ const PROJECT_UI_OWNED_FIELDS=['id','no','name','customerRef','poNumber','descri
   'pm','workshop','sales','createdDate','plannedStart','actualStart','deadline','plannedCompletion',
   'actualCompletion','closedDate','quotedValue','estLabourHours','estMaterialCost','estPurchaseCost',
   'otherCostEst','otherCostAct','status','holdReason','holdComment','expectedResume','cancelReason',
-  'quoteValidUntil','approvedDate',
+  'approvedDate',
   'jobcards','hours','materials','purchases','documents','activity','archived'];
 function syncSharedProject(p){
   if(!window.WorkshopData?.upsertProject)return null;
@@ -429,7 +428,7 @@ function custContactLine(cust){
   return[c.name,c.email].filter(Boolean).join(" · ");
 }
 const {STATUS_ORDER,PIPELINE,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,
-  canQuote,canApprove,canPlan,canStart,isReadonlyStatus,statusCssClass}=ProjectRules;
+  canApprove,canPlan,canStart,isReadonlyStatus,statusCssClass}=ProjectRules;
 function getProject(id){return PROJECTS.find(p=>p.id===id);}
 // Resolves via WorkshopData's central Quality Hold gate (quality-gates.js) — this covers BOTH a
 // Project-scoped hold on p.no AND a Jobcard-scoped hold on any real jobcard-desktop.html Jobcard
@@ -561,12 +560,12 @@ let LANG="en";
 const T={
 en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Projects",psub:"Central job container",
  newproj:"+ New project",searchph:"Search project, number, customer, reference…",
- board_hidden:"{n} not on the board — see Table:", view_board:"Board",view_table:"Table", f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
+ board_hidden:"{n} not on the board — see Table:", view_board:"Board",view_table:"Table", f_all:"All",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
  morefilters:"More filters",ff_customer:"Customer",ff_responsible:"Responsible",ff_type:"Project type",ff_from:"Deadline from",ff_to:"Deadline to",ff_clear:"Clear filters",ff_any:"— Any —",
  th_no:"Project #",th_name:"Project name",th_customer:"Customer",th_ref:"Customer ref.",th_status:"Status",th_start:"Planned start",th_deadline:"Deadline",th_progress:"Progress",th_responsible:"Responsible",th_quoted:"Quoted value",th_actual:"Actual cost",
  kpi_quoted:"Total quoted",kpi_actual:"Total actual cost",kpi_overdue:"Overdue",kpi_hold:"On hold",
  emptylist:"No projects match your filters.",
- np_title:"New project",np_edit_title:"Edit project",np_number:"Project number",np_name:"Project name",np_customer:"Customer",np_newcustomer:"+ New customer",np_ref:"Customer reference",np_po:"Customer PO number",np_quoted:"Quoted value (SEK)",np_desc:"Project description",np_notes:"Internal notes",np_type:"Project type",np_pm:"Project manager",np_workshop:"Workshop responsible",np_sales:"Sales responsible",np_start:"Planned start date",np_deadline:"Deadline",np_plannedcompletion:"Planned completion",np_save:"Save project",np_cancel:"Cancel",np_printoffer:"Print offer",
+ np_title:"New project",np_edit_title:"Edit project",np_number:"Project number",np_name:"Project name",np_customer:"Customer",np_newcustomer:"+ New customer",np_ref:"Customer reference",np_po:"Customer PO number",np_err_value:"Enter a quoted value greater than zero — a new project is the quotation, so it needs a price.",np_quoted:"Quoted value (SEK)",np_desc:"Project description",np_notes:"Internal notes",np_type:"Project type",np_pm:"Project manager",np_workshop:"Workshop responsible",np_sales:"Sales responsible",np_start:"Planned start date",np_deadline:"Deadline",np_plannedcompletion:"Planned completion",np_save:"Save project",np_cancel:"Cancel",np_printoffer:"Print offer",
  nc_title:"New customer",nc_name:"Customer name",nc_org:"Org. number",nc_contact:"Contact person",nc_save:"Add customer",nc_cancel:"Cancel",
  tab_overview:"Overview",tab_jobcards:"Items",tab_hours:"Hours",tab_materials:"Materials",tab_purchases:"Purchases",tab_documents:"Documents",tab_reports:"Reports",tab_costs:"Costs",tab_activity:"Activity",
  ov_status:"Status",ov_progress:"Progress",ov_time:"Time",ov_est:"Estimated",ov_used:"Used",ov_remaining:"Remaining",ov_material:"Material",ov_purchases:"Purchases",ov_ordered:"Ordered",ov_delivered:"Delivered",ov_pending:"Pending",ov_deadline:"Deadline",ov_daysremaining:"{d} days remaining",ov_daysoverdue:"{d} days overdue",ov_nodeadline:"No deadline set",ov_warnings:"Warnings",ov_nowarnings:"No warnings — everything on track.",ov_notes:"Pinned note",
@@ -579,14 +578,13 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  c_estimated:"Estimated cost",c_actual:"Actual cost",c_labour:"Labour",c_material:"Material",c_purchased:"Purchased components",c_other:"Other costs",c_total:"Total cost",c_quoted:"Quoted value",c_revenue:"Revenue",c_profit:"Profit",c_margin:"Margin",c_itemrevenue:"Revenue by item",c_estprice:"Est. price",c_actcost:"Actual cost",
  o_title:"OFFER",o_no:"Offer no",o_date:"Date",o_to:"To",o_desc:"Description",o_hrs:"Hrs",o_mat:"Material",o_amount:"Amount",o_subtotal:"Subtotal",o_vat:"VAT 25%",o_total:"Total due",o_valid:"Offer valid 30 days. Prices excl. VAT where not stated.",o_printbtn:"Print",o_close:"Close",
  act_empty:"No activity yet.",note_empty:"No notes yet.",
- a_quote:"Send as quotation",a_approve:"Mark approved",a_plan:"Schedule project",a_start:"Start work",
+a_approve:"Mark approved",a_plan:"Schedule project",a_start:"Start work",
  pipe_label:"Workflow",pipe_current:"Current stage",pipe_next:"Click to advance",pipe_done:"Passed",pipe_off:"Outside the quoting chain — this project is {s}.",
- quote_title:"Send as quotation",quote_body:"Moves the project from Draft to Quotation. Record what the customer is being quoted.",quote_value:"Quoted value (SEK)",quote_valid:"Quote valid until (optional)",quote_save:"Send as quotation",quote_err_value:"Enter a quoted value greater than zero — a quotation cannot be sent without a price.",
  approve_title:"Mark approved",approve_body:"The customer has accepted the quotation. The quoted value is locked in as the agreed price.",approve_po:"Customer PO / reference (optional)",approve_date:"Approval date",approve_save:"Mark approved",
  plan_title:"Schedule project",plan_body:"Approved work moves into the schedule. Both dates are required so the project appears correctly in Planning.",plan_start:"Planned start",plan_deadline:"Deadline",plan_save:"Schedule",plan_err_dates:"Planned start and deadline are both required.",plan_err_order:"The deadline cannot fall before the planned start.",
  start_title:"Start work",start_body:"Marks the project as running. This sets the actual start date and the project begins accruing hours.",start_date:"Actual start date",start_save:"Start work",
  a_edit:"Edit",a_createjc:"Create jobcard",a_adddoc:"Add document",a_createpo:"Create purchase",a_addnote:"Add note",a_more:"More",a_duplicate:"Duplicate project",a_hold:"Put on hold",a_resume:"Resume project",a_complete:"Complete project",a_close:"Close project",a_cancel:"Cancel project",a_reopen:"Reopen project",
- st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
+ st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
  hold_title:"Put project on hold",hold_reason:"Hold reason",hold_comment:"Comment",hold_expected:"Expected resume date (optional)",hold_save:"Put on hold",
  hr_material:"Waiting for Material",hr_customer:"Waiting for Customer",hr_drawing:"Waiting for Drawing",hr_approval:"Waiting for Approval",hr_breakdown:"Machine Breakdown",hr_external:"External Delay",hr_other:"Other",
  resume_title:"Resume project",resume_tostatus:"Resume to status",resume_save:"Resume",
@@ -617,12 +615,12 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  locale:"en-GB"},
 sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Projekt",psub:"Central jobbcontainer",
  newproj:"+ Nytt projekt",searchph:"Sök projekt, nummer, kund, referens…",
- board_hidden:"{n} visas inte på tavlan — se Tabell:", view_board:"Tavla",view_table:"Tabell", f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
+ board_hidden:"{n} visas inte på tavlan — se Tabell:", view_board:"Tavla",view_table:"Tabell", f_all:"Alla",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
  morefilters:"Fler filter",ff_customer:"Kund",ff_responsible:"Ansvarig",ff_type:"Projekttyp",ff_from:"Deadline från",ff_to:"Deadline till",ff_clear:"Rensa filter",ff_any:"— Alla —",
  th_no:"Projekt-nr",th_name:"Projektnamn",th_customer:"Kund",th_ref:"Kundref.",th_status:"Status",th_start:"Planerad start",th_deadline:"Deadline",th_progress:"Framsteg",th_responsible:"Ansvarig",th_quoted:"Offertvärde",th_actual:"Verklig kostnad",
  kpi_quoted:"Totalt offertvärde",kpi_actual:"Total verklig kostnad",kpi_overdue:"Försenade",kpi_hold:"Pausade",
  emptylist:"Inga projekt matchar dina filter.",
- np_title:"Nytt projekt",np_edit_title:"Redigera projekt",np_number:"Projektnummer",np_name:"Projektnamn",np_customer:"Kund",np_newcustomer:"+ Ny kund",np_ref:"Kundreferens",np_po:"Kundens ordernummer",np_quoted:"Offertvärde (SEK)",np_desc:"Projektbeskrivning",np_notes:"Interna anteckningar",np_type:"Projekttyp",np_pm:"Projektledare",np_workshop:"Verkstadsansvarig",np_sales:"Säljansvarig",np_start:"Planerat startdatum",np_deadline:"Deadline",np_plannedcompletion:"Planerat klart",np_save:"Spara projekt",np_cancel:"Avbryt",np_printoffer:"Skriv ut offert",
+ np_title:"Nytt projekt",np_edit_title:"Redigera projekt",np_number:"Projektnummer",np_name:"Projektnamn",np_customer:"Kund",np_newcustomer:"+ Ny kund",np_ref:"Kundreferens",np_po:"Kundens ordernummer",np_err_value:"Ange ett offertvärde större än noll — ett nytt projekt är offerten och behöver ett pris.",np_quoted:"Offertvärde (SEK)",np_desc:"Projektbeskrivning",np_notes:"Interna anteckningar",np_type:"Projekttyp",np_pm:"Projektledare",np_workshop:"Verkstadsansvarig",np_sales:"Säljansvarig",np_start:"Planerat startdatum",np_deadline:"Deadline",np_plannedcompletion:"Planerat klart",np_save:"Spara projekt",np_cancel:"Avbryt",np_printoffer:"Skriv ut offert",
  nc_title:"Ny kund",nc_name:"Kundnamn",nc_org:"Org.nr",nc_contact:"Kontaktperson",nc_save:"Lägg till kund",nc_cancel:"Avbryt",
  tab_overview:"Översikt",tab_jobcards:"Poster",tab_hours:"Timmar",tab_materials:"Material",tab_purchases:"Inköp",tab_documents:"Dokument",tab_reports:"Rapporter",tab_costs:"Kostnader",tab_activity:"Aktivitet",
  ov_status:"Status",ov_progress:"Framsteg",ov_time:"Tid",ov_est:"Uppskattat",ov_used:"Använt",ov_remaining:"Kvar",ov_material:"Material",ov_purchases:"Inköp",ov_ordered:"Beställt",ov_delivered:"Levererat",ov_pending:"Väntar",ov_deadline:"Deadline",ov_daysremaining:"{d} dagar kvar",ov_daysoverdue:"{d} dagar försenat",ov_nodeadline:"Ingen deadline satt",ov_warnings:"Varningar",ov_nowarnings:"Inga varningar — allt ligger rätt till.",ov_notes:"Fäst anteckning",
@@ -635,14 +633,13 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  c_estimated:"Uppskattad kostnad",c_actual:"Verklig kostnad",c_labour:"Arbete",c_material:"Material",c_purchased:"Inköpta komponenter",c_other:"Övriga kostnader",c_total:"Total kostnad",c_quoted:"Offertvärde",c_revenue:"Intäkt",c_profit:"Vinst",c_margin:"Marginal",c_itemrevenue:"Intäkt per post",c_estprice:"Est. pris",c_actcost:"Verklig kostnad",
  o_title:"OFFERT",o_no:"Offertnr",o_date:"Datum",o_to:"Till",o_desc:"Beskrivning",o_hrs:"Tim",o_mat:"Material",o_amount:"Belopp",o_subtotal:"Delsumma",o_vat:"Moms 25%",o_total:"Att betala",o_valid:"Offerten gäller i 30 dagar. Priser exkl. moms där ej annat anges.",o_printbtn:"Skriv ut",o_close:"Stäng",
  act_empty:"Ingen aktivitet ännu.",note_empty:"Inga anteckningar ännu.",
- a_quote:"Skicka som offert",a_approve:"Markera godkänd",a_plan:"Planera projekt",a_start:"Starta arbetet",
+a_approve:"Markera godkänd",a_plan:"Planera projekt",a_start:"Starta arbetet",
  pipe_label:"Arbetsflöde",pipe_current:"Nuvarande steg",pipe_next:"Klicka för att gå vidare",pipe_done:"Passerat",pipe_off:"Utanför offertkedjan — projektet är {s}.",
- quote_title:"Skicka som offert",quote_body:"Flyttar projektet från Utkast till Offert. Registrera vad kunden offereras.",quote_value:"Offertvärde (SEK)",quote_valid:"Offert giltig till (valfritt)",quote_save:"Skicka som offert",quote_err_value:"Ange ett offertvärde större än noll — en offert kan inte skickas utan pris.",
  approve_title:"Markera godkänd",approve_body:"Kunden har accepterat offerten. Offertvärdet låses som avtalat pris.",approve_po:"Kundens inköpsorder / referens (valfritt)",approve_date:"Godkännandedatum",approve_save:"Markera godkänd",
  plan_title:"Planera projekt",plan_body:"Godkänt arbete går in i planeringen. Båda datumen krävs för att projektet ska visas rätt i Planering.",plan_start:"Planerad start",plan_deadline:"Deadline",plan_save:"Planera",plan_err_dates:"Både planerad start och deadline krävs.",plan_err_order:"Deadline kan inte ligga före planerad start.",
  start_title:"Starta arbetet",start_body:"Markerar projektet som pågående. Detta sätter verkligt startdatum och projektet börjar samla timmar.",start_date:"Verkligt startdatum",start_save:"Starta arbetet",
  a_edit:"Redigera",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",
- st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",
+ st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",
  hold_title:"Pausa projekt",hold_reason:"Anledning",hold_comment:"Kommentar",hold_expected:"Förväntat återupptagningsdatum (valfritt)",hold_save:"Pausa",
  resume_title:"Återuppta projekt",resume_tostatus:"Återuppta till status",resume_save:"Återuppta",
  complete_title:"Slutför projekt",complete_ok:"Alla kontroller godkända. Markera projektet som KLART?",complete_issues_title:"Projektet kan inte slutföras utan granskning",complete_goback:"Gå tillbaka",complete_override:"Chefsöverstyrning",complete_override_reason:"Anledning till överstyrning (krävs)",complete_confirm:"Markera klart",
@@ -672,12 +669,12 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  locale:"sv-SE"},
 mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"Proekti",psub:"Centralen kontejner za raboti",
  newproj:"+ Nov proekt",searchph:"Prebaraj proekt, broj, klient, referenca…",
- board_hidden:"{n} ne se na tablata — vidi Tabela:", view_board:"Tabla",view_table:"Tabela", f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
+ board_hidden:"{n} ne se na tablata — vidi Tabela:", view_board:"Tabla",view_table:"Tabela", f_all:"Site",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
  morefilters:"Povekje filtri",ff_customer:"Klient",ff_responsible:"Odgovoren",ff_type:"Tip proekt",ff_from:"Rok od",ff_to:"Rok do",ff_clear:"Isčisti filtri",ff_any:"— Site —",
  th_no:"Proekt br.",th_name:"Ime na proekt",th_customer:"Klient",th_ref:"Referenca",th_status:"Status",th_start:"Planiran početok",th_deadline:"Rok",th_progress:"Napredok",th_responsible:"Odgovoren",th_quoted:"Ponudena vrednost",th_actual:"Realen trošok",
  kpi_quoted:"Vkupno ponudeno",kpi_actual:"Vkupen realen trošok",kpi_overdue:"Docneti",kpi_hold:"Pauzirani",
  emptylist:"Nema proekti što odgovaraat na filtrite.",
- np_title:"Nov proekt",np_edit_title:"Uredi proekt",np_number:"Proekt broj",np_name:"Ime na proekt",np_customer:"Klient",np_newcustomer:"+ Nov klient",np_ref:"Referenca na klient",np_po:"Broj na narudžba na klient",np_quoted:"Ponudena vrednost (SEK)",np_desc:"Opis na proekt",np_notes:"Interni beleški",np_type:"Tip proekt",np_pm:"Menadžer na proekt",np_workshop:"Odgovoren za rabotilnica",np_sales:"Odgovoren za prodažba",np_start:"Planiran datum na početok",np_deadline:"Rok",np_plannedcompletion:"Planirano završuvanje",np_save:"Začuvaj proekt",np_cancel:"Otkaži",np_printoffer:"Pečati ponuda",
+ np_title:"Nov proekt",np_edit_title:"Uredi proekt",np_number:"Proekt broj",np_name:"Ime na proekt",np_customer:"Klient",np_newcustomer:"+ Nov klient",np_ref:"Referenca na klient",np_po:"Broj na narudžba na klient",np_err_value:"Vnesi ponudena vrednost pogolema od nula — nov proekt e samata ponuda, pa mu treba cena.",np_quoted:"Ponudena vrednost (SEK)",np_desc:"Opis na proekt",np_notes:"Interni beleški",np_type:"Tip proekt",np_pm:"Menadžer na proekt",np_workshop:"Odgovoren za rabotilnica",np_sales:"Odgovoren za prodažba",np_start:"Planiran datum na početok",np_deadline:"Rok",np_plannedcompletion:"Planirano završuvanje",np_save:"Začuvaj proekt",np_cancel:"Otkaži",np_printoffer:"Pečati ponuda",
  nc_title:"Nov klient",nc_name:"Ime na klient",nc_org:"Mat. broj",nc_contact:"Kontakt lice",nc_save:"Dodaj klient",nc_cancel:"Otkaži",
  tab_overview:"Pregled",tab_jobcards:"Stavki",tab_hours:"Časovi",tab_materials:"Materijali",tab_purchases:"Nabavki",tab_documents:"Dokumenti",tab_reports:"Izveštai",tab_costs:"Trošoci",tab_activity:"Aktivnost",
  ov_status:"Status",ov_progress:"Napredok",ov_time:"Vreme",ov_est:"Proceneto",ov_used:"Iskoristeno",ov_remaining:"Preostanato",ov_material:"Materijal",ov_purchases:"Nabavki",ov_ordered:"Naračano",ov_delivered:"Isporačano",ov_pending:"Vo čekanje",ov_deadline:"Rok",ov_daysremaining:"{d} denovi preostanati",ov_daysoverdue:"{d} denovi docnenje",ov_nodeadline:"Nema postaven rok",ov_warnings:"Predupreduvanja",ov_nowarnings:"Nema predupreduvanja — se e vo red.",ov_notes:"Zakačena beleška",
@@ -690,14 +687,13 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  c_estimated:"Procenet trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proceneta cena",c_actcost:"Realen trošok",
  o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Megjuzbir",o_vat:"DDV 25%",o_total:"Za plakjanje",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
  act_empty:"Sè ušte nema aktivnost.",note_empty:"Sè ušte nema beleški.",
- a_quote:"Isprati kako ponuda",a_approve:"Označi kako odobreno",a_plan:"Planiraj proekt",a_start:"Započni rabota",
+a_approve:"Označi kako odobreno",a_plan:"Planiraj proekt",a_start:"Započni rabota",
  pipe_label:"Tek na rabota",pipe_current:"Tekovna faza",pipe_next:"Klikni za sledna faza",pipe_done:"Pominato",pipe_off:"Nadvor od ponudbeniot tek — proektot e {s}.",
- quote_title:"Isprati kako ponuda",quote_body:"Go pomestuva proektot od Nacrt vo Ponuda. Zapiši što mu se nudi na klientot.",quote_value:"Ponudena vrednost (SEK)",quote_valid:"Ponudata važi do (opcionalno)",quote_save:"Isprati kako ponuda",quote_err_value:"Vnesi ponudena vrednost pogolema od nula — ponuda ne može da se isprati bez cena.",
  approve_title:"Označi kako odobreno",approve_body:"Klientot ja prifati ponudata. Ponudenata vrednost se zaklučuva kako dogovorena cena.",approve_po:"Nabavna narudžba / referenca na klient (opcionalno)",approve_date:"Datum na odobruvanje",approve_save:"Označi kako odobreno",
  plan_title:"Planiraj proekt",plan_body:"Odobrenata rabota vleguva vo planot. Dvata datumi se zadolžitelni za proektot da se prikaže pravilno vo Planiranje.",plan_start:"Planiran početok",plan_deadline:"Rok",plan_save:"Planiraj",plan_err_dates:"I planiraniot početok i rokot se zadolžitelni.",plan_err_order:"Rokot ne može da bide pred planiraniot početok.",
  start_title:"Započni rabota",start_body:"Go označuva proektot kako tekoven. Go postavuva realniot datum na početok i proektot počnuva da sobira časovi.",start_date:"Realen datum na početok",start_save:"Započni rabota",
  a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",
- st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
+ st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
  hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",
  resume_title:"Prodolži proekt",resume_tostatus:"Prodolži do status",resume_save:"Prodolži",
  complete_title:"Završi proekt",complete_ok:"Site proverki se pomineti. Označi go proektot kako ZAVRŠEN?",complete_issues_title:"Proektot ne može da se završi bez proverka",complete_goback:"Vrati se",complete_override:"Menadžerska nadmoć",complete_override_reason:"Pričina za nadmoć (zadolžitelno)",complete_confirm:"Označi završeno",
@@ -837,7 +833,6 @@ const BOARD_ORDER=['quotation','approved','planned','active','hold','completed']
 // the activity-log entry all still happen — dragging never writes a status directly.
 function boardTargets(p){
   const s=new Set();
-  if(canQuote(p))s.add('quotation');
   if(canApprove(p))s.add('approved');
   if(canPlan(p))s.add('planned');
   if(canStart(p))s.add('active');
@@ -854,7 +849,6 @@ function boardDrop(p,target){
   // Each quoting-chain check is true for exactly one source status, so these can never both match
   // a resume/reopen below for the same card (a 'planned' drop is either an approved project being
   // scheduled or a held one being resumed — never both).
-  if(target==='quotation'&&canQuote(p))return openQuoteForm(p);
   if(target==='approved'&&canApprove(p))return openApproveForm(p);
   if(target==='planned'&&canPlan(p))return openPlanForm(p);
   if(target==='active'&&canStart(p))return openStartForm(p);
@@ -938,7 +932,6 @@ function renderDetail(){
 
   const moreItems=[
     ['duplicate',t.a_duplicate,false,true],
-    ['quote',t.a_quote,false,canQuote(p)],
     ['approve',t.a_approve,false,canApprove(p)],
     ['plan',t.a_plan,false,canPlan(p)],
     ['start',t.a_start,false,canStart(p)],
@@ -1265,6 +1258,9 @@ function submitProjectForm(){
   const t=T[LANG];
   const name=$("fName").value.trim();if(!name)return;
   const custId=parseInt($("fCustomer").value)||null;
+  // A project now starts life as the quotation itself, so it cannot be created without a price.
+  // An existing project is exempt: once it is past quotation the field no longer describes an offer.
+  if(!editingId&&(parseFloat($("fQuoted").value)||0)<=0){alert(T[LANG].np_err_value);$("fQuoted").focus();return;}
   const vals={name,customerId:custId,customerRef:$("fRef").value.trim(),poNumber:$("fPo").value.trim(),description:$("fDesc").value.trim(),
     types:newProjTypes.slice(),pm:$("fPm").value,workshop:$("fWorkshop").value,sales:$("fSales").value,
     plannedStart:$("fStart").value,deadline:$("fDeadline").value,plannedCompletion:$("fPlannedC").value,quotedValue:parseFloat($("fQuoted").value)||0};
@@ -1274,7 +1270,7 @@ function submitProjectForm(){
     // No local id is pre-generated here — syncSharedProject() lets WorkshopData assign the real
     // shared id, so a stale page-local counter can never collide with an existing shared project.
     const p={no:projNo(),customerId:custId,poNumber:vals.poNumber,notes:[],quotedValue:0,estLabourHours:0,estMaterialCost:0,estPurchaseCost:0,otherCostEst:0,otherCostAct:0,
-      createdDate:todayISO(),actualStart:"",actualCompletion:"",closedDate:"",status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
+      createdDate:todayISO(),actualStart:"",actualCompletion:"",closedDate:"",status:"quotation",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",
       jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[],...vals};
     pushActivity(p,"Project Created");syncSharedProject(p);
     PROJECTS.unshift(p);
@@ -1569,7 +1565,6 @@ function handleAction(kind){
   $("moreMenu").classList.remove('open');
   const p=getProject(currentId);
   if(kind==='duplicate')return openDuplicateConfirm(p);
-  if(kind==='quote')return openQuoteForm(p);
   if(kind==='approve')return openApproveForm(p);
   if(kind==='plan')return openPlanForm(p);
   if(kind==='start')return openStartForm(p);
@@ -1591,8 +1586,8 @@ function doDuplicate(id){
   const dup={no:projNo(),name:src.name+" (copy)",customerId:src.customerId,customerRef:src.customerRef,poNumber:src.poNumber,description:src.description,
     notes:[],types:src.types.slice(),pm:src.pm,workshop:src.workshop,sales:src.sales,
     createdDate:todayISO(),plannedStart:"",actualStart:"",deadline:"",plannedCompletion:"",actualCompletion:"",closedDate:"",
-    quotedValue:0,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
-    status:"draft",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",jobcards:[],
+    quotedValue:src.quotedValue,estLabourHours:src.estLabourHours,estMaterialCost:src.estMaterialCost,estPurchaseCost:src.estPurchaseCost,otherCostEst:0,otherCostAct:0,
+    status:"quotation",holdReason:"",holdComment:"",expectedResume:"",cancelReason:"",jobcards:[],
     hours:[],materials:[],purchases:[],documents:{},activity:[{date:todayISO(),time:new Date().toTimeString().slice(0,5),user:"Aleksandar",action:"Project duplicated from "+src.no}]};
   syncSharedProject(dup);
   // Each duplicated Item is a real draft Jobcard too. WorkshopData owns the new numbers; no
@@ -1685,7 +1680,6 @@ function doCancel(id){
 // clickable only when the matching ProjectRules check says so, and clicking runs the same gated flow
 // the More menu and a board drop run, so all three routes share one set of rules and one audit trail.
 function pipeAction(p,step){
-  if(step==='quotation'&&canQuote(p))return'quote';
   if(step==='approved'&&canApprove(p))return'approve';
   if(step==='planned'&&canPlan(p))return'plan';
   if(step==='active'&&canStart(p))return'start';
@@ -1711,21 +1705,6 @@ function renderPipeline(p){
 // Draft → Quotation → Approved → Planned → Active. Each form asks only for what that step genuinely
 // records, and every one of them re-checks its own rule before writing: the board, the step strip
 // and the More menu all route here, so the guard lives with the write rather than with each caller.
-function openQuoteForm(p){
-  const t=T[LANG];
-  showModal(`<h2>${t.quote_title}</h2><p class="fsub">${t.quote_body}</p>
-    <div class="frow"><label for="qValue">${t.quote_value}</label><input type="number" id="qValue" min="0" step="100" value="${p.quotedValue||''}"></div>
-    <div class="frow"><label for="qValid">${t.quote_valid}</label><input type="date" id="qValid" value="${p.quoteValidUntil||''}"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doQuote(${p.id})">${t.quote_save}</button></div>`);
-}
-function doQuote(id){
-  const p=getProject(id);if(!canQuote(p)){alert(T[LANG].err_row_changed);closeModal();render();return;}
-  const value=parseFloat($("qValue").value)||0;
-  if(value<=0){alert(T[LANG].quote_err_value);return;}
-  p.status="quotation";p.quotedValue=value;p.quoteValidUntil=$("qValid").value||"";
-  pushActivity(p,"Status changed: DRAFT → QUOTATION — quoted "+fmt(value));
-  syncSharedProject(p);closeModal();render();
-}
 function openApproveForm(p){
   const t=T[LANG];
   showModal(`<h2>${t.approve_title}</h2><p class="fsub">${t.approve_body}</p>
