@@ -5,11 +5,15 @@
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-900-rgb:7,26,51;--navy-800:#0a2447;--navy-800-rgb:10,36,71;--navy-brand:#013179;--navy-brand-rgb:1,49,121;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--spark-rgb:74,144,255;--accent-2:#2c6bd6;--accent-tint:#cfe0ff;--ice:#e8f0fb;
     --line-rgb:142,163,192;--line:rgba(var(--line-rgb),0.16);--field:rgba(255,255,255,0.045);--field-line-rgb:185,198,218;--field-line:rgba(var(--field-line-rgb),0.24);
-    --font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;}
-  :root[data-theme="carbon"]{--navy-950:#05070b;--navy-900:#0a0d13;--navy-900-rgb:10,13,19;--navy-800:#0f131b;--navy-800-rgb:15,19,27;--navy-brand:#234c9e;--navy-brand-rgb:35,76,158;
+    --font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;
+    --ambient-glow:radial-gradient(circle,rgba(var(--spark-rgb),0.18),transparent 62%);--ember-core:var(--spark);
+    --ember-glow:0 0 6px 1px rgba(var(--spark-rgb),.8);--dot-glow:0 0 9px 1px rgba(var(--spark-rgb),.9);}
+  :root[data-theme="carbon"]{--navy-950:#020305;--navy-900:#06080c;--navy-900-rgb:6,8,12;--navy-800:#0a0d13;--navy-800-rgb:10,13,19;--navy-brand:#16326a;--navy-brand-rgb:22,50,106;
     --steel-400:#8792a3;--steel-300:#aab4c4;--spark:#4f8cff;--spark-rgb:79,140,255;--accent-2:#3a7bdb;--accent-tint:#c7ddff;--ice:#e9edf3;
     --line-rgb:135,146,163;--field-line-rgb:170,180,196;
-    --font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;}
+    --font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --ambient-glow:radial-gradient(circle,rgba(var(--spark-rgb),0.09),transparent 66%);--ember-core:#dbe9ff;
+    --ember-glow:0 0 7px 2px rgba(var(--spark-rgb),.95),0 0 17px 5px rgba(var(--spark-rgb),.42);--dot-glow:0 0 12px 2px rgba(var(--spark-rgb),1),0 0 24px 7px rgba(var(--spark-rgb),.45);}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--font-body);color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
@@ -21,9 +25,9 @@
     background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
     background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
   .glow{position:absolute;left:50%;top:34%;width:520px;height:520px;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(var(--spark-rgb),0.18),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+    background:var(--ambient-glow);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
-  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(var(--spark-rgb),.8);animation:rise linear infinite;opacity:0;}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--ember-core);box-shadow:var(--ember-glow);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
@@ -31,7 +35,7 @@
   .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
   .brand .logo{font-family:var(--font-heading);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(var(--spark-rgb),.9);}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:var(--dot-glow);}
   .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
   .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .clock{text-align:right;font-variant-numeric:tabular-nums;}
