@@ -38,6 +38,10 @@
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .ttl{display:flex;align-items:center;gap:11px;}
+  /* project actions sit in the page header, beside the title */
+  .headactions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;}
+  .headactions:empty{display:none;}
+  @media(max-width:1200px){.modhead{flex-wrap:wrap;} .headactions{margin-left:0;width:100%;justify-content:flex-start;}}
   .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
   .modhead h1{font-family:var(--font-heading);font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
@@ -127,6 +131,11 @@
   /* detail header */
   .dethead{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:22px 24px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .dethead .dtop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  /* the quality hold banner sits to the right of the project facts */
+  .dhgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;}
+  .dhside:empty{display:none;}
+  .dhgrid:has(.dhside:empty){grid-template-columns:minmax(0,1fr);}
+  @media(max-width:1200px){.dhgrid{grid-template-columns:minmax(0,1fr);}}
   .dethead .pno{font-family:var(--font-heading);font-size:12px;color:var(--steel-300);letter-spacing:.04em;} .dethead h2{font-family:var(--font-heading);font-weight:600;font-size:22px;margin-top:3px;}
   .dethead .dcust{font-size:12.5px;color:var(--steel-400);margin-top:3px;}
   .dfacts{display:flex;gap:28px;flex-wrap:wrap;}
@@ -286,6 +295,7 @@
     <button class="back" id="backBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="backLbl" data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
       <div><h1 data-i="ptitle">Projects</h1><p data-i="psub">Central job container</p></div></div>
+    <div class="headactions" id="headActions"></div>
   </div>
 
   <div id="listView"></div>
@@ -859,35 +869,40 @@ function renderDetail(){
 
   $("detailView").innerHTML=`
     <div class="dethead">
-      <div class="dtop">
-        <div><div class="pno">${p.no}</div><h2>${esc(p.name)}</h2><div class="dcust">${esc(custName(p.customerId))}${p.customerRef?' · '+esc(p.customerRef):''}</div></div>
-        <div class="roactions">
-          <button class="tbtn" onclick="openEditProject()" ${ro?'disabled':''}>${t.a_edit}</button>
-          <button class="tbtn" onclick="printOffer(${p.id})">${t.np_printoffer}</button>
-          <button class="tbtn" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.a_createjc}</button>
-          <button class="tbtn" onclick="openDocForm()" ${ro?'disabled':''}>${t.a_adddoc}</button>
-          <button class="tbtn" onclick="openPoForm()" ${ro?'disabled':''}>${t.a_createpo}</button>
-          <button class="tbtn" onclick="openNoteForm()" ${ro?'disabled':''}>${t.a_addnote}</button>
-          <div class="more">
-            <button class="tbtn" id="moreBtn">${t.a_more} ▾</button>
-            <div class="moremenu" id="moreMenu">${moreItems}</div>
+      <div class="dhgrid">
+        <div class="dhmain">
+          <div class="dtop">
+            <div><div class="pno">${p.no}</div><h2>${esc(p.name)}</h2><div class="dcust">${esc(custName(p.customerId))}${p.customerRef?' · '+esc(p.customerRef):''}</div></div>
           </div>
+          <div class="dfacts">
+            <div class="df"><div class="k">${t.ov_status}</div><div class="v">${statusBadge(p.status)}</div></div>
+            <div class="df"><div class="k">${t.ov_progress}</div><div class="v">${progressOf(p)}%</div></div>
+            <div class="df"><div class="k">${t.ov_deadline}</div><div class="v">${fmtD(p.deadline)}</div></div>
+            <div class="df"><div class="k">${t.th_responsible}</div><div class="v">${p.pm||"—"}</div></div>
+            <div class="df"><div class="k">${t.th_quoted}</div><div class="v">${p.quotedValue?fmt(p.quotedValue):"—"}</div></div>
+          </div>
+          ${ro?`<div class="roreadonly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${t.readonly_note}</div>`:""}
         </div>
+        <div class="dhside">${qualityHoldBanner(p)}</div>
       </div>
-      <div class="dfacts">
-        <div class="df"><div class="k">${t.ov_status}</div><div class="v">${statusBadge(p.status)}</div></div>
-        <div class="df"><div class="k">${t.ov_progress}</div><div class="v">${progressOf(p)}%</div></div>
-        <div class="df"><div class="k">${t.ov_deadline}</div><div class="v">${fmtD(p.deadline)}</div></div>
-        <div class="df"><div class="k">${t.th_responsible}</div><div class="v">${p.pm||"—"}</div></div>
-        <div class="df"><div class="k">${t.th_quoted}</div><div class="v">${p.quotedValue?fmt(p.quotedValue):"—"}</div></div>
-      </div>
-      ${ro?`<div class="roreadonly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${t.readonly_note}</div>`:""}
-      ${qualityHoldBanner(p)}
     </div>
     <div class="ptabs" id="ptabs">
       ${["overview","jobcards","materials","purchases","documents","costs","activity"].map(tb=>`<button data-tab="${tb}" class="${activeTab===tb?'on':''}">${t["tab_"+tb]}</button>`).join("")}
     </div>
     <div class="tabpanel" id="tabpanel"></div>`;
+
+  // The project actions live in the module header, alongside the page title.
+  $("headActions").innerHTML=`
+    <button class="tbtn" onclick="openEditProject()" ${ro?'disabled':''}>${t.a_edit}</button>
+    <button class="tbtn" onclick="printOffer(${p.id})">${t.np_printoffer}</button>
+    <button class="tbtn" onclick="openJobcardForm()" ${ro?'disabled':''}>${t.a_createjc}</button>
+    <button class="tbtn" onclick="openDocForm()" ${ro?'disabled':''}>${t.a_adddoc}</button>
+    <button class="tbtn" onclick="openPoForm()" ${ro?'disabled':''}>${t.a_createpo}</button>
+    <button class="tbtn" onclick="openNoteForm()" ${ro?'disabled':''}>${t.a_addnote}</button>
+    <div class="more">
+      <button class="tbtn" id="moreBtn">${t.a_more} ▾</button>
+      <div class="moremenu" id="moreMenu">${moreItems}</div>
+    </div>`;
 
   $("ptabs").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;activeTab=b.getAttribute('data-tab');renderDetail();});
   $("moreBtn").addEventListener('click',e=>{e.stopPropagation();$("moreMenu").classList.toggle('open');});
@@ -1601,6 +1616,7 @@ function render(){
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
   if(VIEW==="list"){
     $("listView").style.display="";$("detailView").style.display="none";
+    $("headActions").innerHTML="";
     $("backLbl").textContent=t.back_hub;$("backBtn").onclick=()=>{location.href="hub-desktop.html";};
     renderList();
   }else{
