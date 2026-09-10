@@ -62,7 +62,10 @@
   .crmgrid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start;}
   /* the list and summary columns are compact panels: flow them across the full
      width instead of leaving them as sparse full-width bars */
-  .crmgrid>.col:first-child,.crmgrid>.col:last-child{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;}
+  .crmgrid>.col:first-child,.crmgrid>.col:last-child{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:stretch;}
+  /* Cards laid out side by side end on the same line instead of each stopping at its own content. */
+  .crmgrid>.col:last-child>.panel{display:flex;flex-direction:column;}
+  .crmgrid>.col:last-child>.panel>.spacer{flex:1 1 auto;min-height:0;}
   /* min-width:0 lets a grid track shrink below its content's intrinsic width (the wide items table)
      so .itable-wrap's own overflow-x:auto can scroll internally instead of forcing the whole page wider. */
   .col{display:flex;flex-direction:column;gap:16px;min-width:0;}
@@ -305,6 +308,18 @@
     background:rgba(255,255,255,.03);border:1px solid var(--line);border-left:2px solid rgba(var(--c-accent-rgb),.6);}
   .estnote.warn{border-left-color:var(--warn);color:var(--steel-200);}
   .eitems{font-size:10.5px;letter-spacing:.03em;color:var(--steel-400);}
+
+  /* Two buttons can share a panel heading now that notes and history are one card. */
+  .pheadbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  /* A hand-written note is marked so it reads apart from the automatic history entries. */
+  .notetag{display:inline-block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--c-tint);background:rgba(var(--c-accent-rgb),.14);border:1px solid rgba(var(--c-accent-rgb),.32);
+    padding:1px 6px;margin-right:7px;vertical-align:middle;}
+
+  /* The heading carries a revision badge and two buttons, so it needs room to breathe. */
+  .crmgrid>.col:last-child .phead{flex-wrap:wrap;row-gap:8px;}
+  .crmgrid>.col:last-child .phead h3{display:flex;align-items:center;gap:8px;}
+  .crmgrid>.col:last-child .phead h3 .revbadge{margin:0;}
 </style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
@@ -675,7 +690,7 @@ const T={
     cb_consumable:"Consumables",cb_logistics:"Transport",cb_other:"Other Cost",cb_direct:"Total Direct Cost",cb_overhead:"Overhead",cb_contingency:"Contingency",
     cb_internal:"Total Internal Cost",cb_selling:"Selling Price",cb_profit:"Gross Profit",cb_margin:"Margin %",
     mk_material:"Material markup",mk_labour:"Labour margin",mk_sub:"Subcontractor markup",
-    documents:"Documents",upload:"Upload",history:"History",notes:"Notes",addnote:"+ Add Note",
+    documents:"Documents",upload:"Upload",history:"History",history_notes:"History & notes",note_tag:"Note",cb_nocost:"Nothing priced yet",no_history:"No entries yet.",notes:"Notes",addnote:"+ Add Note",
     empty_docs:"No documents yet.",empty_notes:"No notes yet.",empty_hist:"No history yet.",
     act_preview:"Preview PDF",act_email:"Send by Email",act_convert:"Convert to Project",act_open:"Open Project",act_duplicate:"Duplicate",act_export:"Export to Excel",act_delete:"Delete",
     nc_title:"New Estimation",nc_customer:"Customer",nc_project:"Project reference",nc_valid:"Valid until",nc_save:"Create",nc_cancel:"Cancel",
@@ -744,7 +759,7 @@ const T={
     cb_consumable:"Förbrukningsmaterial",cb_logistics:"Transport",cb_other:"Övrig kostnad",cb_direct:"Total direktkostnad",cb_overhead:"Omkostnader",cb_contingency:"Marginal för osäkerhet",
     cb_internal:"Total intern kostnad",cb_selling:"Försäljningspris",cb_profit:"Bruttovinst",cb_margin:"Marginal %",
     mk_material:"Materialpåslag",mk_labour:"Arbetsmarginal",mk_sub:"Underleverantörspåslag",
-    documents:"Dokument",upload:"Ladda upp",history:"Historik",notes:"Anteckningar",addnote:"+ Lägg till anteckning",
+    documents:"Dokument",upload:"Ladda upp",history:"Historik",history_notes:"Historik & anteckningar",note_tag:"Anteckning",cb_nocost:"Inget prissatt ännu",no_history:"Inga poster ännu.",notes:"Anteckningar",addnote:"+ Lägg till anteckning",
     empty_docs:"Inga dokument ännu.",empty_notes:"Inga anteckningar ännu.",empty_hist:"Ingen historik ännu.",
     act_preview:"Förhandsgranska PDF",act_email:"Skicka via e-post",act_convert:"Konvertera till projekt",act_open:"Öppna projekt",act_duplicate:"Duplicera",act_export:"Exportera till Excel",act_delete:"Ta bort",
     nc_title:"Ny kalkyl",nc_customer:"Kund",nc_project:"Projektreferens",nc_valid:"Giltig till",nc_save:"Skapa",nc_cancel:"Avbryt",
@@ -813,7 +828,7 @@ const T={
     cb_consumable:"Potroшen materijal",cb_logistics:"Transport",cb_other:"Drug trošok",cb_direct:"Vkupen direkten trošok",cb_overhead:"Režiski troшoci",cb_contingency:"Rezerva za nesigurnost",
     cb_internal:"Vkupna interna cena",cb_selling:"Prodažna cena",cb_profit:"Bruto profit",cb_margin:"Marža %",
     mk_material:"Marža na materijal",mk_labour:"Marža na rabota",mk_sub:"Marža na podizveduvač",
-    documents:"Dokumenti",upload:"Otpremi",history:"Istorija",notes:"Beleški",addnote:"+ Dodaj beleška",
+    documents:"Dokumenti",upload:"Otpremi",history:"Istorija",history_notes:"Istorija i beleški",note_tag:"Beleška",cb_nocost:"Sè ušte nema procenka",no_history:"Sè ušte nema zapisi.",notes:"Beleški",addnote:"+ Dodaj beleška",
     empty_docs:"Sè uште nema dokumenti.",empty_notes:"Sè uште nema beleški.",empty_hist:"Sè uште nema istorija.",
     act_preview:"Pregled na PDF",act_email:"Isprati po e-pošta",act_convert:"Konvertiraj vo proekt",act_open:"Otvori proekt",act_duplicate:"Dupliciraj",act_export:"Izvezi vo Excel",act_delete:"Izbriši",
     nc_title:"Nova kalkulacija",nc_customer:"Klient",nc_project:"Referenca na proekt",nc_valid:"Važi do",nc_save:"Kreiraj",nc_cancel:"Otkaži",
@@ -1326,13 +1341,7 @@ function renderRight(e){
     ${actualComparisonHtml(e,tot)}
     <div class="panel">
       <div class="phead"><h3>${esc(t.cost_breakdown)}</h3><button class="iconbtn" style="width:28px;height:28px;" onclick="openPricingSettings(${e.id})" aria-label="${esc(t.pricing_title)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_material)}</span><span>${fmt0(tot.materialCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_labour)}</span><span>${fmt0(tot.labourCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_machine)}</span><span>${fmt0(tot.machineCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_sub)}</span><span>${fmt0(tot.subCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_consumable)}</span><span>${fmt0(tot.consumableCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_logistics)}</span><span>${fmt0(tot.logisticsCost)}</span></div>
-      <div class="costrow"><span class="ck">${esc(t.cb_other)}</span><span>${fmt0(tot.otherCost)}</span></div>
+      ${costCategoryRows(tot)}
       <div class="costrow sub"><span>${esc(t.cb_direct)}</span><span>${fmt0(tot.totalDirectCost)}</span></div>
       <div class="costrow"><span class="ck">${esc(t.cb_overhead)} (${e.overheadPct}%)</span><span>${fmt0(tot.overhead)}</span></div>
       <div class="costrow"><span class="ck">${esc(t.cb_contingency)} (${e.contingencyPct}%)</span><span>${fmt0(tot.contingency)}</span></div>
@@ -1352,13 +1361,36 @@ function renderRight(e){
       <div class="disclaimer2">${esc(t.demo_upload)}</div>
     </div>
     <div class="panel">
-      <div class="phead"><h3>${esc(t.history)} · ${esc(t.rev_short)} ${e.revision||0}</h3><button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>
-      ${(e.history||[]).slice().reverse().map(h=>`<div class="histrow"><div class="hdate">${esc(h.date)}${h.time?' '+esc(h.time):''}</div><div><div class="haction">${esc(h.action)}</div><div class="hby">${esc(t.by_word)} ${esc(h.by)}</div></div></div>`).join("")||`<div class="empty3">${esc(t.empty_hist)}</div>`}
-    </div>
-    <div class="panel">
-      <div class="phead"><h3>${esc(t.notes)}</h3><button class="tbtn small" onclick="openAddNote(${e.id})">${esc(t.addnote)}</button></div>
-      ${(e.notes||[]).slice().reverse().map(n=>`<div class="notecard"><b>${esc(n.date)}</b> — ${esc(n.text)}<div style="color:var(--steel-400);margin-top:4px;">– ${esc(n.author)}</div></div>`).join("")||`<div class="empty3">${esc(t.empty_notes)}</div>`}
+      <div class="phead"><h3>${esc(t.history_notes)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span></h3><div class="pheadbtns"><button class="tbtn small" onclick="openAddNote(${e.id})">${esc(t.addnote)}</button><button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div></div>
+      ${renderTimeline(e)}
     </div>`;
+}
+
+
+// Only the cost categories that actually carry cost. A quote with no subcontracting, consumables,
+// transport or other costs used to show four rows of zeros, which made this the tallest card in the
+// row for no information at all.
+function costCategoryRows(tot){
+  const t=T[LANG];
+  const rows=[['cb_material',tot.materialCost],['cb_labour',tot.labourCost],['cb_machine',tot.machineCost],
+    ['cb_sub',tot.subCost],['cb_consumable',tot.consumableCost],['cb_logistics',tot.logisticsCost],['cb_other',tot.otherCost]]
+    .filter(r=>r[1]>0);
+  if(!rows.length)return `<div class="costrow"><span class="ck">${esc(t.cb_nocost)}</span><span>${fmt0(0)}</span></div>`;
+  return rows.map(r=>`<div class="costrow"><span class="ck">${esc(t[r[0]])}</span><span>${fmt0(r[1])}</span></div>`).join("");
+}
+
+// History and notes are both a record of what happened to this estimate over time, so they read as
+// one timeline rather than two cards - a note is simply an entry someone wrote by hand.
+function renderTimeline(e){
+  const t=T[LANG];
+  const entries=(e.history||[]).map(h=>({date:h.date||'',time:h.time||'',text:h.action||'',by:h.by||'',note:false}))
+    .concat((e.notes||[]).map(n=>({date:n.date||'',time:n.time||'',text:n.text||'',by:n.author||'',note:true})))
+    .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  if(!entries.length)return `<div class="empty3">${esc(t.no_history)}</div>`;
+  return entries.map(x=>`<div class="histrow">
+    <div class="hdate">${esc(x.date)}${x.time?' '+esc(x.time):''}</div>
+    <div><div class="haction">${x.note?`<span class="notetag">${esc(t.note_tag)}</span>`:''}${esc(x.text)}</div><div class="hby">${esc(x.by)}</div></div>
+  </div>`).join("");
 }
 
 function actualComparisonHtml(e,tot){if(!window.WorkshopData)return'';const t=T[LANG];const shared=WorkshopData.get(),se=shared.estimations.find(x=>x.id===e.sharedId||x.no===e.no),p=se&&shared.projects.find(x=>x.id===se.projectId);if(!p)return'';const actualMat=p.actualMaterialCost||money(tot.materialCost*.92),actualHours=p.usedHours||0,planned=e.plannedHours||p.plannedHours||0;return `<div class="panel"><div class="phead"><h3>${esc(t.actual_vs_est)}</h3><span class="stpill ${p.status==='completed'?'accepted':'sent'}">${esc(p.no)}</span></div><div class="costrow"><span class="ck">${esc(t.cb_material)}</span><span>${fmt0(tot.materialCost)} → <b>${fmt0(actualMat)}</b></span></div><div class="costrow"><span class="ck">${esc(t.actual_hours)}</span><span>${esc(planned)} h → <b>${esc(actualHours)} h</b></span></div><div class="costrow final"><span>${esc(t.actual_variance)}</span><span style="color:${actualMat>tot.materialCost?'var(--danger)':'var(--ok)'}">${actualMat>tot.materialCost?'+':''}${fmt0(actualMat-tot.materialCost)}</span></div></div>`}
