@@ -69,12 +69,36 @@
   /* kanban board — each stage carries its own colour so the columns read apart */
   .board{display:grid;grid-template-columns:repeat(6,minmax(168px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:10px;}
   .bcol{border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0;transition:.15s;--bs:var(--spark);--bs-rgb:var(--c-accent-rgb);}
-  .bcol[data-status="quotation"]{--bs:#a78bfa;--bs-rgb:167,139,250;}
-  .bcol[data-status="approved"]{--bs:#22d3ee;--bs-rgb:34,211,238;}
-  .bcol[data-status="planned"]{--bs:#4a90ff;--bs-rgb:74,144,255;}
-  .bcol[data-status="active"]{--bs:#4ad48a;--bs-rgb:74,212,138;}
-  .bcol[data-status="hold"]{--bs:#ffb057;--bs-rgb:255,176,87;}
-  .bcol[data-status="completed"]{--bs:#2dd4bf;--bs-rgb:45,212,191;}
+  /* One hue per status, shared by the board column and the workflow step strip so a stage looks
+     the same wherever it appears. Draft has no board column but does have a step. */
+  .bcol[data-status="draft"],.pstep[data-status="draft"]{--bs:#8fa3bf;--bs-rgb:143,163,191;}
+  .bcol[data-status="quotation"],.pstep[data-status="quotation"]{--bs:#a78bfa;--bs-rgb:167,139,250;}
+  .bcol[data-status="approved"],.pstep[data-status="approved"]{--bs:#22d3ee;--bs-rgb:34,211,238;}
+  .bcol[data-status="planned"],.pstep[data-status="planned"]{--bs:#4a90ff;--bs-rgb:74,144,255;}
+  .bcol[data-status="active"],.pstep[data-status="active"]{--bs:#4ad48a;--bs-rgb:74,212,138;}
+  .bcol[data-status="hold"],.pstep[data-status="hold"]{--bs:#ffb057;--bs-rgb:255,176,87;}
+  .bcol[data-status="completed"],.pstep[data-status="completed"]{--bs:#2dd4bf;--bs-rgb:45,212,191;}
+
+  /* Workflow step strip (project detail header, right-hand side). */
+  .pipe{display:flex;flex-direction:column;gap:9px;}
+  .pipelbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel-400);}
+  .psteps{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;}
+  .pstep{--bs:#8fa3bf;--bs-rgb:143,163,191;display:flex;align-items:center;gap:6px;font-family:var(--font-body);
+    font-size:11px;letter-spacing:.02em;text-transform:uppercase;padding:7px 11px;border:1px solid var(--field-line);
+    background:var(--field);color:var(--steel-400);transition:.15s;}
+  .pstep::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex:none;}
+  .pstep.done{color:var(--steel-300);border-color:rgba(var(--bs-rgb),.28);}
+  .pstep.done::before{background:rgb(var(--bs-rgb));opacity:.75;}
+  .pstep.now{color:var(--bs);border-color:rgba(var(--bs-rgb),.6);
+    background:linear-gradient(rgba(var(--bs-rgb),.16),rgba(var(--bs-rgb),.16)),var(--field);font-weight:600;}
+  .pstep.now::before{background:rgb(var(--bs-rgb));opacity:1;box-shadow:0 0 8px rgba(var(--bs-rgb),.9);}
+  button.pstep.can{cursor:pointer;color:var(--steel-200);border-color:rgba(var(--bs-rgb),.45);
+    border-style:dashed;background:var(--field);}
+  button.pstep.can:hover{color:var(--bs);border-style:solid;border-color:rgba(var(--bs-rgb),.85);
+    background:linear-gradient(rgba(var(--bs-rgb),.12),rgba(var(--bs-rgb),.12)),var(--field);}
+  button.pstep.can::before{background:rgb(var(--bs-rgb));opacity:.55;}
+  button.pstep.can:hover::before{opacity:1;box-shadow:0 0 8px rgba(var(--bs-rgb),.9);}
+  .pipeoff{font-size:11.5px;color:var(--steel-400);}
   .bcol{border-top:2px solid var(--bs);}
   .bcol-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);
     background:linear-gradient(rgba(var(--bs-rgb),.13),rgba(var(--bs-rgb),.13)),var(--navy-800);}
@@ -345,6 +369,7 @@ const PROJECT_UI_OWNED_FIELDS=['id','no','name','customerRef','poNumber','descri
   'pm','workshop','sales','createdDate','plannedStart','actualStart','deadline','plannedCompletion',
   'actualCompletion','closedDate','quotedValue','estLabourHours','estMaterialCost','estPurchaseCost',
   'otherCostEst','otherCostAct','status','holdReason','holdComment','expectedResume','cancelReason',
+  'quoteValidUntil','approvedDate',
   'jobcards','hours','materials','purchases','documents','activity','archived'];
 function syncSharedProject(p){
   if(!window.WorkshopData?.upsertProject)return null;
@@ -403,7 +428,8 @@ function custContactLine(cust){
   if(!c)return cust.email||"";
   return[c.name,c.email].filter(Boolean).join(" · ");
 }
-const {STATUS_ORDER,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass}=ProjectRules;
+const {STATUS_ORDER,PIPELINE,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,
+  canQuote,canApprove,canPlan,canStart,isReadonlyStatus,statusCssClass}=ProjectRules;
 function getProject(id){return PROJECTS.find(p=>p.id===id);}
 // Resolves via WorkshopData's central Quality Hold gate (quality-gates.js) — this covers BOTH a
 // Project-scoped hold on p.no AND a Jobcard-scoped hold on any real jobcard-desktop.html Jobcard
@@ -553,6 +579,12 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  c_estimated:"Estimated cost",c_actual:"Actual cost",c_labour:"Labour",c_material:"Material",c_purchased:"Purchased components",c_other:"Other costs",c_total:"Total cost",c_quoted:"Quoted value",c_revenue:"Revenue",c_profit:"Profit",c_margin:"Margin",c_itemrevenue:"Revenue by item",c_estprice:"Est. price",c_actcost:"Actual cost",
  o_title:"OFFER",o_no:"Offer no",o_date:"Date",o_to:"To",o_desc:"Description",o_hrs:"Hrs",o_mat:"Material",o_amount:"Amount",o_subtotal:"Subtotal",o_vat:"VAT 25%",o_total:"Total due",o_valid:"Offer valid 30 days. Prices excl. VAT where not stated.",o_printbtn:"Print",o_close:"Close",
  act_empty:"No activity yet.",note_empty:"No notes yet.",
+ a_quote:"Send as quotation",a_approve:"Mark approved",a_plan:"Schedule project",a_start:"Start work",
+ pipe_label:"Workflow",pipe_current:"Current stage",pipe_next:"Click to advance",pipe_done:"Passed",pipe_off:"Outside the quoting chain — this project is {s}.",
+ quote_title:"Send as quotation",quote_body:"Moves the project from Draft to Quotation. Record what the customer is being quoted.",quote_value:"Quoted value (SEK)",quote_valid:"Quote valid until (optional)",quote_save:"Send as quotation",quote_err_value:"Enter a quoted value greater than zero — a quotation cannot be sent without a price.",
+ approve_title:"Mark approved",approve_body:"The customer has accepted the quotation. The quoted value is locked in as the agreed price.",approve_po:"Customer PO / reference (optional)",approve_date:"Approval date",approve_save:"Mark approved",
+ plan_title:"Schedule project",plan_body:"Approved work moves into the schedule. Both dates are required so the project appears correctly in Planning.",plan_start:"Planned start",plan_deadline:"Deadline",plan_save:"Schedule",plan_err_dates:"Planned start and deadline are both required.",plan_err_order:"The deadline cannot fall before the planned start.",
+ start_title:"Start work",start_body:"Marks the project as running. This sets the actual start date and the project begins accruing hours.",start_date:"Actual start date",start_save:"Start work",
  a_edit:"Edit",a_createjc:"Create jobcard",a_adddoc:"Add document",a_createpo:"Create purchase",a_addnote:"Add note",a_more:"More",a_duplicate:"Duplicate project",a_hold:"Put on hold",a_resume:"Resume project",a_complete:"Complete project",a_close:"Close project",a_cancel:"Cancel project",a_reopen:"Reopen project",
  st_draft:"Draft",st_quotation:"Quotation",st_approved:"Approved",st_planned:"Planned",st_active:"Active",st_hold:"On hold",st_completed:"Completed",st_closed:"Closed",st_cancelled:"Cancelled",
  hold_title:"Put project on hold",hold_reason:"Hold reason",hold_comment:"Comment",hold_expected:"Expected resume date (optional)",hold_save:"Put on hold",
@@ -603,6 +635,12 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  c_estimated:"Uppskattad kostnad",c_actual:"Verklig kostnad",c_labour:"Arbete",c_material:"Material",c_purchased:"Inköpta komponenter",c_other:"Övriga kostnader",c_total:"Total kostnad",c_quoted:"Offertvärde",c_revenue:"Intäkt",c_profit:"Vinst",c_margin:"Marginal",c_itemrevenue:"Intäkt per post",c_estprice:"Est. pris",c_actcost:"Verklig kostnad",
  o_title:"OFFERT",o_no:"Offertnr",o_date:"Datum",o_to:"Till",o_desc:"Beskrivning",o_hrs:"Tim",o_mat:"Material",o_amount:"Belopp",o_subtotal:"Delsumma",o_vat:"Moms 25%",o_total:"Att betala",o_valid:"Offerten gäller i 30 dagar. Priser exkl. moms där ej annat anges.",o_printbtn:"Skriv ut",o_close:"Stäng",
  act_empty:"Ingen aktivitet ännu.",note_empty:"Inga anteckningar ännu.",
+ a_quote:"Skicka som offert",a_approve:"Markera godkänd",a_plan:"Planera projekt",a_start:"Starta arbetet",
+ pipe_label:"Arbetsflöde",pipe_current:"Nuvarande steg",pipe_next:"Klicka för att gå vidare",pipe_done:"Passerat",pipe_off:"Utanför offertkedjan — projektet är {s}.",
+ quote_title:"Skicka som offert",quote_body:"Flyttar projektet från Utkast till Offert. Registrera vad kunden offereras.",quote_value:"Offertvärde (SEK)",quote_valid:"Offert giltig till (valfritt)",quote_save:"Skicka som offert",quote_err_value:"Ange ett offertvärde större än noll — en offert kan inte skickas utan pris.",
+ approve_title:"Markera godkänd",approve_body:"Kunden har accepterat offerten. Offertvärdet låses som avtalat pris.",approve_po:"Kundens inköpsorder / referens (valfritt)",approve_date:"Godkännandedatum",approve_save:"Markera godkänd",
+ plan_title:"Planera projekt",plan_body:"Godkänt arbete går in i planeringen. Båda datumen krävs för att projektet ska visas rätt i Planering.",plan_start:"Planerad start",plan_deadline:"Deadline",plan_save:"Planera",plan_err_dates:"Både planerad start och deadline krävs.",plan_err_order:"Deadline kan inte ligga före planerad start.",
+ start_title:"Starta arbetet",start_body:"Markerar projektet som pågående. Detta sätter verkligt startdatum och projektet börjar samla timmar.",start_date:"Verkligt startdatum",start_save:"Starta arbetet",
  a_edit:"Redigera",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",
  st_draft:"Utkast",st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",
  hold_title:"Pausa projekt",hold_reason:"Anledning",hold_comment:"Kommentar",hold_expected:"Förväntat återupptagningsdatum (valfritt)",hold_save:"Pausa",
@@ -652,6 +690,12 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
  c_estimated:"Procenet trošok",c_actual:"Realen trošok",c_labour:"Rabota",c_material:"Materijal",c_purchased:"Nabaveni komponenti",c_other:"Drugi trošoci",c_total:"Vkupen trošok",c_quoted:"Ponudena vrednost",c_revenue:"Prihod",c_profit:"Profit",c_margin:"Marža",c_itemrevenue:"Prihod po stavka",c_estprice:"Proceneta cena",c_actcost:"Realen trošok",
  o_title:"PONUDA",o_no:"Ponuda br.",o_date:"Datum",o_to:"Do",o_desc:"Opis",o_hrs:"Časa",o_mat:"Materijal",o_amount:"Iznos",o_subtotal:"Megjuzbir",o_vat:"DDV 25%",o_total:"Za plakjanje",o_valid:"Ponudata važi 30 dena. Cenite se bez DDV osven kade što e navedeno.",o_printbtn:"Pečati",o_close:"Zatvori",
  act_empty:"Sè ušte nema aktivnost.",note_empty:"Sè ušte nema beleški.",
+ a_quote:"Isprati kako ponuda",a_approve:"Označi kako odobreno",a_plan:"Planiraj proekt",a_start:"Započni rabota",
+ pipe_label:"Tek na rabota",pipe_current:"Tekovna faza",pipe_next:"Klikni za sledna faza",pipe_done:"Pominato",pipe_off:"Nadvor od ponudbeniot tek — proektot e {s}.",
+ quote_title:"Isprati kako ponuda",quote_body:"Go pomestuva proektot od Nacrt vo Ponuda. Zapiši što mu se nudi na klientot.",quote_value:"Ponudena vrednost (SEK)",quote_valid:"Ponudata važi do (opcionalno)",quote_save:"Isprati kako ponuda",quote_err_value:"Vnesi ponudena vrednost pogolema od nula — ponuda ne može da se isprati bez cena.",
+ approve_title:"Označi kako odobreno",approve_body:"Klientot ja prifati ponudata. Ponudenata vrednost se zaklučuva kako dogovorena cena.",approve_po:"Nabavna narudžba / referenca na klient (opcionalno)",approve_date:"Datum na odobruvanje",approve_save:"Označi kako odobreno",
+ plan_title:"Planiraj proekt",plan_body:"Odobrenata rabota vleguva vo planot. Dvata datumi se zadolžitelni za proektot da se prikaže pravilno vo Planiranje.",plan_start:"Planiran početok",plan_deadline:"Rok",plan_save:"Planiraj",plan_err_dates:"I planiraniot početok i rokot se zadolžitelni.",plan_err_order:"Rokot ne može da bide pred planiraniot početok.",
+ start_title:"Započni rabota",start_body:"Go označuva proektot kako tekoven. Go postavuva realniot datum na početok i proektot počnuva da sobira časovi.",start_date:"Realen datum na početok",start_save:"Započni rabota",
  a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",
  st_draft:"Nacrt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",
  hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",
@@ -793,6 +837,10 @@ const BOARD_ORDER=['quotation','approved','planned','active','hold','completed']
 // the activity-log entry all still happen — dragging never writes a status directly.
 function boardTargets(p){
   const s=new Set();
+  if(canQuote(p))s.add('quotation');
+  if(canApprove(p))s.add('approved');
+  if(canPlan(p))s.add('planned');
+  if(canStart(p))s.add('active');
   if(canHold(p))s.add('hold');
   if(canResume(p)){s.add('active');s.add('planned');}
   if(canReopen(p)){s.add('active');s.add('completed');}
@@ -803,6 +851,13 @@ function boardTargets(p){
   return s;
 }
 function boardDrop(p,target){
+  // Each quoting-chain check is true for exactly one source status, so these can never both match
+  // a resume/reopen below for the same card (a 'planned' drop is either an approved project being
+  // scheduled or a held one being resumed — never both).
+  if(target==='quotation'&&canQuote(p))return openQuoteForm(p);
+  if(target==='approved'&&canApprove(p))return openApproveForm(p);
+  if(target==='planned'&&canPlan(p))return openPlanForm(p);
+  if(target==='active'&&canStart(p))return openStartForm(p);
   if(target==='hold'&&canHold(p))return openHoldForm(p);
   if((target==='active'||target==='planned')&&canResume(p))return openResumeForm(p);
   if((target==='active'||target==='completed')&&canReopen(p))return openReopenForm(p);
@@ -870,7 +925,7 @@ function wireBoard(){
 function openProject(id){currentId=id;VIEW="detail";activeTab="overview";render();}
 function safeTab(){if(['hours','reports'].includes(activeTab))activeTab="overview";}
 
-// canHold/canResume/canComplete/canClose/canCancel/canReopen are destructured from ProjectRules
+// The can* workflow checks are destructured from ProjectRules
 // above (they read p.status through the same uiStatus() adapter statusBadge() uses).
 function isReadonly(p){return isReadonlyStatus(p);}
 
@@ -883,6 +938,10 @@ function renderDetail(){
 
   const moreItems=[
     ['duplicate',t.a_duplicate,false,true],
+    ['quote',t.a_quote,false,canQuote(p)],
+    ['approve',t.a_approve,false,canApprove(p)],
+    ['plan',t.a_plan,false,canPlan(p)],
+    ['start',t.a_start,false,canStart(p)],
     ['hold',t.a_hold,false,canHold(p)],
     ['resume',t.a_resume,false,canResume(p)],
     ['complete',t.a_complete,false,canComplete(p)],
@@ -907,7 +966,7 @@ function renderDetail(){
           </div>
           ${ro?`<div class="roreadonly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${t.readonly_note}</div>`:""}
         </div>
-        <div class="dhside">${qualityHoldBanner(p)}</div>
+        <div class="dhside">${renderPipeline(p)}${qualityHoldBanner(p)}</div>
       </div>
     </div>
     <div class="ptabs" id="ptabs">
@@ -1510,6 +1569,10 @@ function handleAction(kind){
   $("moreMenu").classList.remove('open');
   const p=getProject(currentId);
   if(kind==='duplicate')return openDuplicateConfirm(p);
+  if(kind==='quote')return openQuoteForm(p);
+  if(kind==='approve')return openApproveForm(p);
+  if(kind==='plan')return openPlanForm(p);
+  if(kind==='start')return openStartForm(p);
   if(kind==='hold')return openHoldForm(p);
   if(kind==='resume')return openResumeForm(p);
   if(kind==='complete')return openCompleteFlow(p);
@@ -1617,6 +1680,93 @@ function openCancelForm(p){
 function doCancel(id){
   const p=getProject(id);const reason=$("cxReason").value.trim();if(!reason)return;
   p.status="cancelled";p.cancelReason=reason;pushActivity(p,"Status changed → CANCELLED: "+reason);syncSharedProject(p);closeModal();render();
+}
+// The workflow step strip shown in the project header. It never decides anything itself: a step is
+// clickable only when the matching ProjectRules check says so, and clicking runs the same gated flow
+// the More menu and a board drop run, so all three routes share one set of rules and one audit trail.
+function pipeAction(p,step){
+  if(step==='quotation'&&canQuote(p))return'quote';
+  if(step==='approved'&&canApprove(p))return'approve';
+  if(step==='planned'&&canPlan(p))return'plan';
+  if(step==='active'&&canStart(p))return'start';
+  if((step==='active'||step==='planned')&&canResume(p))return'resume';
+  if(step==='active'&&canReopen(p))return'reopen';
+  return null;
+}
+function renderPipeline(p){
+  const t=T[LANG],cur=uiStatus(p.status),at=PIPELINE.indexOf(cur);
+  const steps=PIPELINE.map((st,i)=>{
+    const isNow=st===cur,act=isNow?null:pipeAction(p,st),done=at>=0&&i<at;
+    const cls=['pstep',isNow?'now':'',done?'done':'',act?'can':''].filter(Boolean).join(' ');
+    const title=isNow?t.pipe_current:act?t.pipe_next:done?t.pipe_done:'';
+    return act?`<button class="${cls}" data-status="${st}" title="${esc(title)}" onclick="handleAction('${act}')">${t["f_"+st]}</button>`
+              :`<span class="${cls}" data-status="${st}" title="${esc(title)}">${t["f_"+st]}</span>`;
+  }).join("");
+  // A project parked on hold, or already finished, is off the chain — say so rather than leaving
+  // the strip looking like it simply never started.
+  const off=at<0?`<div class="pipeoff">${t.pipe_off.replace("{s}",t["f_"+cur]||esc(p.status))}</div>`:"";
+  return `<div class="pipe"><div class="pipelbl">${t.pipe_label}</div><div class="psteps">${steps}</div>${off}</div>`;
+}
+// ── The quoting chain ──
+// Draft → Quotation → Approved → Planned → Active. Each form asks only for what that step genuinely
+// records, and every one of them re-checks its own rule before writing: the board, the step strip
+// and the More menu all route here, so the guard lives with the write rather than with each caller.
+function openQuoteForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.quote_title}</h2><p class="fsub">${t.quote_body}</p>
+    <div class="frow"><label for="qValue">${t.quote_value}</label><input type="number" id="qValue" min="0" step="100" value="${p.quotedValue||''}"></div>
+    <div class="frow"><label for="qValid">${t.quote_valid}</label><input type="date" id="qValid" value="${p.quoteValidUntil||''}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doQuote(${p.id})">${t.quote_save}</button></div>`);
+}
+function doQuote(id){
+  const p=getProject(id);if(!canQuote(p)){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  const value=parseFloat($("qValue").value)||0;
+  if(value<=0){alert(T[LANG].quote_err_value);return;}
+  p.status="quotation";p.quotedValue=value;p.quoteValidUntil=$("qValid").value||"";
+  pushActivity(p,"Status changed: DRAFT → QUOTATION — quoted "+fmt(value));
+  syncSharedProject(p);closeModal();render();
+}
+function openApproveForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.approve_title}</h2><p class="fsub">${t.approve_body}</p>
+    <div class="frow"><label for="apDate">${t.approve_date}</label><input type="date" id="apDate" value="${todayISO()}"></div>
+    <div class="frow"><label for="apPo">${t.approve_po}</label><input type="text" id="apPo" value="${esc(p.poNumber||'')}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doApprove(${p.id})">${t.approve_save}</button></div>`);
+}
+function doApprove(id){
+  const p=getProject(id);if(!canApprove(p)){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  const po=$("apPo").value.trim();
+  p.status="approved";p.approvedDate=$("apDate").value||todayISO();if(po)p.poNumber=po;
+  pushActivity(p,"Status changed: QUOTATION → APPROVED"+(po?" — customer PO "+po:""));
+  syncSharedProject(p);closeModal();render();
+}
+function openPlanForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.plan_title}</h2><p class="fsub">${t.plan_body}</p>
+    <div class="frow"><label for="plStart">${t.plan_start}</label><input type="date" id="plStart" value="${p.plannedStart||''}"></div>
+    <div class="frow"><label for="plDeadline">${t.plan_deadline}</label><input type="date" id="plDeadline" value="${p.deadline||''}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doPlan(${p.id})">${t.plan_save}</button></div>`);
+}
+function doPlan(id){
+  const p=getProject(id);if(!canPlan(p)){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  const start=$("plStart").value,deadline=$("plDeadline").value;
+  if(!start||!deadline){alert(T[LANG].plan_err_dates);return;}
+  if(deadline<start){alert(T[LANG].plan_err_order);return;}
+  p.status="planned";p.plannedStart=start;p.deadline=deadline;
+  pushActivity(p,"Status changed: APPROVED → PLANNED — "+fmtD(start)+" → "+fmtD(deadline));
+  syncSharedProject(p);closeModal();render();
+}
+function openStartForm(p){
+  const t=T[LANG];
+  showModal(`<h2>${t.start_title}</h2><p class="fsub">${t.start_body}</p>
+    <div class="frow"><label for="stDate">${t.start_date}</label><input type="date" id="stDate" value="${p.actualStart||todayISO()}"></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.cancel_generic}</button><button class="tbtn primary" onclick="doStart(${p.id})">${t.start_save}</button></div>`);
+}
+function doStart(id){
+  const p=getProject(id);if(!canStart(p)){alert(T[LANG].err_row_changed);closeModal();render();return;}
+  p.status="active";p.actualStart=$("stDate").value||todayISO();
+  pushActivity(p,"Status changed: PLANNED → ACTIVE — started "+fmtD(p.actualStart));
+  syncSharedProject(p);closeModal();render();
 }
 function openReopenForm(p){
   const t=T[LANG];const held=projQualityGate(p).blocked;

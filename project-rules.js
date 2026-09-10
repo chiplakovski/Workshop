@@ -31,6 +31,18 @@
   function canClose(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='completed';}
   function canCancel(p){return isKnownUiStatus(p.status)&&!['closed','cancelled','completed'].includes(uiStatus(p.status));}
   function canReopen(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='closed';}
+  // The quoting chain, added in Pass 3.68. Until then a project could only be created as a
+  // draft and then jump straight to hold/complete/cancel: 'quotation', 'approved' and 'planned'
+  // existed as statuses (and as board columns) with nothing in the app able to reach them, so the
+  // only projects ever in those states were the seeded demo ones. Each step is single-source, so a
+  // status can only ever be entered from the one that legitimately precedes it.
+  function canQuote(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='draft';}
+  function canApprove(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='quotation';}
+  function canPlan(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='approved';}
+  function canStart(p){return isKnownUiStatus(p.status)&&uiStatus(p.status)==='planned';}
+  // The ordered pipeline a project walks before it is running work. Kept next to the checks above
+  // because the UI renders it as a step strip and must not re-declare the order for itself.
+  const PIPELINE=['draft','quotation','approved','planned','active'];
   function isReadonlyStatus(p){return uiStatus(p.status)==='closed';}
   // The CSS class rendered for a status badge. A known status (native or aliased) uses its own
   // mapped class name; an unrecognised status ALWAYS uses the fixed 'unknown' class — raw status
@@ -48,9 +60,9 @@
     return state;
   }
 
-  const ProjectRules={custName,custObj,STATUS_ORDER,STATUS_ALIASES,uiStatus,isKnownUiStatus,
-    canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass,
-    mergeProjectFormStateAfterCustomer};
+  const ProjectRules={custName,custObj,STATUS_ORDER,STATUS_ALIASES,PIPELINE,uiStatus,isKnownUiStatus,
+    canHold,canResume,canComplete,canClose,canCancel,canReopen,canQuote,canApprove,canPlan,canStart,
+    isReadonlyStatus,statusCssClass,mergeProjectFormStateAfterCustomer};
   root.ProjectRules=ProjectRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=ProjectRules;
 })(typeof window!=='undefined'?window:globalThis);
