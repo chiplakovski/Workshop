@@ -57,6 +57,30 @@
   .tbtn:disabled:hover{transform:none;box-shadow:none;border-color:var(--field-line);color:var(--steel-300);}
 
   .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .viewtabs{display:flex;gap:6px;margin-bottom:14px;}
+  .viewtabs button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:11.5px;padding:8px 16px;cursor:pointer;transition:.15s;letter-spacing:.02em;text-transform:uppercase;}
+  .viewtabs button.active{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
+
+  /* kanban board */
+  .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(228px,1fr);gap:12px;overflow-x:auto;align-items:start;padding-bottom:10px;}
+  .bcol{border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0;transition:.15s;}
+  .bcol-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);}
+  .bcol-head h3{font-family:var(--font-heading);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c-tint);}
+  .bcount{font-size:11px;color:var(--steel-400);font-variant-numeric:tabular-nums;}
+  .bcards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:90px;}
+  .bcard{background:var(--field);border:1px solid var(--field-line);padding:10px 11px;cursor:pointer;transition:.15s;}
+  .bcard:hover{border-color:rgba(var(--c-accent-rgb),.55);transform:translateY(-1px);}
+  .bcard.dragging{opacity:.45;}
+  .bc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;}
+  .bc-no{color:var(--spark);font-weight:600;} .bc-val{color:var(--steel-400);}
+  .bc-name{font-weight:600;font-size:12.5px;margin:5px 0 2px;line-height:1.35;}
+  .bc-cust{font-size:11px;color:var(--steel-400);margin-bottom:8px;}
+  .bc-foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--steel-400);margin-top:5px;}
+  .bc-foot .over{color:var(--danger);font-weight:600;}
+  .bempty{color:var(--steel-400);font-size:11px;text-align:center;padding:12px 0;}
+  .bcol.candrop{border-color:rgba(var(--c-accent-rgb),.55);}
+  .bcol.candrop.over{background:rgba(var(--c-accent-rgb),.09);}
+  .bcol.nodrop{opacity:.38;}
   .filters button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:11.5px;padding:8px 12px;cursor:pointer;transition:.15s;letter-spacing:.02em;text-transform:uppercase;}
   .filters button:hover{color:var(--ice);} .filters button.active{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
 
@@ -491,7 +515,7 @@ let LANG="en";
 const T={
 en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Projects",psub:"Central job container",
  newproj:"+ New project",searchph:"Search project, number, customer, reference…",
- f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
+ view_board:"Board",view_table:"Table", f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
  morefilters:"More filters",ff_customer:"Customer",ff_responsible:"Responsible",ff_type:"Project type",ff_from:"Deadline from",ff_to:"Deadline to",ff_clear:"Clear filters",ff_any:"— Any —",
  th_no:"Project #",th_name:"Project name",th_customer:"Customer",th_ref:"Customer ref.",th_status:"Status",th_start:"Planned start",th_deadline:"Deadline",th_progress:"Progress",th_responsible:"Responsible",th_quoted:"Quoted value",th_actual:"Actual cost",
  kpi_quoted:"Total quoted",kpi_actual:"Total actual cost",kpi_overdue:"Overdue",kpi_hold:"On hold",
@@ -541,7 +565,7 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  locale:"en-GB"},
 sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Projekt",psub:"Central jobbcontainer",
  newproj:"+ Nytt projekt",searchph:"Sök projekt, nummer, kund, referens…",
- f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
+ view_board:"Tavla",view_table:"Tabell", f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
  morefilters:"Fler filter",ff_customer:"Kund",ff_responsible:"Ansvarig",ff_type:"Projekttyp",ff_from:"Deadline från",ff_to:"Deadline till",ff_clear:"Rensa filter",ff_any:"— Alla —",
  th_no:"Projekt-nr",th_name:"Projektnamn",th_customer:"Kund",th_ref:"Kundref.",th_status:"Status",th_start:"Planerad start",th_deadline:"Deadline",th_progress:"Framsteg",th_responsible:"Ansvarig",th_quoted:"Offertvärde",th_actual:"Verklig kostnad",
  kpi_quoted:"Totalt offertvärde",kpi_actual:"Total verklig kostnad",kpi_overdue:"Försenade",kpi_hold:"Pausade",
@@ -590,7 +614,7 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  locale:"sv-SE"},
 mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"Proekti",psub:"Centralen kontejner za raboti",
  newproj:"+ Nov proekt",searchph:"Prebaraj proekt, broj, klient, referenca…",
- f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
+ view_board:"Tabla",view_table:"Tabela", f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
  morefilters:"Povekje filtri",ff_customer:"Klient",ff_responsible:"Odgovoren",ff_type:"Tip proekt",ff_from:"Rok od",ff_to:"Rok do",ff_clear:"Isčisti filtri",ff_any:"— Site —",
  th_no:"Proekt br.",th_name:"Ime na proekt",th_customer:"Klient",th_ref:"Referenca",th_status:"Status",th_start:"Planiran početok",th_deadline:"Rok",th_progress:"Napredok",th_responsible:"Odgovoren",th_quoted:"Ponudena vrednost",th_actual:"Realen trošok",
  kpi_quoted:"Vkupno ponudeno",kpi_actual:"Vkupen realen trošok",kpi_overdue:"Docneti",kpi_hold:"Pauzirani",
@@ -640,7 +664,7 @@ mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"
 };
 
 let VIEW="list",currentId=null,activeTab="overview",moreOpen=false;
-let listFilter="all",listQuery="",sortKey="no",sortDir=1;
+let listMode="board",listQuery="",sortKey="no",sortDir=1;
 let listFilters={customer:"",responsible:"",type:"",from:"",to:""};
 
 // A raw status is mapped through uiStatus() before it is used for a label/class/filter/sort/KPI —
@@ -655,7 +679,7 @@ function statusBadge(s){
 
 function renderList(){
   const t=T[LANG];
-  let rows=PROJECTS.filter(p=>listFilter==="all"||uiStatus(p.status)===listFilter);
+  let rows=PROJECTS.slice();
   if(listQuery){const q=listQuery.toLowerCase();rows=rows.filter(p=>p.no.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||custName(p.customerId).toLowerCase().includes(q)||(p.customerRef||"").toLowerCase().includes(q));}
   if(listFilters.customer)rows=rows.filter(p=>String(p.customerId)===listFilters.customer);
   if(listFilters.responsible)rows=rows.filter(p=>p.pm===listFilters.responsible||p.workshop===listFilters.responsible||p.sales===listFilters.responsible);
@@ -670,7 +694,11 @@ function renderList(){
   const kOverdue=rows.filter(p=>!['completed','closed','cancelled'].includes(uiStatus(p.status))&&daysBetween(p.deadline)!==null&&daysBetween(p.deadline)<0).length;
   const kHold=rows.filter(p=>uiStatus(p.status)==='hold').length;
 
-  const chips=["all",...STATUS_ORDER].map(s=>`<button data-f="${s}" class="${listFilter===s?'active':''}">${t["f_"+s]}</button>`).join("");
+  // The board's columns are the statuses, so it replaces the old status filter chips.
+  const modes=`<div class="viewtabs" id="viewtabs">
+      <button data-m="board" class="${listMode==='board'?'active':''}">${t.view_board}</button>
+      <button data-m="table" class="${listMode==='table'?'active':''}">${t.view_table}</button>
+    </div>`;
   const custOpts=CUSTOMERS.map(c=>`<option value="${c.id}" ${listFilters.customer==String(c.id)?'selected':''}>${esc(c.name)}</option>`).join("");
   const respOpts=PEOPLE.map(n=>`<option value="${n}" ${listFilters.responsible===n?'selected':''}>${n}</option>`).join("");
   const typeOpts=TYPES.map(x=>`<option value="${x}" ${listFilters.type===x?'selected':''}>${x}</option>`).join("");
@@ -691,6 +719,7 @@ function renderList(){
     </tr>`;}).join("");
 
   $("listView").innerHTML=`
+    ${modes}
     <div class="kpistrip">
       <div class="kpi"><div class="kl">${t.kpi_quoted}</div><div class="kv">${fmt(kQuoted)}</div></div>
       <div class="kpi"><div class="kl">${t.kpi_actual}</div><div class="kv">${fmt(kActual)}</div></div>
@@ -701,7 +730,6 @@ function renderList(){
       <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" data-i-ph="searchph" placeholder="${t.searchph}" aria-label="${t.searchph}" value="${listQuery.replace(/"/g,'&quot;')}"></div>
       <button class="tbtn primary" onclick="openNewProject()">${t.newproj}</button>
     </div>
-    <div class="filters" id="filters">${chips}</div>
     <div class="morewrap ${moreOpen?'open':''}" id="morewrap">
       <button class="tbtn ghost2" id="moreToggle">${t.morefilters}</button>
       <div class="morepanel">
@@ -712,14 +740,15 @@ function renderList(){
         <div><label for="ffTo">${t.ff_to}</label><input type="date" id="ffTo" value="${listFilters.to}"></div>
       </div>
     </div>
-    <div class="ptable-wrap"><table class="ptable"><thead><tr>
+    ${listMode==='board'?renderBoard(rows):`<div class="ptable-wrap"><table class="ptable"><thead><tr>
       <th data-k="no">${t.th_no}${sortArrow('no')}</th><th data-k="name">${t.th_name}${sortArrow('name')}</th><th data-k="customer">${t.th_customer}${sortArrow('customer')}</th>
       <th>${t.th_ref}</th><th data-k="status">${t.th_status}${sortArrow('status')}</th><th data-k="start">${t.th_start}${sortArrow('start')}</th>
       <th data-k="deadline">${t.th_deadline}${sortArrow('deadline')}</th><th data-k="progress">${t.th_progress}${sortArrow('progress')}</th>
       <th data-k="responsible">${t.th_responsible}${sortArrow('responsible')}</th><th data-k="quoted">${t.th_quoted}${sortArrow('quoted')}</th><th data-k="actual">${t.th_actual}${sortArrow('actual')}</th>
-    </tr></thead><tbody>${trs||`<tr class="emptyrow"><td colspan="11">${t.emptylist}</td></tr>`}</tbody></table></div>`;
+    </tr></thead><tbody>${trs||`<tr class="emptyrow"><td colspan="11">${t.emptylist}</td></tr>`}</tbody></table></div>`}`;
 
-  $("filters").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;listFilter=b.getAttribute('data-f');renderList();});
+  $("viewtabs").addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;listMode=b.getAttribute('data-m');renderList();});
+  if(listMode==='board')wireBoard();
   $("search").addEventListener('input',e=>{listQuery=e.target.value;renderList();$("search").focus();$("search").setSelectionRange(listQuery.length,listQuery.length);});
   $("moreToggle").addEventListener('click',()=>{moreOpen=!moreOpen;renderList();});
   if(moreOpen){
@@ -732,6 +761,78 @@ function renderList(){
   document.querySelectorAll('.ptable th[data-k]').forEach(th=>th.addEventListener('click',()=>{const k=th.getAttribute('data-k');if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}renderList();}));
 }
 function sortArrow(k){return sortKey===k?`<span class="sa">${sortDir===1?'▲':'▼'}</span>`:"";}
+
+// ── Board view ──
+// Columns are the statuses, Active first since that is the day-to-day view.
+const BOARD_ORDER=['active',...STATUS_ORDER.filter(s=>s!=='active')];
+// A card may only be dragged where project-rules.js permits a transition. The drop then runs the
+// very same flow the action buttons use, so the required reasons, the completion/quality gates and
+// the activity-log entry all still happen — dragging never writes a status directly.
+function boardTargets(p){
+  const s=new Set();
+  if(canHold(p))s.add('hold');
+  if(canResume(p)){s.add('active');s.add('planned');}
+  if(canReopen(p)){s.add('active');s.add('completed');}
+  if(canComplete(p))s.add('completed');
+  if(canClose(p))s.add('closed');
+  if(canCancel(p))s.add('cancelled');
+  s.delete(uiStatus(p.status));
+  return s;
+}
+function boardDrop(p,target){
+  if(target==='hold'&&canHold(p))return openHoldForm(p);
+  if((target==='active'||target==='planned')&&canResume(p))return openResumeForm(p);
+  if((target==='active'||target==='completed')&&canReopen(p))return openReopenForm(p);
+  if(target==='completed'&&canComplete(p))return openCompleteFlow(p);
+  if(target==='closed'&&canClose(p))return openCloseFlow(p);
+  if(target==='cancelled'&&canCancel(p))return openCancelForm(p);
+}
+function renderBoard(rows){
+  const t=T[LANG];
+  return `<div class="board" id="board">${BOARD_ORDER.map(st=>{
+    const items=rows.filter(p=>uiStatus(p.status)===st);
+    const cards=items.map(p=>{
+      const prog=progressOf(p),dl=daysBetween(p.deadline);
+      const late=dl!==null&&dl<0&&!['completed','closed','cancelled'].includes(st);
+      return `<article class="bcard" draggable="true" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.no+' — '+p.name)}">
+        <div class="bc-top"><span class="bc-no">${esc(p.no)}</span>${p.quotedValue?`<span class="bc-val">${fmt(p.quotedValue)}</span>`:''}</div>
+        <div class="bc-name">${esc(p.name)}</div>
+        <div class="bc-cust">${esc(custName(p.customerId))}</div>
+        <div class="miniprog"><i style="width:${prog}%"></i></div>
+        <div class="bc-foot"><span>${prog}%</span><span class="${late?'over':''}">${p.deadline?fmtD(p.deadline):'—'}</span></div>
+      </article>`;}).join("");
+    return `<section class="bcol" data-status="${st}">
+      <header class="bcol-head"><h3>${t["f_"+st]}</h3><span class="bcount">${items.length}</span></header>
+      <div class="bcards">${cards||`<div class="bempty">${t.emptylist}</div>`}</div>
+    </section>`;}).join("")}</div>`;
+}
+function wireBoard(){
+  const board=$("board");if(!board)return;
+  let dragId=null;
+  const clearMarks=()=>board.querySelectorAll('.bcol').forEach(c=>c.classList.remove('candrop','nodrop','over'));
+  board.querySelectorAll('.bcard').forEach(card=>{
+    const open=()=>openProject(Number(card.dataset.id));
+    card.addEventListener('click',open);
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    card.addEventListener('dragstart',e=>{
+      const p=getProject(Number(card.dataset.id));if(!p)return;
+      dragId=p.id;card.classList.add('dragging');
+      const ok=boardTargets(p);
+      board.querySelectorAll('.bcol').forEach(c=>c.classList.add(ok.has(c.dataset.status)?'candrop':'nodrop'));
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(p.id));}catch(err){}
+    });
+    card.addEventListener('dragend',()=>{dragId=null;card.classList.remove('dragging');clearMarks();});
+  });
+  board.querySelectorAll('.bcol').forEach(col=>{
+    col.addEventListener('dragover',e=>{if(col.classList.contains('candrop')){e.preventDefault();col.classList.add('over');}});
+    col.addEventListener('dragleave',()=>col.classList.remove('over'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();col.classList.remove('over');
+      if(!col.classList.contains('candrop'))return;
+      const p=getProject(dragId);if(p)boardDrop(p,col.dataset.status);
+    });
+  });
+}
 function openProject(id){currentId=id;VIEW="detail";activeTab="overview";render();}
 function safeTab(){if(['hours','reports'].includes(activeTab))activeTab="overview";}
 
