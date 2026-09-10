@@ -211,8 +211,13 @@
   .cattag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;margin-left:6px;border:1px solid var(--field-line);color:var(--steel-300);background:rgba(255,255,255,.04);}
   .cattag.cat-material{color:var(--c-tint);border-color:rgba(var(--c-accent-rgb),.35);background:rgba(var(--c-accent-rgb),.08);}
   .cattag.cat-subcontractor{color:var(--warn);border-color:rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.1);}
-  .addline-btn{background:none;border:none;color:var(--spark);font-size:11px;cursor:pointer;margin-left:10px;font-family:var(--font-body);}
-  .addline-btn:hover{text-decoration:underline;}
+  .subrow{display:flex;align-items:center;gap:14px;}
+  /* The subtotal label keeps to the right, beside the figure it sums, whether or not the row can
+     still take a new line. */
+  .subrow .sublabel{margin-left:auto;}
+  .addline-btn{background:none;border:1px solid rgba(var(--c-accent-rgb),.32);color:var(--spark);font-size:13px;
+    font-weight:600;cursor:pointer;padding:4px 11px;font-family:var(--font-body);transition:.15s;}
+  .addline-btn:hover{border-color:rgba(var(--c-accent-rgb),.75);background:rgba(var(--c-accent-rgb),.1);color:var(--c-tint);}
   .rnum{font-variant-numeric:tabular-nums;white-space:nowrap;}
 
   .tccard{background:rgba(255,255,255,.025);border:1px solid var(--line);padding:15px;margin-bottom:14px;}
@@ -1291,7 +1296,9 @@ function renderItemsTable(e){
         <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}" style="text-align:right;">${esc(t.subtotal_section)} — ${esc(wi.desc)}${isBaseWorkItem&&!locked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    // Add Line leads the row on the left, where a new entry would be typed; the subtotal it belongs
+    // to stays with the figure it sums on the right.
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}"><div class="subrow">${isBaseWorkItem&&!locked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}<span class="sublabel">${esc(t.subtotal_section)} — ${esc(wi.desc)}</span></div></td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
   // Nothing to price until the project has items, and pricing left behind by an item that has since
