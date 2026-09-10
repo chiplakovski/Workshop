@@ -317,6 +317,11 @@
   .dhead3 .tbtn.danger2:hover{border-color:var(--danger);color:#fff;background:rgba(var(--c-danger-rgb),.1);}
   .dhead3 .tbtn.danger2 svg{color:var(--danger);}
   .dhead3 .dbtns{justify-content:flex-end;}
+
+  /* The projects list is the module's main heading, so it is sized like the estimate title
+     (P-26-0002) rather than like a small panel label. */
+  .crmgrid>.col:first-child .phead h3{font-family:var(--font-heading);font-size:19px;font-weight:700;
+    letter-spacing:.02em;color:var(--ice);}
 </style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
