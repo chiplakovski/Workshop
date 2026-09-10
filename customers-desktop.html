@@ -181,6 +181,11 @@
   .fcard input:focus,.fcard select:focus{border-color:var(--spark);}
   .fcard textarea{min-height:60px;resize:vertical;}
   .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+  .fcard .orglookup{display:flex;align-items:center;gap:10px;margin:-6px 0 14px;flex-wrap:wrap;}
+  .fcard .orglookup button{flex:none;}
+  .fcard .orglookup-status{font-size:11px;color:var(--steel-400);line-height:1.5;}
+  .fcard .orglookup-status.ok{color:var(--ok);}
+  .fcard .orglookup-status.err{color:var(--danger);}
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -350,6 +355,7 @@ const T={
     qs_sent:"Sent",qs_accepted:"Accepted",qs_expired:"Expired",is_paid:"Paid",is_pending:"Pending",is_overdue:"Overdue",
     act_newcust:"New Customer",act_newquote:"New Quote",act_newproj:"New Project",act_newinv:"New Invoice",act_newnote:"New Note",act_upload:"Upload Document",act_report:"Customer Report",
     nc_title:"New Customer",nc_edit_title:"Edit Customer",nc_name:"Customer name",nc_city:"City",nc_org:"Org. number",nc_email:"Email",nc_phone:"Phone",nc_website:"Website",nc_status:"Status",nc_save:"Save",nc_cancel:"Cancel",nc_shiphint:"Leave empty to reuse billing address",
+    nc_org_fetch:"Fetch from allabolag.se",org_lookup_loading:"Looking up…",org_lookup_need_number:"Enter an organization number first.",org_lookup_bad_format:"Organization number should be 10 digits (XXXXXX-XXXX).",org_lookup_failed:"Couldn't reach allabolag.se from the browser (likely blocked by cross-origin restrictions — this prototype has no backend to proxy the request through). Enter the company details manually below.",org_lookup_success:"Filled in from allabolag.se.",
     ac_title:"Add Contact",ac_name:"Name",ac_role:"Role",ac_email:"Email",ac_phone:"Phone",ac_primary:"Set as primary contact",ac_save:"Add contact",
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
@@ -376,6 +382,7 @@ const T={
     qs_sent:"Skickad",qs_accepted:"Accepterad",qs_expired:"Utgången",is_paid:"Betald",is_pending:"Väntande",is_overdue:"Försenad",
     act_newcust:"Ny kund",act_newquote:"Ny offert",act_newproj:"Nytt projekt",act_newinv:"Ny faktura",act_newnote:"Ny anteckning",act_upload:"Ladda upp dokument",act_report:"Kundrapport",
     nc_title:"Ny kund",nc_edit_title:"Redigera kund",nc_name:"Kundnamn",nc_city:"Stad",nc_org:"Org.nr",nc_email:"E-post",nc_phone:"Telefon",nc_website:"Webbplats",nc_status:"Status",nc_save:"Spara",nc_cancel:"Avbryt",nc_shiphint:"Lämna tomt för att återanvända faktureringsadressen",
+    nc_org_fetch:"Hämta från allabolag.se",org_lookup_loading:"Söker…",org_lookup_need_number:"Ange ett organisationsnummer först.",org_lookup_bad_format:"Organisationsnumret ska vara 10 siffror (XXXXXX-XXXX).",org_lookup_failed:"Kunde inte nå allabolag.se från webbläsaren (troligen blockerat av cross-origin-begränsningar — denna prototyp saknar en backend att skicka anropet via). Fyll i företagsuppgifterna manuellt nedan.",org_lookup_success:"Ifyllt från allabolag.se.",
     ac_title:"Lägg till kontakt",ac_name:"Namn",ac_role:"Roll",ac_email:"E-post",ac_phone:"Telefon",ac_primary:"Ange som primär kontakt",ac_save:"Lägg till kontakt",
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
@@ -402,6 +409,7 @@ const T={
     qs_sent:"Ispratena",qs_accepted:"Prifatena",qs_expired:"Istekla",is_paid:"Platena",is_pending:"Vo čekanje",is_overdue:"Zadocneta",
     act_newcust:"Nov klient",act_newquote:"Nova ponuda",act_newproj:"Nov proekt",act_newinv:"Nova faktura",act_newnote:"Nova beleška",act_upload:"Otpremi dokument",act_report:"Izveštaj za klient",
     nc_title:"Nov klient",nc_edit_title:"Uredi klient",nc_name:"Ime na klient",nc_city:"Grad",nc_org:"EMBS",nc_email:"E-pošta",nc_phone:"Telefon",nc_website:"Veb-strana",nc_status:"Status",nc_save:"Začuvaj",nc_cancel:"Otkaži",nc_shiphint:"Ostavi prazno za da se koristi istata adresa kako za faktura",
+    nc_org_fetch:"Prezemi od allabolag.se",org_lookup_loading:"Baram…",org_lookup_need_number:"Prvo vnesete matičen broj.",org_lookup_bad_format:"Matičniot broj treba da ima 10 cifri (XXXXXX-XXXX).",org_lookup_failed:"Ne uspea povrzuvanje so allabolag.se od pregleduvačot (verojatno blokirano od cross-origin ograničuvanja — ovoj prototip nema backend za da go prosledi baranjeto). Vnesete gi podatocite za kompanijata račno podolu.",org_lookup_success:"Popolneto od allabolag.se.",
     ac_title:"Dodaj kontakt",ac_name:"Ime",ac_role:"Uloga",ac_email:"E-pošta",ac_phone:"Telefon",ac_primary:"Postavi kako primaren kontakt",ac_save:"Dodaj kontakt",
     an_title:"Dodaj beleška",an_text:"Beleška",an_save:"Dodaj",
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
@@ -656,7 +664,8 @@ function openNewCustomer(){
   const t=T[LANG];
   $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.csub}</p>
     <div class="frow"><label for="ncName">${t.nc_name}</label><input id="ncName"></div>
-    <div class="frow2"><div><label for="ncCity">${t.nc_city}</label><input id="ncCity"></div><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX"></div></div>
+    <div class="frow2"><div><label for="ncCity">${t.nc_city}</label><input id="ncCity"></div><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX" autocomplete="off"></div></div>
+    <div class="frow orglookup"><button type="button" class="tbtn small" id="ncOrgFetchBtn" onclick="fetchFromAllabolag()">${t.nc_org_fetch}</button><span id="ncOrgStatus" class="orglookup-status" role="status" aria-live="polite"></span></div>
     <div class="frow2"><div><label for="ncEmail">${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label for="ncPhone">${t.nc_phone}</label><input id="ncPhone"></div></div>
     <div class="frow"><label for="ncWebsite">${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
     <div class="frow2"><div><label for="ncVat">${t.vat}</label><input id="ncVat"></div><div><label for="ncIndustry">${t.industry}</label><input id="ncIndustry"></div></div>
@@ -666,6 +675,41 @@ function openNewCustomer(){
     <div class="frow"><label for="ncShipping">${t.shipping}</label><textarea id="ncShipping" placeholder="${t.nc_shiphint}"></textarea></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
+}
+async function fetchFromAllabolag(){
+  const t=T[LANG];
+  const orgInput=$("ncOrg"),btn=$("ncOrgFetchBtn"),status=$("ncOrgStatus");
+  if(!orgInput||!btn||!status)return;
+  const digits=orgInput.value.replace(/[^0-9]/g,"");
+  status.className="orglookup-status";
+  if(!digits){status.classList.add("err");status.textContent=t.org_lookup_need_number;orgInput.focus();return;}
+  if(digits.length!==10){status.classList.add("err");status.textContent=t.org_lookup_bad_format;orgInput.focus();return;}
+  btn.disabled=true;
+  status.textContent=t.org_lookup_loading;
+  try{
+    // allabolag.se has no public, CORS-enabled API for third-party pages, and this
+    // prototype has no backend to proxy the request through - in a real browser this
+    // fetch is expected to fail (network/CORS error), which is reported honestly below
+    // rather than being simulated with fabricated company data.
+    const res=await fetch("https://www.allabolag.se/what/"+digits,{mode:"cors",headers:{"Accept":"application/json"}});
+    const contentType=res.headers.get("content-type")||"";
+    if(!res.ok||!contentType.includes("application/json"))throw new Error("non-json-response");
+    const data=await res.json();
+    if(!data||!data.name)throw new Error("unexpected-response-shape");
+    $("ncName").value=data.name;
+    if(data.city)$("ncCity").value=data.city;
+    if(data.website)$("ncWebsite").value=data.website;
+    if(data.industry)$("ncIndustry").value=data.industry;
+    if(data.vat)$("ncVat").value=data.vat;
+    orgInput.value=digits.slice(0,6)+"-"+digits.slice(6);
+    status.classList.add("ok");
+    status.textContent=t.org_lookup_success;
+  }catch(err){
+    status.classList.add("err");
+    status.textContent=t.org_lookup_failed;
+  }finally{
+    btn.disabled=false;
+  }
 }
 function saveNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;

@@ -54,6 +54,15 @@ a recovery copy before an import is applied). There is currently no in-app UI fo
 a data-layer safeguard only, with an import/export UI planned for a future Settings/Data
 Administration pass.
 
+## External lookups
+The New Customer form (Customers module) has a "Fetch from allabolag.se" button next to the
+organization number field. It performs a real `fetch()` against allabolag.se — this is not a
+simulation. allabolag.se does not expose a public, CORS-enabled API for third-party pages, and
+this prototype has no backend to proxy the request through, so in a real browser the call is
+expected to fail with a network/CORS error; the UI reports that honestly (with a message
+explaining why) rather than fabricating company data. It only auto-fills the form if a future
+backend proxy makes the request succeed and returns the expected JSON shape.
+
 ## Shared design
 Navy theme (#013179), sharp edges, engineering-grid + spark animation,
 compact SV / EN / MK language switcher, 3K/4K scaling on desktop screens.
