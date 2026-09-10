@@ -37,6 +37,16 @@
   .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .ttl{display:flex;align-items:center;gap:11px;}
+  /* summary stats sit in the header so the estimation list gets the full width */
+  .headsum{margin-left:auto;display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;justify-content:flex-end;}
+  .headsum .hs{display:flex;flex-direction:column;gap:1px;}
+  .headsum .hsl{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);white-space:nowrap;}
+  .headsum .hsv{font-family:var(--font-heading);font-weight:600;font-size:15px;white-space:nowrap;}
+  .headsum .hsv.draft{color:var(--steel-300);} .headsum .hsv.sent{color:var(--spark);}
+  .headsum .hsv.accepted{color:var(--ok);} .headsum .hsv.declined{color:var(--danger);}
+  .headsum .hssub{font-size:10px;color:var(--steel-400);white-space:nowrap;}
+  .headsum .hsdiv{width:1px;align-self:stretch;background:var(--line);}
+  @media(max-width:1100px){.modhead{flex-wrap:wrap;} .headsum{margin-left:0;width:100%;justify-content:flex-start;gap:16px;} .headsum .hsdiv{display:none;}}
   .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
   .modhead h1{font-family:var(--font-heading);font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
@@ -299,6 +309,7 @@
     <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
       <div><h1 data-i="etitle">Estimations</h1><p data-i="esub">Quotes & costing</p></div></div>
+    <div class="headsum" id="summaryStrip"></div>
   </div>
 
   <div id="app"></div>
@@ -956,8 +967,6 @@ function renderLeft(){
 
   const counts={draft:0,sent:0,accepted:0,declined:0};
   active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
-  const totalValue=active.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
-  const valueByStatus=st=>active.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
 
   const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
     return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-est-id="${e.id}">
@@ -983,20 +992,24 @@ function renderLeft(){
       <div class="estlist">${estRows||`<div class="empty3">—</div>`}</div>
       <div class="pager"><span>${t.showing.replace('{a}','1').replace('{b}',rows.length).replace('{n}',rows.length)}</span>
         <div class="pnav"><button disabled>‹</button><button class="cur">1</button><button disabled>›</button></div></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3>${t.p_summary}</h3></div>
-      <div class="sumgrid2">
-        <div class="sumtotal"><div><div class="sl">${t.sum_total}</div><div class="sv">${active.length}</div></div>
-          <div style="text-align:right;"><div class="sl">${t.sum_value}</div><div class="sv">${fmt0(totalValue)}</div></div></div>
-        <div class="sumbystatus">
-          <div class="ss"><div class="sl">${t.f_draft}</div><div class="sv draft">${counts.draft}</div><div class="ssub">${fmt0(valueByStatus('draft'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_sent}</div><div class="sv sent">${counts.sent}</div><div class="ssub">${fmt0(valueByStatus('sent'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_accepted}</div><div class="sv accepted">${counts.accepted}</div><div class="ssub">${fmt0(valueByStatus('accepted'))}</div></div>
-          <div class="ss"><div class="sl">${t.f_declined}</div><div class="sv declined">${counts.declined}</div><div class="ssub">${fmt0(valueByStatus('declined'))}</div></div>
-        </div>
-      </div>
     </div>`;
+}
+// The summary lives in the page header, so the list can use the full width.
+function renderHeadSummary(){
+  const t=T[LANG];
+  const active=ESTIMATIONS.filter(e=>!e.archived);
+  const counts={draft:0,sent:0,accepted:0,declined:0};
+  active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
+  const totalValue=active.reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  const valueByStatus=st=>active.filter(e=>e.status===st).reduce((a,e)=>a+computeTotalsQuiet(e).sellSubtotal,0);
+  const stat=(label,value,cls,sub)=>`<div class="hs"><span class="hsl">${esc(label)}</span><span class="hsv ${cls||''}">${esc(String(value))}</span>${sub?`<span class="hssub">${esc(sub)}</span>`:''}</div>`;
+  return stat(t.sum_total,active.length)
+    +stat(t.sum_value,fmt0(totalValue))
+    +`<div class="hsdiv" aria-hidden="true"></div>`
+    +stat(t.f_draft,counts.draft,'draft',fmt0(valueByStatus('draft')))
+    +stat(t.f_sent,counts.sent,'sent',fmt0(valueByStatus('sent')))
+    +stat(t.f_accepted,counts.accepted,'accepted',fmt0(valueByStatus('accepted')))
+    +stat(t.f_declined,counts.declined,'declined',fmt0(valueByStatus('declined')));
 }
 // computeTotals() no longer depends on the option-preview tab (previewing never touches saved totals), so this is now a plain alias kept for call-site compatibility.
 function computeTotalsQuiet(e){return computeTotals(e);}
@@ -1341,6 +1354,7 @@ function renderAll(){
     <div class="col">${renderMiddle(e)}</div>
     <div class="col">${renderRight(e)}</div>
   </div>${renderActionBar(e)}`;
+  const strip=$("summaryStrip");if(strip)strip.innerHTML=renderHeadSummary();
   document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectEst(Number(row.dataset.estId))));
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
   syncModuleSidebar();
