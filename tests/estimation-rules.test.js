@@ -4,7 +4,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {money,lineTotal,baseAndIncludedLines}=require('../estimation-rules.js');
+const {money,lineTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems}=require('../estimation-rules.js');
 
 function sampleEstimation(){
   return {
@@ -60,4 +60,101 @@ test('lineTotal applies the line discount and clamps a negative/absurd discount 
   assert.equal(lineTotal({qty:2,sell:100,disc:10}),180);
   assert.equal(lineTotal({qty:2,sell:100,disc:-50}),200,'a negative discount must not inflate the price');
   assert.equal(lineTotal({qty:2,sell:100,disc:500}),0,'discount is clamped at 100%');
+});
+
+// ── The estimate's work items ARE the project's items (Pass 3.70) ──
+// An estimate used to keep its own free-text work items, unconnected to the items the project
+// actually contains, so the two lists could describe different work. The project now owns the list
+// and the estimate owns only the pricing.
+
+const ITEMS=[{no:'JC-2026-041',desc:'Cut and form panels'},
+             {no:'JC-2026-042',desc:'Weld frame'},
+             {no:'JC-2026-043',desc:'Surface finish'}];
+const priced=(no,sell)=>({no,lines:[{desc:'work',category:'labour',qty:2,unit:'h',cost:sell/2,sell,disc:0,tax:25}]});
+
+test('item reference: read off the project number and the item position, zero-padded', ()=>{
+  assert.equal(itemEstRef('P-26-0008',1),'P-26-0008-01');
+  assert.equal(itemEstRef('P-26-0008',9),'P-26-0008-09');
+  assert.equal(itemEstRef('P-26-0008',10),'P-26-0008-10');
+  assert.equal(itemEstRef('P-2026-014',3),'P-2026-014-03');
+});
+
+test('item reference: a missing or nonsense sequence still yields a usable first-item reference', ()=>{
+  assert.equal(itemEstRef('P-26-0008'),'P-26-0008-01');
+  assert.equal(itemEstRef('P-26-0008',0),'P-26-0008-01');
+  assert.equal(itemEstRef('P-26-0008',-4),'P-26-0008-01');
+  assert.equal(itemEstRef('P-26-0008','2'),'P-26-0008-02');
+});
+
+test('reconcile: the project decides which items exist, in which order, and what they are called', ()=>{
+  const {workItems}=reconcileWorkItems(ITEMS,[{no:'JC-2026-042',desc:'STALE NAME',lines:[]}]);
+  assert.deepEqual(workItems.map(w=>w.no),['JC-2026-041','JC-2026-042','JC-2026-043']);
+  assert.deepEqual(workItems.map(w=>w.seq),[1,2,3]);
+  assert.equal(workItems[1].desc,'Weld frame','the project name wins over whatever the estimate stored');
+});
+
+test('reconcile: saved pricing follows its item by number, not by position', ()=>{
+  const stored=[priced('JC-2026-043',500)];
+  const {workItems}=reconcileWorkItems(ITEMS,stored);
+  assert.equal(workItems[0].lines.length,0);
+  assert.equal(workItems[1].lines.length,0);
+  assert.equal(workItems[2].lines.length,1,'the priced lines must land on JC-2026-043, whatever position it holds');
+  assert.equal(workItems[2].lines[0].sell,500);
+});
+
+test('reconcile: reordering items on the project reorders the estimate and keeps each price attached', ()=>{
+  const stored=[priced('JC-2026-041',100),priced('JC-2026-043',300)];
+  const reordered=[ITEMS[2],ITEMS[0],ITEMS[1]];
+  const {workItems}=reconcileWorkItems(reordered,stored);
+  assert.deepEqual(workItems.map(w=>w.no),['JC-2026-043','JC-2026-041','JC-2026-042']);
+  assert.equal(workItems[0].lines[0].sell,300);
+  assert.equal(workItems[1].lines[0].sell,100);
+  assert.equal(workItems[2].lines.length,0);
+  assert.deepEqual(workItems.map(w=>w.seq),[1,2,3],'references renumber with the project order');
+});
+
+test('reconcile: an item added on the project appears here, unpriced rather than missing', ()=>{
+  const {workItems}=reconcileWorkItems(ITEMS,[priced('JC-2026-041',100)]);
+  const added=workItems.find(w=>w.no==='JC-2026-042');
+  assert.ok(added,'a newly added project item must show up in the estimate');
+  assert.deepEqual(added.lines,[],'and must start with no pricing rather than inheriting any');
+});
+
+test('reconcile: pricing for an item removed from the project is retired, never silently dropped', ()=>{
+  const stored=[priced('JC-2026-041',100),priced('JC-GONE',900)];
+  const {workItems,retired}=reconcileWorkItems(ITEMS,stored);
+  assert.equal(workItems.some(w=>w.no==='JC-GONE'),false,'it must not be priced any more');
+  assert.equal(retired.length,1);
+  assert.equal(retired[0].no,'JC-GONE');
+  assert.equal(retired[0].lines[0].sell,900,'the work that went into pricing it is still there to report');
+});
+
+test('reconcile: a retired item restored to the project comes back with its pricing intact', ()=>{
+  const stored=[priced('JC-GONE',900)];
+  const first=reconcileWorkItems(ITEMS,stored);
+  assert.equal(first.retired.length,1);
+  // Feeding the retired set back in is what makes the round trip lossless.
+  const restored=reconcileWorkItems(ITEMS.concat({no:'JC-GONE',desc:'Back on the job'}),
+                                    first.workItems.concat(first.retired));
+  const back=restored.workItems.find(w=>w.no==='JC-GONE');
+  assert.equal(back.lines[0].sell,900);
+  assert.equal(restored.retired.length,0);
+});
+
+test('reconcile: an unpriced item that leaves the project is not reported as retired', ()=>{
+  const {retired}=reconcileWorkItems(ITEMS,[{no:'JC-EMPTY',lines:[]}]);
+  assert.deepEqual(retired,[],'there is nothing to warn about when no pricing would be lost');
+});
+
+test('reconcile: a project with no items yields an empty estimate, not a crash', ()=>{
+  assert.deepEqual(reconcileWorkItems([],[]).workItems,[]);
+  assert.deepEqual(reconcileWorkItems(null,null).workItems,[]);
+  assert.deepEqual(reconcileWorkItems(undefined,undefined).retired,[]);
+});
+
+test('reconcile: the result feeds the pricing engine unchanged', ()=>{
+  const {workItems}=reconcileWorkItems(ITEMS,[priced('JC-2026-041',100),priced('JC-2026-042',250)]);
+  const lines=baseAndIncludedLines({workItems,options:[]});
+  assert.equal(lines.length,2);
+  assert.equal(money(lines.reduce((a,l)=>a+lineTotal(l),0)),money(2*100+2*250));
 });

@@ -294,9 +294,20 @@
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
 </style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
-<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
+<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}
+  /* Project-first estimating: an item carries the project's own reference, and the row says which
+     project item it prices. */
+  .itemref{display:inline-block;font-family:var(--font-mono,var(--font-body));font-size:11px;letter-spacing:.04em;
+    color:var(--c-tint);background:rgba(var(--c-accent-rgb),.14);border:1px solid rgba(var(--c-accent-rgb),.34);
+    padding:2px 7px;margin-right:9px;vertical-align:middle;}
+  .itemsrc{margin-left:9px;font-size:10.5px;font-weight:500;letter-spacing:.03em;opacity:.55;text-transform:none;}
+  .estnote{margin-bottom:12px;padding:11px 13px;font-size:12px;line-height:1.55;color:var(--steel-300);
+    background:rgba(255,255,255,.03);border:1px solid var(--line);border-left:2px solid rgba(var(--c-accent-rgb),.6);}
+  .estnote.warn{border-left-color:var(--warn);color:var(--steel-200);}
+  .eitems{font-size:10.5px;letter-spacing:.03em;color:var(--steel-400);}
+</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button><button onclick="openNewEst()"><i>＋</i>New Estimation</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▤</div><div><h2>ESTIMATIONS</h2><small>Quotes & costing</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="all" onclick="sidebarEstimate('all')"><i>▦</i>Estimation Overview</button><button data-ms="draft" onclick="sidebarEstimate('draft')"><i>✎</i>Drafts</button><button data-ms="review" onclick="sidebarEstimate('review')"><i>◌</i>In Review</button><button data-ms="sent" onclick="sidebarEstimate('sent')"><i>⇥</i>Sent</button><button data-ms="accepted" onclick="sidebarEstimate('accepted')"><i>✓</i>Accepted</button><button data-ms="closed" onclick="sidebarEstimate('closed')"><i>×</i>Declined / Expired</button></nav><div class="ms-sidebox"><b>Connected workflow</b><p>Accepted estimates convert into projects with customer, BOM, hours, machines and delivery target.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small>Estimator</small></div></div></aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
@@ -399,17 +410,28 @@ function localCustomerIdForShared(sharedId,name){
   return Number(key||Object.keys(CUSTOMERS)[0]);
 }
 hydrateSharedCustomers();
-const PROJECTS={
-  "P-26-0001":{name:"Bakery Conveyor Modification",type:"Stainless Fabrication & Installation",status:"active"},
-  "P-26-0002":{name:"Folding Machine Retrofit",type:"Machine Retrofit",status:"quotation"},
-  "P-26-0003":{name:"Mixer Overhaul — Preliminary",type:"Repair",status:"draft"},
-  "P-26-0004":{name:"Guard Fabrication",type:"Fabrication & Installation",status:"completed"},
-  "P-26-0005":{name:"Service — Malmö Slicer",type:"Service",status:"closed"},
-  "P-26-0006":{name:"Spiral Mixer Service",type:"Repair & Service",status:"hold"},
-  "P-26-0007":{name:"Packing Line Extension",type:"Fabrication & Installation",status:"cancelled"},
-  "P-26-0008":{name:"Bearing Replacement",type:"Repair",status:"approved"},
-  "P-26-0009":{name:"HMI Upgrade",type:"Electrical",status:"planned"}
-};
+// ── Project-first estimating ──
+// An estimate prices work a project already describes, so both the project list and the items
+// inside it are read live from the shared store rather than kept as a second copy here. The old
+// hardcoded map had already drifted (it still called P-26-0003 a draft after Projects had moved on).
+let PROJECTS={};
+function hydrateProjects(){
+  PROJECTS={};
+  if(!window.WorkshopData||!WorkshopData.getProjects)return;
+  WorkshopData.getProjects().filter(p=>!p.archived).forEach(p=>{
+    PROJECTS[p.no]={no:p.no,name:p.name,type:(p.types&&p.types[0])||'—',status:p.status,
+      customerId:p.customerId,customer:p.customer,quotedValue:Number(p.quotedValue)||0};
+  });
+}
+// The items a project actually contains, in the project's own order. This is the list an estimate
+// prices - it never invents one of its own.
+function projectItems(projectNo){
+  if(!window.WorkshopData||!WorkshopData.listJobcards||!projectNo)return[];
+  return WorkshopData.listJobcards()
+    .filter(j=>j.projectNo===projectNo&&!j.archived)
+    .map(j=>({no:j.no,desc:j.title||j.item||j.no,plannedHours:Number(j.plannedHours)||0}));
+}
+hydrateProjects();
 
 function autoItems(total){
   const matSell=Math.round(total*0.28),labSell=Math.round(total*0.55),machSell=Math.round(total-matSell-labSell);
@@ -618,14 +640,21 @@ function hydrateSharedEstimations(){
 }
 hydrateSharedEstimations();
 
+// Hand every estimate's legacy work items to its project once, at load, rather than waiting for
+// each one to be opened - otherwise the project list would report items the projects do not yet
+// have. Each call is a no-op for a project that already owns its items.
+function adoptAllLegacyWorkItems(){
+  ESTIMATIONS.filter(e=>!e.archived&&e.projectNo).forEach(e=>{adoptLegacyWorkItems(e);syncWorkItemsToProject(e);});
+}
+
 const STAGES=["draft","review","sent","accepted"];
 function catLabel(cat){return T[LANG]["cat_"+cat]||cat;}
 
 const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",etitle:"Estimations",esub:"Quotes & costing",
-    searchph:"Search estimations…",newest:"New Estimation",
+    searchph:"Search projects, customers…",ei_record:"Record reference",newest:"New Estimation",
     f_all:"All",f_draft:"Draft",f_sent:"Sent",f_accepted:"Accepted",f_declined:"Declined",
-    p_list:"Estimation List",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
+    unattached_note:"{n} estimate(s) are not attached to a project and cannot be priced here — attach them to a project first.",p_list:"Projects",p_list_hint:"pick one to price",n_items:"{n} items",no_items_short:"No items yet",no_items_body:"This project has no items yet. Items are created on the project itself — add them in Projects ({p}), then price them here.",retired_note:"{n} priced item(s) are no longer on the project — their pricing is kept but not counted:",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
     sum_total:"Total Estimations",sum_value:"Total Value (All)",
     edit:"Edit",duplicate:"Duplicate",print:"Print / PDF",
     st_draft:"Draft",st_review:"In Review",st_sent:"Sent",st_accepted:"Accepted",st_declined:"Declined",st_expired:"Expired",
@@ -634,7 +663,7 @@ const T={
     ei_number:"Estimation Number",ei_ref:"Reference / PO",ei_date:"Estimation Date",ei_valid:"Valid Until",ei_currency:"Currency",
     ei_delivery:"Delivery Time",ei_terms:"Payment Terms",ei_pricelist:"Price List",ei_incoterms:"Incoterms",ei_notes:"Notes",
     pj_location:"Location",pj_type:"Project Type",pj_contact:"Contact Person",pj_status:"Project Status",pj_open:"Open Project",
-    items:"Estimation Items",additem:"Add Item",addline:"Add Line",addworkitem:"Add Work Item",addsection:"Add Section",showcost:"Show internal cost & margin",
+    items:"Estimation Items",additem:"Add Item",addline:"Add Line",addsection:"Add Section",showcost:"Show internal cost & margin",
     wi_no:"Job / item number (optional)",wi_desc:"Work item description",
     th_no:"#",th_item:"Item / Description",th_category:"Category",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total (SEK)",
     subtotal_section:"Subtotal",
@@ -664,13 +693,13 @@ const T={
     ei_oppref:"Opportunity / enquiry reference",ei_rfq:"Customer RFQ / reference",ei_reqdelivery:"Requested delivery date",ei_estimator:"Responsible estimator",
     opt_included_title:"Include this option in the customer offer",opt_combined:"Combined selected options",
     preview_only:"Preview only — not included",waste_word:"waste",cost_word:"cost",
-    act_editwi:"Edit work item",act_moveup:"Move up",act_movedown:"Move down",act_deletewi:"Delete work item",
     act_editline:"Edit line",act_dupline:"Duplicate line",act_delline:"Delete line",
     th_margin_sek:"Margin (SEK)",th_margin_pct:"Margin %",empty_items:"No items yet — add a work item to get started.",
     err_required:"This field is required.",internal_cost:"Internal cost",waste_pct_material:"Waste % (material lines only)",
     err_qty:"Quantity must be greater than zero.",err_sell:"Selling price cannot be negative.",err_cost:"Internal cost cannot be negative.",
     err_disc:"Discount must be between 0% and 100%.",err_tax:"Tax must be between 0% and 100%.",
-    confirm_delete_wi:"Delete the empty work item \"{n}\"?",confirm_delete_line:"Delete the line \"{n}\"?",
+    act_moveup:"Move up",act_movedown:"Move down",
+    confirm_delete_line:"Delete the line \"{n}\"?",
     err_date:"Please enter a valid date.",err_date_order:"Valid-until date cannot be before the estimation date.",
     convert_title:"Convert to Project",convert_note:"This will reuse the customer, BOM, estimated hours, machines, selling price and delivery target in Projects, Planning and Store.",
     convert_projtitle:"Project title",convert_hours:"Planned hours",convert_delivery:"Delivery target",convert_value:"Estimated project value",convert_create:"Create connected project",
@@ -692,9 +721,9 @@ const T={
     act_archive:"Archive",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
-    searchph:"Sök kalkyler…",newest:"Ny kalkyl",
+    searchph:"Sök projekt, kunder…",ei_record:"Postreferens",newest:"Ny kalkyl",
     f_all:"Alla",f_draft:"Utkast",f_sent:"Skickad",f_accepted:"Accepterad",f_declined:"Nekad",
-    p_list:"Kalkyllista",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
+    unattached_note:"{n} kalkyl(er) saknar projekt och kan inte prissättas här — koppla dem till ett projekt först.",p_list:"Projekt",p_list_hint:"välj ett att prissätta",n_items:"{n} poster",no_items_short:"Inga poster ännu",no_items_body:"Projektet har inga poster ännu. Poster skapas på projektet — lägg till dem i Projekt ({p}) och prissätt dem sedan här.",retired_note:"{n} prissatt(a) post(er) finns inte längre på projektet — prissättningen behålls men räknas inte:",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
     sum_total:"Totalt antal kalkyler",sum_value:"Totalt värde (alla)",
     edit:"Redigera",duplicate:"Duplicera",print:"Skriv ut / PDF",
     st_draft:"Utkast",st_review:"Under granskning",st_sent:"Skickad",st_accepted:"Accepterad",st_declined:"Nekad",st_expired:"Utgången",
@@ -703,7 +732,7 @@ const T={
     ei_number:"Kalkylnummer",ei_ref:"Referens / PO",ei_date:"Kalkyldatum",ei_valid:"Giltig till",ei_currency:"Valuta",
     ei_delivery:"Leveranstid",ei_terms:"Betalningsvillkor",ei_pricelist:"Prislista",ei_incoterms:"Incoterms",ei_notes:"Anteckningar",
     pj_location:"Plats",pj_type:"Projekttyp",pj_contact:"Kontaktperson",pj_status:"Projektstatus",pj_open:"Öppna projekt",
-    items:"Kalkylposter",additem:"Lägg till post",addline:"Lägg till rad",addworkitem:"Lägg till arbetsmoment",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
+    items:"Kalkylposter",additem:"Lägg till post",addline:"Lägg till rad",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
     wi_no:"Jobb-/artikelnummer (valfritt)",wi_desc:"Beskrivning av arbetsmoment",
     th_no:"#",th_item:"Post / Beskrivning",th_category:"Kategori",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa (SEK)",
     subtotal_section:"Delsumma",
@@ -733,13 +762,13 @@ const T={
     ei_oppref:"Affärsmöjlighet / förfrågningsreferens",ei_rfq:"Kundens referens / förfrågan",ei_reqdelivery:"Önskat leveransdatum",ei_estimator:"Ansvarig kalkylator",
     opt_included_title:"Inkludera detta tillval i kunderbjudandet",opt_combined:"Kombinerade valda tillval",
     preview_only:"Endast förhandsvisning — ej inkluderad",waste_word:"spill",cost_word:"kostnad",
-    act_editwi:"Redigera arbetsmoment",act_moveup:"Flytta upp",act_movedown:"Flytta ner",act_deletewi:"Ta bort arbetsmoment",
     act_editline:"Redigera rad",act_dupline:"Duplicera rad",act_delline:"Ta bort rad",
     th_margin_sek:"Marginal (SEK)",th_margin_pct:"Marginal %",empty_items:"Inga poster ännu — lägg till ett arbetsmoment för att komma igång.",
     err_required:"Detta fält är obligatoriskt.",internal_cost:"Intern kostnad",waste_pct_material:"Spill % (endast materialrader)",
     err_qty:"Antal måste vara större än noll.",err_sell:"Försäljningspris kan inte vara negativt.",err_cost:"Intern kostnad kan inte vara negativ.",
     err_disc:"Rabatt måste vara mellan 0% och 100%.",err_tax:"Moms måste vara mellan 0% och 100%.",
-    confirm_delete_wi:"Ta bort det tomma arbetsmomentet \"{n}\"?",confirm_delete_line:"Ta bort raden \"{n}\"?",
+    act_moveup:"Flytta upp",act_movedown:"Flytta ner",
+    confirm_delete_line:"Ta bort raden \"{n}\"?",
     err_date:"Ange ett giltigt datum.",err_date_order:"Giltigt-till-datum kan inte vara före kalkyldatumet.",
     convert_title:"Konvertera till projekt",convert_note:"Detta återanvänder kund, materialspecifikation, uppskattade timmar, maskiner, försäljningspris och leveransmål i Projekt, Planering och Lager.",
     convert_projtitle:"Projekttitel",convert_hours:"Planerade timmar",convert_delivery:"Leveransmål",convert_value:"Uppskattat projektvärde",convert_create:"Skapa kopplat projekt",
@@ -761,9 +790,9 @@ const T={
     act_archive:"Arkivera",
     locale:"sv-SE"},
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
-    searchph:"Prebaraj kalkulacii…",newest:"Nova kalkulacija",
+    searchph:"Prebaraj proekti, klienti…",ei_record:"Referenca na zapis",newest:"Nova kalkulacija",
     f_all:"Site",f_draft:"Nacrt",f_sent:"Ispratena",f_accepted:"Prifatena",f_declined:"Odbiena",
-    p_list:"Lista na kalkulacii",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
+    unattached_note:"{n} procenk(i) nemaat proekt i ne možat da se procenat tuka — prvo povrzi gi so proekt.",p_list:"Proekti",p_list_hint:"izberi eden za procenka",n_items:"{n} stavki",no_items_short:"Sè ušte nema stavki",no_items_body:"Ovoj proekt sè ušte nema stavki. Stavkite se kreiraat na samiot proekt — dodaj gi vo Proekti ({p}), pa procenkaj gi tuka.",retired_note:"{n} procenet(i) stavk(i) veḱe ne se na proektot — procenkata e začuvana no ne se broi:",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
     sum_total:"Vkupno kalkulacii",sum_value:"Vkupna vrednost (site)",
     edit:"Uredi",duplicate:"Dupliciraj",print:"Pečati / PDF",
     st_draft:"Nacrt",st_review:"Vo pregled",st_sent:"Ispratena",st_accepted:"Prifatena",st_declined:"Odbiena",st_expired:"Istekla",
@@ -772,7 +801,7 @@ const T={
     ei_number:"Broj na kalkulacija",ei_ref:"Referenca / PO",ei_date:"Datum",ei_valid:"Važi do",ei_currency:"Valuta",
     ei_delivery:"Vreme na isporaka",ei_terms:"Uslovi za plaќaњe",ei_pricelist:"Cenovnik",ei_incoterms:"Incoterms",ei_notes:"Beleški",
     pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
-    items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addworkitem:"Dodaj rabotna stavka",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
+    items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
     wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",
     th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno (SEK)",
     subtotal_section:"Meѓuzbir",
@@ -802,13 +831,13 @@ const T={
     ei_oppref:"Referenca na prilika / barañe",ei_rfq:"Referenca / barañe od klientot",ei_reqdelivery:"Baran datum na isporaka",ei_estimator:"Odgovoren kalkulant",
     opt_included_title:"Vkluči ja ovaa opcija vo ponudata za klientot",opt_combined:"Kombinirani izbrani opcii",
     preview_only:"Samo pregled — ne e vklučeno",waste_word:"otpad",cost_word:"cena",
-    act_editwi:"Uredi rabotna stavka",act_moveup:"Premesti nagore",act_movedown:"Premesti nadolu",act_deletewi:"Izbriši rabotna stavka",
     act_editline:"Uredi red",act_dupline:"Dupliciraj red",act_delline:"Izbriši red",
     th_margin_sek:"Marža (SEK)",th_margin_pct:"Marža %",empty_items:"Sè ušte nema stavki — dodaj rabotna stavka za да počneš.",
     err_required:"Ова poле е задолжително.",internal_cost:"Interna cena",waste_pct_material:"Otpad % (samo za materijalni redovi)",
     err_qty:"Količinata mora da bide pogolema od nula.",err_sell:"Prodažnata cena ne može da bide negativna.",err_cost:"Internata cena ne može da bide negativna.",
     err_disc:"Popustot mora da bide pomeѓu 0% i 100%.",err_tax:"DDV mora da bide pomeѓu 0% i 100%.",
-    confirm_delete_wi:"Izbriši ja praznata rabotna stavka \"{n}\"?",confirm_delete_line:"Izbriši go redot \"{n}\"?",
+    act_moveup:"Premesti nagore",act_movedown:"Premesti nadolu",
+    confirm_delete_line:"Izbriši go redot \"{n}\"?",
     err_date:"Vnesi validen datum.",err_date_order:"Datumot \"važi do\" ne može da bide pred datumot na kalkulacijata.",
     convert_title:"Konvertiraj vo proekt",convert_note:"Ova ke gi prezeme klientot, specifikacijata na materijali, procenetite časovi, mašinite, prodažnata cena i celta za isporaka vo Proekti, Planiranje i Magacin.",
     convert_projtitle:"Naslov na proekt",convert_hours:"Planirani časovi",convert_delivery:"Cel za isporaka",convert_value:"Procenета vrednost na proektot",convert_create:"Kreiraj poврзан proekt",
@@ -834,6 +863,68 @@ const T={
 let LANG="en",selectedId=2,filterStatus="all",query="",showCost=false,activeOptTab="base";
 
 function getEst(id){return ESTIMATIONS.find(e=>e.id===id);}
+// One estimate per project: the project is what is being quoted, so the module is browsed by
+// project and an estimate is simply the pricing attached to one.
+function estForProject(no){return ESTIMATIONS.find(e=>!e.archived&&e.projectNo===no)||null;}
+// The estimate's visible reference is read off the project, not a separate document number, and an
+// item's reference is that project number plus its position: P-26-0008-02 is P-26-0008's second item.
+function estRef(e){return e&&e.projectNo?e.projectNo:(e?e.no:'—');}
+function itemRef(e,seq){return e&&e.projectNo?EstimationRules.itemEstRef(e.projectNo,seq):String(seq);}
+// Rebuilds the priced work items from the project's items on every read. Pricing for an item that
+// has left the project is kept aside rather than dropped, and returns intact if the item comes back.
+// One-time upgrade. Before this pass an estimate kept its own free-text work items, unconnected to
+// the project it was quoting. Those items describe real work, so they are handed to the project
+// rather than retired wholesale: the project takes them on as its own items, and the estimate's
+// pricing is rebound to the item numbers the project hands back. It runs only for a project that
+// has no items of its own, so it can never duplicate work the project already tracks.
+function adoptLegacyWorkItems(e){
+  if(!e||!e.projectNo||!window.WorkshopData||!WorkshopData.upsertJobcard)return 0;
+  if(projectItems(e.projectNo).length)return 0;
+  const p=WorkshopData.getProjects().find(x=>x.no===e.projectNo);
+  if(!p)return 0;
+  // No number check here: the early return above already guarantees the project has no items of its
+  // own, so anything the estimate is holding is legacy by definition. The seeded work items carry
+  // JC-style numbers that never matched a real jobcard, which is exactly what this repairs.
+  const legacy=(e.workItems||[]).filter(w=>w&&w.desc);
+  if(!legacy.length)return 0;
+  let adopted=0;
+  legacy.forEach(w=>{
+    const lines=w.lines||[];
+    const hours=lines.filter(l=>l.category==='labour').reduce((a,l)=>a+(Number(l.qty)||0),0);
+    const material=lines.filter(l=>l.category==='material').reduce((a,l)=>a+EstimationRules.lineCostTotal(l),0);
+    const saved=WorkshopData.upsertJobcard({projectId:p.id,projectNo:p.no,customerId:p.customerId,customer:p.customer,
+      title:w.desc,item:w.desc,quantity:1,revision:0,workType:'other',location:'workshop',priority:'medium',
+      responsible:'Aleksandar C.',workers:[],status:'draft',plannedHours:hours,estimatedMaterialCost:material,
+      progress:0,actualHours:0,archived:false,created:todayISO(),createdBy:'Aleksandar C.'});
+    if(saved&&saved.no){w.no=saved.no;adopted++;}
+  });
+  if(adopted)syncEstimation(e);
+  return adopted;
+}
+function syncWorkItemsToProject(e){
+  if(!e||!e.projectNo)return e;
+  adoptLegacyWorkItems(e);
+  const stored=(e.workItems||[]).concat(e.retiredWorkItems||[]);
+  const {workItems,retired}=EstimationRules.reconcileWorkItems(projectItems(e.projectNo),stored);
+  e.workItems=workItems;e.retiredWorkItems=retired;
+  return e;
+}
+// An estimate's totals are the project's quoted price - writing them back is what keeps the two
+// from disagreeing. Only a live estimate does this; a declined or expired one must not requote.
+function pushTotalsToProject(e){
+  if(!e||!e.projectNo||!window.WorkshopData||!WorkshopData.upsertProject)return;
+  if(['declined','expired'].includes(e.status))return;
+  const p=WorkshopData.getProjects().find(x=>x.no===e.projectNo);
+  if(!p)return;
+  const tot=computeTotals(e);
+  // An estimate with nothing priced yet must not wipe a price the project already carries.
+  if(!(tot.netSellingPrice>0))return;
+  if(Number(p.quotedValue)===tot.netSellingPrice)return;
+  // The whole project record goes back, not just the price: upsertProject() requires a name, and
+  // re-resolves the customer from the payload - sending a partial record would blank both.
+  WorkshopData.upsertProject(Object.assign({},p,{quotedValue:tot.netSellingPrice}));
+  hydrateProjects();
+}
 // Pushes the full current state of an estimate into WorkshopData (the one shared browser-data layer).
 // IMPORTANT: this function never changes the revision number itself — see createRevision() for the single,
 // dedicated place a revision is ever incremented, so calling this repeatedly (on every routine save) can
@@ -960,28 +1051,34 @@ function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st
 function renderLeft(){
   const t=T[LANG];
   const q=query.trim().toLowerCase();
-  const active=ESTIMATIONS.filter(e=>!e.archived);
+  const all=ESTIMATIONS.filter(e=>!e.archived);
+  const active=all.filter(e=>e.projectNo&&PROJECTS[e.projectNo]);
+  const unattached=all.length-active.length;
   let rows=active.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
-    .filter(e=>{const c=CUSTOMERS[e.customerId];return !q||e.no.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);})
+    .filter(e=>{const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo];
+      return !q||String(e.projectNo||'').toLowerCase().includes(q)||(p&&p.name.toLowerCase().includes(q))||c.name.toLowerCase().includes(q);})
     .sort((a,b)=>b.created.localeCompare(a.created));
 
   const counts={draft:0,sent:0,accepted:0,declined:0};
   active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
 
+  // Rows are projects: the project is what gets quoted, and its estimate is the pricing on it.
+  // The item count comes straight from the project, so it is obvious what there is to price.
   const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
-    return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-est-id="${e.id}">
-      <div class="er1"><span class="eno">${esc(e.no)}</span>${statusPill(e.status)}</div>
-      <div class="ecust">${esc(c.name)}</div>
-      <div class="er2"><span class="eval">${fmt0(tot.grandTotal)}</span></div>
+    const p=PROJECTS[e.projectNo];const n=projectItems(e.projectNo).length;
+    return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-project-no="${esc(e.projectNo||'')}">
+      <div class="er1"><span class="eno">${esc(estRef(e))}</span>${statusPill(e.status)}</div>
+      <div class="ecust">${esc(p?p.name:(e.projectTitle||''))}</div>
+      <div class="ecust" style="opacity:.72;">${esc(c.name)}</div>
+      <div class="er2"><span class="eitems">${n?esc(t.n_items.replace('{n}',n)):esc(t.no_items_short)}</span><span class="eval">${fmt0(tot.grandTotal)}</span></div>
     </button>`;}).join("");
 
   return `
     <div class="panel">
-      <div class="phead"><h3>${t.p_list}</h3></div>
+      <div class="phead"><h3>${t.p_list}</h3><span class="stpill sent">${esc(t.p_list_hint)}</span></div>
       <div class="listtoolbar">
         <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" aria-label="${esc(t.searchph)}" value="${esc(query)}"></div>
       </div>
-      <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewEst()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t.newest}</button>
       <div class="segtabs">
         <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${active.length})</button>
         <button class="${filterStatus==='draft'?'on':''}" onclick="setFilter('draft')">${t.f_draft} (${counts.draft})</button>
@@ -990,6 +1087,7 @@ function renderLeft(){
         <button class="${filterStatus==='declined'?'on':''}" onclick="setFilter('declined')">${t.f_declined} (${counts.declined})</button>
       </div>
       <div class="estlist">${estRows||`<div class="empty3">—</div>`}</div>
+      ${unattached?`<div class="estnote warn">${esc(t.unattached_note.replace('{n}',unattached))}</div>`:''}
       <div class="pager"><span>${t.showing.replace('{a}','1').replace('{b}',rows.length).replace('{n}',rows.length)}</span>
         <div class="pnav"><button disabled>‹</button><button class="cur">1</button><button disabled>›</button></div></div>
     </div>`;
@@ -1015,6 +1113,7 @@ function renderHeadSummary(){
 function computeTotalsQuiet(e){return computeTotals(e);}
 
 function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
+function selectProject(no){const e=estForProject(no);if(!e)return;selectedId=e.id;activeOptTab="base";renderAll();}
 function setFilter(f){filterStatus=f;renderAll();}
 
 // A locked estimate (accepted / declined / expired) cannot be edited directly — a revision must be created first.
@@ -1038,10 +1137,9 @@ function renderMiddle(e){
     <div class="panel">
       ${isLocked(e)?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.locked_banner)}<button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>`:''}
       <div class="dhead3">
-        <div class="idn"><h2>${esc(e.no)}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
+        <div class="idn"><h2>${esc(estRef(e))}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
         <div class="dbtns">
           <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
-          <button class="tbtn" onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.duplicate)}</button>
           <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.print)}</button>
         </div>
       </div>
@@ -1064,7 +1162,8 @@ function renderMiddle(e){
           <div class="iline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>${esc(t.vat_org)}: ${esc(c.org)}</div>
         </div>
         <div class="icard"><div class="ich"><h4>${esc(t.c_estinfo)}</h4></div>
-          <div class="irow2"><span class="ik">${esc(t.ei_number)}</span><span class="iv">${esc(e.no)}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_number)}</span><span class="iv">${esc(estRef(e))}</span></div>
+          <div class="irow2"><span class="ik">${esc(t.ei_record)}</span><span class="iv">${esc(e.no)}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_oppref)}</span><span class="iv">${esc(e.opportunityRef)||'—'}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_rfq)}</span><span class="iv">${esc(e.customerRfq)||'—'}</span></div>
           <div class="irow2"><span class="ik">${esc(t.ei_date)}</span><span class="iv">${esc(e.created)}</span></div>
@@ -1094,7 +1193,6 @@ function renderMiddle(e){
         <h3>${esc(t.items)}</h3>
         <div class="itemsactions">
           <label class="costtoggle"><input type="checkbox" ${showCost?'checked':''} onchange="showCost=this.checked;renderAll();">${esc(t.showcost)}</label>
-          <button class="tbtn small" onclick="openAddWorkItem(${e.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(t.addworkitem)}</button>
         </div>
       </div>
       ${(e.options||[]).length?renderOptionTabs(e):''}
@@ -1139,13 +1237,9 @@ function renderItemsTable(e){
     const isBaseWorkItem=idx<e.workItems.length;
     if(!wi.lines.length&&!isBaseWorkItem)return;
     const nf=locked?'':'';
-    rows+=`<tr class="sectionrow"><td colspan="${showCost?10:8}">${n}. ${esc(wi.desc.toUpperCase())}${wi.no?` <span style="opacity:.6;font-weight:600;">(${esc(wi.no)})</span>`:''}${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}
-      ${isBaseWorkItem&&!locked?`<span class="wiactions">
-        <button title="${esc(t.act_editwi)}" onclick="openEditWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-        <button title="${esc(t.act_moveup)}" ${idx===0?'disabled':''} onclick="moveWorkItem(${e.id},${idx},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
-        <button title="${esc(t.act_movedown)}" ${idx===e.workItems.length-1?'disabled':''} onclick="moveWorkItem(${e.id},${idx},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
-        ${wi.lines.length===0?`<button title="${esc(t.act_deletewi)}" onclick="deleteWorkItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>`:''}
-      </span>`:''}
+    // The reference is the project's, not the estimate's: which item this is, in the project's order.
+    const ref=wi.isOption?'':itemRef(e,wi.seq||n);
+    rows+=`<tr class="sectionrow"><td colspan="${showCost?10:8}">${ref?`<span class="itemref">${esc(ref)}</span>`:''}${esc(wi.desc.toUpperCase())}${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}${wi.no&&!wi.isOption?` <span class="itemsrc">${esc(wi.no)}</span>`:''}
     </td></tr>`;
     let sIdx=1;let sectionSell=0;
     wi.lines.forEach((it,lIdx)=>{
@@ -1176,52 +1270,20 @@ function renderItemsTable(e){
     rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}" style="text-align:right;">${esc(t.subtotal_section)} — ${esc(wi.desc)}${isBaseWorkItem&&!locked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}</td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
-  return `<div class="itable-wrap"><table class="itable"><thead><tr>
+  // Nothing to price until the project has items, and pricing left behind by an item that has since
+  // left the project is reported rather than quietly vanishing.
+  const noItems=!e.workItems.length;
+  const retired=(e.retiredWorkItems||[]);
+  const notes=(noItems?`<div class="estnote">${esc(t.no_items_body.replace('{p}',e.projectNo||'—'))}</div>`:'')
+    +(retired.length?`<div class="estnote warn">${esc(t.retired_note.replace('{n}',retired.length))} ${esc(retired.map(w=>w.no).join(', '))}</div>`:'');
+  return notes+`<div class="itable-wrap"><table class="itable"><thead><tr>
     <th>${esc(t.th_no)}</th><th>${esc(t.th_item)}</th><th class="n">${esc(t.th_qty)}</th><th>${esc(t.th_unit)}</th><th class="n">${esc(t.th_price)}</th><th class="n">${esc(t.th_disc)}</th><th class="n">${esc(t.th_tax)}</th>
     ${showCost?`<th class="n">${esc(t.th_margin_sek)}</th><th class="n">${esc(t.th_margin_pct)}</th>`:''}
     <th class="n">${esc(t.th_total)}</th>
-  </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?10:8}" class="empty3">${esc(t.empty_items)}</td></tr>`}</tbody></table></div>`;
+  </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?10:8}" class="empty3">${esc(noItems?t.no_items_short:t.empty_items)}</td></tr>`}</tbody></table></div>`;
 }
 
 // ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
-function moveWorkItem(id,idx,dir){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const to=idx+dir;
-  // Same class of guard as moveLine() (Pass 3.27) - bounds-checking `to` alone does not guarantee
-  // idx itself is still valid after a concurrent edit elsewhere reshaped workItems.
-  if(idx<0||idx>=e.workItems.length||to<0||to>=e.workItems.length)return renderAll();
-  const tmp=e.workItems[idx];e.workItems[idx]=e.workItems[to];e.workItems[to]=tmp;
-  syncEstimation(e);renderAll();
-}
-function deleteWorkItem(id,idx){
-  const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[idx];if(!wi||wi.lines.length)return;
-  if(!confirm(T[LANG].confirm_delete_wi.replace('{n}',wi.desc)))return;
-  e.workItems.splice(idx,1);
-  e.history.push({date:todayISO(),action:'Work item removed: '+wi.desc,by:'Aleksandar C.'});
-  syncEstimation(e);renderAll();
-}
-function openEditWorkItem(id,idx){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  const wi=e.workItems[idx];if(!wi)return;
-  $("fcard").innerHTML=`<h2>${esc(t.act_editwi)}</h2>
-    <div class="frow"><label for="ewNo">${esc(t.wi_no)}</label><input id="ewNo" value="${esc(wi.no)}"></div>
-    <div class="frow"><label for="ewDesc">${esc(t.wi_desc)}</label><input id="ewDesc" value="${esc(wi.desc)}"></div>
-    <div id="ewErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveEditWorkItem(${id},${idx})">${esc(t.nc_save)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function saveEditWorkItem(id,idx){
-  const t=T[LANG];clearAllFieldErrors();const e=getEst(id);if(!guardEdit(e))return;
-  const desc=$("ewDesc").value.trim();
-  if(!desc){showFieldError('ewDesc','ewErr',t.err_required);return;}
-  // Same class of guard as saveLineForm() (Pass 3.27 bug hunt) - workItems can be replaced
-  // wholesale by hydrateSharedEstimations() reacting to workshop:data while this modal is open.
-  const wi=e.workItems[idx];if(!wi){toast(t.err_line_changed,'error');closeModal();renderAll();return;}
-  wi.no=$("ewNo").value.trim();wi.desc=desc;
-  e.history.push({date:todayISO(),action:'Work item renamed to: '+desc,by:'Aleksandar C.'});
-  syncEstimation(e);closeModal();renderAll();
-}
 function duplicateLine(id,wiIdx,lIdx){
   const e=getEst(id);if(!guardEdit(e))return;
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
@@ -1244,7 +1306,7 @@ function moveLine(id,wiIdx,lIdx,dir){
   // Bounds-checking `to` alone does not guarantee lIdx itself is still valid (e.g. the array
   // shrank from a concurrent edit elsewhere such that lIdx is now out of range but lIdx+dir
   // coincidentally isn't) - without this, an out-of-bounds read would silently overwrite a real
-  // line with undefined. Same class of guard as saveLineForm()/saveEditWorkItem() (Pass 3.27).
+  // line with undefined. Same class of guard as saveLineForm() (Pass 3.27).
   if(lIdx<0||lIdx>=wi.lines.length||to<0||to>=wi.lines.length)return renderAll();
   const tmp=wi.lines[lIdx];wi.lines[lIdx]=wi.lines[to];wi.lines[to]=tmp;
   syncEstimation(e);renderAll();
@@ -1339,7 +1401,6 @@ function renderActionBar(e){
     <button onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>${esc(t.act_preview)}</button>
     <button onclick="sendEmail(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
     <button onclick="${converted?"location.href='projects-desktop.html'":`openConvertEst(${e.id})`}" ${!converted&&e.status!=='accepted'?`title="${esc(t.convert_requires_accepted)}"`:''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${converted?esc(t.act_open):esc(t.act_convert)}</button>
-    <button onclick="duplicateEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>${esc(t.act_duplicate)}</button>
     <button onclick="exportExcel(${e.id})" title="${esc(t.demo_export).replace('{no}',e.no)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>${esc(t.act_export)}</button>
     <button class="danger" onclick="deleteEst(${e.id})">${converted?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>${esc(t.act_archive)}`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>${esc(t.act_delete)}`}</button>
   </div>`;
@@ -1348,14 +1409,18 @@ function renderActionBar(e){
 function renderAll(){
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
+  hydrateProjects();
   let e=getEst(selectedId);if(!e||e.archived){e=ESTIMATIONS.find(x=>!x.archived)||ESTIMATIONS[0];selectedId=e.id;}
+  // The project owns the item list, so re-read it before anything is priced or displayed.
+  syncWorkItemsToProject(e);
+  pushTotalsToProject(e);
   $("app").innerHTML=`<div class="crmgrid">
     <div class="col">${renderLeft()}</div>
     <div class="col">${renderMiddle(e)}</div>
     <div class="col">${renderRight(e)}</div>
   </div>${renderActionBar(e)}`;
   const strip=$("summaryStrip");if(strip)strip.innerHTML=renderHeadSummary();
-  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectEst(Number(row.dataset.estId))));
+  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectProject(row.dataset.projectNo)));
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
   syncModuleSidebar();
 }
@@ -1392,74 +1457,8 @@ $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
 
 // Starting-method templates: structure and category placeholders only, all costs/prices start at zero —
 // never an invented monetary figure. Anything other than Blank gets a visible "review before sending" note.
-function templateBlank(){return [];}
-function templateFabrication(){return [
-  {no:'',desc:'Fabrication & Materials',lines:[
-    {desc:'Steel sheet / plate (specify grade)',category:'material',qty:1,unit:'m²',weight:0,waste:5,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Cutting & forming',category:'machine',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Welding & assembly',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]},
-  {no:'',desc:'Installation',lines:[
-    {desc:'On-site installation',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Delivery',category:'logistics',qty:1,unit:'trip',cost:0,sell:0,disc:0,tax:25}]}];}
-function templateRepair(){return [
-  {no:'',desc:'Diagnosis & Repair',lines:[
-    {desc:'Site visit / diagnosis',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Replacement parts (specify)',category:'material',qty:1,unit:'pcs',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Repair labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
-function templateInstallation(){return [
-  {no:'',desc:'Installation',lines:[
-    {desc:'Equipment / materials supplied',category:'material',qty:1,unit:'set',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25},
-    {desc:'Installation labour',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25},
-    {desc:'Commissioning & handover',category:'labour',qty:1,unit:'h',cost:0,sell:0,disc:0,tax:25}]}];}
-const START_TEMPLATES={blank:templateBlank,fabrication:templateFabrication,repair:templateRepair,installation:templateInstallation};
 
-function openNewEst(){
-  const t=T[LANG];
-  const custOpts=Object.keys(CUSTOMERS).map(id=>`<option value="${id}">${esc(CUSTOMERS[id].name)}</option>`).join("");
-  const projOpts=`<option value="">${esc(t.ne_none)}</option>`+Object.keys(PROJECTS).map(no=>`<option value="${no}">${esc(no)} — ${esc(PROJECTS[no].name)}</option>`).join("");
-  const today=todayISO();
-  $("fcard").innerHTML=`<h2>${esc(t.nc_title)}</h2><p class="fsub">${esc(t.esub)}</p>
-    <div class="frow2"><div><label for="neCustomer">${esc(t.nc_customer)} *</label><select id="neCustomer">${custOpts}</select></div><div><label for="neTitle">${esc(t.ne_title)} *</label><input id="neTitle" placeholder="${esc(t.ne_title_ph)}"></div></div>
-    <div id="neErr1" class="errmsg" style="display:none;"></div>
-    <div class="frow2"><div><label for="neOppRef">${esc(t.ei_oppref)}</label><input id="neOppRef"></div><div><label for="neProject">${esc(t.nc_project)}</label><select id="neProject">${projOpts}</select></div></div>
-    <div class="frow2"><div><label for="neRfq">${esc(t.ei_rfq)}</label><input id="neRfq"></div><div><label for="neEstimator">${esc(t.ei_estimator)}</label><select id="neEstimator">${ownerOptionsHtml()}</select></div></div>
-    <div class="frow3"><div><label for="neCreated">${esc(t.ei_date)}</label><input id="neCreated" type="date" value="${today}"></div><div><label for="neValid">${esc(t.ei_valid)} *</label><input id="neValid" type="date" value="${addDaysISO(today,30)}"></div><div><label for="neReqDelivery">${esc(t.ei_reqdelivery)}</label><input id="neReqDelivery" type="date"></div></div>
-    <div id="neErr2" class="errmsg" style="display:none;"></div>
-    <div class="frow3"><div><label for="neDelivery">${esc(t.ei_delivery)}</label><input id="neDelivery" placeholder="2–3 weeks"></div><div><label for="neCurrency">${esc(t.ei_currency)}</label><select id="neCurrency"><option>SEK</option><option>EUR</option><option>USD</option></select></div><div><label for="neTerms">${esc(t.ei_terms)}</label><input id="neTerms" value="30 days"></div></div>
-    <div class="frow2"><div><label for="neIncoterms">${esc(t.ei_incoterms)}</label><input id="neIncoterms" value="EXW Marieholm"></div></div>
-    <div class="frow"><label for="neTemplate">${esc(t.ne_startmethod)}</label><select id="neTemplate">
-      <option value="blank" selected>${esc(t.ne_blank)}</option>
-      <option value="fabrication">${esc(t.ne_tpl_fab)}</option>
-      <option value="repair">${esc(t.ne_tpl_repair)}</option>
-      <option value="installation">${esc(t.ne_tpl_install)}</option>
-    </select></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveNewEst()">${esc(t.nc_save)}</button></div>`;
-  $("fov").classList.add("show");
-}
 function ownerOptionsHtml(){return ['Aleksandar C.','Elena N.','Marko K.'].map(n=>`<option>${esc(n)}</option>`).join('');}
-function saveNewEst(){
-  const t=T[LANG];clearAllFieldErrors();
-  const title=$("neTitle").value.trim();
-  if(!title){showFieldError('neTitle','neErr1',t.err_required);return;}
-  const created=$("neCreated").value||todayISO(),validUntil=$("neValid").value;
-  if(isBlank(validUntil)){showFieldError('neValid','neErr2',t.err_date);return;}
-  if(validUntil<created){showFieldError('neValid','neErr2',t.err_date_order);return;}
-  const customerId=parseInt($("neCustomer").value);const projectNo=$("neProject").value||null;
-  const templateKey=$("neTemplate").value;const isBlankTpl=templateKey==='blank';
-  const no=nextEstNumber(created);
-  const rec={id:nextEstId++,no,customerId,projectNo,projectTitle:title,status:"draft",created,validUntil,
-    requestedDelivery:$("neReqDelivery").value||'',opportunityRef:$("neOppRef").value.trim(),customerRfq:$("neRfq").value.trim(),
-    currency:$("neCurrency").value,deliveryTime:$("neDelivery").value.trim()||"—",paymentTerms:$("neTerms").value.trim()||"30 days",
-    priceList:"Standard Price List 2026",incoterms:$("neIncoterms").value.trim()||"EXW Marieholm",reference:"—",
-    createdBy:"Aleksandar C.",estimator:$("neEstimator").value,
-    overheadPct:8,contingencyPct:5,discount:0,workItems:(START_TEMPLATES[templateKey]||templateBlank)(),options:[],
-    exclusions:[],terms:"Prices valid for 30 days.",documents:[],revision:0,revisionSnapshots:[],
-    history:[{date:created,action:"Estimation created (Rev 0)",by:"Aleksandar C."}],
-    notes:isBlankTpl?[]:[{date:created,author:'Aleksandar C.',text:t.ne_template_note}]};
-  ESTIMATIONS.push(rec);
-  syncEstimation(rec);closeModal();selectedId=rec.id;renderAll();
-}
-
 function openEditEst(id){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.no)}</h2>
@@ -1533,25 +1532,6 @@ function savePricingSettings(id){
   if(!isNonNegNumber(discount)||discount>subtotal){showFieldError('psDiscount','psErr',t.err_discount);return;}
   e.overheadPct=overhead;e.contingencyPct=contingency;e.discount=discount;
   e.history.push({date:todayISO(),action:'Pricing settings updated',by:'Aleksandar C.'});
-  syncEstimation(e);
-  closeModal();renderAll();
-}
-
-function openAddWorkItem(id){
-  const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
-  $("fcard").innerHTML=`<h2>${esc(t.addworkitem)}</h2><p class="fsub">${esc(e.no)}</p>
-    <div class="frow"><label for="awNo">${esc(t.wi_no)}</label><input id="awNo" placeholder="JC-2026-00XX"></div>
-    <div class="frow"><label for="awDesc">${esc(t.wi_desc)}</label><input id="awDesc"></div>
-    <div id="awErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="saveAddWorkItem(${id})">${esc(t.addworkitem)}</button></div>`;
-  $("fov").classList.add("show");
-}
-function saveAddWorkItem(id){
-  const t=T[LANG];clearAllFieldErrors();const desc=$("awDesc").value.trim();
-  if(!desc){showFieldError('awDesc','awErr',t.err_required);return;}
-  const e=getEst(id);if(!guardEdit(e))return;
-  e.workItems.push({no:$("awNo").value.trim(),desc,lines:[]});
-  e.history.push({date:todayISO(),action:`Work item added: ${desc}`,by:"Aleksandar C."});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -1677,27 +1657,6 @@ async function saveUpload(id){
 // Duplicating creates a genuinely independent estimate: deep-cloned commercial/cost content, a brand-new
 // local id and estimation number, no shared/project linkage, reset status/revision/dates/history. The
 // original estimate is never touched.
-function duplicateEst(id){
-  const src=getEst(id);
-  const copy=JSON.parse(JSON.stringify(src));
-  const created=todayISO();
-  copy.id=nextEstId++;
-  copy.no=nextEstNumber(created);
-  delete copy.sharedId;                 // never overwrite the original shared estimation
-  copy.projectNo=null;copy.projectTitle=null;copy.deliveryTarget=null;
-  copy.status="draft";
-  copy.revision=0;copy.revisionSnapshots=[];
-  copy.created=created;
-  copy.validUntil=addDaysISO(created,30);
-  copy.documents=[];                    // do not copy uploaded customer-specific documents by default
-  copy.notes=[];
-  copy.history=[{date:created,action:`Duplicated from ${src.no}`,by:"Aleksandar C."}];
-  ESTIMATIONS.push(copy);
-  selectedId=copy.id;
-  syncEstimation(copy);                 // saved as a new, separate shared estimation — the original is untouched
-  renderAll();
-  toast(T[LANG].duplicate_toast.replace('{a}',src.no).replace('{b}',copy.no),'ok');
-}
 function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00");d2.setDate(d2.getDate()+days);return d2.toISOString().slice(0,10);}
 
 // An estimate linked to a project cannot be safely deleted (the project still references it) — offer
@@ -1817,12 +1776,16 @@ function setLang(code){LANG=code;
 document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$("langc").classList.remove('open');}));
 function tick(){const n=new Date();$("time").textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
   try{$("date").textContent=n.toLocaleDateString(T[LANG].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){$("date").textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+// Runs once at startup, after every declaration it depends on, so the project list reports the
+// items the projects really have rather than only adopting them as each estimate is opened.
+adoptAllLegacyWorkItems();
 const requestedEstimation=new URLSearchParams(location.search).get('estimation');
 if(requestedEstimation){const requested=ESTIMATIONS.find(e=>e.no===requestedEstimation||String(e.sharedId)===requestedEstimation);if(requested)selectedId=requested.id;}
 setLang("en");setInterval(tick,10000);
 // Picks up an estimation created/updated elsewhere (another tab, or another module such as
 // Customers' "New Quote") without a full reload - see hydrateSharedEstimations()'s own comment.
-window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();hydrateSharedEstimations();renderAll();});
+window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();hydrateSharedEstimations();
+adoptAllLegacyWorkItems();renderAll();});
 
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
