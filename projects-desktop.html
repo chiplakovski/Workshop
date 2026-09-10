@@ -65,15 +65,24 @@
   .viewtabs button{background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:11.5px;padding:8px 16px;cursor:pointer;transition:.15s;letter-spacing:.02em;text-transform:uppercase;}
   .viewtabs button.active{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
 
-  /* kanban board */
-  .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(228px,1fr);gap:12px;overflow-x:auto;align-items:start;padding-bottom:10px;}
-  .bcol{border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0;transition:.15s;}
-  .bcol-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);}
-  .bcol-head h3{font-family:var(--font-heading);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c-tint);}
-  .bcount{font-size:11px;color:var(--steel-400);font-variant-numeric:tabular-nums;}
+  /* kanban board — each stage carries its own colour so the columns read apart */
+  .board{display:grid;grid-template-columns:repeat(6,minmax(168px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:10px;}
+  .bcol{border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0;transition:.15s;--bs:var(--spark);--bs-rgb:var(--c-accent-rgb);}
+  .bcol[data-status="quotation"]{--bs:#a78bfa;--bs-rgb:167,139,250;}
+  .bcol[data-status="approved"]{--bs:#22d3ee;--bs-rgb:34,211,238;}
+  .bcol[data-status="planned"]{--bs:#4a90ff;--bs-rgb:74,144,255;}
+  .bcol[data-status="active"]{--bs:#4ad48a;--bs-rgb:74,212,138;}
+  .bcol[data-status="hold"]{--bs:#ffb057;--bs-rgb:255,176,87;}
+  .bcol[data-status="completed"]{--bs:#2dd4bf;--bs-rgb:45,212,191;}
+  .bcol{border-top:2px solid var(--bs);}
+  .bcol-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);
+    background:linear-gradient(rgba(var(--bs-rgb),.13),rgba(var(--bs-rgb),.13)),var(--navy-800);}
+  .bcol-head h3{font-family:var(--font-heading);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--bs);}
+  .bcount{font-size:11px;color:var(--bs);background:rgba(var(--bs-rgb),.18);padding:1px 8px;font-variant-numeric:tabular-nums;}
+  .bhidden{margin-top:10px;font-size:11px;color:var(--steel-400);}
   .bcards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:90px;}
-  .bcard{background:var(--field);border:1px solid var(--field-line);padding:10px 11px;cursor:pointer;transition:.15s;}
-  .bcard:hover{border-color:rgba(var(--c-accent-rgb),.55);transform:translateY(-1px);}
+  .bcard{background:var(--field);border:1px solid var(--field-line);border-left:3px solid rgba(var(--bs-rgb),.8);padding:10px 11px;cursor:pointer;transition:.15s;}
+  .bcard:hover{border-color:rgba(var(--bs-rgb),.6);border-left-color:var(--bs);transform:translateY(-1px);}
   .bcard.dragging{opacity:.45;}
   .bc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;}
   .bc-no{color:var(--spark);font-weight:600;} .bc-val{color:var(--steel-400);}
@@ -525,7 +534,7 @@ let LANG="en";
 const T={
 en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Projects",psub:"Central job container",
  newproj:"+ New project",searchph:"Search project, number, customer, reference…",
- view_board:"Board",view_table:"Table", f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
+ board_hidden:"{n} not on the board — see Table:", view_board:"Board",view_table:"Table", f_all:"All",f_draft:"Draft",f_quotation:"Quotation",f_approved:"Approved",f_planned:"Planned",f_active:"Active",f_hold:"On hold",f_completed:"Completed",f_closed:"Closed",f_cancelled:"Cancelled",
  morefilters:"More filters",ff_customer:"Customer",ff_responsible:"Responsible",ff_type:"Project type",ff_from:"Deadline from",ff_to:"Deadline to",ff_clear:"Clear filters",ff_any:"— Any —",
  th_no:"Project #",th_name:"Project name",th_customer:"Customer",th_ref:"Customer ref.",th_status:"Status",th_start:"Planned start",th_deadline:"Deadline",th_progress:"Progress",th_responsible:"Responsible",th_quoted:"Quoted value",th_actual:"Actual cost",
  kpi_quoted:"Total quoted",kpi_actual:"Total actual cost",kpi_overdue:"Overdue",kpi_hold:"On hold",
@@ -575,7 +584,7 @@ en:{role:"Admin",logout:"Log out",back_hub:"Hub",back_list:"Projects",ptitle:"Pr
  locale:"en-GB"},
 sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Projekt",psub:"Central jobbcontainer",
  newproj:"+ Nytt projekt",searchph:"Sök projekt, nummer, kund, referens…",
- view_board:"Tavla",view_table:"Tabell", f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
+ board_hidden:"{n} visas inte på tavlan — se Tabell:", view_board:"Tavla",view_table:"Tabell", f_all:"Alla",f_draft:"Utkast",f_quotation:"Offert",f_approved:"Godkänt",f_planned:"Planerat",f_active:"Aktivt",f_hold:"Pausat",f_completed:"Klart",f_closed:"Stängt",f_cancelled:"Avbrutet",
  morefilters:"Fler filter",ff_customer:"Kund",ff_responsible:"Ansvarig",ff_type:"Projekttyp",ff_from:"Deadline från",ff_to:"Deadline till",ff_clear:"Rensa filter",ff_any:"— Alla —",
  th_no:"Projekt-nr",th_name:"Projektnamn",th_customer:"Kund",th_ref:"Kundref.",th_status:"Status",th_start:"Planerad start",th_deadline:"Deadline",th_progress:"Framsteg",th_responsible:"Ansvarig",th_quoted:"Offertvärde",th_actual:"Verklig kostnad",
  kpi_quoted:"Totalt offertvärde",kpi_actual:"Total verklig kostnad",kpi_overdue:"Försenade",kpi_hold:"Pausade",
@@ -624,7 +633,7 @@ sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",back_list:"Projekt",ptitle:"Pr
  locale:"sv-SE"},
 mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",back_list:"Proekti",ptitle:"Proekti",psub:"Centralen kontejner za raboti",
  newproj:"+ Nov proekt",searchph:"Prebaraj proekt, broj, klient, referenca…",
- view_board:"Tabla",view_table:"Tabela", f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
+ board_hidden:"{n} ne se na tablata — vidi Tabela:", view_board:"Tabla",view_table:"Tabela", f_all:"Site",f_draft:"Nacrt",f_quotation:"Ponuda",f_approved:"Odobreno",f_planned:"Planirano",f_active:"Aktivno",f_hold:"Pauzirano",f_completed:"Završeno",f_closed:"Zatvoreno",f_cancelled:"Otkažano",
  morefilters:"Povekje filtri",ff_customer:"Klient",ff_responsible:"Odgovoren",ff_type:"Tip proekt",ff_from:"Rok od",ff_to:"Rok do",ff_clear:"Isčisti filtri",ff_any:"— Site —",
  th_no:"Proekt br.",th_name:"Ime na proekt",th_customer:"Klient",th_ref:"Referenca",th_status:"Status",th_start:"Planiran početok",th_deadline:"Rok",th_progress:"Napredok",th_responsible:"Odgovoren",th_quoted:"Ponudena vrednost",th_actual:"Realen trošok",
  kpi_quoted:"Vkupno ponudeno",kpi_actual:"Vkupen realen trošok",kpi_overdue:"Docneti",kpi_hold:"Pauzirani",
@@ -773,8 +782,10 @@ function renderList(){
 function sortArrow(k){return sortKey===k?`<span class="sa">${sortDir===1?'▲':'▼'}</span>`:"";}
 
 // ── Board view ──
-// Columns are the statuses, Active first since that is the day-to-day view.
-const BOARD_ORDER=['active',...STATUS_ORDER.filter(s=>s!=='active')];
+// The board shows the working pipeline only. Draft, Closed and Cancelled are start/archive
+// states rather than stages, so they stay in the Table view — the board reports how many
+// projects that hides so none of them disappear silently.
+const BOARD_ORDER=['quotation','approved','planned','active','hold','completed'];
 // A card may only be dragged where project-rules.js permits a transition. The drop then runs the
 // very same flow the action buttons use, so the required reasons, the completion/quality gates and
 // the activity-log entry all still happen — dragging never writes a status directly.
@@ -814,7 +825,18 @@ function renderBoard(rows){
     return `<section class="bcol" data-status="${st}">
       <header class="bcol-head"><h3>${t["f_"+st]}</h3><span class="bcount">${items.length}</span></header>
       <div class="bcards">${cards||`<div class="bempty">${t.emptylist}</div>`}</div>
-    </section>`;}).join("")}</div>`;
+    </section>`;}).join("")}</div>${boardHiddenNote(rows)}`;
+}
+// Anything whose status is not a board column (draft/closed/cancelled, or an unrecognised
+// status) would otherwise just vanish from the view, so say so and where to find it.
+function boardHiddenNote(rows){
+  const t=T[LANG];
+  const hidden=rows.filter(p=>!BOARD_ORDER.includes(uiStatus(p.status)));
+  if(!hidden.length)return "";
+  const byStatus={};
+  hidden.forEach(p=>{const k=uiStatus(p.status);byStatus[k]=(byStatus[k]||0)+1;});
+  const parts=Object.keys(byStatus).map(k=>`${esc(t["f_"+k]||k)} ${byStatus[k]}`).join(" · ");
+  return `<div class="bhidden">${esc(t.board_hidden.replace('{n}',hidden.length))} ${parts}</div>`;
 }
 function wireBoard(){
   const board=$("board");if(!board)return;
