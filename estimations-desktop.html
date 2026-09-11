@@ -109,16 +109,44 @@
   .segtabs button{flex:0 0 auto;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:10.5px;padding:7px 4px;cursor:pointer;transition:.15s;white-space:nowrap;}
   .segtabs button.on{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
 
-  .estlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;max-height:330px;overflow-y:auto;margin:-4px;padding:4px;}
-  .estrow{display:block;width:100%;padding:10px 11px;border:1px solid var(--line);cursor:pointer;transition:.14s;text-align:left;color:inherit;background:transparent;font:inherit;}
-  .estrow:hover{background:var(--lift-03);}
-  .estrow.sel{background:rgba(var(--c-accent-rgb),.12);border-color:rgba(var(--c-accent-rgb),.45);}
-  .estrow .er1{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
-  .estrow .eno{font-family:var(--font-heading);font-weight:700;font-size:14px;}
-  .estrow .ename{font-size:12.5px;font-weight:500;color:var(--ice);margin-bottom:2px;}
-  .estrow .ecust{font-size:11px;color:var(--steel-400);margin-bottom:5px;}
-  .estrow .er2{display:flex;justify-content:space-between;align-items:center;}
-  .estrow .eval{font-family:var(--font-heading);font-weight:700;font-size:13.5px;color:var(--ice);font-variant-numeric:tabular-nums;}
+  /* ── the mini board ──────────────────────────────────────────────────────
+     A project's column is its status, so a card carries no pill — only what it is, whose it is and
+     what it comes to. Each lane is tinted by its own stage colour so the board reads at a glance. */
+  .kboard{display:grid;grid-template-columns:repeat(var(--kcols,5),minmax(0,1fr));gap:8px;}
+  .kcol{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);
+    background:var(--lift-02);transition:.15s;}
+  .kchead{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 9px;
+    border-top:2px solid var(--kc,var(--steel-400));border-bottom:1px solid var(--line);}
+  .kcname{font-family:var(--font-heading);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--kc,var(--steel-300));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kccount{flex:none;font-size:10px;font-weight:700;color:var(--steel-300);background:var(--lift-05);padding:1px 6px;
+    font-variant-numeric:tabular-nums;}
+  .kcbody{display:flex;flex-direction:column;gap:5px;padding:6px;flex:1 1 auto;min-height:64px;max-height:236px;overflow-y:auto;}
+  .kboard.solo .kcbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));max-height:260px;}
+  .kcol.k-draft{--kc:var(--steel-400);} .kcol.k-review{--kc:var(--warn);} .kcol.k-sent{--kc:var(--spark);}
+  .kcol.k-accepted{--kc:var(--ok);} .kcol.k-declined{--kc:var(--danger);}
+
+  .kcard{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:grab;
+    border:1px solid var(--line);background:var(--lift-03);padding:7px 8px;transition:.14s;}
+  .kcard:hover{border-color:rgba(var(--c-accent-rgb),.5);background:var(--lift-05);}
+  .kcard.sel{background:rgba(var(--c-accent-rgb),.14);border-color:rgba(var(--c-accent-rgb),.55);}
+  .kcard .kc1{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+  .kcard .kno{font-family:var(--font-heading);font-weight:700;font-size:12px;}
+  .kcard .kval{font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ice);
+    font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .kcard .kname{font-size:11.5px;color:var(--ice);line-height:1.3;margin-top:3px;}
+  .kcard .kc2{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px;}
+  .kcard .kcust{font-size:10px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kcempty{font-size:10.5px;color:var(--steel-400);text-align:center;padding:16px 0;}
+
+  /* While a card is in the air the lanes answer before the drop: which moves the rules allow, and
+     which they do not. A refusal is then never a surprise toast after the fact. */
+  .kcol.cantake{border-color:var(--kc,var(--spark));box-shadow:0 0 0 1px var(--kc,var(--spark)) inset;}
+  .kcol.cannottake{opacity:.35;}
+  .kcol.over{background:rgba(var(--c-accent-rgb),.14);}
+  @media(max-width:1200px){.kboard{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:760px){.kboard{grid-template-columns:1fr;}}
+
 
   .pager{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-size:11px;color:var(--steel-400);}
   .pager .pnav{display:flex;gap:5px;}
@@ -1242,35 +1270,82 @@ function combinedOptionsValue(e){return money((e.options||[]).filter(o=>o.includ
 
 function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st_"+s]}</span>`;}
 
+// ── the board ─────────────────────────────────────────────────────────────
+// One column per stage an estimate can be in. Expired offers share the Declined column — a closed
+// door is a closed door — but keep their own pill so the board never renames a status.
+const KCOLS=[{k:'draft',has:['draft']},{k:'review',has:['review']},{k:'sent',has:['sent']},
+  {k:'accepted',has:['accepted']},{k:'declined',has:['declined','expired']}];
+// Dragging a card is the same act as pressing the stepper, so it goes through requestStageChange()
+// and inherits every rule it enforces: a locked estimate, the allowed transitions, and a priced line
+// before anything is Sent. Columns light up or dim while a card is in the air, so the rules are
+// visible before the drop rather than explained by a toast after it.
+let dragEstId=null;
+function kanbanDragStart(ev,id){
+  dragEstId=id;
+  try{ev.dataTransfer.setData('text/plain',String(id));ev.dataTransfer.effectAllowed='move';}catch(_){}
+  const e=getEst(id);const allowed=(e&&!isLocked(e))?(ALLOWED_TRANSITIONS[e.status]||[]):[];
+  document.querySelectorAll('.kcol').forEach(c=>{
+    const st=c.dataset.stage;const here=!!(e&&KCOLS.find(k=>k.k===st).has.includes(e.status));
+    c.classList.toggle('cantake',allowed.includes(st));
+    c.classList.toggle('cannottake',!here&&!allowed.includes(st));
+  });
+}
+function kanbanDragEnd(){dragEstId=null;
+  document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('cantake','cannottake','over'));}
+function kanbanOver(ev){
+  const col=ev.currentTarget;if(!col.classList.contains('cantake'))return;
+  ev.preventDefault();col.classList.add('over');
+}
+function kanbanLeave(ev){ev.currentTarget.classList.remove('over');}
+function kanbanDrop(ev,stage){
+  ev.preventDefault();
+  let id=dragEstId;
+  if(id===null){const raw=ev.dataTransfer?ev.dataTransfer.getData('text/plain'):'';id=parseInt(raw,10);}
+  kanbanDragEnd();
+  if(!Number.isFinite(id))return;
+  requestStageChange(id,stage);
+}
+
 function renderLeft(){
   const t=T[LANG];
   const q=query.trim().toLowerCase();
   const all=ESTIMATIONS.filter(e=>!e.archived);
   const active=all.filter(e=>e.projectNo&&PROJECTS[e.projectNo]);
   const unattached=all.length-active.length;
-  let rows=active.filter(e=>filterStatus==='all'||(filterStatus==='closed'?['declined','expired'].includes(e.status):e.status===filterStatus))
-    .filter(e=>{const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo];
+  let rows=active.filter(e=>{const c=CUSTOMERS[e.customerId];const p=PROJECTS[e.projectNo];
       return !q||String(e.projectNo||'').toLowerCase().includes(q)||(p&&p.name.toLowerCase().includes(q))||c.name.toLowerCase().includes(q);})
     .sort((a,b)=>b.created.localeCompare(a.created));
 
-  const counts={draft:0,sent:0,accepted:0,declined:0};
-  active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
   // A count of what is on screen is only worth a line when something is being hidden; a single page
   // showing everything needs no "1 of 1" and no arrows that cannot be pressed.
-  const narrowed=rows.length!==active.length;
+  const narrowed=()=>onBoard!==active.length;
   // The offer bar acts on whichever project is selected below; with none, it says so instead of misfiring.
   const sel=active.find(e=>e.id===selectedId)||null;
 
-  // Rows are projects: the project is what gets quoted, and its estimate is the pricing on it.
-  // The item count comes straight from the project, so it is obvious what there is to price.
-  const estRows=rows.map(e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
+  // Cards are projects, and the column a card sits in IS its status — so the card needs no pill,
+  // only the reference, what it is, whose it is and what it comes to. A status the column does not
+  // name (an expired offer in Declined) still shows its own pill rather than passing as the column.
+  const kcard=e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
     const p=PROJECTS[e.projectNo];const n=projectItems(e.projectNo).length;
-    return `<button type="button" class="estrow ${e.id===selectedId?'sel':''}" data-project-no="${esc(e.projectNo||'')}">
-      <div class="er1"><span class="eno">${esc(estRef(e))}</span>${statusPill(e.status)}</div>
-      <div class="ename">${esc(p?p.name:(e.projectTitle||''))}</div>
-      <div class="ecust">${esc(c.name)}</div>
-      <div class="er2"><span class="eitems">${n?esc(t.n_items.replace('{n}',n)):esc(t.no_items_short)}</span><span class="eval">${fmt0(tot.grandTotal)}</span></div>
-    </button>`;}).join("");
+    const col=KCOLS.find(k=>k.has.includes(e.status));
+    return `<button type="button" class="kcard ${e.id===selectedId?'sel':''}" draggable="true"
+      data-project-no="${esc(e.projectNo||'')}" data-est-id="${e.id}"
+      ondragstart="kanbanDragStart(event,${e.id})" ondragend="kanbanDragEnd()"
+      title="${esc(n?t.n_items.replace('{n}',n):t.no_items_short)}">
+      <div class="kc1"><span class="kno">${esc(estRef(e))}</span><span class="kval">${fmt0(tot.grandTotal)}</span></div>
+      <div class="kname">${esc(p?p.name:(e.projectTitle||''))}</div>
+      <div class="kc2"><span class="kcust">${esc(c.name)}</span>${col&&col.k!==e.status?statusPill(e.status):''}</div>
+    </button>`;};
+  const focus=filterStatus==='closed'?'declined':filterStatus;
+  const shown=focus==='all'?KCOLS:KCOLS.filter(c=>c.k===focus);
+  let onBoard=0;
+  const board=shown.map(col=>{
+    const items=rows.filter(e=>col.has.includes(e.status));onBoard+=items.length;
+    return `<div class="kcol k-${col.k}" data-stage="${col.k}"
+        ondragover="kanbanOver(event)" ondragleave="kanbanLeave(event)" ondrop="kanbanDrop(event,'${col.k}')">
+      <div class="kchead"><span class="kcname">${esc(t['st_'+col.k])}</span><span class="kccount">${items.length}</span></div>
+      <div class="kcbody">${items.map(kcard).join('')||`<div class="kcempty">—</div>`}</div>
+    </div>`;}).join('');
 
   return `
     <div class="panel">
@@ -1286,17 +1361,10 @@ function renderLeft(){
       </div>
       <div class="listtoolbar">
         <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" aria-label="${esc(t.searchph)}" value="${esc(query)}"></div>
-        <div class="segtabs">
-          <button class="${filterStatus==='all'?'on':''}" onclick="setFilter('all')">${t.f_all} (${active.length})</button>
-          <button class="${filterStatus==='draft'?'on':''}" onclick="setFilter('draft')">${t.f_draft} (${counts.draft})</button>
-          <button class="${filterStatus==='sent'?'on':''}" onclick="setFilter('sent')">${t.f_sent} (${counts.sent})</button>
-          <button class="${filterStatus==='accepted'?'on':''}" onclick="setFilter('accepted')">${t.f_accepted} (${counts.accepted})</button>
-          <button class="${filterStatus==='declined'?'on':''}" onclick="setFilter('declined')">${t.f_declined} (${counts.declined})</button>
-        </div>
       </div>
-      <div class="estlist">${estRows||`<div class="empty3">—</div>`}</div>
-      ${narrowed||unattached?`<div class="listfoot">
-        ${narrowed?`<span>${esc(t.showing_n.replace('{b}',rows.length).replace('{n}',active.length))}</span>`:'<span></span>'}
+      <div class="kboard ${shown.length===1?'solo':''}" style="--kcols:${shown.length};">${board}</div>
+      ${narrowed()||unattached?`<div class="listfoot">
+        ${narrowed()?`<span>${esc(t.showing_n.replace('{b}',onBoard).replace('{n}',active.length))}</span>`:'<span></span>'}
         ${unattached?`<span class="lfnote">${esc(t.unattached_note.replace('{n}',unattached))}</span>`:''}
       </div>`:''}
     </div>`;
@@ -1323,7 +1391,6 @@ function computeTotalsQuiet(e){return computeTotals(e);}
 
 function selectEst(id){selectedId=id;activeOptTab="base";renderAll();}
 function selectProject(no){const e=estForProject(no);if(!e)return;selectedId=e.id;activeOptTab="base";renderAll();}
-function setFilter(f){filterStatus=f;renderAll();}
 
 // A locked estimate (accepted / declined / expired) cannot be edited directly — a revision must be created first.
 function isLocked(e){return e.status==='accepted'||e.status==='declined'||e.status==='expired';}
@@ -1798,7 +1865,7 @@ function renderAll(){
     <div class="col">${renderRight(e)}</div>
   </div>`;
   const strip=$("summaryStrip");if(strip)strip.innerHTML=renderHeadSummary();
-  document.querySelectorAll('.estrow').forEach(row=>row.addEventListener('click',()=>selectProject(row.dataset.projectNo)));
+  document.querySelectorAll('.kcard').forEach(card=>card.addEventListener('click',()=>selectProject(card.dataset.projectNo)));
   wireProjectWorkflow();
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
   syncModuleSidebar();

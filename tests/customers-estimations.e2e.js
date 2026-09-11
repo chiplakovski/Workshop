@@ -92,16 +92,50 @@ async function estimationWorkflow(page) {
   assert.equal(quoteVisible, true, 'quote created in Customers is not visible to Estimations data');
   step('Estimations: sees the quote created by Customers');
 
-  // The module is project-first: every row is a project, and picking one is how you start pricing.
-  const rowCount = await page.locator('.estrow').count();
-  assert.ok(rowCount > 0, 'the project list is empty');
-  const listedProject = await page.locator('.estrow').first().getAttribute('data-project-no');
-  assert.ok(listedProject, 'a list row must name the project it prices');
-  await page.locator('.estrow').first().click();
+  // The module is project-first: every card is a project, and picking one is how you start pricing.
+  const rowCount = await page.locator('.kcard').count();
+  assert.ok(rowCount > 0, 'the project board is empty');
+  const listedProject = await page.locator('.kcard').first().getAttribute('data-project-no');
+  assert.ok(listedProject, 'a card must name the project it prices');
+  await page.locator('.kcard').first().click();
   const selected = await page.evaluate(() => { const e = getEst(selectedId); return { project: e.projectNo, ref: estRef(e) }; });
   assert.equal(selected.project, listedProject, 'clicking a project must select that project');
   assert.equal(selected.ref, listedProject, "the estimate's reference is the project's own number");
-  step('Estimations: the list is projects, and picking one selects its estimate');
+  step('Estimations: the board is projects, and picking one selects its estimate');
+
+  // A card's column IS its status, and every project is on the board somewhere.
+  const board = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('.kcard')];
+    const active = ESTIMATIONS.filter((e) => !e.archived && e.projectNo && PROJECTS[e.projectNo]);
+    const misplaced = cards.filter((c) => {
+      const e = getEst(Number(c.dataset.estId));
+      const col = c.closest('.kcol').dataset.stage;
+      return !KCOLS.find((k) => k.k === col).has.includes(e.status);
+    }).map((c) => c.dataset.projectNo);
+    return { cards: cards.length, active: active.length, misplaced,
+      lanes: [...document.querySelectorAll('.kcol')].map((c) => c.dataset.stage) };
+  });
+  assert.equal(board.cards, board.active, 'every project must be on the board, none dropped');
+  assert.deepEqual(board.misplaced, [], 'a card must sit in the column its status names');
+  assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
+  step('Estimations: the board shows every project in the lane its status names');
+
+  // Dragging a card is the stepper by another name: it obeys the same transition rules.
+  const moved = await page.evaluate(async () => {
+    const before = ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo);
+    const drop = (id, stage) => {
+      const card = document.querySelector(`.kcard[data-est-id="${id}"]`);
+      const col = document.querySelector(`.kcol[data-stage="${stage}"]`);
+      const dt = new DataTransfer();
+      card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+      col.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dt }));
+      col.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt }));
+    };
+    drop(before.id, 'draft');
+    return getEst(before.id).status;
+  });
+  assert.equal(moved, 'accepted', 'a closed stage must refuse a drop, exactly as the stepper does');
+  step('Estimations: the board refuses a move the transition rules forbid');
 
   // The offer is the whole project as one customer-facing document, produced from the top bar.
   const offer = await page.evaluate(() => {
