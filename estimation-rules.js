@@ -9,6 +9,15 @@
     const qty=Math.max(0,Number(it.qty)||0),sell=Math.max(0,Number(it.sell)||0),disc=Math.min(100,Math.max(0,Number(it.disc)||0));
     return money(qty*sell*(1-disc/100));
   }
+  // VAT on a line is charged on that line's already-discounted sell total.
+  function lineVat(it){
+    const tax=Math.min(100,Math.max(0,Number(it.tax)||0));
+    return money(lineTotal(it)*tax/100);
+  }
+  // What the line actually costs the customer: the discounted sell total plus its own VAT. This is
+  // the figure the items table, the printed offer and an item's own sheet all show, so a reader
+  // never has to add the tax column up in their head.
+  function lineGross(it){return money(lineTotal(it)+lineVat(it));}
   // Internal cost: for MATERIAL lines, waste% inflates the quantity actually consumed (offcuts, kerf, spoilage).
   function lineCostTotal(it){
     const qty=Math.max(0,Number(it.qty)||0),cost=Math.max(0,Number(it.cost)||0);
@@ -112,7 +121,7 @@
     return{totalDays,personDays,avgPeople,peakPeople,estimated,items:items.length};
   }
 
-  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,itemDays,itemPeople,itemPersonDays,effortTotals,
+  const EstimationRules={money,lineTotal,lineVat,lineGross,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,itemDays,itemPeople,itemPersonDays,effortTotals,
     isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory};
   root.EstimationRules=EstimationRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimationRules;

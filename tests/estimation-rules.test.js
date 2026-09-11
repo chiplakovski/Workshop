@@ -4,7 +4,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {money,lineTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
+const {money,lineTotal,lineVat,lineGross,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
   isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory,
   itemDays,itemPeople,itemPersonDays,effortTotals}=require('../estimation-rules.js');
 
@@ -56,6 +56,37 @@ test('printed effective lines (base section + included option sections) equal th
   const calculatedTotal=money(calculated.reduce((a,l)=>a+lineTotal(l),0));
   assert.equal(printedTotal,calculatedTotal);
   assert.equal(printedBase.length+printedOptionLines.length,calculated.length);
+});
+
+test('lineVat charges tax on the discounted sell total, and lineGross is what the customer pays', ()=>{
+  assert.equal(lineVat({qty:100,sell:5,tax:25}),125);
+  assert.equal(lineGross({qty:100,sell:5,tax:25}),625,'100 km at 5,00 with 25% VAT is 625,00');
+  assert.equal(lineGross({qty:16,sell:440,tax:25}),8800);
+  assert.equal(lineGross({qty:1,sell:12500,tax:25}),15625);
+  assert.equal(money(625+8800+15625),25050,'the three lines together make the item subtotal');
+});
+
+test('lineGross taxes the discounted amount, never the list price', ()=>{
+  assert.equal(lineTotal({qty:2,sell:100,disc:10}),180);
+  assert.equal(lineGross({qty:2,sell:100,disc:10,tax:25}),225,'VAT is charged on 180, not on 200');
+});
+
+test('a line with no tax rate is gross-equal to its net total', ()=>{
+  assert.equal(lineGross({qty:2,sell:100}),lineTotal({qty:2,sell:100}));
+  assert.equal(lineVat({qty:2,sell:100}),0);
+});
+
+test('lineVat clamps an absurd or negative tax rate rather than inventing money', ()=>{
+  assert.equal(lineVat({qty:1,sell:100,tax:-20}),0,'a negative rate must not discount the line');
+  assert.equal(lineVat({qty:1,sell:100,tax:500}),100,'the rate is clamped at 100%');
+});
+
+test('the gross lines of an estimate reconcile with its net subtotal plus VAT', ()=>{
+  const lines=[{qty:100,sell:5,tax:25},{qty:16,sell:440,tax:25},{qty:1,sell:12500,tax:25},{qty:3,sell:90,tax:0}];
+  const net=money(lines.reduce((a,l)=>a+lineTotal(l),0));
+  const vat=money(lines.reduce((a,l)=>a+lineVat(l),0));
+  const gross=money(lines.reduce((a,l)=>a+lineGross(l),0));
+  assert.equal(gross,money(net+vat),'what the table shows must equal subtotal + VAT');
 });
 
 test('lineTotal applies the line discount and clamps a negative/absurd discount defensively', ()=>{
