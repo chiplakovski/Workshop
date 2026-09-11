@@ -214,7 +214,7 @@
      heading band, a light rule between columns, alternating line rows, and every figure set
      directly under the heading it answers to. */
   .itable-wrap{overflow-x:auto;border:1px solid var(--line);background:var(--lift-02);margin-bottom:18px;}
-  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:980px;}
+  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1180px;}
   .itable thead th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-300);
     background:var(--lift-05);border-bottom:2px solid rgba(var(--c-accent-rgb),.42);padding:9px 10px;white-space:nowrap;}
   .itable thead th+th{border-left:1px solid var(--line);}
@@ -226,7 +226,9 @@
   /* Fixed widths hold the figures in one block on the right; the description takes the slack. */
   .itable th.c-no{width:56px;} .itable th.c-qty{width:78px;} .itable th.c-unit{width:74px;}
   .itable th.c-price{width:118px;} .itable th.c-sm{width:74px;} .itable th.c-mar{width:98px;}
+  .itable th.c-net{width:116px;} .itable th.c-vat{width:104px;}
   .itable th.c-total{width:124px;}
+  .itable td.vatcell,.itable th.c-vat{color:var(--steel-300);}
   /* Everything else adds up to the money column, so it is fenced off and set in white. */
   .itable th.c-total,.itable td.tot{border-left:1px solid rgba(var(--c-accent-rgb),.32);}
   .itable td.tot{font-weight:600;color:var(--ice);}
@@ -239,6 +241,13 @@
   /* An item subtotal closes its section, so it reads above the individual lines it sums. */
   .itable tr.subtotalrow td:last-child{font-size:13.5px;font-weight:700;color:var(--ice);}
   .itable tbody tr.optrow td{background:rgba(var(--c-ok-rgb),.06);}
+  /* What the offer comes to, closing the table under the columns it sums. */
+  .itable tfoot td{background:rgba(var(--c-accent-rgb),.07);border-top:1px solid rgba(var(--c-accent-rgb),.3);
+    border-bottom:none;padding:9px 10px;font-weight:600;color:var(--steel-300);}
+  .itable tfoot .tflabel{display:block;text-align:right;font-size:10px;letter-spacing:.07em;text-transform:uppercase;}
+  .itable tfoot tr.tfgrand td{background:rgba(var(--c-accent-rgb),.14);font-size:14px;font-weight:700;color:var(--ice);}
+  .itable tfoot tr.tfgrand .tflabel{font-family:var(--font-heading);font-size:11px;color:var(--c-tint);}
+  .itable tfoot tr.tfdisc td{color:var(--tint-warn);}
   .itable .grip{color:var(--steel-400);opacity:.5;margin-right:6px;}
   .itable .idesc{font-weight:500;}
   .itable .isub{color:var(--steel-400);font-size:11px;}
@@ -824,12 +833,12 @@ const T={
     pj_location:"Location",pj_type:"Project Type",pj_contact:"Contact Person",pj_status:"Project Status",pj_open:"Open Project",
     items:"Estimation Items",additem:"Add Item",addline:"Add Line",addsection:"Add Section",showcost:"Show internal cost & margin",
     wi_no:"Job / item number (optional)",wi_desc:"Work item description",
-    th_no:"#",th_item:"Item / Description",th_category:"Category",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"Tax (%)",th_total:"Total incl. VAT (SEK)",
-    subtotal_section:"Subtotal incl. VAT",
+    th_no:"#",th_item:"Item / Description",th_category:"Category",th_qty:"Qty",th_unit:"Unit",th_price:"Unit Price (SEK)",th_disc:"Disc. (%)",th_tax:"VAT (%)",th_net:"Excl. VAT (SEK)",th_vat:"VAT (SEK)",th_total:"Total incl. VAT (SEK)",
+    subtotal_section:"Subtotal",
     cat_material:"Material",cat_labour:"Labour",cat_machine:"Machine",cat_subcontractor:"Subcontractor",cat_consumable:"Consumable",cat_logistics:"Logistics",cat_other:"Other",
     base_offer:"Base Offer",option:"Option",include:"include",
     terms_title:"Terms & Conditions",excl_title:"Exclusions & Assumptions",edit_short:"Edit",
-    price_summary:"Price Summary",ps_subtotal:"Subtotal (excl. tax)",ps_discount:"Discount",ps_tax:"Tax (25%)",ps_total:"TOTAL (incl. tax)",
+    price_summary:"Price Summary",ps_subtotal:"Subtotal (excl. VAT)",ps_discount:"Discount",ps_tax:"VAT (25%)",ps_total:"TOTAL (incl. VAT)",tf_subtotal:"Subtotal",tf_total:"TOTAL",
     cost_breakdown:"Cost Breakdown",cb_material:"Material Cost",cb_labour:"Labour Cost",cb_machine:"Machine Cost",cb_sub:"Subcontractor Cost",
     cb_consumable:"Consumables",cb_logistics:"Transport",cb_other:"Other Cost",cb_direct:"Total Direct Cost",cb_overhead:"Overhead",cb_contingency:"Contingency",
     cb_internal:"Total Internal Cost",cb_selling:"Selling Price",cb_profit:"Gross Profit",cb_margin:"Margin %",
@@ -899,12 +908,12 @@ const T={
     pj_location:"Plats",pj_type:"Projekttyp",pj_contact:"Kontaktperson",pj_status:"Projektstatus",pj_open:"Öppna projekt",
     items:"Kalkylposter",additem:"Lägg till post",addline:"Lägg till rad",addsection:"Lägg till sektion",showcost:"Visa intern kostnad & marginal",
     wi_no:"Jobb-/artikelnummer (valfritt)",wi_desc:"Beskrivning av arbetsmoment",
-    th_no:"#",th_item:"Post / Beskrivning",th_category:"Kategori",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_total:"Summa inkl. moms (SEK)",
-    subtotal_section:"Delsumma inkl. moms",
+    th_no:"#",th_item:"Post / Beskrivning",th_category:"Kategori",th_qty:"Antal",th_unit:"Enhet",th_price:"À-pris (SEK)",th_disc:"Rabatt (%)",th_tax:"Moms (%)",th_net:"Exkl. moms (SEK)",th_vat:"Moms (SEK)",th_total:"Summa inkl. moms (SEK)",
+    subtotal_section:"Delsumma",
     cat_material:"Material",cat_labour:"Arbete",cat_machine:"Maskin",cat_subcontractor:"Underleverantör",cat_consumable:"Förbrukning",cat_logistics:"Transport",cat_other:"Övrigt",
     base_offer:"Grunderbjudande",option:"Tillval",include:"inkludera",
     terms_title:"Villkor",excl_title:"Undantag & antaganden",edit_short:"Redigera",
-    price_summary:"Prissammanfattning",ps_subtotal:"Delsumma (exkl. moms)",ps_discount:"Rabatt",ps_tax:"Moms (25%)",ps_total:"TOTALT (inkl. moms)",
+    price_summary:"Prissammanfattning",ps_subtotal:"Delsumma (exkl. moms)",ps_discount:"Rabatt",ps_tax:"Moms (25%)",ps_total:"TOTALT (inkl. moms)",tf_subtotal:"Delsumma",tf_total:"TOTALT",
     cost_breakdown:"Kostnadsfördelning",cb_material:"Materialkostnad",cb_labour:"Arbetskostnad",cb_machine:"Maskinkostnad",cb_sub:"Underleverantörskostnad",
     cb_consumable:"Förbrukningsmaterial",cb_logistics:"Transport",cb_other:"Övrig kostnad",cb_direct:"Total direktkostnad",cb_overhead:"Omkostnader",cb_contingency:"Marginal för osäkerhet",
     cb_internal:"Total intern kostnad",cb_selling:"Försäljningspris",cb_profit:"Bruttovinst",cb_margin:"Marginal %",
@@ -974,12 +983,12 @@ const T={
     pj_location:"Lokacija",pj_type:"Tip na proekt",pj_contact:"Kontakt lice",pj_status:"Status na proekt",pj_open:"Otvori proekt",
     items:"Stavki od kalkulacija",additem:"Dodaj stavka",addline:"Dodaj red",addsection:"Dodaj sekcija",showcost:"Prikaži interna cena i marža",
     wi_no:"Broj na rabota/stavka (nezadolžitelno)",wi_desc:"Opis na rabotnata stavka",
-    th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_total:"Vkupno so DDV (SEK)",
-    subtotal_section:"Meѓuzbir so DDV",
+    th_no:"#",th_item:"Stavka / Opis",th_category:"Kategorija",th_qty:"Kol.",th_unit:"Edinica",th_price:"Cena (SEK)",th_disc:"Popust (%)",th_tax:"DDV (%)",th_net:"Bez DDV (SEK)",th_vat:"DDV (SEK)",th_total:"Vkupno so DDV (SEK)",
+    subtotal_section:"Meѓuzbir",
     cat_material:"Materijal",cat_labour:"Rabota",cat_machine:"Mašina",cat_subcontractor:"Podizveduvač",cat_consumable:"Potrošen materijal",cat_logistics:"Transport",cat_other:"Drugo",
     base_offer:"Osnovna ponuda",option:"Opcija",include:"vkluči",
     terms_title:"Uslovi",excl_title:"Isklučuvaњa i pretpostavki",edit_short:"Uredi",
-    price_summary:"Pregled na cena",ps_subtotal:"Meѓuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",
+    price_summary:"Pregled na cena",ps_subtotal:"Meѓuzbir (bez DDV)",ps_discount:"Popust",ps_tax:"DDV (25%)",ps_total:"VKUPNO (so DDV)",tf_subtotal:"Meѓuzbir",tf_total:"VKUPNO",
     cost_breakdown:"Raspredelba na troшoci",cb_material:"Trošok za materijal",cb_labour:"Trošok za rabota",cb_machine:"Trošok za mašini",cb_sub:"Trošok za podizveduvač",
     cb_consumable:"Potroшen materijal",cb_logistics:"Transport",cb_other:"Drug trošok",cb_direct:"Vkupen direkten trošok",cb_overhead:"Režiski troшoci",cb_contingency:"Rezerva za nesigurnost",
     cb_internal:"Vkupna interna cena",cb_selling:"Prodažna cena",cb_profit:"Bruto profit",cb_margin:"Marža %",
@@ -1426,7 +1435,9 @@ function itemSheetRows(wi){return (wi.lines||[]).slice();}
 function printItem(id,idx){
   const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi)return;
   const t=T[LANG],c=CUSTOMERS[e.customerId],ref=itemRef(e,wi.seq||idx+1),rows=itemSheetRows(wi);
-  const total=rows.reduce((a,l)=>a+lineGross(l),0);
+  const net=rows.reduce((a,l)=>a+lineTotal(l),0);
+  const vat=rows.reduce((a,l)=>a+lineVat(l),0);
+  const total=money(net+vat);
   const lockLine=isItemLocked(wi)
     ? `<p style="font-family:sans-serif;color:#555;">${esc(t.pr_locked)} ${esc(wi.lock.by)} · ${esc(wi.lock.at)}</p>` : '';
   $("printSheet").innerHTML=`
@@ -1440,7 +1451,11 @@ function printItem(id,idx){
       <thead><tr><th>#</th><th>${esc(t.pr_desc)}</th><th style="text-align:right;">${esc(t.pr_qty)}</th><th>${esc(t.pr_unit)}</th><th style="text-align:right;">${esc(t.pr_price)}</th><th style="text-align:right;">${esc(t.pr_total)}</th></tr></thead>
       <tbody>${rows.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.desc)}</td><td style="text-align:right;">${esc(l.qty)}</td><td>${esc(l.unit)}</td><td style="text-align:right;">${fmt(l.sell)}</td><td style="text-align:right;">${fmt(lineGross(l))}</td></tr>`).join("")
         ||`<tr><td colspan="6">${esc(t.empty_items)}</td></tr>`}</tbody>
-      <tfoot><tr><th colspan="5" style="text-align:right;">${esc(t.subtotal_section)}</th><th style="text-align:right;">${fmt(total)}</th></tr></tfoot>
+      <tfoot>
+        <tr><th colspan="5" style="text-align:right;font-weight:400;">${esc(t.th_net)}</th><th style="text-align:right;font-weight:400;">${fmt(net)}</th></tr>
+        <tr><th colspan="5" style="text-align:right;font-weight:400;">${esc(t.th_vat)}</th><th style="text-align:right;font-weight:400;">${fmt(vat)}</th></tr>
+        <tr><th colspan="5" style="text-align:right;">${esc(t.tf_total)}</th><th style="text-align:right;">${fmt(total)}</th></tr>
+      </tfoot>
     </table>`;
   window.print();
 }
@@ -1561,11 +1576,12 @@ function renderItemsTable(e){
         ?`<button class="ibtn warn" onclick="openUnlockItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></svg>${esc(t.item_unlock)}</button>`
         :`<button class="ibtn" onclick="openLockItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.item_lock)}</button>`}
     </span>`;
-    rows+=`<tr class="sectionrow ${itemLocked?'islocked':''}"><td colspan="${showCost?10:8}"><div class="secrow">${ref?`<span class="itemref ${itemLocked?'islocked':'isopen'}">${esc(ref)}</span>`:''}<span class="secname">${esc(wi.desc.toUpperCase())}</span>${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}${wi.no&&!wi.isOption?` <span class="itemsrc">${esc(wi.no)}</span>`:''}${itemTools}</div>
+    rows+=`<tr class="sectionrow ${itemLocked?'islocked':''}"><td colspan="${showCost?12:10}"><div class="secrow">${ref?`<span class="itemref ${itemLocked?'islocked':'isopen'}">${esc(ref)}</span>`:''}<span class="secname">${esc(wi.desc.toUpperCase())}</span>${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}${wi.no&&!wi.isOption?` <span class="itemsrc">${esc(wi.no)}</span>`:''}${itemTools}</div>
     </td></tr>`;
-    let sIdx=1;let sectionSell=0;
+    let sIdx=1;let sectionNet=0,sectionVat=0,sectionSell=0;
     wi.lines.forEach((it,lIdx)=>{
-      const tot=lineGross(it);sectionSell+=tot;
+      const net=lineTotal(it),vat=lineVat(it),tot=lineGross(it);
+      sectionNet+=net;sectionVat+=vat;sectionSell+=tot;
       const isOpt=it.fromOption;
       const editable=isBaseWorkItem&&!isOpt&&!locked&&!itemLocked;
       const rowNo=sIdx++;
@@ -1587,12 +1603,14 @@ function renderItemsTable(e){
         <td class="n rnum">${it.disc||0}</td>
         <td class="n rnum">${it.tax||0}</td>
         ${showCost?`<td class="n rnum">${lineSellCostDelta(it).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="n rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
+        <td class="n rnum">${net.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td class="n rnum vatcell">${vat.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
         <td class="n rnum tot">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
     // Add Line leads the row on the left, where a new entry would be typed; the subtotal it belongs
     // to stays with the figure it sums on the right.
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}"><div class="subrow">${isBaseWorkItem&&!locked&&!itemLocked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}<span class="sublabel">${esc(t.subtotal_section)} — ${esc(wi.desc)}</span></div></td><td class="n rnum tot">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}"><div class="subrow">${isBaseWorkItem&&!locked&&!itemLocked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}<span class="sublabel">${esc(t.subtotal_section)} — ${esc(wi.desc)}</span></div></td><td class="n rnum">${sectionNet.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td class="n rnum vatcell">${sectionVat.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td class="n rnum tot">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
   // Nothing to price until the project has items, and pricing left behind by an item that has since
@@ -1601,11 +1619,29 @@ function renderItemsTable(e){
   const retired=(e.retiredWorkItems||[]);
   const notes=(noItems?`<div class="estnote">${esc(t.no_items_body.replace('{p}',e.projectNo||'—'))}</div>`:'')
     +(retired.length?`<div class="estnote warn">${esc(t.retired_note.replace('{n}',retired.length))} ${esc(retired.map(w=>w.no).join(', '))}</div>`:'');
+  // The table closes with what the offer comes to: the lines without VAT, the VAT charged on them,
+  // and the total. An estimate-level discount gets its own line — it is taken before VAT, so without
+  // it shown the three columns would not add up to the figures the Price Summary reports.
+  const gt=computeTotals(e);
+  const vatBefore=money(baseAndIncludedLines(e).reduce((a,l)=>a+lineVat(l),0));
+  const lead=showCost?9:7;
+  const tfRow=(cls,label,net,vat,total)=>`<tr class="${cls}"><td colspan="${lead}"><span class="tflabel">${esc(label)}</span></td>`
+    +`<td class="n rnum">${net.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td class="n rnum vatcell">${vat.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`
+    +`<td class="n rnum tot">${total.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+  const discounted=gt.discount>0;
+  const vatDropped=money(vatBefore-gt.taxTotal);
+  const tfoot=`<tfoot>`
+    +(discounted?tfRow('tfsub',t.tf_subtotal,gt.sellSubtotal,vatBefore,money(gt.sellSubtotal+vatBefore)):'')
+    +(discounted?tfRow('tfdisc',t.ps_discount,-gt.discount,-vatDropped,-money(gt.discount+vatDropped)):'')
+    +tfRow('tfgrand',t.tf_total,money(gt.sellSubtotal-gt.discount),gt.taxTotal,gt.grandTotal)
+    +`</tfoot>`;
+
   return notes+`<div class="itable-wrap"><table class="itable"><thead><tr>
     <th class="c-no">${esc(t.th_no)}</th><th class="c-item">${esc(t.th_item)}</th><th class="n c-qty">${esc(t.th_qty)}</th><th class="c-unit">${esc(t.th_unit)}</th><th class="n c-price">${esc(t.th_price)}</th><th class="n c-sm">${esc(t.th_disc)}</th><th class="n c-sm">${esc(t.th_tax)}</th>
     ${showCost?`<th class="n c-mar">${esc(t.th_margin_sek)}</th><th class="n c-sm">${esc(t.th_margin_pct)}</th>`:''}
+    <th class="n c-net">${esc(t.th_net)}</th><th class="n c-vat">${esc(t.th_vat)}</th>
     <th class="n c-total">${esc(t.th_total)}</th>
-  </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?10:8}" class="empty3">${esc(noItems?t.no_items_short:t.empty_items)}</td></tr>`}</tbody></table></div>`;
+  </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?12:10}" class="empty3">${esc(noItems?t.no_items_short:t.empty_items)}</td></tr>`}</tbody>${tfoot}</table></div>`;
 }
 
 // ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
