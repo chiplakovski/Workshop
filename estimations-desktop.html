@@ -193,16 +193,35 @@
   .previewrow td{opacity:.72;font-style:italic;}
   .disclaimer2{font-size:10.5px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);}
 
+  /* A price list is read down its columns, so each column is drawn as its own lane: a shaded
+     heading band, a light rule between columns, alternating line rows, and every figure set
+     directly under the heading it answers to. */
   .itable-wrap{overflow-x:auto;border:1px solid var(--line);background:rgba(255,255,255,.02);margin-bottom:18px;}
-  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;}
-  .itable th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:9px 10px;white-space:nowrap;}
+  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:980px;}
+  .itable thead th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-300);
+    background:rgba(255,255,255,.05);border-bottom:2px solid rgba(var(--c-accent-rgb),.42);padding:9px 10px;white-space:nowrap;}
+  .itable thead th+th{border-left:1px solid var(--line);}
+  /* A right-aligned heading gets a right-aligned figure, or the two never line up. */
   .itable th.n,.itable td.n{text-align:right;}
-  .itable td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
-  .itable tr.sectionrow td{background:rgba(var(--c-accent-rgb),.06);font-family:var(--font-heading);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--c-tint);padding:10px 10px;}
-  .itable tr.subtotalrow td{background:rgba(255,255,255,.02);font-weight:600;color:var(--steel-300);border-bottom:1px solid var(--line);}
+  .itable td{padding:8px 10px;border-bottom:1px solid rgba(var(--c-line-rgb),.13);vertical-align:top;}
+  .itable td+td{border-left:1px solid rgba(var(--c-line-rgb),.1);}
+  .itable td.rowno{color:var(--steel-400);}
+  /* Fixed widths hold the figures in one block on the right; the description takes the slack. */
+  .itable th.c-no{width:56px;} .itable th.c-qty{width:78px;} .itable th.c-unit{width:74px;}
+  .itable th.c-price{width:118px;} .itable th.c-sm{width:74px;} .itable th.c-mar{width:98px;}
+  .itable th.c-total{width:124px;}
+  /* Everything else adds up to the money column, so it is fenced off and set in white. */
+  .itable th.c-total,.itable td.tot{border-left:1px solid rgba(var(--c-accent-rgb),.32);}
+  .itable td.tot{font-weight:600;color:var(--ice);}
+  .itable tbody tr.alt td{background:rgba(255,255,255,.03);}
+  /* The description and its figures sit far apart on a wide screen, so the whole line lights up
+     under the pointer and the eye can carry across the gap. */
+  .itable tbody tr.lrow:hover td{background:rgba(var(--c-accent-rgb),.1);}
+  .itable tr.sectionrow td{background:rgba(var(--c-accent-rgb),.07);font-family:var(--font-heading);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--c-tint);padding:10px 10px;border-top:1px solid rgba(var(--c-accent-rgb),.28);}
+  .itable tr.subtotalrow td{background:rgba(255,255,255,.04);font-weight:600;color:var(--steel-300);border-bottom:1px solid var(--line);}
   /* An item subtotal closes its section, so it reads above the individual lines it sums. */
   .itable tr.subtotalrow td:last-child{font-size:13.5px;font-weight:700;color:var(--ice);}
-  .itable tr.optrow td{background:rgba(var(--c-ok-rgb),.05);}
+  .itable tbody tr.optrow td{background:rgba(var(--c-ok-rgb),.06);}
   .itable .grip{color:var(--steel-400);opacity:.5;margin-right:6px;}
   .itable .idesc{font-weight:500;}
   .itable .isub{color:var(--steel-400);font-size:11px;}
@@ -1505,8 +1524,9 @@ function renderItemsTable(e){
       const tot=lineTotal(it);sectionSell+=tot;
       const isOpt=it.fromOption;
       const editable=isBaseWorkItem&&!isOpt&&!locked&&!itemLocked;
-      rows+=`<tr class="${isOpt?'optrow':''} ${it.previewOnly?'previewrow':''}">
-        <td class="rnum">${n}.${sIdx++}</td>
+      const rowNo=sIdx++;
+      rows+=`<tr class="lrow ${rowNo%2?'':'alt'} ${isOpt?'optrow':''} ${it.previewOnly?'previewrow':''}">
+        <td class="rowno rnum">${n}.${rowNo}</td>
         <td><span class="idesc">${esc(it.desc)}</span><span class="cattag cat-${esc(it.category)}">${esc(catLabel(it.category))}</span>${isOpt?`<span class="subtag" style="color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);">${esc(it.fromOption)}</span>`:''}${it.previewOnly?`<span class="subtag">${esc(t.preview_only)}</span>`:''}
           ${it.weight?`<span class="isub">${esc(it.weight)} kg${it.waste?` · ${esc(it.waste)}% ${esc(t.waste_word)}`:''}</span>`:''}
           ${editable?`<span class="rowactions2">
@@ -1517,18 +1537,18 @@ function renderItemsTable(e){
             <button title="${esc(t.act_delline)}" onclick="deleteLine(${e.id},${idx},${lIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
           </span>`:''}
         </td>
-        <td class="rnum">${esc(it.qty)}</td>
+        <td class="n rnum">${esc(it.qty)}</td>
         <td>${esc(it.unit)}</td>
-        <td class="rnum">${it.sell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}${showCost?`<span class="costsub">${esc(t.cost_word)} ${it.cost.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:''}</td>
-        <td class="rnum">${it.disc||0}</td>
-        <td class="rnum">${it.tax||0}</td>
-        ${showCost?`<td class="rnum">${lineSellCostDelta(it).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
-        <td class="rnum">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td class="n rnum">${it.sell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}${showCost?`<span class="costsub">${esc(t.cost_word)} ${it.cost.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:''}</td>
+        <td class="n rnum">${it.disc||0}</td>
+        <td class="n rnum">${it.tax||0}</td>
+        ${showCost?`<td class="n rnum">${lineSellCostDelta(it).toLocaleString('sv-SE',{maximumFractionDigits:0})}</td><td class="n rnum">${it.cost?(((it.sell-it.cost)/it.cost*100).toFixed(0)):'—'}%</td>`:''}
+        <td class="n rnum tot">${tot.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
     // Add Line leads the row on the left, where a new entry would be typed; the subtotal it belongs
     // to stays with the figure it sums on the right.
-    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}"><div class="subrow">${isBaseWorkItem&&!locked&&!itemLocked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}<span class="sublabel">${esc(t.subtotal_section)} — ${esc(wi.desc)}</span></div></td><td class="rnum">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
+    rows+=`<tr class="subtotalrow"><td colspan="${(showCost?9:7)}"><div class="subrow">${isBaseWorkItem&&!locked&&!itemLocked&&!wi.previewOnly?`<button class="addline-btn" onclick="openAddLine(${e.id},${idx})">+ ${esc(t.addline)}</button>`:''}<span class="sublabel">${esc(t.subtotal_section)} — ${esc(wi.desc)}</span></div></td><td class="n rnum tot">${sectionSell.toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`;
     n++;
   });
   // Nothing to price until the project has items, and pricing left behind by an item that has since
@@ -1538,9 +1558,9 @@ function renderItemsTable(e){
   const notes=(noItems?`<div class="estnote">${esc(t.no_items_body.replace('{p}',e.projectNo||'—'))}</div>`:'')
     +(retired.length?`<div class="estnote warn">${esc(t.retired_note.replace('{n}',retired.length))} ${esc(retired.map(w=>w.no).join(', '))}</div>`:'');
   return notes+`<div class="itable-wrap"><table class="itable"><thead><tr>
-    <th>${esc(t.th_no)}</th><th>${esc(t.th_item)}</th><th class="n">${esc(t.th_qty)}</th><th>${esc(t.th_unit)}</th><th class="n">${esc(t.th_price)}</th><th class="n">${esc(t.th_disc)}</th><th class="n">${esc(t.th_tax)}</th>
-    ${showCost?`<th class="n">${esc(t.th_margin_sek)}</th><th class="n">${esc(t.th_margin_pct)}</th>`:''}
-    <th class="n">${esc(t.th_total)}</th>
+    <th class="c-no">${esc(t.th_no)}</th><th class="c-item">${esc(t.th_item)}</th><th class="n c-qty">${esc(t.th_qty)}</th><th class="c-unit">${esc(t.th_unit)}</th><th class="n c-price">${esc(t.th_price)}</th><th class="n c-sm">${esc(t.th_disc)}</th><th class="n c-sm">${esc(t.th_tax)}</th>
+    ${showCost?`<th class="n c-mar">${esc(t.th_margin_sek)}</th><th class="n c-sm">${esc(t.th_margin_pct)}</th>`:''}
+    <th class="n c-total">${esc(t.th_total)}</th>
   </tr></thead><tbody>${rows||`<tr><td colspan="${showCost?10:8}" class="empty3">${esc(noItems?t.no_items_short:t.empty_items)}</td></tr>`}</tbody></table></div>`;
 }
 
