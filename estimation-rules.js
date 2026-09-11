@@ -53,9 +53,11 @@
       if(prev)claimed.add(item.no);
       return{no:item.no,seq:i+1,desc:item.desc||String(item.no),
         lines:prev&&Array.isArray(prev.lines)?prev.lines:[],
-        // The lock belongs to the pricing, not to the project's item record, so it is carried
-        // across with the lines rather than reset every time the project is re-read.
-        lock:prev&&prev.lock?prev.lock:null};
+        // The lock and the effort belong to the pricing, not to the project's item record, so they
+        // are carried across with the lines rather than reset every time the project is re-read.
+        lock:prev&&prev.lock?prev.lock:null,
+        days:prev&&prev.days!=null?prev.days:0,
+        people:prev&&prev.people!=null?prev.people:0};
     });
     const retired=(stored||[]).filter(w=>w&&w.no!=null&&!claimed.has(w.no)&&Array.isArray(w.lines)&&w.lines.length);
     return{workItems,retired};
@@ -85,7 +87,32 @@
   // The trail newest-first, for display.
   function itemLockHistory(wi){return lockTrail(wi&&wi.lock).slice().reverse();}
 
-  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
+  // ── How long, and how many ──
+  // Priced lines say what an item costs; they do not say how long it takes or how many people it
+  // occupies. Those are estimated per item, because that is the only level anyone can judge them
+  // at, and the project's own figures are derived from them rather than typed a second time.
+  function itemDays(wi){const n=Number(wi&&wi.days);return Number.isFinite(n)&&n>0?n:0;}
+  function itemPeople(wi){const n=Number(wi&&wi.people);return Number.isFinite(n)&&n>0?n:0;}
+  // One item's labour commitment: people working it, for as long as it lasts.
+  function itemPersonDays(wi){return money(itemDays(wi)*itemPeople(wi));}
+
+  // Start to finish, the items run one after another, so the duration is their sum. The average
+  // crew is weighted by duration - a two-week item with one person and a one-day item with six
+  // does not average to three and a half. An item with no duration cannot weight anything, so it
+  // is left out of the average rather than counted as zero.
+  function effortTotals(workItems){
+    const items=(workItems||[]).filter(w=>w&&!w.isOption);
+    const totalDays=money(items.reduce((a,w)=>a+itemDays(w),0));
+    const personDays=money(items.reduce((a,w)=>a+itemPersonDays(w),0));
+    const weighted=items.filter(w=>itemDays(w)>0&&itemPeople(w)>0);
+    const weightedDays=weighted.reduce((a,w)=>a+itemDays(w),0);
+    const avgPeople=weightedDays>0?money(weighted.reduce((a,w)=>a+itemPersonDays(w),0)/weightedDays):0;
+    const peakPeople=items.reduce((a,w)=>Math.max(a,itemPeople(w)),0);
+    const estimated=items.filter(w=>itemDays(w)>0).length;
+    return{totalDays,personDays,avgPeople,peakPeople,estimated,items:items.length};
+  }
+
+  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,itemDays,itemPeople,itemPersonDays,effortTotals,
     isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory};
   root.EstimationRules=EstimationRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimationRules;

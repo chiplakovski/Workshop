@@ -21,20 +21,47 @@ async function projectWorkflow(page) {
   await page.locator('button[onclick="openNewProject()"]').first().click();
   await page.locator('#npName').fill(PROJECT_NAME);
   await page.locator('#npCust').selectOption({ label: 'MarineVent AB' });
-  await page.locator('#npValue').fill('175000');
+  await page.locator('#npKind').selectOption('offer');
   await page.locator('#npDeadline').fill('2026-11-05');
+  // The work a job is made of is described up front; it is what the estimate then prices.
+  for (const item of ['Fabricate frame', 'Install on site']) {
+    await page.locator('#npItemDesc').fill(item);
+    await page.locator('button[onclick="addNewProjItem()"]').click();
+  }
+  assert.equal(await page.locator('.npitem').count(), 2);
   await saveModal(page);
 
   let project = await page.evaluate((name) => WorkshopData.getProjects().find((item) => item.name === name), PROJECT_NAME);
   assert.ok(project, 'new project was not persisted');
   assert.equal(project.customer, 'MarineVent AB');
-  assert.equal(project.quotedValue, 175000);
+  assert.equal(project.quoteKind, 'offer');
   assert.equal(project.status, 'quotation', 'a new project is the quotation it is being priced for');
-  step('Estimating: a new project persists with its customer and price');
+  assert.equal(project.quotedValue, 0, 'no price is typed at creation — the estimate produces it');
+  step('Estimating: a new project persists with its customer and work type');
 
-  const est = await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); return e ? e.no : null; }, project.no);
-  assert.ok(est, 'a new project must get an estimate it can be priced on');
-  step('Estimating: the new project is ready to price');
+  const items = await page.evaluate((no) => WorkshopData.listJobcards().filter((j) => j.projectNo === no).map((j) => j.title), project.no);
+  assert.deepEqual(items, ['Fabricate frame', 'Install on site'], 'the items described at creation must become real project items');
+  const est = await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); return e ? e.workItems.map((w) => w.desc) : null; }, project.no);
+  assert.deepEqual(est, items, 'the estimate prices exactly those items');
+  step('Estimating: the items given at creation are what gets priced');
+
+  // Duration and crew are estimated per item; the project's figures are derived from them.
+  await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
+  for (const [i, d, p] of [[0, '10', '1'], [1, '1', '6']]) {
+    await page.evaluate((idx) => openItemEffort(selectedId, idx), i);
+    await page.locator('#efDays').fill(d);
+    await page.locator('#efPeople').fill(p);
+    await saveModal(page);
+  }
+  const effort = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    return EstimationRules.effortTotals(e.workItems);
+  });
+  assert.equal(effort.totalDays, 11, 'start to finish is the sum of the items');
+  assert.equal(effort.personDays, 16);
+  assert.equal(effort.peakPeople, 6);
+  assert.ok(effort.avgPeople > 1.4 && effort.avgPeople < 1.5, 'the average crew is weighted by duration, not a plain average');
+  step('Estimating: duration and crew roll up from the items');
 
   // The workflow ported from the Projects module drives the project from here.
   await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);

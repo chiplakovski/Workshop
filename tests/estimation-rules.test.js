@@ -5,7 +5,8 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {money,lineTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
-  isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory}=require('../estimation-rules.js');
+  isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory,
+  itemDays,itemPeople,itemPersonDays,effortTotals}=require('../estimation-rules.js');
 
 function sampleEstimation(){
   return {
@@ -235,4 +236,84 @@ test('item lock: locking one item leaves the others editable', ()=>{
   const {workItems}=reconcileWorkItems([{no:'JC-1',desc:'a'},{no:'JC-2',desc:'b'}],stored);
   assert.equal(isItemLocked(workItems[0]),true);
   assert.equal(isItemLocked(workItems[1]),false);
+});
+
+// ── Duration and crew (Pass 3.84) ──
+// Priced lines say what an item costs, not how long it takes or how many people it occupies. Those
+// are estimated per item; the project's own figures are derived, never typed a second time.
+
+test('effort: a missing, zero or nonsense figure reads as nothing rather than breaking the sum', ()=>{
+  for(const bad of [undefined,null,'',{},[],NaN,-3,'abc']){
+    assert.equal(itemDays({days:bad}),0);
+    assert.equal(itemPeople({people:bad}),0);
+  }
+  assert.equal(itemDays(),0);
+  assert.equal(itemPeople(null),0);
+  assert.equal(itemPersonDays({days:4,people:2}),8);
+});
+
+test('effort: numbers arriving as text still count', ()=>{
+  assert.equal(itemDays({days:'5'}),5);
+  assert.equal(itemPeople({people:'3'}),3);
+  assert.equal(itemPersonDays({days:'5',people:'3'}),15);
+});
+
+test('effort: start to finish is the sum of the items, because they run one after another', ()=>{
+  const t=effortTotals([{days:4,people:2},{days:6,people:1},{days:2,people:3}]);
+  assert.equal(t.totalDays,12);
+});
+
+test('effort: the average crew is weighted by duration, not a plain average of the items', ()=>{
+  // Ten days with one person and one day with six is not three and a half people.
+  const t=effortTotals([{days:10,people:1},{days:1,people:6}]);
+  assert.equal(t.personDays,16);
+  assert.equal(t.totalDays,11);
+  assert.equal(t.avgPeople,money(16/11));
+  assert.notEqual(t.avgPeople,3.5,'a plain average would misrepresent a long thin item');
+});
+
+test('effort: an item with no duration cannot weight the average, and is not counted as zero people', ()=>{
+  const t=effortTotals([{days:4,people:2},{days:0,people:9}]);
+  assert.equal(t.avgPeople,2,'the unestimated item must not drag the average');
+  assert.equal(t.totalDays,4);
+});
+
+test('effort: the peak is the busiest single item, which is what the shop has to staff', ()=>{
+  const t=effortTotals([{days:4,people:2},{days:1,people:6},{days:3,people:1}]);
+  assert.equal(t.peakPeople,6);
+  assert.ok(t.avgPeople<t.peakPeople,'the average must not hide the busiest moment');
+});
+
+test('effort: it reports how much of the project has actually been estimated', ()=>{
+  const t=effortTotals([{days:4,people:2},{days:0,people:0},{days:3,people:1}]);
+  assert.equal(t.estimated,2);
+  assert.equal(t.items,3);
+});
+
+test('effort: an option being previewed never counts towards the project duration', ()=>{
+  const t=effortTotals([{days:4,people:2},{days:99,people:9,isOption:true}]);
+  assert.equal(t.totalDays,4);
+  assert.equal(t.items,1);
+});
+
+test('effort: nothing estimated yet reports zeros rather than dividing by zero', ()=>{
+  const t=effortTotals([{days:0,people:0}]);
+  assert.equal(t.avgPeople,0);
+  assert.equal(t.totalDays,0);
+  assert.deepEqual(effortTotals([]),{totalDays:0,personDays:0,avgPeople:0,peakPeople:0,estimated:0,items:0});
+  assert.deepEqual(effortTotals(null).totalDays,0);
+});
+
+test('effort: duration and crew survive the project being re-read', ()=>{
+  const stored=[{no:'JC-1',lines:[],days:6,people:3}];
+  const {workItems}=reconcileWorkItems([{no:'JC-1',desc:'Weld frame'}],stored);
+  assert.equal(workItems[0].days,6);
+  assert.equal(workItems[0].people,3);
+  assert.equal(effortTotals(workItems).personDays,18);
+});
+
+test('effort: an item that never had an estimate reconciles to zero, not undefined', ()=>{
+  const {workItems}=reconcileWorkItems([{no:'JC-9',desc:'New'}],[]);
+  assert.equal(workItems[0].days,0);
+  assert.equal(workItems[0].people,0);
 });
