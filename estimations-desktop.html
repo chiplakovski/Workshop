@@ -78,6 +78,22 @@
   .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
   .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:9px 10px 9px 32px;outline:none;}
   .search input:focus{border-color:var(--spark);}
+  /* Producing the offer is what the module is for, so it sits at the top of the list, beside the
+     button that creates the project it is produced from. */
+  .listbar{display:flex;align-items:stretch;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
+  .listbar .newproj{flex:1 1 250px;justify-content:center;}
+  .offerbar{flex:2 1 430px;display:flex;align-items:center;gap:8px;padding:5px 7px 5px 13px;
+    border:1px solid rgba(var(--c-accent-rgb),.32);background:rgba(var(--c-accent-rgb),.07);}
+  .offerbar.off{border-color:var(--line);background:rgba(255,255,255,.02);}
+  .offerlbl{display:flex;align-items:baseline;gap:9px;margin-right:auto;min-width:0;}
+  .offerlbl b{font-family:var(--font-heading);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--c-tint);}
+  .offerbar.off .offerlbl b{color:var(--steel-400);}
+  .offerref{font-size:13px;font-weight:600;color:var(--ice);font-variant-numeric:tabular-nums;}
+  .offersub{font-size:10.5px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .offerbar .tbtn{font-size:11.5px;padding:7px 11px;}
+  .offerbar .tbtn[disabled]{opacity:.45;cursor:not-allowed;}
+  .offerbar .tbtn[disabled]:hover{border-color:var(--field-line);background:transparent;color:var(--steel-300);}
+  @media(max-width:900px){.listbar{flex-direction:column;}.listbar .newproj{flex:none;}.offerbar{flex:none;flex-wrap:wrap;}}
   .listtoolbar{display:flex;gap:8px;margin-bottom:11px;}
   .iconbtn{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);cursor:pointer;}
   .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
@@ -850,6 +866,12 @@ const T={
     demo_upload:"Files up to 768 KB are stored in this browser and shared with Documents.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
     confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
     demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Export {no} as an Excel-compatible SpreadsheetML workbook.",
+    offer_group:"Offer",offer_whole:"Whole project — every item",offer_print:"Print",
+    offer_pick:"Pick a project — the offer is produced from it",
+    offer_pdf_toast:"Offer {ref} opened as an A4 document — choose \u201cSave as PDF\u201d in the print dialog.",
+    offer_pdf_blocked:"Allow pop-ups to save the offer as a PDF — printing this page instead.",
+    offer_email_subject:"Offer {ref} — {name} — Varmak AB",offer_email_intro:"Please find our offer for {name} below.",
+    offer_email_attach:"The full offer follows as a printed PDF.",
     pr_desc:"Description",pr_qty:"Qty",pr_unit:"Unit",pr_price:"Price",pr_total:"Total",pr_optional:"Optional Items",pr_estimate:"Estimation",
     pr_customer:"Customer",pr_details:"Estimation Details",pr_scope:"Scope",pr_base:"Base Offer",pr_vat:"VAT",pr_delivery:"Delivery",
     pr_signature_customer:"Customer acceptance / signature",pr_signature_varmak:"Varmak AB",
@@ -919,6 +941,12 @@ const T={
     demo_upload:"Filer upp till 768 KB lagras i den här webbläsaren och delas med Dokument.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
     confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
     demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Exportera {no} som en Excel-kompatibel SpreadsheetML-arbetsbok.",
+    offer_group:"Offert",offer_whole:"Hela projektet — alla poster",offer_print:"Skriv ut",
+    offer_pick:"Välj ett projekt — offerten skapas från det",
+    offer_pdf_toast:"Offert {ref} öppnad som A4-dokument — välj \u201dSpara som PDF\u201d i utskriftsdialogen.",
+    offer_pdf_blocked:"Tillåt popup-fönster för att spara offerten som PDF — skriver ut den här sidan i stället.",
+    offer_email_subject:"Offert {ref} — {name} — Varmak AB",offer_email_intro:"Här kommer vår offert för {name}.",
+    offer_email_attach:"Hela offerten följer som utskriven PDF.",
     pr_desc:"Beskrivning",pr_qty:"Antal",pr_unit:"Enhet",pr_price:"Pris",pr_total:"Summa",pr_optional:"Tillval",pr_estimate:"Kalkyl",
     pr_customer:"Kund",pr_details:"Kalkyldetaljer",pr_scope:"Omfattning",pr_base:"Grunderbjudande",pr_vat:"Moms",pr_delivery:"Leverans",
     pr_signature_customer:"Kundens godkännande / underskrift",pr_signature_varmak:"Varmak AB",
@@ -988,6 +1016,12 @@ const T={
     demo_upload:"Fajlovi do 768 KB se začuvuvaat vo ovoj prebaruvač i se delat so Dokumenti.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
     confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
     demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Izvezi ja {no} kako Excel-kompatibilna SpreadsheetML rabotna kniga.",
+    offer_group:"Ponuda",offer_whole:"Celiot proekt — site stavki",offer_print:"Pečati",
+    offer_pick:"Izberi proekt — ponudata se pravi od nego",
+    offer_pdf_toast:"Ponudata {ref} e otvorena kako A4 dokument — izberi \u201cSave as PDF\u201d vo dijalogot za pečatenje.",
+    offer_pdf_blocked:"Dozvoli pop-up prozorci za da ja začuvaš ponudata kako PDF — ja pečatam ovaa strana namesto toa.",
+    offer_email_subject:"Ponuda {ref} — {name} — Varmak AB",offer_email_intro:"Vo prodolženie e našata ponuda za {name}.",
+    offer_email_attach:"Celata ponuda sledi kako otpečatena PDF.",
     pr_desc:"Opis",pr_qty:"Kol.",pr_unit:"Edinica",pr_price:"Cena",pr_total:"Vkupno",pr_optional:"Opcionalni stavki",pr_estimate:"Kalkulacija",
     pr_customer:"Klient",pr_details:"Detali za kalkulacija",pr_scope:"Opseg",pr_base:"Osnovna ponuda",pr_vat:"DDV",pr_delivery:"Isporaka",
     pr_signature_customer:"Prifaќaњe / potpis od klient",pr_signature_varmak:"Varmak AB",
@@ -1205,6 +1239,8 @@ function renderLeft(){
 
   const counts={draft:0,sent:0,accepted:0,declined:0};
   active.forEach(e=>{if(counts[e.status]!==undefined)counts[e.status]++;});
+  // The offer bar acts on whichever project is selected below; with none, it says so instead of misfiring.
+  const sel=active.find(e=>e.id===selectedId)||null;
 
   // Rows are projects: the project is what gets quoted, and its estimate is the pricing on it.
   // The item count comes straight from the project, so it is obvious what there is to price.
@@ -1220,7 +1256,15 @@ function renderLeft(){
   return `
     <div class="panel">
       <div class="phead"><h3>${t.p_list}</h3><span class="stpill sent">${esc(t.p_list_hint)}</span></div>
-      <button class="tbtn primary small" style="width:100%;justify-content:center;margin-bottom:11px;" onclick="openNewProject()">+ ${esc(t.np_title)}</button>
+      <div class="listbar">
+        <button class="tbtn primary small newproj" onclick="openNewProject()">+ ${esc(t.np_title)}</button>
+        <div class="offerbar ${sel?'':'off'}">
+          <span class="offerlbl"><b>${esc(t.offer_group)}</b>${sel?`<span class="offerref">${esc(estRef(sel))}</span><span class="offersub">${esc(t.offer_whole)}</span>`:`<span class="offersub">${esc(t.offer_pick)}</span>`}</span>
+          <button class="tbtn" ${sel?'':'disabled'} onclick="emailOffer(${sel?sel.id:0})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
+          <button class="tbtn" ${sel?'':'disabled'} onclick="pdfOffer(${sel?sel.id:0})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${esc(t.item_pdf)}</button>
+          <button class="tbtn primary" ${sel?'':'disabled'} onclick="printOffer(${sel?sel.id:0})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.offer_print)}</button>
+        </div>
+      </div>
       <div class="listtoolbar">
         <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" type="text" placeholder="${esc(t.searchph)}" aria-label="${esc(t.searchph)}" value="${esc(query)}"></div>
       </div>
@@ -1285,8 +1329,7 @@ function renderMiddle(e){
         <div class="idn"><h2>${esc(estRef(e))}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
         <div class="dbtns">
           <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
-          <button class="tbtn" onclick="sendEmail(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
-          <button class="tbtn" onclick="${converted?"location.href='estimations-desktop.html'":`openConvertEst(${e.id})`}" ${!converted&&e.status!=='accepted'?`title="${esc(t.convert_requires_accepted)}"`:''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>${esc(converted?t.act_open:t.act_convert)}</button>
+          <button class="tbtn" onclick="emailOffer(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
           <button class="tbtn" onclick="exportExcel(${e.id})" title="${esc(t.demo_export).replace('{no}',e.no)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 13l6 6M15 13l-6 6"/></svg>${esc(t.act_export)}</button>
           <button class="tbtn danger2" onclick="deleteEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>${esc(converted?t.act_archive:t.act_delete)}</button>
           <button class="tbtn primary" onclick="printEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.print)}</button>
@@ -1973,12 +2016,45 @@ function deleteEst(id){
   if(selectedId===id)selectedId=ESTIMATIONS.length?ESTIMATIONS[0].id:null;
   renderAll();
 }
-// Email sending is a frontend demonstration only (opens the OS mail client via mailto:) — no message is
-// actually transmitted and no email service is called.
-function sendEmail(id){
-  const t=T[LANG];const e=getEst(id);const c=CUSTOMERS[e.customerId];
+// ── the offer: the whole project as one customer-facing document ──────────────────────────────
+// Print, PDF and email all go through renderPrintSheet(), so the offer that is printed, saved and
+// sent is the same document every time — every item of the project, priced, with no internal cost.
+function offerName(e){return (PROJECTS[e.projectNo]||{}).name||e.projectTitle||e.no;}
+function printOffer(id){printEst(id);}
+// A browser makes a PDF through its own print dialog. The offer is opened as a standalone A4
+// document so "Save as PDF" yields the offer alone, not the screen it was produced from.
+function pdfOffer(id){
+  const t=T[LANG],e=getEst(id);if(!e)return;
+  selectedId=id;renderPrintSheet(e);
+  const w=window.open('','_blank');
+  if(!w){toast(t.offer_pdf_blocked,'warn');window.print();return;}
+  w.document.write(`<!doctype html><html lang="${esc(document.documentElement.lang||'en')}"><head><meta charset="utf-8">
+    <title>${esc(estRef(e))} — ${esc(offerName(e))}</title>
+    <style>@page{size:A4;margin:16mm;}
+      body{margin:0;background:#fff;color:#111;font-family:system-ui,sans-serif;}
+      table{border-collapse:collapse;} th,td{border:1px solid #999;padding:6px;}
+      .psection{page-break-inside:avoid;}</style></head>
+    <body>${$("printSheet").innerHTML}</body></html>`);
+  w.document.close();
+  toast(t.offer_pdf_toast.replace('{ref}',estRef(e)),'ok');
+  setTimeout(()=>{try{w.focus();w.print();}catch(_){}} ,300);
+}
+// Email is a frontend demonstration only (it opens the OS mail client via mailto:) — no message is
+// transmitted and no email service is called. The body carries the offer's headline figures so the
+// mail says what it is about before the PDF is attached by hand.
+function emailOffer(id){
+  const t=T[LANG],e=getEst(id);if(!e)return;
+  const c=CUSTOMERS[e.customerId],tot=computeTotals(e),ref=estRef(e),name=offerName(e);
+  const subject=t.offer_email_subject.replace('{ref}',ref).replace('{name}',name);
+  const body=[t.offer_email_intro.replace('{name}',name),'',
+    `${t.ei_number}: ${ref}`,
+    `${t.pr_scope}: ${name}`,
+    `${t.ps_total}: ${fmt0(tot.grandTotal)}`,
+    `${t.ei_valid}: ${e.validUntil}`,
+    '',t.offer_email_attach,'',
+    'Varmak AB · Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se'].join('\n');
   toast(t.demo_email,'ok');
-  location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Estimation '+e.no+' — Varmak AB')}`;
+  location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 // A dependency-free Excel export using Microsoft's SpreadsheetML 2003 format. This is a genuine
 // workbook file (not a toast-only simulation) and opens directly in Excel/LibreOffice while

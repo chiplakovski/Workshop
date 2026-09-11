@@ -103,6 +103,32 @@ async function estimationWorkflow(page) {
   assert.equal(selected.ref, listedProject, "the estimate's reference is the project's own number");
   step('Estimations: the list is projects, and picking one selects its estimate');
 
+  // The offer is the whole project as one customer-facing document, produced from the top bar.
+  const offer = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    window.print = () => { window.__printed = (window.__printed || 0) + 1; };
+    printOffer(e.id);
+    const sheet = document.getElementById('printSheet');
+    const base = baseAndIncludedLines(e).filter((l) => !l.fromOption);
+    return {
+      ref: document.querySelector('.offerbar .offerref').textContent.trim(),
+      off: document.querySelector('.offerbar').classList.contains('off'),
+      dialogs: window.__printed,
+      missing: base.filter((l) => !sheet.textContent.includes(l.desc)).map((l) => l.desc),
+      carriesTotal: sheet.textContent.includes(computeTotals(e).grandTotal.toFixed(2)),
+      leaksInternal: /overhead|contingency|margin/i.test(sheet.textContent),
+      deadOpenProject: [...document.querySelectorAll('.dbtns .tbtn')].some((b) => /Open Project|Convert to Project/.test(b.textContent)),
+    };
+  });
+  assert.equal(offer.off, false, 'a selected project must have its offer actions live');
+  assert.equal(offer.ref, listedProject, 'the offer bar must name the project it produces');
+  assert.equal(offer.dialogs, 1, 'Print must open the print dialog exactly once');
+  assert.deepEqual(offer.missing, [], 'the offer must carry every priced line of the project');
+  assert.equal(offer.carriesTotal, true, 'the offer must carry the grand total');
+  assert.equal(offer.leaksInternal, false, 'a customer-facing offer must not print internal cost or margin');
+  assert.equal(offer.deadOpenProject, false, 'Open Project led back to this same page and is gone');
+  step('Estimations: the top bar produces the whole project as one offer');
+
   // The items being priced are the project's items - not a second list kept here.
   const items = await page.evaluate(() => {
     const e = getEst(selectedId);
