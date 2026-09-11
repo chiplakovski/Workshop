@@ -1,4 +1,4 @@
-// Pure Estimation pricing/effective-line helpers, loaded by estimations-desktop.html and by the
+// Pure Estimation pricing/effective-line helpers, loaded by project-estimator-desktop.html and by the
 // Node test suite (tests/estimation-rules.test.js) so both share exactly one implementation —
 // the printed offer and the on-screen calculation can never disagree.
 (function(root){

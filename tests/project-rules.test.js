@@ -1,4 +1,4 @@
-// Pure-helper tests for project-rules.js — the exact module projects-desktop.html loads, so these
+// Pure-helper tests for project-rules.js — the exact module project-estimator-desktop.html loads, so these
 // tests exercise the real customer-resolution and status-adapter logic the page runs.
 'use strict';
 const test=require('node:test');

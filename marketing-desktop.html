@@ -963,7 +963,7 @@ function openOpportunityEstimation(id){
     o.linkedEstimateNo=estimation.no;o.activity.push({date:created.toISOString().slice(0,10),text:`Estimation ${estimation.no} created.`});syncOpportunity(o);
   }
   const shared=WorkshopData.get();SHARED.customers=shared.customers;SHARED.estimations=shared.estimations;SHARED.projects=shared.projects;
-  location.href='estimations-desktop.html?estimation='+encodeURIComponent(estimation.no);
+  location.href='project-estimator-desktop.html?estimation='+encodeURIComponent(estimation.no);
 }
 function openMarkLost(id){const tt=t();const html=`<h2>${tt.m_marklost_t}</h2>${fieldTextarea('lostReason',tt.fl_decisionreason,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveMarkLost(${id})">${tt.act_marklost}</button></div>`;openModal(html);}
