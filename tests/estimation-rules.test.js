@@ -4,7 +4,8 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {money,lineTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems}=require('../estimation-rules.js');
+const {money,lineTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
+  isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory}=require('../estimation-rules.js');
 
 function sampleEstimation(){
   return {
@@ -157,4 +158,81 @@ test('reconcile: the result feeds the pricing engine unchanged', ()=>{
   const lines=baseAndIncludedLines({workItems,options:[]});
   assert.equal(lines.length,2);
   assert.equal(money(lines.reduce((a,l)=>a+lineTotal(l),0)),money(2*100+2*250));
+});
+
+// ── Locking an item's calculation (Pass 3.78) ──
+// An agreed price must not be able to change quietly: locking records who and when, unlocking
+// demands a reason, and both are kept on the item so the trail cannot be separated from the figures.
+
+test('item lock: an item starts editable and stays so until it is locked', ()=>{
+  const wi={no:'JC-1',lines:[]};
+  assert.equal(isItemLocked(wi),false);
+  assert.equal(canEditItemLines(wi),true);
+  assert.equal(isItemLocked({no:'JC-1',lines:[],lock:null}),false,'an explicit null lock is not locked');
+  assert.equal(isItemLocked({no:'JC-1',lines:[],lock:{locked:false}}),false,'a released lock is not locked');
+});
+
+test('item lock: locking records who and when, and closes the lines to editing', ()=>{
+  const lock=lockItem(null,'Aleksandar C.','2026-09-11 10:00');
+  assert.equal(lock.locked,true);
+  assert.equal(lock.by,'Aleksandar C.');
+  assert.equal(lock.at,'2026-09-11 10:00');
+  assert.equal(canEditItemLines({lock}),false,'a locked item must refuse line edits');
+});
+
+test('item lock: unlocking releases it, keeps the reason, and names who did it', ()=>{
+  const locked=lockItem(null,'Aleksandar C.','2026-09-11 10:00');
+  const released=unlockItem(locked,'Elena N.','2026-09-11 11:30','Customer changed the scope');
+  assert.equal(released.locked,false);
+  assert.equal(canEditItemLines({lock:released}),true);
+  const last=released.trail[released.trail.length-1];
+  assert.equal(last.action,'unlocked');
+  assert.equal(last.by,'Elena N.');
+  assert.equal(last.at,'2026-09-11 11:30');
+  assert.equal(last.reason,'Customer changed the scope');
+});
+
+test('item lock: the trail accumulates every lock and unlock, in order', ()=>{
+  let lock=lockItem(null,'A','2026-09-01 09:00');
+  lock=unlockItem(lock,'B','2026-09-02 09:00','revise');
+  lock=lockItem(lock,'C','2026-09-03 09:00');
+  assert.deepEqual(lock.trail.map(x=>x.action),['locked','unlocked','locked']);
+  assert.deepEqual(lock.trail.map(x=>x.by),['A','B','C']);
+  assert.deepEqual(itemLockHistory({lock}).map(x=>x.by),['C','B','A'],'history reads newest first');
+});
+
+test('item lock: a re-lock after an unlock does not erase what came before', ()=>{
+  let lock=lockItem(null,'A','2026-09-01 09:00');
+  lock=unlockItem(lock,'B','2026-09-02 09:00','wrong material price');
+  lock=lockItem(lock,'A','2026-09-03 09:00');
+  const unlockEntry=lock.trail.find(x=>x.action==='unlocked');
+  assert.equal(unlockEntry.reason,'wrong material price','the reason for a past unlock must survive re-locking');
+  assert.equal(lock.trail.length,3);
+});
+
+test('item lock: an unlock with no reason given is recorded as empty, never as undefined', ()=>{
+  const lock=unlockItem(lockItem(null,'A','t1'),'B','t2');
+  assert.equal(lock.trail[1].reason,'');
+});
+
+test('item lock: the lock survives the project being re-read', ()=>{
+  const locked={no:'JC-2026-041',lines:[{desc:'x',category:'labour',qty:1,unit:'h',cost:1,sell:2,disc:0,tax:25}],
+    lock:lockItem(null,'Aleksandar C.','2026-09-11 10:00')};
+  const {workItems}=reconcileWorkItems([{no:'JC-2026-041',desc:'Cut and form panels'}],[locked]);
+  assert.equal(isItemLocked(workItems[0]),true,'re-reading the project must not release a lock');
+  assert.equal(workItems[0].lock.by,'Aleksandar C.');
+  assert.equal(workItems[0].lines.length,1);
+});
+
+test('item lock: an item that was never locked reconciles with no lock rather than a fabricated one', ()=>{
+  const {workItems}=reconcileWorkItems([{no:'JC-1',desc:'a'}],[]);
+  assert.equal(workItems[0].lock,null);
+  assert.equal(canEditItemLines(workItems[0]),true);
+});
+
+test('item lock: locking one item leaves the others editable', ()=>{
+  const stored=[{no:'JC-1',lines:[],lock:lockItem(null,'A','t')},{no:'JC-2',lines:[]}];
+  const {workItems}=reconcileWorkItems([{no:'JC-1',desc:'a'},{no:'JC-2',desc:'b'}],stored);
+  assert.equal(isItemLocked(workItems[0]),true);
+  assert.equal(isItemLocked(workItems[1]),false);
 });

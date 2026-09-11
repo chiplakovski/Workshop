@@ -52,13 +52,41 @@
       const prev=byNo.get(item.no);
       if(prev)claimed.add(item.no);
       return{no:item.no,seq:i+1,desc:item.desc||String(item.no),
-        lines:prev&&Array.isArray(prev.lines)?prev.lines:[]};
+        lines:prev&&Array.isArray(prev.lines)?prev.lines:[],
+        // The lock belongs to the pricing, not to the project's item record, so it is carried
+        // across with the lines rather than reset every time the project is re-read.
+        lock:prev&&prev.lock?prev.lock:null};
     });
     const retired=(stored||[]).filter(w=>w&&w.no!=null&&!claimed.has(w.no)&&Array.isArray(w.lines)&&w.lines.length);
     return{workItems,retired};
   }
 
-  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems};
+  // ── Locking an item's calculation ──
+  // Once an item's pricing is agreed it can be locked, so the figures behind a quoted price cannot
+  // drift without someone taking responsibility for the change. A lock is never just a flag: it
+  // records who set it and when, and every lock and unlock is appended to the item's own trail, so
+  // the question "who changed this, and why" always has an answer on the item itself.
+  function isItemLocked(wi){return !!(wi&&wi.lock&&wi.lock.locked);}
+  // What the estimator may do to an item's cost lines. A locked item is read-only until unlocked.
+  function canEditItemLines(wi){return !isItemLocked(wi);}
+
+  function lockTrail(lock){return (lock&&Array.isArray(lock.trail))?lock.trail:[];}
+
+  // Returns the NEW lock state; callers assign it. `by` and `at` are supplied by the caller rather
+  // than read from a clock here, so this stays pure and testable.
+  function lockItem(lock,by,at){
+    return{locked:true,by:by||'',at:at||'',trail:lockTrail(lock).concat({action:'locked',by:by||'',at:at||''})};
+  }
+  // Unlocking always carries a reason: it is the one moment an agreed figure becomes editable again.
+  function unlockItem(lock,by,at,reason){
+    return{locked:false,by:'',at:'',
+      trail:lockTrail(lock).concat({action:'unlocked',by:by||'',at:at||'',reason:(reason||'').trim()})};
+  }
+  // The trail newest-first, for display.
+  function itemLockHistory(wi){return lockTrail(wi&&wi.lock).slice().reverse();}
+
+  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,
+    isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory};
   root.EstimationRules=EstimationRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimationRules;
 })(typeof window!=='undefined'?window:globalThis);
