@@ -130,13 +130,17 @@
     border:1px solid var(--line);background:var(--lift-03);padding:7px 8px;transition:.14s;}
   .kcard:hover{border-color:rgba(var(--c-accent-rgb),.5);background:var(--lift-05);}
   .kcard.sel{background:rgba(var(--c-accent-rgb),.14);border-color:rgba(var(--c-accent-rgb),.55);}
-  .kcard .kc1{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
-  .kcard .kno{font-family:var(--font-heading);font-weight:700;font-size:12px;}
-  .kcard .kval{font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ice);
+  .kcard .kc1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  /* The name is what a card is read by; the number is how it is referred to afterwards. */
+  .kcard .kname{flex:1 1 auto;min-width:0;font-family:var(--font-heading);font-weight:600;font-size:12.5px;
+    color:var(--ice);line-height:1.3;}
+  .kcard .kval{flex:none;font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ice);
     font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .kcard .kname{font-size:11.5px;color:var(--ice);line-height:1.3;margin-top:3px;}
-  .kcard .kc2{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px;}
-  .kcard .kcust{font-size:10px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kcard .kc2{display:flex;align-items:center;gap:7px;margin-top:4px;}
+  .kcard .kno{flex:none;font-size:10.5px;font-weight:700;color:var(--steel-300);
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+  .kcard .kcust{min-width:0;font-size:10px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kcard .kc2 .stpill{margin-left:auto;}
   .kcempty{font-size:10.5px;color:var(--steel-400);text-align:center;padding:16px 0;}
 
   /* While a card is in the air the lanes answer before the drop: which moves the rules allow, and
@@ -167,7 +171,9 @@
   .dhead3{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
   .dhead3 .idn{display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
   .dhead3 h2{font-family:var(--font-heading);font-weight:700;font-size:19px;letter-spacing:-.01em;}
-  .dhead3 .esttitle{flex-basis:100%;font-family:var(--font-heading);font-size:13px;font-weight:600;color:var(--steel-300);}
+  /* The heading is what the job IS; its number identifies it on the line below. */
+  .dhead3 .estref2{flex-basis:100%;font-family:var(--font-heading);font-size:13px;font-weight:700;
+    color:var(--steel-300);letter-spacing:.02em;font-variant-numeric:tabular-nums;}
   .dhead3 .dbtns{display:flex;gap:8px;flex-wrap:wrap;}
 
   .stpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;font-weight:700;white-space:nowrap;border:1px solid;}
@@ -1332,9 +1338,8 @@ function renderLeft(){
       data-project-no="${esc(e.projectNo||'')}" data-est-id="${e.id}"
       ondragstart="kanbanDragStart(event,${e.id})" ondragend="kanbanDragEnd()"
       title="${esc(n?t.n_items.replace('{n}',n):t.no_items_short)}">
-      <div class="kc1"><span class="kno">${esc(estRef(e))}</span><span class="kval">${fmt0(tot.grandTotal)}</span></div>
-      <div class="kname">${esc(p?p.name:(e.projectTitle||''))}</div>
-      <div class="kc2"><span class="kcust">${esc(c.name)}</span>${col&&col.k!==e.status?statusPill(e.status):''}</div>
+      <div class="kc1"><span class="kname">${esc(p?p.name:(e.projectTitle||''))}</span><span class="kval">${fmt0(tot.grandTotal)}</span></div>
+      <div class="kc2"><span class="kno">${esc(estRef(e))}</span><span class="kcust">${esc(c.name)}</span>${col&&col.k!==e.status?statusPill(e.status):''}</div>
     </button>`;};
   const focus=filterStatus==='closed'?'declined':filterStatus;
   const shown=focus==='all'?KCOLS:KCOLS.filter(c=>c.k===focus);
@@ -1413,7 +1418,7 @@ function renderMiddle(e){
     <div class="panel">
       ${isLocked(e)?`<div class="lockbanner"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.locked_banner)}<button class="tbtn small" onclick="openRevision(${e.id})">${esc(t.act_newrevision)}</button></div>`:''}
       <div class="dhead3">
-        <div class="idn"><h2>${esc(estRef(e))}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span>${e.projectTitle&&e.projectTitle!==e.no?`<div class="esttitle">${esc(e.projectTitle)}</div>`:''}</div>
+        <div class="idn"><h2>${esc(offerName(e))}</h2>${statusPill(e.status)}<span class="revbadge">${esc(t.rev_short)} ${e.revision||0}</span><div class="estref2">${esc(estRef(e))}</div></div>
         <div class="dbtns">
           <button class="tbtn" onclick="openEditEst(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
           <button class="tbtn" onclick="emailOffer(${e.id})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
