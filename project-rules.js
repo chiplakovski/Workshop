@@ -1,4 +1,4 @@
-// Pure Projects-module adapters, loaded by project-estimator-desktop.html and by the Node test suite
+// Pure Projects-module adapters, loaded by projects-desktop.html and by the Node test suite
 // (tests/project-rules.test.js) so both share exactly one implementation of these rules.
 (function(root){
   'use strict';

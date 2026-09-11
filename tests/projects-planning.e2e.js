@@ -146,7 +146,7 @@ async function main() {
   const page = await harness.context.newPage();
   const monitor = monitorPage(page, harness.baseUrl);
   try {
-    await page.goto(`${harness.baseUrl}/project-estimator-desktop.html`, { waitUntil: 'load' });
+    await page.goto(`${harness.baseUrl}/projects-desktop.html`, { waitUntil: 'load' });
     const project = await projectWorkflow(page);
     await page.goto(`${harness.baseUrl}/planning-desktop.html`, { waitUntil: 'load' });
     await planningWorkflow(page, project);

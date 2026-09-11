@@ -99,7 +99,7 @@ async function verifyCustomer(page) {
 async function openEstimateFromOpportunity(page, opportunityId) {
   await page.evaluate((id) => openOppDetail(id), opportunityId);
   await Promise.all([
-    page.waitForURL(/project-estimator-desktop\.html\?estimation=/, { timeout: 5000 }),
+    page.waitForURL(/estimations-desktop\.html\?estimation=/, { timeout: 5000 }),
     page.getByRole('button', { name: 'Open Estimation' }).click()
   ]);
   await page.waitForLoadState('load');
@@ -137,7 +137,7 @@ async function verifyIdempotentEstimateAndWin(page, baseUrl, opportunityId, esti
 
     await salesPage.evaluate((id) => openOppDetail(id), opportunityId);
     await Promise.all([
-      salesPage.waitForURL(/project-estimator-desktop\.html\?estimation=/, { timeout: 5000 }),
+      salesPage.waitForURL(/estimations-desktop\.html\?estimation=/, { timeout: 5000 }),
       salesPage.getByRole('button', { name: 'Open Estimation' }).click()
     ]);
     const count = await salesPage.evaluate((no) => WorkshopData.listEstimations().filter((estimation) => estimation.no === no).length, estimationNo);

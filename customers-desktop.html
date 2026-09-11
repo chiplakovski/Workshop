@@ -577,7 +577,7 @@ function renderTab(c){
     $("tabpanel").innerHTML=c.contacts.map(p=>contactCardHtml(p)).join("")||`<div class="empty3">${t.empty_contacts}</div>`;
   }else if(activeTab==='projects'){
     const ps=custProjects(c.id);
-    const rows=ps.map(p=>`<tr class="click" onclick="location.href='project-estimator-desktop.html'"><td class="pnum2">${esc(p.no)}</td><td>${esc(p.name)}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${esc(fmtD(p.deadline))}</td></tr>`).join("");
+    const rows=ps.map(p=>`<tr class="click" onclick="location.href='projects-desktop.html'"><td class="pnum2">${esc(p.no)}</td><td>${esc(p.name)}</td><td>${statusBadge(p.status)}</td><td class="rnum">${fmt(p.quotedValue)}</td><td class="rnum">${esc(fmtD(p.deadline))}</td></tr>`).join("");
     $("tabpanel").innerHTML=`<table class="stbl"><thead><tr><th>${t.th_no}</th><th>${t.th_name}</th><th>${t.th_status}</th><th>${t.th_value}</th><th>${t.th_deadline}</th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="empty3">${t.empty_projects}</td></tr>`}</tbody></table>`;
   }else if(activeTab==='quotes'){
     const rows=customerQuoteRows(c).map(q=>`<tr><td class="pnum2">${esc(q.no)}</td><td class="rnum">${esc(fmtD(q.date))}</td><td class="rnum">${fmt(q.value)}</td><td><span class="tagpill ${q.status==='accepted'?'g':q.status==='expired'?'r':'b'}">${t["qs_"+q.status]}</span></td></tr>`).join("");
@@ -637,7 +637,7 @@ function renderActionBar(c){
   return `<div class="actionbar">
     <button onclick="openNewCustomer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>${t.act_newcust}</button>
     <button onclick="openNewQuote(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5"/><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 13h6M9 17h4"/></svg>${t.act_newquote}</button>
-    <button onclick="location.href='project-estimator-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 15h3"/></svg>${t.act_newproj}</button>
+    <button onclick="location.href='projects-desktop.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 15h3"/></svg>${t.act_newproj}</button>
     <button onclick="openNewInvoice(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9 12h6M9 16h6"/></svg>${t.act_newinv}</button>
     <button onclick="openAddNote(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${t.act_newnote}</button>
     <button onclick="openUpload(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.9A5 5 0 0 1 6 5.3 6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 16H7a3 3 0 0 1-3-1.1z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></svg>${t.act_upload}</button>
@@ -812,7 +812,7 @@ function openNewQuote(id){
 }
 // Was pushing into c.quotes (a page-local array never read back by WorkshopData.upsertCustomer's
 // explicit field whitelist in syncCustomer()) - a new quote looked saved but vanished on reload.
-// WorkshopData.upsertEstimation() is the real backing function (same one project-estimator-desktop.html
+// WorkshopData.upsertEstimation() is the real backing function (same one estimations-desktop.html
 // itself uses); customerQuoteRows() above now derives the display live from it, so this only needs
 // to create the real record. 'sent' is a genuine Estimation status (matches the status this form
 // already claimed, unchanged) - this quote was just created and handed to the customer, not saved

@@ -92,12 +92,7 @@ async function estimationWorkflow(page) {
   assert.equal(quoteVisible, true, 'quote created in Customers is not visible to Estimations data');
   step('Estimations: sees the quote created by Customers');
 
-  // Estimating is one view of the Project / Estimator module, so the test enters it the way a user
-  // does rather than assuming the module opens there.
-  await page.locator('#viewtabs button[data-m="estimate"]').click();
-  await page.waitForTimeout(400);
-
-  // The view is project-first: every row is a project, and picking one is how you start pricing.
+  // The module is project-first: every row is a project, and picking one is how you start pricing.
   const rowCount = await page.locator('.estrow').count();
   assert.ok(rowCount > 0, 'the project list is empty');
   const listedProject = await page.locator('.estrow').first().getAttribute('data-project-no');
@@ -174,8 +169,6 @@ async function estimationWorkflow(page) {
   step('Estimations: pricing for a removed item is retired, not lost');
 
   await page.reload({ waitUntil: 'load' });
-  await page.locator('#viewtabs button[data-m="estimate"]').click();
-  await page.waitForTimeout(400);
   const restored = await page.evaluate((no) => {
     const local = ESTIMATIONS.find((item) => item.projectNo === no);
     if (local) { selectedId = local.id; renderAll(); }
@@ -194,7 +187,7 @@ async function main() {
   try {
     await page.goto(`${harness.baseUrl}/customers-desktop.html`, { waitUntil: 'load' });
     await customerWorkflow(page);
-    await page.goto(`${harness.baseUrl}/project-estimator-desktop.html`, { waitUntil: 'load' });
+    await page.goto(`${harness.baseUrl}/estimations-desktop.html`, { waitUntil: 'load' });
     await estimationWorkflow(page);
     monitor.assertClean();
     console.log('\nCustomers/Estimations browser E2E passed.');

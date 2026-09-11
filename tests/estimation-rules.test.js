@@ -1,4 +1,4 @@
-// Pure-helper tests for estimation-rules.js — the exact module both project-estimator-desktop.html's
+// Pure-helper tests for estimation-rules.js — the exact module both estimations-desktop.html's
 // pricing (computeTotals) and its customer-facing print sheet load, so a passing test here means
 // the printed offer and the calculated totals can never structurally disagree.
 'use strict';
