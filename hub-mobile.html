@@ -91,16 +91,16 @@
     <div class="hubtitle"><h1 data-i="welcome">Choose a module</h1><p data-i="welcomesub">Full access · all workshop tools</p></div>
 
     <div class="tiles">
+      <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/></svg></div>
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
+        <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
+      </div>
       
       <div class="tile" role="link" tabindex="0" onclick="location.href='customers-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="46" cy="38" r="18"/><path d="M14 100a32 32 0 0 1 64 0"/><circle cx="86" cy="46" r="13"/><path d="M76 100a24 24 0 0 1 40 0"/></svg></div>
         <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div><h3 data-i="m_customers">Customers</h3><p data-i="c_customers">Contacts & accounts</p></div>
-      </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
-        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/></svg></div>
-        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
-        <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='jobcard-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="28" y="26" width="54" height="70"/><rect x="45" y="19" width="20" height="13"/><path d="M38 50h34M38 63h34"/></svg></div>
@@ -199,7 +199,7 @@
   const T={
     sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
-      m_estim:"Kalkyler",c_estim:"Offerter & kostnad",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
+      m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
       m_store:"Lager",c_store:"Inventarie & delar",m_purchasing:"Inköp",c_purchasing:"Inköpsordrar",
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
@@ -208,7 +208,7 @@
       m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
     en:{role:"Admin",logout:"Log out",welcome:"Choose a module",welcomesub:"Full access · all workshop tools",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
-      m_estim:"Estimations",c_estim:"Quotes & costing",m_jobcard:"Jobcard",c_jobcard:"Work orders",
+      m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
       m_store:"Store",c_store:"Inventory & parts",m_purchasing:"Purchasing",c_purchasing:"Purchase orders",
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
@@ -217,7 +217,7 @@
       m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
     mk:{role:"Admin",logout:"Odjavi se",welcome:"Izberi modul",welcomesub:"Poln pristap · site alatki",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
-      m_estim:"Procenki",c_estim:"Ponudi i trošoci",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
+      m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
       m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_planning:"Planiranje",c_planning:"Raspored i kapacitet",
       m_store:"Magacin",c_store:"Inventar i delovi",m_purchasing:"Nabavki",c_purchasing:"Nabavni nalozi",
       m_suppliers:"Dobavuvači",c_suppliers:"Registar na dobavuvači",m_documents:"Dokumenti",c_documents:"Datoteki i šabloni",
