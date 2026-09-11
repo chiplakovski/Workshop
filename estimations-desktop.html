@@ -302,6 +302,9 @@
   .itemref{display:inline-block;font-family:var(--font-mono,var(--font-body));font-size:11px;letter-spacing:.04em;
     color:var(--c-tint);background:rgba(var(--c-accent-rgb),.14);border:1px solid rgba(var(--c-accent-rgb),.34);
     padding:2px 7px;margin-right:9px;vertical-align:middle;}
+  /* The reference states whether this item's calculation is still open or has been closed. */
+  .itemref.isopen{color:#ff9b9b;background:rgba(var(--c-danger-rgb),.13);border-color:rgba(var(--c-danger-rgb),.42);}
+  .itemref.islocked{color:var(--ok);background:rgba(var(--c-ok-rgb),.14);border-color:rgba(var(--c-ok-rgb),.45);}
   .itemsrc{margin-left:9px;font-size:10.5px;font-weight:500;letter-spacing:.03em;opacity:.55;text-transform:none;}
   .estnote{margin-bottom:12px;padding:11px 13px;font-size:12px;line-height:1.55;color:var(--steel-300);
     background:rgba(255,255,255,.03);border:1px solid var(--line);border-left:2px solid rgba(var(--c-accent-rgb),.6);}
@@ -705,7 +708,7 @@ const T={
   en:{role:"Admin",logout:"Log out",back_hub:"Hub",etitle:"Estimations",esub:"Quotes & costing",
     searchph:"Search projects, customers…",ei_record:"Record reference",newest:"New Estimation",
     f_all:"All",f_draft:"Draft",f_sent:"Sent",f_accepted:"Accepted",f_declined:"Declined",
-    unattached_note:"{n} estimate(s) are not attached to a project and cannot be priced here — attach them to a project first.",item_lock:"Lock",item_unlock:"Unlock",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Calculation downloaded — {f}",item_locked_msg:"{ref} is locked. Unlock it before changing its lines.",lock_title:"Lock this calculation?",lock_body:"Locks item {ref} and its {n} cost line(s). Nobody can change them until it is unlocked, and unlocking records who did it and why.",lock_total:"Item total",lock_confirm:"Lock item",lock_done:"{ref} locked",unlock_title:"Unlock this calculation?",unlock_body:"{ref} was locked by {by} on {at}. Unlocking reopens its cost lines for editing.",unlock_reason:"Reason for unlocking (required)",unlock_recorded:"Recorded automatically",unlock_confirm:"Unlock item",unlock_err_reason:"Give a reason — an agreed figure is not reopened without one.",itemhist_title:"Lock history",itemhist_empty:"This item has never been locked.",hist_locked_word:"Locked",hist_unlocked_word:"Unlocked",close_word:"Close",hist_item_locked:"Item {ref} locked",hist_item_unlocked:"Item {ref} unlocked",pr_itemsheet:"Item calculation",pr_locked:"Locked by",p_list:"Projects",p_list_hint:"pick one to price",n_items:"{n} items",no_items_short:"No items yet",no_items_body:"This project has no items yet. Items are created on the project itself — add them in Projects ({p}), then price them here.",retired_note:"{n} priced item(s) are no longer on the project — their pricing is kept but not counted:",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
+    unattached_note:"{n} estimate(s) are not attached to a project and cannot be priced here — attach them to a project first.",locked_prompt_title:"{ref} is locked",locked_prompt_body:"Locked by {by} on {at}. Its cost lines cannot change while it is locked. Unlock it and carry on with this change?",locked_prompt_no:"No, leave it locked",locked_prompt_yes:"Yes, unlock",item_lock:"Lock",item_unlock:"Unlock",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Calculation downloaded — {f}",item_locked_msg:"{ref} is locked. Unlock it before changing its lines.",lock_title:"Lock this calculation?",lock_body:"Locks item {ref} and its {n} cost line(s). Nobody can change them until it is unlocked, and unlocking records who did it and why.",lock_total:"Item total",lock_confirm:"Lock item",lock_done:"{ref} locked",unlock_title:"Unlock this calculation?",unlock_body:"{ref} was locked by {by} on {at}. Unlocking reopens its cost lines for editing.",unlock_reason:"Reason for unlocking (required)",unlock_recorded:"Recorded automatically",unlock_confirm:"Unlock item",unlock_err_reason:"Give a reason — an agreed figure is not reopened without one.",itemhist_title:"Lock history",itemhist_empty:"This item has never been locked.",hist_locked_word:"Locked",hist_unlocked_word:"Unlocked",close_word:"Close",hist_item_locked:"Item {ref} locked",hist_item_unlocked:"Item {ref} unlocked",pr_itemsheet:"Item calculation",pr_locked:"Locked by",p_list:"Projects",p_list_hint:"pick one to price",n_items:"{n} items",no_items_short:"No items yet",no_items_body:"This project has no items yet. Items are created on the project itself — add them in Projects ({p}), then price them here.",retired_note:"{n} priced item(s) are no longer on the project — their pricing is kept but not counted:",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",
     sum_total:"Total Estimations",sum_value:"Total Value (All)",
     edit:"Edit",duplicate:"Duplicate",print:"Print / PDF",
     st_draft:"Draft",st_review:"In Review",st_sent:"Sent",st_accepted:"Accepted",st_declined:"Declined",st_expired:"Expired",
@@ -774,7 +777,7 @@ const T={
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
     searchph:"Sök projekt, kunder…",ei_record:"Postreferens",newest:"Ny kalkyl",
     f_all:"Alla",f_draft:"Utkast",f_sent:"Skickad",f_accepted:"Accepterad",f_declined:"Nekad",
-    unattached_note:"{n} kalkyl(er) saknar projekt och kan inte prissättas här — koppla dem till ett projekt först.",item_lock:"Lås",item_unlock:"Lås upp",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Kalkyl nedladdad — {f}",item_locked_msg:"{ref} är låst. Lås upp innan raderna ändras.",lock_title:"Låsa denna kalkyl?",lock_body:"Låser post {ref} och dess {n} kostnadsrad(er). Ingen kan ändra dem förrän den låses upp, och upplåsning registrerar vem och varför.",lock_total:"Postsumma",lock_confirm:"Lås post",lock_done:"{ref} låst",unlock_title:"Låsa upp denna kalkyl?",unlock_body:"{ref} låstes av {by} den {at}. Upplåsning öppnar kostnadsraderna för redigering igen.",unlock_reason:"Anledning till upplåsning (krävs)",unlock_recorded:"Registreras automatiskt",unlock_confirm:"Lås upp post",unlock_err_reason:"Ange en anledning — en överenskommen siffra öppnas inte utan en.",itemhist_title:"Låshistorik",itemhist_empty:"Denna post har aldrig varit låst.",hist_locked_word:"Låst",hist_unlocked_word:"Upplåst",close_word:"Stäng",hist_item_locked:"Post {ref} låst",hist_item_unlocked:"Post {ref} upplåst",pr_itemsheet:"Postkalkyl",pr_locked:"Låst av",p_list:"Projekt",p_list_hint:"välj ett att prissätta",n_items:"{n} poster",no_items_short:"Inga poster ännu",no_items_body:"Projektet har inga poster ännu. Poster skapas på projektet — lägg till dem i Projekt ({p}) och prissätt dem sedan här.",retired_note:"{n} prissatt(a) post(er) finns inte längre på projektet — prissättningen behålls men räknas inte:",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
+    unattached_note:"{n} kalkyl(er) saknar projekt och kan inte prissättas här — koppla dem till ett projekt först.",locked_prompt_title:"{ref} är låst",locked_prompt_body:"Låst av {by} den {at}. Kostnadsraderna kan inte ändras medan den är låst. Låsa upp och fortsätta med ändringen?",locked_prompt_no:"Nej, låt den vara låst",locked_prompt_yes:"Ja, lås upp",item_lock:"Lås",item_unlock:"Lås upp",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Kalkyl nedladdad — {f}",item_locked_msg:"{ref} är låst. Lås upp innan raderna ändras.",lock_title:"Låsa denna kalkyl?",lock_body:"Låser post {ref} och dess {n} kostnadsrad(er). Ingen kan ändra dem förrän den låses upp, och upplåsning registrerar vem och varför.",lock_total:"Postsumma",lock_confirm:"Lås post",lock_done:"{ref} låst",unlock_title:"Låsa upp denna kalkyl?",unlock_body:"{ref} låstes av {by} den {at}. Upplåsning öppnar kostnadsraderna för redigering igen.",unlock_reason:"Anledning till upplåsning (krävs)",unlock_recorded:"Registreras automatiskt",unlock_confirm:"Lås upp post",unlock_err_reason:"Ange en anledning — en överenskommen siffra öppnas inte utan en.",itemhist_title:"Låshistorik",itemhist_empty:"Denna post har aldrig varit låst.",hist_locked_word:"Låst",hist_unlocked_word:"Upplåst",close_word:"Stäng",hist_item_locked:"Post {ref} låst",hist_item_unlocked:"Post {ref} upplåst",pr_itemsheet:"Postkalkyl",pr_locked:"Låst av",p_list:"Projekt",p_list_hint:"välj ett att prissätta",n_items:"{n} poster",no_items_short:"Inga poster ännu",no_items_body:"Projektet har inga poster ännu. Poster skapas på projektet — lägg till dem i Projekt ({p}) och prissätt dem sedan här.",retired_note:"{n} prissatt(a) post(er) finns inte längre på projektet — prissättningen behålls men räknas inte:",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",
     sum_total:"Totalt antal kalkyler",sum_value:"Totalt värde (alla)",
     edit:"Redigera",duplicate:"Duplicera",print:"Skriv ut / PDF",
     st_draft:"Utkast",st_review:"Under granskning",st_sent:"Skickad",st_accepted:"Accepterad",st_declined:"Nekad",st_expired:"Utgången",
@@ -843,7 +846,7 @@ const T={
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
     searchph:"Prebaraj proekti, klienti…",ei_record:"Referenca na zapis",newest:"Nova kalkulacija",
     f_all:"Site",f_draft:"Nacrt",f_sent:"Ispratena",f_accepted:"Prifatena",f_declined:"Odbiena",
-    unattached_note:"{n} procenk(i) nemaat proekt i ne možat da se procenat tuka — prvo povrzi gi so proekt.",item_lock:"Zakluči",item_unlock:"Otkluči",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Kalkulacijata e prevzemena — {f}",item_locked_msg:"{ref} e zaklučena. Otkluči ja pred da gi menuvaš redovite.",lock_title:"Da ja zaklučam ovaa kalkulacija?",lock_body:"Ja zaklučuva stavkata {ref} i nejzinite {n} redovi. Nikoj ne može da gi smeni dodeka ne se otkluči, a otkluèuvanjeto zapišuva koj i zošto.",lock_total:"Vkupno za stavkata",lock_confirm:"Zakluči stavka",lock_done:"{ref} e zaklučena",unlock_title:"Da ja otklučam ovaa kalkulacija?",unlock_body:"{ref} ja zakluči {by} na {at}. Otklučuvanjeto pak gi otvora redovite za izmena.",unlock_reason:"Pričina za otklučuvanje (zadolžitelno)",unlock_recorded:"Se zapišuva avtomatski",unlock_confirm:"Otkluči stavka",unlock_err_reason:"Vnesi pričina — dogovorena brojka ne se otvora bez nea.",itemhist_title:"Istorija na zaklučuvanje",itemhist_empty:"Ovaa stavka nikogaš ne bila zaklučena.",hist_locked_word:"Zaklučeno",hist_unlocked_word:"Otklučeno",close_word:"Zatvori",hist_item_locked:"Stavka {ref} zaklučena",hist_item_unlocked:"Stavka {ref} otklučena",pr_itemsheet:"Kalkulacija na stavka",pr_locked:"Zaklučena od",p_list:"Proekti",p_list_hint:"izberi eden za procenka",n_items:"{n} stavki",no_items_short:"Sè ušte nema stavki",no_items_body:"Ovoj proekt sè ušte nema stavki. Stavkite se kreiraat na samiot proekt — dodaj gi vo Proekti ({p}), pa procenkaj gi tuka.",retired_note:"{n} procenet(i) stavk(i) veḱe ne se na proektot — procenkata e začuvana no ne se broi:",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
+    unattached_note:"{n} procenk(i) nemaat proekt i ne možat da se procenat tuka — prvo povrzi gi so proekt.",locked_prompt_title:"{ref} e zaklučena",locked_prompt_body:"Ja zakluči {by} na {at}. Redovite ne možat da se menuvaat dodeka e zaklučena. Da ja otkluèam i da prodolžime so izmenata?",locked_prompt_no:"Ne, ostavi ja zaklučena",locked_prompt_yes:"Da, otkluči",item_lock:"Zakluči",item_unlock:"Otkluči",item_pdf:"PDF",item_excel:"Excel",item_excel_done:"Kalkulacijata e prevzemena — {f}",item_locked_msg:"{ref} e zaklučena. Otkluči ja pred da gi menuvaš redovite.",lock_title:"Da ja zaklučam ovaa kalkulacija?",lock_body:"Ja zaklučuva stavkata {ref} i nejzinite {n} redovi. Nikoj ne može da gi smeni dodeka ne se otkluči, a otkluèuvanjeto zapišuva koj i zošto.",lock_total:"Vkupno za stavkata",lock_confirm:"Zakluči stavka",lock_done:"{ref} e zaklučena",unlock_title:"Da ja otklučam ovaa kalkulacija?",unlock_body:"{ref} ja zakluči {by} na {at}. Otklučuvanjeto pak gi otvora redovite za izmena.",unlock_reason:"Pričina za otklučuvanje (zadolžitelno)",unlock_recorded:"Se zapišuva avtomatski",unlock_confirm:"Otkluči stavka",unlock_err_reason:"Vnesi pričina — dogovorena brojka ne se otvora bez nea.",itemhist_title:"Istorija na zaklučuvanje",itemhist_empty:"Ovaa stavka nikogaš ne bila zaklučena.",hist_locked_word:"Zaklučeno",hist_unlocked_word:"Otklučeno",close_word:"Zatvori",hist_item_locked:"Stavka {ref} zaklučena",hist_item_unlocked:"Stavka {ref} otklučena",pr_itemsheet:"Kalkulacija na stavka",pr_locked:"Zaklučena od",p_list:"Proekti",p_list_hint:"izberi eden za procenka",n_items:"{n} stavki",no_items_short:"Sè ušte nema stavki",no_items_body:"Ovoj proekt sè ušte nema stavki. Stavkite se kreiraat na samiot proekt — dodaj gi vo Proekti ({p}), pa procenkaj gi tuka.",retired_note:"{n} procenet(i) stavk(i) veḱe ne se na proektot — procenkata e začuvana no ne se broi:",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",
     sum_total:"Vkupno kalkulacii",sum_value:"Vkupna vrednost (site)",
     edit:"Uredi",duplicate:"Dupliciraj",print:"Pečati / PDF",
     st_draft:"Nacrt",st_review:"Vo pregled",st_sent:"Ispratena",st_accepted:"Prifatena",st_declined:"Odbiena",st_expired:"Istekla",
@@ -1330,13 +1333,26 @@ function lockStamp(){return todayISO()+' '+nowTime();}
 function currentUser(){return 'Aleksandar C.';}
 function getWorkItem(e,idx){return e&&e.workItems?e.workItems[idx]:null;}
 // Every route that changes an item's lines goes through this, so a locked item cannot be edited by
-// reaching a form directly. Returns false and says why when the item is closed.
-function guardItemEdit(e,idx){
+// reaching a form directly. A blocked action does not just fail: it asks whether to unlock, and the
+// action it interrupted is resumed once the unlock goes through.
+let pendingUnlockAction=null;
+function guardItemEdit(e,idx,resume){
   const wi=getWorkItem(e,idx);
   if(!wi)return false;
-  if(isItemLocked(wi)){toast(T[LANG].item_locked_msg.replace('{ref}',itemRef(e,wi.seq||idx+1)),'error');return false;}
-  return true;
+  if(!isItemLocked(wi))return true;
+  if(resume)openLockedPrompt(e.id,idx,resume);
+  else toast(T[LANG].item_locked_msg.replace('{ref}',itemRef(e,wi.seq||idx+1)),'error');
+  return false;
 }
+function openLockedPrompt(id,idx,resume){
+  const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi)return;
+  const t=T[LANG],ref=itemRef(e,wi.seq||idx+1),l=wi.lock||{};
+  pendingUnlockAction=resume||null;
+  showModal(`<h2>${esc(t.locked_prompt_title.replace('{ref}',ref))}</h2>
+    <p class="fsub">${esc(t.locked_prompt_body.replace('{by}',l.by||'—').replace('{at}',l.at||'—'))}</p>
+    <div class="fbtns"><button class="tbtn" onclick="cancelUnlockPrompt()">${esc(t.locked_prompt_no)}</button><button class="tbtn danger" onclick="openUnlockItem(${id},${idx},true)">${esc(t.locked_prompt_yes)}</button></div>`);
+}
+function cancelUnlockPrompt(){pendingUnlockAction=null;closeModal();}
 // Locking is an approval, so it asks first and says plainly what it commits to.
 function openLockItem(id,idx){
   const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi||!guardEdit(e))return;
@@ -1355,7 +1371,8 @@ function doLockItem(id,idx){
   toast(T[LANG].lock_done.replace('{ref}',ref),'ok');
 }
 // Unlocking an agreed figure always carries a reason; who and when are recorded automatically.
-function openUnlockItem(id,idx){
+function openUnlockItem(id,idx,keepPending){
+  if(!keepPending)pendingUnlockAction=null;
   const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi||!guardEdit(e))return;
   const t=T[LANG],ref=itemRef(e,wi.seq||idx+1),l=wi.lock||{};
   showModal(`<h2>${esc(t.unlock_title)}</h2>
@@ -1372,6 +1389,9 @@ function doUnlockItem(id,idx){
   wi.lock=unlockItem(wi.lock,by,at,reason);
   pushHistory(e,T[LANG].hist_item_unlocked.replace('{ref}',ref)+' — '+reason,by,at);
   syncEstimation(e);closeModal();renderAll();
+  // Resume the edit the lock interrupted, so unlocking does not cost the user their place.
+  const resume=pendingUnlockAction;pendingUnlockAction=null;
+  if(resume)resume();
 }
 // The lock trail for one item, read where the item is.
 function openItemHistory(id,idx){
@@ -1406,7 +1426,7 @@ function renderItemsTable(e){
         ?`<button class="ibtn warn" onclick="openUnlockItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></svg>${esc(t.item_unlock)}</button>`
         :`<button class="ibtn" onclick="openLockItem(${e.id},${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.item_lock)}</button>`}
     </span>`;
-    rows+=`<tr class="sectionrow ${itemLocked?'islocked':''}"><td colspan="${showCost?10:8}"><div class="secrow">${ref?`<span class="itemref">${esc(ref)}</span>`:''}<span class="secname">${esc(wi.desc.toUpperCase())}</span>${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}${wi.no&&!wi.isOption?` <span class="itemsrc">${esc(wi.no)}</span>`:''}${itemTools}</div>
+    rows+=`<tr class="sectionrow ${itemLocked?'islocked':''}"><td colspan="${showCost?10:8}"><div class="secrow">${ref?`<span class="itemref ${itemLocked?'islocked':'isopen'}">${esc(ref)}</span>`:''}<span class="secname">${esc(wi.desc.toUpperCase())}</span>${wi.previewOnly?` <span class="subtag" style="color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);">${esc(t.preview_only)}</span>`:''}${wi.no&&!wi.isOption?` <span class="itemsrc">${esc(wi.no)}</span>`:''}${itemTools}</div>
     </td></tr>`;
     let sIdx=1;let sectionSell=0;
     wi.lines.forEach((it,lIdx)=>{
@@ -1454,14 +1474,14 @@ function renderItemsTable(e){
 
 // ── work-item and line management: move/edit/duplicate/delete. All guarded against editing a locked estimate. ──
 function duplicateLine(id,wiIdx,lIdx){
-  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx))return;
+  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>duplicateLine(id,wiIdx,lIdx)))return;
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
   wi.lines.splice(lIdx+1,0,JSON.parse(JSON.stringify(line)));
   e.history.push({date:todayISO(),action:'Line duplicated: '+line.desc,by:'Aleksandar C.'});
   syncEstimation(e);renderAll();
 }
 function deleteLine(id,wiIdx,lIdx){
-  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx))return;
+  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>deleteLine(id,wiIdx,lIdx)))return;
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
   if(!confirm(T[LANG].confirm_delete_line.replace('{n}',line.desc)))return;
   wi.lines.splice(lIdx,1);
@@ -1469,7 +1489,7 @@ function deleteLine(id,wiIdx,lIdx){
   syncEstimation(e);renderAll();
 }
 function moveLine(id,wiIdx,lIdx,dir){
-  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx))return;
+  const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>moveLine(id,wiIdx,lIdx,dir)))return;
   const wi=e.workItems[wiIdx];if(!wi)return renderAll();
   const to=lIdx+dir;
   // Bounds-checking `to` alone does not guarantee lIdx itself is still valid (e.g. the array
@@ -1713,7 +1733,7 @@ function savePricingSettings(id){
 
 // Add and Edit share one form. lIdx is omitted for "add a new line", or the index of the line being edited.
 function openLineForm(id,wiIdx,lIdx){
-  const _e0=getEst(id);if(_e0&&!guardItemEdit(_e0,wiIdx))return;
+  const _e0=getEst(id);if(_e0&&!guardItemEdit(_e0,wiIdx,()=>openLineForm(id,wiIdx,lIdx)))return;
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   const wi=e.workItems[wiIdx];if(!wi)return;
   const editing=lIdx!==undefined&&lIdx!==null;
