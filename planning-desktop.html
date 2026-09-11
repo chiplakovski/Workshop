@@ -285,7 +285,7 @@
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▦</div><div><h2 data-i="ms_title">PLANNING</h2><small data-i="psub">Schedule & capacity</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarPlanning('overview')"><i>▦</i><span data-i="tab_overview">Planning Overview</span></button><button data-ms="ideas" onclick="sidebarPlanning('ideas')"><i>◉</i><span data-i="ms_nav_ideas">New Ideas</span></button><button data-ms="existing" onclick="sidebarPlanning('existing')"><i>▣</i><span data-i="sub_existing">Existing Projects</span></button><button data-ms="future" onclick="sidebarPlanning('future')"><i>↗</i><span data-i="sub_future">Future Projects</span></button><button data-ms="gantt" onclick="sidebarPlanning('gantt')"><i>▤</i><span data-i="tab_gantt">Gantt Chart</span></button><button data-ms="calendar" onclick="sidebarPlanning('calendar')"><i>□</i><span data-i="tab_calendar">Calendar</span></button><button data-ms="timeline" onclick="sidebarPlanning('timeline')"><i>↔</i><span data-i="tab_timeline">Timeline</span></button><button data-ms="workload" onclick="sidebarPlanning('workload')"><i>▥</i><span data-i="ms_nav_workload">Capacity / Workload</span></button><button data-ms="scenarios" onclick="sidebarPlanning('scenarios')"><i>◇</i><span data-i="tab_scenarios">Scenarios</span></button></nav><div class="ms-sidebox"><b data-i="ms_sidebox_title">Automatic planning</b><p data-i="ms_sidebox_desc">Projects, tasks, dependencies, milestones and resource demand update the schedule together.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="ms_role">Planning manager</small></div></div></aside>
@@ -309,7 +309,7 @@
 </div>
 
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
-<script>
+<script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const MSDAY=86400000;

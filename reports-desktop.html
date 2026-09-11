@@ -244,7 +244,7 @@
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <a class="skip" href="#main">Skip to reports content</a>
 
@@ -1038,7 +1038,7 @@
 
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script>
 <script src="workshop-forms.js"></script>
-<script>
+<script src="workshop-ui.js"></script><script>
 'use strict';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Purchasing data, saved report definitions and report configuration all now come from the shared

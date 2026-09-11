@@ -181,7 +181,7 @@
     .tt-head h3{font-size:21px;} .tt-feed .mtext{font-size:17px;} .tt-input input{font-size:18px;padding:14px 16px;}
     .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;padding:14px 18px;}
   }
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script><script src="workshop-forms.js"></script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script><script src="workshop-forms.js"></script></head><body>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
 <div class="topfull">
@@ -329,7 +329,7 @@
   </button>
 </div>
 
-<script>
+<script src="workshop-ui.js"></script><script>
   function combineModuleTiles(){
     [['m_planning','m_purchasing','Planning and purchasing']].forEach(([firstKey,secondKey,label])=>{
       const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-compact>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -157,7 +157,7 @@
   .themetoggle svg{width:14px;height:14px;color:var(--steel-400);}
   .themetoggle .cur{font-weight:600;letter-spacing:.04em;}
 
-</style>
+</style><link rel="stylesheet" href="workshop-ui.css">
 <script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script>
 </head>
 <body>
@@ -218,7 +218,7 @@
     <span class="cur" id="themeCur">Navy</span>
   </button>
 </div>
-<script>
+<script src="workshop-ui.js"></script><script>
   const T = {
     sv:{
       eyebrow:"Verkstadssystem",

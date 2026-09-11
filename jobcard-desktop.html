@@ -256,7 +256,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -303,7 +303,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script>
 <script src="jobcard-rules.js"></script>
-<script>
+<script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(n*100)/100;}

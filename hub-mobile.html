@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en" data-compact><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <title>Varmak — Hub (Mobile)</title><style>
@@ -78,7 +78,7 @@
   :root[data-theme="carbon"] .ember{background:#dbe9ff;box-shadow:0 0 7px 2px rgba(79,140,255,.95),0 0 17px 5px rgba(79,140,255,.42);}
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script><script src="workshop-forms.js"></script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script><script src="workshop-forms.js"></script></head><body>
 <div class="phone">
   <div class="inbg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
   <div class="scr">
@@ -185,7 +185,7 @@
   
 </div>
 
-<script>
+<script src="workshop-ui.js"></script><script>
   function combineModuleTiles(){
     [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning'],['m_store','m_purchasing','Store and purchasing']].forEach(([firstKey,secondKey,label])=>{
       const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');

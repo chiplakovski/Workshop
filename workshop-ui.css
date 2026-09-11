@@ -1,0 +1,69 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Shared UI layer: one type scale, one tooltip, one help panel.
+   Each module page carries its own copy of the design system, so the same
+   role had drifted to a different size in almost every one - module titles
+   ran 17-22px, table cells 10-14px, inputs 11.5-16px. The scale below is
+   the single answer for the roles that mean the same thing everywhere; a
+   module keeps its own sizes for anything that genuinely differs.
+   Loaded last, so it settles the roles it names and nothing else.
+   ───────────────────────────────────────────────────────────────────────── */
+:root{
+  --fs-module-title:22px;   /* the page's own name */
+  --fs-module-sub:12px;     /* the line under it */
+  --fs-table-head:9.5px;    /* column headings */
+  --fs-table-cell:12.5px;   /* the data itself */
+  --fs-field-label:11px;    /* form labels */
+  --fs-field-input:13px;    /* what is typed into them */
+  --fs-button:11.5px;
+}
+
+/* The mobile layouts and the login screen keep their own sizes - they are not
+   the same reading distance - so the scale applies to the desktop modules. */
+/* Each page names itself in a single h1, wrapped in its own header markup, so
+   the element is the hook rather than any one container class. */
+html:not([data-compact]) h1,
+html:not([data-compact]) .modhead .title h1,
+html:not([data-compact]) .modhead .ttl h1{font-size:var(--fs-module-title);}
+html:not([data-compact]) .ttl>div>p,html:not([data-compact]) .title>div>p{font-size:var(--fs-module-sub);}
+html:not([data-compact]) table thead th{font-size:var(--fs-table-head);}
+html:not([data-compact]) table tbody td{font-size:var(--fs-table-cell);}
+html:not([data-compact]) .frow label,html:not([data-compact]) .frow2 label,html:not([data-compact]) .frow3 label{font-size:var(--fs-field-label);}
+/* Every text input, select and textarea in the app carries .workshop-form-control
+   from the shared forms module, which is the one reliable hook for all of them. */
+html:not([data-compact]) .workshop-form-control{font-size:var(--fs-field-input);}
+html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
+
+/* ── Tooltip ──
+   Explains a control in place, after a short pause, so it never interrupts
+   someone who already knows what the button does. */
+.wtip{position:fixed;z-index:400;max-width:280px;padding:8px 11px;pointer-events:none;
+  font-family:var(--font-body,inherit);font-size:12px;line-height:1.5;
+  color:var(--ice,#e8eefc);background:var(--navy-800,#0f1a2e);
+  border:1px solid var(--line,rgba(255,255,255,.14));
+  box-shadow:0 14px 34px rgba(0,0,0,.5);opacity:0;transform:translateY(3px);
+  transition:opacity .13s ease,transform .13s ease;}
+.wtip.show{opacity:1;transform:translateY(0);}
+
+/* ── Help ──
+   One button per module, in its header, opening what the module is for. */
+.helpbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  width:30px;height:30px;flex:none;cursor:pointer;
+  background:none;border:1px solid var(--field-line,rgba(255,255,255,.14));
+  color:var(--steel-300,#9fb2cd);font-family:var(--font-heading,inherit);
+  font-size:14px;font-weight:700;transition:.15s;}
+.helpbtn:hover{border-color:rgba(var(--c-accent-rgb,74,144,255),.75);
+  color:var(--c-tint,#7fb0ff);background:rgba(var(--c-accent-rgb,74,144,255),.1);}
+.whelp{position:fixed;inset:0;z-index:380;display:none;align-items:flex-start;
+  justify-content:center;padding:60px 20px;background:rgba(4,10,20,.72);
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow-y:auto;}
+.whelp.show{display:flex;}
+.whelpcard{width:min(680px,100%);background:var(--navy-800,#0f1a2e);
+  border:1px solid var(--line,rgba(255,255,255,.14));padding:26px 28px;}
+.whelpcard h2{font-family:var(--font-heading,inherit);font-size:19px;font-weight:700;margin-bottom:4px;}
+.whelpcard .whsub{font-size:12px;color:var(--steel-400,#7f90ab);margin-bottom:18px;}
+.whelpcard h3{font-family:var(--font-heading,inherit);font-size:11px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--spark,#4a90ff);margin:18px 0 8px;}
+.whelpcard p,.whelpcard li{font-size:13px;line-height:1.65;color:var(--steel-200,#c6d3e8);}
+.whelpcard ul{margin:0 0 0 18px;}
+.whelpcard li{margin-bottom:6px;}
+.whelpfoot{display:flex;justify-content:flex-end;margin-top:22px;}

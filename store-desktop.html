@@ -32,7 +32,7 @@
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script>
 </head>
 <body>
 <div class="bg"><div class="gridlines"></div><div class="glow"></div><div id="embers"></div></div>
@@ -89,7 +89,7 @@ setLang('en');
 (function(){const box=$('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce&&box){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}})();
 </script>
-<script>
+<script src="workshop-ui.js"></script><script>
 (()=>{
   let shared={inventory:[],projects:[],movements:[],offcuts:[]};
   const money=n=>`${Number(n||0).toLocaleString('sv-SE')} kr`;

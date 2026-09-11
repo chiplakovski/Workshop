@@ -201,7 +201,7 @@
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
@@ -230,7 +230,7 @@
 </div>
 
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
-<script>
+<script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
 function initials(name){return name.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
