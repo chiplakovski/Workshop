@@ -6,7 +6,7 @@
 <title>Varmak AB — Workshop Access</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy-950:#04101f;
@@ -27,12 +27,11 @@
     --line:rgba(var(--line-rgb),0.16);
     --font-heading:'Sora',sans-serif;
     --font-body:'Inter',system-ui,sans-serif;
-    --ambient-glow:radial-gradient(circle,rgba(var(--spark-rgb),0.22),transparent 62%);
+    --ambient-glow:radial-gradient(circle,var(--glow-core),transparent 62%);
     --ember-core:var(--spark);
     --ember-glow:0 0 6px 1px rgba(var(--spark-rgb),0.8);
     --dot-glow:0 0 10px 1px rgba(var(--spark-rgb),0.9);
-    color-scheme:dark;
-  }
+    color-scheme:dark;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--c-tint:#cfe0ff;--field-line:rgba(185,198,218,0.24);--c-accent-rgb:74,144,255;}
   :root[data-theme="carbon"]{
     --navy-950:#020305;
     --navy-900:#06080c;
@@ -51,11 +50,11 @@
     --line-rgb:135,146,163;
     --font-heading:'Space Grotesk',sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
-    --ambient-glow:radial-gradient(circle,rgba(var(--spark-rgb),0.10),transparent 66%);
+    --ambient-glow:radial-gradient(circle,var(--glow-core),transparent 66%);
     --ember-core:#dbe9ff;
     --ember-glow:0 0 7px 2px rgba(var(--spark-rgb),0.95),0 0 17px 5px rgba(var(--spark-rgb),0.42);
-    --dot-glow:0 0 12px 2px rgba(var(--spark-rgb),1),0 0 24px 7px rgba(var(--spark-rgb),0.45);
-  }
+    --dot-glow:0 0 12px 2px rgba(var(--spark-rgb),1),0 0 24px 7px rgba(var(--spark-rgb),0.45);--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--c-tint:#dbe8ff;--field-line:rgba(170,180,196,0.24);--c-accent-rgb:79,140,255;}
+:root[data-theme="iris"]{--navy-950:#f1f3fb;--navy-900:#ffffff;--navy-900-rgb:255,255,255;--navy-800:#e9edf9;--navy-800-rgb:233,237,249;--navy-brand:#4b49ac;--navy-brand-rgb:75,73,172;--steel-400:#5f6889;--steel-300:#4e5573;--steel-300-rgb:75,73,172;--spark:#4b49ac;--spark-rgb:75,73,172;--accent-tint:#3b39a0;--ice:#191d3d;--line-rgb:75,73,172;--line:rgba(75,73,172,0.16);--font-heading:'Public Sans',system-ui,sans-serif;--font-body:'Public Sans',system-ui,sans-serif;--ambient-glow:radial-gradient(circle,rgba(75,73,172,0.07),transparent 62%);--ember-core:var(--spark);--ember-glow:0 0 6px 1px rgba(75,73,172,0.45);--dot-glow:0 0 10px 1px rgba(75,73,172,0.45);color-scheme:light;--lift-008:rgba(255,255,255,.35);--lift-015:rgba(255,255,255,.45);--lift-02:rgba(255,255,255,.55);--lift-025:rgba(255,255,255,.62);--lift-03:rgba(255,255,255,.7);--lift-033:rgba(255,255,255,.74);--lift-035:rgba(255,255,255,.78);--lift-04:rgba(255,255,255,.86);--lift-045:rgba(255,255,255,.93);--lift-05:#ffffff;--lift-06:rgba(75,73,172,.05);--lift-08:rgba(75,73,172,.07);--lift-10:rgba(75,73,172,.09);--lift-12:rgba(75,73,172,.11);--lift-16:rgba(75,73,172,.14);--lift-18:rgba(75,73,172,.16);--lift-28:rgba(75,73,172,.24);--shade-12:rgba(75,73,172,.05);--shade-16:rgba(75,73,172,.07);--shade-18:rgba(75,73,172,.08);--shade-35:rgba(75,73,172,.10);--shade-40:rgba(75,73,172,.12);--shade-45:rgba(75,73,172,.13);--shade-50:rgba(75,73,172,.15);--shade-55:rgba(75,73,172,.17);--shade-60:rgba(75,73,172,.19);--sunken:#e9edf9;--nav-on-bg:#4b49ac;--on-accent:#2e2c86;--on-danger:#b23a40;--tint-danger:#c0343b;--tint-warn:#7a4f10;--tint-est:#9a4f14;--tint-info:#3b39a0;--tint-ok:#0b6b4d;--nav-on-icon:#ffffff;--bg-glow0:rgba(152,189,255,0.18);--bg-glow1:rgba(152,189,255,0.18);--bg-glow2:rgba(121,120,233,0.09);--nav-on-fg:#ffffff;--c-tint:#3b39a0;--field-line:rgba(75,73,172,0.24);--c-accent-rgb:75,73,172;}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{
@@ -116,11 +115,11 @@
 
   .signin{display:inline-flex;align-items:center;gap:14px;padding:15px 26px;border-radius:0;cursor:pointer;
     font-family:var(--font-heading);font-size:15px;font-weight:600;letter-spacing:0.01em;color:var(--ice);
-    background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));
+    background:linear-gradient(180deg,var(--lift-08),var(--lift-03));
     border:1px solid rgba(var(--steel-300-rgb),0.28);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-    box-shadow:0 10px 40px rgba(var(--navy-brand-rgb),0.5),inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow:0 10px 40px rgba(var(--navy-brand-rgb),0.5),inset 0 1px 0 var(--lift-12);
     transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;}
-  .signin:hover{transform:translateY(-2px);border-color:rgba(var(--spark-rgb),0.7);box-shadow:0 16px 50px rgba(var(--spark-rgb),0.4),inset 0 1px 0 rgba(255,255,255,0.18);}
+  .signin:hover{transform:translateY(-2px);border-color:rgba(var(--spark-rgb),0.7);box-shadow:0 16px 50px rgba(var(--spark-rgb),0.4),inset 0 1px 0 var(--lift-18);}
   .signin .gwrap{width:26px;height:26px;border-radius:0;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
   .hint{margin-top:22px;font-size:12px;color:var(--steel-400);letter-spacing:0.03em;display:flex;align-items:center;gap:8px;}
   .hint svg{opacity:0.7;}
@@ -144,7 +143,7 @@
   .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
   .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
   .langc.open .langtoggle .chev{transform:rotate(180deg);}
-  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--navy-900-rgb),.96);border:1px solid rgba(var(--line-rgb),0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--navy-900-rgb),.96);border:1px solid rgba(var(--line-rgb),0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
   .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
   .langmenu button:hover{background:rgba(var(--spark-rgb),.12);color:var(--ice);}
@@ -158,7 +157,7 @@
   .themetoggle .cur{font-weight:600;letter-spacing:.04em;}
 
 </style><link rel="stylesheet" href="workshop-ui.css">
-<script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon')document.documentElement.setAttribute('data-theme','carbon');}catch(e){}})();</script>
+<script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body>
 <div class="stage">
@@ -302,16 +301,21 @@
     document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 
   (function(){
-    function getTheme(){try{return localStorage.getItem('varmak.theme')||'navy';}catch(e){return 'navy';}}
+    // Navy and Carbon are dark; Iris is the light one. The button cycles the three in order.
+    var THEMES=[{id:'navy',label:'Navy'},{id:'carbon',label:'Carbon'},{id:'iris',label:'Iris'}];
+    function indexOf(v){for(var i=0;i<THEMES.length;i++){if(THEMES[i].id===v)return i;}return 0;}
+    function getTheme(){try{return THEMES[indexOf(localStorage.getItem('varmak.theme'))].id;}catch(e){return 'navy';}}
     function applyTheme(v){
-      document.documentElement.setAttribute('data-theme',v==='carbon'?'carbon':'navy');
-      var cur=document.getElementById('themeCur');if(cur)cur.textContent=v==='carbon'?'Carbon':'Navy';
-      var btn=document.getElementById('themeToggle');if(btn)btn.setAttribute('aria-pressed',v==='carbon'?'true':'false');
+      var th=THEMES[indexOf(v)];
+      if(th.id==='navy')document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme',th.id);
+      var cur=document.getElementById('themeCur');if(cur)cur.textContent=th.label;
+      var btn=document.getElementById('themeToggle');if(btn){btn.setAttribute('aria-pressed',th.id==='navy'?'false':'true');btn.setAttribute('title','Color theme: '+th.label+' — click for the next one');}
     }
     function setTheme(v){try{localStorage.setItem('varmak.theme',v);}catch(e){} applyTheme(v);}
     applyTheme(getTheme());
     var toggle=document.getElementById('themeToggle');
-    if(toggle)toggle.addEventListener('click',function(){setTheme(getTheme()==='carbon'?'navy':'carbon');});
+    if(toggle)toggle.addEventListener('click',function(){setTheme(THEMES[(indexOf(getTheme())+1)%THEMES.length].id);});
   })();
 </script>
 </body>
