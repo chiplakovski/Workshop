@@ -157,11 +157,14 @@
   function mountHelp(){
     if(!HELP[moduleKey()])return;
     if(document.querySelector('.helpbtn'))return;
-    // Every module names itself in an h1, but each page wraps that in its own
-    // header markup, so the h1 is the hook rather than any one container class.
-    var h1=document.querySelector('h1');
-    if(!h1)return;
-    var head=h1.closest('.modhead,.hubtitle,header,.pheader,.main-head,.brand,.title,.heading,.ttl')||h1.parentElement;
+    // A page can name the place itself; otherwise every module names itself in an h1, and since
+    // each page wraps that in its own header markup the h1 is the hook, not a container class.
+    var head=document.querySelector('[data-help-slot]');
+    if(!head){
+      var h1=document.querySelector('h1');
+      if(!h1)return;
+      head=h1.closest('.modhead,.hubtitle,header,.pheader,.main-head,.brand,.title,.heading,.ttl')||h1.parentElement;
+    }
     if(!head)return;
     var b=document.createElement('button');
     b.type='button';b.className='helpbtn';b.textContent='?';

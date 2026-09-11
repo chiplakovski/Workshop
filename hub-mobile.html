@@ -33,7 +33,6 @@
   .who .out{margin-left:auto;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 11px;font-size:11.5px;cursor:pointer;font-family:var(--font-body);}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .hubtitle{margin-bottom:14px;} .hubtitle h1{font-family:var(--font-heading);font-weight:600;font-size:18px;} .hubtitle p{font-size:11px;color:var(--steel-400);margin-top:2px;}
 
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:80px;}
   .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:118px;overflow:hidden;
@@ -87,9 +86,7 @@
       <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Marieholm</div></div>
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
     </div>
-    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
-
-    <div class="hubtitle"><h1 data-i="welcome">Choose a module</h1><p data-i="welcomesub">Full access · all workshop tools</p></div>
+    <div class="who" data-help-slot><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
 
     <div class="tiles">
       <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
@@ -198,7 +195,7 @@
   }
   combineModuleTiles();
   const T={
-    sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
+    sv:{role:"Admin",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
       m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
@@ -207,7 +204,7 @@
       m_reports:"Rapporter",c_reports:"Analys & insikter",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhål",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
-    en:{role:"Admin",logout:"Log out",welcome:"Choose a module",welcomesub:"Full access · all workshop tools",
+    en:{role:"Admin",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
@@ -216,7 +213,7 @@
       m_reports:"Reports",c_reports:"Analytics & insights",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
-    mk:{role:"Admin",logout:"Odjavi se",welcome:"Izberi modul",welcomesub:"Poln pristap · site alatki",
+    mk:{role:"Admin",logout:"Odjavi se",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
       m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
       m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_planning:"Planiranje",c_planning:"Raspored i kapacitet",
