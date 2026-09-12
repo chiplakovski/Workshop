@@ -108,6 +108,63 @@ async function hoursWorkflow(page, jobcard) {
   assert.equal(state.usage.meterAfter - state.usage.meterBefore, LOGGED_HOURS);
   step('Hours → Jobcards/Equipment: one save updates labour, operation, and machine usage');
 
+  // Only projects with an open jobcard are offered: hours are logged against a jobcard, so a project
+  // without one is not a choice a person can act on.
+  const offered = await page.evaluate(() => {
+    const open = new Set((WorkshopData.listJobcards() || [])
+      .filter((j) => !j.archived && !['completed', 'closed', 'cancelled'].includes(j.status))
+      .map((j) => j.projectNo));
+    const listed = [...document.querySelectorAll('#project option')].map((o) => o.value).filter(Boolean);
+    return { listed, withoutJobcard: listed.filter((no) => !open.has(no)) };
+  });
+  assert.ok(offered.listed.length > 0, 'the project list must offer the projects that have work open');
+  assert.deepEqual(offered.withoutJobcard, [], 'a project with no open jobcard must not be offered');
+  step('Hours: only projects with an open jobcard can be picked');
+
+  // A machine that was used but never linked to the jobcard is attached on save, through the same
+  // assignEquipment() call the Jobcard module makes - the safety gate still decides.
+  const spare = await page.evaluate((used) => {
+    const jc = WorkshopData.listJobcards().find((j) => j.no === document.querySelector('#item').selectedOptions[0].dataset.jobcard);
+    const onJob = new Set((jc.machines || []).map((m) => m.equipmentId));
+    const free = (WorkshopData.getEquipment() || []).find((e) => {
+      if (onJob.has(e.equipmentId) || e.equipmentId === used) return false;
+      const gate = WorkshopData.getEquipmentSafetyGate(e.equipmentId, { requirePreUseCheck: true, jobcardNo: jc.no, projectNo: jc.projectNo });
+      return JobcardEquipmentRules.canAddEquipmentToJobcard(e, jc.machines || [], jc.no, gate).allowed;
+    });
+    return free ? { equipmentId: free.equipmentId, jobcard: jc.no } : null;
+  }, EQUIPMENT_ID);
+
+  if (spare) {
+    await page.locator('#hours').fill('2');
+    await page.locator('#equipList .eqsel').selectOption(spare.equipmentId);
+    await page.locator('#equipList .eqhrs').fill('1');
+    await page.locator('#matList .matname').fill('E2E consumable');
+    await page.locator('#matList .matqty').fill('4');
+    await page.locator('#matList .matunit').fill('pcs');
+    await page.locator('#saveEntry').click();
+    await page.waitForTimeout(200);
+    await page.locator('.wask .waskyes').click();
+    await page.waitForTimeout(150);
+
+    const linked = await page.evaluate(({ no, equipmentId }) => {
+      const jc = WorkshopData.findJobcard(no);
+      const eq = WorkshopData.getEquipment().find((e) => e.equipmentId === equipmentId);
+      return {
+        onJobcard: (jc.machines || []).some((m) => m.equipmentId === equipmentId),
+        assignedTo: eq.assignedJobcard,
+        usedHere: (eq.usageHistory || []).some((u) => u.jobcard === no),
+        material: (jc.materials || []).find((m) => m.description === 'E2E consumable')
+      };
+    }, { no: spare.jobcard, equipmentId: spare.equipmentId });
+    assert.equal(linked.onJobcard, true, 'a machine used in Hours must end up on the jobcard');
+    assert.equal(linked.assignedTo, spare.jobcard, 'and assigned to it in the equipment register');
+    assert.equal(linked.usedHere, true, 'with its usage logged against the jobcard');
+    assert.ok(linked.material, 'material used in Hours must reach the jobcard');
+    assert.equal(linked.material.issued, 4, 'with the quantity that was consumed');
+    assert.equal(linked.material.unit, 'pcs');
+    step('Hours → Jobcards: an unlinked machine is attached and material lands on the jobcard');
+  }
+
   await page.reload({ waitUntil: 'load' });
   const restored = await page.evaluate(({ no, equipmentId, operationName }) => {
     const hour = WorkshopData.get().hours.find((item) => item.jobcard === no && item.operation === operationName);

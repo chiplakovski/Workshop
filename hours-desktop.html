@@ -56,6 +56,9 @@
   .est b{font-family:var(--font-heading);font-weight:600;}
   .est.warn{background:rgba(var(--c-est-rgb),.12);border-color:rgba(var(--c-est-rgb),.4);color:var(--tint-est);}
   .eqrow{display:grid;grid-template-columns:1fr 96px 38px;gap:8px;margin-bottom:8px;}
+  /* A material row carries a unit as well as a quantity, so it needs the extra column. */
+  .eqrow.matrow{grid-template-columns:1fr 84px 70px 38px;}
+  @media(max-width:560px){.eqrow.matrow{grid-template-columns:1fr 64px 56px 34px;gap:6px;}}
   .eqrow .eqdel{background:transparent;border:1px solid var(--field-line);color:var(--steel-400);cursor:pointer;font-size:16px;line-height:1;transition:.15s;}
   .eqrow .eqdel:hover{border-color:var(--c-danger);color:var(--tint-danger);}
   .addeq{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px dashed var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:9px 12px;cursor:pointer;transition:.15s;}
@@ -235,19 +238,19 @@
   // implementation of "is this equipment currently held by this jobcard" in the app.
   const {resolveLogTimeEquipment}=JobcardEquipmentRules;
   const T={
-    sv:{back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",safetytitle:"Säkerhetsinformation",safetybody:"Platshållare — lägg till verkstadens säkerhetsregler, obligatorisk skyddsutrustning, maskinspecifika varningar och nödkontakter här.",locale:"sv-SE",
+    sv:{noopenjobs:"Inget projekt har ett öppet jobbkort",eq_onjob:"På detta jobbkort",eq_attach:"Koppla från verkstaden",eq_attached:"Kopplad till jobbkortet: {list}",mat_logged:"{n} materialrad(er) noterade på {jc}",unit:"Enhet",back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",safetytitle:"Säkerhetsinformation",safetybody:"Platshållare — lägg till verkstadens säkerhetsregler, obligatorisk skyddsutrustning, maskinspecifika varningar och nödkontakter här.",locale:"sv-SE",
       wholejobcard:"(helt jobbkort)",noitems:"Inga jobbkort hittades för detta projekt",noeqlinked:"Ingen utrustning kopplad till detta jobbkort ännu",
       err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
       eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
       eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
       eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad."},
-    en:{back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",safetytitle:"Safety information",safetybody:"Placeholder — add workshop safety rules, required PPE, machine-specific warnings and emergency contacts here.",locale:"en-GB",
+    en:{noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",safetytitle:"Safety information",safetybody:"Placeholder — add workshop safety rules, required PPE, machine-specific warnings and emergency contacts here.",locale:"en-GB",
       wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
       err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
       eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
       eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
       eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved."},
-    mk:{back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",safetytitle:"Bezbednosni informacii",safetybody:"Placeholder — dodadi gi bezbednosnite pravila na rabotilnicata, potrebnata zaštitna oprema, predupreduvanja za mašinite i itni kontakti tuka.",locale:"mk",
+    mk:{noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",safetytitle:"Bezbednosni informacii",safetybody:"Placeholder — dodadi gi bezbednosnite pravila na rabotilnicata, potrebnata zaštitna oprema, predupreduvanja za mašinite i itni kontakti tuka.",locale:"mk",
       wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
       err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
       eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
@@ -267,10 +270,19 @@
   // elsewhere now appears in this dropdown without a full reload. Resets to the placeholder option
   // first (rather than appending again) so a repeat call never duplicates the list; preserves the
   // current selection across the refresh so a user mid-entry isn't silently reset.
+  // Hours are logged against a jobcard, so a project with no open jobcard is not a choice - it was
+  // one of eleven rows that led to "no items" on ten of them.
+  function openJobcards(){
+    return (WorkshopData.listJobcards()||[])
+      .filter(j=>!j.archived&&!['completed','closed','cancelled'].includes(j.status));
+  }
   function populateProjects(){
-    const prevValue=proj.value;
-    proj.innerHTML='<option value="">—</option>';
-    (WorkshopData.listProjects()||[]).forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+    const t=T[current],prevValue=proj.value;
+    const open=new Set(openJobcards().map(j=>j.projectNo));
+    const list=(WorkshopData.listProjects()||[]).filter(p=>open.has(p.no));
+    proj.innerHTML='';
+    const ph=document.createElement('option');ph.value='';ph.textContent=list.length?'—':t.noopenjobs;proj.appendChild(ph);
+    list.forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
     if([...proj.options].some(o=>o.value===prevValue))proj.value=prevValue;
   }
   populateProjects();
@@ -298,7 +310,7 @@
     updateEst();refreshEquipRows();
   }
   proj.addEventListener('change',loadItems);
-  item.addEventListener('change',()=>{updateEst();refreshEquipRows();});document.getElementById('hours').addEventListener('input',updateEst);
+  item.addEventListener('change',()=>{updateEst();refreshEquipRows();refreshMatOptions();});document.getElementById('hours').addEventListener('input',updateEst);
   function updateEst(){const chip=document.getElementById('estChip'),val=document.getElementById('estVal');const sel=item.options[item.selectedIndex];
     if(sel&&sel.dataset.est){chip.style.display='inline-flex';val.textContent=sel.dataset.est+' h';const h=parseFloat(document.getElementById('hours').value||0);chip.classList.toggle('warn',h>parseFloat(sel.dataset.est));}else chip.style.display='none';}
   // Equipment rows may only offer equipment already linked to the SELECTED item's Jobcard (never
@@ -308,12 +320,44 @@
     if(!jcNo)return null;
     return (WorkshopData.listJobcards()||[]).find(j=>j.no===jcNo)||null;
   }
+  // A machine already on the jobcard can simply be logged. One that is not is still offered - the
+  // plasma cutter you actually used is not absent from the workshop just because nobody linked it
+  // first - and saving attaches it through exactly the call the Jobcard module makes. Equipment the
+  // safety gate refuses is shown with its reason and cannot be picked, rather than being hidden.
   function populateEqSelect(sel){
     const t=T[current];const prev=sel.value;sel.innerHTML='';
-    const jc=selectedJobcard();const linked=jc?(jc.machines||[]).filter(m=>m.equipmentId):[];
-    const ph=document.createElement('option');ph.value='';ph.textContent=linked.length?t.eqph:t.noeqlinked;sel.appendChild(ph);
-    linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.equipmentId} — ${m.name}`;sel.appendChild(o);});
-    if(linked.some(m=>m.equipmentId===prev))sel.value=prev;
+    const jc=selectedJobcard();
+    const linked=jc?(jc.machines||[]).filter(m=>m.equipmentId):[];
+    const ph=document.createElement('option');ph.value='';ph.textContent=jc?t.eqph:t.noeqlinked;sel.appendChild(ph);
+    if(linked.length){
+      const g=document.createElement('optgroup');g.label=t.eq_onjob;
+      linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.equipmentId} — ${m.name}`;g.appendChild(o);});
+      sel.appendChild(g);
+    }
+    if(jc){
+      const onJob=new Set(linked.map(m=>m.equipmentId));
+      const rest=(WorkshopData.getEquipment()||[]).filter(e=>!onJob.has(e.equipmentId));
+      if(rest.length){
+        const g=document.createElement('optgroup');g.label=t.eq_attach;
+        rest.forEach(e=>{
+          const gate=WorkshopData.getEquipmentSafetyGate(e.equipmentId,{requirePreUseCheck:true,jobcardNo:jc.no,projectNo:jc.projectNo});
+          const d=JobcardEquipmentRules.canAddEquipmentToJobcard(e,jc.machines||[],jc.no,gate);
+          const o=document.createElement('option');o.value=e.equipmentId;
+          o.textContent=`${e.equipmentId} — ${e.name}`+(d.allowed?'':` · ${eqReasonShort(d,gate,e)}`);
+          o.disabled=!d.allowed;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      }
+    }
+    if([...sel.options].some(o=>o.value===prev&&!o.disabled))sel.value=prev;
+  }
+  // The decision says why; which jobcard holds the equipment is on the equipment record itself.
+  function eqReasonShort(decision,gate,eq){
+    const t=T[current];
+    if(decision.reasonCode==='ASSIGNED_ELSEWHERE')return tpl(t.eq_assignedelsewhere,{jc:(eq&&eq.assignedJobcard)||'—'});
+    if(decision.reasonCode==='BLOCKED')return (gate&&gate.reasons||[]).join('; ')||t.eq_blocked;
+    return t.eq_blocked;
   }
   function refreshEquipRows(){document.querySelectorAll('#equipList .eqsel').forEach(populateEqSelect);}
   const equipList=document.getElementById('equipList');
@@ -324,11 +368,26 @@
     row.append(sel,hrs,del);equipList.appendChild(row);populateEqSelect(sel);}
   document.getElementById('addEq').addEventListener('click',addEqRow);
   const matList=document.getElementById('matList');
-  function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
+  // The jobcard already lists the material the job planned for, so typing here offers those lines
+  // first: what is logged then ticks off a planned line rather than inventing a second record of it.
+  function matListId(){return 'matopts';}
+  function refreshMatOptions(){
+    let dl=document.getElementById(matListId());
+    if(!dl){dl=document.createElement('datalist');dl.id=matListId();document.body.appendChild(dl);}
+    const jc=selectedJobcard();dl.innerHTML='';
+    (jc&&jc.materials||[]).forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m.code?`${m.code} — ${m.description||''}`.trim():(m.description||'');
+      dl.appendChild(o);
+    });
+  }
+  function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow matrow';
     const name=document.createElement('input');name.className='fld matname';name.type='text';name.placeholder=t.matph;
+    name.setAttribute('list',matListId());
     const qty=document.createElement('input');qty.className='fld matqty';qty.type='number';qty.step='0.1';qty.min='0';qty.placeholder=t.qty;
+    const unit=document.createElement('input');unit.className='fld matunit';unit.type='text';unit.placeholder=t.unit;
     const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove material');del.textContent='×';del.onclick=()=>row.remove();
-    row.append(name,qty,del);matList.appendChild(row);}
+    row.append(name,qty,unit,del);matList.appendChild(row);refreshMatOptions();}
   document.getElementById('addMat').addEventListener('click',addMatRow);
   function refreshEqLang(){const t=T[current];refreshEquipRows();document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
     document.querySelectorAll('.matname').forEach(n=>n.placeholder=t.matph);document.querySelectorAll('.matqty').forEach(q=>q.placeholder=t.qty);}
@@ -345,7 +404,7 @@
       hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,
       worker:document.getElementById('whoName').textContent,
       equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({equipmentId:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.equipmentId||x.hours),
-      materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)
+      materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value,unit:row.querySelector('.matunit')?.value})).filter(x=>x.name||x.qty)
     };
   }
   function tpl(str,vals){return String(str||'').replace(/\{(\w+)\}/g,(m,k)=>vals&&vals[k]!=null?vals[k]:'');}
@@ -373,11 +432,58 @@
   // authoritative Equipment Safety Gate BEFORE committing anything, then log equipment usage via
   // WorkshopData.logEquipmentUsage() BEFORE labour hours via logHours() — if any row is blocked,
   // neither equipment usage nor labour hours are recorded. No equipment rows simply logs labour hours.
+  // Matching is by the jobcard's own code or description, so "SS-SHT-304-2.0 — AISI 304 sheet 2 mm"
+  // picked from the list lands on that line rather than beside it.
+  function postMaterialsToJobcard(jc,rows){
+    const use=(rows||[]).filter(r=>r&&String(r.name||'').trim()&&Number(r.qty)>0);
+    if(!use.length)return 0;
+    const mats=(jc.materials||[]).map(m=>Object.assign({},m));
+    use.forEach(r=>{
+      const typed=String(r.name).trim().toLowerCase();
+      const hit=mats.find(m=>{
+        const code=String(m.code||'').toLowerCase(),desc=String(m.description||'').toLowerCase();
+        return (code&&typed.startsWith(code))||(desc&&typed===desc)||(code&&typed===code);
+      });
+      const qty=Number(r.qty)||0;
+      if(hit){
+        hit.issued=(Number(hit.issued)||0)+qty;
+        const req=Number(hit.required)||0;
+        hit.status=req&&hit.issued>=req?'issued':(hit.issued>0?'partial':hit.status);
+      }else{
+        mats.push({code:'',description:String(r.name).trim(),unit:String(r.unit||'').trim()||'EA',
+          required:0,reserved:0,issued:qty,status:'issued',spec:'',grade:'',dimension:'',location:'',heat:'',certificate:''});
+      }
+    });
+    WorkshopData.updateJobcard(jc.no,{materials:mats});
+    jc.materials=mats;
+    return use.length;
+  }
   function saveHours(reset){
     const entry=collectHours();const hours=Number(entry.hours);
     if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){wAlert(T[current].err_select);return false;}
     const jc=(WorkshopData.listJobcards()||[]).find(j=>j.no===entry.jobcard);
     if(!jc){wAlert(T[current].err_jobcard_missing);return false;}
+
+    // A machine used but not yet on the jobcard is attached first, through the same two calls the
+    // Jobcard module makes - assignEquipment() decides, and the link is written only if it succeeds.
+    // The safety gate is never bypassed: a refused assignment stops the whole save, so neither
+    // equipment usage nor labour hours are recorded against a machine that may not be run.
+    const attached=[];
+    for(const row of entry.equipment){
+      if(!row.equipmentId)continue;
+      if((jc.machines||[]).some(m=>m.equipmentId===row.equipmentId))continue;
+      const eq=(WorkshopData.getEquipment()||[]).find(e=>e.equipmentId===row.equipmentId);
+      if(!eq){wAlert(equipBlockMessage({code:'EQUIPMENT_MISSING'}));return false;}
+      const gate=WorkshopData.getEquipmentSafetyGate(eq.equipmentId,{requirePreUseCheck:true,jobcardNo:jc.no,projectNo:jc.projectNo});
+      const decision=JobcardEquipmentRules.canAddEquipmentToJobcard(eq,jc.machines||[],jc.no,gate);
+      if(!decision.allowed){wAlert(eqReasonShort(decision,gate,eq));return false;}
+      const res=WorkshopData.assignEquipment(eq.equipmentId,{project:jc.projectNo,jobcard:jc.no,worker:entry.worker,assignedBy:entry.worker});
+      if(res&&res.error){wAlert(equipBlockMessage(res));return false;}
+      jc.machines=(jc.machines||[]).concat([{equipmentId:eq.equipmentId,name:eq.name,plannedUsage:0}]);
+      WorkshopData.updateJobcard(jc.no,{machines:jc.machines});
+      WorkshopData.recordJobcardActivity(jc.no,{action:`Equipment linked from Hours: ${eq.equipmentId} — ${eq.name}`});
+      attached.push(eq.equipmentId);
+    }
 
     const toLog=[];
     for(const row of entry.equipment){
@@ -404,9 +510,16 @@
       const op=(jc.operations||[]).find(o=>o.id===entry.operationId);
       WorkshopData.updateJobcardOperation(jc.no,entry.operationId,{loggedHours:(Number(op&&op.loggedHours)||0)+hours});
     }
+    // Material consumed here is material consumed on the jobcard. A line the jobcard already plans
+    // for has its issued quantity raised; anything else is added as a line that was not planned, so
+    // the jobcard shows what actually went into the job rather than only what was intended.
+    const matCount=postMaterialsToJobcard(jc,entry.materials);
     WorkshopData.recordJobcardActivity(jc.no,{action:`${hours}h logged by ${entry.worker}${entry.item?' on '+entry.item:''}`});
 
-    wAlert(T[current].savedok);
+    const t=T[current];
+    const extra=[attached.length?tpl(t.eq_attached,{list:attached.join(', ')}):'',
+                 matCount?tpl(t.mat_logged,{n:matCount,jc:jc.no}):''].filter(Boolean);
+    wAlert(t.savedok+(extra.length?'\n\n'+extra.join('\n'):''));
     if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}
     return true;
   }
