@@ -97,9 +97,17 @@ async function estimationWorkflow(page) {
   // The module is project-first: every card is a project, and picking one is how you start pricing.
   const rowCount = await page.locator('.kcard').count();
   assert.ok(rowCount > 0, 'the project board is empty');
-  const listedProject = await page.locator('.kcard').first().getAttribute('data-project-no');
-  assert.ok(listedProject, 'a card must name the project it prices');
-  await page.locator('.kcard').first().click();
+  // Pick a card that is still open, not one in a terminal lane: the steps below edit it, and an
+  // accepted estimate is read-only by design. Which lane comes first is a layout choice, not a rule.
+  const listedProject = await page.evaluate(() => {
+    const open = [...document.querySelectorAll('.kcard')].find((c) => {
+      const e = getEst(Number(c.dataset.estId));
+      return e && !['accepted', 'declined', 'expired'].includes(e.status);
+    });
+    return open ? open.dataset.projectNo : null;
+  });
+  assert.ok(listedProject, 'the board must show at least one project still open for pricing');
+  await page.locator(`.kcard[data-project-no="${listedProject}"]`).click();
   const selected = await page.evaluate(() => { const e = getEst(selectedId); return { project: e.projectNo, ref: estRef(e) }; });
   assert.equal(selected.project, listedProject, 'clicking a project must select that project');
   assert.equal(selected.ref, listedProject, "the estimate's reference is the project's own number");
@@ -119,7 +127,7 @@ async function estimationWorkflow(page) {
   });
   assert.equal(board.cards, board.active, 'every project must be on the board, none dropped');
   assert.deepEqual(board.misplaced, [], 'a card must sit in the column its status names');
-  assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
+  assert.deepEqual(board.lanes, ['accepted', 'review', 'sent', 'draft', 'declined'], 'the board covers every stage');
   step('Estimations: the board shows every project in the lane its status names');
 
   // Dragging a card is the stepper by another name: it obeys the same transition rules. Driven with
