@@ -3952,3 +3952,107 @@ test('item groups: refiling an item changes its shelf but never its number', ()=
   assert.match(W.setItemGroup('GRD-DISC-4.5','tooling','nope').error,/no subgroup/);
   assert.match(W.setItemGroup('NO-SUCH-ITEM','tooling').error,/Item not found/);
 });
+
+// ---- Locations, measurement, edit and delete --------------------------------
+
+test('locations: a warehouse holds sublocations and both can be managed', ()=>{
+  const W=loadWorkshopData();
+  const [wh]=W.listLocationGroups();
+  assert.equal(wh.id,'warehouse');
+  assert.deepEqual(wh.subgroups.map(s=>s.name),['Warehouse 1 - shelves','Warehouse 2 - rack']);
+  const added=W.upsertSublocation('warehouse',{name:'Yard'});
+  assert.equal(added.id,'yard');
+  assert.match(W.upsertSublocation('warehouse',{name:'Warehouse 1 - shelves'}).error,/already has/i);
+  const second=W.upsertLocationGroup({name:'Outside store'});
+  assert.equal(second.id,'outside-store');
+  assert.match(W.upsertLocationGroup({name:'Warehouse'}).error,/already exists/i);
+  assert.match(W.deleteLocationGroup('warehouse').error,/still holds/,'a warehouse holding stock cannot be deleted');
+  assert.match(W.deleteSublocation('warehouse','wh1-shelves').error,/still holds/);
+  assert.equal(W.deleteSublocation('warehouse','yard').ok,true);
+  assert.equal(W.deleteLocationGroup('outside-store').ok,true);
+});
+
+test('locations: an item is created into a real warehouse and sublocation', ()=>{
+  const W=loadWorkshopData();
+  const ok=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',
+    unit:'EA',location:'A3-01-01',locationGroup:'warehouse',locationSub:'wh2-rack'});
+  assert.equal(ok.locationGroup,'warehouse');
+  assert.equal(ok.locationSub,'wh2-rack');
+  assert.equal(ok.location,'A3-01-01','the bin code is still the label on the shelf');
+  assert.match(W.createInventoryItem({description:'x',group:'materials',unit:'EA',location:'A',locationGroup:'nope'}).error,/Warehouse not found/);
+  assert.match(W.createInventoryItem({description:'x',group:'materials',unit:'EA',location:'A',locationGroup:'warehouse',locationSub:'nope'}).error,/no sublocation/);
+});
+
+test('measurement: a count of whole units reads as length and as weight', ()=>{
+  const W=loadWorkshopData();
+  const pipe=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',
+    unit:'EA',location:'A3-01-01',baseUnit:'m',sizePerUnit:6,weightPerBase:16.08,stock:3});
+  const three=W.itemMeasure(pipe.code,3);
+  assert.equal(three.baseQty,18,'three 6 m lengths are 18 m');
+  assert.equal(three.baseUnit,'m');
+  assert.equal(three.weightKg,289.44,'and 18 m of DN100 SCH40 is 289.44 kg');
+  assert.equal(W.itemMeasure(pipe.code,0).baseQty,0);
+  assert.equal(W.itemMeasure(pipe.code,0.5).baseQty,3,'half a length is three metres');
+  // An item nobody has measured still answers, without inventing a weight.
+  const plain=W.createInventoryItem({description:'Box of clips',group:'hardware',unit:'EA',location:'C1'});
+  const one=W.itemMeasure(plain.code,7);
+  assert.equal(one.baseQty,7,'with no size per unit, the count is the measure');
+  assert.equal(one.weightKg,null,'no recorded weight is not a weight of zero');
+  assert.equal(W.itemMeasure('NO-SUCH-ITEM',1),null);
+});
+
+test('items: editing changes what it may and leaves identity alone', ()=>{
+  const W=loadWorkshopData();
+  const before=W.get().inventory.find(x=>x.code==='MS-TUBE-25SQ-1.6');
+  const after=W.updateInventoryItem('MS-TUBE-25SQ-1.6',{minStock:35,weightPerBase:1.12,description:'Square tube 25×25×1.6 mm 6 m',
+    code:'HACKED',itemNo:9999,subgroup:'copper'});
+  assert.equal(after.code,before.code,'the code is not editable here');
+  assert.equal(after.itemNo,before.itemNo,'nor is the number');
+  assert.equal(after.minStock,35);
+  assert.equal(after.weightPerBase,1.12);
+  assert.equal(after.subgroup,'copper');
+  assert.equal(after.category,'Copper','the category follows the subgroup');
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{description:'  '}).error,/Description is required/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{minStock:-1}).error,/zero or greater/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{reserved:99999}).error,/cannot exceed stock/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{subgroup:'nope'}).error,/no subgroup/);
+  assert.match(W.updateInventoryItem('NO-SUCH-ITEM',{minStock:1}).error,/Item not found/);
+});
+
+test('items: one that is used anywhere cannot be deleted, and the refusal says where', ()=>{
+  const W=loadWorkshopData();
+  const usage=W.itemUsage('SS-SHT-304-2.0');
+  const where=usage.map(u=>u.where);
+  ['movements','projectBom','jobcards','offcuts','barcodes'].forEach(w=>
+    assert.ok(where.includes(w),`usage must report ${w}`));
+  usage.forEach(u=>{
+    assert.ok(u.count>0);
+    assert.ok(u.examples.length>0,`${u.where} must name at least one record`);
+  });
+  const refused=W.deleteInventoryItem('SS-SHT-304-2.0');
+  assert.equal(refused.error,'Item is in use');
+  assert.deepEqual(refused.usage.map(u=>u.where).sort(),where.sort());
+  assert.ok(W.get().inventory.some(x=>x.code==='SS-SHT-304-2.0'),'a refused delete must change nothing');
+});
+
+test('items: stock on the shelf blocks a delete on its own', ()=>{
+  const W=loadWorkshopData();
+  const held=W.createInventoryItem({description:'Still on the shelf',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9',stock:4});
+  const refused=W.deleteInventoryItem(held.code);
+  assert.match(refused.error,/still has stock/i);
+  assert.equal(refused.usage[0].where,'stock');
+  W.updateInventoryItem(held.code,{stock:0});
+  const gone=W.deleteInventoryItem(held.code);
+  assert.equal(gone.ok,true);
+  assert.equal(gone.itemNo,held.itemNo);
+  assert.ok(!W.get().inventory.some(x=>x.code===held.code));
+  assert.match(W.deleteInventoryItem(held.code).error,/Item not found/);
+});
+
+test('items: a number freed by a delete is still never handed out again', ()=>{
+  const W=loadWorkshopData();
+  const first=W.createInventoryItem({description:'First',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9'});
+  assert.equal(W.deleteInventoryItem(first.code).ok,true);
+  const second=W.createInventoryItem({description:'Second',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9'});
+  assert.ok(second.itemNo>first.itemNo,'deleting must not recycle the number');
+});

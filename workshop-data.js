@@ -62,6 +62,11 @@
       {id:'E-1009',equipmentId:'E-1009',name:'Gas Detector',category:'Safety Equipment',manufacturer:'Crowcon',model:'Gas-Pro',serial:'CRW-9012',assetNumber:'AS-1009',status:'Available',currentLocation:'Safety locker',homeLocation:'Safety locker',department:'Safety',responsiblePerson:'Sven O.',condition:'Good',criticality:'Critical',description:'Portable gas detector safety check instrument for confined spaces and welding areas.',purchaseDate:'2024-04-12',purchaseSupplier:'SafetyWorks',purchasePrice:7800,warrantyExpiry:'2027-04-12',yearOfManufacture:2024,operatingHourMeter:620,serviceInterval:90,qrCode:'EQ-1009-GAS',maintenanceDate:'2026-09-21',inspectionDate:'2026-09-04',certificationExpiry:'2026-09-11',calibrationDate:'2026-09-10',safetyWarnings:['Safety certificate expiring soon'],assignedProject:null,assignedJobcard:null,operator:'Sven O.',notes:'Demo safety equipment record for certification expiry logic.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-14',lastActivity:new Date().toISOString() },
       {id:'E-1010',equipmentId:'E-1010',name:'Overhead Lifting Equipment',category:'Lifting Equipment',manufacturer:'Demag',model:'Gantry 5T',serial:'DEM-9901',assetNumber:'AS-1010',status:'Quarantined',currentLocation:'Service bay',homeLocation:'Service bay',department:'Fabrication',responsiblePerson:'Aleksandar C.',condition:'Fair',criticality:'Critical',description:'Workshop gantry lifting assembly used for moving sheet packs and fabricated sections.',purchaseDate:'2018-06-11',purchaseSupplier:'LiftNord',purchasePrice:56200,warrantyExpiry:'2026-06-11',yearOfManufacture:2018,operatingHourMeter:9100,serviceInterval:180,qrCode:'EQ-1010-LIFT',maintenanceDate:'2026-08-27',inspectionDate:'2026-08-15',certificationExpiry:'2026-08-18',calibrationDate:null,safetyWarnings:['Failure on lifting inspection requires return-to-service review'],assignedProject:null,assignedJobcard:null,operator:null,notes:'This item demonstrates quarantine and blocking safety workflow.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-04',lastActivity:new Date().toISOString() }
     ],
+    locationGroups:[
+      {id:'warehouse',name:'Warehouse',subgroups:[
+        {id:'wh1-shelves',name:'Warehouse 1 - shelves'},
+        {id:'wh2-rack',name:'Warehouse 2 - rack'}]}
+    ],
     itemGroups:[
       {id:'materials',name:'Materials',start:1000,next:1003,subgroups:[
         {id:'stainless-steel',name:'Stainless steel'},{id:'mild-steel',name:'Mild steel'},
@@ -75,12 +80,12 @@
         {id:'cutting-tools',name:'Cutting tools'},{id:'hand-tools',name:'Hand tools'}]}
     ],
     inventory:[
-      {code:'SS-SHT-304-2.0',itemNo:1000,group:'materials',subgroup:'stainless-steel',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
-      {code:'MS-TUBE-25SQ-1.6',itemNo:1001,group:'materials',subgroup:'mild-steel',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
-      {code:'MS-TUBE-40SQ-2.0',itemNo:1002,group:'materials',subgroup:'mild-steel',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
-      {code:'ER70S-6-1.0',itemNo:2000,group:'consumables',subgroup:'welding',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
-      {code:'BOLT-HEX-M10X25',itemNo:3000,group:'hardware',subgroup:'fasteners',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
-      {code:'GRD-DISC-4.5',itemNo:2001,group:'consumables',subgroup:'abrasives',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
+      {code:'SS-SHT-304-2.0',itemNo:1000,baseUnit:'m2',sizePerUnit:3.125,weightPerBase:15.8,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'materials',subgroup:'stainless-steel',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
+      {code:'MS-TUBE-25SQ-1.6',itemNo:1001,baseUnit:'m',sizePerUnit:6,weightPerBase:1.12,locationGroup:'warehouse',locationSub:'wh2-rack',group:'materials',subgroup:'mild-steel',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
+      {code:'MS-TUBE-40SQ-2.0',itemNo:1002,baseUnit:'m',sizePerUnit:6,weightPerBase:2.31,locationGroup:'warehouse',locationSub:'wh2-rack',group:'materials',subgroup:'mild-steel',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
+      {code:'ER70S-6-1.0',itemNo:2000,baseUnit:'kg',sizePerUnit:1,weightPerBase:1,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'consumables',subgroup:'welding',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
+      {code:'BOLT-HEX-M10X25',itemNo:3000,baseUnit:'pcs',sizePerUnit:1,weightPerBase:0.0255,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'hardware',subgroup:'fasteners',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
+      {code:'GRD-DISC-4.5',itemNo:2001,baseUnit:'pcs',sizePerUnit:1,weightPerBase:0.06,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'consumables',subgroup:'abrasives',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
     ],
     barcodeLinks:{'7350123456789':'SS-SHT-304-2.0','7350123456796':'MS-TUBE-25SQ-1.6','7350123456802':'MS-TUBE-40SQ-2.0'},
     movements:[
@@ -496,6 +501,7 @@
   // (Materials 1000, Consumables 2000, ...). The number is allocated once, on
   // creation, and never reused, so an issued or received line always points at
   // the same item even after the item is renamed or moved between subgroups.
+  const round2=n=>Math.round((Number(n)||0)*100)/100;
   const slug=v=>String(v||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   // Categories the pre-group data used, mapped onto a group and subgroup so
   // inventory saved before this change keeps its meaning instead of landing in
@@ -544,6 +550,8 @@
     if(!Array.isArray(s.estimations))s.estimations=base.estimations;
     if(!Array.isArray(s.projects))s.projects=base.projects;
     if(!Array.isArray(s.inventory))s.inventory=base.inventory;
+    if(!Array.isArray(s.locationGroups)||!s.locationGroups.length)s.locationGroups=base.locationGroups;
+    s.locationGroups.forEach(g=>{if(!Array.isArray(g.subgroups))g.subgroups=[];});
     if(!Array.isArray(s.itemGroups)||!s.itemGroups.length)s.itemGroups=base.itemGroups;
     s.itemGroups.forEach(g=>{if(!Array.isArray(g.subgroups))g.subgroups=[];});
     migrateItemNumbers(s);
@@ -1410,6 +1418,179 @@
       return clone(p);
     },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
+    // ---- Where an item is referenced ---------------------------------------
+    // An item that has moved, been reserved or been quoted cannot simply be
+    // deleted: its number is written on records that would stop making sense.
+    // This answers where it is used, so the refusal can say so rather than just
+    // saying no.
+    itemUsage(code){
+      const key=String(code||'');
+      if(!key)return[];
+      const found=[];
+      const add=(where,detail)=>{const hit=found.find(x=>x.where===where);
+        if(hit){hit.count+=1;if(hit.examples.length<3&&detail)hit.examples.push(detail);}
+        else found.push({where,count:1,examples:detail?[detail]:[]});};
+      state.movements.forEach(m=>{if(String(m.code)===key)add('movements',`${m.action} ${m.qty} · ${m.time}`);});
+      state.projects.forEach(p=>(p.bom||[]).forEach(line=>{if(String(line.code)===key)add('projectBom',p.no);}));
+      state.jobcards.forEach(j=>(j.materials||[]).forEach(line=>{if(String(line.code)===key)add('jobcards',j.no);}));
+      state.offcuts.forEach(o=>{if(String(o.materialCode)===key||String(o.code)===key)add('offcuts',o.code||o.id);});
+      (state.purchaseOrders||[]).forEach(po=>{
+        if(String(po.itemCode||'')===key||String(po.items||'').indexOf(key)>=0)add('purchaseOrders',po.no);});
+      (state.estimations||[]).forEach(e=>(e.lines||e.items||[]).forEach(line=>{
+        if(String(line.code||line.itemCode||'')===key)add('estimations',e.no||e.ref);}));
+      Object.entries(state.barcodeLinks||{}).forEach(([barcode,linked])=>{if(String(linked)===key)add('barcodes',barcode);});
+      (state.stockCounts||[]).forEach(c=>(c.lines||[]).forEach(line=>{
+        if(String(line.code)===key)add('stockCounts',c.no||c.id);}));
+      return found;
+    },
+    // A patch, not a replacement: only what is passed is changed, and the
+    // fields that identify the item are not up for editing here.
+    updateInventoryItem(code,patch){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const data=clone(patch||{});
+      delete data.code;delete data.itemNo;
+      if(data.group!==undefined||data.subgroup!==undefined){
+        const groupId=data.group!==undefined?String(data.group):item.group;
+        const g=groupFor(state,groupId);
+        if(!g)return{error:'Item group is required'};
+        const subId=String(data.subgroup!==undefined?data.subgroup:(item.subgroup||''));
+        if(subId&&!(g.subgroups||[]).some(x=>x.id===subId))return{error:`${g.name} has no subgroup ${subId}`};
+        data.group=groupId;data.subgroup=subId;
+        data.category=((g.subgroups||[]).find(x=>x.id===subId)||{}).name||g.name;
+      }
+      if(data.locationGroup!==undefined||data.locationSub!==undefined){
+        const lgId=String(data.locationGroup!==undefined?data.locationGroup:(item.locationGroup||''));
+        if(lgId){
+          const lg=(state.locationGroups||[]).find(x=>x.id===lgId);
+          if(!lg)return{error:'Warehouse not found'};
+          const lsId=String(data.locationSub!==undefined?data.locationSub:(item.locationSub||''));
+          if(lsId&&!lg.subgroups.some(x=>x.id===lsId))return{error:`${lg.name} has no sublocation ${lsId}`};
+          data.locationGroup=lgId;data.locationSub=lsId;
+        }
+      }
+      if(data.description!==undefined){
+        data.description=String(data.description).trim();
+        if(!data.description)return{error:'Description is required'};
+      }
+      if(data.unit!==undefined){
+        data.unit=String(data.unit).trim().toUpperCase();
+        if(!data.unit)return{error:'Unit is required'};
+      }
+      for(const field of ['stock','reserved','minStock','reorderQty','avgCost','lastPrice','sizePerUnit','weightPerBase']){
+        if(data[field]===undefined)continue;
+        const value=Number(data[field]);
+        if(!Number.isFinite(value)||value<0)return{error:`${field} must be zero or greater`};
+        data[field]=value;
+      }
+      const nextStock=data.stock!==undefined?data.stock:item.stock;
+      const nextReserved=data.reserved!==undefined?data.reserved:item.reserved;
+      if(Number(nextReserved)>Number(nextStock))return{error:'Reserved quantity cannot exceed stock'};
+      Object.assign(item,data);
+      if(!(Number(item.sizePerUnit)>0))item.sizePerUnit=1;
+      item.status=item.stock-item.reserved<=item.minStock?'low':'good';
+      save(`Item ${item.itemNo} updated: ${item.description}`);
+      return clone(item);
+    },
+    deleteInventoryItem(code){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const usage=api.itemUsage(item.code);
+      if(usage.length)return{error:'Item is in use',usage};
+      if(Number(item.stock)>0)return{error:'Item still has stock on the shelf',
+        usage:[{where:'stock',count:Number(item.stock),examples:[`${item.stock} ${item.unit} in ${item.location||'—'}`]}]};
+      state.inventory=state.inventory.filter(x=>String(x.code)!==String(item.code));
+      save(`Item ${item.itemNo} deleted: ${item.description}`);
+      return{ok:true,itemNo:item.itemNo,description:item.description};
+    },
+    // ---- What a quantity actually amounts to -------------------------------
+    // Stock is counted in whole units - a length of pipe, a sheet, a spool -
+    // but the measure that matters downstream is metres, square metres or
+    // kilos. sizePerUnit says how much of the base measure one stock unit is,
+    // so three 6 m lengths read as 18 m and, through weightPerBase, as kilos.
+    itemMeasure(codeOrItem,qty){
+      const item=typeof codeOrItem==='object'&&codeOrItem
+        ?codeOrItem
+        :state.inventory.find(x=>String(x.code)===String(codeOrItem));
+      if(!item)return null;
+      const units=Number(qty);
+      const count=Number.isFinite(units)?units:0;
+      const size=Number(item.sizePerUnit)>0?Number(item.sizePerUnit):1;
+      const perBase=Number(item.weightPerBase)>0?Number(item.weightPerBase):0;
+      const base=String(item.baseUnit||'pcs');
+      const baseQty=round2(count*size);
+      return {
+        units:count,
+        unit:item.unit||'EA',
+        baseUnit:base,
+        sizePerUnit:size,
+        baseQty,
+        // A zero weight means nobody has recorded one, which is not the same as
+        // weighing nothing - the caller shows a dash rather than "0 kg".
+        weightKg:perBase?round2(baseQty*perBase):null,
+        weightPerBase:perBase||null
+      };
+    },
+    // ---- Where stock is kept: a warehouse, its sublocations, and the bin code
+    // written on the shelf. The bin stays free text because it is what is
+    // physically labelled; the two above it are managed lists.
+    listLocationGroups:()=>clone(state.locationGroups),
+    findLocationGroup:id=>clone((state.locationGroups||[]).find(g=>g.id===id)||null),
+    upsertLocationGroup(payload){
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Warehouse name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Warehouse name must contain at least one letter or digit'};
+      const existing=(state.locationGroups||[]).find(g=>g.id===id);
+      if(isEdit&&!existing)return{error:'Warehouse not found'};
+      const clash=(state.locationGroups||[]).find(g=>g.id!==id&&g.name.trim().toLowerCase()===name.toLowerCase());
+      if(clash||(!isEdit&&existing))return{error:`A warehouse called ${name} already exists`};
+      if(existing){existing.name=name;save(`Warehouse updated: ${name}`);return clone(existing);}
+      const rec={id,name,subgroups:[]};
+      state.locationGroups.push(rec);
+      save(`Warehouse created: ${name}`);
+      return clone(rec);
+    },
+    deleteLocationGroup(id){
+      const g=(state.locationGroups||[]).find(x=>x.id===id);
+      if(!g)return{error:'Warehouse not found'};
+      const used=state.inventory.filter(x=>x.locationGroup===id).length;
+      if(used)return{error:`${g.name} still holds ${used} item${used===1?'':'s'}`};
+      state.locationGroups=state.locationGroups.filter(x=>x.id!==id);
+      save(`Warehouse deleted: ${g.name}`);
+      return{ok:true};
+    },
+    upsertSublocation(groupId,payload){
+      const g=(state.locationGroups||[]).find(x=>x.id===groupId);
+      if(!g)return{error:'Warehouse not found'};
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Sublocation name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Sublocation name must contain at least one letter or digit'};
+      const existing=g.subgroups.find(x=>x.id===id);
+      if(isEdit&&!existing)return{error:'Sublocation not found'};
+      if(g.subgroups.some(x=>x.id!==id&&x.name.trim().toLowerCase()===name.toLowerCase())||(!isEdit&&existing))return{error:`${g.name} already has ${name}`};
+      if(existing){existing.name=name;save(`Sublocation updated: ${name}`);return clone(existing);}
+      const rec={id,name};
+      g.subgroups.push(rec);
+      save(`Sublocation created: ${g.name} / ${name}`);
+      return clone(rec);
+    },
+    deleteSublocation(groupId,id){
+      const g=(state.locationGroups||[]).find(x=>x.id===groupId);
+      if(!g)return{error:'Warehouse not found'};
+      const sub=g.subgroups.find(x=>x.id===id);
+      if(!sub)return{error:'Sublocation not found'};
+      const used=state.inventory.filter(x=>x.locationGroup===groupId&&x.locationSub===id).length;
+      if(used)return{error:`${sub.name} still holds ${used} item${used===1?'':'s'}`};
+      g.subgroups=g.subgroups.filter(x=>x.id!==id);
+      save(`Sublocation deleted: ${g.name} / ${sub.name}`);
+      return{ok:true};
+    },
     // ---- Item groups and subgroups ----
     listItemGroups:()=>clone(state.itemGroups),
     findItemGroup:id=>clone((state.itemGroups||[]).find(g=>g.id===id)||null),
@@ -1518,6 +1699,16 @@
       data.location=String(data.location||'').trim();
       data.group=String(data.group||'').trim();
       data.subgroup=String(data.subgroup||'').trim();
+      data.locationGroup=String(data.locationGroup||'').trim();
+      data.locationSub=String(data.locationSub||'').trim();
+      data.baseUnit=String(data.baseUnit||'pcs').trim();
+      data.sizePerUnit=Number(data.sizePerUnit)>0?Number(data.sizePerUnit):1;
+      data.weightPerBase=Number(data.weightPerBase)>0?Number(data.weightPerBase):0;
+      if(data.locationGroup){
+        const lg=(state.locationGroups||[]).find(x=>x.id===data.locationGroup);
+        if(!lg)return{error:'Warehouse not found'};
+        if(data.locationSub&&!lg.subgroups.some(x=>x.id===data.locationSub))return{error:`${lg.name} has no sublocation ${data.locationSub}`};
+      }
       const grp=groupFor(state,data.group);
       if(!grp)return{error:'Item group is required'};
       if(data.subgroup&&!grp.subgroups.some(x=>x.id===data.subgroup))return{error:`${grp.name} has no subgroup ${data.subgroup}`};
