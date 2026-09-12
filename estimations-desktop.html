@@ -126,8 +126,21 @@
   .kcol.k-draft{--kc:var(--steel-400);} .kcol.k-review{--kc:var(--warn);} .kcol.k-sent{--kc:var(--spark);}
   .kcol.k-accepted{--kc:var(--ok);} .kcol.k-declined{--kc:var(--danger);}
 
-  .kcard{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:grab;
-    border:1px solid var(--line);background:var(--lift-03);padding:7px 8px;transition:.14s;}
+  /* pan-y leaves the lane scrollable under a finger while a sideways move becomes a drag. */
+  .kcard{position:relative;display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:grab;
+    border:1px solid var(--line);background:var(--lift-03);padding:7px 8px 7px 17px;transition:.14s;
+    touch-action:pan-y;user-select:none;-webkit-user-select:none;}
+  /* A card says it can be picked up, without shouting it at every card at once. */
+  .kcard .kgrip{position:absolute;left:4px;top:7px;font-size:10px;line-height:1;color:var(--steel-400);
+    opacity:0;transition:.14s;pointer-events:none;}
+  .kcard:hover .kgrip,.kcard.sel .kgrip{opacity:.65;}
+  .kcard.dragging{opacity:.35;}
+  .kcard.dragging .kgrip{opacity:0;}
+  /* The card in hand follows the pointer above everything, and is never a target itself. */
+  html.kdragging .wtip{display:none!important;}
+  .kghost{position:fixed;z-index:400;pointer-events:none;cursor:grabbing;
+    box-shadow:0 12px 30px var(--shade-45);border-color:rgba(var(--c-accent-rgb),.6);
+    background:var(--lift-08);transform:rotate(-1.5deg);}
   .kcard:hover{border-color:rgba(var(--c-accent-rgb),.5);background:var(--lift-05);}
   .kcard.sel{background:rgba(var(--c-accent-rgb),.14);border-color:rgba(var(--c-accent-rgb),.55);}
   .kcard .kc1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
@@ -916,7 +929,7 @@ const T={
     demo_upload:"Files up to 768 KB are stored in this browser and shared with Documents.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
     confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
     demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Export {no} as an Excel-compatible SpreadsheetML workbook.",
-    offer_group:"Offer",offer_whole:"Whole project — every item",offer_print:"Print",
+    kdrag_tip:"Drag to another stage, or click to open it",offer_group:"Offer",offer_whole:"Whole project — every item",offer_print:"Print",
     offer_pick:"Pick a project — the offer is produced from it",
     offer_pdf_toast:"Offer {ref} opened as an A4 document — choose \u201cSave as PDF\u201d in the print dialog.",
     offer_pdf_blocked:"Allow pop-ups to save the offer as a PDF — printing this page instead.",
@@ -991,7 +1004,7 @@ const T={
     demo_upload:"Filer upp till 768 KB lagras i den här webbläsaren och delas med Dokument.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
     confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
     demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Exportera {no} som en Excel-kompatibel SpreadsheetML-arbetsbok.",
-    offer_group:"Offert",offer_whole:"Hela projektet — alla poster",offer_print:"Skriv ut",
+    kdrag_tip:"Dra till ett annat steg, eller klicka för att öppna",offer_group:"Offert",offer_whole:"Hela projektet — alla poster",offer_print:"Skriv ut",
     offer_pick:"Välj ett projekt — offerten skapas från det",
     offer_pdf_toast:"Offert {ref} öppnad som A4-dokument — välj \u201dSpara som PDF\u201d i utskriftsdialogen.",
     offer_pdf_blocked:"Tillåt popup-fönster för att spara offerten som PDF — skriver ut den här sidan i stället.",
@@ -1066,7 +1079,7 @@ const T={
     demo_upload:"Fajlovi do 768 KB se začuvuvaat vo ovoj prebaruvač i se delat so Dokumenti.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
     confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
     demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Izvezi ja {no} kako Excel-kompatibilna SpreadsheetML rabotna kniga.",
-    offer_group:"Ponuda",offer_whole:"Celiot proekt — site stavki",offer_print:"Pečati",
+    kdrag_tip:"Povleči vo druga faza, ili klikni za da ja otvoriš",offer_group:"Ponuda",offer_whole:"Celiot proekt — site stavki",offer_print:"Pečati",
     offer_pick:"Izberi proekt — ponudata se pravi od nego",
     offer_pdf_toast:"Ponudata {ref} e otvorena kako A4 dokument — izberi \u201cSave as PDF\u201d vo dijalogot za pečatenje.",
     offer_pdf_blocked:"Dozvoli pop-up prozorci za da ja začuvaš ponudata kako PDF — ja pečatam ovaa strana namesto toa.",
@@ -1283,12 +1296,14 @@ const KCOLS=[{k:'draft',has:['draft']},{k:'review',has:['review']},{k:'sent',has
   {k:'accepted',has:['accepted']},{k:'declined',has:['declined','expired']}];
 // Dragging a card is the same act as pressing the stepper, so it goes through requestStageChange()
 // and inherits every rule it enforces: a locked estimate, the allowed transitions, and a priced line
-// before anything is Sent. Columns light up or dim while a card is in the air, so the rules are
-// visible before the drop rather than explained by a toast after it.
-let dragEstId=null;
-function kanbanDragStart(ev,id){
-  dragEstId=id;
-  try{ev.dataTransfer.setData('text/plain',String(id));ev.dataTransfer.effectAllowed='move';}catch(_){}
+// before anything is Sent. Lanes light up or dim while a card is in hand, so the rules are visible
+// before the drop rather than explained by a toast after it.
+//
+// This is built on pointer events rather than HTML5 drag-and-drop. Native drag does not survive a
+// sandboxed frame - which is how the whole app is served in the packaged demo - and it does not
+// exist at all under a finger. Pointer events work in both.
+let kdrag=null,kClickAfterDrag=false;
+function kanbanLightLanes(id){
   const e=getEst(id);const allowed=(e&&!isLocked(e))?(ALLOWED_TRANSITIONS[e.status]||[]):[];
   document.querySelectorAll('.kcol').forEach(c=>{
     const st=c.dataset.stage;const here=!!(e&&KCOLS.find(k=>k.k===st).has.includes(e.status));
@@ -1296,21 +1311,59 @@ function kanbanDragStart(ev,id){
     c.classList.toggle('cannottake',!here&&!allowed.includes(st));
   });
 }
-function kanbanDragEnd(){dragEstId=null;
-  document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('cantake','cannottake','over'));}
-function kanbanOver(ev){
-  const col=ev.currentTarget;if(!col.classList.contains('cantake'))return;
-  ev.preventDefault();col.classList.add('over');
+// Only a lane the rules allow is a target, so an illegal move simply cannot be dropped.
+function kanbanLaneAt(x,y){
+  return [...document.querySelectorAll('.kcol.cantake')].find(c=>{
+    const r=c.getBoundingClientRect();
+    return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;})||null;
 }
-function kanbanLeave(ev){ev.currentTarget.classList.remove('over');}
-function kanbanDrop(ev,stage){
+function kanbanPointerDown(ev,id){
+  if(ev.button!==undefined&&ev.button>0)return;
+  const card=ev.currentTarget,r=card.getBoundingClientRect();
+  kdrag={id,card,started:false,x0:ev.clientX,y0:ev.clientY,
+    dx:ev.clientX-r.left,dy:ev.clientY-r.top,w:r.width,ghost:null,over:null};
+  try{card.setPointerCapture(ev.pointerId);}catch(_){}
+}
+function kanbanPointerMove(ev){
+  if(!kdrag)return;
+  // A few pixels of slop, so a click to select a project is never mistaken for a drag.
+  if(!kdrag.started){
+    if(Math.abs(ev.clientX-kdrag.x0)+Math.abs(ev.clientY-kdrag.y0)<6)return;
+    kdrag.started=true;
+    const g=kdrag.card.cloneNode(true);
+    g.className='kcard kghost';g.style.width=kdrag.w+'px';
+    g.removeAttribute('title');g.removeAttribute('data-tip');
+    document.body.appendChild(g);kdrag.ghost=g;
+    kdrag.card.classList.add('dragging');
+    document.documentElement.classList.add('kdragging');
+    kanbanLightLanes(kdrag.id);
+  }
+  kdrag.ghost.style.left=(ev.clientX-kdrag.dx)+'px';
+  kdrag.ghost.style.top=(ev.clientY-kdrag.dy)+'px';
+  const lane=kanbanLaneAt(ev.clientX,ev.clientY);
+  if(kdrag.over!==lane){
+    if(kdrag.over)kdrag.over.classList.remove('over');
+    kdrag.over=lane;if(lane)lane.classList.add('over');
+  }
   ev.preventDefault();
-  let id=dragEstId;
-  if(id===null){const raw=ev.dataTransfer?ev.dataTransfer.getData('text/plain'):'';id=parseInt(raw,10);}
-  kanbanDragEnd();
-  if(!Number.isFinite(id))return;
-  requestStageChange(id,stage);
 }
+function kanbanPointerUp(){
+  if(!kdrag)return;
+  const started=kdrag.started,lane=kdrag.over,id=kdrag.id;
+  kanbanDragEnd();
+  if(!started)return;                 // it was a click; the click handler selects the project
+  kClickAfterDrag=true;               // and the click the browser fires after a drag is not one
+  if(lane)requestStageChange(id,lane.dataset.stage);
+}
+function kanbanDragEnd(){
+  if(!kdrag)return;
+  if(kdrag.ghost)kdrag.ghost.remove();
+  kdrag.card.classList.remove('dragging');
+  document.documentElement.classList.remove('kdragging');
+  kdrag=null;
+  document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('cantake','cannottake','over'));
+}
+window.addEventListener('pointercancel',kanbanDragEnd);
 
 function renderLeft(){
   const t=T[LANG];
@@ -1334,10 +1387,11 @@ function renderLeft(){
   const kcard=e=>{const c=CUSTOMERS[e.customerId];const tot=computeTotalsQuiet(e);
     const p=PROJECTS[e.projectNo];const n=projectItems(e.projectNo).length;
     const col=KCOLS.find(k=>k.has.includes(e.status));
-    return `<button type="button" class="kcard ${e.id===selectedId?'sel':''}" draggable="true"
+    return `<button type="button" class="kcard ${e.id===selectedId?'sel':''}"
       data-project-no="${esc(e.projectNo||'')}" data-est-id="${e.id}"
-      ondragstart="kanbanDragStart(event,${e.id})" ondragend="kanbanDragEnd()"
-      title="${esc(n?t.n_items.replace('{n}',n):t.no_items_short)}">
+      onpointerdown="kanbanPointerDown(event,${e.id})" onpointermove="kanbanPointerMove(event)"
+      onpointerup="kanbanPointerUp()" title="${esc(t.kdrag_tip)}">
+      <span class="kgrip" aria-hidden="true">⠿</span>
       <div class="kc1"><span class="kname">${esc(p?p.name:(e.projectTitle||''))}</span><span class="kval">${fmt0(tot.grandTotal)}</span></div>
       <div class="kc2"><span class="kno">${esc(estRef(e))}</span><span class="kcust">${esc(c.name)}</span>${col&&col.k!==e.status?statusPill(e.status):''}</div>
     </button>`;};
@@ -1346,8 +1400,7 @@ function renderLeft(){
   let onBoard=0;
   const board=shown.map(col=>{
     const items=rows.filter(e=>col.has.includes(e.status));onBoard+=items.length;
-    return `<div class="kcol k-${col.k}" data-stage="${col.k}"
-        ondragover="kanbanOver(event)" ondragleave="kanbanLeave(event)" ondrop="kanbanDrop(event,'${col.k}')">
+    return `<div class="kcol k-${col.k}" data-stage="${col.k}">
       <div class="kchead"><span class="kcname">${esc(t['st_'+col.k])}</span><span class="kccount">${items.length}</span></div>
       <div class="kcbody">${items.map(kcard).join('')||`<div class="kcempty">—</div>`}</div>
     </div>`;}).join('');
@@ -1870,7 +1923,9 @@ function renderAll(){
     <div class="col">${renderRight(e)}</div>
   </div>`;
   const strip=$("summaryStrip");if(strip)strip.innerHTML=renderHeadSummary();
-  document.querySelectorAll('.kcard').forEach(card=>card.addEventListener('click',()=>selectProject(card.dataset.projectNo)));
+  document.querySelectorAll('.kcard').forEach(card=>card.addEventListener('click',()=>{
+    if(kClickAfterDrag){kClickAfterDrag=false;return;}
+    selectProject(card.dataset.projectNo);}));
   wireProjectWorkflow();
   const s=$("search");if(s)s.addEventListener('input',ev=>{query=ev.target.value;renderAll();});
   syncModuleSidebar();

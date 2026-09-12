@@ -120,21 +120,44 @@ async function estimationWorkflow(page) {
   assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
   step('Estimations: the board shows every project in the lane its status names');
 
-  // Dragging a card is the stepper by another name: it obeys the same transition rules.
-  const moved = await page.evaluate(async () => {
-    const before = ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo);
-    const drop = (id, stage) => {
-      const card = document.querySelector(`.kcard[data-est-id="${id}"]`);
-      const col = document.querySelector(`.kcol[data-stage="${stage}"]`);
-      const dt = new DataTransfer();
-      card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
-      col.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dt }));
-      col.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt }));
-    };
-    drop(before.id, 'draft');
-    return getEst(before.id).status;
+  // Dragging a card is the stepper by another name: it obeys the same transition rules. Driven with
+  // a real mouse, because that is the only way to prove the gesture a person makes actually works.
+  const dragCard = async (estId, stage) => {
+    const card = page.locator(`.kcard[data-est-id="${estId}"]`);
+    const lane = page.locator(`.kcol[data-stage="${stage}"]`);
+    const cb = await card.boundingBox();
+    const tb = await lane.boundingBox();
+    const [sx, sy] = [cb.x + 40, cb.y + cb.height / 2];
+    const [ex, ey] = [tb.x + tb.width / 2, tb.y + 60];
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    for (let k = 1; k <= 12; k += 1) {
+      await page.mouse.move(sx + ((ex - sx) * k) / 12, sy + ((ey - sy) * k) / 12);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+  };
+  page.on('dialog', (d) => d.accept());
+
+  const draftId = await page.evaluate(() => {
+    const e = ESTIMATIONS.find((x) => x.status === 'draft' && x.projectNo);
+    return e ? e.id : null;
   });
-  assert.equal(moved, 'accepted', 'a closed stage must refuse a drop, exactly as the stepper does');
+  assert.ok(draftId, 'the seed needs a draft to drag');
+  await dragCard(draftId, 'review');
+  assert.equal(await page.evaluate((i) => getEst(i).status, draftId), 'review',
+    'dragging a Draft card into In Review must move it');
+  const selectionKept = await page.evaluate(() => getEst(selectedId).projectNo);
+  assert.equal(selectionKept, listedProject, 'a drag must not be mistaken for a click that selects');
+  step('Estimations: dragging a card between lanes moves the estimate');
+
+  const acceptedId = await page.evaluate(() =>
+    ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo).id);
+  await dragCard(acceptedId, 'draft');
+  assert.equal(await page.evaluate((i) => getEst(i).status, acceptedId), 'accepted',
+    'a closed stage must refuse a drop, exactly as the stepper does');
+  assert.equal(await page.evaluate(() => !document.querySelector('.kghost')), true,
+    'the dragged card must never be left behind on screen');
   step('Estimations: the board refuses a move the transition rules forbid');
 
   // The offer is the whole project as one customer-facing document, produced from the top bar.
