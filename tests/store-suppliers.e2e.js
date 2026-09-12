@@ -309,6 +309,65 @@ async function receiveGoods(page, poNo) {
   assert.equal(afterIssue.issued.length, 1);
   assert.equal(afterIssue.issued[0].jobcard, 'JC-1456');
   step('Store: material pulled for a job comes off the shelf against that jobcard');
+
+  // The standards table suggests the weight, and the form shows what a count
+  // of whole lengths actually amounts to before anything is saved.
+  await page.evaluate(() => openNewItemForm());
+  await page.locator('#newGroup').selectOption('materials');
+  await page.locator('#newSubgroup').selectOption('pipe-fittings');
+  await page.locator('#newWarehouse').selectOption('warehouse');
+  await page.locator('#newSublocation').selectOption('wh2-rack');
+  await page.locator('#newDescription').fill('Pipe DN80 SCH40');
+  await page.locator('#newGrade').fill('S235JR');
+  await page.locator('#newDimensions').fill('DN80 SCH40');
+  await page.waitForTimeout(120);
+  const suggested = Number(await page.locator('#newWeightPerBase').inputValue());
+  // 3" SCH40 pipe: 88.9 mm outside, 5.49 mm wall, 11.29 kg/m in the tables.
+  assert.ok(Math.abs(suggested - 11.29) / 11.29 < 0.02,
+    `DN80 SCH40 in steel should suggest about 11.29 kg/m, got ${suggested}`);
+  assert.equal(await page.locator('#newBaseUnit').inputValue(), 'm', 'a pipe is measured in metres');
+  assert.match(await page.locator('#measureHint').innerText(), /DN80 SCH40/,
+    'the form must say which standard section it matched');
+
+  await page.locator('#newSizePerUnit').fill('6');
+  await page.locator('#newStock').fill('3');
+  await page.locator('#newLocation').fill('E2E-RACK-01');
+  const preview = await page.locator('#measurePreview .measurecalc').innerText();
+  assert.match(preview, /3 EA/);
+  assert.match(preview, /18 m/, 'three 6 m lengths must read as 18 m');
+  assert.match(preview, /kg/, 'and as a weight');
+  await page.locator('#newItemModal .primary').click();
+  await page.waitForTimeout(150);
+  const dn80 = await page.evaluate(() => WorkshopData.get().inventory.find((x) => x.description === 'Pipe DN80 SCH40'));
+  assert.equal(dn80.locationGroup, 'warehouse');
+  assert.equal(dn80.locationSub, 'wh2-rack');
+  assert.equal(dn80.sizePerUnit, 6);
+  assert.equal(await page.evaluate((c) => WorkshopData.itemMeasure(c, 3).baseQty, dn80.code), 18);
+  step('Store: the standards table suggests the weight and the form shows what the count amounts to');
+
+  // Edit keeps identity; delete is refused while anything points at the item.
+  await page.evaluate((c) => openEditItemForm(c), dn80.code);
+  await page.waitForTimeout(120);
+  assert.equal(await page.locator('#newCode').inputValue(), dn80.code);
+  assert.equal(await page.locator('#newCode').getAttribute('readonly'), '',
+    'the code identifies the item and is not edited here');
+  await page.locator('#newMinStock').fill('2');
+  await page.locator('#newItemModal .primary').click();
+  await page.waitForTimeout(150);
+  const edited = await page.evaluate((c) => WorkshopData.get().inventory.find((x) => x.code === c), dn80.code);
+  assert.equal(edited.minStock, 2);
+  assert.equal(edited.itemNo, dn80.itemNo, 'editing must not renumber the item');
+
+  await page.evaluate((c) => removeInventoryItem(c), ITEM_CODE);
+  await page.waitForTimeout(150);
+  const refusal = await page.locator('.wask .waskmsg').innerText();
+  assert.match(refusal, /cannot be deleted/i);
+  assert.match(refusal, /Stock movements|Stock on the shelf/, 'the refusal must say where the item is used');
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(120);
+  assert.ok(await page.evaluate((c) => WorkshopData.get().inventory.some((x) => x.code === c), ITEM_CODE),
+    'a refused delete must leave the item alone');
+  step('Store: an item in use cannot be deleted, and the refusal names where it is used');
 }
 
 async function main() {

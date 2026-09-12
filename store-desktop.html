@@ -102,6 +102,20 @@ html.kdragging .kcard{cursor:grabbing}
 .kempty{padding:14px 6px;text-align:center;color:var(--steel-400);font-size:11.5px}
 @media(max-width:900px){.kboard{grid-template-columns:1fr}.kcbody{max-height:none}}
 .ksub.empty{opacity:.5}
+
+.kcacts{position:absolute;top:5px;right:5px;display:none;gap:3px}
+.kcard:hover .kcacts{display:flex}
+.kcacts .mini{padding:1px 5px;line-height:1.2;font-size:11px}
+.kcamount{margin-top:3px;font-size:11px;color:var(--steel-300);font-variant-numeric:tabular-nums}
+.rowacts{white-space:nowrap}
+.rowacts .mini+.mini{margin-left:5px}
+.measurebox{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding:8px 10px;border:1px solid var(--field-line);background:var(--field);min-height:34px}
+.measurecalc{font-size:13px;color:var(--ice);font-variant-numeric:tabular-nums}
+.measurecalc b{color:var(--spark);font-weight:600;padding:0 2px}
+.measurehint{font-size:11.5px;color:var(--steel-400)}
+.binlist{font-size:10.5px;color:var(--steel-400);font-variant-numeric:tabular-nums}
+.field.full{grid-column:1/-1}
+.measurebox{justify-content:space-between}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body>
@@ -114,11 +128,11 @@ html.kdragging .kcard{cursor:grabbing}
 <div class="user"><div class="avatar">AK</div><div><b>Aleksandar</b><small data-i="userRole">Store supervisor</small></div></div></aside>
 <main class="main"><header class="top"><div class="title"><button class="back" onclick="location.href='hub-desktop.html'">← <span data-i="hub">Hub</span></button><div><h2 data-i="title">Store</h2><p><span id="viewName">Inventory Overview</span></p></div></div><div class="bottom"><button onclick="openNewItemForm()">＋ <span data-i="btnNewItem">New Item</span></button><button onclick="focusSection('receiving')">▣ <span data-i="btnReceiveGoods">Receive Goods</span></button><button onclick="focusSection('issuing')">⇥ <span data-i="issue">Issue to Project</span></button><button onclick="openOperation('transfer')">⇄ <span data-i="btnTransferStock">Transfer Stock</span></button><button onclick="focusSection('stockcount')">◉ <span data-i="stockcount">Stock Count</span></button><button onclick="exportInventoryReport()">▧ <span data-i="btnExportReport">Export Report</span></button></div><div class="topright"><span class="clock" id="clock"></span><select class="lang" id="lang" aria-label="Language"><option value="en">EN</option><option value="sv">SV</option><option value="mk">MK</option></select></div></header>
 <section class="stats" data-panel="inventory"><div class="stat"><label data-i="total">Total items</label><strong>1,248</strong><small data-i="statTotalDesc">Active stock items</small></div><div class="stat warn"><label data-i="low">Low stock items</label><strong>36</strong><small data-i="statLowDesc">Require attention</small></div><div class="stat"><label data-i="reserved">Materials reserved</label><strong>312</strong><small data-i="statReservedDesc">Across 8 projects</small></div><div class="stat"><label data-i="value">Value in stock</label><strong>$684,250</strong><small data-i="statValueDesc">At standard cost</small></div><div class="stat"><label data-i="received">Goods received today</label><strong>18</strong><small data-i="statReceivedDesc">Items · $12,640</small></div><div class="stat"><label data-i="issued">Items issued today</label><strong>27</strong><small data-i="statIssuedDesc">Items · $8,915</small></div></section>
-<div class="grid"><div class="stack"><section class="panel inventory" id="inventory" data-panel="inventory"><div class="phead"><h3 data-i="inventory">Inventory</h3><div class="tools"><span class="segbtns"><button class="seg on" id="segBoard" onclick="setStockLayout('board')" data-i="layoutBoard">Board</button><button class="seg" id="segList" onclick="setStockLayout('list')" data-i="layoutList">List</button></span><select class="control" id="groupFilter" aria-label="Filter inventory by group" onchange="renderGroupFilters();renderStock()"></select><select class="control" id="subgroupFilter" aria-label="Filter inventory by subgroup" onchange="renderStock()"></select><input class="control search" id="search" data-i-ph="searchinv" placeholder="Search inventory..." aria-label="Search inventory..."></div></div><div class="kboard" id="stockBoard"></div><div class="tablewrap" id="stockTable" hidden><table><thead><tr><th class="num" data-i="thItemNo">No.</th><th data-i="thCode">Item code</th><th data-i="thDesc">Description</th><th data-i="thGrade">Grade / dimensions</th><th data-i="thGroupSub">Group / subgroup</th><th data-i="thUnit">Unit</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thReserved">Reserved</th><th class="num" data-i="thAvailable">Available</th><th data-i="thLocation">Location</th><th class="num" data-i="thMin">Min</th><th class="num" data-i="thReorder">Reorder</th><th class="num" data-i="thAvgCost">Avg cost</th><th class="num" data-i="thLastPrice">Last price</th><th data-i="thSupplier">Supplier</th><th data-i="thHeatLot">Heat / Lot</th><th data-i="thCert">Cert</th><th data-i="thStatus">Status</th></tr></thead><tbody id="stockRows"></tbody></table></div><div class="pager" hidden><span id="count"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 105 &nbsp; ›</span></div></section>
+<div class="grid"><div class="stack"><section class="panel inventory" id="inventory" data-panel="inventory"><div class="phead"><h3 data-i="inventory">Inventory</h3><div class="tools"><span class="segbtns"><button class="seg on" id="segBoard" onclick="setStockLayout('board')" data-i="layoutBoard">Board</button><button class="seg" id="segList" onclick="setStockLayout('list')" data-i="layoutList">List</button></span><select class="control" id="groupFilter" aria-label="Filter inventory by group" onchange="renderGroupFilters();renderStock()"></select><select class="control" id="subgroupFilter" aria-label="Filter inventory by subgroup" onchange="renderStock()"></select><input class="control search" id="search" data-i-ph="searchinv" placeholder="Search inventory..." aria-label="Search inventory..."></div></div><div class="kboard" id="stockBoard"></div><div class="tablewrap" id="stockTable" hidden><table><thead><tr><th class="num" data-i="thItemNo">No.</th><th data-i="thCode">Item code</th><th data-i="thDesc">Description</th><th data-i="thGrade">Grade / dimensions</th><th data-i="thGroupSub">Group / subgroup</th><th data-i="thUnit">Unit</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thReserved">Reserved</th><th class="num" data-i="thAvailable">Available</th><th data-i="thLocation">Location</th><th class="num" data-i="thMin">Min</th><th class="num" data-i="thReorder">Reorder</th><th class="num" data-i="thAvgCost">Avg cost</th><th class="num" data-i="thLastPrice">Last price</th><th data-i="thSupplier">Supplier</th><th data-i="thHeatLot">Heat / Lot</th><th data-i="thCert">Cert</th><th data-i="thStatus">Status</th><th data-i="thActions">Actions</th></tr></thead><tbody id="stockRows"></tbody></table></div><div class="pager" hidden><span id="count"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 105 &nbsp; ›</span></div></section>
 <div class="forms"><section class="panel" id="receiving" data-panel="receiving"><div class="phead"><div><h3 data-i="receivingTitle">Receiving materials</h3><small data-i="receivingDesc">Scan supplier barcode → identify → store → label</small></div><label style="color:var(--steel-400)"><input type="checkbox" id="autoLabel" checked> <span data-i="autoPrintLabel">Auto print label</span></label></div><div class="formbody"><div class="scan">▥<b data-i="scanbarcode">SCAN BARCODE / QR CODE</b><span data-i="receivingScanDesc">USB, Bluetooth, or phone/tablet camera input</span></div><div class="fields"><div class="field wide"><label for="receiveBarcode" data-i="lblSupplierBarcode">Supplier barcode / QR *</label><input id="receiveBarcode" value="7350123456789"><button class="btn" style="margin-top:5px;width:100%" onclick="resolveReceiveBarcode()"><span data-i="btnIdentifyLink">Identify / Link barcode</span></button></div><div class="field"><label for="receiveItem" data-i="lblInternalItem">Internal item *</label><select id="receiveItem"></select><button class="btn" style="margin-top:5px;width:100%" onclick="openNewItemForm('receiving')"><span data-i="btnNewFromInvoice">+ New item from this invoice</span></button></div><div class="field"><label for="receiveSupplier" data-i="lblSupplier">Supplier *</label><input id="receiveSupplier" value="SteelCo Pty Ltd"></div><div class="field"><label for="receivePo" data-i="lblPO">Purchase Order *</label><input id="receivePo" value="PO-5567"></div><div class="field"><label for="receiveDn" data-i="lblDN">Delivery Note *</label><input id="receiveDn" value="DN-87452"></div><div class="field"><label for="receiveQty" data-i="lblReceivedQty">Received Qty *</label><input id="receiveQty" type="number" value="12"></div><div class="field"><label for="receiveLocation" data-i="lblStorageLocation">Storage Location *</label><input id="receiveLocation" value="A1-01-02"></div><div class="field"><label for="receiveHeat" data-i="lblBatchHeat">Batch / Heat / Lot *</label><input id="receiveHeat" value="H240516-S534"></div><div class="field"><label for="receiveCert" data-i="lblMaterialCert">Material Certificate</label><input id="receiveCert" value="MTC_H240516-S534.pdf"></div><div class="field"><label for="receivePrice" data-i="lblLastPurchasePrice">Last Purchase Price</label><input id="receivePrice" type="number" value="1910"></div><div class="field"><label for="receiveBy" data-i="lblReceivedBy">Received by</label><input id="receiveBy" value="John Smith"></div></div><div class="actions"><button class="btn" onclick="clearReceiving()"><span data-i="btnClear">Clear</span></button><button class="btn" onclick="showLabel($('receiveItem').value)"><span data-i="btnPrintLabel">Print Label</span></button><button class="btn primary" id="confirmReceipt">✓ <span data-i="btnConfirmReceipt">Confirm Receipt</span></button></div></div></section>
 <section class="panel" id="issuing" data-panel="issuing"><div class="phead"><div><h3 data-i="issueTitle">Issue to project</h3><small data-i="issueDesc">Scan material → scan project/jobcard → quantity</small></div></div><div class="formbody"><div class="scan">▥<b data-i="scanitemqr">SCAN ITEM + PROJECT QR</b><span data-i="issueScanDesc">Every scan writes user, date, time, project and location</span></div><div class="fields"><div class="field wide"><label for="issueItem" data-i="lblMaterial">Material *</label><select id="issueItem"></select></div><div class="field wide"><label for="issueProject" data-i="lblProject">Project *</label><select id="issueProject"></select></div><div class="field"><label for="issueJobcard" data-i="lblJobcard">Jobcard / Work Order</label><input id="issueJobcard" value="JC-1456"></div><div class="field"><label for="issueQty" data-i="lblQtyIssue">Qty to Issue *</label><input id="issueQty" type="number" value="10"></div><div class="field wide"><label for="issueDestination" data-i="lblDestinationStation">Destination / Station</label><input id="issueDestination" value="Fabrication Area · Bay 2"></div><div class="field"><label for="issueBy" data-i="lblIssuedBy">Issued by</label><input id="issueBy" value="Aleksandar C."></div></div><div class="actions"><button class="btn" onclick="reserveSelectedItem()"><span data-i="btnReserve">Reserve</span></button><button class="btn primary" id="confirmIssue">⇥ <span data-i="issue">Issue to Project</span></button></div></div></section></div>
 </div><aside class="stack"><section class="panel" data-panel="inventory"><div class="phead"><h3 data-i="alerts">Low stock alerts</h3><small class="viewall" onclick="showView('reorder')" data-i="viewAll">View all</small></div><div id="alerts"></div></section><section class="panel" data-panel="inventory"><div class="phead"><h3 data-i="recent">Recent stock movements</h3><small class="viewall" onclick="showView('movements')" data-i="viewAll">View all</small></div><div id="moves"></div></section></aside></div>
-<section class="panel" data-panel="groups"><div class="phead"><div><h3 data-i="groupsTitle">Groups &amp; numbering</h3><small class="sub" data-i="groupsSub">Each group numbers its own items from its start number</small></div><button class="btn primary" onclick="openGroupForm()"><span data-i="btnNewGroup">+ New group</span></button></div><div class="opbody" id="groupCards"></div></section><section class="panel locations" id="locations" data-panel="locations"><div class="phead"><div><h3 data-i="locationoverview">Location overview</h3><small data-i="locDesc">Warehouse zones and bin utilisation</small></div><button class="btn" data-i="btnReserveForProject">Reserve for Project</button></div><div class="locbody"><div class="legend">■ &gt; 80%<br>■ 50–80%<br>■ 20–50%<br>■ &lt; 20%<br>□ Empty</div><div class="bins" id="bins"></div></div></section>
+<section class="panel" data-panel="groups"><div class="phead"><div><h3 data-i="groupsTitle">Groups &amp; numbering</h3><small class="sub" data-i="groupsSub">Each group numbers its own items from its start number</small></div><button class="btn primary" onclick="openGroupForm()"><span data-i="btnNewGroup">+ New group</span></button></div><div class="opbody" id="groupCards"></div></section><section class="panel locations" id="locations" data-panel="locations"><div class="phead"><div><h3 data-i="locationoverview">Location overview</h3><small data-i="locDesc">Warehouses, their sublocations and what each one holds</small></div><button class="btn primary" onclick="openWarehouseForm()"><span data-i="btnNewWarehouse">+ New warehouse</span></button></div><div class="opbody" id="warehouseCards"></div></section>
 <section class="operations" id="controlCenter">
 <section class="panel" id="reservations" data-panel="reservations"><div class="phead"><div><h3 data-i="bomTitle">Reservations / BOM readiness</h3><small data-i="bomDesc">Project → Store → Purchasing</small></div><span class="badge low" id="readiness">MATERIAL SHORTAGE</span></div><div class="opbody"><div class="bomhead"><div><b>P-2026-014 — Ventilation Duct System</b><small>JC-1456 · Duct fabrication</small></div><button class="btn primary" onclick="reserveBom()"><span data-i="btnReserveBom">Reserve available BOM</span></button></div><table><thead><tr><th data-i="thMaterial">Material</th><th class="num" data-i="thNeeded">Needed</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thAvailable">Available</th><th data-i="thResult">Result</th><th data-i="thAction">Action</th></tr></thead><tbody id="bomRows"></tbody></table></div></section>
 <section class="panel" id="movements" data-panel="movements"><div class="phead"><h3 data-i="movementsTitle">Material movements</h3><div class="tools"><button class="btn" onclick="openOperation('return')">↩ <span data-i="btnReturn">Return</span></button><button class="btn" onclick="openOperation('transfer')">⇄ <span data-i="btnTransfer">Transfer</span></button><button class="btn" onclick="openOperation('scrap')">✕ <span data-i="btnScrapOffcut">Scrap / Offcut</span></button></div></div><div class="opbody"><table><thead><tr><th data-i="thDateTime">Date / time</th><th data-i="thAction">Action</th><th data-i="thMaterial">Material</th><th class="num" data-i="thQty">Qty</th><th data-i="thFromTo">From → To</th><th data-i="thProjectJobcard">Project / Jobcard</th><th data-i="thMovedBy">Moved by</th></tr></thead><tbody id="movementRows"></tbody></table></div></section>
@@ -131,10 +145,11 @@ html.kdragging .kcard{cursor:grabbing}
 </main></div><div class="toast" id="toast"></div>
 <div class="modal" id="operationModal"><div class="modalcard"><div class="phead"><h3 id="operationTitle" data-i="opModalTitleDefault">Material operation</h3><button class="btn" onclick="closeOperation()">×</button></div><div class="formbody"><div class="scan">▥<b data-i="opScanDesc1">SCAN MATERIAL → SCAN PROJECT / LOCATION</b><span data-i="opScanDesc2">USB, Bluetooth, or camera scanner</span></div><div class="fields"><div class="field wide"><label for="opItem" data-i="lblMaterial">Material *</label><select id="opItem"></select></div><div class="field"><label for="opQty" data-i="lblQuantity">Quantity *</label><input id="opQty" type="number" value="1" min="0.01" step="0.01"></div><div class="field"><label for="opProject" data-i="lblProjectPlain">Project</label><select id="opProject"><option value="" data-i="optNoProject">— No project —</option></select></div><div class="field"><label for="opJobcard" data-i="lblJobcard">Jobcard / Work Order</label><input id="opJobcard" data-i-ph="phJobcardExample" placeholder="JC-1234"></div><div class="field"><label for="opDestination" data-i="lblDestinationLocation">Destination / location</label><input id="opDestination" data-i-ph="phBinLocation" placeholder="Bin location"></div><div class="field wide" style="grid-column:span 3"><label for="opRemarks" data-i="lblDispositionRemarks">Disposition / remarks</label><input id="opRemarks" data-i-ph="phRemarksExample" placeholder="Return, offcut dimensions, scrap reason..."></div></div><div class="actions"><button class="btn" onclick="closeOperation()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="commitOperation()"><span data-i="btnConfirmScanMovement">Confirm scan movement</span></button></div></div></div></div>
 <div class="modal" id="labelModal"><div class="modalcard" style="width:430px"><div class="phead"><h3 data-i="labelModalTitle">VARMAK INTERNAL MATERIAL LABEL</h3><button class="btn" onclick="$('labelModal').classList.remove('show')">×</button></div><div id="labelBody" style="margin:18px;background:#fff;color:#071323;padding:22px;font-size:14px"></div><div class="actions" style="padding:0 18px 18px"><button class="btn" onclick="$('labelModal').classList.remove('show')"><span data-i="btnClose">Close</span></button><button class="btn primary" onclick="window.print()"><span data-i="btnPrintLabelModal">Print label</span></button></div></div></div>
+<div class="modal" id="warehouseModal"><div class="modalcard"><div class="phead"><h3 id="warehouseModalTitle" data-i="newWarehouseTitle">New warehouse</h3><button class="btn" onclick="closeWarehouseForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="warehouseName" data-i="thWarehouse">Warehouse</label><input id="warehouseName" required></div></div><div class="actions"><button class="btn" onclick="closeWarehouseForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveWarehouse()"><span data-i="btnSave">Save</span></button></div></div></div></div><div class="modal" id="sublocationModal"><div class="modalcard"><div class="phead"><h3 id="sublocationModalTitle" data-i="newSublocationTitle">New sublocation</h3><button class="btn" onclick="closeSublocationForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="sublocationName" data-i="thSublocation">Sublocation</label><input id="sublocationName" required></div></div><div class="actions"><button class="btn" onclick="closeSublocationForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveSublocation()"><span data-i="btnSave">Save</span></button></div></div></div></div>
 <div class="modal" id="groupModal"><div class="modalcard"><div class="phead"><h3 id="groupModalTitle" data-i="newGroupTitle">New group</h3><button class="btn" onclick="closeGroupForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="groupName" data-i="thGroup">Group</label><input id="groupName" required></div><div class="field"><label for="groupStart" data-i="groupStartLbl">Numbers start at</label><input id="groupStart" type="number" min="0" step="1" value="5000"></div></div><p class="sub" data-i="groupStartHint">Items in this group are numbered from here upwards, one number each.</p><div class="actions"><button class="btn" onclick="closeGroupForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveGroup()"><span data-i="btnSave">Save</span></button></div></div></div></div><div class="modal" id="subgroupModal"><div class="modalcard"><div class="phead"><h3 id="subgroupModalTitle" data-i="newSubgroupTitle">New subgroup</h3><button class="btn" onclick="closeSubgroupForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="subgroupName" data-i="thSubgroup">Subgroup</label><input id="subgroupName" required></div></div><div class="actions"><button class="btn" onclick="closeSubgroupForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveSubgroup()"><span data-i="btnSave">Save</span></button></div></div></div></div>
-<div class="modal" id="newItemModal"><div class="modalcard"><div class="phead"><h3 data-i="newItemTitle">Create inventory item</h3><button class="btn" onclick="closeNewItemForm()">×</button></div><div class="formbody"><div class="fields"><div class="field"><label for="newGroup" data-i="thGroup">Group</label><select id="newGroup" required onchange="fillSubgroupSelect('newGroup','newSubgroup','newItemNo')"></select></div><div class="field"><label for="newSubgroup" data-i="thSubgroup">Subgroup</label><select id="newSubgroup"></select></div><div class="field"><label for="newItemNo" data-i="thItemNo">Item number</label><input id="newItemNo" readonly tabindex="-1"></div><div class="field wide"><label for="newDescription" data-i="thDesc">Description</label><input id="newDescription" required></div><div class="field"><label for="newCode" data-i="newCodeOptional">Supplier / drawing code</label><input id="newCode" data-i-ph="newCodePlaceholder" placeholder="leave blank to use the item number"></div><div class="field"><label for="newUnit" data-i="thUnit">Unit</label><input id="newUnit" value="EA" required></div><div class="field"><label for="newLocation" data-i="thLocation">Location</label><input id="newLocation" required></div><div class="field"><label for="newGrade" data-i="newGrade">Grade</label><input id="newGrade"></div><div class="field wide"><label for="newDimensions" data-i="newDimensions">Dimensions</label><input id="newDimensions"></div><div class="field"><label for="newStock" data-i="thStock">Stock</label><input id="newStock" type="number" min="0" value="0"></div><div class="field"><label for="newMinStock" data-i="thMin">Min</label><input id="newMinStock" type="number" min="0" value="0"></div><div class="field"><label for="newReorderQty" data-i="thReorder">Reorder</label><input id="newReorderQty" type="number" min="0" value="0"></div><div class="field"><label for="newAvgCost" data-i="thAvgCost">Avg cost</label><input id="newAvgCost" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newLastPrice" data-i="thLastPrice">Last price</label><input id="newLastPrice" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newSupplier" data-i="thSupplier">Supplier</label><input id="newSupplier"></div><div class="field"><label for="newHeat" data-i="thHeatLot">Heat / Lot</label><input id="newHeat"></div></div><div class="actions"><button class="btn" onclick="closeNewItemForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="createInventoryItem()"><span data-i="btnCreateItem">Create item</span></button></div></div></div></div>
+<div class="modal" id="newItemModal"><div class="modalcard"><div class="phead"><h3 id="itemFormTitle" data-i="newItemTitle">Create inventory item</h3><button class="btn" onclick="closeNewItemForm()">×</button></div><div class="formbody"><div class="fields"><div class="field"><label for="newGroup" data-i="thGroup">Group</label><select id="newGroup" required onchange="fillSubgroupSelect('newGroup','newSubgroup','newItemNo')"></select></div><div class="field"><label for="newSubgroup" data-i="thSubgroup">Subgroup</label><select id="newSubgroup"></select></div><div class="field"><label for="newItemNo" data-i="thItemNo">Item number</label><input id="newItemNo" readonly tabindex="-1"></div><div class="field wide"><label for="newDescription" data-i="thDesc">Description</label><input id="newDescription" required></div><div class="field"><label for="newCode" data-i="newCodeOptional">Supplier / drawing code</label><input id="newCode" data-i-ph="newCodePlaceholder" placeholder="leave blank to use the item number"></div><div class="field"><label for="newUnit" data-i="thUnit">Unit</label><input id="newUnit" value="EA" required></div><div class="field"><label for="newWarehouse" data-i="thWarehouse">Warehouse</label><select id="newWarehouse" onchange="fillSublocationSelect('newWarehouse','newSublocation')"></select></div><div class="field"><label for="newSublocation" data-i="thSublocation">Sublocation</label><select id="newSublocation"></select></div><div class="field"><label for="newLocation" data-i="thBin">Bin</label><input id="newLocation" required></div><div class="field"><label for="newGrade" data-i="newGrade">Grade</label><input id="newGrade" oninput="suggestWeight()" data-i-ph="gradePlaceholder" placeholder="e.g. S235JR, AISI 304"></div><div class="field wide"><label for="newDimensions" data-i="newDimensions">Dimensions</label><input id="newDimensions" oninput="suggestWeight()" data-i-ph="dimPlaceholder" placeholder="e.g. DN100 SCH40, or 40 × 40 × 2.0 mm"></div><div class="field"><label for="newShape" data-i="thShape">Section</label><select id="newShape" onchange="suggestWeight()"></select></div><div class="field"><label for="newBaseUnit" data-i="thBaseUnit">Measured in</label><select id="newBaseUnit" onchange="renderMeasurePreview()"><option value="pcs">pcs</option><option value="m">m</option><option value="m2">m²</option><option value="kg">kg</option></select></div><div class="field"><label for="newSizePerUnit" data-i="thSizePerUnit">Per stock unit</label><input id="newSizePerUnit" type="number" min="0" step="0.001" value="1" oninput="renderMeasurePreview()"></div><div class="field"><label for="newWeightPerBase" data-i="thWeightPerBase">kg per measure</label><input id="newWeightPerBase" type="number" min="0" step="0.001" value="0" oninput="renderMeasurePreview()"></div><div class="field full"><div class="measurebox" id="measurePreview"></div></div><div class="field"><label for="newStock" data-i="thStock">Stock</label><input id="newStock" type="number" min="0" value="0" oninput="renderMeasurePreview()"></div><div class="field"><label for="newMinStock" data-i="thMin">Min</label><input id="newMinStock" type="number" min="0" value="0"></div><div class="field"><label for="newReorderQty" data-i="thReorder">Reorder</label><input id="newReorderQty" type="number" min="0" value="0"></div><div class="field"><label for="newAvgCost" data-i="thAvgCost">Avg cost</label><input id="newAvgCost" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newLastPrice" data-i="thLastPrice">Last price</label><input id="newLastPrice" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newSupplier" data-i="thSupplier">Supplier</label><input id="newSupplier"></div><div class="field"><label for="newHeat" data-i="thHeatLot">Heat / Lot</label><input id="newHeat"></div></div><div class="actions"><button class="btn" onclick="closeNewItemForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveInventoryItem()"><span id="itemFormSave" data-i="btnCreateItem">Create item</span></button></div></div></div></div>
 <div class="modal" id="certificateModal"><div class="modalcard"><div class="phead"><h3 data-i="certificateTitle">Attach material certificate</h3><button class="btn" onclick="closeCertificateForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="certificateItem" data-i="lblMaterial">Material</label><select id="certificateItem"></select></div><div class="field"><label for="certificateType" data-i="certificateType">Certificate type</label><input id="certificateType" value="EN 10204 3.1"></div><div class="field wide"><label for="certificateFile" data-i="certificateFile">Certificate file</label><input id="certificateFile" type="file" accept=".pdf,.xml,.txt,.csv,image/*" required></div></div><p class="sub" data-i="certificateStorageNote">The file is stored in Documents and linked to this Store item.</p><div class="actions"><button class="btn" onclick="closeCertificateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="attachCertificate()"><span data-i="btnAttachCert">Attach certificate</span></button></div></div></div></div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="material-reference.js"></script><script src="workshop-forms.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const STOCK=[];
@@ -148,6 +163,12 @@ const T={en:{title:'Store',subtitle:'Inventory & parts',overview:'Inventory Over
 Object.assign(T.en,{btnNewFromInvoice:'+ New item from this invoice'});
 Object.assign(T.sv,{btnNewFromInvoice:'+ Ny artikel från denna faktura'});
 Object.assign(T.mk,{btnNewFromInvoice:'+ Нов артикл од оваа фактура'});
+Object.assign(T.en,{btnNewWarehouse:'+ New warehouse',btnAddSublocation:'+ Sublocation',newWarehouseTitle:'New warehouse',editWarehouseTitle:'Edit warehouse',newSublocationTitle:'New sublocation',editSublocationTitle:'Rename sublocation',noSublocations:'No sublocations yet.',noWarehouses:'No warehouses yet.',unfiledItems:'{n} not placed in a sublocation',notifyWarehouseSaved:'Warehouse saved: {name}',notifyWarehouseDeleted:'Warehouse deleted: {name}',notifySublocationSaved:'Sublocation saved: {name}',notifySublocationDeleted:'Sublocation deleted: {name}',confirmDeleteWarehouse:'Delete the warehouse {name}?',confirmDeleteSublocation:'Delete the sublocation {name}?'});
+Object.assign(T.sv,{btnNewWarehouse:'+ Nytt lager',btnAddSublocation:'+ Delplats',newWarehouseTitle:'Nytt lager',editWarehouseTitle:'Redigera lager',newSublocationTitle:'Ny delplats',editSublocationTitle:'Byt namn på delplats',noSublocations:'Inga delplatser ännu.',noWarehouses:'Inga lager ännu.',unfiledItems:'{n} utan delplats',notifyWarehouseSaved:'Lager sparat: {name}',notifyWarehouseDeleted:'Lager borttaget: {name}',notifySublocationSaved:'Delplats sparad: {name}',notifySublocationDeleted:'Delplats borttagen: {name}',confirmDeleteWarehouse:'Ta bort lagret {name}?',confirmDeleteSublocation:'Ta bort delplatsen {name}?'});
+Object.assign(T.mk,{btnNewWarehouse:'+ Нов магацин',btnAddSublocation:'+ Подлокација',newWarehouseTitle:'Нов магацин',editWarehouseTitle:'Уреди магацин',newSublocationTitle:'Нова подлокација',editSublocationTitle:'Преименувај подлокација',noSublocations:'Сè уште нема подлокации.',noWarehouses:'Сè уште нема магацини.',unfiledItems:'{n} без подлокација',notifyWarehouseSaved:'Магацинот е зачуван: {name}',notifyWarehouseDeleted:'Магацинот е избришан: {name}',notifySublocationSaved:'Подлокацијата е зачувана: {name}',notifySublocationDeleted:'Подлокацијата е избришана: {name}',confirmDeleteWarehouse:'Да се избрише магацинот {name}?',confirmDeleteSublocation:'Да се избрише подлокацијата {name}?'});
+Object.assign(T.en,{thWarehouse:'Warehouse',thSublocation:'Sublocation',thBin:'Bin',thShape:'Section',thBaseUnit:'Measured in',thSizePerUnit:'Per stock unit',thWeightPerBase:'kg per measure',thActions:'Actions',shapeNone:'(not a standard section)',dimPlaceholder:'e.g. DN100 SCH40, or 40 × 40 × 2.0 mm',gradePlaceholder:'e.g. S235JR, AISI 304',weightSuggested:'{label} → {w} kg per {unit}',measureUnits:'{n} {unit}',editItemTitle:'Edit item {no}',notifyItemUpdated:'Item {no} updated: {desc}',notifyItemDeleted:'Item {no} deleted: {desc}',confirmDeleteItem:'Delete item {no} {desc}?',cannotDeleteItem:'Item {no} {desc} cannot be deleted — it is used in:',usedIn_movements:'Stock movements',usedIn_projectBom:'Project BOM',usedIn_jobcards:'Jobcards',usedIn_offcuts:'Offcuts',usedIn_purchaseOrders:'Purchase orders',usedIn_estimations:'Estimations',usedIn_barcodes:'Barcodes',usedIn_stockCounts:'Stock counts',usedIn_stock:'Stock on the shelf'});
+Object.assign(T.sv,{thWarehouse:'Lager',thSublocation:'Delplats',thBin:'Fack',thShape:'Profil',thBaseUnit:'Mäts i',thSizePerUnit:'Per lagerenhet',thWeightPerBase:'kg per mått',thActions:'Åtgärder',shapeNone:'(ingen standardprofil)',dimPlaceholder:'t.ex. DN100 SCH40, eller 40 × 40 × 2,0 mm',gradePlaceholder:'t.ex. S235JR, AISI 304',weightSuggested:'{label} → {w} kg per {unit}',measureUnits:'{n} {unit}',editItemTitle:'Redigera artikel {no}',notifyItemUpdated:'Artikel {no} uppdaterad: {desc}',notifyItemDeleted:'Artikel {no} borttagen: {desc}',confirmDeleteItem:'Ta bort artikel {no} {desc}?',cannotDeleteItem:'Artikel {no} {desc} kan inte tas bort — den används i:',usedIn_movements:'Lagerrörelser',usedIn_projectBom:'Projektets materiallista',usedIn_jobcards:'Arbetskort',usedIn_offcuts:'Restmaterial',usedIn_purchaseOrders:'Inköpsorder',usedIn_estimations:'Kalkyler',usedIn_barcodes:'Streckkoder',usedIn_stockCounts:'Inventeringar',usedIn_stock:'Saldo på hyllan'});
+Object.assign(T.mk,{thWarehouse:'Магацин',thSublocation:'Подлокација',thBin:'Полица',thShape:'Профил',thBaseUnit:'Се мери во',thSizePerUnit:'По складишна единица',thWeightPerBase:'kg по мера',thActions:'Дејства',shapeNone:'(не е стандарден профил)',dimPlaceholder:'пр. DN100 SCH40, или 40 × 40 × 2,0 mm',gradePlaceholder:'пр. S235JR, AISI 304',weightSuggested:'{label} → {w} kg по {unit}',measureUnits:'{n} {unit}',editItemTitle:'Уреди артикл {no}',notifyItemUpdated:'Артиклот {no} е ажуриран: {desc}',notifyItemDeleted:'Артиклот {no} е избришан: {desc}',confirmDeleteItem:'Да се избрише артиклот {no} {desc}?',cannotDeleteItem:'Артиклот {no} {desc} не може да се избрише — се користи во:',usedIn_movements:'Движења на залиха',usedIn_projectBom:'Материјална листа на проект',usedIn_jobcards:'Работни налози',usedIn_offcuts:'Остатоци',usedIn_purchaseOrders:'Нарачки',usedIn_estimations:'Пресметки',usedIn_barcodes:'Баркодови',usedIn_stockCounts:'Пописи',usedIn_stock:'Залиха на полица'});
 Object.assign(T.en,{layoutBoard:'Board',layoutList:'List',boardFrom:'from {start}',boardEmptyGroup:'Nothing filed here yet.',notifyRefiled:'Item {no} moved to {group} / {sub}',btnMoveItem:'Move item',confirmRefile:'Move {no} {desc} to {group} / {sub}?\n\nThe item keeps its number - the number identifies the item, and it is already written on its receipts and issues.'});
 Object.assign(T.sv,{layoutBoard:'Tavla',layoutList:'Lista',boardFrom:'från {start}',boardEmptyGroup:'Inget här ännu.',notifyRefiled:'Artikel {no} flyttad till {group} / {sub}',btnMoveItem:'Flytta artikel',confirmRefile:'Flytta {no} {desc} till {group} / {sub}?\n\nArtikeln behåller sitt nummer - numret identifierar artikeln och står redan på dess inleveranser och uttag.'});
 Object.assign(T.mk,{layoutBoard:'Табла',layoutList:'Листа',boardFrom:'од {start}',boardEmptyGroup:'Сè уште нема ништо тука.',notifyRefiled:'Артиклот {no} е преместен во {group} / {sub}',btnMoveItem:'Премести',confirmRefile:'Да се премести {no} {desc} во {group} / {sub}?\n\nАртиклот го задржува својот број - бројот го идентификува артиклот и веќе е запишан на неговите приеми и издавања.'});
@@ -271,11 +292,21 @@ showView(location.hash.slice(1)||'inventory');
       const items=mine.filter(x=>String((META[x[0]]||[])[11]||'')===subId);
       const cards=items.map(x=>{
         const m=META[x[0]]||[],available=x[4]-x[5],low=available<=x[7],out=available<=0;
+        const meas=WorkshopData.itemMeasure(x[0],available);
+        const bits=[];
+        if(meas&&meas.sizePerUnit!==1)bits.push(`${meas.baseQty} ${meas.baseUnit==='m2'?'m²':meas.baseUnit}`);
+        if(meas&&meas.weightKg!=null)bits.push(`${meas.weightKg} kg`);
+        const amounts=bits.length?`<div class="kcamount">${escapeHtml(bits.join(' · '))}</div>`:'';
         return `<div class="kcard ${out?'out':low?'low':''}" data-code="${escapeHtml(x[0])}"
           onpointerdown="stockPointerDown(event,'${escapeHtml(x[0])}')"
           onpointermove="stockPointerMove(event)" onpointerup="stockPointerUp(event)">
+          <span class="kcacts">
+            <button class="mini" title="${escapeHtml(currentT.btnEdit)}" onpointerdown="event.stopPropagation()" onclick="openEditItemForm('${escapeHtml(x[0])}')">✎</button>
+            <button class="mini" title="${escapeHtml(currentT.btnDelete)}" onpointerdown="event.stopPropagation()" onclick="removeInventoryItem('${escapeHtml(x[0])}')">×</button>
+          </span>
           <b><span class="kcno">${escapeHtml(m[9]??'—')}</span> ${escapeHtml(x[1])}</b>
           <div class="kcmeta"><span>${escapeHtml(x[6])}</span><span class="q">${available.toLocaleString()} ${escapeHtml(x[3])}</span></div>
+          ${amounts}
         </div>`;
       }).join('');
       return `<div class="ksub${items.length?'':' empty'}" data-group="${escapeHtml(groupId)}" data-sub="${escapeHtml(subId)}">${escapeHtml(subName)}<span>${items.length}</span></div>${cards}`;
@@ -382,13 +413,248 @@ showView(location.hash.slice(1)||'inventory');
       return (x.join(' ')+m.join(' ')).toLowerCase().includes(q);
     });
     if(stockLayout==='board')renderStockBoard(rows);
-    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td></tr>`}).join('');
+    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td><td class="rowacts"><button class="mini" onclick="openEditItemForm('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnEdit)}</button><button class="mini" onclick="removeInventoryItem('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnDelete)}</button></td></tr>`}).join('');
     $('count').textContent=currentT.showingCount.replace('{n}',rows.length);
   };
 
   // How much to bring in to clear a shortfall: the item's own reorder quantity
   // when it has one, otherwise enough to reach the minimum again.
   const reorderQty=(reorder,min,available)=>Math.max(1,Math.round(Number(reorder)>0?Number(reorder):Math.max(0,Number(min)||0)-Math.max(0,Number(available)||0)||1));
+
+  // ---- The item form, used to create and to edit ---------------------------
+  let itemFormEditing=null;
+  window.fillSublocationSelect=function(whSel,subSel){
+    const wh=$(whSel),sub=$(subSel);
+    if(!wh||!sub)return;
+    const g=WorkshopData.findLocationGroup(wh.value);
+    const keep=sub.value;
+    sub.innerHTML=`<option value="">${escapeHtml(currentT.subgroupNone)}</option>`+
+      ((g&&g.subgroups)||[]).map(x=>`<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)}</option>`).join('');
+    if(keep&&((g&&g.subgroups)||[]).some(x=>x.id===keep))sub.value=keep;
+  };
+  function fillWarehouseSelects(){
+    const wh=$('newWarehouse');
+    const keep=wh.value;
+    const list=WorkshopData.listLocationGroups();
+    wh.innerHTML=list.map(g=>`<option value="${escapeHtml(g.id)}">${escapeHtml(g.name)}</option>`).join('');
+    if(keep&&list.some(g=>g.id===keep))wh.value=keep;
+    fillSublocationSelect('newWarehouse','newSublocation');
+  }
+  function fillShapeSelect(){
+    const sel=$('newShape'),keep=sel.value;
+    sel.innerHTML=`<option value="">${escapeHtml(currentT.shapeNone)}</option>`+
+      MaterialReference.SHAPES.map(x=>`<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)}</option>`).join('');
+    if(keep)sel.value=keep;
+  }
+  // The standards table proposes a weight from what has been typed. It fills
+  // the field only while the field is still a suggestion - once a figure is
+  // edited by hand, nothing overwrites it.
+  let weightIsSuggested=true;
+  window.markWeightTyped=function(){weightIsSuggested=false;};
+  window.suggestWeight=function(){
+    const desc=`${$('newDescription').value} ${$('newDimensions').value}`;
+    const hit=MaterialReference.suggest(desc,$('newGrade').value,$('newShape').value||undefined);
+    if(!hit){renderMeasurePreview('');return;}
+    if(weightIsSuggested){
+      $('newWeightPerBase').value=hit.weightPerBase;
+      $('newBaseUnit').value=hit.baseUnit;
+      if(hit.shape&&$('newShape').value!==hit.shape)$('newShape').value=hit.shape;
+    }
+    renderMeasurePreview(currentT.weightSuggested
+      .replace('{label}',hit.label||MaterialReference.SHAPES.find(x=>x.id===hit.shape)?.name||'')
+      .replace('{w}',hit.weightPerBase)
+      .replace('{unit}',hit.baseUnit==='m2'?'m²':hit.baseUnit));
+  };
+  // What the quantity on the form actually amounts to, shown before it is saved.
+  window.renderMeasurePreview=function(hint){
+    const qty=Number($('newStock').value)||0;
+    const measure=WorkshopData.itemMeasure({
+      unit:$('newUnit').value,baseUnit:$('newBaseUnit').value,
+      sizePerUnit:$('newSizePerUnit').value,weightPerBase:$('newWeightPerBase').value},qty);
+    const base=measure.baseUnit==='m2'?'m²':measure.baseUnit;
+    const parts=[currentT.measureUnits.replace('{n}',qty).replace('{unit}',measure.unit||'EA')];
+    if(measure.sizePerUnit!==1||base!=='pcs')parts.push(`${measure.baseQty} ${base}`);
+    if(measure.weightKg!=null)parts.push(`${measure.weightKg} kg`);
+    $('measurePreview').innerHTML=`<span class="measurecalc">${parts.map(escapeHtml).join('<b> = </b>')}</span>`+
+      `<span class="measurehint" id="measureHint">${escapeHtml(hint||'')}</span>`;
+  };
+  window.openNewItemForm=function(returnTo){
+    newItemReturnTo=returnTo||null;
+    itemFormEditing=null;weightIsSuggested=true;
+    ['newCode','newDescription','newLocation','newGrade','newDimensions','newSupplier','newHeat'].forEach(id=>$(id).value='');
+    $('newUnit').value='EA';['newStock','newMinStock','newReorderQty','newAvgCost','newLastPrice','newWeightPerBase'].forEach(id=>$(id).value='0');
+    $('newSizePerUnit').value='1';$('newBaseUnit').value='pcs';
+    fillGroupSelects('newGroup','newSubgroup','newItemNo');
+    fillWarehouseSelects();fillShapeSelect();
+    $('newShape').value='';
+    $('newCode').readOnly=false;
+    $('itemFormTitle').textContent=currentT.newItemTitle;
+    $('itemFormSave').textContent=currentT.btnCreateItem;
+    if(newItemReturnTo==='receiving'){
+      // Carry across what the receipt already knows about the line.
+      $('newSupplier').value=$('receiveSupplier').value||'';
+      $('newLocation').value=$('receiveLocation').value||'';
+      $('newLastPrice').value=$('receivePrice').value||'0';
+      $('newHeat').value=$('receiveHeat').value||'';
+    }
+    renderMeasurePreview();
+    $('newItemModal').classList.add('show');$('newDescription').focus();
+  };
+  window.openEditItemForm=function(code){
+    const item=shared.inventory.find(x=>String(x.code)===String(code));
+    if(!item)return;
+    newItemReturnTo=null;itemFormEditing=item.code;weightIsSuggested=false;
+    fillGroupSelects('newGroup','newSubgroup','newItemNo');
+    $('newGroup').value=item.group||'';
+    fillSubgroupSelect('newGroup','newSubgroup',null);
+    $('newSubgroup').value=item.subgroup||'';
+    fillWarehouseSelects();
+    $('newWarehouse').value=item.locationGroup||'';
+    fillSublocationSelect('newWarehouse','newSublocation');
+    $('newSublocation').value=item.locationSub||'';
+    fillShapeSelect();$('newShape').value='';
+    // The number and the code identify the item and are not edited here.
+    $('newItemNo').value=item.itemNo??'';
+    $('newCode').value=item.code;$('newCode').readOnly=true;
+    $('newDescription').value=item.description||'';
+    $('newUnit').value=item.unit||'EA';
+    $('newLocation').value=item.location||'';
+    $('newGrade').value=item.grade||'';
+    $('newDimensions').value=item.dimensions||'';
+    $('newBaseUnit').value=item.baseUnit||'pcs';
+    $('newSizePerUnit').value=item.sizePerUnit??1;
+    $('newWeightPerBase').value=item.weightPerBase??0;
+    ['stock','minStock','reorderQty','avgCost','lastPrice'].forEach(f=>{
+      const id='new'+f.charAt(0).toUpperCase()+f.slice(1);
+      if($(id))$(id).value=item[f]??0;
+    });
+    $('newSupplier').value=item.supplier||'';
+    $('newHeat').value=item.heat||'';
+    $('itemFormTitle').textContent=currentT.editItemTitle.replace('{no}',item.itemNo);
+    $('itemFormSave').textContent=currentT.btnSave;
+    renderMeasurePreview();
+    $('newItemModal').classList.add('show');$('newDescription').focus();
+  };
+  window.saveInventoryItem=function(){
+    const payload={description:$('newDescription').value,group:$('newGroup').value,subgroup:$('newSubgroup').value,
+      unit:$('newUnit').value,location:$('newLocation').value,
+      locationGroup:$('newWarehouse').value,locationSub:$('newSublocation').value,
+      grade:$('newGrade').value,dimensions:$('newDimensions').value,
+      baseUnit:$('newBaseUnit').value,sizePerUnit:$('newSizePerUnit').value,weightPerBase:$('newWeightPerBase').value,
+      stock:$('newStock').value,minStock:$('newMinStock').value,reorderQty:$('newReorderQty').value,
+      avgCost:$('newAvgCost').value,lastPrice:$('newLastPrice').value,
+      supplier:$('newSupplier').value,heat:$('newHeat').value};
+    if(itemFormEditing){
+      const res=WorkshopData.updateInventoryItem(itemFormEditing,payload);
+      if(res?.error)return notify(res.error);
+      closeNewItemForm();
+      return refresh(currentT.notifyItemUpdated.replace('{no}',res.itemNo).replace('{desc}',res.description));
+    }
+    payload.code=$('newCode').value;
+    const result=WorkshopData.createInventoryItem(payload);
+    if(result?.error)return notify(result.error);
+    const returnTo=newItemReturnTo;
+    closeNewItemForm();
+    refresh((currentT.notifyItemCreated||'Inventory item created: {code}').replace('{code}',result.itemNo+' '+result.description));
+    if(returnTo==='receiving'){
+      $('receiveItem').value=result.code;
+      fillReceiveFromItem();
+      showView('receiving');
+      $('receiveQty').focus();
+    }
+  };
+  // ---- Deleting an item ----------------------------------------------------
+  window.removeInventoryItem=function(code){
+    const item=shared.inventory.find(x=>String(x.code)===String(code));
+    if(!item)return;
+    const usage=WorkshopData.itemUsage(item.code);
+    const onShelf=Number(item.stock)>0;
+    if(usage.length||onShelf){
+      // Say where it is used rather than only that it cannot go.
+      const lines=usage.map(u=>`• ${currentT['usedIn_'+u.where]||u.where}: ${u.count}${u.examples.length?' — '+u.examples.join(', '):''}`);
+      if(onShelf)lines.unshift(`• ${currentT.usedIn_stock}: ${item.stock} ${item.unit} — ${item.location||'—'}`);
+      return wAlert(currentT.cannotDeleteItem.replace('{no}',item.itemNo).replace('{desc}',item.description)+'\n\n'+lines.join('\n'));
+    }
+    wConfirm(currentT.confirmDeleteItem.replace('{no}',item.itemNo).replace('{desc}',item.description),()=>{
+      const res=WorkshopData.deleteInventoryItem(item.code);
+      if(res&&res.error)return notify(res.error);
+      refresh(currentT.notifyItemDeleted.replace('{no}',res.itemNo).replace('{desc}',res.description));
+    },{yes:currentT.btnDelete,danger:true});
+  };
+
+  // ---- Warehouses page -----------------------------------------------------
+  let warehouseEditing=null,sublocationParent=null,sublocationEditing=null;
+  window.renderWarehouses=function(){
+    const groups=WorkshopData.listLocationGroups();
+    $('warehouseCards').innerHTML=groups.map(g=>{
+      const held=shared.inventory.filter(x=>x.locationGroup===g.id);
+      const subs=(g.subgroups||[]).map(sub=>{
+        const items=held.filter(x=>x.locationSub===sub.id);
+        const bins=[...new Set(items.map(x=>x.location).filter(Boolean))];
+        return `<span class="subchip"><b>${escapeHtml(sub.name)}</b><span class="sub">${items.length}</span>`+
+          (bins.length?`<span class="binlist">${escapeHtml(bins.slice(0,4).join(' · '))}${bins.length>4?' …':''}</span>`:'')+
+          `<button class="mini" title="${escapeHtml(currentT.btnRename)}" onclick="openSublocationForm('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">✎</button>`+
+          `<button class="mini" title="${escapeHtml(currentT.btnDelete)}" onclick="removeSublocation('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">×</button></span>`;
+      }).join('')||`<span class="sub">${escapeHtml(currentT.noSublocations)}</span>`;
+      const unfiled=held.filter(x=>!x.locationSub).length;
+      return `<div class="groupcard"><div class="grouphead">
+        <div><b>${escapeHtml(g.name)}</b>${unfiled?`<small class="sub">${escapeHtml(currentT.unfiledItems.replace('{n}',unfiled))}</small>`:''}</div>
+        <span class="groupcount">${escapeHtml(currentT.groupItems.replace('{n}',held.length))}</span>
+        <span class="groupactions">
+          <button class="mini" onclick="openSublocationForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnAddSublocation)}</button>
+          <button class="mini" onclick="openWarehouseForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnEdit)}</button>
+          <button class="mini" onclick="removeWarehouse('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnDelete)}</button>
+        </span></div><div class="subchips">${subs}</div></div>`;
+    }).join('')||`<span class="sub">${escapeHtml(currentT.noWarehouses)}</span>`;
+  };
+  window.openWarehouseForm=function(id){
+    warehouseEditing=id||null;
+    const g=id?WorkshopData.findLocationGroup(id):null;
+    $('warehouseModalTitle').textContent=g?currentT.editWarehouseTitle:currentT.newWarehouseTitle;
+    $('warehouseName').value=g?g.name:'';
+    $('warehouseModal').classList.add('show');$('warehouseName').focus();
+  };
+  window.closeWarehouseForm=function(){$('warehouseModal').classList.remove('show');warehouseEditing=null};
+  window.saveWarehouse=function(){
+    const payload={name:$('warehouseName').value};
+    if(warehouseEditing)payload.id=warehouseEditing;
+    const res=WorkshopData.upsertLocationGroup(payload);
+    if(res&&res.error)return notify(res.error);
+    closeWarehouseForm();refresh(currentT.notifyWarehouseSaved.replace('{name}',res.name));
+  };
+  window.removeWarehouse=function(id){
+    const g=WorkshopData.findLocationGroup(id);if(!g)return;
+    wConfirm(currentT.confirmDeleteWarehouse.replace('{name}',g.name),()=>{
+      const res=WorkshopData.deleteLocationGroup(id);
+      if(res&&res.error)return notify(res.error);
+      refresh(currentT.notifyWarehouseDeleted.replace('{name}',g.name));
+    },{yes:currentT.btnDelete,danger:true});
+  };
+  window.openSublocationForm=function(groupId,subId){
+    sublocationParent=groupId;sublocationEditing=subId||null;
+    const g=WorkshopData.findLocationGroup(groupId);
+    const sub=subId&&(g.subgroups||[]).find(x=>x.id===subId);
+    $('sublocationModalTitle').textContent=sub?currentT.editSublocationTitle:currentT.newSublocationTitle;
+    $('sublocationName').value=sub?sub.name:'';
+    $('sublocationModal').classList.add('show');$('sublocationName').focus();
+  };
+  window.closeSublocationForm=function(){$('sublocationModal').classList.remove('show');sublocationParent=null;sublocationEditing=null};
+  window.saveSublocation=function(){
+    const payload={name:$('sublocationName').value};
+    if(sublocationEditing)payload.id=sublocationEditing;
+    const res=WorkshopData.upsertSublocation(sublocationParent,payload);
+    if(res&&res.error)return notify(res.error);
+    closeSublocationForm();refresh(currentT.notifySublocationSaved.replace('{name}',res.name));
+  };
+  window.removeSublocation=function(groupId,subId){
+    const g=WorkshopData.findLocationGroup(groupId);
+    const sub=g&&(g.subgroups||[]).find(x=>x.id===subId);if(!sub)return;
+    wConfirm(currentT.confirmDeleteSublocation.replace('{name}',sub.name),()=>{
+      const res=WorkshopData.deleteSublocation(groupId,subId);
+      if(res&&res.error)return notify(res.error);
+      refresh(currentT.notifySublocationDeleted.replace('{name}',sub.name));
+    },{yes:currentT.btnDelete,danger:true});
+  };
 
   // ---- Groups & numbering page ----
   let groupEditing=null,subgroupParent=null,subgroupEditing=null;
@@ -470,8 +736,7 @@ showView(location.hash.slice(1)||'inventory');
     const lows=STOCK.filter(x=>x[4]-x[5]<=x[7]).slice(0,5);
     $('alerts').innerHTML=lows.map(x=>`<div class="alert"><b>⚠ ${escapeHtml(x[1])}</b><span>${currentT.thAvailable} ${x[4]-x[5]}</span><span>${currentT.thMin} ${x[7]}</span></div>`).join('')||`<div class="project sub">${currentT.noLowStockAlerts}</div>`;
     $('moves').innerHTML=TRANSACTIONS.slice(0,5).map(m=>`<div class="movement"><i>⇄</i><b>${escapeHtml(m.action)} · ${escapeHtml(m.project)}<br><span>${escapeHtml(item(m.code)?.[1]||m.code)}</span></b><span>${escapeHtml(m.time.split(' ').slice(-1)[0])}</span></div>`).join('');
-    $('bins').innerHTML=[['A1','Sheet Steel',82,'hot'],['A2','Steel Tubing',68,'mid'],['B1','Welding Cons.',55,'mid'],['C1','Fasteners',48,'mid'],['D1','Abrasives',36,''],['E1','Bearings',28,''],['F1','Coatings',42,'mid'],['O1','Offcuts',22,'']].map(x=>`<div class="bin ${x[3]}"><b>${x[0]}</b><small>${x[1]}</small><strong>${x[2]}%</strong></div>`).join('');
-  };
+      };
 
   window.renderControl=function(){
     const primary=shared.projects.find(x=>x.no==='P-2026-014')||shared.projects[0],readiness=primary&&WorkshopData.readiness(primary.no);
@@ -495,7 +760,7 @@ showView(location.hash.slice(1)||'inventory');
     [total,low,reserved,money(value),received,issued].forEach((v,i)=>{if(values[i])values[i].textContent=v});
   }
 
-  function refresh(message){hydrateSharedStore();rebuildSelectors();renderStock();renderSide();renderControl();renderOffcuts();renderGroups();updateStats();if(message)notify(message)}
+  function refresh(message){hydrateSharedStore();rebuildSelectors();renderStock();renderSide();renderControl();renderOffcuts();renderGroups();renderWarehouses();updateStats();if(message)notify(message)}
   window.refreshStoreView=()=>refresh();
 
   // The group decides the number, so the form fills the group list first and
@@ -518,35 +783,7 @@ showView(location.hash.slice(1)||'inventory');
   // When the create form is opened from a receipt it comes back to it: the new
   // item is selected on the receiving line so the goods can be booked straight in.
   let newItemReturnTo=null;
-  window.openNewItemForm=function(returnTo){
-    newItemReturnTo=returnTo||null;
-    ['newCode','newDescription','newLocation','newGrade','newDimensions','newSupplier','newHeat'].forEach(id=>$(id).value='');
-    $('newUnit').value='EA';['newStock','newMinStock','newReorderQty','newAvgCost','newLastPrice'].forEach(id=>$(id).value='0');
-    fillGroupSelects('newGroup','newSubgroup','newItemNo');
-    if(newItemReturnTo==='receiving'){
-      // Carry across what the receipt already knows about the line.
-      $('newSupplier').value=$('receiveSupplier').value||'';
-      $('newLocation').value=$('receiveLocation').value||'';
-      $('newLastPrice').value=$('receivePrice').value||'0';
-      $('newHeat').value=$('receiveHeat').value||'';
-    }
-    $('newItemModal').classList.add('show');$('newDescription').focus();
-  };
-  window.closeNewItemForm=function(){newItemReturnTo=null;$('newItemModal').classList.remove('show')};
-  window.createInventoryItem=function(){
-    const result=WorkshopData.createInventoryItem({code:$('newCode').value,description:$('newDescription').value,group:$('newGroup').value,subgroup:$('newSubgroup').value,unit:$('newUnit').value,location:$('newLocation').value,grade:$('newGrade').value,dimensions:$('newDimensions').value,stock:$('newStock').value,minStock:$('newMinStock').value,reorderQty:$('newReorderQty').value,avgCost:$('newAvgCost').value,lastPrice:$('newLastPrice').value,supplier:$('newSupplier').value,heat:$('newHeat').value});
-    if(result?.error)return notify(result.error);
-    const returnTo=newItemReturnTo;
-    closeNewItemForm();
-    refresh((currentT.notifyItemCreated||'Inventory item created: {code}').replace('{code}',result.itemNo+' '+result.description));
-    if(returnTo==='receiving'){
-      $('receiveItem').value=result.code;
-      fillReceiveFromItem();
-      showView('receiving');
-      $('receiveQty').focus();
-    }
-  };
-
+  window.closeNewItemForm=function(){newItemReturnTo=null;itemFormEditing=null;$('newItemModal').classList.remove('show')};
   window.openCertificateForm=function(){
     rebuildSelectors();$('certificateFile').value='';$('certificateType').value='EN 10204 3.1';
     $('certificateModal').classList.add('show');
