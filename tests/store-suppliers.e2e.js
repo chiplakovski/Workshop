@@ -425,6 +425,41 @@ async function receiveGoods(page, poNo) {
   assert.equal(gas.baseUnit, 'm3');
   assert.ok(gas.itemNo >= 2000 && gas.itemNo < 3000, 'and it takes a consumables number');
   step('Store: the catalogue fills an item whole, from plate to gas bottle');
+
+  // The shell is fixed: the window never scrolls, the sidebar stands full
+  // height, and the user badge stays at its foot while the nav scrolls.
+  const shell = await page.evaluate(() => {
+    const user = document.querySelector('.user').getBoundingClientRect();
+    const main = document.querySelector('.main');
+    const scroller = document.querySelector('.sidescroll');
+    scroller.scrollTop = 9999;
+    return {
+      windowScrolls: document.documentElement.scrollHeight - window.innerHeight,
+      sidebarFixed: getComputedStyle(document.querySelector('.sidebar')).position === 'fixed',
+      mainScrollable: getComputedStyle(main).overflowY === 'auto',
+      userAtFoot: window.innerHeight - user.bottom,
+      userAfterNavScroll: Math.round(document.querySelector('.user').getBoundingClientRect().bottom)
+    };
+  });
+  assert.ok(shell.windowScrolls <= 2, 'the window itself must not scroll');
+  assert.ok(shell.sidebarFixed, 'the sidebar must stand fixed');
+  assert.ok(shell.mainScrollable, 'the page body is what scrolls');
+  assert.ok(shell.userAtFoot >= 0 && shell.userAtFoot < 30, 'the user badge sits at the foot of the sidebar');
+  assert.equal(shell.userAfterNavScroll, Math.round(await page.evaluate(() => document.querySelector('.user').getBoundingClientRect().bottom)),
+    'and stays there while the nav scrolls under it');
+
+  const type = await page.evaluate(() => ({
+    navgroup: getComputedStyle(document.querySelector('.navgroup')),
+    phead: getComputedStyle(document.querySelector('.phead h3'))
+  })).then(() => page.evaluate(() => ({
+    navgroupSize: parseFloat(getComputedStyle(document.querySelector('.navgroup')).fontSize),
+    navgroupWeight: Number(getComputedStyle(document.querySelector('.navgroup')).fontWeight),
+    pheadSize: parseFloat(getComputedStyle(document.querySelector('.phead h3')).fontSize),
+    pheadWeight: Number(getComputedStyle(document.querySelector('.phead h3')).fontWeight)
+  })));
+  assert.ok(type.navgroupSize >= 11 && type.navgroupWeight >= 700, 'the nav group labels are set bigger and bold');
+  assert.ok(type.pheadSize >= 17 && type.pheadWeight >= 800, 'and so are the panel headings');
+  step('Store: the shell is fixed, with the user badge at the foot and the headings set bolder');
 }
 
 async function main() {

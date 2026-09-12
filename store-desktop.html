@@ -125,16 +125,55 @@ html.kdragging .kcard{cursor:grabbing}
 .catpick .btn{height:32px;padding:0 14px}
 .cathint{margin-top:6px;font-size:11.5px;color:var(--steel-300);font-variant-numeric:tabular-nums;min-height:14px}
 @media(max-width:900px){.catpick{grid-template-columns:1fr}}
+
+/* ---- Fixed shell: the page itself does not scroll. The sidebar stands full
+   height with the brand pinned at the top and the user at the foot, and only
+   the nav between them and the page body scroll. ---- */
+html,body{height:100%}
+body{overflow:hidden}
+.app{height:100vh;min-height:0}
+.sidebar{position:fixed;top:0;left:0;width:205px;height:100vh;overflow:hidden;z-index:3}
+.app>.main{grid-column:2}
+.main{height:100vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.brand{flex:none}
+.sidescroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;margin:0 -4px;padding:0 4px}
+.sidescroll::-webkit-scrollbar{width:6px}
+.sidescroll::-webkit-scrollbar-thumb{background:rgba(var(--c-line-rgb),.45)}
+.user{flex:none;margin-top:0;background:linear-gradient(180deg,transparent,var(--navy-950) 40%)}
+@media(max-width:1300px){.sidebar{width:185px}}
+@media(max-width:900px){
+  html,body{height:auto}
+  body{overflow:visible}
+  .app{height:auto}
+  .sidebar{position:static;width:100%;height:auto;overflow:visible}
+  .main{height:auto;overflow:visible}
+  .sidescroll{overflow:visible}
+}
+
+/* ---- Headings carry more weight: the nav group labels and every panel head ---- */
+.navgroup{margin:16px 0 5px;font:800 11px var(--font-heading);letter-spacing:.14em;color:var(--steel-300)}
+.navgroup:first-child{margin-top:2px}
+.phead h3{font:800 17px var(--font-heading);letter-spacing:.01em}
+.title h2{font-weight:800}
+.sidebox h4{font:800 11px var(--font-heading);letter-spacing:.12em;text-transform:uppercase}
+.modalcard .phead h3{font-size:16px}
+
+/* The nav scrolls when it has to, but a little less room per row means it
+   usually does not have to. */
+.brand{padding-bottom:13px}
+.nav button{padding:9px 12px}
+.sidebox{margin-top:13px;padding:10px}
+.user{padding:12px 4px 4px}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body>
 <div class="bg"><div class="gridlines"></div><div class="glow"></div><div id="embers"></div></div>
 <div class="app">
 <aside class="sidebar"><div class="brand"><div class="cube">◇</div><div><h1>STORE</h1><p data-i="subtitle">Inventory & parts</p></div></div>
-<nav class="nav" id="nav"><b class="navgroup" data-i="grpStock">Stock</b><button class="on" data-view="inventory"><i>▣</i><span data-i="overview">Inventory Overview</span></button><button data-view="locations"><i>▤</i><span data-i="locations">Locations &amp; Bins</span></button><button data-view="stockcount"><i>✓</i><span data-i="stockcount">Stock Count</span></button><button data-view="traceability"><i>◫</i><span data-i="traceability">Certificates / Traceability</span></button><button data-view="offcuts"><i>◩</i><span data-i="offcuts">Offcuts / Remnants</span></button><button data-view="groups"><i>◰</i><span data-i="groupsNav">Groups &amp; Numbering</span></button><button data-view="reorder"><i>!</i><span data-i="lowstock">Low Stock / Reorder</span></button><b class="navgroup" data-i="grpFlow">Movement</b><button data-view="receiving"><i>⇩</i><span data-i="receiving">Receiving Materials</span></button><button data-view="issuing"><i>⇧</i><span data-i="issue">Issue to Project</span></button><button data-view="reservations"><i>⌁</i><span data-i="reservations">Reservations / Allocations</span></button><button data-view="movements"><i>◇</i><span data-i="movements">Stock Movements</span></button><button data-view="scanhistory"><i>⌗</i><span data-i="scan">Scan History</span></button></nav>
+<div class="sidescroll"><nav class="nav" id="nav"><b class="navgroup" data-i="grpStock">Stock</b><button class="on" data-view="inventory"><i>▣</i><span data-i="overview">Inventory Overview</span></button><button data-view="locations"><i>▤</i><span data-i="locations">Locations &amp; Bins</span></button><button data-view="stockcount"><i>✓</i><span data-i="stockcount">Stock Count</span></button><button data-view="traceability"><i>◫</i><span data-i="traceability">Certificates / Traceability</span></button><button data-view="offcuts"><i>◩</i><span data-i="offcuts">Offcuts / Remnants</span></button><button data-view="groups"><i>◰</i><span data-i="groupsNav">Groups &amp; Numbering</span></button><button data-view="reorder"><i>!</i><span data-i="lowstock">Low Stock / Reorder</span></button><b class="navgroup" data-i="grpFlow">Movement</b><button data-view="receiving"><i>⇩</i><span data-i="receiving">Receiving Materials</span></button><button data-view="issuing"><i>⇧</i><span data-i="issue">Issue to Project</span></button><button data-view="reservations"><i>⌁</i><span data-i="reservations">Reservations / Allocations</span></button><button data-view="movements"><i>◇</i><span data-i="movements">Stock Movements</span></button><button data-view="scanhistory"><i>⌗</i><span data-i="scan">Scan History</span></button></nav>
 <div class="sidebox"><h4 data-i="quick">Quick search</h4><input id="sideSearch" data-i-ph="search" placeholder="Search items, code, barcode..." aria-label="Search items, code, barcode..."></div>
 <div class="sidebox"><h4 data-i="warehouse">Warehouse summary</h4><div class="srow"><span data-i="wsActiveLoc">Active locations</span><b>28</b></div><div class="srow"><span data-i="wsTotalBins">Total bins</span><b>186</b></div><div class="srow"><span data-i="wsBinUtil">Bin utilisation</span><b>78%</b></div><div class="bar"><span style="width:78%"></span></div><div class="srow"><span data-i="wsLastCount">Last stock count</span><b data-i="wsLastCountVal">2 days ago</b></div></div>
-<div class="user"><div class="avatar">AK</div><div><b>Aleksandar</b><small data-i="userRole">Store supervisor</small></div></div></aside>
+</div><div class="user"><div class="avatar">AK</div><div><b>Aleksandar</b><small data-i="userRole">Store supervisor</small></div></div></aside>
 <main class="main"><header class="top"><div class="title"><button class="back" onclick="location.href='hub-desktop.html'">← <span data-i="hub">Hub</span></button><div><h2 data-i="title">Store</h2><p><span id="viewName">Inventory Overview</span></p></div></div><div class="bottom"><button onclick="openNewItemForm()">＋ <span data-i="btnNewItem">New Item</span></button><button onclick="focusSection('receiving')">▣ <span data-i="btnReceiveGoods">Receive Goods</span></button><button onclick="focusSection('issuing')">⇥ <span data-i="issue">Issue to Project</span></button><button onclick="openOperation('transfer')">⇄ <span data-i="btnTransferStock">Transfer Stock</span></button><button onclick="focusSection('stockcount')">◉ <span data-i="stockcount">Stock Count</span></button><button onclick="exportInventoryReport()">▧ <span data-i="btnExportReport">Export Report</span></button></div><div class="topright"><span class="clock" id="clock"></span><select class="lang" id="lang" aria-label="Language"><option value="en">EN</option><option value="sv">SV</option><option value="mk">MK</option></select></div></header>
 <section class="stats" data-panel="inventory"><div class="stat"><label data-i="total">Total items</label><strong>1,248</strong><small data-i="statTotalDesc">Active stock items</small></div><div class="stat warn"><label data-i="low">Low stock items</label><strong>36</strong><small data-i="statLowDesc">Require attention</small></div><div class="stat"><label data-i="reserved">Materials reserved</label><strong>312</strong><small data-i="statReservedDesc">Across 8 projects</small></div><div class="stat"><label data-i="value">Value in stock</label><strong>$684,250</strong><small data-i="statValueDesc">At standard cost</small></div><div class="stat"><label data-i="received">Goods received today</label><strong>18</strong><small data-i="statReceivedDesc">Items · $12,640</small></div><div class="stat"><label data-i="issued">Items issued today</label><strong>27</strong><small data-i="statIssuedDesc">Items · $8,915</small></div></section>
 <div class="grid"><div class="stack"><section class="panel inventory" id="inventory" data-panel="inventory"><div class="phead"><h3 data-i="inventory">Inventory</h3><div class="tools"><span class="segbtns"><button class="seg on" id="segBoard" onclick="setStockLayout('board')" data-i="layoutBoard">Board</button><button class="seg" id="segList" onclick="setStockLayout('list')" data-i="layoutList">List</button></span><select class="control" id="groupFilter" aria-label="Filter inventory by group" onchange="renderGroupFilters();renderStock()"></select><select class="control" id="subgroupFilter" aria-label="Filter inventory by subgroup" onchange="renderStock()"></select><input class="control search" id="search" data-i-ph="searchinv" placeholder="Search inventory..." aria-label="Search inventory..."></div></div><div class="kboard" id="stockBoard"></div><div class="tablewrap" id="stockTable" hidden><table><thead><tr><th class="num" data-i="thItemNo">No.</th><th data-i="thCode">Item code</th><th data-i="thDesc">Description</th><th data-i="thGrade">Grade / dimensions</th><th data-i="thGroupSub">Group / subgroup</th><th data-i="thUnit">Unit</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thReserved">Reserved</th><th class="num" data-i="thAvailable">Available</th><th data-i="thLocation">Location</th><th class="num" data-i="thMin">Min</th><th class="num" data-i="thReorder">Reorder</th><th class="num" data-i="thAvgCost">Avg cost</th><th class="num" data-i="thLastPrice">Last price</th><th data-i="thSupplier">Supplier</th><th data-i="thHeatLot">Heat / Lot</th><th data-i="thCert">Cert</th><th data-i="thStatus">Status</th><th data-i="thActions">Actions</th></tr></thead><tbody id="stockRows"></tbody></table></div><div class="pager" hidden><span id="count"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 105 &nbsp; ›</span></div></section>
