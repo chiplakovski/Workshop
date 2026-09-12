@@ -194,6 +194,65 @@ async function receiveGoods(page, poNo) {
   assert.equal(await page.evaluate(() => storeView), 'stockcount',
     'a Store page must be reachable by its own link');
   step('Store: a page can be opened directly by link');
+
+  // An invoice line for something the store has never held: create it on the
+  // receipt, book it in, then pull it for a job.
+  await page.evaluate(() => showView('receiving'));
+  await page.locator('#receiveSupplier').fill('Nordic Steel');
+  await page.locator('#receiveLocation').fill('E2E-PIPE-01');
+  await page.locator('#receivePrice').fill('845');
+  await page.locator('#receiveHeat').fill('E2E-H-PIPE');
+  await page.locator('#receiving button:has-text("New item from this invoice")').click();
+  await page.waitForTimeout(120);
+  assert.equal(await page.locator('#newSupplier').inputValue(), 'Nordic Steel',
+    'the create form must carry what the receipt already knows');
+  assert.equal(await page.locator('#newLocation').inputValue(), 'E2E-PIPE-01');
+  await page.locator('#newGroup').selectOption('materials');
+  await page.locator('#newSubgroup').selectOption('pipe-fittings');
+  const pipeNo = await page.locator('#newItemNo').inputValue();
+  await page.locator('#newDescription').fill('Pipe DN100 SCH40');
+  await page.locator('#newUnit').fill('M');
+  await page.locator('#newItemModal .primary').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#receiveItem').inputValue(), pipeNo,
+    'saving from a receipt must come back with the new item selected');
+
+  await page.locator('#autoLabel').uncheck();
+  await page.locator('#receiveQty').fill('24');
+  await page.locator('#receiveDn').fill('E2E-INV-88231');
+  await page.locator('#receivePo').fill('E2E-INV-88231');
+  await page.locator('#confirmReceipt').click();
+  await page.waitForTimeout(120);
+  const pipe = await page.evaluate(() => WorkshopData.get().inventory.find((x) => x.description === 'Pipe DN100 SCH40'));
+  assert.equal(String(pipe.itemNo), pipeNo);
+  assert.equal(pipe.group, 'materials');
+  assert.equal(pipe.subgroup, 'pipe-fittings');
+  assert.equal(pipe.stock, 24);
+  step('Store: an invoice line becomes a numbered item and is booked in on the same receipt');
+
+  await page.evaluate(() => showView('issuing'));
+  await page.waitForTimeout(80);
+  const label = await page.evaluate(() => {
+    const o = [...document.querySelectorAll('#issueItem option')].find((x) => x.textContent.includes('Pipe DN100'));
+    return o ? o.textContent : null;
+  });
+  assert.ok(label && label.startsWith(pipeNo), 'the issue picker must lead with the item number');
+  await page.evaluate(() => {
+    const o = [...document.querySelectorAll('#issueItem option')].find((x) => x.textContent.includes('Pipe DN100'));
+    document.getElementById('issueItem').value = o.value;
+  });
+  await page.locator('#issueQty').fill('6');
+  await page.locator('#issueJobcard').fill('JC-1456');
+  await page.locator('#confirmIssue').click();
+  await page.waitForTimeout(150);
+  const afterIssue = await page.evaluate(() => {
+    const i = WorkshopData.get().inventory.find((x) => x.description === 'Pipe DN100 SCH40');
+    return { stock: i.stock, issued: WorkshopData.get().movements.filter((m) => m.code === i.code && m.action === 'ISSUED') };
+  });
+  assert.equal(afterIssue.stock, 18, 'issuing for a job must come off the shelf');
+  assert.equal(afterIssue.issued.length, 1);
+  assert.equal(afterIssue.issued[0].jobcard, 'JC-1456');
+  step('Store: material pulled for a job comes off the shelf against that jobcard');
 }
 
 async function main() {
