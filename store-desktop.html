@@ -287,7 +287,10 @@ $('poForm').onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormD
   [$('poModal'),$('rfqModal'),$('invoiceModal')].forEach(m=>{if(m)m.onclick=e=>{if(e.target===m){closePO();closeRFQ();closeInvoice()}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePO();closeRFQ();closeInvoice()}});
   window.addEventListener('workshop:data',()=>{refreshPOs();renderProcurement()});
-  showView(location.hash.slice(1)||'inventory');
+  const q=new URLSearchParams(location.search);
+  if(q.get('supplier')&&$('poSearch'))$('poSearch').value=q.get('supplier');
+  showView(q.get('view')||location.hash.slice(1)||'inventory');
+  if(q.has('rfqSupplier'))openRFQ();
 /* ===== end procurement ===== */
 window.renderSide=function(){
     const lows=STOCK.filter(x=>x[4]-x[5]<=x[7]).slice(0,5);

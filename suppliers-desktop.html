@@ -273,8 +273,8 @@ function toggleSupplier(){const t=T[LANG];const s=suppliers[selected];s.status=s
 function confirmToggleSupplier(){const t=T[LANG];const s=suppliers[selected];
   if(s.status==='inactive'){toggleSupplier();return;}
   wConfirm(t.confirm_deactivate.replace('{name}',s.name),toggleSupplier,{danger:true});}
-function openSupplierRfq(){location.href='purchasing-desktop.html?rfqSupplier='+encodeURIComponent(suppliers[selected].name)}
-function openPurchaseHistory(){location.href='purchasing-desktop.html?view=orders&supplier='+encodeURIComponent(suppliers[selected].name)}
+function openSupplierRfq(){location.href='store-desktop.html?rfqSupplier='+encodeURIComponent(suppliers[selected].name)}
+function openPurchaseHistory(){location.href='store-desktop.html?view=orders&supplier='+encodeURIComponent(suppliers[selected].name)}
 function importSupplierItems(){$('supplierItemImport').value='';$('supplierItemImport').click()}
 function parseCsvLine(line){const cells=[];let cell='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cell+='"';i++}else quoted=!quoted}else if(ch===','&&!quoted){cells.push(cell.trim());cell=''}else cell+=ch}cells.push(cell.trim());return cells}
 function handleSupplierItemImport(input){

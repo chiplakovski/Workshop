@@ -5,8 +5,8 @@
 (function(root){
   'use strict';
   const CODE_SUFFIX=/\(([^()]+)\)\s*$/;
-  const TERMINAL_PO_STATUSES=['Received','Cancelled']; // same "no longer open" set purchasing-desktop.html's own "Open POs" KPI uses
-  const DEFAULT_LEAD_DAYS=14; // same default lead time purchasing-desktop.html's own openPO() uses
+  const TERMINAL_PO_STATUSES=['Received','Cancelled']; // same "no longer open" set the Store module's own "Open POs" KPI uses
+  const DEFAULT_LEAD_DAYS=14; // same default lead time the Store module's own openPO() uses
 
   function buildReorderItemsText(description,code){return `Reorder: ${description} (${code})`;}
   function extractMaterialCode(itemsText){const m=CODE_SUFFIX.exec(String(itemsText||''));return m?m[1]:null;}
@@ -16,7 +16,7 @@
   // (both null = a general, non-project-specific reorder). The same material short on two DIFFERENT
   // projects gets two independent POs; the same material + same project (or no project) twice is
   // blocked. Only matches POs created through this module's own encoding — a manually-created PO in
-  // purchasing-desktop.html for the same material won't be detected; accepted limitation.
+  // the Purchase Orders page for the same material won't be detected; accepted limitation.
   function findOpenReorderPO(purchaseOrders,code,projectNo){
     const wantProject=projectNo||null;
     return (purchaseOrders||[]).find(po=>po&&isOpenPurchaseOrderStatus(po.status)
@@ -34,7 +34,7 @@
     return new Date(base.getTime()+days*86400000).toISOString().slice(0,10);
   }
   // Always 'Awaiting Approval' — a system-computed suggestion always needs buyer sign-off before it's
-  // a committed order; this is the exact status purchasing-desktop.html's Approvals panel filters on.
+  // a committed order; this is the exact status the Store module's Approvals page filters on.
   function buildReorderPurchaseOrderPayload({code,description,supplier,qty,lastPrice,avgCost,projectNo,buyer,today}){
     const orderDate=(today instanceof Date&&!isNaN(today))?today:new Date();
     return{supplier,project:projectNo||null,date:orderDate.toISOString().slice(0,10),
