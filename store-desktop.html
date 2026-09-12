@@ -54,6 +54,54 @@
 .mini{border:1px solid var(--field-line);background:var(--field);color:var(--steel-300);padding:5px 8px;cursor:pointer;font-size:11px}
 .mini:hover{border-color:var(--spark)}
 #groupCards{max-height:none}
+
+/* ---- Inventory board: one column per group, cards filed under their subgroup ---- */
+.segbtns{display:inline-flex;border:1px solid var(--field-line)}
+.seg{height:32px;padding:0 11px;border:0;background:var(--field);color:var(--steel-300);cursor:pointer;font-size:11.5px}
+.seg+.seg{border-left:1px solid var(--field-line)}
+.seg.on{background:rgba(var(--c-accent-rgb),.18);color:var(--ice)}
+.kboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:9px;padding:11px}
+.kcol{display:flex;flex-direction:column;min-width:0;transition:.15s;
+  --kc:var(--spark);--kc-rgb:var(--c-accent-rgb);
+  border:1px solid rgba(var(--kc-rgb),.3);background:rgba(var(--kc-rgb),.05)}
+.kcol:nth-child(2){--kc:var(--ok);--kc-rgb:var(--c-ok-rgb)}
+.kcol:nth-child(3){--kc:var(--warn);--kc-rgb:var(--c-warn-rgb)}
+.kcol:nth-child(4){--kc:var(--steel-400);--kc-rgb:var(--c-steel-rgb)}
+.kcol:nth-child(5){--kc:var(--danger);--kc-rgb:var(--c-danger-rgb)}
+.kchead{display:flex;align-items:center;gap:7px;padding:8px 9px;background:rgba(var(--kc-rgb),.15);
+  border-top:3px solid var(--kc);border-bottom:1px solid rgba(var(--kc-rgb),.3)}
+.kchead b{font:700 12.5px var(--font-heading);color:var(--ice);text-transform:uppercase;letter-spacing:.03em}
+.kchead small{color:var(--steel-300);font-size:10.5px;white-space:nowrap}
+.kccount{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;color:var(--ice);
+  padding:2px 7px;background:rgba(var(--kc-rgb),.28)}
+.kcbody{display:flex;flex-direction:column;gap:5px;padding:6px;flex:1 1 auto;min-height:70px;max-height:430px;overflow-y:auto}
+.ksub{display:flex;align-items:center;gap:6px;margin:5px 2px 1px;font-size:10px;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--steel-400);border-bottom:1px dashed rgba(var(--c-line-rgb),.4);padding-bottom:3px}
+.ksub:first-child{margin-top:0}
+.ksub span{margin-left:auto;letter-spacing:0}
+.kcard{position:relative;display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:grab;
+  border:1px solid rgba(var(--kc-rgb),.32);border-left:3px solid rgba(var(--kc-rgb),.7);
+  background:var(--lift-04);padding:7px 8px;transition:.12s;touch-action:pan-y}
+.kcard:hover{border-color:rgba(var(--kc-rgb),.6);background:var(--lift-08)}
+.kcard.low{border-left-color:var(--warn)}
+.kcard.out{border-left-color:var(--danger)}
+.kcard b{display:block;font-size:12.5px;color:var(--ice);font-weight:600;line-height:1.3}
+.kcno{font-family:var(--font-heading);font-weight:700;color:var(--spark);font-size:12px}
+.kcmeta{display:flex;align-items:baseline;gap:8px;margin-top:4px;font-size:11px;color:var(--steel-400)}
+.kcmeta .q{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ok);font-weight:600;white-space:nowrap}
+.kcard.low .kcmeta .q{color:var(--warn)}
+.kcard.out .kcmeta .q{color:var(--danger)}
+.kcard.dragging{opacity:.35}
+.kghost{position:fixed;z-index:400;pointer-events:none;cursor:grabbing;
+  box-shadow:0 12px 30px var(--shade-45);background:var(--lift-08)}
+html.kdragging{cursor:grabbing}
+html.kdragging .kcard{cursor:grabbing}
+.kcol.cantake{border-color:rgba(var(--c-accent-rgb),.55);border-style:dashed}
+.kcol.over{background:rgba(var(--c-accent-rgb),.14);border-color:var(--spark)}
+.ksub.over{color:var(--ice);border-bottom-color:var(--spark)}
+.kempty{padding:14px 6px;text-align:center;color:var(--steel-400);font-size:11.5px}
+@media(max-width:900px){.kboard{grid-template-columns:1fr}.kcbody{max-height:none}}
+.ksub.empty{opacity:.5}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body>
@@ -66,7 +114,7 @@
 <div class="user"><div class="avatar">AK</div><div><b>Aleksandar</b><small data-i="userRole">Store supervisor</small></div></div></aside>
 <main class="main"><header class="top"><div class="title"><button class="back" onclick="location.href='hub-desktop.html'">← <span data-i="hub">Hub</span></button><div><h2 data-i="title">Store</h2><p><span id="viewName">Inventory Overview</span></p></div></div><div class="bottom"><button onclick="openNewItemForm()">＋ <span data-i="btnNewItem">New Item</span></button><button onclick="focusSection('receiving')">▣ <span data-i="btnReceiveGoods">Receive Goods</span></button><button onclick="focusSection('issuing')">⇥ <span data-i="issue">Issue to Project</span></button><button onclick="openOperation('transfer')">⇄ <span data-i="btnTransferStock">Transfer Stock</span></button><button onclick="focusSection('stockcount')">◉ <span data-i="stockcount">Stock Count</span></button><button onclick="exportInventoryReport()">▧ <span data-i="btnExportReport">Export Report</span></button></div><div class="topright"><span class="clock" id="clock"></span><select class="lang" id="lang" aria-label="Language"><option value="en">EN</option><option value="sv">SV</option><option value="mk">MK</option></select></div></header>
 <section class="stats" data-panel="inventory"><div class="stat"><label data-i="total">Total items</label><strong>1,248</strong><small data-i="statTotalDesc">Active stock items</small></div><div class="stat warn"><label data-i="low">Low stock items</label><strong>36</strong><small data-i="statLowDesc">Require attention</small></div><div class="stat"><label data-i="reserved">Materials reserved</label><strong>312</strong><small data-i="statReservedDesc">Across 8 projects</small></div><div class="stat"><label data-i="value">Value in stock</label><strong>$684,250</strong><small data-i="statValueDesc">At standard cost</small></div><div class="stat"><label data-i="received">Goods received today</label><strong>18</strong><small data-i="statReceivedDesc">Items · $12,640</small></div><div class="stat"><label data-i="issued">Items issued today</label><strong>27</strong><small data-i="statIssuedDesc">Items · $8,915</small></div></section>
-<div class="grid"><div class="stack"><section class="panel inventory" id="inventory" data-panel="inventory"><div class="phead"><h3 data-i="inventory">Inventory</h3><div class="tools"><select class="control" id="groupFilter" aria-label="Filter inventory by group" onchange="renderGroupFilters();renderStock()"></select><select class="control" id="subgroupFilter" aria-label="Filter inventory by subgroup" onchange="renderStock()"></select><input class="control search" id="search" data-i-ph="searchinv" placeholder="Search inventory..." aria-label="Search inventory..."></div></div><div class="tablewrap"><table><thead><tr><th class="num" data-i="thItemNo">No.</th><th data-i="thCode">Item code</th><th data-i="thDesc">Description</th><th data-i="thGrade">Grade / dimensions</th><th data-i="thGroupSub">Group / subgroup</th><th data-i="thUnit">Unit</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thReserved">Reserved</th><th class="num" data-i="thAvailable">Available</th><th data-i="thLocation">Location</th><th class="num" data-i="thMin">Min</th><th class="num" data-i="thReorder">Reorder</th><th class="num" data-i="thAvgCost">Avg cost</th><th class="num" data-i="thLastPrice">Last price</th><th data-i="thSupplier">Supplier</th><th data-i="thHeatLot">Heat / Lot</th><th data-i="thCert">Cert</th><th data-i="thStatus">Status</th></tr></thead><tbody id="stockRows"></tbody></table></div><div class="pager"><span id="count"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 105 &nbsp; ›</span></div></section>
+<div class="grid"><div class="stack"><section class="panel inventory" id="inventory" data-panel="inventory"><div class="phead"><h3 data-i="inventory">Inventory</h3><div class="tools"><span class="segbtns"><button class="seg on" id="segBoard" onclick="setStockLayout('board')" data-i="layoutBoard">Board</button><button class="seg" id="segList" onclick="setStockLayout('list')" data-i="layoutList">List</button></span><select class="control" id="groupFilter" aria-label="Filter inventory by group" onchange="renderGroupFilters();renderStock()"></select><select class="control" id="subgroupFilter" aria-label="Filter inventory by subgroup" onchange="renderStock()"></select><input class="control search" id="search" data-i-ph="searchinv" placeholder="Search inventory..." aria-label="Search inventory..."></div></div><div class="kboard" id="stockBoard"></div><div class="tablewrap" id="stockTable" hidden><table><thead><tr><th class="num" data-i="thItemNo">No.</th><th data-i="thCode">Item code</th><th data-i="thDesc">Description</th><th data-i="thGrade">Grade / dimensions</th><th data-i="thGroupSub">Group / subgroup</th><th data-i="thUnit">Unit</th><th class="num" data-i="thStock">Stock</th><th class="num" data-i="thReserved">Reserved</th><th class="num" data-i="thAvailable">Available</th><th data-i="thLocation">Location</th><th class="num" data-i="thMin">Min</th><th class="num" data-i="thReorder">Reorder</th><th class="num" data-i="thAvgCost">Avg cost</th><th class="num" data-i="thLastPrice">Last price</th><th data-i="thSupplier">Supplier</th><th data-i="thHeatLot">Heat / Lot</th><th data-i="thCert">Cert</th><th data-i="thStatus">Status</th></tr></thead><tbody id="stockRows"></tbody></table></div><div class="pager" hidden><span id="count"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 105 &nbsp; ›</span></div></section>
 <div class="forms"><section class="panel" id="receiving" data-panel="receiving"><div class="phead"><div><h3 data-i="receivingTitle">Receiving materials</h3><small data-i="receivingDesc">Scan supplier barcode → identify → store → label</small></div><label style="color:var(--steel-400)"><input type="checkbox" id="autoLabel" checked> <span data-i="autoPrintLabel">Auto print label</span></label></div><div class="formbody"><div class="scan">▥<b data-i="scanbarcode">SCAN BARCODE / QR CODE</b><span data-i="receivingScanDesc">USB, Bluetooth, or phone/tablet camera input</span></div><div class="fields"><div class="field wide"><label for="receiveBarcode" data-i="lblSupplierBarcode">Supplier barcode / QR *</label><input id="receiveBarcode" value="7350123456789"><button class="btn" style="margin-top:5px;width:100%" onclick="resolveReceiveBarcode()"><span data-i="btnIdentifyLink">Identify / Link barcode</span></button></div><div class="field"><label for="receiveItem" data-i="lblInternalItem">Internal item *</label><select id="receiveItem"></select><button class="btn" style="margin-top:5px;width:100%" onclick="openNewItemForm('receiving')"><span data-i="btnNewFromInvoice">+ New item from this invoice</span></button></div><div class="field"><label for="receiveSupplier" data-i="lblSupplier">Supplier *</label><input id="receiveSupplier" value="SteelCo Pty Ltd"></div><div class="field"><label for="receivePo" data-i="lblPO">Purchase Order *</label><input id="receivePo" value="PO-5567"></div><div class="field"><label for="receiveDn" data-i="lblDN">Delivery Note *</label><input id="receiveDn" value="DN-87452"></div><div class="field"><label for="receiveQty" data-i="lblReceivedQty">Received Qty *</label><input id="receiveQty" type="number" value="12"></div><div class="field"><label for="receiveLocation" data-i="lblStorageLocation">Storage Location *</label><input id="receiveLocation" value="A1-01-02"></div><div class="field"><label for="receiveHeat" data-i="lblBatchHeat">Batch / Heat / Lot *</label><input id="receiveHeat" value="H240516-S534"></div><div class="field"><label for="receiveCert" data-i="lblMaterialCert">Material Certificate</label><input id="receiveCert" value="MTC_H240516-S534.pdf"></div><div class="field"><label for="receivePrice" data-i="lblLastPurchasePrice">Last Purchase Price</label><input id="receivePrice" type="number" value="1910"></div><div class="field"><label for="receiveBy" data-i="lblReceivedBy">Received by</label><input id="receiveBy" value="John Smith"></div></div><div class="actions"><button class="btn" onclick="clearReceiving()"><span data-i="btnClear">Clear</span></button><button class="btn" onclick="showLabel($('receiveItem').value)"><span data-i="btnPrintLabel">Print Label</span></button><button class="btn primary" id="confirmReceipt">✓ <span data-i="btnConfirmReceipt">Confirm Receipt</span></button></div></div></section>
 <section class="panel" id="issuing" data-panel="issuing"><div class="phead"><div><h3 data-i="issueTitle">Issue to project</h3><small data-i="issueDesc">Scan material → scan project/jobcard → quantity</small></div></div><div class="formbody"><div class="scan">▥<b data-i="scanitemqr">SCAN ITEM + PROJECT QR</b><span data-i="issueScanDesc">Every scan writes user, date, time, project and location</span></div><div class="fields"><div class="field wide"><label for="issueItem" data-i="lblMaterial">Material *</label><select id="issueItem"></select></div><div class="field wide"><label for="issueProject" data-i="lblProject">Project *</label><select id="issueProject"></select></div><div class="field"><label for="issueJobcard" data-i="lblJobcard">Jobcard / Work Order</label><input id="issueJobcard" value="JC-1456"></div><div class="field"><label for="issueQty" data-i="lblQtyIssue">Qty to Issue *</label><input id="issueQty" type="number" value="10"></div><div class="field wide"><label for="issueDestination" data-i="lblDestinationStation">Destination / Station</label><input id="issueDestination" value="Fabrication Area · Bay 2"></div><div class="field"><label for="issueBy" data-i="lblIssuedBy">Issued by</label><input id="issueBy" value="Aleksandar C."></div></div><div class="actions"><button class="btn" onclick="reserveSelectedItem()"><span data-i="btnReserve">Reserve</span></button><button class="btn primary" id="confirmIssue">⇥ <span data-i="issue">Issue to Project</span></button></div></div></section></div>
 </div><aside class="stack"><section class="panel" data-panel="inventory"><div class="phead"><h3 data-i="alerts">Low stock alerts</h3><small class="viewall" onclick="showView('reorder')" data-i="viewAll">View all</small></div><div id="alerts"></div></section><section class="panel" data-panel="inventory"><div class="phead"><h3 data-i="recent">Recent stock movements</h3><small class="viewall" onclick="showView('movements')" data-i="viewAll">View all</small></div><div id="moves"></div></section></aside></div>
@@ -100,6 +148,9 @@ const T={en:{title:'Store',subtitle:'Inventory & parts',overview:'Inventory Over
 Object.assign(T.en,{btnNewFromInvoice:'+ New item from this invoice'});
 Object.assign(T.sv,{btnNewFromInvoice:'+ Ny artikel från denna faktura'});
 Object.assign(T.mk,{btnNewFromInvoice:'+ Нов артикл од оваа фактура'});
+Object.assign(T.en,{layoutBoard:'Board',layoutList:'List',boardFrom:'from {start}',boardEmptyGroup:'Nothing filed here yet.',notifyRefiled:'Item {no} moved to {group} / {sub}',btnMoveItem:'Move item',confirmRefile:'Move {no} {desc} to {group} / {sub}?\n\nThe item keeps its number - the number identifies the item, and it is already written on its receipts and issues.'});
+Object.assign(T.sv,{layoutBoard:'Tavla',layoutList:'Lista',boardFrom:'från {start}',boardEmptyGroup:'Inget här ännu.',notifyRefiled:'Artikel {no} flyttad till {group} / {sub}',btnMoveItem:'Flytta artikel',confirmRefile:'Flytta {no} {desc} till {group} / {sub}?\n\nArtikeln behåller sitt nummer - numret identifierar artikeln och står redan på dess inleveranser och uttag.'});
+Object.assign(T.mk,{layoutBoard:'Табла',layoutList:'Листа',boardFrom:'од {start}',boardEmptyGroup:'Сè уште нема ништо тука.',notifyRefiled:'Артиклот {no} е преместен во {group} / {sub}',btnMoveItem:'Премести',confirmRefile:'Да се премести {no} {desc} во {group} / {sub}?\n\nАртиклот го задржува својот број - бројот го идентификува артиклот и веќе е запишан на неговите приеми и издавања.'});
 Object.assign(T.en,{groupsNav:'Groups & Numbering',groupsTitle:'Groups & numbering',groupsSub:'Each group numbers its own items from its start number',btnNewGroup:'+ New group',btnAddSubgroup:'+ Subgroup',btnEdit:'Edit',btnRename:'Rename',btnDelete:'Delete',btnSave:'Save',newGroupTitle:'New group',editGroupTitle:'Edit group',newSubgroupTitle:'New subgroup',editSubgroupTitle:'Rename subgroup',groupStartLbl:'Numbers start at',groupStartHint:'Items in this group are numbered from here upwards, one number each.',groupRange:'from {start} - next is {next}',groupItems:'{n} items',noSubgroups:'No subgroups yet.',noGroups:'No groups yet.',notifyGroupSaved:'Group saved: {name}',notifyGroupDeleted:'Group deleted: {name}',notifySubgroupSaved:'Subgroup saved: {name}',notifySubgroupDeleted:'Subgroup deleted: {name}',confirmDeleteGroup:'Delete the group {name}?',confirmDeleteSubgroup:'Delete the subgroup {name}?'});
 Object.assign(T.sv,{groupsNav:'Grupper & numrering',groupsTitle:'Grupper & numrering',groupsSub:'Varje grupp numrerar sina egna artiklar från sitt startnummer',btnNewGroup:'+ Ny grupp',btnAddSubgroup:'+ Undergrupp',btnEdit:'Redigera',btnRename:'Byt namn',btnDelete:'Ta bort',btnSave:'Spara',newGroupTitle:'Ny grupp',editGroupTitle:'Redigera grupp',newSubgroupTitle:'Ny undergrupp',editSubgroupTitle:'Byt namn på undergrupp',groupStartLbl:'Numren börjar på',groupStartHint:'Artiklar i den här gruppen numreras uppåt härifrån, ett nummer var.',groupRange:'från {start} - nästa är {next}',groupItems:'{n} artiklar',noSubgroups:'Inga undergrupper ännu.',noGroups:'Inga grupper ännu.',notifyGroupSaved:'Grupp sparad: {name}',notifyGroupDeleted:'Grupp borttagen: {name}',notifySubgroupSaved:'Undergrupp sparad: {name}',notifySubgroupDeleted:'Undergrupp borttagen: {name}',confirmDeleteGroup:'Ta bort gruppen {name}?',confirmDeleteSubgroup:'Ta bort undergruppen {name}?'});
 Object.assign(T.mk,{groupsNav:'Групи и нумерирање',groupsTitle:'Групи и нумерирање',groupsSub:'Секоја група ги нумерира своите артикли од својот почетен број',btnNewGroup:'+ Нова група',btnAddSubgroup:'+ Подгрупа',btnEdit:'Уреди',btnRename:'Преименувај',btnDelete:'Избриши',btnSave:'Зачувај',newGroupTitle:'Нова група',editGroupTitle:'Уреди група',newSubgroupTitle:'Нова подгрупа',editSubgroupTitle:'Преименувај подгрупа',groupStartLbl:'Броевите почнуваат од',groupStartHint:'Артиклите во оваа група се нумерираат нагоре оттука, по еден број.',groupRange:'од {start} - следен е {next}',groupItems:'{n} артикли',noSubgroups:'Сè уште нема подгрупи.',noGroups:'Сè уште нема групи.',notifyGroupSaved:'Групата е зачувана: {name}',notifyGroupDeleted:'Групата е избришана: {name}',notifySubgroupSaved:'Подгрупата е зачувана: {name}',notifySubgroupDeleted:'Подгрупата е избришана: {name}',confirmDeleteGroup:'Да се избрише групата {name}?',confirmDeleteSubgroup:'Да се избрише подгрупата {name}?'});
@@ -192,6 +243,135 @@ showView(location.hash.slice(1)||'inventory');
     sf.value=picked&&picked.subgroups.some(x=>x.id===keepS)?keepS:'all';
     sf.disabled=!picked;
   };
+  // ---- Inventory board -----------------------------------------------------
+  // The overview reads as a board of groups rather than one long table: a
+  // column per group, cards filed under the subgroup they belong to. The list
+  // is the same data, one click away.
+  let stockLayout='board',kdrag=null;
+  // The board is the overview; the toggle is applied once the page is up.
+  window.setStockLayout=function(mode){
+    stockLayout=mode==='list'?'list':'board';
+    $('segBoard').classList.toggle('on',stockLayout==='board');
+    $('segList').classList.toggle('on',stockLayout==='list');
+    $('stockBoard').hidden=stockLayout!=='board';
+    $('stockTable').hidden=stockLayout!=='list';
+    // The pager counts table rows, so it belongs with the table.
+    const pager=document.querySelector('#inventory .pager');
+    if(pager)pager.hidden=stockLayout!=='list';
+    renderStock();
+  };
+  function stockCardsFor(rows,groupId){
+    const group=WorkshopData.findItemGroup(groupId);
+    const mine=rows.filter(x=>(META[x[0]]||[])[10]===groupId);
+    // Subgroups in the group's own order, then anything not filed under one.
+    const buckets=((group&&group.subgroups)||[]).map(sub=>[sub.id,sub.name]);
+    if(mine.some(x=>!String((META[x[0]]||[])[11]||'')))buckets.push(['',currentT.subgroupNone]);
+    if(!buckets.length)return `<div class="kempty">${escapeHtml(currentT.boardEmptyGroup)}</div>`;
+    return buckets.map(([subId,subName])=>{
+      const items=mine.filter(x=>String((META[x[0]]||[])[11]||'')===subId);
+      const cards=items.map(x=>{
+        const m=META[x[0]]||[],available=x[4]-x[5],low=available<=x[7],out=available<=0;
+        return `<div class="kcard ${out?'out':low?'low':''}" data-code="${escapeHtml(x[0])}"
+          onpointerdown="stockPointerDown(event,'${escapeHtml(x[0])}')"
+          onpointermove="stockPointerMove(event)" onpointerup="stockPointerUp(event)">
+          <b><span class="kcno">${escapeHtml(m[9]??'—')}</span> ${escapeHtml(x[1])}</b>
+          <div class="kcmeta"><span>${escapeHtml(x[6])}</span><span class="q">${available.toLocaleString()} ${escapeHtml(x[3])}</span></div>
+        </div>`;
+      }).join('');
+      return `<div class="ksub${items.length?'':' empty'}" data-group="${escapeHtml(groupId)}" data-sub="${escapeHtml(subId)}">${escapeHtml(subName)}<span>${items.length}</span></div>${cards}`;
+    }).join('');
+  }
+  window.renderStockBoard=function(rows){
+    // Filtering to one group shows that group's column alone rather than three
+    // empty ones beside it.
+    const picked=$('groupFilter').value||'all';
+    const groups=WorkshopData.listItemGroups().filter(g=>picked==='all'||g.id===picked);
+    $('stockBoard').innerHTML=groups.map(g=>{
+      const mine=rows.filter(x=>(META[x[0]]||[])[10]===g.id);
+      return `<section class="kcol" data-group="${escapeHtml(g.id)}">
+        <div class="kchead"><b>${escapeHtml(g.name)}</b><small>${escapeHtml(currentT.boardFrom.replace('{start}',g.start))}</small>
+        <span class="kccount">${mine.length}</span></div>
+        <div class="kcbody">${stockCardsFor(rows,g.id)}</div></section>`;
+    }).join('')||`<div class="kempty">${escapeHtml(currentT.noGroups)}</div>`;
+  };
+  // Pointer drag, not HTML5 drag-and-drop: the packaged demo runs each module in
+  // a sandboxed iframe, where dragstart never fires.
+  function stockDropTargetAt(x,y){
+    const sub=[...document.querySelectorAll('#stockBoard .ksub')].find(el=>{
+      const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top-4&&y<=r.bottom+4;});
+    if(sub)return sub;
+    return [...document.querySelectorAll('#stockBoard .kcol')].find(el=>{
+      const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;})||null;
+  }
+  window.stockPointerDown=function(ev,code){
+    if(ev.button!==undefined&&ev.button>0)return;
+    const card=ev.currentTarget,r=card.getBoundingClientRect();
+    kdrag={code,card,started:false,x0:ev.clientX,y0:ev.clientY,
+      dx:ev.clientX-r.left,dy:ev.clientY-r.top,w:r.width,ghost:null,over:null};
+    try{card.setPointerCapture(ev.pointerId);}catch(_){}
+  };
+  window.stockPointerMove=function(ev){
+    if(!kdrag)return;
+    // A few pixels of slop, so a plain click is never mistaken for a drag.
+    if(!kdrag.started){
+      if(Math.abs(ev.clientX-kdrag.x0)+Math.abs(ev.clientY-kdrag.y0)<6)return;
+      kdrag.started=true;
+      const g=kdrag.card.cloneNode(true);
+      g.className=kdrag.card.className+' kghost';g.style.width=kdrag.w+'px';
+      document.body.appendChild(g);kdrag.ghost=g;
+      kdrag.card.classList.add('dragging');
+      document.documentElement.classList.add('kdragging');
+      document.querySelectorAll('#stockBoard .kcol').forEach(c=>c.classList.add('cantake'));
+    }
+    kdrag.ghost.style.left=(ev.clientX-kdrag.dx)+'px';
+    kdrag.ghost.style.top=(ev.clientY-kdrag.dy)+'px';
+    const target=stockDropTargetAt(ev.clientX,ev.clientY);
+    if(kdrag.over!==target){
+      if(kdrag.over)kdrag.over.classList.remove('over');
+      kdrag.over=target;if(target)target.classList.add('over');
+    }
+    ev.preventDefault();
+  };
+  window.stockPointerUp=function(){
+    if(!kdrag)return;
+    const started=kdrag.started,target=kdrag.over,code=kdrag.code;
+    stockDragEnd();
+    if(!started||!target)return;
+    const toGroup=target.dataset.group||(target.closest('.kcol')||{}).dataset?.group;
+    const toSub=target.classList.contains('ksub')?target.dataset.sub:undefined;
+    requestRefile(code,toGroup,toSub);
+  };
+  function stockDragEnd(){
+    if(!kdrag)return;
+    if(kdrag.ghost)kdrag.ghost.remove();
+    kdrag.card.classList.remove('dragging');
+    document.documentElement.classList.remove('kdragging');
+    kdrag=null;
+    document.querySelectorAll('#stockBoard .kcol,#stockBoard .ksub').forEach(c=>c.classList.remove('cantake','over'));
+  }
+  window.addEventListener('pointercancel',stockDragEnd);
+  // Moving an item between groups is a real change to where it is filed, so it
+  // is confirmed and the confirmation says what happens to the number.
+  function requestRefile(code,groupId,subId){
+    const item=shared.inventory.find(x=>String(x.code)===String(code));
+    if(!item||!groupId)return;
+    const target=WorkshopData.findItemGroup(groupId);
+    if(!target)return;
+    const sameGroup=item.group===groupId;
+    const nextSub=subId===undefined?(sameGroup?String(item.subgroup||''):''):subId;
+    if(sameGroup&&String(item.subgroup||'')===nextSub)return;
+    const subName=nextSub?((target.subgroups||[]).find(x=>x.id===nextSub)||{}).name:currentT.subgroupNone;
+    const apply=()=>{
+      const res=WorkshopData.setItemGroup(code,groupId,nextSub);
+      if(res&&res.error)return notify(res.error);
+      refresh(currentT.notifyRefiled.replace('{no}',res.itemNo).replace('{group}',target.name).replace('{sub}',subName));
+    };
+    if(sameGroup)return apply();
+    wConfirm(currentT.confirmRefile
+      .replace('{no}',item.itemNo).replace('{desc}',item.description)
+      .replace('{group}',target.name).replace('{sub}',subName),apply,{yes:currentT.btnMoveItem});
+  }
+
   window.renderStock=function(){
     const q=$('search').value.toLowerCase();
     const gf=$('groupFilter').value||'all',sf=$('subgroupFilter').value||'all';
@@ -201,6 +381,7 @@ showView(location.hash.slice(1)||'inventory');
       if(sf!=='all'&&m[11]!==sf)return false;
       return (x.join(' ')+m.join(' ')).toLowerCase().includes(q);
     });
+    if(stockLayout==='board')renderStockBoard(rows);
     $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td></tr>`}).join('');
     $('count').textContent=currentT.showingCount.replace('{n}',rows.length);
   };

@@ -169,6 +169,62 @@ async function receiveGoods(page, poNo) {
     assert.ok(!pages.some((p) => p.view === v), `the removed ${v} page must not be back`));
   step('Store: each nav item opens its own page rather than scrolling one long one');
 
+  // The overview reads as a board of groups, and a card can be refiled by
+  // dragging it - within a group directly, across groups after confirming.
+  await page.evaluate(() => showView('inventory'));
+  await page.waitForTimeout(120);
+  const board = await page.evaluate(() => ({
+    columns: [...document.querySelectorAll('#stockBoard .kcol')].map((c) => c.dataset.group),
+    lanes: [...document.querySelectorAll('#stockBoard .kcol[data-group="materials"] .ksub')].map((l) => l.dataset.sub),
+    tableHidden: document.getElementById('stockTable').hidden
+  }));
+  assert.deepEqual(board.columns, ['materials', 'consumables', 'hardware', 'tooling'],
+    'the overview must show one column per group');
+  assert.ok(board.lanes.includes('copper'), 'an empty subgroup must still be a lane you can drop into');
+  assert.equal(board.tableHidden, true, 'the board is the overview; the table is the other tab');
+
+  const dragCard = async (fromSel, toSel) => {
+    const a = await page.locator(fromSel).boundingBox();
+    const b = await page.locator(toSel).boundingBox();
+    await page.mouse.move(a.x + a.width / 2, a.y + 12);
+    await page.mouse.down();
+    await page.mouse.move(a.x + a.width / 2 + 20, a.y + 20, { steps: 4 });
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+  };
+
+  const moving = await page.getAttribute('#stockBoard .kcol[data-group="materials"] .kcard >> nth=0', 'data-code');
+  const numberBefore = await page.evaluate((c) => WorkshopData.get().inventory.find((x) => x.code === c).itemNo, moving);
+  // The board re-renders after every move, so the card is found by its code
+  // rather than by where it happened to sit a moment ago.
+  const cardFor = (code) => `#stockBoard .kcard[data-code="${code}"]`;
+  await dragCard(cardFor(moving), '#stockBoard .kcol[data-group="materials"] .ksub[data-sub="copper"]');
+  let after = await page.evaluate((c) => WorkshopData.get().inventory.find((x) => x.code === c), moving);
+  assert.equal(after.subgroup, 'copper', 'a drag within a group refiles the item straight away');
+  assert.equal(after.itemNo, numberBefore, 'refiling must not change the number');
+
+  await dragCard(cardFor(moving), '#stockBoard .kcol[data-group="tooling"]');
+  const asked = await page.locator('.wask .waskmsg').innerText();
+  assert.match(asked, /keeps its number/i, 'a cross-group move must say what happens to the number');
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(200);
+  after = await page.evaluate((c) => WorkshopData.get().inventory.find((x) => x.code === c), moving);
+  assert.equal(after.group, 'tooling');
+  assert.equal(after.itemNo, numberBefore);
+  await page.evaluate((c) => WorkshopData.setItemGroup(c, 'materials', 'stainless-steel'), moving);
+  await page.evaluate(() => refreshStoreView());
+  step('Store: the overview is a board by group, and a card can be refiled by dragging it');
+
+  await page.locator('#segList').click();
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(() => document.getElementById('stockBoard').hidden), true);
+  assert.ok(await page.evaluate(() => document.querySelectorAll('#stockRows tr').length) > 0,
+    'the list tab must show the same items as rows');
+  await page.locator('#segBoard').click();
+  await page.waitForTimeout(120);
+  step('Store: board and list are two views of the same stock');
+
   // Every Store page reads in all three languages, and switching language must
   // never rewrite a record.
   const beforeLang = await page.evaluate(() => WorkshopData.getPurchaseOrders().map((po) => po.status));

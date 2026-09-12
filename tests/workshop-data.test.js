@@ -3935,3 +3935,20 @@ test('item groups: inventory saved before groups existed is migrated by its old 
   assert.equal(new Set(numbers).size,numbers.length,'migration must not hand out a number twice');
   numbers.forEach(n=>assert.equal(typeof n,'number'));
 });
+
+test('item groups: refiling an item changes its shelf but never its number', ()=>{
+  const W=loadWorkshopData();
+  const before=W.get().inventory.find(x=>x.code==='GRD-DISC-4.5');
+  assert.equal(before.group,'consumables');
+  const moved=W.setItemGroup('GRD-DISC-4.5','tooling','cutting-tools');
+  assert.equal(moved.group,'tooling');
+  assert.equal(moved.subgroup,'cutting-tools');
+  assert.equal(moved.itemNo,before.itemNo,'the number travels with the item');
+  assert.equal(moved.category,'Cutting tools','the category follows the new subgroup');
+  const within=W.setItemGroup('GRD-DISC-4.5','tooling','hand-tools');
+  assert.equal(within.subgroup,'hand-tools');
+  assert.equal(within.itemNo,before.itemNo);
+  assert.match(W.setItemGroup('GRD-DISC-4.5','nope').error,/Group not found/);
+  assert.match(W.setItemGroup('GRD-DISC-4.5','tooling','nope').error,/no subgroup/);
+  assert.match(W.setItemGroup('NO-SUCH-ITEM','tooling').error,/Item not found/);
+});

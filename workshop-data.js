@@ -1491,6 +1491,25 @@
       save(`Subgroup deleted: ${g.name} / ${sub.name}`);
       return{ok:true};
     },
+    // Refiling an item keeps its number. The number identifies the item and is
+    // already written on receipts, issues and movements, so it travels with the
+    // item rather than with the shelf it is filed on.
+    setItemGroup(code,groupId,subgroupId){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const subId=String(subgroupId||'');
+      const sub=subId?(g.subgroups||[]).find(x=>x.id===subId):null;
+      if(subId&&!sub)return{error:`${g.name} has no subgroup ${subId}`};
+      if(item.group===groupId&&String(item.subgroup||'')===subId)return clone(item);
+      const wasGroup=groupFor(state,item.group);
+      item.group=groupId;
+      item.subgroup=subId;
+      item.category=(sub&&sub.name)||g.name;
+      save(`Item ${item.itemNo} moved from ${wasGroup?wasGroup.name:'—'} to ${g.name}${sub?' / '+sub.name:''}`);
+      return clone(item);
+    },
     createInventoryItem(payload){
       const data=clone(payload||{});
       data.description=String(data.description||'').trim();
