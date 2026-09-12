@@ -72,19 +72,46 @@ async function createInventoryAndReorder(page) {
 }
 
 async function approveAndVerifyPurchaseOrder(page, poNo) {
-  await page.evaluate(() => setView('orders'));
+  await page.locator('.side-nav button[data-view="orders"]').click();
   await page.locator('#search').fill(ITEM_CODE);
-  let text = await page.locator('#detailContent').innerText();
+  let text = await page.locator('#ordersAll').innerText();
   assert.ok(text.includes(poNo));
   assert.ok(text.includes(SUPPLIER));
 
   await page.locator('#search').fill('');
-  await page.evaluate(() => setView('approvals'));
-  const approval = page.locator('#detailContent .approval').filter({ hasText: poNo });
+  await page.locator('.side-nav button[data-view="approvals"]').click();
+  const approval = page.locator('#approvalsAll .approval').filter({ hasText: poNo });
   await approval.getByRole('button', { name: 'Approve' }).click();
   const approved = await page.evaluate((no) => WorkshopData.findPurchaseOrder(no), poNo);
   assert.equal(approved.status, 'Confirmed');
   step('Purchasing: reorder is visible and approval changes the shared PO');
+
+  // Every nav item is a page of its own, and each one renders from its own
+  // container rather than copying innerHTML out of the overview.
+  const pages = await page.evaluate(() => {
+    const out = [];
+    PVIEWS.forEach((v) => {
+      showView(v);
+      const shown = [...document.querySelectorAll('[data-panel]:not([hidden])')].map((p) => p.dataset.panel);
+      const body = [...document.querySelectorAll('[data-panel]:not([hidden])')].map((p) => p.innerText).join(' ');
+      out.push({ view: v, shown: [...new Set(shown)], crumb: document.getElementById('viewName').textContent, body });
+    });
+    showView('overview');
+    return out;
+  });
+  pages.forEach(({ view, shown, crumb, body }) => {
+    assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
+    assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
+    assert.ok(!/ready for the next workflow step/.test(body), `the ${view} page must render real content, not a placeholder`);
+  });
+  assert.equal(pages.length, 9, 'every purchasing nav item must have a page of its own');
+  step('Purchasing: each nav item opens its own page');
+
+  await page.goto(page.url().split('#')[0].split('?')[0] + '#invoices', { waitUntil: 'load' });
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => activeView), 'invoices',
+    'a purchasing page must be reachable by its own link');
+  step('Purchasing: a page can be opened directly by link');
 }
 
 async function verifySupplierOrder(page, poNo, expectedStatus) {
@@ -188,10 +215,10 @@ async function main() {
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     await receiveGoods(page, poNo);
     await page.goto(`${harness.baseUrl}/purchasing-desktop.html`, { waitUntil: 'load' });
-    await page.evaluate(() => setView('orders'));
+    await page.locator('.side-nav button[data-view="orders"]').click();
     await page.locator('#search').fill(poNo);
     await page.locator('#statusFilter').selectOption('Received');
-    assert.ok((await page.locator('#detailContent').innerText()).includes('Received'));
+    assert.ok((await page.locator('#ordersAll').innerText()).includes('Received'));
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Received');
     step('Purchasing/Suppliers: final received state is shared across both subsystems');
