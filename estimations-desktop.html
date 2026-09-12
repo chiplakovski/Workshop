@@ -93,6 +93,9 @@
   .offersub{font-size:10.5px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .offerbar .tbtn{font-size:11.5px;padding:7px 11px;}
   .offerbar .tbtn[disabled]{opacity:.45;cursor:not-allowed;}
+  .offerbar .tbtn.warn2{border-color:rgba(var(--c-warn-rgb),.5);color:var(--tint-warn);}
+  .offerbar .tbtn.warn2:hover{border-color:var(--warn);background:rgba(var(--c-warn-rgb),.1);}
+  .offerbar .lockcnt{font-size:9.5px;font-weight:700;color:var(--steel-400);font-variant-numeric:tabular-nums;}
   .offerbar .tbtn[disabled]:hover{border-color:var(--field-line);background:transparent;color:var(--steel-300);}
   @media(max-width:900px){.listbar{flex-direction:column;}.listbar .newproj{flex:none;}.offerbar{flex:none;flex-wrap:wrap;}}
   .listtoolbar{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
@@ -931,7 +934,7 @@ const T={
     demo_upload:"Files up to 768 KB are stored in this browser and shared with Documents.",duplicate_toast:"Duplicated {a} as a new, independent estimation {b}.",
     confirm_archive:"{no} is linked to project {p} and cannot be deleted. Archive it instead? Archived estimations are hidden from the list but kept for record-keeping.",
     demo_email:"Email integration — demo. No message is actually sent.",demo_export:"Export {no} as an Excel-compatible SpreadsheetML workbook.",
-    kdrag_tip:"Drag to another stage, or click to open it",offer_group:"Offer",offer_whole:"Whole project — every item",offer_print:"Print",
+    kdrag_tip:"Drag to another stage, or click to open it",lockall_btn:"Lock all",unlockall_btn:"Unlock all",lockall_tip:"Lock every item's calculation at once",unlockall_tip:"Reopen every locked item at once",lockall_title:"Lock every item?",lockall_body:"Locks the {n} open item(s) on {ref}. Their cost lines cannot change until they are unlocked, and every unlock records who did it and why.",lockall_confirm:"Lock all items",lockall_done:"{n} item(s) locked",lockall_none:"Every item is already locked.",unlockall_title:"Unlock every item?",unlockall_body:"Reopens the {n} locked item(s) on {ref} for editing. The reason is recorded against each of them.",unlockall_confirm:"Unlock all items",unlockall_done:"{n} item(s) unlocked",unlockall_none:"No item is locked.",offer_group:"Offer",offer_whole:"Whole project — every item",offer_print:"Print",
     offer_pick:"Pick a project — the offer is produced from it",
     offer_pdf_toast:"Offer {ref} opened as an A4 document — choose \u201cSave as PDF\u201d in the print dialog.",
     offer_pdf_blocked:"Allow pop-ups to save the offer as a PDF — printing this page instead.",
@@ -1006,7 +1009,7 @@ const T={
     demo_upload:"Filer upp till 768 KB lagras i den här webbläsaren och delas med Dokument.",duplicate_toast:"Duplicerade {a} som en ny, oberoende kalkyl {b}.",
     confirm_archive:"{no} är kopplad till projekt {p} och kan inte tas bort. Arkivera istället? Arkiverade kalkyler döljs från listan men behålls för spårbarhet.",
     demo_email:"E-postintegration — demo. Inget meddelande skickas i verkligheten.",demo_export:"Exportera {no} som en Excel-kompatibel SpreadsheetML-arbetsbok.",
-    kdrag_tip:"Dra till ett annat steg, eller klicka för att öppna",offer_group:"Offert",offer_whole:"Hela projektet — alla poster",offer_print:"Skriv ut",
+    kdrag_tip:"Dra till ett annat steg, eller klicka för att öppna",lockall_btn:"Lås alla",unlockall_btn:"Lås upp alla",lockall_tip:"Lås alla posters kalkyler på en gång",unlockall_tip:"Öppna alla låsta poster på en gång",lockall_title:"Låsa alla poster?",lockall_body:"Låser de {n} öppna posterna på {ref}. Deras kostnadsrader kan inte ändras förrän de låses upp, och varje upplåsning registrerar vem och varför.",lockall_confirm:"Lås alla poster",lockall_done:"{n} post(er) låsta",lockall_none:"Alla poster är redan låsta.",unlockall_title:"Låsa upp alla poster?",unlockall_body:"Öppnar de {n} låsta posterna på {ref} för redigering. Anledningen registreras på var och en.",unlockall_confirm:"Lås upp alla poster",unlockall_done:"{n} post(er) upplåsta",unlockall_none:"Ingen post är låst.",offer_group:"Offert",offer_whole:"Hela projektet — alla poster",offer_print:"Skriv ut",
     offer_pick:"Välj ett projekt — offerten skapas från det",
     offer_pdf_toast:"Offert {ref} öppnad som A4-dokument — välj \u201dSpara som PDF\u201d i utskriftsdialogen.",
     offer_pdf_blocked:"Tillåt popup-fönster för att spara offerten som PDF — skriver ut den här sidan i stället.",
@@ -1081,7 +1084,7 @@ const T={
     demo_upload:"Fajlovi do 768 KB se začuvuvaat vo ovoj prebaruvač i se delat so Dokumenti.",duplicate_toast:"{a} e dupliciran kako nova, nezavisna kalkulacija {b}.",
     confirm_archive:"{no} e poврзана so proektot {p} i ne može da se izbriše. Da se arhivira наместо тоа? Arhiviranite kalkulacii se skrieni od listata no se čuvaat za evidencija.",
     demo_email:"E-pošta integracija — demo. Nikakva poraka не se ispraќa vo realnost.",demo_export:"Izvezi ja {no} kako Excel-kompatibilna SpreadsheetML rabotna kniga.",
-    kdrag_tip:"Povleči vo druga faza, ili klikni za da ja otvoriš",offer_group:"Ponuda",offer_whole:"Celiot proekt — site stavki",offer_print:"Pečati",
+    kdrag_tip:"Povleči vo druga faza, ili klikni za da ja otvoriš",lockall_btn:"Zakluči gi site",unlockall_btn:"Otkluči gi site",lockall_tip:"Zakluči gi kalkulaciite na site stavki odedanš",unlockall_tip:"Otvori gi site zaklučeni stavki odedanš",lockall_title:"Da gi zaklučam site stavki?",lockall_body:"Gi zaklučuva {n} otvoreni stavki na {ref}. Nivnite redovi ne možat da se menuvaat dodeka ne se otklučat, a sekoe otklučuvanje zapišuva koj i zošto.",lockall_confirm:"Zakluči gi site",lockall_done:"{n} stavki se zaklučeni",lockall_none:"Site stavki veḱe se zaklučeni.",unlockall_title:"Da gi otklučam site stavki?",unlockall_body:"Gi otvora {n} zaklučeni stavki na {ref} za izmena. Pričinata se zapišuva kaj sekoja od niv.",unlockall_confirm:"Otkluči gi site",unlockall_done:"{n} stavki se otklučeni",unlockall_none:"Nitu edna stavka ne e zaklučena.",offer_group:"Ponuda",offer_whole:"Celiot proekt — site stavki",offer_print:"Pečati",
     offer_pick:"Izberi proekt — ponudata se pravi od nego",
     offer_pdf_toast:"Ponudata {ref} e otvorena kako A4 dokument — izberi \u201cSave as PDF\u201d vo dijalogot za pečatenje.",
     offer_pdf_blocked:"Dozvoli pop-up prozorci za da ja začuvaš ponudata kako PDF — ja pečatam ovaa strana namesto toa.",
@@ -1414,6 +1417,10 @@ function renderLeft(){
         <button class="tbtn primary small newproj" onclick="openNewProject()">+ ${esc(t.np_title)}</button>
         <div class="offerbar ${sel?'':'off'}">
           <span class="offerlbl"><b>${esc(t.offer_group)}</b>${sel?`<span class="offerref">${esc(estRef(sel))}</span>`:`<span class="offersub">${esc(t.offer_pick)}</span>`}</span>
+          <button class="tbtn" ${sel?'':'disabled'} onclick="openEditEst(${sel?sel.id:0})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${esc(t.edit)}</button>
+          ${sel&&!openItems(sel).length&&lockedItems(sel).length
+            ?`<button class="tbtn warn2" onclick="openUnlockAll(${sel.id})" title="${esc(t.unlockall_tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></svg>${esc(t.unlockall_btn)}</button>`
+            :`<button class="tbtn" ${sel?'':'disabled'} onclick="openLockAll(${sel?sel.id:0})" title="${esc(t.lockall_tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>${esc(t.lockall_btn)}${sel&&lockedItems(sel).length?` <span class="lockcnt">${lockedItems(sel).length}/${(sel.workItems||[]).length}</span>`:''}</button>`}
           <button class="tbtn" ${sel?'':'disabled'} onclick="emailOffer(${sel?sel.id:0})" title="${esc(t.demo_email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>${esc(t.act_email)}</button>
           <button class="tbtn" ${sel?'':'disabled'} onclick="pdfOffer(${sel?sel.id:0})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>${esc(t.item_pdf)}</button>
           <button class="tbtn primary" ${sel?'':'disabled'} onclick="printOffer(${sel?sel.id:0})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4v-6h16v6h-2M8 14h8v8H8z"/></svg>${esc(t.offer_print)}</button>
@@ -1679,6 +1686,56 @@ function doUnlockItem(id,idx){
   const resume=pendingUnlockAction;pendingUnlockAction=null;
   if(resume)resume();
 }
+// ── locking the whole estimate in one go ──────────────────────────────────
+// Agreeing a quotation means agreeing all of it, so the items are locked together rather than one
+// at a time. Each item still records its own lock in its own trail, exactly as a single lock does.
+function openItems(e){return (e.workItems||[]).filter(wi=>!isItemLocked(wi));}
+function lockedItems(e){return (e.workItems||[]).filter(isItemLocked);}
+function openLockAll(id){
+  const t=T[LANG],e=getEst(id);if(!e||!guardEdit(e))return;
+  const open=openItems(e);
+  if(!open.length){toast(t.lockall_none,'ok');return;}
+  const total=open.reduce((a,wi)=>a+(wi.lines||[]).reduce((x,l)=>x+lineGross(l),0),0);
+  showModal(`<h2>${esc(t.lockall_title)}</h2>
+    <p class="fsub">${esc(t.lockall_body.replace('{n}',open.length).replace('{ref}',estRef(e)))}</p>
+    <div class="frow"><label>${esc(t.lock_total)}</label><div class="lockfig">${fmt(total)}</div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="doLockAll(${id})">${esc(t.lockall_confirm)}</button></div>`);
+}
+function doLockAll(id){
+  const t=T[LANG],e=getEst(id);if(!e)return;
+  const at=lockStamp(),by=currentUser();let n=0;
+  (e.workItems||[]).forEach((wi,idx)=>{
+    if(isItemLocked(wi))return;
+    wi.lock=lockItem(wi.lock,by,at);
+    pushHistory(e,t.hist_item_locked.replace('{ref}',itemRef(e,wi.seq||idx+1)),by,at);n++;
+  });
+  syncEstimation(e);closeModal();renderAll();
+  toast(t.lockall_done.replace('{n}',n),'ok');
+}
+// Unlocking all of them carries one reason, recorded against every item it reopens.
+function openUnlockAll(id){
+  const t=T[LANG],e=getEst(id);if(!e||!guardEdit(e))return;
+  const locked=lockedItems(e);
+  if(!locked.length){toast(t.unlockall_none,'ok');return;}
+  showModal(`<h2>${esc(t.unlockall_title)}</h2>
+    <p class="fsub">${esc(t.unlockall_body.replace('{n}',locked.length).replace('{ref}',estRef(e)))}</p>
+    <div class="frow"><label for="ulReason">${esc(t.unlock_reason)}</label><textarea id="ulReason" rows="3"></textarea><div id="ulErr" class="errmsg" style="display:none;"></div></div>
+    <div class="frow"><label>${esc(t.unlock_recorded)}</label><div class="lockfig small">${esc(currentUser())} · ${esc(lockStamp())}</div></div>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn danger" onclick="doUnlockAll(${id})">${esc(t.unlockall_confirm)}</button></div>`);
+}
+function doUnlockAll(id){
+  const t=T[LANG],e=getEst(id);if(!e)return;
+  const reason=$("ulReason").value.trim();
+  if(!reason){showFieldError('ulReason','ulErr',t.unlock_err_reason);return;}
+  const at=lockStamp(),by=currentUser();let n=0;
+  (e.workItems||[]).forEach((wi,idx)=>{
+    if(!isItemLocked(wi))return;
+    wi.lock=unlockItem(wi.lock,by,at,reason);
+    pushHistory(e,t.hist_item_unlocked.replace('{ref}',itemRef(e,wi.seq||idx+1))+' — '+reason,by,at);n++;
+  });
+  syncEstimation(e);closeModal();renderAll();
+  toast(t.unlockall_done.replace('{n}',n),'ok');
+}
 // The lock trail for one item, read where the item is.
 function openItemHistory(id,idx){
   const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi)return;
@@ -1792,10 +1849,11 @@ function duplicateLine(id,wiIdx,lIdx){
 function deleteLine(id,wiIdx,lIdx){
   const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>deleteLine(id,wiIdx,lIdx)))return;
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
-  if(!confirm(T[LANG].confirm_delete_line.replace('{n}',line.desc)))return;
-  wi.lines.splice(lIdx,1);
-  e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:'Aleksandar C.'});
-  syncEstimation(e);renderAll();
+  wConfirm(T[LANG].confirm_delete_line.replace('{n}',line.desc),()=>{
+    wi.lines.splice(lIdx,1);
+    e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:'Aleksandar C.'});
+    syncEstimation(e);renderAll();
+  },{danger:true});
 }
 function moveLine(id,wiIdx,lIdx,dir){
   const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>moveLine(id,wiIdx,lIdx,dir)))return;
@@ -1894,9 +1952,10 @@ function saveRevision(id){
   const t=T[LANG];clearAllFieldErrors();const reason=$("revReason").value.trim();
   if(!reason){showFieldError('revReason','revErr',t.err_required);return;}
   const e=getEst(id);
-  if(!confirm(t.confirm_revision.replace('{no}',e.no)))return;
-  createRevision(e,reason);
-  closeModal();renderAll();
+  wConfirm(t.confirm_revision.replace('{no}',e.no),()=>{
+    createRevision(e,reason);
+    closeModal();renderAll();
+  });
 }
 function createRevision(e,reason){
   const snapshot=JSON.parse(JSON.stringify({workItems:e.workItems,options:e.options,terms:e.terms,exclusions:e.exclusions,
@@ -1965,14 +2024,15 @@ function requestStageChange(id,stage){
   if(reopens)notes.push(t.stage_reopen.replace('{a}',t['st_'+from]));
   if(unpriced)notes.push(t.stage_unpriced);
   const ask=(notes.length?notes.join('\n')+'\n\n':'')+t.confirm_stage.replace('{s}',t['st_'+stage]);
-  if(!confirm(ask))return;
-  e.status=stage;
-  e.history.push({date:todayISO(),
-    action:`Status changed to ${t['st_'+stage]}`+(usual?'':` — out of the usual order, from ${t['st_'+from]}`),
-    by:"Aleksandar C."});
-  syncEstimation(e);
-  renderAll();
-  if(!usual)toast(t.stage_recorded.replace('{a}',t['st_'+from]).replace('{b}',t['st_'+stage]),'warn');
+  wConfirm(ask,()=>{
+    e.status=stage;
+    e.history.push({date:todayISO(),
+      action:`Status changed to ${t['st_'+stage]}`+(usual?'':` — out of the usual order, from ${t['st_'+from]}`),
+      by:"Aleksandar C."});
+    syncEstimation(e);
+    renderAll();
+    if(!usual)toast(t.stage_recorded.replace('{a}',t['st_'+from]).replace('{b}',t['st_'+stage]),'warn');
+  },{yes:t['st_'+stage]});
 }
 
 function closeModal(){$("fov").classList.remove("show");}
@@ -2024,7 +2084,10 @@ function openConvertEst(id){
 function confirmConvertEst(id){
   const t=T[LANG];const e=getEst(id);
   if(e.status!=='accepted'){toast(t.convert_requires_accepted,'error');closeModal();return;}
-  if(!confirm(t.confirm_convert.replace('{no}',e.no)))return;
+  wConfirm(t.confirm_convert.replace('{no}',e.no),()=>doConvertEst(id));
+}
+function doConvertEst(id){
+  const t=T[LANG];const e=getEst(id);if(!e)return;
   e.plannedHours=+$('cpHours').value||0;e.deliveryTarget=$('cpDate').value||e.validUntil;e.projectTitle=$('cpTitle').value.trim()||e.projectTitle;
   const saved=syncEstimation(e);
   const result=WorkshopData.createProjectFromEstimation(saved.id);
@@ -2188,15 +2251,19 @@ function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00");d2.setDate(d2.g
 function deleteEst(id){
   const t=T[LANG];const e=getEst(id);if(!e)return;
   if(e.projectNo){
-    if(!confirm(t.confirm_archive.replace('{no}',e.no).replace('{p}',e.projectNo)))return;
-    e.archived=true;
-    e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:'Aleksandar C.'});
-    syncEstimation(e);
-    if(selectedId===id){const visible=ESTIMATIONS.filter(x=>x.id!==id&&!x.archived);selectedId=visible.length?visible[0].id:null;}
-    renderAll();
+    wConfirm(t.confirm_archive.replace('{no}',e.no).replace('{p}',e.projectNo),()=>{
+      e.archived=true;
+      e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:'Aleksandar C.'});
+      syncEstimation(e);
+      if(selectedId===id){const visible=ESTIMATIONS.filter(x=>x.id!==id&&!x.archived);selectedId=visible.length?visible[0].id:null;}
+      renderAll();
+    },{yes:t.act_archive,danger:true});
     return;
   }
-  if(!confirm(t.confirm_delete))return;
+  wConfirm(t.confirm_delete,()=>doDeleteEst(id),{yes:t.act_delete,danger:true});
+}
+function doDeleteEst(id){
+  const t=T[LANG];const e=getEst(id);if(!e)return;
   // Unlinked estimates are removed from BOTH this page's local list and the shared data layer, so the
   // record cannot reappear on refresh (hydrateSharedEstimations() re-adds anything still present there).
   if(window.WorkshopData&&e.sharedId){
@@ -2366,7 +2433,7 @@ function wfSave(p,action){
   p.activity=p.activity||[];
   p.activity.push({date:todayISO(),time:nowTime(),user:'Aleksandar C.',action});
   const res=WorkshopData.upsertProject(p);
-  if(res&&res.code==='QUALITY_HOLD_ACTIVE'){alert(T[LANG].qh_blocked);return false;}
+  if(res&&res.code==='QUALITY_HOLD_ACTIVE'){wAlert(T[LANG].qh_blocked);return false;}
   hydrateProjects();closeModal();renderAll();return true;
 }
 function wfGate(p){return (p&&WorkshopData.getProjectQualityGate)?WorkshopData.getProjectQualityGate(p.no):{blocked:false,holds:[],reasons:[]};}
@@ -2453,8 +2520,8 @@ function wfPlan(p){const t=T[LANG];
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(t.nc_cancel)}</button><button class="tbtn primary" onclick="wfDoPlan()">${esc(t.plan_save)}</button></div>`);}
 function wfDoPlan(){const t=T[LANG],p=wfProject();if(!p||!canPlan(p))return closeModal();
   const a=$("wfStart").value,b=$("wfDl").value;
-  if(!a||!b){alert(t.plan_err_dates);return;}
-  if(b<a){alert(t.plan_err_order);return;}
+  if(!a||!b){wAlert(t.plan_err_dates);return;}
+  if(b<a){wAlert(t.plan_err_order);return;}
   p.status='planned';p.plannedStart=a;p.deadline=b;
   wfSave(p,'Status changed: APPROVED → PLANNED — '+wfDate(a)+' → '+wfDate(b));}
 
@@ -2577,7 +2644,7 @@ function saveNewProject(){
     status:'quotation',quoteKind:kind,quotedValue:0,deadline:$("npDeadline").value||'',plannedStart:'',
     types:[kind==='service'?'Service':'Fabrication'],pm:'Aleksandar',createdDate:todayISO(),
     activity:[{date:todayISO(),time:nowTime(),user:'Aleksandar C.',action:'Project created ('+kind+')'}]});
-  if(!saved||saved.error){alert(saved&&saved.error?saved.error:t.err_required);return;}
+  if(!saved||saved.error){wAlert(saved&&saved.error?saved.error:t.err_required);return;}
   // Each line becomes a real project item, so the estimate has something to price straight away.
   newProjItems.forEach(desc=>WorkshopData.upsertJobcard({projectId:saved.id,projectNo:saved.no,
     customerId:saved.customerId,customer:saved.customer,title:desc,item:desc,quantity:1,revision:0,

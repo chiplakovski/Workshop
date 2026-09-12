@@ -67,3 +67,26 @@ html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
 .whelpcard ul{margin:0 0 0 18px;}
 .whelpcard li{margin-bottom:6px;}
 .whelpfoot{display:flex;justify-content:flex-end;margin-top:22px;}
+
+/* ── Ask and tell ──
+   Stands in for window.confirm()/alert(), which a sandboxed frame silently refuses. */
+.waskwrap{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:rgba(var(--c-scrim-rgb,2,8,15),.62);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
+.wask{max-width:440px;width:100%;padding:20px 22px 18px;
+  background:var(--c-panel2,#0a2447);border:1px solid var(--field-line,rgba(185,198,218,.24));
+  box-shadow:0 22px 60px var(--shade-55,rgba(0,0,0,.55));}
+.wask.danger{border-color:rgba(var(--c-danger-rgb,255,107,107),.5);}
+.waskmsg{margin:0 0 18px;font-family:var(--font-body,system-ui,sans-serif);font-size:13.5px;line-height:1.6;
+  color:var(--ice,#e8f0fb);white-space:pre-line;}
+.waskinput{width:100%;margin:0 0 16px;padding:9px 11px;font-family:var(--font-body,system-ui,sans-serif);
+  font-size:13px;color:var(--ice,#e8f0fb);background:var(--field,rgba(255,255,255,.045));
+  border:1px solid var(--field-line,rgba(185,198,218,.24));outline:none;}
+.waskinput:focus{border-color:var(--spark,#4a90ff);}
+.waskbtns{display:flex;justify-content:flex-end;gap:9px;}
+.waskbtns button{font-family:var(--font-heading,inherit);font-weight:600;font-size:12.5px;padding:9px 15px;
+  cursor:pointer;border:1px solid var(--field-line,rgba(185,198,218,.24));background:transparent;
+  color:var(--steel-300,#b9c6da);transition:.15s;}
+.waskbtns button:hover{border-color:var(--spark,#4a90ff);color:var(--ice,#e8f0fb);}
+.waskbtns .waskyes{border:none;color:#fff;
+  background:linear-gradient(180deg,var(--c-accent2,#2c6bd6),var(--c-brand,#013179));}
+.wask.danger .waskyes{background:linear-gradient(180deg,var(--danger,#ff6b6b),#9e2a2a);}

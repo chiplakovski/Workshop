@@ -101,8 +101,10 @@ async function reportsWorkflow(page, reportId) {
   assert.ok(copy);
 
   row = page.locator('#saved-list-body tr').filter({ hasText: '(copy)' });
-  page.once('dialog', async (dialog) => dialog.accept(RENAMED_REPORT));
   await row.getByRole('button', { name: 'Rename' }).click();
+  await page.locator('.wask .waskinput').fill(RENAMED_REPORT);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(150);
   const renamed = await page.evaluate((id) => WorkshopData.getSavedReports().find((report) => report.id === id), copy.id);
   assert.equal(renamed.name, RENAMED_REPORT, 'report name was stored as HTML-encoded text');
   assert.ok((await page.locator('#saved-list-body').innerText()).includes(RENAMED_REPORT));
@@ -114,8 +116,9 @@ async function reportsWorkflow(page, reportId) {
   step('Reports: favourite, duplicate, rename, and definition export use real shared records');
 
   row = page.locator('#saved-list-body tr').filter({ hasText: REPORT_NAME }).filter({ hasNotText: RENAMED_REPORT });
-  page.once('dialog', async (dialog) => dialog.accept());
   await row.getByRole('button', { name: 'Archive' }).click();
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(150);
   assert.equal((await page.evaluate((id) => WorkshopData.getSavedReports().find((report) => report.id === id), reportId)).archived, true);
 
   await page.reload({ waitUntil: 'load' });

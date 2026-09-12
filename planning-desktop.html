@@ -1210,9 +1210,9 @@ function renderScenariosTab(){
 }
 function applyCapacitySuggestion(){activeScenario='welder';setTab('scenarios')}
 function delayScenarioTarget(){return PROJECTS.find(p=>p.no==='P-2026-014'||/vent/i.test(p.name))||PROJECTS[0];}
-function applyScenario(){if(activeScenario==='baseline')return alert(T[LANG].alert_baseline_live);const s=SCENARIOS.find(x=>x.id===activeScenario);if(s.welder>1)EMPLOYEES.push({name:'Scenario Welder',role:'Welder (TIG)',util:60});if(s.projectShift){const p=delayScenarioTarget();p.tasks[0].shift=(p.tasks[0].shift||0)+s.projectShift;p.updatedCompletion=fmtISO(projectSpan(p).end)}if(s.laser)MACHINES.push({name:'Laser 2',util:45});alert(T[LANG].alert_scenario_applied.replace('{s}',scenarioName(s.id)));setTab('workload')}
+function applyScenario(){if(activeScenario==='baseline')return wAlert(T[LANG].alert_baseline_live);const s=SCENARIOS.find(x=>x.id===activeScenario);if(s.welder>1)EMPLOYEES.push({name:'Scenario Welder',role:'Welder (TIG)',util:60});if(s.projectShift){const p=delayScenarioTarget();p.tasks[0].shift=(p.tasks[0].shift||0)+s.projectShift;p.updatedCompletion=fmtISO(projectSpan(p).end)}if(s.laser)MACHINES.push({name:'Laser 2',util:45});wAlert(T[LANG].alert_scenario_applied.replace('{s}',scenarioName(s.id)));setTab('workload')}
 function importAcceptedEstimation(){
-  if(!window.WorkshopData)return alert(T[LANG].alert_shareddata_unavailable);const candidates=WorkshopData.listEstimations().filter(e=>e.status==='accepted'&&!e.projectId);if(!candidates.length)return alert(T[LANG].alert_all_est_connected);const e=candidates[0];let f=FUTURE.find(x=>x.sharedEstimationId===e.id);if(!f){f={id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Imported from accepted estimation ${e.no}`,priority:'high'};FUTURE.unshift(f)}selectedFutureId=f.id;setSub('future');
+  if(!window.WorkshopData)return wAlert(T[LANG].alert_shareddata_unavailable);const candidates=WorkshopData.listEstimations().filter(e=>e.status==='accepted'&&!e.projectId);if(!candidates.length)return wAlert(T[LANG].alert_all_est_connected);const e=candidates[0];let f=FUTURE.find(x=>x.sharedEstimationId===e.id);if(!f){f={id:nextFutureId++,sharedEstimationId:e.id,name:e.title,customerName:e.customer,expectedStart:fmtISO(addDays(d(e.created),21)),expectedFinish:e.deliveryTarget,probability:'confirmed',probabilityPct:100,estValue:e.sellingPrice,estHours:e.plannedHours,employees:2,machines:e.machines||[],materialLeadTime:'3 weeks',dependencyNote:`Imported from accepted estimation ${e.no}`,priority:'high'};FUTURE.unshift(f)}selectedFutureId=f.id;setSub('future');
 }
 
 function renderGanttTab(){
@@ -1339,13 +1339,13 @@ function renderFutureSub(){
 function convertFutureToProject(id){
   const f=FUTURE.find(x=>x.id===id);if(!f)return;
   let no=`P-2026-${String(PROJECTS.length+10).padStart(3,'0')}`;
-  if(PROJECTS.some(p=>p.name===f.name))return alert(T[LANG].alert_future_converted);
+  if(PROJECTS.some(p=>p.name===f.name))return wAlert(T[LANG].alert_future_converted);
   const tasks=[['measurement','Site measurement',1,[],f.employees? 'Aleksandar C.':'—'],['design','Design / drawings',3,['measurement'],'Elena N.'],['order','Material ordering',1,['design'],'Aleksandar C.'],['wait','Material lead time',Math.max(3,parseInt(f.materialLeadTime)*7||7),['order'],'—'],['cut','Laser cutting',1,['wait'],'Marko K.'],['bend','Bending',2,['cut'],'Marko K.'],['weld','TIG welding',4,['bend'],'Marko K.'],['assembly','Assembly',2,['weld'],'Elena N.'],['inspection','FAT / inspection',1,['assembly'],'Aleksandar C.'],['delivery','Delivery',1,['inspection'],'Aleksandar C.']]
     .map((x,i)=>({id:x[0],name:x[1],dur:x[2],dependsOn:x[3],resource:x[4],status:'planned',shift:0,...(i===0?{start:f.expectedStart}:{})}));
   let sharedProject=null;if(window.WorkshopData&&f.sharedEstimationId){const result=WorkshopData.createProjectFromEstimation(f.sharedEstimationId);if(result.project){sharedProject=result.project;no=sharedProject.no}}
   const p={no,name:f.name,customerId:f.customerId||null,customerName:f.customerName,start:f.expectedStart,deadline:f.expectedFinish,progress:0,plannedHours:f.estHours,usedHours:0,phase:'design',materialStatus:'BOM check required',responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'].slice(0,Math.max(1,f.employees)),machines:f.machines,dependencyNote:f.dependencyNote,problems:[],updatedCompletion:f.expectedFinish,tasks,milestones:[{name:'Drawings approved',date:f.expectedStart,done:false},{name:'Material delivered',date:fmtISO(addDays(d(f.expectedStart),Math.max(3,parseInt(f.materialLeadTime)*7||7))),done:false},{name:'FAT / inspection',date:f.expectedFinish,done:false}]};
   if(window.WorkshopData)WorkshopData.upsertProject(Object.assign({},sharedProject||{},p,{status:'planned',expectedCompletion:p.updatedCompletion}));
-  PROJECTS.unshift(p);selectedProjNo=no;setSub('existing');alert(T[LANG].alert_project_created.replace('{no}',no));
+  PROJECTS.unshift(p);selectedProjNo=no;setSub('existing');wAlert(T[LANG].alert_project_created.replace('{no}',no));
 }
 
 function openNewIdea(){

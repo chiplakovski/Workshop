@@ -181,5 +181,74 @@
   // if a re-render removes it.
   new MutationObserver(function(){mountHelp();}).observe(document.documentElement,{childList:true,subtree:true});
 
-  window.WorkshopUI={openHelp:openHelp,hideTip:hide};
+  // ── Ask and tell ─────────────────────────────────────────────────────────
+  // window.confirm() and window.alert() do not exist inside a sandboxed frame without allow-modals:
+  // confirm() returns false without showing anything, so every guarded action silently does nothing.
+  // The packaged demo runs exactly like that, so the app asks and tells in its own markup instead.
+  function closeAsk(box){
+    if(!box)return;
+    document.removeEventListener('keydown',box.__key,true);
+    box.remove();
+  }
+  function ask(message,opts,onYes,onNo){
+    opts=opts||{};
+    var box=document.createElement('div');
+    box.className='waskwrap';
+    var msg=String(message==null?'':message);
+    box.innerHTML='<div class="wask'+(opts.danger?' danger':'')+'" role="alertdialog" aria-modal="true">'
+      +'<p class="waskmsg"></p><div class="waskbtns">'
+      +(onYes?'<button type="button" class="waskno"></button>':'')
+      +'<button type="button" class="waskyes"></button></div></div>';
+    box.querySelector('.waskmsg').textContent=msg;   // never markup: the text is data
+    var yes=box.querySelector('.waskyes'),no=box.querySelector('.waskno');
+    yes.textContent=opts.yes||(onYes?'OK':'Close');
+    if(no)no.textContent=opts.no||'Cancel';
+    function done(ok){closeAsk(box);if(ok&&onYes)onYes();else if(!onYes&&onNo)onNo();else if(!ok&&onNo)onNo();}
+    yes.addEventListener('click',function(){done(true);});
+    if(no)no.addEventListener('click',function(){done(false);});
+    box.addEventListener('mousedown',function(ev){if(ev.target===box)done(false);});
+    box.__key=function(ev){
+      if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();done(false);}
+      else if(ev.key==='Enter'){ev.preventDefault();ev.stopPropagation();done(true);}
+    };
+    document.addEventListener('keydown',box.__key,true);
+    document.body.appendChild(box);
+    yes.focus();
+    return box;
+  }
+  // A question: onYes runs only when the answer is yes, so a caller reads like the guard it replaces.
+  window.wConfirm=function(message,onYes,opts){return ask(message,opts||{},onYes||function(){},null);};
+  // A statement: one button, nothing to decide.
+  window.wAlert=function(message,onClose){return ask(message,{yes:'OK'},null,onClose||null);};
+  // A question that wants words back. onOk runs with the text only when something was typed.
+  window.wPrompt=function(message,initial,onOk,opts){
+    opts=opts||{};
+    var box=document.createElement('div');
+    box.className='waskwrap';
+    box.innerHTML='<div class="wask" role="dialog" aria-modal="true"><p class="waskmsg"></p>'
+      +'<input type="text" class="waskinput"><div class="waskbtns">'
+      +'<button type="button" class="waskno"></button><button type="button" class="waskyes"></button></div></div>';
+    box.querySelector('.waskmsg').textContent=String(message==null?'':message);
+    var input=box.querySelector('.waskinput'),yes=box.querySelector('.waskyes'),no=box.querySelector('.waskno');
+    input.value=initial==null?'':String(initial);
+    yes.textContent=opts.yes||'OK';no.textContent=opts.no||'Cancel';
+    function done(ok){
+      var v=input.value;
+      closeAsk(box);
+      if(ok&&onOk&&v!=null&&String(v).trim()!=='')onOk(v);
+    }
+    yes.addEventListener('click',function(){done(true);});
+    no.addEventListener('click',function(){done(false);});
+    box.addEventListener('mousedown',function(ev){if(ev.target===box)done(false);});
+    box.__key=function(ev){
+      if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();done(false);}
+      else if(ev.key==='Enter'&&ev.target===input){ev.preventDefault();ev.stopPropagation();done(true);}
+    };
+    document.addEventListener('keydown',box.__key,true);
+    document.body.appendChild(box);
+    input.focus();input.select();
+    return box;
+  };
+
+  window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,prompt:window.wPrompt};
 })();

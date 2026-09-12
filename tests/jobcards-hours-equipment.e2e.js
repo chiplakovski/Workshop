@@ -82,11 +82,12 @@ async function hoursWorkflow(page, jobcard) {
   await page.locator('#equipList .eqsel').selectOption(EQUIPMENT_ID);
   await page.locator('#equipList .eqhrs').fill(String(LOGGED_HOURS));
 
-  page.once('dialog', async (dialog) => {
-    assert.match(dialog.message(), /saved/i);
-    await dialog.accept();
-  });
   await page.locator('#saveEntry').click();
+  await page.waitForTimeout(150);
+  // The app tells you in its own markup: a native alert() is invisible in a sandboxed frame.
+  const saidSaved = await page.locator('.wask .waskmsg').first().textContent();
+  assert.match(saidSaved, /saved|sparad|začuvan/i);
+  await page.locator('.wask .waskyes').click();
   await page.waitForTimeout(70);
 
   const state = await page.evaluate(({ no, operationId, equipmentId, operationName }) => {

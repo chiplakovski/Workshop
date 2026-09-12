@@ -87,6 +87,8 @@ async function customerWorkflow(page) {
   step('Customers: persisted record survives reload');
 }
 
+const nativeDialogs = [];
+
 async function estimationWorkflow(page) {
   const quoteVisible = await page.evaluate((name) => WorkshopData.listEstimations().some((item) => item.customer === name && item.title === 'E2E cross-module quote'), CUSTOMER_EDITED_NAME);
   assert.equal(quoteVisible, true, 'quote created in Customers is not visible to Estimations data');
@@ -136,8 +138,12 @@ async function estimationWorkflow(page) {
     }
     await page.mouse.up();
     await page.waitForTimeout(300);
+    // The app asks in its own markup, not through window.confirm() - which a sandboxed frame refuses.
+    const ask = page.locator('.wask .waskyes');
+    if (await ask.count()) { await ask.click(); await page.waitForTimeout(300); }
   };
-  page.on('dialog', (d) => d.accept());
+  // Any native dialog here is a bug: it would be invisible in the packaged demo.
+  page.on('dialog', (d) => { nativeDialogs.push(d.message()); d.dismiss(); });
 
   const draftId = await page.evaluate(() => {
     const e = ESTIMATIONS.find((x) => x.status === 'draft' && x.projectNo);
@@ -285,6 +291,11 @@ async function estimationWorkflow(page) {
   assert.equal(restored.ref, listedProject, 'the project reference must survive a reload');
   assert.equal(restored.rfq, 'E2E-RFQ-0039', 'the commercial edit must survive a reload');
   step('Estimations: the project estimate survives reload');
+
+  assert.deepEqual(nativeDialogs, [],
+    'nothing may use window.confirm()/alert(): a sandboxed frame returns false without showing them, '
+    + 'so the guarded action silently does nothing');
+  step('Estimations: every question is asked in the page, never through a native dialog');
 }
 
 async function main() {

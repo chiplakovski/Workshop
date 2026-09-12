@@ -1035,7 +1035,10 @@ function deleteOp(jcId,opId){
   // An in-progress operation must be paused before it can be deleted — the button is disabled for
   // this case, but WorkshopData enforces it centrally regardless (never rely on the UI control alone).
   if(op.status==='in-progress'){toast(tt.op_delete_pausefirst,'error');return;}
-  if(!confirm(tpl(tt.confirm_delete_op,{n:op.desc})))return;
+  wConfirm(tpl(tt.confirm_delete_op,{n:op.desc}),()=>doDeleteOp(jcId,opId),{danger:true});
+}
+function doDeleteOp(jcId,opId){
+  const tt=t();const j=getJC(jcId);const op=(j.operations||[]).find(o=>o.id===opId);if(!op)return;
   const arr=j.operations.filter(o=>o.id!==opId);
   const res=WorkshopData.updateJobcard(jcId,{operations:arr});
   if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
@@ -1211,11 +1214,12 @@ function saveMatForm(jcId){
 }
 function deleteMatLine(jcId,idx){
   const tt=t();const j=getJC(jcId);const m=j.materials[idx];if(!m)return;
-  if(!confirm(tpl(tt.confirm_delete_mat,{n:m.description})))return;
-  const mats=j.materials.filter((x,i)=>i!==idx);
-  WorkshopData.updateJobcard(jcId,{materials:mats});
-  WorkshopData.recordJobcardActivity(jcId,{action:`Material line removed: ${m.description}`});
-  refreshShared();renderApp();
+  wConfirm(tpl(tt.confirm_delete_mat,{n:m.description}),()=>{
+    const mats=j.materials.filter((x,i)=>i!==idx);
+    WorkshopData.updateJobcard(jcId,{materials:mats});
+    WorkshopData.recordJobcardActivity(jcId,{action:`Material line removed: ${m.description}`});
+    refreshShared();renderApp();
+  },{danger:true});
 }
 // Reserve / Issue / Return / Scrap all go through the real shared Store functions (WorkshopData.reserveItem /
 // issue / move) against shared inventory + the linked project's BOM, then mirror the result onto this
@@ -1574,7 +1578,10 @@ function removeMachine(jcId,idx){
   // this case, but WorkshopData enforces it centrally regardless (never rely on the UI control alone).
   const usedByActiveOp=!!(m.equipmentId&&(j.operations||[]).some(op=>op&&op.status==='in-progress'&&op.equipmentId===m.equipmentId));
   if(usedByActiveOp){toast(tt.mc_pausetoremove,'error');return;}
-  if(!confirm(tpl(tt.confirm_removemachine,{n:m.name||m.equipmentId||''})))return;
+  wConfirm(tpl(tt.confirm_removemachine,{n:m.name||m.equipmentId||''}),()=>doRemoveMachine(jcId,idx),{danger:true});
+}
+function doRemoveMachine(jcId,idx){
+  const tt=t();const j=getJC(jcId);const m=(j.machines||[])[idx];if(!m)return;
   if(m.equipmentId){
     const eq=SHARED.equipment.find(e=>e.equipmentId===m.equipmentId);
     if(canReturnEquipmentFromJobcard(eq,j.no)){
@@ -1670,8 +1677,7 @@ function requestStatusChange(id,stage){
     if(materialsShort(j))toast(tt.issue_material_short,'error');
   }
   if(stage==='completed'){openCompleteCheck(id);return;}
-  if(!confirm(tpl(tt.confirm_status,{s:tt['st_'+stage]})))return;
-  applyStatusChange(id,stage);
+  wConfirm(tpl(tt.confirm_status,{s:tt['st_'+stage]}),()=>applyStatusChange(id,stage));
 }
 function applyStatusChange(id,stage,extra){
   const tt=t();const j=getJC(id);const patch=Object.assign({status:stage},extra||{});
@@ -1689,7 +1695,7 @@ function openCompleteCheck(id){
   if(!requiredOperationsComplete(j)){const n=(j.operations||[]).filter(o=>o.status!=='completed'&&o.status!=='skipped').length;issues.push(tpl(tt.issue_operations_open,{n}));}
   const pend=pendingInspections(j).length;if(pend)issues.push(tpl(tt.issue_inspections_pending,{n:pend}));
   const failed=failedInspections(j).length;if(failed)issues.push(tpl(tt.issue_inspections_failed,{n:failed}));
-  if(!issues.length){if(!confirm(tpl(tt.confirm_status,{s:tt.st_completed})))return;applyStatusChange(id,'completed',{actualCompletion:todayISO()});return;}
+  if(!issues.length){wConfirm(tpl(tt.confirm_status,{s:tt.st_completed}),()=>applyStatusChange(id,'completed',{actualCompletion:todayISO()}));return;}
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.complete_issues_title)}</h2><p class="fsub">${esc(j.no)}</p>
     <ul class="issuelist">${issues.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
@@ -1779,11 +1785,12 @@ function saveReopen(id){
 }
 function archiveJc(id){
   const tt=t();const j=getJC(id);
-  if(!confirm(tpl(tt.confirm_archive,{no:j.no})))return;
-  WorkshopData.archiveJobcard(id);
-  WorkshopData.recordJobcardActivity(id,{action:'Archived'});
-  refreshShared();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));
-  setView('archived');
+  wConfirm(tpl(tt.confirm_archive,{no:j.no}),()=>{
+    WorkshopData.archiveJobcard(id);
+    WorkshopData.recordJobcardActivity(id,{action:'Archived'});
+    refreshShared();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));
+    setView('archived');
+  },{yes:'Archive',danger:true});
 }
 
 // ═══════════════ CREATE / EDIT / DUPLICATE ═══════════════

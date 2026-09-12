@@ -1552,20 +1552,20 @@ $('clearFiltBtn').addEventListener('click',()=>{
 });
 
 $('saveViewBtn').addEventListener('click',()=>{
-  const name=prompt('Name this saved view:');
-  if(!name)return;
-  // Was calling a non-existent saveSavedReports(wholeArray) - a plain ReferenceError that broke
-  // this button entirely (not even the toast fired). WorkshopData.saveReport() persists ONE record
-  // at a time, exactly like every sibling save action on this page (confirmSavedModal, rename,
-  // duplicate, toggleFavourite) already does correctly.
-  WorkshopData.saveReport({
-    id:'view-'+Date.now(),name:name.trim().slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
-    filters:{dateFilter:currentFilter,...activeFilters},columns:[],sorting:null,grouping:null,chartType:null,
-    visibility:'private',favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
-    section:currentSection,type:'view'
+  wPrompt('Name this saved view:','',(name)=>{
+    // Was calling a non-existent saveSavedReports(wholeArray) - a plain ReferenceError that broke
+    // this button entirely (not even the toast fired). WorkshopData.saveReport() persists ONE record
+    // at a time, exactly like every sibling save action on this page (confirmSavedModal, rename,
+    // duplicate, toggleFavourite) already does correctly.
+    WorkshopData.saveReport({
+      id:'view-'+Date.now(),name:name.trim().slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
+      filters:{dateFilter:currentFilter,...activeFilters},columns:[],sorting:null,grouping:null,chartType:null,
+      visibility:'private',favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
+      section:currentSection,type:'view'
+    });
+    renderSavedReports();
+    notify('View saved to Saved Reports.');
   });
-  renderSavedReports();
-  notify('View saved to Saved Reports.');
 });
 
 // EXPORT / PRINT / REFRESH
@@ -2597,11 +2597,11 @@ function loadSavedReport(id){
 }
 function renameSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
-  const name=prompt('Rename report:',r.name);
-  if(!name)return;
-  WorkshopData.saveReport(Object.assign({},r,{name:name.trim().slice(0,80)}));
-  renderSavedReports();
-  notify('Report renamed.');
+  wPrompt('Rename report:',r.name,(name)=>{
+    WorkshopData.saveReport(Object.assign({},r,{name:name.trim().slice(0,80)}));
+    renderSavedReports();
+    notify('Report renamed.');
+  });
 }
 function duplicateSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
@@ -2616,11 +2616,12 @@ function toggleFavourite(id){
   renderSavedReports();
 }
 function archiveSavedReport(id){
-  if(!confirm('Archive this saved report?'))return;
-  const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
-  WorkshopData.archiveSavedReport(id);
-  renderSavedReports();
-  notify('Report archived.');
+  wConfirm('Archive this saved report?',()=>{
+    const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
+    WorkshopData.archiveSavedReport(id);
+    renderSavedReports();
+    notify('Report archived.');
+  },{yes:'Archive',danger:true});
 }
 function exportSavedDefinition(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;

@@ -335,30 +335,30 @@
   // neither equipment usage nor labour hours are recorded. No equipment rows simply logs labour hours.
   function saveHours(reset){
     const entry=collectHours();const hours=Number(entry.hours);
-    if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){alert(T[current].err_select);return false;}
+    if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){wAlert(T[current].err_select);return false;}
     const jc=(WorkshopData.listJobcards()||[]).find(j=>j.no===entry.jobcard);
-    if(!jc){alert(T[current].err_jobcard_missing);return false;}
+    if(!jc){wAlert(T[current].err_jobcard_missing);return false;}
 
     const toLog=[];
     for(const row of entry.equipment){
       if(!row.equipmentId)continue;
       const resolved=resolveLogTimeEquipment(jc.machines,row.equipmentId,WorkshopData.getEquipment(),jc.no);
-      if(!resolved.ok){alert(equipBlockMessage(resolved));return false;}
+      if(!resolved.ok){wAlert(equipBlockMessage(resolved));return false;}
       const use=WorkshopData.canUseEquipment(row.equipmentId,{date:entry.date,projectNo:jc.projectNo,jobcardNo:jc.no});
-      if(!use.allowed){alert(equipBlockMessage({code:'EQUIPMENT_SAFETY_BLOCKED',reasons:(use.gate&&use.gate.reasons)||[]}));return false;}
+      if(!use.allowed){wAlert(equipBlockMessage({code:'EQUIPMENT_SAFETY_BLOCKED',reasons:(use.gate&&use.gate.reasons)||[]}));return false;}
       toLog.push({equipmentId:row.equipmentId,name:resolved.machine.name,hours:Number(row.hours)||hours});
     }
 
     for(const eqEntry of toLog){
       const usageRes=WorkshopData.logEquipmentUsage(eqEntry.equipmentId,{hours:eqEntry.hours,date:entry.date,worker:entry.worker,project:jc.projectNo,jobcard:jc.no,notes:entry.notes});
-      if(usageRes&&usageRes.error){alert(equipBlockMessage(usageRes));return false;}
+      if(usageRes&&usageRes.error){wAlert(equipBlockMessage(usageRes));return false;}
     }
 
     // Sets both `worker` (jobcard-desktop.html's own hours panel filters by this — SHARED.hours
     // matching h.jobcard/h.worker) and `user` (reports-desktop.html's Hours-by-user/by-worker tables
     // group by this) — logHours() itself only defaults `user`, never derives one from `worker`.
     const result=WorkshopData.logHours({project:jc.projectNo,jobcard:jc.no,item:entry.item,operation:entry.item,worker:entry.worker,user:entry.worker,hours,date:entry.date,notes:entry.notes,equipment:toLog,materials:entry.materials});
-    if(result&&result.error){alert(result.error);return false;}
+    if(result&&result.error){wAlert(result.error);return false;}
 
     if(entry.operationId!=null){
       const op=(jc.operations||[]).find(o=>o.id===entry.operationId);
@@ -366,7 +366,7 @@
     }
     WorkshopData.recordJobcardActivity(jc.no,{action:`${hours}h logged by ${entry.worker}${entry.item?' on '+entry.item:''}`});
 
-    alert(T[current].savedok);
+    wAlert(T[current].savedok);
     if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}
     return true;
   }

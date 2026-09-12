@@ -1728,11 +1728,12 @@ function openWeldDetail(no){
   openModal('detailModal');
 }
 function promptWeldRepair(no){
-  const reason=prompt('Repair reason:');if(!reason)return;
-  const rec=WorkshopData.addWeldRepair(no,{reason,by:'Aleksandar C.'});
-  if(rec.error){notify(rec.error);return;}
-  invalidateDataCache();notify('Repair recorded for '+no);closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('Repair reason:','',(reason)=>{
+    const rec=WorkshopData.addWeldRepair(no,{reason,by:'Aleksandar C.'});
+    if(rec.error){notify(rec.error);return;}
+    invalidateDataCache();notify('Repair recorded for '+no);closeModal('detailModal');
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 function setWeldStatus(no,status){
   const rec=WorkshopData.updateWeld(no,{status,finalResult:status==='accepted'?'accepted':status==='rejected'?'rejected':'pending'});
@@ -2017,21 +2018,27 @@ function resolveItpLine(itpNo,seq){
   const line=itp&&(itp.lines||[]).find(l=>l.seq===seq);
   let result=line?line.result:'';
   if(line&&line.pointType==='H'&&(!result||result==='pending')){
-    result=prompt('Record result before resolving this Hold Point (passed/failed/accepted/rejected):','passed');
-    if(!result)return;
+    wPrompt('Record result before resolving this Hold Point (passed/failed/accepted/rejected):','passed',
+      (v)=>doResolveItpLine(itpNo,seq,v||line.result));
+    return;
   }
-  const r=WorkshopData.updateItpLine(itpNo,seq,{status:'resolved',result:result||line.result,actualDate:todayStr()});
+  doResolveItpLine(itpNo,seq,result||line.result);
+}
+function doResolveItpLine(itpNo,seq,result){
+  const r=WorkshopData.updateItpLine(itpNo,seq,{status:'resolved',result,actualDate:todayStr()});
   if(r.error){notify(r.error);return;}
   invalidateDataCache();notify('ITP line resolved.');
   if(currentSection)loadSectionData('itp');
 }
 function skipItpLine(itpNo,seq){
-  const reason=prompt('Reason for skipping this inspection point:');if(!reason)return;
-  const approvalRef=prompt('Approval reference:');if(!approvalRef)return;
-  const r=WorkshopData.updateItpLine(itpNo,seq,{status:'skipped',comments:reason,approvalRef});
-  if(r.error){notify(r.error);return;}
-  invalidateDataCache();notify('ITP line skipped.');
-  if(currentSection)loadSectionData('itp');
+  wPrompt('Reason for skipping this inspection point:','',(reason)=>{
+    wPrompt('Approval reference:','',(approvalRef)=>{
+      const r=WorkshopData.updateItpLine(itpNo,seq,{status:'skipped',comments:reason,approvalRef});
+      if(r.error){notify(r.error);return;}
+      invalidateDataCache();notify('ITP line skipped.');
+      if(currentSection)loadSectionData('itp');
+    });
+  });
 }
 $('openNewItpBtn').addEventListener('click',()=>{populateProjectSelect($('itp_project'));$('itp_effective').value=todayStr();clearFormErr('itpFormErr');openModal('itpModal');});
 function submitItp(){
@@ -2109,23 +2116,26 @@ function openSupplierQualityDetail(supplierName){
   openModal('detailModal');
 }
 function promptSupplierNcr(supplier){
-  const desc=prompt('Describe the supplier quality issue:');if(!desc)return;
-  const res=WorkshopData.createNcr({title:'Supplier issue: '+supplier,projectNo:'',customer:'',supplier,description:desc,category:'supplier',severity:'major',detectedBy:'Aleksandar C.',responsiblePerson:'Aleksandar C.',dueDate:todayStr()});
-  if(res.error){notify(res.error);return;}
-  invalidateDataCache();notify('Supplier NCR created: '+res.ncr.no);closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('Describe the supplier quality issue:','',(desc)=>{
+    const res=WorkshopData.createNcr({title:'Supplier issue: '+supplier,projectNo:'',customer:'',supplier,description:desc,category:'supplier',severity:'major',detectedBy:'Aleksandar C.',responsiblePerson:'Aleksandar C.',dueDate:todayStr()});
+    if(res.error){notify(res.error);return;}
+    invalidateDataCache();notify('Supplier NCR created: '+res.ncr.no);closeModal('detailModal');
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 function promptSupplierReview(supplier){
-  const text=prompt('Review notes:');if(!text)return;
-  WorkshopData.addSupplierQualityReview(supplier,{author:'Aleksandar C.',text});
-  invalidateDataCache();notify('Review added.');closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('Review notes:','',(text)=>{
+    WorkshopData.addSupplierQualityReview(supplier,{author:'Aleksandar C.',text});
+    invalidateDataCache();notify('Review added.');closeModal('detailModal');
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 function promptSupplierStatus(supplier){
-  const status=prompt('New approval status (approved/conditionally-approved/under-review/suspended/not-approved):');if(!status)return;
-  WorkshopData.upsertSupplierQuality(supplier,{approvalStatus:status});
-  invalidateDataCache();notify('Approval status updated.');closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('New approval status (approved/conditionally-approved/under-review/suspended/not-approved):','approved',(status)=>{
+    WorkshopData.upsertSupplierQuality(supplier,{approvalStatus:status});
+    invalidateDataCache();notify('Approval status updated.');closeModal('detailModal');
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 
 // ══════════════ CUSTOMER COMPLAINTS ══════════════
@@ -2195,11 +2205,12 @@ function renderCertificates(data){
   </tr>`).join('')||'<tr class="emptyrow"><td colspan="6">No store items</td></tr>';
 }
 function promptLinkCertificate(code){
-  const certNo=prompt('Certificate number (e.g. MTC_H240516-S534.pdf):');if(!certNo)return;
-  const r=WorkshopData.linkMaterialCertificate(code,{certificateNumber:certNo,certificateType:'EN 10204 3.1',certificateStatus:'valid'});
-  if(r.error){notify(r.error);return;}
-  invalidateDataCache();notify('Certificate linked to '+code);
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('Certificate number (e.g. MTC_H240516-S534.pdf):','',(certNo)=>{
+    const r=WorkshopData.linkMaterialCertificate(code,{certificateNumber:certNo,certificateType:'EN 10204 3.1',certificateStatus:'valid'});
+    if(r.error){notify(r.error);return;}
+    invalidateDataCache();notify('Certificate linked to '+code);
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 
 // ══════════════ CALIBRATION STATUS ══════════════
@@ -2294,11 +2305,12 @@ function submitRelease(projectNo,jobcardNo){
   if(currentSection)loadSectionData(currentSection);
 }
 function promptReopenRelease(no){
-  const reason=prompt('Reason for reopening this release:');if(!reason)return;
-  const r=WorkshopData.reopenFinalRelease(no,reason);
-  if(r.error){notify(r.error);return;}
-  invalidateDataCache();notify('Release reopened.');
-  if(currentSection)loadSectionData(currentSection);
+  wPrompt('Reason for reopening this release:','',(reason)=>{
+    const r=WorkshopData.reopenFinalRelease(no,reason);
+    if(r.error){notify(r.error);return;}
+    invalidateDataCache();notify('Release reopened.');
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 
 // ══════════════ QUALITY REPORTS ══════════════
