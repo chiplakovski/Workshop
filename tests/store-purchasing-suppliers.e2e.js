@@ -145,6 +145,30 @@ async function receiveGoods(page, poNo) {
   assert.equal(restored.stock, ORDERED_QTY);
   assert.equal(restored.po.status, 'Received');
   step('Store receiving: partial/final receipts update stock, PO status, evidence, and reload persistence');
+
+  // Each nav item is its own page: the module no longer stacks eleven panels on one long scroll.
+  const pages = await page.evaluate(() => {
+    const out = [];
+    STORE_VIEWS.forEach((v) => {
+      showView(v);
+      const shown = [...document.querySelectorAll('[data-panel]:not([hidden])')].map((p) => p.dataset.panel);
+      out.push({ view: v, shown: [...new Set(shown)], crumb: document.getElementById('viewName').textContent });
+    });
+    showView('inventory');
+    return out;
+  });
+  pages.forEach(({ view, shown, crumb }) => {
+    assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
+    assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
+  });
+  assert.ok(pages.length >= 10, 'every nav item must have a page of its own');
+  step('Store: each nav item opens its own page rather than scrolling one long one');
+
+  await page.goto(page.url().split('#')[0] + '#stockcount', { waitUntil: 'load' });
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => storeView), 'stockcount',
+    'a Store page must be reachable by its own link');
+  step('Store: a page can be opened directly by link');
 }
 
 async function main() {
