@@ -1436,8 +1436,11 @@
       state.offcuts.forEach(o=>{if(String(o.materialCode)===key||String(o.code)===key)add('offcuts',o.code||o.id);});
       (state.purchaseOrders||[]).forEach(po=>{
         if(String(po.itemCode||'')===key||String(po.items||'').indexOf(key)>=0)add('purchaseOrders',po.no);});
-      (state.estimations||[]).forEach(e=>(e.lines||e.items||[]).forEach(line=>{
-        if(String(line.code||line.itemCode||'')===key)add('estimations',e.no||e.ref);}));
+      // An estimation's lines sit inside its work items, not on the estimation.
+      (state.estimations||[]).forEach(e=>{
+        const lines=[].concat(e.lines||[],e.items||[],...(e.workItems||[]).map(wi=>wi.lines||[]));
+        lines.forEach(line=>{if(String(line.code||line.itemCode||'')===key)add('estimations',e.no||e.ref);});
+      });
       Object.entries(state.barcodeLinks||{}).forEach(([barcode,linked])=>{if(String(linked)===key)add('barcodes',barcode);});
       (state.stockCounts||[]).forEach(c=>(c.lines||[]).forEach(line=>{
         if(String(line.code)===key)add('stockCounts',c.no||c.id);}));

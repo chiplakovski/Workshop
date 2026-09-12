@@ -4056,3 +4056,17 @@ test('items: a number freed by a delete is still never handed out again', ()=>{
   const second=W.createInventoryItem({description:'Second',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9'});
   assert.ok(second.itemNo>first.itemNo,'deleting must not recycle the number');
 });
+
+test('items: an item quoted on an estimation line counts as in use', ()=>{
+  const W=loadWorkshopData();
+  const spare=W.createInventoryItem({description:'Quoted only',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Q1'});
+  assert.equal(W.itemUsage(spare.code).length,0,'nothing points at it yet');
+  // Estimation lines live inside work items, which is where the Estimations
+  // module writes them back from.
+  const est=W.get().estimations[0];
+  est.workItems=[{desc:'Fabrication',lines:[{desc:'Quoted only',code:spare.code,qty:2,unit:'EA',sell:10}]}];
+  W.upsertEstimation(est);
+  const usage=W.itemUsage(spare.code);
+  assert.ok(usage.some(u=>u.where==='estimations'),'a line inside a work item must be found');
+  assert.match(W.deleteInventoryItem(spare.code).error,/in use/i);
+});
