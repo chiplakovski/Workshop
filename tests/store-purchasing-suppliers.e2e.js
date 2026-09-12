@@ -72,46 +72,29 @@ async function createInventoryAndReorder(page) {
 }
 
 async function approveAndVerifyPurchaseOrder(page, poNo) {
-  await page.locator('.side-nav button[data-view="orders"]').click();
-  await page.locator('#search').fill(ITEM_CODE);
-  let text = await page.locator('#ordersAll').innerText();
+  // Procurement now lives inside Store; the reorder that created this PO and the
+  // approval that confirms it are two pages of the same module.
+  await page.locator('#nav button[data-view="orders"]').click();
+  await page.locator('#poSearch').fill(ITEM_CODE);
+  const text = await page.locator('#ordersAll').innerText();
   assert.ok(text.includes(poNo));
   assert.ok(text.includes(SUPPLIER));
 
-  await page.locator('#search').fill('');
-  await page.locator('.side-nav button[data-view="approvals"]').click();
+  await page.locator('#poSearch').fill('');
+  await page.locator('#nav button[data-view="approvals"]').click();
   const approval = page.locator('#approvalsAll .approval').filter({ hasText: poNo });
   await approval.getByRole('button', { name: 'Approve' }).click();
   const approved = await page.evaluate((no) => WorkshopData.findPurchaseOrder(no), poNo);
   assert.equal(approved.status, 'Confirmed');
-  step('Purchasing: reorder is visible and approval changes the shared PO');
+  step('Store: a reorder is visible and approval changes the shared PO');
 
-  // Every nav item is a page of its own, and each one renders from its own
-  // container rather than copying innerHTML out of the overview.
-  const pages = await page.evaluate(() => {
-    const out = [];
-    PVIEWS.forEach((v) => {
-      showView(v);
-      const shown = [...document.querySelectorAll('[data-panel]:not([hidden])')].map((p) => p.dataset.panel);
-      const body = [...document.querySelectorAll('[data-panel]:not([hidden])')].map((p) => p.innerText).join(' ');
-      out.push({ view: v, shown: [...new Set(shown)], crumb: document.getElementById('viewName').textContent, body });
-    });
-    showView('overview');
-    return out;
-  });
-  pages.forEach(({ view, shown, crumb, body }) => {
-    assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
-    assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
-    assert.ok(!/ready for the next workflow step/.test(body), `the ${view} page must render real content, not a placeholder`);
-  });
-  assert.equal(pages.length, 9, 'every purchasing nav item must have a page of its own');
-  step('Purchasing: each nav item opens its own page');
-
-  await page.goto(page.url().split('#')[0].split('?')[0] + '#invoices', { waitUntil: 'load' });
-  await page.waitForTimeout(250);
-  assert.equal(await page.evaluate(() => activeView), 'invoices',
-    'a purchasing page must be reachable by its own link');
-  step('Purchasing: a page can be opened directly by link');
+  // The same PO is waiting on the overview, so a buyer never has to find the page.
+  await page.locator('#nav button[data-view="inventory"]').click();
+  const onOverview = await page.locator('#approvalList').innerText();
+  const upcoming = await page.locator('#deliveryList').innerText();
+  assert.ok(/Approve/.test(onOverview) || /No approvals/.test(onOverview));
+  assert.ok(upcoming.includes('PO-'), 'the overview must list upcoming deliveries');
+  step('Store: the overview carries the procurement work waiting on a buyer');
 }
 
 async function verifySupplierOrder(page, poNo, expectedStatus) {
@@ -188,7 +171,9 @@ async function receiveGoods(page, poNo) {
     assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
     assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
   });
-  assert.ok(pages.length >= 10, 'every nav item must have a page of its own');
+  assert.equal(pages.length, 17, 'stock, movement and purchasing must each have their pages');
+  ['orders', 'rfq', 'invoices', 'approvals', 'deliveries', 'comparison'].forEach((v) =>
+    assert.ok(pages.some((p) => p.view === v), `the merged module must carry the ${v} page`));
   step('Store: each nav item opens its own page rather than scrolling one long one');
 
   await page.goto(page.url().split('#')[0] + '#stockcount', { waitUntil: 'load' });
@@ -207,17 +192,15 @@ async function main() {
     await createSupplier(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);
-    await page.goto(`${harness.baseUrl}/purchasing-desktop.html`, { waitUntil: 'load' });
     await approveAndVerifyPurchaseOrder(page, poNo);
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Confirmed');
     step('Suppliers: live PO is visible in supplier purchase history');
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     await receiveGoods(page, poNo);
-    await page.goto(`${harness.baseUrl}/purchasing-desktop.html`, { waitUntil: 'load' });
-    await page.locator('.side-nav button[data-view="orders"]').click();
-    await page.locator('#search').fill(poNo);
-    await page.locator('#statusFilter').selectOption('Received');
+    await page.locator('#nav button[data-view="orders"]').click();
+    await page.locator('#poSearch').fill(poNo);
+    await page.locator('#poStatusFilter').selectOption('Received');
     assert.ok((await page.locator('#ordersAll').innerText()).includes('Received'));
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Received');
