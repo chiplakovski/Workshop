@@ -112,6 +112,32 @@ async function customerWorkflow(page) {
   assert.equal(shell.buttons, 7, 'all seven actions moved up');
   assert.equal(shell.headTopAfterScroll, 0, 'the header stays put while the body scrolls under it');
   step('Customers: the shell is fixed and the quick actions sit in the header');
+
+  // The body fills the shell rather than shrink-wrapping and leaving the right
+  // of the window empty, and no column runs off the edge.
+  const layout = await page.evaluate(() => {
+    const wrap = document.querySelector('.wrap');
+    const shell = wrap.parentElement;
+    const cols = [...document.querySelectorAll('.crmgrid > .col')].map((c) => c.getBoundingClientRect());
+    const pager = document.querySelector('.pager');
+    const nav = document.querySelector('.pager .pnav');
+    return {
+      unusedToTheRight: Math.round(shell.getBoundingClientRect().right - wrap.getBoundingClientRect().right),
+      colWidths: cols.map((c) => Math.round(c.width)),
+      rightColumnEnd: Math.round(cols[cols.length - 1].right),
+      windowWidth: window.innerWidth,
+      pagerNavFlushRight: pager && nav ? Math.round(pager.getBoundingClientRect().right - nav.getBoundingClientRect().right) : null
+    };
+  });
+  assert.ok(layout.unusedToTheRight <= 2, `the body must fill the shell, ${layout.unusedToTheRight}px was left empty`);
+  assert.ok(layout.rightColumnEnd <= layout.windowWidth,
+    'the right-hand column must not be cut off by the window edge');
+  assert.equal(layout.colWidths.length, 3, 'three columns');
+  assert.ok(layout.colWidths[1] > layout.colWidths[0],
+    'the middle column takes the space the other two do not need');
+  assert.ok(layout.pagerNavFlushRight !== null && layout.pagerNavFlushRight <= 2,
+    'the page nav sits against the right edge of the list');
+  step('Customers: the layout fills the window and nothing is clipped');
 }
 
 const nativeDialogs = [];
