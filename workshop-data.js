@@ -62,13 +62,25 @@
       {id:'E-1009',equipmentId:'E-1009',name:'Gas Detector',category:'Safety Equipment',manufacturer:'Crowcon',model:'Gas-Pro',serial:'CRW-9012',assetNumber:'AS-1009',status:'Available',currentLocation:'Safety locker',homeLocation:'Safety locker',department:'Safety',responsiblePerson:'Sven O.',condition:'Good',criticality:'Critical',description:'Portable gas detector safety check instrument for confined spaces and welding areas.',purchaseDate:'2024-04-12',purchaseSupplier:'SafetyWorks',purchasePrice:7800,warrantyExpiry:'2027-04-12',yearOfManufacture:2024,operatingHourMeter:620,serviceInterval:90,qrCode:'EQ-1009-GAS',maintenanceDate:'2026-09-21',inspectionDate:'2026-09-04',certificationExpiry:'2026-09-11',calibrationDate:'2026-09-10',safetyWarnings:['Safety certificate expiring soon'],assignedProject:null,assignedJobcard:null,operator:'Sven O.',notes:'Demo safety equipment record for certification expiry logic.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-14',lastActivity:new Date().toISOString() },
       {id:'E-1010',equipmentId:'E-1010',name:'Overhead Lifting Equipment',category:'Lifting Equipment',manufacturer:'Demag',model:'Gantry 5T',serial:'DEM-9901',assetNumber:'AS-1010',status:'Quarantined',currentLocation:'Service bay',homeLocation:'Service bay',department:'Fabrication',responsiblePerson:'Aleksandar C.',condition:'Fair',criticality:'Critical',description:'Workshop gantry lifting assembly used for moving sheet packs and fabricated sections.',purchaseDate:'2018-06-11',purchaseSupplier:'LiftNord',purchasePrice:56200,warrantyExpiry:'2026-06-11',yearOfManufacture:2018,operatingHourMeter:9100,serviceInterval:180,qrCode:'EQ-1010-LIFT',maintenanceDate:'2026-08-27',inspectionDate:'2026-08-15',certificationExpiry:'2026-08-18',calibrationDate:null,safetyWarnings:['Failure on lifting inspection requires return-to-service review'],assignedProject:null,assignedJobcard:null,operator:null,notes:'This item demonstrates quarantine and blocking safety workflow.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-04',lastActivity:new Date().toISOString() }
     ],
+    itemGroups:[
+      {id:'materials',name:'Materials',start:1000,next:1003,subgroups:[
+        {id:'stainless-steel',name:'Stainless steel'},{id:'mild-steel',name:'Mild steel'},
+        {id:'aluminium',name:'Aluminium'},{id:'copper',name:'Copper'},{id:'pipe-fittings',name:'Pipe & fittings'}]},
+      {id:'consumables',name:'Consumables',start:2000,next:2002,subgroups:[
+        {id:'welding',name:'Welding consumables'},{id:'abrasives',name:'Abrasives'},
+        {id:'gases',name:'Gases'},{id:'paint',name:'Paint & coatings'}]},
+      {id:'hardware',name:'Hardware',start:3000,next:3001,subgroups:[
+        {id:'fasteners',name:'Fasteners'},{id:'seals',name:'Seals & gaskets'}]},
+      {id:'tooling',name:'Tooling',start:4000,next:4000,subgroups:[
+        {id:'cutting-tools',name:'Cutting tools'},{id:'hand-tools',name:'Hand tools'}]}
+    ],
     inventory:[
-      {code:'SS-SHT-304-2.0',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
-      {code:'MS-TUBE-25SQ-1.6',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
-      {code:'MS-TUBE-40SQ-2.0',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
-      {code:'ER70S-6-1.0',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
-      {code:'BOLT-HEX-M10X25',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
-      {code:'GRD-DISC-4.5',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
+      {code:'SS-SHT-304-2.0',itemNo:1000,group:'materials',subgroup:'stainless-steel',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
+      {code:'MS-TUBE-25SQ-1.6',itemNo:1001,group:'materials',subgroup:'mild-steel',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
+      {code:'MS-TUBE-40SQ-2.0',itemNo:1002,group:'materials',subgroup:'mild-steel',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
+      {code:'ER70S-6-1.0',itemNo:2000,group:'consumables',subgroup:'welding',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
+      {code:'BOLT-HEX-M10X25',itemNo:3000,group:'hardware',subgroup:'fasteners',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
+      {code:'GRD-DISC-4.5',itemNo:2001,group:'consumables',subgroup:'abrasives',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
     ],
     barcodeLinks:{'7350123456789':'SS-SHT-304-2.0','7350123456796':'MS-TUBE-25SQ-1.6','7350123456802':'MS-TUBE-40SQ-2.0'},
     movements:[
@@ -479,6 +491,50 @@
   // Safe default-normalization: older localStorage records (saved before Jobcards or Equipment existed)
   // are backfilled in place rather than being wiped. This preserves the user's prior browser data while
   // adding the missing arrays and counters required by the new Equipment & Machines workflow.
+  // ---- Item groups, subgroups and per-group numbering ----------------------
+  // Every stock item belongs to a group whose numbers run from its own start
+  // (Materials 1000, Consumables 2000, ...). The number is allocated once, on
+  // creation, and never reused, so an issued or received line always points at
+  // the same item even after the item is renamed or moved between subgroups.
+  const slug=v=>String(v||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  // Categories the pre-group data used, mapped onto a group and subgroup so
+  // inventory saved before this change keeps its meaning instead of landing in
+  // an "uncategorised" bucket.
+  const LEGACY_CATEGORY_MAP={
+    'stainless sheet':['materials','stainless-steel'],'stainless steel':['materials','stainless-steel'],
+    'mild steel tube':['materials','mild-steel'],'mild steel':['materials','mild-steel'],
+    'aluminium':['materials','aluminium'],'copper':['materials','copper'],
+    'pipe':['materials','pipe-fittings'],'fittings':['materials','pipe-fittings'],
+    'welding consumable':['consumables','welding'],'abrasives':['consumables','abrasives'],
+    'gases':['consumables','gases'],'paint':['consumables','paint'],
+    'fasteners':['hardware','fasteners'],'seals':['hardware','seals'],
+    'cutting tools':['tooling','cutting-tools'],'hand tools':['tooling','hand-tools']
+  };
+  function groupFor(st,id){return (st.itemGroups||[]).find(g=>g.id===id)||null;}
+  function allocateItemNumber(st,groupId){
+    const g=groupFor(st,groupId);
+    if(!g)return null;
+    const start=Number(g.start)||0;
+    // Never hand out a number an item already holds, even if `next` is stale
+    // from an import or a hand-edited backup.
+    const used=(st.inventory||[]).filter(x=>x.group===groupId).reduce((m,x)=>Math.max(m,Number(x.itemNo)||0),0);
+    const nextNo=Math.max(Number(g.next)||start,start,used?used+1:start);
+    g.next=nextNo+1;
+    return nextNo;
+  }
+  function migrateItemNumbers(st){
+    if(!Array.isArray(st.inventory)||!Array.isArray(st.itemGroups))return;
+    const fallback=st.itemGroups[0];
+    st.inventory.forEach(item=>{
+      if(!item.group||!groupFor(st,item.group)){
+        const mapped=LEGACY_CATEGORY_MAP[String(item.category||'').trim().toLowerCase()];
+        if(mapped&&groupFor(st,mapped[0])){item.group=mapped[0];if(!item.subgroup)item.subgroup=mapped[1];}
+        else if(fallback)item.group=fallback.id;
+      }
+      if(!Number(item.itemNo))item.itemNo=allocateItemNumber(st,item.group);
+    });
+  }
+
   function normalize(s){
     if(!s||typeof s!=='object')s={};
     const base=seed();
@@ -488,6 +544,9 @@
     if(!Array.isArray(s.estimations))s.estimations=base.estimations;
     if(!Array.isArray(s.projects))s.projects=base.projects;
     if(!Array.isArray(s.inventory))s.inventory=base.inventory;
+    if(!Array.isArray(s.itemGroups)||!s.itemGroups.length)s.itemGroups=base.itemGroups;
+    s.itemGroups.forEach(g=>{if(!Array.isArray(g.subgroups))g.subgroups=[];});
+    migrateItemNumbers(s);
     if(!Array.isArray(s.movements))s.movements=base.movements;
     if(!Array.isArray(s.offcuts))s.offcuts=base.offcuts;
     if(!Array.isArray(s.suppliers))s.suppliers=[];
@@ -1351,18 +1410,108 @@
       return clone(p);
     },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
+    // ---- Item groups and subgroups ----
+    listItemGroups:()=>clone(state.itemGroups),
+    findItemGroup:id=>clone((state.itemGroups||[]).find(g=>g.id===id)||null),
+    // Peek at the number the next item in this group would take, so the create
+    // form can show it before anything is saved. It allocates nothing.
+    peekItemNumber(groupId){
+      const g=groupFor(state,groupId);
+      if(!g)return null;
+      const start=Number(g.start)||0;
+      const used=state.inventory.filter(x=>x.group===groupId).reduce((m,x)=>Math.max(m,Number(x.itemNo)||0),0);
+      return Math.max(Number(g.next)||start,start,used?used+1:start);
+    },
+    upsertItemGroup(payload){
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Group name is required'};
+      const start=Number(data.start);
+      if(!Number.isFinite(start)||start<0||Math.floor(start)!==start)return{error:'Start number must be a whole number of zero or more'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Group name must contain at least one letter or digit'};
+      const existing=groupFor(state,id);
+      if(isEdit&&!existing)return{error:'Group not found'};
+      const clash=(state.itemGroups||[]).find(g=>g.id!==id&&g.name.trim().toLowerCase()===name.toLowerCase());
+      if(clash||(!isEdit&&existing))return{error:`A group called ${name} already exists`};
+      // Two groups sharing a number range would hand out the same item number
+      // twice, so ranges have to stay apart. A group runs from its start up to
+      // the next group's start.
+      const others=(state.itemGroups||[]).filter(g=>g.id!==id).map(g=>Number(g.start)||0);
+      if(others.includes(start))return{error:`Another group already starts at ${start}`};
+      if(existing){
+        const lowest=state.inventory.filter(x=>x.group===id).reduce((m,x)=>Math.min(m,Number(x.itemNo)||Infinity),Infinity);
+        if(Number.isFinite(lowest)&&start>lowest)return{error:`This group already has item ${lowest}, so it cannot start at ${start}`};
+        existing.name=name;existing.start=start;
+        if(Number(existing.next)<start)existing.next=start;
+        save(`Item group updated: ${name}`);
+        return clone(existing);
+      }
+      const rec={id,name,start,next:start,subgroups:[]};
+      state.itemGroups.push(rec);
+      save(`Item group created: ${name}`);
+      return clone(rec);
+    },
+    deleteItemGroup(id){
+      const g=groupFor(state,id);
+      if(!g)return{error:'Group not found'};
+      const used=state.inventory.filter(x=>x.group===id).length;
+      if(used)return{error:`${g.name} still holds ${used} item${used===1?'':'s'}`};
+      state.itemGroups=state.itemGroups.filter(x=>x.id!==id);
+      save(`Item group deleted: ${g.name}`);
+      return{ok:true};
+    },
+    upsertSubgroup(groupId,payload){
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Subgroup name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Subgroup name must contain at least one letter or digit'};
+      const existing=g.subgroups.find(x=>x.id===id);
+      if(isEdit&&!existing)return{error:'Subgroup not found'};
+      if(g.subgroups.some(x=>x.id!==id&&x.name.trim().toLowerCase()===name.toLowerCase())||(!isEdit&&existing))return{error:`${g.name} already has a subgroup called ${name}`};
+      if(existing){existing.name=name;save(`Subgroup updated: ${name}`);return clone(existing);}
+      const rec={id,name};
+      g.subgroups.push(rec);
+      save(`Subgroup created: ${g.name} / ${name}`);
+      return clone(rec);
+    },
+    deleteSubgroup(groupId,id){
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const sub=g.subgroups.find(x=>x.id===id);
+      if(!sub)return{error:'Subgroup not found'};
+      const used=state.inventory.filter(x=>x.group===groupId&&x.subgroup===id).length;
+      if(used)return{error:`${sub.name} still holds ${used} item${used===1?'':'s'}`};
+      g.subgroups=g.subgroups.filter(x=>x.id!==id);
+      save(`Subgroup deleted: ${g.name} / ${sub.name}`);
+      return{ok:true};
+    },
     createInventoryItem(payload){
       const data=clone(payload||{});
-      data.code=String(data.code||'').trim().toUpperCase();
       data.description=String(data.description||'').trim();
       data.category=String(data.category||'').trim();
       data.unit=String(data.unit||'').trim().toUpperCase();
       data.location=String(data.location||'').trim();
+      data.group=String(data.group||'').trim();
+      data.subgroup=String(data.subgroup||'').trim();
+      const grp=groupFor(state,data.group);
+      if(!grp)return{error:'Item group is required'};
+      if(data.subgroup&&!grp.subgroups.some(x=>x.id===data.subgroup))return{error:`${grp.name} has no subgroup ${data.subgroup}`};
+      // The group hands out the number. Unless the user typed a code of their
+      // own - a supplier or drawing reference - the number is the code, so a
+      // new item carries one identifier rather than two.
+      const itemNo=allocateItemNumber(state,data.group);
+      data.itemNo=itemNo;
+      data.code=String(data.code||itemNo).trim().toUpperCase();
       if(!data.code)return{error:'Item code is required'};
       if(!/^[A-Z0-9][A-Z0-9._/-]*$/.test(data.code))return{error:'Item code contains unsupported characters'};
       if(state.inventory.some(item=>String(item.code||'').trim().toUpperCase()===data.code))return{error:`Item ${data.code} already exists`};
       if(!data.description)return{error:'Description is required'};
-      if(!data.category)return{error:'Category is required'};
       if(!data.unit)return{error:'Unit is required'};
       if(!data.location)return{error:'Location is required'};
       const numeric=['stock','reserved','minStock','reorderQty','avgCost','lastPrice'];
@@ -1372,6 +1521,10 @@
         data[field]=value;
       }
       if(data.reserved>data.stock)return{error:'Reserved quantity cannot exceed stock'};
+      // The subgroup name stands in as the category, so records written before
+      // groups existed and records written now read the same way.
+      const subName=(grp.subgroups.find(x=>x.id===data.subgroup)||{}).name||grp.name;
+      if(!data.category)data.category=subName;
       const rec=Object.assign({grade:'',dimensions:'',supplier:'',heat:'',certificate:null,status:'good'},data);
       rec.status=rec.stock-rec.reserved<=rec.minStock?'low':'good';
       state.inventory.push(rec);

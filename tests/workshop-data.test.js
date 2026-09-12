@@ -3740,7 +3740,7 @@ test('backup validation and old-state normalization include documentFolders and 
 // ── Pass 3.35: real Store item creation ─────────────────────────────────────────────
 test('inventory: create item persists a normalized, immediately usable Store record', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  const created=WD.createInventoryItem({code:' test-item-01 ',description:'Test plate',category:'Plate',unit:'ea',location:'Z1-01',stock:12,reserved:2,minStock:4,reorderQty:10,avgCost:25,lastPrice:27,supplier:'Test Supplier'});
+  const created=WD.createInventoryItem({code:' test-item-01 ',description:'Test plate',group:'materials',category:'Plate',unit:'ea',location:'Z1-01',stock:12,reserved:2,minStock:4,reorderQty:10,avgCost:25,lastPrice:27,supplier:'Test Supplier'});
   assert.equal(created.code,'TEST-ITEM-01');
   assert.equal(created.unit,'EA');
   assert.equal(created.status,'good');
@@ -3752,10 +3752,10 @@ test('inventory: create item persists a normalized, immediately usable Store rec
 test('inventory: duplicate, incomplete, invalid and over-reserved items are rejected atomically', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().inventory.length;
-  assert.ok(WD.createInventoryItem({code:'SS-SHT-304-2.0',description:'Duplicate',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW-1',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW ITEM',description:'Bad code',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',category:'Plate',unit:'EA',location:'A1',stock:1,reserved:2}).error);
+  assert.ok(WD.createInventoryItem({code:'SS-SHT-304-2.0',description:'Duplicate',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-1',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW ITEM',description:'Bad code',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',group:'materials',unit:'EA',location:'A1',stock:1,reserved:2}).error);
   assert.equal(WD.get().inventory.length,before);
 });
 
@@ -3791,7 +3791,7 @@ test('backup validation and normalization include purchase RFQs and supplier inv
 // â”€â”€ Pass 3.42: Store receipt closes the linked Purchasing lifecycle â”€â”€
 test('receiving: linked PO progresses from partial to received and persists receipt evidence', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  WD.createInventoryItem({code:'PO-RECEIPT-ITEM',description:'Receipt test plate',category:'Plate',unit:'EA',location:'R1-01',stock:0,minStock:2,reorderQty:10,avgCost:20,lastPrice:25,supplier:'Receipt Supplier'});
+  WD.createInventoryItem({code:'PO-RECEIPT-ITEM',description:'Receipt test plate',group:'materials',unit:'EA',location:'R1-01',stock:0,minStock:2,reorderQty:10,avgCost:20,lastPrice:25,supplier:'Receipt Supplier'});
   const po=WD.upsertPurchaseOrder({supplier:'Receipt Supplier',itemCode:'PO-RECEIPT-ITEM',items:'Receipt test plate',orderedQty:10,receivedQty:0,receivedValue:0,status:'Confirmed'});
 
   const partial=WD.receive({code:'PO-RECEIPT-ITEM',qty:4,supplier:'Receipt Supplier',po:po.no,deliveryNote:'DN-PART',location:'R1-02',lastPrice:25,user:'Store User'});
@@ -3818,10 +3818,120 @@ test('receiving: linked PO progresses from partial to received and persists rece
 
 test('receiving: cancelled or wrong-item linked POs are rejected before stock changes', ()=>{
   const WD=loadWorkshopData();
-  WD.createInventoryItem({code:'PO-SAFE-ITEM',description:'Safe receipt item',category:'Parts',unit:'EA',location:'R1',stock:0,minStock:0});
+  WD.createInventoryItem({code:'PO-SAFE-ITEM',description:'Safe receipt item',group:'materials',unit:'EA',location:'R1',stock:0,minStock:0});
   const cancelled=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'PO-SAFE-ITEM',items:'Safe item',orderedQty:2,status:'Cancelled'});
   const wrong=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'OTHER-ITEM',items:'Other item',orderedQty:2,status:'Confirmed'});
   assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:cancelled.no}).error,/cancelled/);
   assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:wrong.no}).error,/OTHER-ITEM/);
   assert.equal(WD.get().inventory.find(i=>i.code==='PO-SAFE-ITEM').stock,0);
+});
+
+// ---- Item groups, subgroups and per-group numbering -------------------------
+
+test('item groups: every seeded item sits in a group and carries its group number', ()=>{
+  const W=loadWorkshopData();
+  const groups=W.listItemGroups();
+  assert.ok(groups.length>=4,'the seed must define item groups');
+  assert.deepEqual(groups.map(g=>g.start),[1000,2000,3000,4000]);
+  for(const item of W.get().inventory){
+    assert.ok(item.group,`${item.code} has no group`);
+    assert.ok(W.findItemGroup(item.group),`${item.code} is in a group that does not exist`);
+    assert.equal(typeof item.itemNo,'number');
+    assert.ok(item.itemNo>=W.findItemGroup(item.group).start,`${item.code} is numbered below its group start`);
+  }
+});
+
+test('item groups: a new item takes the next number in its own group', ()=>{
+  const W=loadWorkshopData();
+  const expected=W.peekItemNumber('materials');
+  const pipe=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-01',stock:12});
+  assert.equal(pipe.itemNo,expected);
+  assert.equal(pipe.code,String(expected),'with no code of its own the number is the code');
+  assert.equal(pipe.category,'Pipe & fittings','the subgroup name stands in as the category');
+  const second=W.createInventoryItem({description:'Pipe DN80 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-02'});
+  assert.equal(second.itemNo,expected+1);
+  const consumable=W.createInventoryItem({description:'Argon 50L',group:'consumables',subgroup:'gases',unit:'EA',location:'G1'});
+  assert.ok(consumable.itemNo>=2000&&consumable.itemNo<3000,'a consumable must be numbered in the 2000 range');
+});
+
+test('item groups: a supplier or drawing code of its own is kept instead of the number', ()=>{
+  const W=loadWorkshopData();
+  const rec=W.createInventoryItem({code:'PIPE-DN100-S40',description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-01'});
+  assert.equal(rec.code,'PIPE-DN100-S40');
+  assert.ok(Number(rec.itemNo)>=1000,'it still gets a group number');
+});
+
+test('item groups: an item cannot be created without a real group or subgroup', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.createInventoryItem({description:'x',unit:'EA',location:'A'}).error,/group is required/i);
+  assert.match(W.createInventoryItem({description:'x',group:'nope',unit:'EA',location:'A'}).error,/group is required/i);
+  assert.match(W.createInventoryItem({description:'x',group:'materials',subgroup:'nope',unit:'EA',location:'A'}).error,/no subgroup/i);
+});
+
+test('item groups: numbers are never reused, even after the item is deleted from state', ()=>{
+  const W=loadWorkshopData();
+  const first=W.createInventoryItem({description:'One',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'A'});
+  const state=W.get();
+  state.inventory.splice(state.inventory.findIndex(x=>x.code===first.code),1);
+  const second=W.createInventoryItem({description:'Two',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'A'});
+  assert.ok(second.itemNo>first.itemNo,'a freed number must not come back around');
+});
+
+test('item groups: a group can be added, renamed and given its own number range', ()=>{
+  const W=loadWorkshopData();
+  const made=W.upsertItemGroup({name:'Paint & chemicals',start:5000});
+  assert.equal(made.id,'paint-chemicals');
+  assert.equal(made.next,5000);
+  const item=W.createInventoryItem({description:'Primer grey 5L',group:'paint-chemicals',unit:'EA',location:'P1'});
+  assert.equal(item.itemNo,5000);
+  const renamed=W.upsertItemGroup({id:'paint-chemicals',name:'Paint and chemicals',start:5000});
+  assert.equal(renamed.name,'Paint and chemicals');
+  assert.match(W.upsertItemGroup({name:'Something',start:1000}).error,/already starts at 1000/);
+  assert.match(W.upsertItemGroup({name:'Materials',start:9000}).error,/already exists/i);
+  assert.match(W.upsertItemGroup({name:'No start',start:-1}).error,/whole number/i);
+});
+
+test('item groups: a range cannot move above a number the group already handed out', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.upsertItemGroup({id:'materials',name:'Materials',start:1500}).error,/already has item 1000/);
+});
+
+test('item groups: subgroups can be added and renamed, and a group keeps its own set', ()=>{
+  const W=loadWorkshopData();
+  const sub=W.upsertSubgroup('materials',{name:'Brass'});
+  assert.equal(sub.id,'brass');
+  assert.ok(W.findItemGroup('materials').subgroups.some(x=>x.id==='brass'));
+  assert.ok(!W.findItemGroup('consumables').subgroups.some(x=>x.id==='brass'),'subgroups belong to one group');
+  assert.match(W.upsertSubgroup('materials',{name:'Copper'}).error,/already has a subgroup/i);
+  assert.match(W.upsertSubgroup('nope',{name:'X'}).error,/Group not found/);
+});
+
+test('item groups: a group or subgroup still holding stock cannot be deleted', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.deleteItemGroup('materials').error,/still holds/);
+  assert.match(W.deleteSubgroup('materials','stainless-steel').error,/still holds/);
+  W.upsertItemGroup({name:'Empty group',start:7000});
+  assert.equal(W.deleteItemGroup('empty-group').ok,true);
+  W.upsertSubgroup('materials',{name:'Titanium'});
+  assert.equal(W.deleteSubgroup('materials','titanium').ok,true);
+});
+
+test('item groups: inventory saved before groups existed is migrated by its old category', ()=>{
+  const {localStorage:storage}=loadWorkshopDataWithStorage();
+  const legacy={version:5,inventory:[
+    {code:'OLD-SS-1',description:'Old stainless plate',category:'Stainless Sheet',unit:'EA',stock:4,reserved:0,location:'A1',minStock:1},
+    {code:'OLD-WIRE',description:'Old welding wire',category:'Welding Consumable',unit:'KG',stock:9,reserved:0,location:'B1',minStock:2},
+    {code:'OLD-ODD',description:'Something uncategorised',category:'Mystery',unit:'EA',stock:1,reserved:0,location:'C1',minStock:0}
+  ]};
+  storage.setItem('varmak.workshop.frontend.v5',JSON.stringify(legacy));
+  const W=loadWorkshopData(null,storage);
+  const byCode=Object.fromEntries(W.get().inventory.map(x=>[x.code,x]));
+  assert.equal(byCode['OLD-SS-1'].group,'materials');
+  assert.equal(byCode['OLD-SS-1'].subgroup,'stainless-steel');
+  assert.equal(byCode['OLD-WIRE'].group,'consumables');
+  assert.equal(byCode['OLD-WIRE'].subgroup,'welding');
+  assert.equal(byCode['OLD-ODD'].group,'materials','an unknown category falls back to the first group rather than vanishing');
+  const numbers=W.get().inventory.map(x=>x.itemNo);
+  assert.equal(new Set(numbers).size,numbers.length,'migration must not hand out a number twice');
+  numbers.forEach(n=>assert.equal(typeof n,'number'));
 });

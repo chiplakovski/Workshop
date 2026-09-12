@@ -35,8 +35,10 @@ async function createSupplier(page) {
 async function createInventoryAndReorder(page) {
   await page.evaluate(() => openNewItemForm());
   await page.locator('#newCode').fill(ITEM_CODE);
+  const shownNumber = await page.locator('#newItemNo').inputValue();
   await page.locator('#newDescription').fill(ITEM_DESCRIPTION);
-  await page.locator('#newCategory').fill('Sheet metal');
+  await page.locator('#newGroup').selectOption('materials');
+  await page.locator('#newSubgroup').selectOption('stainless-steel');
   await page.locator('#newUnit').fill('EA');
   await page.locator('#newLocation').fill('E2E-R1-01');
   await page.locator('#newGrade').fill('AISI 304');
@@ -53,6 +55,11 @@ async function createInventoryAndReorder(page) {
 
   const item = await page.evaluate((code) => WorkshopData.get().inventory.find((entry) => entry.code === code), ITEM_CODE);
   assert.ok(item, 'inventory item was not persisted');
+  // The group hands out the number, and the form shows it before anything is saved.
+  assert.equal(String(item.itemNo), shownNumber, 'the number shown on the form is the number the item got');
+  assert.equal(item.group, 'materials');
+  assert.equal(item.subgroup, 'stainless-steel');
+  assert.ok(item.itemNo >= 1000 && item.itemNo < 2000, 'a material must be numbered in the 1000 range');
   assert.equal(item.stock, 0);
   assert.equal(item.supplier, SUPPLIER);
 
@@ -156,7 +163,8 @@ async function receiveGoods(page, poNo) {
     assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
     assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
   });
-  assert.equal(pages.length, 11, 'every nav item must have a page of its own');
+  assert.equal(pages.length, 12, 'every nav item must have a page of its own');
+  assert.ok(pages.some((p) => p.view === 'groups'), 'the module must carry the groups page');
   ['orders', 'rfq', 'invoices', 'approvals', 'deliveries', 'comparison'].forEach((v) =>
     assert.ok(!pages.some((p) => p.view === v), `the removed ${v} page must not be back`));
   step('Store: each nav item opens its own page rather than scrolling one long one');
