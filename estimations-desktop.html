@@ -1309,8 +1309,8 @@ function statusPill(s){const t=T[LANG];return `<span class="stpill ${s}">${t["st
 // ── the board ─────────────────────────────────────────────────────────────
 // One column per stage an estimate can be in. Expired offers share the Declined column — a closed
 // door is a closed door — but keep their own pill so the board never renames a status.
-const KCOLS=[{k:'accepted',has:['accepted']},{k:'review',has:['review']},{k:'sent',has:['sent']},
-  {k:'draft',has:['draft']},{k:'declined',has:['declined','expired']}];
+const KCOLS=[{k:'draft',has:['draft']},{k:'review',has:['review']},{k:'sent',has:['sent']},
+  {k:'accepted',has:['accepted']},{k:'declined',has:['declined','expired']}];
 // Dragging a card is the same act as pressing the stepper, so it goes through requestStageChange()
 // and inherits every rule it enforces: a locked estimate, the allowed transitions, and a priced line
 // before anything is Sent. Lanes light up or dim while a card is in hand, so the rules are visible

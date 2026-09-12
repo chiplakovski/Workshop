@@ -127,7 +127,7 @@ async function estimationWorkflow(page) {
   });
   assert.equal(board.cards, board.active, 'every project must be on the board, none dropped');
   assert.deepEqual(board.misplaced, [], 'a card must sit in the column its status names');
-  assert.deepEqual(board.lanes, ['accepted', 'review', 'sent', 'draft', 'declined'], 'the board covers every stage');
+  assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
   step('Estimations: the board shows every project in the lane its status names');
 
   // Dragging a card is the stepper by another name: it obeys the same transition rules. Driven with
