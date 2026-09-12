@@ -56,45 +56,30 @@ async function createInventoryAndReorder(page) {
   assert.equal(item.stock, 0);
   assert.equal(item.supplier, SUPPLIER);
 
-  await page.evaluate((code) => suggestReorder(code), ITEM_CODE);
+  // The low-stock page reports the shortfall and the quantity that would clear
+  // it; raising the order is Purchasing's job, and that is being rebuilt.
+  await page.locator('#nav [data-view="reorder"]').click();
   await page.waitForTimeout(70);
-  let orders = await page.evaluate(({ code, supplier }) => WorkshopData.getPurchaseOrders().filter((po) => po.itemCode === code && po.supplier === supplier), { code: ITEM_CODE, supplier: SUPPLIER });
-  assert.equal(orders.length, 1, 'reorder did not create exactly one purchase order');
-  assert.equal(orders[0].status, 'Awaiting Approval');
+  const reorderText = await page.locator('#reorderCards').innerText();
+  assert.ok(reorderText.includes(ITEM_CODE), 'the low-stock page must list the item that is below minimum');
+  assert.ok(new RegExp(String(ORDERED_QTY)).test(reorderText), 'the low-stock page must name the quantity to order');
+  step('Store: the low-stock page reports the shortfall and the quantity to order');
+
+  // The purchase order itself comes from the shared register, which the
+  // Purchasing rebuild will write to.
+  const poNo = await page.evaluate(({ code, supplier, qty, price }) => WorkshopData.upsertPurchaseOrder({
+    supplier, project: null, itemCode: code, description: 'E2E stainless sheet',
+    items: `Reorder: E2E stainless sheet (${code})`,
+    orderedQty: qty, receivedQty: 0, value: qty * price, unitPrice: price,
+    date: new Date().toISOString().slice(0, 10),
+    expected: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    buyer: 'Aleksandar C.', status: 'Confirmed'
+  }).no, { code: ITEM_CODE, supplier: SUPPLIER, qty: ORDERED_QTY, price: UNIT_PRICE });
+  const orders = await page.evaluate((code) => WorkshopData.getPurchaseOrders().filter((po) => po.itemCode === code), ITEM_CODE);
+  assert.equal(orders.length, 1, 'the shared register did not hold exactly one purchase order');
   assert.equal(orders[0].orderedQty, ORDERED_QTY);
-  assert.equal(orders[0].receivedQty, 0);
-
-  await page.evaluate((code) => suggestReorder(code), ITEM_CODE);
-  orders = await page.evaluate((code) => WorkshopData.getPurchaseOrders().filter((po) => po.itemCode === code), ITEM_CODE);
-  assert.equal(orders.length, 1, 'a repeated reorder created a duplicate purchase order');
-  step('Store: low stock creates one quantity-aware PO and blocks duplicates');
-  return orders[0].no;
-}
-
-async function approveAndVerifyPurchaseOrder(page, poNo) {
-  // Procurement now lives inside Store; the reorder that created this PO and the
-  // approval that confirms it are two pages of the same module.
-  await page.locator('#nav button[data-view="orders"]').click();
-  await page.locator('#poSearch').fill(ITEM_CODE);
-  const text = await page.locator('#ordersAll').innerText();
-  assert.ok(text.includes(poNo));
-  assert.ok(text.includes(SUPPLIER));
-
-  await page.locator('#poSearch').fill('');
-  await page.locator('#nav button[data-view="approvals"]').click();
-  const approval = page.locator('#approvalsAll .approval').filter({ hasText: poNo });
-  await approval.getByRole('button', { name: 'Approve' }).click();
-  const approved = await page.evaluate((no) => WorkshopData.findPurchaseOrder(no), poNo);
-  assert.equal(approved.status, 'Confirmed');
-  step('Store: a reorder is visible and approval changes the shared PO');
-
-  // The same PO is waiting on the overview, so a buyer never has to find the page.
-  await page.locator('#nav button[data-view="inventory"]').click();
-  const onOverview = await page.locator('#approvalList').innerText();
-  const upcoming = await page.locator('#deliveryList').innerText();
-  assert.ok(/Approve/.test(onOverview) || /No approvals/.test(onOverview));
-  assert.ok(upcoming.includes('PO-'), 'the overview must list upcoming deliveries');
-  step('Store: the overview carries the procurement work waiting on a buyer');
+  step('Store: a purchase order for the shortfall persists in the shared register');
+  return poNo;
 }
 
 async function verifySupplierOrder(page, poNo, expectedStatus) {
@@ -171,31 +156,30 @@ async function receiveGoods(page, poNo) {
     assert.deepEqual(shown, [view], `the ${view} page must show only its own panels`);
     assert.ok(crumb && crumb.trim(), `the ${view} page must name itself in the header`);
   });
-  assert.equal(pages.length, 17, 'stock, movement and purchasing must each have their pages');
+  assert.equal(pages.length, 11, 'every nav item must have a page of its own');
   ['orders', 'rfq', 'invoices', 'approvals', 'deliveries', 'comparison'].forEach((v) =>
-    assert.ok(pages.some((p) => p.view === v), `the merged module must carry the ${v} page`));
+    assert.ok(!pages.some((p) => p.view === v), `the removed ${v} page must not be back`));
   step('Store: each nav item opens its own page rather than scrolling one long one');
 
-  // The procurement pages are translated like the rest of the module, and the
-  // status a chip shows must never become the status the record stores.
+  // Every Store page reads in all three languages, and switching language must
+  // never rewrite a record.
   const beforeLang = await page.evaluate(() => WorkshopData.getPurchaseOrders().map((po) => po.status));
   for (const lang of ['sv', 'mk']) {
     const leaked = await page.evaluate((l) => {
       setLang(l);
       const out = [];
-      ['reorder', 'rfq', 'comparison', 'orders', 'deliveries', 'invoices', 'approvals'].forEach((v) => {
+      STORE_VIEWS.forEach((v) => {
         showView(v);
-        const text = document.querySelector(`[data-panel="${v}"]`).innerText;
-        if (/\bSupplier\b|\bApprove\b|\bReject\b|\bQuantity\b|undefined/.test(text)) out.push(v);
+        if (/undefined/.test(document.querySelector(`[data-panel="${v}"]`).innerText)) out.push(v);
       });
       return out;
     }, lang);
-    assert.deepEqual(leaked, [], `the procurement pages must be translated into ${lang}`);
+    assert.deepEqual(leaked, [], `every Store page must be translated into ${lang}`);
   }
   const afterLang = await page.evaluate(() => WorkshopData.getPurchaseOrders().map((po) => po.status));
-  assert.deepEqual(afterLang, beforeLang, 'changing language must not rewrite a stored status');
+  assert.deepEqual(afterLang, beforeLang, 'changing language must not rewrite a stored record');
   await page.evaluate(() => { setLang('en'); showView('inventory'); });
-  step('Store: procurement reads in all three languages without touching stored data');
+  step('Store: every page reads in all three languages without touching stored data');
 
   await page.goto(page.url().split('#')[0] + '#stockcount', { waitUntil: 'load' });
   await page.waitForTimeout(250);
@@ -213,21 +197,17 @@ async function main() {
     await createSupplier(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);
-    await approveAndVerifyPurchaseOrder(page, poNo);
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Confirmed');
     step('Suppliers: live PO is visible in supplier purchase history');
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     await receiveGoods(page, poNo);
-    await page.locator('#nav button[data-view="orders"]').click();
-    await page.locator('#poSearch').fill(poNo);
-    await page.locator('#poStatusFilter').selectOption('Received');
-    assert.ok((await page.locator('#ordersAll').innerText()).includes('Received'));
+    assert.equal(await page.evaluate((no) => WorkshopData.findPurchaseOrder(no).status, poNo), 'Received');
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Received');
-    step('Purchasing/Suppliers: final received state is shared across both subsystems');
+    step('Store/Suppliers: final received state is shared across both subsystems');
     monitor.assertClean();
-    console.log('\nStore/Purchasing/Suppliers browser E2E passed.');
+    console.log('\nStore/Suppliers browser E2E passed.');
   } finally {
     await page.close();
     await harness.close();

@@ -19,7 +19,7 @@ permission is actually enforced beyond the UI.
 | Estimation | `estimations-desktop.html` |
 | Projects | `projects-desktop.html` |
 | Planning | `planning-desktop.html` |
-| Store (inventory, movement, purchasing) | `store-desktop.html` |
+| Store | `store-desktop.html` |
 | Hours | `hours-desktop.html`, `hours-mobile.html` |
 | Jobcards | `jobcard-desktop.html` |
 | Documents | `documents-desktop.html` |
