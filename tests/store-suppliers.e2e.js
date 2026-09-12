@@ -368,6 +368,63 @@ async function receiveGoods(page, poNo) {
   assert.ok(await page.evaluate((c) => WorkshopData.get().inventory.some((x) => x.code === c), ITEM_CODE),
     'a refused delete must leave the item alone');
   step('Store: an item in use cannot be deleted, and the refusal names where it is used');
+
+  // The catalogue fills a whole item rather than having it typed out.
+  await page.evaluate(() => openNewItemForm());
+  await page.waitForTimeout(120);
+  const families = await page.evaluate(() => [...document.querySelectorAll('#catFamily option')].map((o) => o.value).filter(Boolean));
+  ['plate', 'pipe', 'valve', 'welding', 'abrasive', 'gas', 'fastener'].forEach((f) =>
+    assert.ok(families.includes(f), `the catalogue must offer ${f}`));
+
+  await page.locator('#catFamily').selectOption('plate');
+  await page.locator('#catSearch').fill('5 mm s235 1500x3000');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#catProduct option').first().innerText(), /^Plate 5 mm/,
+    'a size typed with x must find the plate written with ×');
+  await page.locator('.catpick .btn').click();
+  await page.waitForTimeout(150);
+  const filled = await page.evaluate(() => ({
+    group: document.getElementById('newGroup').value,
+    sub: document.getElementById('newSubgroup').value,
+    desc: document.getElementById('newDescription').value,
+    base: document.getElementById('newBaseUnit').value,
+    size: Number(document.getElementById('newSizePerUnit').value),
+    kg: Number(document.getElementById('newWeightPerBase').value)
+  }));
+  assert.equal(filled.group, 'materials');
+  assert.equal(filled.sub, 'mild-steel', 'a steel plate is filed under mild steel, not the family default');
+  assert.match(filled.desc, /Plate 5 mm/);
+  assert.equal(filled.base, 'm2');
+  assert.equal(filled.size, 4.5, 'a 1500×3000 sheet is 4.5 m²');
+  assert.ok(Math.abs(filled.kg - 39.25) < 0.5, 'and 5 mm steel is 39.25 kg per m²');
+
+  // A valve carries a maker-dependent weight, and says so.
+  await page.locator('#catFamily').selectOption('valve');
+  await page.locator('#catSearch').fill('ball dn50 pn16');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#catHint').innerText(), /indicative/i,
+    'a manufactured weight must be flagged as indicative');
+
+  // A gas bottle is measured in cubic metres, which the form must offer.
+  await page.locator('#catFamily').selectOption('gas');
+  await page.locator('#catSearch').fill('argon 50');
+  await page.waitForTimeout(150);
+  await page.locator('.catpick .btn').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#newBaseUnit').inputValue(), 'm3');
+  await page.locator('#newLocation').fill('E2E-GAS-01');
+  await page.locator('#newStock').fill('2');
+  await page.waitForTimeout(120);
+  assert.match(await page.locator('#measurePreview .measurecalc').innerText(), /20 m³/,
+    'two 50 l bottles are about 20 m³ of gas');
+  await page.locator('#newItemModal .actions .primary').click();
+  await page.waitForTimeout(150);
+  const gas = await page.evaluate(() => WorkshopData.get().inventory.find((x) => /Argon/.test(x.description)));
+  assert.equal(gas.group, 'consumables');
+  assert.equal(gas.subgroup, 'gases');
+  assert.equal(gas.baseUnit, 'm3');
+  assert.ok(gas.itemNo >= 2000 && gas.itemNo < 3000, 'and it takes a consumables number');
+  step('Store: the catalogue fills an item whole, from plate to gas bottle');
 }
 
 async function main() {

@@ -76,3 +76,138 @@ test('dimensions are read out of the usual ways of writing them', () => {
   assert.deepEqual(M.readDimensions('2 mm'), { wall: 2 });
   assert.equal(M.readDimensions('no numbers here'), null);
 });
+
+// ---- Product catalogue ------------------------------------------------------
+
+const only = (family, query) => {
+  const hits = M.catalogueProducts(family, query);
+  assert.ok(hits.length, `${family} "${query}": nothing found`);
+  return hits[0];
+};
+
+test('the catalogue covers the families a workshop buys from', () => {
+  const families = M.catalogueFamilies().map(f => f.id);
+  ['plate', 'pipe', 'section', 'bar', 'fitting', 'flange', 'valve', 'welding', 'abrasive', 'gas', 'fastener']
+    .forEach(id => assert.ok(families.includes(id), `the catalogue must carry ${id}`));
+  assert.ok(M.catalogueSize() > 1500, 'each family must actually be populated');
+  // Every family files its products under a real item group.
+  M.catalogueFamilies().forEach(f => {
+    assert.ok(['materials', 'consumables', 'hardware', 'tooling'].includes(f.group), `${f.id} has no group`);
+    assert.ok(f.subgroup, `${f.id} has no subgroup`);
+  });
+});
+
+test('every catalogue product is a complete item template', () => {
+  for (const family of M.catalogueFamilies()) {
+    for (const p of M.catalogueProducts(family.id)) {
+      assert.ok(p.id && p.name && p.description, `${family.id}: an entry is missing its name`);
+      assert.ok(['pcs', 'm', 'm2', 'm3', 'kg'].includes(p.baseUnit), `${p.name}: odd base unit ${p.baseUnit}`);
+      assert.ok(Number(p.sizePerUnit) > 0, `${p.name}: size per unit must be positive`);
+      assert.ok(Number(p.weightPerBase) >= 0, `${p.name}: weight cannot be negative`);
+      assert.ok(p.unit, `${p.name}: no stock unit`);
+    }
+  }
+});
+
+test('catalogue weights follow the published figures', () => {
+  // Plate: thickness times density, over the area of the sheet.
+  const plate = only('plate', 'plate 3 mm s235jr 1500×3000');
+  near(plate.weightPerBase, 23.55, '3 mm steel plate per m2');
+  assert.equal(plate.sizePerUnit, 4.5, 'a 1500×3000 sheet is 4.5 m2');
+  near(plate.weightPerBase * plate.sizePerUnit, 106, 'so one sheet weighs about 106 kg');
+
+  near(only('pipe', 'dn100 sch40 s235').weightPerBase, 16.08, 'DN100 SCH40 pipe');
+  near(only('section', 'shs 40×40×2 s235').weightPerBase, 2.31, 'SHS 40x40x2');
+  near(only('bar', 'round bar ⌀20 s235').weightPerBase, 2.47, 'round bar 20');
+  // A long-radius 90 degree elbow is a quarter turn of 1.5 bore radius.
+  near(only('fitting', 'elbow 90 dn100 sch40 s235').weightPerBase, 3.79, 'DN100 SCH40 LR elbow');
+  near(only('flange', 'weld neck dn100 pn16 s235').weightPerBase, 6.2, 'DN100 PN16 weld-neck flange');
+  near(only('abrasive', 'cutting disc 125×1.6').weightPerBase, 0.046, '125 x 1.6 cutting disc');
+  near(only('fastener', 'hex bolt m10×30 8.8').weightPerBase, 0.031, 'M10x30 bolt');
+  near(only('fastener', 'hex nut m12 8.8').weightPerBase, 0.0169, 'M12 nut');
+});
+
+test('a stainless product weighs more than the same thing in steel', () => {
+  const steel = only('pipe', 'dn100 sch40 s235jr').weightPerBase;
+  const stainless = only('pipe', 'dn100 sch40 aisi 304').weightPerBase;
+  assert.ok(stainless > steel, 'stainless is denser, so the pipe is heavier');
+  near(stainless / steel, 7900 / 7850, 'and heavier by exactly the density ratio');
+});
+
+test('a manufactured weight is marked as indicative, a calculated one is not', () => {
+  assert.equal(only('valve', 'ball valve dn50 pn16').indicative, true, 'a valve weight depends on its maker');
+  assert.equal(only('flange', 'weld neck dn100 pn16 s235').indicative, true);
+  assert.ok(!only('plate', 'plate 3 mm s235jr 1500×3000').indicative, 'plate follows from its own geometry');
+  assert.ok(!only('pipe', 'dn100 sch40 s235').indicative);
+  assert.ok(!only('fitting', 'elbow 90 dn100 sch40 s235').indicative);
+});
+
+test('a heavier pressure class and a bigger bore both weigh more', () => {
+  const pn16 = only('valve', 'ball valve dn50 pn16').weightPerBase;
+  const pn40 = only('valve', 'ball valve dn50 pn40').weightPerBase;
+  assert.ok(pn40 > pn16, 'PN40 has a heavier body than PN16');
+  const dn100 = only('valve', 'ball valve dn100 pn16').weightPerBase;
+  assert.ok(dn100 > pn16, 'and DN100 is heavier than DN50');
+});
+
+test('consumables carry their pack size as the measure', () => {
+  const spool = only('welding', 'er70s-6 ⌀1.0 15 kg');
+  assert.equal(spool.baseUnit, 'kg');
+  assert.equal(spool.sizePerUnit, 15, 'one spool is 15 kg of wire');
+  assert.equal(spool.weightPerBase, 1, 'a kilo of wire weighs a kilo');
+  const bottle = only('gas', 'argon 50 l');
+  assert.equal(bottle.baseUnit, 'm3');
+  near(bottle.sizePerUnit, 10, '50 l at 200 bar is about 10 m3 of free gas');
+});
+
+test('search narrows on every word and ignores how a grade is spaced', () => {
+  // "3" also appears inside 3000, so a full spec does not reduce to one row -
+  // it has to put the right row first.
+  assert.equal(M.catalogueProducts('plate', 'plate 3 mm s235jr 1500×3000')[0].name,
+    'Plate 3 mm S235JR mild steel 1500×3000', 'a full spec must rank its own plate first');
+  const spaced = M.catalogueProducts('plate', '10 mm aisi 304');
+  const tight = M.catalogueProducts('plate', '10 mm aisi304');
+  assert.deepEqual(tight.map(p => p.id), spaced.map(p => p.id), '"aisi304" and "AISI 304" are one search');
+  // A figure standing on its own outranks the same digits inside another number.
+  assert.match(M.catalogueProducts('plate', '3 mm s235 1500')[0].name, /^Plate 3 mm/,
+    '"3 mm" must find 3 mm plate, not 0.8 mm on a 3000 sheet');
+  assert.equal(M.catalogueProducts('plate', 'unobtainium').length, 0);
+  assert.equal(M.catalogueProducts('no-such-family').length, 0);
+});
+
+test('a product resolves to the group it should be filed under', () => {
+  const valve = M.catalogueProducts('valve')[0];
+  const pulled = M.catalogueProduct('valve', valve.id);
+  assert.equal(pulled.group, 'materials');
+  assert.equal(pulled.subgroup, 'pipe-fittings');
+  assert.equal(pulled.family, 'valve');
+  const wire = M.catalogueProducts('welding')[0];
+  const pulledWire = M.catalogueProduct('welding', wire.id);
+  assert.equal(pulledWire.group, 'consumables');
+  assert.equal(pulledWire.subgroup, 'welding');
+  assert.equal(M.catalogueProduct('valve', 'no-such-product'), null);
+});
+
+test('a product is filed by what it is made of, not by its family default', () => {
+  const filed = (family, query) => {
+    const hit = only(family, query);
+    return M.catalogueProduct(family, hit.id);
+  };
+  assert.equal(filed('plate', 'plate 5 mm s235jr 1500x3000').subgroup, 'mild-steel');
+  assert.equal(filed('plate', 'plate 5 mm aisi 304 1500x3000').subgroup, 'stainless-steel');
+  assert.equal(filed('plate', 'plate 3 mm aluminium 1000x2000').subgroup, 'aluminium');
+  assert.equal(filed('bar', 'round bar ⌀20 copper').subgroup, 'copper');
+  assert.equal(filed('section', 'shs 40x40x2 s235').subgroup, 'mild-steel');
+  // Pipework is filed together whatever it is made of.
+  assert.equal(filed('pipe', 'dn100 sch40 s235').subgroup, 'pipe-fittings');
+  assert.equal(filed('valve', 'ball valve dn50 pn16').subgroup, 'pipe-fittings');
+});
+
+test('a size written with x finds the same product as one written with ×', () => {
+  const cross = M.catalogueProducts('plate', 'plate 5 mm s235jr 1500×3000');
+  const ex = M.catalogueProducts('plate', 'plate 5 mm s235jr 1500x3000');
+  assert.ok(ex.length, 'nobody types the multiplication sign');
+  assert.equal(ex[0].id, cross[0].id);
+  assert.equal(M.catalogueProducts('section', 'shs 40x40x2 s235')[0].id,
+               M.catalogueProducts('section', 'shs 40×40×2 s235')[0].id);
+});
