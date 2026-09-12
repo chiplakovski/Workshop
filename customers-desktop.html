@@ -203,25 +203,60 @@
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
-<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
-<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
+<style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}
+/* ---- Fixed shell: the window does not scroll, the page body does. ---- */
+html,body{height:100%}
+body{overflow:hidden;min-height:0}
+.module-sidebar{overflow:hidden}
+.ms-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;margin:0 -4px;padding:0 4px}
+.ms-scroll::-webkit-scrollbar{width:6px}
+.ms-scroll::-webkit-scrollbar-thumb{background:rgba(var(--c-line-rgb),.45)}
+.ms-brand{flex:none}
+.ms-user{flex:none;margin-top:0}
+.modhead{flex:none;margin:0;padding:16px 36px 14px;border-bottom:1px solid var(--line);background:var(--lift-02)}
+.pagescroll{position:fixed;inset:0 0 0 205px;display:flex;flex-direction:column;overflow:hidden}
+.wrap{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;margin-left:0!important;padding:18px 36px 30px}
 
-<div class="topfull"><div class="topbar">
+/* ---- The quick actions ride in the header, in reach from every customer ---- */
+.actionslot{flex:1 1 auto;min-width:0;margin-left:18px}
+.actionbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;margin-top:0}
+.actionbar button{flex-direction:row;gap:6px;padding:0 11px;height:34px;font-size:11.5px;white-space:nowrap}
+.actionbar button:hover{transform:none}
+.actionbar button svg{width:15px;height:15px}
+@media(max-width:1500px){.actionbar button span.lbl{display:none}.actionbar button{padding:0 10px}}
+@media(max-width:1100px){
+  .actionslot{order:3;flex-basis:100%;margin:10px 0 0}
+  .actionbar{justify-content:flex-start}
+  .topbar{flex-wrap:wrap}
+}
+@media(max-width:900px){
+  html,body{height:auto}
+  body{overflow:visible}
+  .pagescroll{position:static;display:block;overflow:visible}
+  .wrap{overflow:visible}
+  .module-sidebar{overflow:visible}
+  .ms-scroll{overflow:visible}
+}
+</style>
+<div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><div class="ms-scroll"><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
+
+<div class="pagescroll"><div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
   <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
     <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
-<div class="wrap">
-  <div class="modhead">
+<div class="modhead">
     <button class="back" id="backBtn" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
     <div class="ttl"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div><h1 data-i="ctitle">Customers</h1><p data-i="csub">Contacts & accounts</p></div></div>
-  </div>
+  <div class="actionslot" id="actionSlot"></div>
+  </div><div class="wrap">
+  
 
   <div id="app"></div>
-</div>
+</div></div>
 
 <div class="fov" id="fov"><div class="fcard" id="fcard"></div></div>
 
@@ -654,7 +689,8 @@ function renderAll(){
     <div class="col">${renderLeft()}</div>
     <div class="col">${renderMiddle(c)}</div>
     <div class="col">${renderRight(c)}</div>
-  </div>${renderActionBar(c)}`;
+  </div>`;
+  $("actionSlot").innerHTML=renderActionBar(c);
   $("search").addEventListener('input',e=>{query=e.target.value;renderAll();});
   renderTab(c);
   syncModuleSidebar();

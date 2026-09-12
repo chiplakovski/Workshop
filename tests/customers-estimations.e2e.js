@@ -85,6 +85,33 @@ async function customerWorkflow(page) {
   await page.waitForTimeout(60);
   assert.ok((await page.locator('body').innerText()).includes(CUSTOMER_EDITED_NAME), 'customer disappeared after reload');
   step('Customers: persisted record survives reload');
+
+  // The shell is fixed and the quick actions ride in the header rather than
+  // sitting at the foot of the page.
+  const shell = await page.evaluate(() => {
+    const bar = document.querySelector('.actionbar');
+    const head = document.querySelector('.modhead');
+    const wrap = document.querySelector('.wrap');
+    const br = bar.getBoundingClientRect(), hr = head.getBoundingClientRect();
+    wrap.scrollTop = 400;
+    return {
+      windowScrolls: document.documentElement.scrollHeight - window.innerHeight,
+      bodyIsTheScroller: getComputedStyle(wrap).overflowY === 'auto',
+      sidebarFixed: getComputedStyle(document.querySelector('.module-sidebar')).position === 'fixed',
+      barVisible: br.height > 0,
+      barInHeader: br.top >= hr.top - 1 && br.bottom <= hr.bottom + 1,
+      buttons: [...bar.querySelectorAll('button')].length,
+      headTopAfterScroll: Math.round(document.querySelector('.modhead').getBoundingClientRect().top)
+    };
+  });
+  assert.ok(shell.windowScrolls <= 2, 'the window itself must not scroll');
+  assert.ok(shell.sidebarFixed, 'the sidebar stands fixed');
+  assert.ok(shell.bodyIsTheScroller, 'the page body is what scrolls');
+  assert.ok(shell.barVisible, 'the quick actions must actually be on screen, not in a hidden header');
+  assert.ok(shell.barInHeader, 'and they must sit in the header, not at the foot of the page');
+  assert.equal(shell.buttons, 7, 'all seven actions moved up');
+  assert.equal(shell.headTopAfterScroll, 0, 'the header stays put while the body scrolls under it');
+  step('Customers: the shell is fixed and the quick actions sit in the header');
 }
 
 const nativeDialogs = [];
