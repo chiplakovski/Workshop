@@ -176,6 +176,27 @@ async function receiveGoods(page, poNo) {
     assert.ok(pages.some((p) => p.view === v), `the merged module must carry the ${v} page`));
   step('Store: each nav item opens its own page rather than scrolling one long one');
 
+  // The procurement pages are translated like the rest of the module, and the
+  // status a chip shows must never become the status the record stores.
+  const beforeLang = await page.evaluate(() => WorkshopData.getPurchaseOrders().map((po) => po.status));
+  for (const lang of ['sv', 'mk']) {
+    const leaked = await page.evaluate((l) => {
+      setLang(l);
+      const out = [];
+      ['reorder', 'rfq', 'comparison', 'orders', 'deliveries', 'invoices', 'approvals'].forEach((v) => {
+        showView(v);
+        const text = document.querySelector(`[data-panel="${v}"]`).innerText;
+        if (/\bSupplier\b|\bApprove\b|\bReject\b|\bQuantity\b|undefined/.test(text)) out.push(v);
+      });
+      return out;
+    }, lang);
+    assert.deepEqual(leaked, [], `the procurement pages must be translated into ${lang}`);
+  }
+  const afterLang = await page.evaluate(() => WorkshopData.getPurchaseOrders().map((po) => po.status));
+  assert.deepEqual(afterLang, beforeLang, 'changing language must not rewrite a stored status');
+  await page.evaluate(() => { setLang('en'); showView('inventory'); });
+  step('Store: procurement reads in all three languages without touching stored data');
+
   await page.goto(page.url().split('#')[0] + '#stockcount', { waitUntil: 'load' });
   await page.waitForTimeout(250);
   assert.equal(await page.evaluate(() => storeView), 'stockcount',
