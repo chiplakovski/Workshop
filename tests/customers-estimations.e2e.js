@@ -151,14 +151,38 @@ async function estimationWorkflow(page) {
   assert.equal(selectionKept, listedProject, 'a drag must not be mistaken for a click that selects');
   step('Estimations: dragging a card between lanes moves the estimate');
 
+  // A board is a board: a card goes to any lane, including straight past the middle of the workflow.
+  // The move is taken, and the estimate's history says the usual order was bypassed.
+  const jumped = await page.evaluate(() =>
+    ESTIMATIONS.find((e) => e.status === 'draft' && e.projectNo)
+      || ESTIMATIONS.find((e) => e.status === 'review' && e.projectNo));
+  await dragCard(jumped.id, 'accepted');
+  const after = await page.evaluate((i) => {
+    const e = getEst(i);
+    return { status: e.status, last: e.history[e.history.length - 1].action };
+  }, jumped.id);
+  assert.equal(after.status, 'accepted', 'a card must be able to go straight to Accepted');
+  assert.match(after.last, /out of the usual order/,
+    'a move that skips the usual order must say so in the history, not pass as a normal step');
+
+  // Even a closed stage lets go - a customer changing their mind is a real thing.
   const acceptedId = await page.evaluate(() =>
-    ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo).id);
-  await dragCard(acceptedId, 'draft');
-  assert.equal(await page.evaluate((i) => getEst(i).status, acceptedId), 'accepted',
-    'a closed stage must refuse a drop, exactly as the stepper does');
+    ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo && e.id !== getEst(selectedId).id).id);
+  await dragCard(acceptedId, 'declined');
+  assert.equal(await page.evaluate((i) => getEst(i).status, acceptedId), 'declined',
+    'an accepted estimate must be movable to Declined');
   assert.equal(await page.evaluate(() => !document.querySelector('.kghost')), true,
     'the dragged card must never be left behind on screen');
-  step('Estimations: the board refuses a move the transition rules forbid');
+  step('Estimations: any lane takes any card, and an unusual move is recorded as one');
+
+  // The board tests move real estimates about; put them back so what follows sees the world it expects.
+  await page.evaluate(([a, b]) => {
+    [[a, 'draft'], [b, 'accepted']].forEach(([id, status]) => {
+      const e = getEst(id); if (e) { e.status = status; syncEstimation(e); }
+    });
+    renderAll();
+  }, [jumped.id, acceptedId]);
+  await page.waitForTimeout(300);
 
   // The offer is the whole project as one customer-facing document, produced from the top bar.
   const offer = await page.evaluate(() => {

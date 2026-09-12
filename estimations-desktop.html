@@ -158,9 +158,11 @@
 
   /* While a card is in the air the lanes answer before the drop: which moves the rules allow, and
      which they do not. A refusal is then never a surprise toast after the fact. */
-  .kcol.cantake{border-color:var(--kc,var(--spark));box-shadow:0 0 0 1px var(--kc,var(--spark)) inset;}
-  .kcol.cannottake{opacity:.35;}
-  .kcol.over{background:rgba(var(--c-accent-rgb),.14);}
+  /* Every lane takes a card. The one the usual order points to says so louder than the rest. */
+  .kcol.cantake{border-color:rgba(var(--c-line-rgb),.55);border-style:dashed;}
+  .kcol.cannext{border-style:solid;border-color:var(--kc,var(--spark));
+    box-shadow:0 0 0 1px var(--kc,var(--spark)) inset;}
+  .kcol.over{background:rgba(var(--c-accent-rgb),.14);border-style:solid;}
   @media(max-width:1200px){.kboard{grid-template-columns:repeat(3,minmax(0,1fr));}}
   @media(max-width:760px){.kboard{grid-template-columns:1fr;}}
 
@@ -941,7 +943,7 @@ const T={
     actual_vs_est:"Estimated vs Actual",actual_hours:"Labour hours",actual_variance:"Current variance",by_word:"by",
     rev_create_title:"Create Revision",rev_reason:"Reason for change",rev_reason_ph:"Customer change, material update, scope revision…",
     rev_create_btn:"Create revision",confirm_revision:"Create a new revision of {no}? The current content will be preserved as a snapshot and the estimation will return to Draft.",
-    transition_blocked:"Cannot move from \"{a}\" to \"{b}\" directly.",err_needs_line:"Add at least one valid cost line before sending this estimation.",
+    stage_skips:"This skips the usual order — {a} does not normally go straight to {b}.",stage_reopen:"{a} is a closed stage. Moving it out reopens the estimation for editing.",stage_unpriced:"Nothing is priced on this estimation yet.",stage_recorded:"Moved {a} → {b}. The history records that the usual order was bypassed.",err_needs_line:"Add at least one valid cost line before sending this estimation.",
     ne_none:"— None —",ne_title:"Estimate title",ne_title_ph:"e.g. Ventilation duct system",ne_startmethod:"Starting method",
     ne_blank:"Blank estimate",ne_tpl_fab:"Standard fabrication template",ne_tpl_repair:"Repair / service template",ne_tpl_install:"Installation template",
     ne_template_note:"Template starting values are for demonstration only and must be reviewed before this estimation is sent.",
@@ -1016,7 +1018,7 @@ const T={
     actual_vs_est:"Uppskattat vs Faktiskt",actual_hours:"Arbetstimmar",actual_variance:"Aktuell avvikelse",by_word:"av",
     rev_create_title:"Skapa revision",rev_reason:"Anledning till ändring",rev_reason_ph:"Kundändring, materialuppdatering, omfattningsändring…",
     rev_create_btn:"Skapa revision",confirm_revision:"Skapa en ny revision av {no}? Nuvarande innehåll bevaras som en ögonblicksbild och kalkylen återgår till Utkast.",
-    transition_blocked:"Kan inte flytta från \"{a}\" till \"{b}\" direkt.",err_needs_line:"Lägg till minst en giltig kostnadsrad innan denna kalkyl skickas.",
+    stage_skips:"Detta hoppar över den vanliga ordningen — {a} går normalt inte direkt till {b}.",stage_reopen:"{a} är ett avslutat steg. Att flytta ut den öppnar kalkylen för redigering igen.",stage_unpriced:"Ingenting är prissatt på denna kalkyl ännu.",stage_recorded:"Flyttad {a} → {b}. Historiken noterar att den vanliga ordningen frångicks.",err_needs_line:"Lägg till minst en giltig kostnadsrad innan denna kalkyl skickas.",
     ne_none:"— Ingen —",ne_title:"Kalkyltitel",ne_title_ph:"t.ex. Ventilationskanalsystem",ne_startmethod:"Startmetod",
     ne_blank:"Tomt kalkylunderlag",ne_tpl_fab:"Standardmall för tillverkning",ne_tpl_repair:"Mall för reparation/service",ne_tpl_install:"Mall för installation",
     ne_template_note:"Mallens startvärden är endast för demonstration och måste granskas innan kalkylen skickas.",
@@ -1091,7 +1093,7 @@ const T={
     actual_vs_est:"Proceneto vs Realno",actual_hours:"Rabotni časovi",actual_variance:"Tekovna razlika",by_word:"od",
     rev_create_title:"Kreiraj revizija",rev_reason:"Pričina za izmena",rev_reason_ph:"Izmena od klient, ažuriraњe na materijal, izmena na opseg…",
     rev_create_btn:"Kreiraj revizija",confirm_revision:"Kreiraj nova revizija na {no}? Tekovnata sodržina ke bide začuvana kako snimka, a kalkulacijata ke se vrati vo Nacrt.",
-    transition_blocked:"Ne može da se premine od \"{a}\" vo \"{b}\" direktno.",err_needs_line:"Dodaj barem eden validen trošočen red pred da ja ispratiš ovaa kalkulacija.",
+    stage_skips:"Ova go preskoknuva voobičaeniot redosled — {a} obično ne odi direktno vo {b}.",stage_reopen:"{a} e zatvorena faza. Izvlekuvanjeto od nea ja otvora kalkulacijata za izmena.",stage_unpriced:"Sè ušte ništo ne e proceneto na ovaa kalkulacija.",stage_recorded:"Premesteno {a} → {b}. Istorijata zapišuva deka voobičaeniot redosled bil zaobikolen.",err_needs_line:"Dodaj barem eden validen trošočen red pred da ja ispratiš ovaa kalkulacija.",
     ne_none:"— Nikoj —",ne_title:"Naslov na kalkulacija",ne_title_ph:"pr. Sistem za ventilacioni kanali",ne_startmethod:"Metod za početok",
     ne_blank:"Prazna kalkulacija",ne_tpl_fab:"Standarden šablon za izработка",ne_tpl_repair:"Šablon za popravka/servis",ne_tpl_install:"Šablon za instalacija",
     ne_template_note:"Početните vrednosti od šablonot se samo za demonstracija i mora da bidat proverени pred da se isprati ovaa kalkulacija.",
@@ -1304,11 +1306,11 @@ const KCOLS=[{k:'draft',has:['draft']},{k:'review',has:['review']},{k:'sent',has
 // exist at all under a finger. Pointer events work in both.
 let kdrag=null,kClickAfterDrag=false;
 function kanbanLightLanes(id){
-  const e=getEst(id);const allowed=(e&&!isLocked(e))?(ALLOWED_TRANSITIONS[e.status]||[]):[];
+  const e=getEst(id);const next=e?(ALLOWED_TRANSITIONS[e.status]||[]):[];
   document.querySelectorAll('.kcol').forEach(c=>{
     const st=c.dataset.stage;const here=!!(e&&KCOLS.find(k=>k.k===st).has.includes(e.status));
-    c.classList.toggle('cantake',allowed.includes(st));
-    c.classList.toggle('cannottake',!here&&!allowed.includes(st));
+    c.classList.toggle('cantake',!!e&&!here);       // every other lane will take it
+    c.classList.toggle('cannext',next.includes(st)); // and this is where it usually goes next
   });
 }
 // Only a lane the rules allow is a target, so an illegal move simply cannot be dropped.
@@ -1361,7 +1363,7 @@ function kanbanDragEnd(){
   kdrag.card.classList.remove('dragging');
   document.documentElement.classList.remove('kdragging');
   kdrag=null;
-  document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('cantake','cannottake','over'));
+  document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('cantake','cannext','over'));
 }
 window.addEventListener('pointercancel',kanbanDragEnd);
 
@@ -1943,19 +1945,34 @@ function setOptTab(id){activeOptTab=id;renderAll();}
 //   From Sent, also: Declined · Expired · (Revision requested, via createRevision)
 // A Draft can never jump straight to Accepted, and Sent requires ≥1 valid cost line.
 // ─────────────────────────────────────────────────────────────────────────
+// The usual order. It is guidance now, not a gate: the board highlights these as the next step and
+// still lets a card go anywhere, naming what a move skips.
 const ALLOWED_TRANSITIONS={draft:['review','sent'],review:['draft','sent'],sent:['accepted','declined','expired','review'],accepted:[],declined:[],expired:[]};
+const TERMINAL_STAGES=['accepted','declined','expired'];
 function hasValidCostLine(e){return e.workItems.some(wi=>wi.lines.some(l=>!isBlank(l.desc)&&isPositiveNumber(l.qty)&&isNonNegNumber(l.sell)));}
+// A board is a board: any lane takes any card, and the stepper works the same way. Quotations do
+// get agreed over the phone and marked Accepted without a formal Send, and a customer does change
+// their mind after accepting — so an unusual move is not refused, it is named. What matters is that
+// the estimate's history says the usual order was bypassed rather than quietly implying it was not.
 function requestStageChange(id,stage){
   const t=T[LANG];const e=getEst(id);if(!e||e.status===stage)return;
-  if(isLocked(e)){toast(t.locked_msg.replace('{no}',e.no),'error');return;}
-  const allowed=ALLOWED_TRANSITIONS[e.status]||[];
-  if(!allowed.includes(stage)){toast(t.transition_blocked.replace('{a}',t['st_'+e.status]).replace('{b}',t['st_'+stage]),'error');return;}
-  if(stage==='sent'&&!hasValidCostLine(e)){toast(t.err_needs_line,'error');return;}
-  if(!confirm(t.confirm_stage.replace('{s}',t["st_"+stage])))return;
+  const from=e.status;
+  const usual=(ALLOWED_TRANSITIONS[from]||[]).includes(stage);
+  const reopens=isLocked(e)&&!TERMINAL_STAGES.includes(stage);
+  const unpriced=(stage==='sent'||stage==='accepted')&&!hasValidCostLine(e);
+  const notes=[];
+  if(!usual)notes.push(t.stage_skips.replace('{a}',t['st_'+from]).replace('{b}',t['st_'+stage]));
+  if(reopens)notes.push(t.stage_reopen.replace('{a}',t['st_'+from]));
+  if(unpriced)notes.push(t.stage_unpriced);
+  const ask=(notes.length?notes.join('\n')+'\n\n':'')+t.confirm_stage.replace('{s}',t['st_'+stage]);
+  if(!confirm(ask))return;
   e.status=stage;
-  e.history.push({date:todayISO(),action:`Status changed to ${t["st_"+stage]}`,by:"Aleksandar C."});
+  e.history.push({date:todayISO(),
+    action:`Status changed to ${t['st_'+stage]}`+(usual?'':` — out of the usual order, from ${t['st_'+from]}`),
+    by:"Aleksandar C."});
   syncEstimation(e);
   renderAll();
+  if(!usual)toast(t.stage_recorded.replace('{a}',t['st_'+from]).replace('{b}',t['st_'+stage]),'warn');
 }
 
 function closeModal(){$("fov").classList.remove("show");}
