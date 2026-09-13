@@ -136,6 +136,31 @@ html.kdragging .kcard{cursor:grabbing}
 .modalcard .formbody,.modalcard>#labelBody{overflow-y:auto}
 .modalcard .formbody>.actions{position:sticky;bottom:-11px;margin:10px -11px -11px;padding:11px;
   background:var(--navy-950);border-top:1px solid var(--line)}
+/* What the store knows about one item's past. Every line is read from the movements and the
+   registers — where there is nothing recorded, it says so rather than showing an empty field. */
+#infoModal .modalcard{width:min(820px,94vw)}
+/* The item's own description is a name, not a heading — it reads as it was typed. */
+#infoTitle{text-transform:none;font-size:16px}
+.infogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:4px}
+.infocell label{display:block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px}
+.infocell b{font:700 15px var(--font-heading);color:var(--ice);font-variant-numeric:tabular-nums}
+.infocell small{display:block;margin-top:2px;color:var(--steel-400);font-size:11px}
+.infosec{margin-top:16px;padding-top:13px;border-top:1px solid var(--line)}
+.infosec>h4{font:800 12px var(--font-heading);letter-spacing:.05em;color:var(--ice);margin:0 0 8px}
+.inforow{display:grid;grid-template-columns:104px 1fr auto;gap:12px;align-items:baseline;
+  padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.inforow:last-child{border-bottom:0}
+.inforow time{color:var(--steel-300);font-variant-numeric:tabular-nums;font-size:11.5px}
+.inforow b{color:var(--ice);font-weight:600}
+.inforow .who{display:block;color:var(--steel-400);font-size:11px;margin-top:2px}
+.inforow .qty{font-variant-numeric:tabular-nums;color:var(--ice);font-weight:600;white-space:nowrap}
+.inforow .qty.out{color:var(--warn)}
+.inforow .qty.in{color:var(--ok)}
+.infonone{padding:9px 0;color:var(--steel-400);font-size:12px}
+.infochips{display:flex;flex-wrap:wrap;gap:6px}
+.infochip{border:1px solid var(--field-line);background:var(--field);padding:4px 8px;font-size:11.5px;color:var(--steel-300)}
+.infochip b{color:var(--ice);font-weight:600}
+
 /* Closing a form is a target, not a footnote. */
 .modalcard .phead{height:auto;min-height:46px;padding:6px 8px 6px 14px}
 .modalcard .phead .btn{width:38px;height:38px;padding:0;display:grid;place-items:center;
@@ -220,6 +245,7 @@ body{overflow:hidden}
 <div class="modal" id="labelModal"><div class="modalcard" style="width:430px"><div class="phead"><h3 data-i="labelModalTitle">VARMAK INTERNAL MATERIAL LABEL</h3><button class="btn" onclick="$('labelModal').classList.remove('show')">×</button></div><div id="labelBody" style="margin:18px;background:#fff;color:#071323;padding:22px;font-size:14px"></div><div class="actions" style="padding:0 18px 18px"><button class="btn" onclick="$('labelModal').classList.remove('show')"><span data-i="btnClose">Close</span></button><button class="btn primary" onclick="window.print()"><span data-i="btnPrintLabelModal">Print label</span></button></div></div></div>
 <div class="modal" id="warehouseModal"><div class="modalcard"><div class="phead"><h3 id="warehouseModalTitle" data-i="newWarehouseTitle">New warehouse</h3><button class="btn" onclick="closeWarehouseForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="warehouseName" data-i="thWarehouse">Warehouse</label><input id="warehouseName" required></div></div><div class="actions"><button class="btn" onclick="closeWarehouseForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveWarehouse()"><span data-i="btnSave">Save</span></button></div></div></div></div><div class="modal" id="sublocationModal"><div class="modalcard"><div class="phead"><h3 id="sublocationModalTitle" data-i="newSublocationTitle">New sublocation</h3><button class="btn" onclick="closeSublocationForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="sublocationName" data-i="thSublocation">Sublocation</label><input id="sublocationName" required></div></div><div class="actions"><button class="btn" onclick="closeSublocationForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveSublocation()"><span data-i="btnSave">Save</span></button></div></div></div></div>
 <div class="modal" id="groupModal"><div class="modalcard"><div class="phead"><h3 id="groupModalTitle" data-i="newGroupTitle">New group</h3><button class="btn" onclick="closeGroupForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="groupName" data-i="thGroup">Group</label><input id="groupName" required></div><div class="field"><label for="groupStart" data-i="groupStartLbl">Numbers start at</label><input id="groupStart" type="number" min="0" step="1" value="5000"></div></div><p class="sub" data-i="groupStartHint">Items in this group are numbered from here upwards, one number each.</p><div class="actions"><button class="btn" onclick="closeGroupForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveGroup()"><span data-i="btnSave">Save</span></button></div></div></div></div><div class="modal" id="subgroupModal"><div class="modalcard"><div class="phead"><h3 id="subgroupModalTitle" data-i="newSubgroupTitle">New subgroup</h3><button class="btn" onclick="closeSubgroupForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="subgroupName" data-i="thSubgroup">Subgroup</label><input id="subgroupName" required></div></div><div class="actions"><button class="btn" onclick="closeSubgroupForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveSubgroup()"><span data-i="btnSave">Save</span></button></div></div></div></div>
+<div class="modal" id="infoModal"><div class="modalcard"><div class="phead"><h3 id="infoTitle">Item</h3><button class="btn" onclick="closeItemInfo()">×</button></div><div class="formbody" id="infoBody"></div></div></div>
 <div class="modal" id="newItemModal"><div class="modalcard"><div class="phead"><h3 id="itemFormTitle" data-i="newItemTitle">Create inventory item</h3><button class="btn" onclick="closeNewItemForm()">×</button></div><div class="formbody"><div class="fields"><div class="field full catrow"><label for="catFamily" data-i="thCatalogue">Catalogue</label><div class="catpick"><select id="catFamily" onchange="renderCatalogue()"></select><input id="catSearch" oninput="renderCatalogue()" data-i-ph="catSearchPh" placeholder="search the catalogue..."><select id="catProduct" size="1" onchange="previewCatalogue()"></select><button class="btn" onclick="useCatalogueProduct()"><span data-i="btnUseProduct">Use</span></button></div><div class="cathint" id="catHint"></div></div><div class="field"><label for="newGroup" data-i="thGroup">Group</label><select id="newGroup" required onchange="fillSubgroupSelect('newGroup','newSubgroup','newItemNo')"></select></div><div class="field"><label for="newSubgroup" data-i="thSubgroup">Subgroup</label><select id="newSubgroup"></select></div><div class="field"><label for="newItemNo" data-i="thItemNo">Item number</label><input id="newItemNo" readonly tabindex="-1"></div><div class="field wide"><label for="newDescription" data-i="thDesc">Description</label><input id="newDescription" required></div><div class="field"><label for="newCode" data-i="newCodeOptional">Supplier / drawing code</label><input id="newCode" data-i-ph="newCodePlaceholder" placeholder="leave blank to use the item number"></div><div class="field"><label for="newUnit" data-i="thUnit">Unit</label><input id="newUnit" value="EA" required></div><div class="field"><label for="newWarehouse" data-i="thWarehouse">Warehouse</label><select id="newWarehouse" onchange="fillSublocationSelect('newWarehouse','newSublocation')"></select></div><div class="field"><label for="newSublocation" data-i="thSublocation">Sublocation</label><select id="newSublocation"></select></div><div class="field"><label for="newLocation" data-i="thBin">Bin</label><input id="newLocation" list="binList" required data-i-ph="binPlaceholder" placeholder="e.g. A1-01-02 — the shelf or slot"><datalist id="binList"></datalist></div><div class="field"><label for="newGrade" data-i="newGrade">Grade</label><input id="newGrade" oninput="suggestWeight()" data-i-ph="gradePlaceholder" placeholder="e.g. S235JR, AISI 304"></div><div class="field wide"><label for="newDimensions" data-i="newDimensions">Dimensions</label><input id="newDimensions" oninput="suggestWeight()" data-i-ph="dimPlaceholder" placeholder="e.g. DN100 SCH40, or 40 × 40 × 2.0 mm"></div><div class="field"><label for="newShape" data-i="thShape">Section</label><select id="newShape" onchange="suggestWeight()"></select></div><div class="field"><label for="newBaseUnit" data-i="thBaseUnit">Measured in</label><select id="newBaseUnit" onchange="renderMeasurePreview()"><option value="pcs">pcs</option><option value="m">m</option><option value="m2">m²</option><option value="m3">m³</option><option value="kg">kg</option></select></div><div class="field"><label for="newSizePerUnit" data-i="thSizePerUnit">Per stock unit</label><input id="newSizePerUnit" type="number" min="0" step="0.001" value="1" oninput="renderMeasurePreview()"></div><div class="field"><label for="newWeightPerBase" data-i="thWeightPerBase">kg per measure</label><input id="newWeightPerBase" type="number" min="0" step="0.001" value="0" oninput="renderMeasurePreview()"></div><div class="field full"><div class="measurebox" id="measurePreview"></div></div><div class="field"><label for="newStock" data-i="thStock">Stock</label><input id="newStock" type="number" min="0" value="0" oninput="renderMeasurePreview()"></div><div class="field"><label for="newMinStock" data-i="thMin">Min</label><input id="newMinStock" type="number" min="0" value="0"></div><div class="field"><label for="newReorderQty" data-i="thReorder">Reorder</label><input id="newReorderQty" type="number" min="0" value="0"></div><div class="field"><label for="newAvgCost" data-i="thAvgCost">Avg cost</label><input id="newAvgCost" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newLastPrice" data-i="thLastPrice">Last price</label><input id="newLastPrice" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newSupplier" data-i="thSupplier">Supplier</label><input id="newSupplier"></div><div class="field"><label for="newHeat" data-i="thHeatLot">Heat / Lot</label><input id="newHeat"></div></div><div class="actions"><button class="btn" onclick="closeNewItemForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveInventoryItem()"><span id="itemFormSave" data-i="btnCreateItem">Create item</span></button></div></div></div></div>
 <div class="modal" id="certificateModal"><div class="modalcard"><div class="phead"><h3 data-i="certificateTitle">Attach material certificate</h3><button class="btn" onclick="closeCertificateForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="certificateItem" data-i="lblMaterial">Material</label><select id="certificateItem"></select></div><div class="field"><label for="certificateType" data-i="certificateType">Certificate type</label><input id="certificateType" value="EN 10204 3.1"></div><div class="field wide"><label for="certificateFile" data-i="certificateFile">Certificate file</label><input id="certificateFile" type="file" accept=".pdf,.xml,.txt,.csv,image/*" required></div></div><p class="sub" data-i="certificateStorageNote">The file is stored in Documents and linked to this Store item.</p><div class="actions"><button class="btn" onclick="closeCertificateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="attachCertificate()"><span data-i="btnAttachCert">Attach certificate</span></button></div></div></div></div>
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="material-reference.js"></script><script src="workshop-forms.js"></script>
@@ -242,15 +268,45 @@ Object.assign(T.mk,{btnNewWarehouse:'+ Нов магацин',btnAddSublocation:
 Object.assign(T.en,{thCatalogue:'Catalogue',catNone:'— type it in myself —',catSearchPh:'search the catalogue...',btnUseProduct:'Use',catNoHits:'Nothing in the catalogue matches that.',catPerUnit:'per unit',catIndicative:'weight is indicative — check the figure from the maker',catPickFirst:'Pick a product first',catUsed:'Filled from the catalogue: {name}'});
 Object.assign(T.sv,{thCatalogue:'Katalog',catNone:'— jag skriver in själv —',catSearchPh:'sök i katalogen...',btnUseProduct:'Använd',catNoHits:'Inget i katalogen matchar det.',catPerUnit:'per enhet',catIndicative:'vikten är ungefärlig — kontrollera tillverkarens uppgift',catPickFirst:'Välj en produkt först',catUsed:'Ifylld från katalogen: {name}'});
 Object.assign(T.mk,{thCatalogue:'Каталог',catNone:'— сам ќе внесам —',catSearchPh:'барај во каталогот...',btnUseProduct:'Употреби',catNoHits:'Ништо во каталогот не одговара.',catPerUnit:'по единица',catIndicative:'тежината е приближна — провери ја бројката на производителот',catPickFirst:'Прво избери производ',catUsed:'Пополнето од каталогот: {name}'});
-Object.assign(T.en,{fieldRequired:'{field} is required',
+Object.assign(T.en,{btnInfo:'Information',
+  infoTitle:'Item {no} — {desc}',infoNotFound:'That item is no longer in the store.',
+  infoWhere:'Where it is',infoNoBin:'no bin given',infoNoWarehouse:'no warehouse given',
+  infoOnShelf:'On the shelf',infoReservedOf:'{r} reserved · {a} free',
+  infoBoughtFrom:'Bought from',infoNoSupplier:'no supplier recorded',infoLastPrice:'last paid {p}',
+  infoFirstArrived:'First arrived',infoNeverReceived:'Nothing has ever been booked in against this item.',
+  infoWentTo:'Where it went',infoNeverIssued:'It has never been issued to a job.',
+  infoCameIn:'Where it came from',infoOtherMoves:'Other movements',
+  infoCommitted:'What points at it now',infoNothingPointsAt:'Nothing points at it — only the stock on the shelf.',
+  infoUnknownSource:'source not recorded',infoUnknownDest:'destination not recorded',
+  fieldRequired:'{field} is required',
   binExplain:'the shelf or slot the material sits in, like A1-01-02',
   binPlaceholder:'e.g. A1-01-02 — the shelf or slot',
   thWarehouse:'Warehouse',thSublocation:'Sublocation',thBin:'Bin',thShape:'Section',thBaseUnit:'Measured in',thSizePerUnit:'Per stock unit',thWeightPerBase:'kg per measure',thActions:'Actions',shapeNone:'(not a standard section)',dimPlaceholder:'e.g. DN100 SCH40, or 40 × 40 × 2.0 mm',gradePlaceholder:'e.g. S235JR, AISI 304',weightSuggested:'{label} → {w} kg per {unit}',measureUnits:'{n} {unit}',editItemTitle:'Edit item {no}',notifyItemUpdated:'Item {no} updated: {desc}',notifyItemDeleted:'Item {no} deleted: {desc}',confirmDeleteItem:'Delete item {no} {desc}?',cannotDeleteItem:'Item {no} {desc} cannot be deleted — it is used in:',usedIn_movements:'Stock movements',usedIn_projectBom:'Project BOM',usedIn_jobcards:'Jobcards',usedIn_offcuts:'Offcuts',usedIn_purchaseOrders:'Purchase orders',usedIn_estimations:'Estimations',usedIn_barcodes:'Barcodes',usedIn_stockCounts:'Stock counts',usedIn_stock:'Stock on the shelf'});
-Object.assign(T.sv,{fieldRequired:'{field} måste fyllas i',
+Object.assign(T.sv,{btnInfo:'Information',
+  infoTitle:'Artikel {no} — {desc}',infoNotFound:'Den artikeln finns inte kvar i lagret.',
+  infoWhere:'Var den står',infoNoBin:'inget fack angivet',infoNoWarehouse:'inget lager angivet',
+  infoOnShelf:'På hyllan',infoReservedOf:'{r} reserverat · {a} fritt',
+  infoBoughtFrom:'Köpt av',infoNoSupplier:'ingen leverantör noterad',infoLastPrice:'senast betalt {p}',
+  infoFirstArrived:'Kom in första gången',infoNeverReceived:'Inget har någonsin bokats in på denna artikel.',
+  infoWentTo:'Vart den gick',infoNeverIssued:'Den har aldrig tagits ut till ett jobb.',
+  infoCameIn:'Varifrån den kom',infoOtherMoves:'Övriga rörelser',
+  infoCommitted:'Vad som pekar på den nu',infoNothingPointsAt:'Inget pekar på den — bara saldot på hyllan.',
+  infoUnknownSource:'källa ej noterad',infoUnknownDest:'destination ej noterad',
+  fieldRequired:'{field} måste fyllas i',
   binExplain:'hyllan eller facket där materialet står, t.ex. A1-01-02',
   binPlaceholder:'t.ex. A1-01-02 — hyllan eller facket',
   thWarehouse:'Lager',thSublocation:'Delplats',thBin:'Fack',thShape:'Profil',thBaseUnit:'Mäts i',thSizePerUnit:'Per lagerenhet',thWeightPerBase:'kg per mått',thActions:'Åtgärder',shapeNone:'(ingen standardprofil)',dimPlaceholder:'t.ex. DN100 SCH40, eller 40 × 40 × 2,0 mm',gradePlaceholder:'t.ex. S235JR, AISI 304',weightSuggested:'{label} → {w} kg per {unit}',measureUnits:'{n} {unit}',editItemTitle:'Redigera artikel {no}',notifyItemUpdated:'Artikel {no} uppdaterad: {desc}',notifyItemDeleted:'Artikel {no} borttagen: {desc}',confirmDeleteItem:'Ta bort artikel {no} {desc}?',cannotDeleteItem:'Artikel {no} {desc} kan inte tas bort — den används i:',usedIn_movements:'Lagerrörelser',usedIn_projectBom:'Projektets materiallista',usedIn_jobcards:'Arbetskort',usedIn_offcuts:'Restmaterial',usedIn_purchaseOrders:'Inköpsorder',usedIn_estimations:'Kalkyler',usedIn_barcodes:'Streckkoder',usedIn_stockCounts:'Inventeringar',usedIn_stock:'Saldo på hyllan'});
-Object.assign(T.mk,{fieldRequired:'{field} е задолжително',
+Object.assign(T.mk,{btnInfo:'Информации',
+  infoTitle:'Артикл {no} — {desc}',infoNotFound:'Тој артикл веќе го нема во магацинот.',
+  infoWhere:'Каде стои',infoNoBin:'нема внесена полица',infoNoWarehouse:'нема внесен магацин',
+  infoOnShelf:'На полица',infoReservedOf:'{r} резервирано · {a} слободно',
+  infoBoughtFrom:'Купено од',infoNoSupplier:'нема запишан добавувач',infoLastPrice:'последно платено {p}',
+  infoFirstArrived:'Прв пат пристигна',infoNeverReceived:'Ништо никогаш не е примено на овој артикл.',
+  infoWentTo:'Каде отиде',infoNeverIssued:'Никогаш не е издаден за работа.',
+  infoCameIn:'Од каде дојде',infoOtherMoves:'Други движења',
+  infoCommitted:'Што укажува на него сега',infoNothingPointsAt:'Ништо не укажува на него — само залихата на полица.',
+  infoUnknownSource:'изворот не е запишан',infoUnknownDest:'дестинацијата не е запишана',
+  fieldRequired:'{field} е задолжително',
   binExplain:'полицата или местото каде стои материјалот, пример A1-01-02',
   binPlaceholder:'пример A1-01-02 — полицата или местото',
   thWarehouse:'Магацин',thSublocation:'Подлокација',thBin:'Полица',thShape:'Профил',thBaseUnit:'Се мери во',thSizePerUnit:'По складишна единица',thWeightPerBase:'kg по мера',thActions:'Дејства',shapeNone:'(не е стандарден профил)',dimPlaceholder:'пр. DN100 SCH40, или 40 × 40 × 2,0 mm',gradePlaceholder:'пр. S235JR, AISI 304',weightSuggested:'{label} → {w} kg по {unit}',measureUnits:'{n} {unit}',editItemTitle:'Уреди артикл {no}',notifyItemUpdated:'Артиклот {no} е ажуриран: {desc}',notifyItemDeleted:'Артиклот {no} е избришан: {desc}',confirmDeleteItem:'Да се избрише артиклот {no} {desc}?',cannotDeleteItem:'Артиклот {no} {desc} не може да се избрише — се користи во:',usedIn_movements:'Движења на залиха',usedIn_projectBom:'Материјална листа на проект',usedIn_jobcards:'Работни налози',usedIn_offcuts:'Остатоци',usedIn_purchaseOrders:'Нарачки',usedIn_estimations:'Пресметки',usedIn_barcodes:'Баркодови',usedIn_stockCounts:'Пописи',usedIn_stock:'Залиха на полица'});
@@ -386,6 +442,7 @@ showView(location.hash.slice(1)||'inventory');
           onpointerdown="stockPointerDown(event,'${escapeHtml(x[0])}')"
           onpointermove="stockPointerMove(event)" onpointerup="stockPointerUp(event)">
           <span class="kcacts">
+            <button class="mini" title="${escapeHtml(currentT.btnInfo)}" onpointerdown="event.stopPropagation()" onclick="openItemInfo('${escapeHtml(x[0])}')">i</button>
             <button class="mini" title="${escapeHtml(currentT.btnEdit)}" onpointerdown="event.stopPropagation()" onclick="openEditItemForm('${escapeHtml(x[0])}')">✎</button>
             <button class="mini" title="${escapeHtml(currentT.btnDelete)}" onpointerdown="event.stopPropagation()" onclick="removeInventoryItem('${escapeHtml(x[0])}')">×</button>
           </span>
@@ -498,7 +555,7 @@ showView(location.hash.slice(1)||'inventory');
       return (x.join(' ')+m.join(' ')).toLowerCase().includes(q);
     });
     if(stockLayout==='board')renderStockBoard(rows);
-    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td><td class="rowacts"><button class="mini" onclick="openEditItemForm('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnEdit)}</button><button class="mini" onclick="removeInventoryItem('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnDelete)}</button></td></tr>`}).join('');
+    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td><td class="rowacts"><button class="mini" title="${escapeHtml(currentT.btnInfo)}" onclick="openItemInfo('${escapeHtml(x[0])}')">i</button><button class="mini" onclick="openEditItemForm('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnEdit)}</button><button class="mini" onclick="removeInventoryItem('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnDelete)}</button></td></tr>`}).join('');
     $('count').textContent=currentT.showingCount.replace('{n}',rows.length);
   };
 
@@ -712,6 +769,68 @@ showView(location.hash.slice(1)||'inventory');
     const bins=[...new Set(shared.inventory.map(i=>String(i.location||'').trim()).filter(Boolean))].sort();
     $('binList').innerHTML=bins.map(b=>`<option value="${escapeHtml(b)}"></option>`).join('');
   }
+  // ── What the store knows about one item ──────────────────────────────────────────────────
+  // Everything below is read out of the movements and the registers. Where nothing was ever
+  // recorded the panel says so; it never fills a gap with a plausible-looking date or place.
+  const infoDate=t=>{
+    if(!t)return '';
+    const d=new Date(t);
+    if(Number.isNaN(d.getTime()))return String(t);
+    return d.toLocaleDateString('sv-SE')+' '+d.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  };
+  function infoRows(list,kind,emptyText){
+    const t=currentT;
+    if(!list.length)return `<div class="infonone">${escapeHtml(emptyText)}</div>`;
+    return list.map(m=>{
+      const place=kind==='in'
+        ? (m.from||t.infoUnknownSource)
+        : (m.projectNo||m.jobcard
+            ? [m.projectNo,m.jobcard].filter(Boolean).join(' · ')
+            : (m.to||t.infoUnknownDest));
+      return `<div class="inforow"><time>${escapeHtml(infoDate(m.time))}</time>
+        <span><b>${escapeHtml(place)}</b>${m.user?`<span class="who">${escapeHtml(m.user)}</span>`:''}</span>
+        <span class="qty ${kind}">${kind==='in'?'+':'−'}${m.qty} ${escapeHtml(m.unit)}</span></div>`;
+    }).join('');
+  }
+  window.openItemInfo=function(code){
+    const t=currentT,h=WorkshopData.itemHistory(code);
+    if(!h)return notify(t.infoNotFound||'Item not found');
+    const cell=(label,value,sub)=>`<div class="infocell"><label>${escapeHtml(label)}</label>
+      <b>${escapeHtml(value)}</b>${sub?`<small>${escapeHtml(sub)}</small>`:''}</div>`;
+    const w=h.where;
+    const place=[w.warehouse,w.sublocation].filter(Boolean).join(' › ');
+    const b=h.bought;
+    // Only the last few of each: a planner wants the recent past, not the whole ledger.
+    const RECENT=5;
+    const usage=h.usedIn.filter(u=>u.where!=='movements');
+    $('infoTitle').textContent=(t.infoTitle||'Item {no} — {desc}')
+      .replace('{no}',h.itemNo??h.code).replace('{desc}',h.description);
+    $('infoBody').innerHTML=`
+      <div class="infogrid">
+        ${cell(t.infoWhere,w.bin||t.infoNoBin,place||t.infoNoWarehouse)}
+        ${cell(t.infoOnShelf,`${w.stock} ${w.unit}`,(t.infoReservedOf||'{r} reserved · {a} free').replace('{r}',w.reserved).replace('{a}',w.available))}
+        ${cell(t.infoBoughtFrom,b.supplier||t.infoNoSupplier,b.lastPrice?(t.infoLastPrice||'last {p}').replace('{p}',b.lastPrice):'')}
+        ${cell(t.infoFirstArrived,b.first?infoDate(b.first.time):t.infoNeverReceived,b.first?b.first.from:'')}
+      </div>
+      ${b.heat?`<div class="infochips"><span class="infochip">${escapeHtml(t.thHeatLot)} <b>${escapeHtml(b.heat)}</b></span></div>`:''}
+      <div class="infosec"><h4>${escapeHtml(t.infoWentTo)}</h4>
+        ${infoRows(h.issued.slice(0,RECENT),'out',t.infoNeverIssued)}</div>
+      <div class="infosec"><h4>${escapeHtml(t.infoCameIn)}</h4>
+        ${infoRows(h.received.slice(0,RECENT),'in',t.infoNeverReceived)}</div>
+      ${h.other.length?`<div class="infosec"><h4>${escapeHtml(t.infoOtherMoves)}</h4>${infoRows(h.other.slice(0,RECENT),'out','')}</div>`:''}
+      <div class="infosec"><h4>${escapeHtml(t.infoCommitted)}</h4>
+        ${usage.length?`<div class="infochips">${usage.map(u=>
+            `<span class="infochip">${escapeHtml(t['usedIn_'+u.where]||u.where)} <b>${u.count}</b>${
+              u.examples.length?` · ${escapeHtml(u.examples.join(', '))}`:''}</span>`).join('')}</div>`
+          :`<div class="infonone">${escapeHtml(t.infoNothingPointsAt)}</div>`}</div>
+      <div class="actions">
+        <button class="btn" onclick="closeItemInfo()"><span>${escapeHtml(t.btnClose)}</span></button>
+        <button class="btn primary" onclick="closeItemInfo();openEditItemForm('${escapeHtml(h.code)}')"><span>${escapeHtml(t.btnEdit)}</span></button>
+      </div>`;
+    $('infoModal').classList.add('show');
+  };
+  window.closeItemInfo=function(){$('infoModal').classList.remove('show');};
+
   window.saveInventoryItem=function(){
     if(!requireFields())return;
     const payload={description:$('newDescription').value,group:$('newGroup').value,subgroup:$('newSubgroup').value,

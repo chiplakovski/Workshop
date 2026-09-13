@@ -310,6 +310,36 @@ async function receiveGoods(page, poNo) {
   assert.equal(afterIssue.issued[0].jobcard, 'JC-1456');
   step('Store: material pulled for a job comes off the shelf against that jobcard');
 
+  // The information panel answers "where is it, where did it come from, where did it go" from the
+  // movements themselves — the same question the issue above just wrote an answer to.
+  const infoCode = await page.evaluate(() => WorkshopData.get().movements.find((m) => m.action === 'ISSUED').code);
+  await page.evaluate((c) => openItemInfo(c), infoCode);
+  await page.locator('#infoModal.show').waitFor();
+  await page.waitForTimeout(120);
+  const panel = (await page.locator('#infoBody').innerText()).replace(/\s+/g, ' ');
+  const item = await page.evaluate((c) => WorkshopData.itemHistory(c), infoCode);
+  assert.ok(panel.includes(item.where.bin), `the bin it sits in must be on the panel: ${panel.slice(0, 160)}`);
+  assert.ok(panel.includes(item.where.warehouse), 'and the warehouse, by name rather than by id');
+  assert.ok(item.issued.length > 0, 'the issue above must be in the history');
+  assert.ok(panel.includes(item.issued[0].projectNo), 'the job it went to is named');
+  assert.ok(panel.includes(String(item.issued[0].qty)), 'with how much went');
+  assert.ok(item.received.length === 0 || panel.includes(item.received[0].from),
+    'and where it came from, when anything was ever booked in');
+  step('Store: the information panel answers where an item is, came from and went');
+
+  // An item with no past says so, rather than showing blank dates and empty places.
+  const quiet = await page.evaluate(() => WorkshopData.createInventoryItem({ description: 'No history yet',
+    group: 'materials', subgroup: 'mild-steel', unit: 'EA', location: 'ZZ-01' }).code);
+  await page.evaluate((c) => openItemInfo(c), quiet);
+  await page.waitForTimeout(120);
+  const empty = (await page.locator('#infoBody').innerText()).replace(/\s+/g, ' ');
+  assert.match(empty, /never been issued|aldrig tagits ut|никогаш не е издаден/i);
+  assert.match(empty, /Nothing has ever been booked in|Inget har någonsin bokats in|Ништо никогаш не е примено/i);
+  assert.ok(!/\d{4}-\d{2}-\d{2}/.test(empty.split('Where it went')[0].replace(/ZZ-01/g, '')),
+    `no date may be shown for an item nothing has happened to: ${empty.slice(0, 200)}`);
+  await page.evaluate(() => closeItemInfo());
+  step('Store: an item with no past says so rather than showing blanks');
+
   // The standards table suggests the weight, and the form shows what a count
   // of whole lengths actually amounts to before anything is saved.
   await page.evaluate(() => openNewItemForm());

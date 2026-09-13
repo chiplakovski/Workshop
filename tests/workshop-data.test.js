@@ -4070,3 +4070,66 @@ test('items: an item quoted on an estimation line counts as in use', ()=>{
   assert.ok(usage.some(u=>u.where==='estimations'),'a line inside a work item must be found');
   assert.match(W.deleteInventoryItem(spare.code).error,/in use/i);
 });
+
+// ── itemHistory: what the store knows about one item's own past (Pass 4.31) ─────────────────────
+test('history: an item nobody has moved reports no receipts and no issues, never a blank date', ()=>{
+  const W=loadWorkshopData();
+  const fresh=W.createInventoryItem({description:'Never moved',group:'materials',subgroup:'mild-steel',
+    unit:'EA',location:'Z1',supplier:'Somebody AB'});
+  const h=W.itemHistory(fresh.code);
+  assert.deepEqual(h.received,[]);
+  assert.deepEqual(h.issued,[]);
+  assert.equal(h.bought.first,null,'a typed-in supplier is not evidence that anything arrived');
+  assert.equal(h.bought.last,null);
+  assert.equal(h.bought.supplier,'Somebody AB','what was typed is still reported, as what it is');
+});
+test('history: an unknown code has no history rather than an empty one', ()=>{
+  assert.equal(loadWorkshopData().itemHistory('NO-SUCH-CODE'),null);
+  assert.equal(loadWorkshopData().itemHistory(''),null);
+  assert.equal(loadWorkshopData().itemHistory(null),null);
+});
+test('history: where it sits is read through the location register, not printed as raw ids', ()=>{
+  const W=loadWorkshopData();
+  const item=W.get().inventory.find(i=>i.locationGroup&&i.locationSub);
+  const h=W.itemHistory(item.code);
+  const group=W.listLocationGroups().find(g=>g.id===item.locationGroup);
+  assert.equal(h.where.warehouse,group.name);
+  assert.equal(h.where.sublocation,(group.subgroups||[]).find(s=>s.id===item.locationSub).name);
+  assert.equal(h.where.bin,item.location);
+  assert.equal(h.where.available,h.where.stock-h.where.reserved,'available is what is not spoken for');
+});
+test('history: receipts and issues are separated, newest first', ()=>{
+  const W=loadWorkshopData();
+  const item=W.createInventoryItem({description:'Moved about',group:'materials',subgroup:'mild-steel',
+    unit:'EA',location:'Z2',stock:0});
+  W.receive({code:item.code,qty:10,supplier:'First AB',po:'PO-1',location:'Z2',user:'A'});
+  W.receive({code:item.code,qty:5,supplier:'Second AB',po:'PO-2',location:'Z2',user:'B'});
+  W.issue({code:item.code,qty:3,projectNo:'P-26-0001',jobcard:'JC-1',user:'C'});
+  const h=W.itemHistory(item.code);
+  assert.equal(h.received.length,2);
+  assert.equal(h.issued.length,1);
+  assert.equal(h.issued[0].projectNo,'P-26-0001','an issue carries the job it went to');
+  assert.equal(h.issued[0].jobcard,'JC-1');
+  assert.equal(h.issued[0].qty,3);
+  // Newest first, and the first receipt is the oldest one - which is when it first arrived.
+  assert.ok(h.received[0].time>=h.received[1].time,'receipts come back newest first');
+  assert.equal(h.bought.last.time,h.received[0].time);
+  assert.equal(h.bought.first.time,h.received[h.received.length-1].time);
+  assert.ok(h.bought.first.time<=h.bought.last.time,'the first receipt cannot be after the last');
+});
+test('history: one item\'s movements only', ()=>{
+  const W=loadWorkshopData();
+  const mine=W.createInventoryItem({description:'Mine',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Z3',stock:0});
+  const other=W.createInventoryItem({description:'Other',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Z4',stock:0});
+  W.receive({code:mine.code,qty:4,supplier:'S',po:'PO-9',location:'Z3'});
+  W.receive({code:other.code,qty:99,supplier:'S',po:'PO-9',location:'Z4'});
+  const h=W.itemHistory(mine.code);
+  assert.equal(h.received.length,1);
+  assert.equal(h.received[0].qty,4,'the other item\'s receipt must not appear here');
+});
+test('history: what it is committed to now is the same answer the delete guard gives', ()=>{
+  const W=loadWorkshopData();
+  const item=W.get().inventory.find(i=>W.itemUsage(i.code).length>0);
+  assert.deepEqual(W.itemHistory(item.code).usedIn,W.itemUsage(item.code),
+    'one question, one answer — the information panel and the delete guard must not disagree');
+});

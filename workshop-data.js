@@ -1448,6 +1448,37 @@
         if(String(line.code)===key)add('stockCounts',c.no||c.id);}));
       return found;
     },
+    // Everything the store knows about one item's own past: where it sits, where it came from,
+    // and where it went. Read-only, and it invents nothing - an item nobody has ever received
+    // comes back with an empty receipts list, not with a blank date pretending to be one.
+    itemHistory(code){
+      const item=inventory(code);
+      if(!item)return null;
+      const key=String(item.code);
+      const newestFirst=(a,b)=>String(b.time||'').localeCompare(String(a.time||''));
+      const mine=state.movements.filter(m=>String(m.code)===key).slice().sort(newestFirst);
+      const line=m=>({time:m.time||'',action:m.action,qty:Number(m.qty)||0,unit:m.unit||item.unit||'',
+        from:m.from||'',to:m.to||'',projectNo:m.projectNo||'',jobcard:m.jobcard||'',user:m.user||''});
+      const received=mine.filter(m=>String(m.action).toUpperCase()==='RECEIVED').map(line);
+      const issued=mine.filter(m=>String(m.action).toUpperCase()==='ISSUED').map(line);
+      const other=mine.filter(m=>!['RECEIVED','ISSUED'].includes(String(m.action).toUpperCase())).map(line);
+      const group=(state.locationGroups||[]).find(g=>g.id===item.locationGroup);
+      const sub=group&&(group.subgroups||[]).find(x=>x.id===item.locationSub);
+      return {
+        code:item.code,itemNo:item.itemNo,description:item.description,
+        where:{warehouse:group?group.name:'',sublocation:sub?sub.name:'',bin:item.location||'',
+          stock:Number(item.stock)||0,reserved:Number(item.reserved)||0,
+          available:(Number(item.stock)||0)-(Number(item.reserved)||0),unit:item.unit||''},
+        bought:{supplier:item.supplier||'',lastPrice:Number(item.lastPrice)||0,avgCost:Number(item.avgCost)||0,
+          heat:item.heat||'',
+          // The first and last time it actually came through the door, from the movements
+          // themselves rather than from a field somebody could have typed anything into.
+          first:received.length?received[received.length-1]:null,last:received.length?received[0]:null},
+        received,issued,other,
+        // Where it is committed right now, as the delete guard already reads it.
+        usedIn:api.itemUsage(item.code)
+      };
+    },
     // A patch, not a replacement: only what is passed is changed, and the
     // fields that identify the item are not up for editing here.
     updateInventoryItem(code,patch){
