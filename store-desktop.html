@@ -54,8 +54,9 @@
 .subchip b{color:var(--ice);font-weight:600}
 .subchip .sub{font-size:11px}
 .subchip .mini{padding:2px 6px;line-height:1}
-.mini{border:1px solid var(--field-line);background:var(--field);color:var(--steel-300);padding:5px 8px;cursor:pointer;font-size:11px}
-.mini:hover{border-color:var(--spark)}
+.mini{border:1px solid var(--field-line);background:var(--field);color:var(--steel-300);
+  min-height:28px;padding:6px 11px;cursor:pointer;font-size:12.5px;line-height:1.2}
+.mini:hover{border-color:var(--spark);color:var(--ice)}
 #groupCards{max-height:none}
 
 /* ---- Inventory board: one column per group, cards filed under their subgroup ---- */
@@ -106,12 +107,16 @@ html.kdragging .kcard{cursor:grabbing}
 @media(max-width:900px){.kboard{grid-template-columns:1fr}.kcbody{max-height:none}}
 .ksub.empty{opacity:.5}
 
-.kcacts{position:absolute;top:5px;right:5px;display:none;gap:3px}
+.kcacts{position:absolute;top:5px;right:5px;display:none;gap:4px}
 .kcard:hover .kcacts{display:flex}
-.kcacts .mini{padding:1px 5px;line-height:1.2;font-size:11px}
+.kcacts .mini{min-width:27px;min-height:27px;padding:0 6px;line-height:1;font-size:14px;
+  display:grid;place-items:center;font-family:var(--font-heading)}
+/* The title never runs under the actions that sit over the corner of the card. */
+.kcard>b{padding-right:94px}
 .kcamount{margin-top:3px;font-size:11px;color:var(--steel-300);font-variant-numeric:tabular-nums}
 .rowacts{white-space:nowrap}
-.rowacts .mini+.mini{margin-left:5px}
+.rowacts .mini+.mini{margin-left:6px}
+.rowacts .mini{min-height:30px}
 .measurebox{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding:8px 10px;border:1px solid var(--field-line);background:var(--field);min-height:34px}
 .measurecalc{font-size:13px;color:var(--ice);font-variant-numeric:tabular-nums}
 .measurecalc b{color:var(--spark);font-weight:600;padding:0 2px}
