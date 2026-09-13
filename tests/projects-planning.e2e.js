@@ -53,6 +53,47 @@ async function projectWorkflow(page) {
     await page.locator('#efPeople').fill(p);
     await saveModal(page);
   }
+  // The estimate dialog recalls what the workshop actually spent on work described like this.
+  // For work it has never done, it says exactly that rather than offering a neutral-looking figure.
+  await page.evaluate(() => openItemEffort(selectedId, 0));
+  await page.locator('#fcard .recall').waitFor();
+  assert.match(await page.locator('#fcard .recall').innerText(),
+    /no finished work described like this|inget avslutat arbete|nema završena rabota/i);
+  assert.equal(await page.locator('#fcard .recall .tbtn').count(), 0,
+    'with nothing to compare against there is nothing to take');
+  await page.evaluate(() => closeModal());
+  await page.waitForTimeout(100);
+
+  // Describe the item as work the workshop has finished before, and it recalls that job by name.
+  // An item's description lives on the project's own jobcard, so that is what gets renamed.
+  await page.evaluate((no) => {
+    const card = WorkshopData.listJobcards().filter((j) => j.projectNo === no)[0];
+    WorkshopData.updateJobcard(card.no, { title: 'Cutting' });
+  }, project.no);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(600);
+  await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
+  await page.evaluate(() => openItemEffort(selectedId, 0));
+  await page.locator('#fcard .recall').waitFor();
+  const recalled = (await page.locator('#fcard .recall').innerText()).replace(/\s+/g, ' ');
+  assert.match(recalled, /1 finished job like this|1 avslutat jobb|1 završena slična/i, recalled);
+  assert.ok(recalled.includes('16'), `the estimate that was made must be shown: ${recalled}`);
+  assert.ok(recalled.includes('18'), `and what it actually took: ${recalled}`);
+  assert.ok(recalled.includes('JC-2026-0001'), `named, so the estimator can open it: ${recalled}`);
+  await page.locator('#fcard .recall .tbtn').click();
+  await page.waitForTimeout(120);
+  assert.equal(await page.inputValue('#efDays'), '2.3', '18 hours is 2.3 days for one person');
+  assert.equal(await page.inputValue('#efPeople'), '1', 'the hours say how long one person was busy, not how many people it needs');
+  await page.evaluate(() => closeModal());
+  await page.evaluate((no) => {
+    const card = WorkshopData.listJobcards().filter((j) => j.projectNo === no)[0];
+    WorkshopData.updateJobcard(card.no, { title: 'Fabricate frame' });
+  }, project.no);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(600);
+  await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
+  step('Estimating: the dialog recalls what work like this actually took, and names the job');
+
   const effort = await page.evaluate(() => {
     const e = getEst(selectedId);
     return EstimationRules.effortTotals(e.workItems);
@@ -194,6 +235,7 @@ async function planningWorkflow(page, project) {
   await page.locator('#itEnd0').fill('2026-10-30');
   await page.locator('#itStart1').fill('2026-11-02');
   await page.locator('#itEnd1').fill('2026-12-04');
+  await page.locator('#dfDeadline').fill('2026-11-08');
   await page.waitForTimeout(150);
   const flagged = await page.evaluate(() => [...document.querySelectorAll('#itemRows .itemrow')]
     .map((r) => r.classList.contains('flag') && r.querySelector('.itemnote').textContent));
@@ -201,20 +243,70 @@ async function planningWorkflow(page, project) {
   assert.match(String(flagged[1]), /after the deadline|efter deadline|по рокот/i);
   step('Planning: an item running past its project is reported, not accepted in silence');
 
+  // Proposing needs hours on the items: an item nobody has sized cannot be laid out, and the
+  // page says so rather than inventing a span for it.
+  await page.locator('#proposeBar .mini').click();
+  await page.locator('.wask .waskmsg').waitFor();
+  assert.match(await page.locator('.wask .waskmsg').innerText(), /no item carries any hours|ingen post har några timmar|ниту една ставка нема часови/i);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(120);
+  step('Planning: with no hours on the items there is nothing to lay out, and it says so');
+
+  // The hours an estimator prices land on the jobcard, which is what the proposal reads.
+  await page.evaluate((no) => {
+    const cards = WorkshopData.listJobcards().filter((j) => j.projectNo === no);
+    WorkshopData.updateJobcard(cards[0].no, { plannedHours: 24 });
+    WorkshopData.updateJobcard(cards[1].no, { plannedHours: 40 });
+  }, project.no);
+  await page.evaluate((no) => { closeDateForm(); openDateForm(no); }, project.no);
+  await page.locator('#dateModal.show').waitFor();
+  await page.waitForTimeout(150);
+
+  // The dates can be proposed from those hours rather than typed one by one.
+  // Nothing is written until Save, so the shared record must be untouched until then.
+  const beforePropose = await page.evaluate((no) => WorkshopData.listJobcards()
+    .filter((j) => j.projectNo === no).map((j) => `${j.plannedStart || '-'}/${j.plannedCompletion || '-'}`), project.no);
+  await page.locator('#dfStart').fill('2026-10-05');
+  await page.locator('#dfPerDay').fill('8');
+  await page.locator('#proposeBar .mini').click();
+  await page.waitForTimeout(200);
+  const proposed = await page.evaluate(() => [...document.querySelectorAll('#itemRows .itemrow')]
+    .map((r) => ({ no: r.dataset.no, start: r.querySelector('input[id^=itStart]').value, end: r.querySelector('input[id^=itEnd]').value })));
+  assert.equal(proposed[0].start, '2026-10-05', 'the first item starts where the project does');
+  assert.ok(proposed[1].start > proposed[0].end, 'items are laid out one after another, not on top of each other');
+  proposed.forEach((p) => assert.ok(new Date(p.start + 'T00:00:00Z').getUTCDay() % 6 !== 0, `${p.no} may not start on a weekend`));
+  const afterPropose = await page.evaluate((no) => WorkshopData.listJobcards()
+    .filter((j) => j.projectNo === no).map((j) => `${j.plannedStart || '-'}/${j.plannedCompletion || '-'}`), project.no);
+  assert.deepEqual(afterPropose, beforePropose, 'proposing fills the form; it must not write anything');
+  step('Planning: dates are proposed from the hours the items carry, and written only on Save');
+
+  // Halving the day rate has to stretch the same work over more days.
+  await page.locator('#dfPerDay').fill('4');
+  await page.locator('#proposeBar .mini').click();
+  await page.waitForTimeout(200);
+  const slower = await page.evaluate(() => document.querySelector('#itemRows input[id^=itEnd]').value);
+  assert.ok(slower > proposed[0].end, `4 h a day must take longer than 8: ${slower} vs ${proposed[0].end}`);
+  step('Planning: the hours-a-day figure is what the proposal is measured against');
+
+  // Put the eight-hour proposal back before carrying on.
+  await page.locator('#dfPerDay').fill('8');
+  await page.locator('#proposeBar .mini').click();
+  await page.waitForTimeout(200);
+
   // The span the items describe can be taken as the project's own.
   await page.locator('#itemSpan .mini').click();
   await page.waitForTimeout(150);
   assert.equal(await page.inputValue('#dfStart'), '2026-10-05');
-  assert.equal(await page.inputValue('#dfDeadline'), '2026-12-04');
+  assert.equal(await page.inputValue('#dfDeadline'), proposed[proposed.length - 1].end);
   assert.equal(await page.evaluate(() => !!document.querySelector('#itemRows .itemrow.flag')), false,
     'once the project covers its items, nothing is out of range');
   await page.locator('#dateModal .primary').click();
   await page.waitForTimeout(250);
   const planned = await page.evaluate((no) => WorkshopData.listJobcards()
     .filter((j) => j.projectNo === no)
-    .map((j) => `${j.title} ${j.plannedStart}→${j.plannedCompletion}`), project.no);
-  assert.deepEqual(planned, ['Fabricate frame 2026-10-05→2026-10-30', 'Install on site 2026-11-02→2026-12-04'],
-    'each item\'s dates are written to its own jobcard');
+    .map((j) => `${j.plannedStart}→${j.plannedCompletion}`), project.no);
+  assert.deepEqual(planned, proposed.map((p) => `${p.start}→${p.end}`),
+    'each item\'s dates are written to its own jobcard, exactly as proposed');
   step('Planning: each item keeps its own start and finish, on its own record');
 
   await page.reload({ waitUntil: 'load' });
@@ -224,7 +316,10 @@ async function planningWorkflow(page, project) {
     const el = [...document.querySelectorAll('#planBoard .kcol')].find((c) => c.querySelector(`[data-no="${no}"]`));
     return { status: p.status, deadline: p.deadline, hours: p.plannedHours, lane: el && el.dataset.lane };
   }, project.no);
-  assert.deepEqual(restored, { status: 'production', deadline: '2026-12-04', hours: 96, lane: 'progress' });
+  assert.equal(restored.status, 'production');
+  assert.equal(restored.hours, 96);
+  assert.equal(restored.lane, 'progress');
+  assert.equal(restored.deadline, proposed[proposed.length - 1].end, 'the proposed span survives the reload');
   step('Planning: stage and dates survive reload');
 
   // Capacity states what it is measured against, or says nothing rather than a made-up percentage.

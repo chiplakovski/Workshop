@@ -144,6 +144,24 @@ body{overflow:hidden}
 .bottom button span{color:var(--ice);font-weight:700}
 .bottom button:hover span{color:#fff}
 
+/* Proposing the dates instead of typing them: one item after another, at a stated
+   number of hours a day. It is an offer - nothing is written until Save. */
+.proposebar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:10px;padding:8px 10px;
+  border:1px solid rgba(var(--c-accent-rgb),.3);background:rgba(var(--c-accent-rgb),.06)}
+.proposebar label{color:var(--steel-300);font-size:11.5px}
+.proposebar input{width:62px;height:28px;border:1px solid var(--field-line);background:var(--field);
+  color:var(--ice);padding:0 7px;font-size:12px}
+.proposenote{flex:1 1 200px;min-width:0;color:var(--steel-300);font-size:11.5px;line-height:1.45}
+.proposenote b{color:var(--ice);font-variant-numeric:tabular-nums}
+.proposenote .warn{color:var(--warn)}
+
+/* What the workshop did last time it took work like this on. */
+.memory{margin-top:4px;font-size:11px;color:var(--steel-300);font-variant-numeric:tabular-nums}
+.memory b{color:var(--ice)}
+.memory .over{color:var(--warn)}
+.memory .under{color:var(--ok)}
+.memory .thin{color:var(--steel-400)}
+
 /* The items a project is made of, each with its own two dates. */
 .itemhead{display:flex;align-items:baseline;gap:10px;margin:16px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
 .itemhead b{font:800 13px var(--font-heading);letter-spacing:.02em;color:var(--ice)}
@@ -338,6 +356,12 @@ body{overflow:hidden}
     <div class="field wide" style="grid-column:1/-1"><div class="boardnote" id="dateFormNote" style="border:0;padding:0"></div></div>
   </div>
   <div class="itemhead"><b data-i="itemsTitle">The work it is made of</b><small data-i="itemsDesc">Each item gets its own start and finish</small><span class="count" id="itemCount"></span></div>
+  <div class="proposebar" id="proposeBar">
+    <button class="mini" type="button" onclick="proposeItemDates()"><span data-i="btnPropose">Propose dates</span></button>
+    <label for="dfPerDay" data-i="lblHoursPerDay">hours a day</label>
+    <input id="dfPerDay" type="number" min="1" step="1" value="8" onchange="renderProposeNote()">
+    <span class="proposenote" id="proposeNote"></span>
+  </div>
   <div id="itemRows"></div>
   <div id="itemSpan"></div>
   <div class="actions"><button class="btn" onclick="closeDateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveDates()"><span data-i="btnSaveDates">Save dates</span></button></div>
@@ -345,7 +369,7 @@ body{overflow:hidden}
 
 <div class="toast" id="toast"></div>
 </main></div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="planning-rules.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="planning-rules.js"></script><script src="estimate-memory.js"></script>
 <script src="workshop-data.js"></script><script src="workshop-ui.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -388,6 +412,17 @@ T.en={
   dateFormTitle:'Schedule a project',lblProject:'Project',lblStart:'Start',lblDeadline:'Deadline',
   lblExpected:'Expected completion',lblPlannedHours:'Planned hours',btnCancel:'Cancel',btnSaveDates:'Save dates',
   lblFinish:'Finish',itemsTitle:'The work it is made of',itemsDesc:'Each item gets its own start and finish',
+  btnPropose:'Propose dates',lblHoursPerDay:'hours a day',
+  proposeReady:'{h} h of work on these items — about {d} working days, one after another.',
+  proposeNoHours:'None of these items carries any hours, so there is nothing to lay out.',
+  proposeDone:'Laid out {n} items, {h} h, {start} → {end}.',
+  proposeUnsized:'No hours on: {list} — left undated.',
+  notifyProposed:'{n} items laid out, finishing {end}. Nothing is saved until you press Save.',
+  notifyProposedSome:'{n} items laid out, finishing {end}. {u} had no hours and were left undated.',
+  errProposeStart:'Give the project a start date first — the items are laid out from it.',
+  errProposeHours:'No item carries any hours, so there is nothing to lay out. Put the hours on the items first.',
+  memoryMore:'and {n} more',
+  memoryLine:'Last time: estimated {est} h, took {real} h',
   itemCount:'{n} items',itemCount1:'1 item',
   itemsNone:'This project lists no items yet. Items come from the work described on it in Estimating, and become jobcards on the floor.',
   itemBefore:'starts before the project does ({date})',itemAfter:'finishes after the deadline ({date})',
@@ -447,6 +482,17 @@ T.sv={
   dateFormTitle:'Planera ett projekt',lblProject:'Projekt',lblStart:'Start',lblDeadline:'Deadline',
   lblExpected:'Förväntat klart',lblPlannedHours:'Planerade timmar',btnCancel:'Avbryt',btnSaveDates:'Spara datum',
   lblFinish:'Slut',itemsTitle:'Arbetet det består av',itemsDesc:'Varje post får sin egen start och sitt eget slut',
+  btnPropose:'Föreslå datum',lblHoursPerDay:'timmar per dag',
+  proposeReady:'{h} h arbete på dessa poster — ungefär {d} arbetsdagar, en efter en.',
+  proposeNoHours:'Ingen av dessa poster har några timmar, så det finns inget att lägga ut.',
+  proposeDone:'Lade ut {n} poster, {h} h, {start} → {end}.',
+  proposeUnsized:'Inga timmar på: {list} — lämnade utan datum.',
+  notifyProposed:'{n} poster utlagda, klara {end}. Inget sparas förrän du trycker Spara.',
+  notifyProposedSome:'{n} poster utlagda, klara {end}. {u} saknade timmar och lämnades utan datum.',
+  errProposeStart:'Ge projektet ett startdatum först — posterna läggs ut från det.',
+  errProposeHours:'Ingen post har några timmar, så det finns inget att lägga ut. Sätt timmarna på posterna först.',
+  memoryMore:'och {n} till',
+  memoryLine:'Förra gången: beräknat {est} h, tog {real} h',
   itemCount:'{n} poster',itemCount1:'1 post',
   itemsNone:'Detta projekt listar inga poster än. Posterna kommer från arbetet som beskrivs på det i Kalkyl, och blir jobbkort i verkstaden.',
   itemBefore:'startar före projektet ({date})',itemAfter:'slutar efter deadline ({date})',
@@ -506,6 +552,17 @@ T.mk={
   dateFormTitle:'Планирај проект',lblProject:'Проект',lblStart:'Почеток',lblDeadline:'Рок',
   lblExpected:'Очекувано завршување',lblPlannedHours:'Планирани часови',btnCancel:'Откажи',btnSaveDates:'Зачувај датуми',
   lblFinish:'Крај',itemsTitle:'Работата од која се состои',itemsDesc:'Секоја ставка добива свој почеток и свој крај',
+  btnPropose:'Предложи датуми',lblHoursPerDay:'часа дневно',
+  proposeReady:'{h} ч работа на овие ставки — околу {d} работни дена, една по друга.',
+  proposeNoHours:'Ниту една од овие ставки нема часови, па нема што да се распореди.',
+  proposeDone:'Распоредени {n} ставки, {h} ч, {start} → {end}.',
+  proposeUnsized:'Без часови: {list} — останаа без датуми.',
+  notifyProposed:'{n} ставки распоредени, завршуваат {end}. Ништо не е зачувано додека не притиснеш Зачувај.',
+  notifyProposedSome:'{n} ставки распоредени, завршуваат {end}. {u} немаа часови и останаа без датуми.',
+  errProposeStart:'Прво дај му почетен датум на проектот — ставките се распоредуваат од него.',
+  errProposeHours:'Ниту една ставка нема часови, па нема што да се распореди. Прво внеси ги часовите на ставките.',
+  memoryMore:'и уште {n}',
+  memoryLine:'Последен пат: проценето {est} ч, потрошено {real} ч',
   itemCount:'{n} ставки',itemCount1:'1 ставка',
   itemsNone:'Овој проект сè уште нема ставки. Ставките доаѓаат од работата опишана на него во Пресметки, и стануваат работни налози во работилницата.',
   itemBefore:'почнува пред проектот ({date})',itemAfter:'завршува по рокот ({date})',
@@ -883,6 +940,7 @@ function currentItems(){
 function renderItemRows(){
   const t=currentT,items=currentItems();
   $('itemCount').textContent=items.length?(items.length===1?t.itemCount1:fill(t.itemCount,{n:items.length})):'';
+  $('proposeBar').hidden=!items.length;
   if(!items.length){
     $('itemRows').innerHTML=`<div class="itemempty">${escapeHtml(t.itemsNone)}</div>`;
     $('itemSpan').innerHTML='';
@@ -891,11 +949,13 @@ function renderItemRows(){
   $('itemRows').innerHTML=items.map((it,i)=>`
     <div class="itemrow" data-no="${escapeHtml(it.no)}" data-source="${it.source}">
       <div class="iname"><b>${escapeHtml(it.title||it.no)}</b>
-        <small>${escapeHtml(it.no)}${it.hours?' · '+escapeHtml(fill(t.resHours,{h:num(it.hours)})):''}${it.responsible?' · '+escapeHtml(it.responsible):''}</small></div>
+        <small>${escapeHtml(it.no)}${it.hours?' · '+escapeHtml(fill(t.resHours,{h:num(it.hours)})):''}${it.responsible?' · '+escapeHtml(it.responsible):''}</small>
+        ${memoryFor(it.title||'')}</div>
       <div><label for="itStart${i}">${escapeHtml(t.lblStart)}</label><input id="itStart${i}" type="date" value="${escapeHtml(it.start)}" onchange="renderItemNotes()"></div>
       <div><label for="itEnd${i}">${escapeHtml(t.lblFinish)}</label><input id="itEnd${i}" type="date" value="${escapeHtml(it.end)}" onchange="renderItemNotes()"></div>
     </div>`).join('');
   renderItemNotes();
+  renderProposeNote();
 }
 function typedItems(){
   return [...document.querySelectorAll('#itemRows .itemrow')].map(row=>({
@@ -932,6 +992,62 @@ function renderItemNotes(){
     ? `<div class="itemspan"><span>${escapeHtml(fill(t.itemSpanLine,{n:span.counted}))}</span><b>${dateShort(span.start)} → ${dateShort(span.end)}</b>
         <button class="mini" type="button" onclick="useItemSpan('${span.start}','${span.end}')">${escapeHtml(t.btnUseSpan)}</button></div>`
     : `<div class="itemspan">${escapeHtml(t.itemSpanNone)}</div>`;
+}
+// The dates an estimator would otherwise type by hand: each item after the one before it, at the
+// stated hours a day, weekends left alone. It fills the fields and stops there - Save is still the
+// only thing that writes.
+function proposeItemDates(){
+  const t=currentT;
+  const start=$('dfStart').value;
+  if(!start)return wAlert(t.errProposeStart);
+  const items=typedItems().map(it=>{
+    const known=currentItems().find(x=>x.no===it.no)||{};
+    return {no:it.no,title:known.title||'',hours:known.hours||0};
+  });
+  const plan=EstimateMemory.proposeSchedule(items,{start,hoursPerDay:Number($('dfPerDay').value)||8});
+  if(!plan.items.length)return wAlert(t.errProposeHours);
+  plan.items.forEach(p=>{
+    const row=document.querySelector(`#itemRows .itemrow[data-no="${CSS.escape(p.no)}"]`);
+    if(!row)return;
+    row.querySelector('input[id^=itStart]').value=p.start;
+    row.querySelector('input[id^=itEnd]').value=p.end;
+  });
+  // The project's own deadline moves out only when the items need more room than it allows.
+  const deadline=$('dfDeadline').value;
+  if(!deadline||plan.end>deadline)$('dfDeadline').value=plan.end;
+  renderItemNotes();
+  renderProposeNote(plan);
+  notify(fill(plan.unsized.length?t.notifyProposedSome:t.notifyProposed,
+    {n:plan.items.length,end:dateShort(plan.end),u:plan.unsized.length}));
+}
+function renderProposeNote(plan){
+  const t=currentT,el=$('proposeNote');
+  if(!el)return;
+  if(!plan){
+    const hours=currentItems().reduce((s,i)=>s+(i.hours||0),0);
+    const perDay=Number($('dfPerDay').value)||8;
+    el.innerHTML=hours
+      ? fill(t.proposeReady,{h:num(hours),d:Math.ceil(hours/perDay)})
+      : escapeHtml(t.proposeNoHours);
+    return;
+  }
+  const parts=[fill(t.proposeDone,{n:plan.items.length,h:num(plan.hours),start:dateShort(plan.start),end:dateShort(plan.end)})];
+  if(plan.unsized.length)parts.push(`<span class="warn">${escapeHtml(fill(t.proposeUnsized,{list:plan.unsized.map(u=>u.title||u.no).join(', ')}))}</span>`);
+  el.innerHTML=parts.join(' · ');
+}
+// What the workshop has actually done before, under the item it describes. A recollection, with
+// the number of jobs it rests on and the jobs themselves - never a prediction.
+function memoryFor(title){
+  if(typeof EstimateMemory==='undefined')return '';
+  const t=currentT;
+  const r=EstimateMemory.recall(title,EstimateMemory.entries(shared()));
+  if(!r)return '';
+  const cls=r.factor>1.05?'over':(r.factor<0.95?'under':'');
+  const top=r.matches[0];
+  const also=r.samples>1?' '+fill(t.memoryMore,{n:r.samples-1}):'';
+  return `<div class="memory">${escapeHtml(fill(t.memoryLine,{est:num(r.planned),real:num(r.actual)}))}
+    · <b class="${cls}">${r.factor}×</b>
+    <span class="thin">— ${escapeHtml(top.desc)} ${escapeHtml(top.ref)}${escapeHtml(also)}</span></div>`;
 }
 function useItemSpan(start,end){
   $('dfStart').value=start;$('dfDeadline').value=end;
