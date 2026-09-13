@@ -257,6 +257,51 @@ test('awaiting: a project with no dates says which date it is missing', ()=>{
   assert.deepEqual(out.find(x=>x.no==='C').missing,['start','deadline']);
 });
 
+// ── a project's items ────────────────────────────────────────────────────────────────────────
+test('items: the two places a project keeps its work are read as one list', ()=>{
+  const project=proj({no:'P-1',jobcards:[{no:'JC-OLD',desc:'Cut frame',assigned:'Marko K.',est:8,progress:50,status:'active'}]});
+  const items=Planning.itemsOf(project,[{no:'JC-NEW',projectNo:'P-1',title:'Weld frame',plannedHours:12,plannedStart:'2026-09-07',plannedCompletion:'2026-09-11',progress:0,status:'ready',responsible:'Elena N.'}]);
+  assert.deepEqual(items.map(i=>i.no),['JC-NEW','JC-OLD'],'registered jobcards first, then the ones only the project knows about');
+  assert.equal(items[0].source,'jobcard');
+  assert.equal(items[0].title,'Weld frame');
+  assert.equal(items[0].start,'2026-09-07');
+  assert.equal(items[0].hours,12);
+  assert.equal(items[1].source,'project','an item only the project carries must say so, because that is where a date goes back');
+  assert.equal(items[1].title,'Cut frame','the older records call it desc');
+  assert.equal(items[1].hours,8,'and call its hours est');
+  assert.equal(items[1].responsible,'Marko K.');
+  assert.equal(items[1].start,'','an item with no dates reports none rather than today');
+});
+test('items: a jobcard registered for the project wins over the project\'s own copy of it', ()=>{
+  const project=proj({no:'P-1',jobcards:[{no:'JC-1',desc:'Stale copy',est:4}]});
+  const items=Planning.itemsOf(project,[{no:'JC-1',projectNo:'P-1',title:'The real one',plannedHours:9}]);
+  assert.equal(items.length,1,'the same item must not appear twice');
+  assert.equal(items[0].title,'The real one');
+  assert.equal(items[0].source,'jobcard');
+});
+test('items: only this project, and nothing archived', ()=>{
+  const cards=[{no:'A',projectNo:'P-1',title:'Mine'},{no:'B',projectNo:'P-2',title:'Someone else'},
+    {no:'C',projectNo:'P-1',title:'Archived',archived:true}];
+  assert.deepEqual(Planning.itemsOf(proj({no:'P-1'}),cards).map(i=>i.no),['A']);
+  assert.deepEqual(Planning.itemsOf(null,cards),[]);
+  assert.deepEqual(Planning.itemsOf(proj({no:'P-9'}),cards),[]);
+});
+test('items: the span the items describe, or nothing when they do not describe one', ()=>{
+  const items=[{no:'A',start:'2026-09-07',end:'2026-09-18'},{no:'B',start:'2026-09-14',end:'2026-10-02'},{no:'C',start:'',end:''}];
+  assert.deepEqual(Planning.itemSpan(items),{start:'2026-09-07',end:'2026-10-02',counted:2},'half-dated items are left out of the span, not guessed at');
+  assert.equal(Planning.itemSpan([{no:'A',start:'2026-09-07',end:''}]),null);
+  assert.equal(Planning.itemSpan([]),null);
+  assert.equal(Planning.itemSpan(null),null);
+});
+test('items: an item that falls outside its project is reported, not quietly moved', ()=>{
+  const project=proj({start:'2026-09-07',deadline:'2026-09-30'});
+  assert.deepEqual(Planning.itemFit(project,{start:'2026-09-10',end:'2026-09-20'}),{dated:true,reversed:false,before:false,after:false});
+  assert.equal(Planning.itemFit(project,{start:'2026-09-01',end:'2026-09-20'}).before,true);
+  assert.equal(Planning.itemFit(project,{start:'2026-09-10',end:'2026-10-08'}).after,true);
+  assert.equal(Planning.itemFit(project,{start:'2026-09-20',end:'2026-09-10'}).reversed,true);
+  assert.equal(Planning.itemFit(project,{start:'',end:''}).dated,false,'an undated item cannot be out of range');
+});
+
 // ── against the real seeded data ──────────────────────────────────────────────────────────────
 test('real data: every seeded project is either on the board or deliberately hidden', ()=>{
   const WD=loadWorkshopData();

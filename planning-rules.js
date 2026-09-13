@@ -204,6 +204,59 @@
     return [...seen.values()].sort((a,b)=>b.projects.length-a.projects.length||a.name.localeCompare(b.name));
   }
 
+  // ── A project's items ────────────────────────────────────────────────────
+  // A project's work is broken into items, and they are recorded in two places
+  // depending on when the project was made: the ones Estimating creates become
+  // real jobcards in the shared register, while the older records carry their
+  // own list on the project itself. Both are the same thing to a planner, so
+  // they are read as one list here - and each item remembers which list it came
+  // from, because that decides where a date typed against it has to be written.
+  function itemsOf(project,jobcards){
+    if(!project)return [];
+    const registered=(Array.isArray(jobcards)?jobcards:[])
+      .filter(j=>j&&!j.archived&&String(j.projectNo||'')===String(project.no))
+      .map(j=>({
+        no:j.no,title:j.title||j.item||'',source:'jobcard',
+        start:j.plannedStart?iso(day(j.plannedStart)):'',
+        end:j.plannedCompletion?iso(day(j.plannedCompletion)):'',
+        hours:Number(j.plannedHours)||0,
+        progress:Math.max(0,Math.min(100,Number(j.progress)||0)),
+        status:j.status||'',responsible:j.responsible||''
+      }));
+    const known=new Set(registered.map(x=>x.no));
+    const own=(Array.isArray(project.jobcards)?project.jobcards:[])
+      .filter(j=>j&&j.no&&!known.has(j.no))
+      .map(j=>({
+        no:j.no,title:j.desc||j.title||'',source:'project',
+        start:j.plannedStart?iso(day(j.plannedStart)):'',
+        end:j.plannedCompletion?iso(day(j.plannedCompletion)):'',
+        hours:Number(j.est)||Number(j.plannedHours)||0,
+        progress:Math.max(0,Math.min(100,Number(j.progress)||0)),
+        status:j.status||'',responsible:j.assigned||''
+      }));
+    return registered.concat(own);
+  }
+  // The span the items themselves describe, for comparing against the span the
+  // project claims. Null when no item carries both of its dates - there is
+  // nothing to compare, and nothing worth guessing.
+  function itemSpan(items){
+    const dated=(Array.isArray(items)?items:[]).filter(i=>i.start&&i.end&&day(i.start)&&day(i.end));
+    if(!dated.length)return null;
+    const starts=dated.map(i=>day(i.start).getTime());
+    const ends=dated.map(i=>day(i.end).getTime());
+    return {start:iso(new Date(Math.min(...starts))),end:iso(new Date(Math.max(...ends))),counted:dated.length};
+  }
+  // An item outside the project's own span is worth saying out loud rather than
+  // silently moving one end or the other.
+  function itemFit(project,item){
+    if(!project||!item||!item.start||!item.end)return {dated:false,before:false,after:false};
+    const ps=startOf(project),pe=endOf(project);
+    const is=day(item.start),ie=day(item.end);
+    if(!is||!ie)return {dated:false,before:false,after:false};
+    return {dated:true,reversed:ie<is,
+      before:Boolean(ps&&is<ps),after:Boolean(pe&&ie>pe)};
+  }
+
   // What is waiting to be scheduled: accepted quotes with no project yet, and
   // projects that exist but have no dates on them.
   function awaitingSchedule(projects,estimations){
@@ -223,7 +276,8 @@
     laneOf,statusForLane,startOf,endOf,expectedOf,isScheduled,board,
     scheduleBar,schedule,
     weekStart,weeks,remainingHours,demandByWeek,loadByWeek,
-    peopleOnPlan,machinesOnPlan,awaitingSchedule
+    peopleOnPlan,machinesOnPlan,awaitingSchedule,
+    itemsOf,itemSpan,itemFit
   };
   if(typeof module!=='undefined'&&module.exports)module.exports=PlanningRules;
   if(global)global.PlanningRules=PlanningRules;

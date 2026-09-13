@@ -117,7 +117,7 @@ async function planningWorkflow(page, project) {
   await page.evaluate(() => showView('schedule'));
   await page.waitForTimeout(120);
   const bar = await page.evaluate((no) => {
-    const row = [...document.querySelectorAll('#gantt .grow')].find((r) => r.querySelector('.glabel b').textContent.startsWith(no));
+    const row = [...document.querySelectorAll('#gantt .grow')].find((r) => r.querySelector('.glabel .gno').textContent === no);
     if (!row) return null;
     return { label: row.querySelector('.glabel').innerText.replace(/\s+/g, ' '), over: !!row.querySelector('.gover') };
   }, project.no);
@@ -157,7 +157,7 @@ async function planningWorkflow(page, project) {
   assert.ok(/deadline/i.test(waitRow), `the row must say which date is missing: ${waitRow}`);
   const drawn = await page.evaluate((no) => {
     showView('schedule');
-    return [...document.querySelectorAll('#gantt .grow')].some((r) => r.querySelector('.glabel b').textContent.startsWith(no));
+    return [...document.querySelectorAll('#gantt .grow')].some((r) => r.querySelector('.glabel .gno').textContent === no);
   }, project.no);
   assert.equal(drawn, false, 'no bar may be drawn for a project without both dates');
   step('Planning: a missing date is reported, not invented');
@@ -177,6 +177,46 @@ async function planningWorkflow(page, project) {
   assert.equal(updated.plannedHours, 96);
   step('Planning: the dates given here are written to the shared project');
 
+  // The project is made of items, and each one is planned on its own. The items here are the
+  // jobcards Estimating created from the work described at creation.
+  await page.evaluate((no) => openDateForm(no), project.no);
+  await page.locator('#dateModal.show').waitFor();
+  await page.waitForTimeout(120);
+  const items = await page.evaluate(() => [...document.querySelectorAll('#itemRows .itemrow')]
+    .map((r) => ({ no: r.dataset.no, source: r.dataset.source, title: r.querySelector('b').textContent })));
+  assert.equal(items.length, 2, 'both items described at creation must be listed');
+  assert.deepEqual(items.map((i) => i.title), ['Fabricate frame', 'Install on site']);
+  assert.ok(items.every((i) => i.source === 'jobcard'), 'items created through Estimating are registered jobcards');
+  step('Planning: opening a project lists the work it is made of');
+
+  // An item that runs past the project's own deadline is said out loud, not silently accepted.
+  await page.locator('#itStart0').fill('2026-10-05');
+  await page.locator('#itEnd0').fill('2026-10-30');
+  await page.locator('#itStart1').fill('2026-11-02');
+  await page.locator('#itEnd1').fill('2026-12-04');
+  await page.waitForTimeout(150);
+  const flagged = await page.evaluate(() => [...document.querySelectorAll('#itemRows .itemrow')]
+    .map((r) => r.classList.contains('flag') && r.querySelector('.itemnote').textContent));
+  assert.equal(flagged[0], false, 'an item inside the project span is not flagged');
+  assert.match(String(flagged[1]), /after the deadline|efter deadline|по рокот/i);
+  step('Planning: an item running past its project is reported, not accepted in silence');
+
+  // The span the items describe can be taken as the project's own.
+  await page.locator('#itemSpan .mini').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.inputValue('#dfStart'), '2026-10-05');
+  assert.equal(await page.inputValue('#dfDeadline'), '2026-12-04');
+  assert.equal(await page.evaluate(() => !!document.querySelector('#itemRows .itemrow.flag')), false,
+    'once the project covers its items, nothing is out of range');
+  await page.locator('#dateModal .primary').click();
+  await page.waitForTimeout(250);
+  const planned = await page.evaluate((no) => WorkshopData.listJobcards()
+    .filter((j) => j.projectNo === no)
+    .map((j) => `${j.title} ${j.plannedStart}→${j.plannedCompletion}`), project.no);
+  assert.deepEqual(planned, ['Fabricate frame 2026-10-05→2026-10-30', 'Install on site 2026-11-02→2026-12-04'],
+    'each item\'s dates are written to its own jobcard');
+  step('Planning: each item keeps its own start and finish, on its own record');
+
   await page.reload({ waitUntil: 'load' });
   await page.waitForTimeout(200);
   const restored = await page.evaluate((no) => {
@@ -184,7 +224,7 @@ async function planningWorkflow(page, project) {
     const el = [...document.querySelectorAll('#planBoard .kcol')].find((c) => c.querySelector(`[data-no="${no}"]`));
     return { status: p.status, deadline: p.deadline, hours: p.plannedHours, lane: el && el.dataset.lane };
   }, project.no);
-  assert.deepEqual(restored, { status: 'production', deadline: '2026-11-20', hours: 96, lane: 'progress' });
+  assert.deepEqual(restored, { status: 'production', deadline: '2026-12-04', hours: 96, lane: 'progress' });
   step('Planning: stage and dates survive reload');
 
   // Capacity states what it is measured against, or says nothing rather than a made-up percentage.

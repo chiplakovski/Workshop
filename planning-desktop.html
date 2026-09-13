@@ -144,13 +144,37 @@ body{overflow:hidden}
 .bottom button span{color:var(--ice);font-weight:700}
 .bottom button:hover span{color:#fff}
 
+/* The items a project is made of, each with its own two dates. */
+.itemhead{display:flex;align-items:baseline;gap:10px;margin:16px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.itemhead b{font:800 13px var(--font-heading);letter-spacing:.02em;color:var(--ice)}
+.itemhead small{color:var(--steel-400)}
+.itemhead .count{margin-left:auto;color:var(--steel-400);font-variant-numeric:tabular-nums}
+.itemrow{display:grid;grid-template-columns:1fr 118px 118px;gap:8px;align-items:end;padding:8px 0;border-bottom:1px solid var(--line)}
+.itemrow:last-of-type{border-bottom:0}
+.itemrow .iname b{display:block;font-size:13px;color:var(--ice);font-weight:700;line-height:1.3}
+.itemrow .iname small{display:block;margin-top:2px;color:var(--steel-400);font-size:10px;letter-spacing:.08em}
+.itemrow input[type=date]{width:100%;height:30px;border:1px solid var(--line);background:var(--field);color:var(--ice);padding:0 6px;font-size:12px}
+.itemrow label{display:block;color:var(--steel-400);font-size:9px;margin-bottom:4px}
+.itemrow.flag input[type=date]{border-color:rgba(var(--c-warn-rgb),.6)}
+.itemnote{grid-column:1/-1;margin-top:4px;font-size:11px;color:var(--warn)}
+.itemempty{padding:14px 0;color:var(--steel-400);font-size:12px;line-height:1.55}
+.itemspan{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;
+  border:1px solid var(--line);background:var(--lift-03);font-size:11.5px;color:var(--steel-300)}
+.itemspan b{color:var(--ice);font-variant-numeric:tabular-nums}
+#dateModal .modalcard{max-height:88vh;display:flex;flex-direction:column}
+#dateModal .formbody{overflow-y:auto}
+
 /* Board: one column per lane, a card per project. */
 .kcol[data-lane="toschedule"]{--kc:var(--steel-400);--kc-rgb:142,163,192}
 .kcol[data-lane="planned"]{--kc:var(--spark);--kc-rgb:var(--c-accent-rgb)}
 .kcol[data-lane="progress"]{--kc:var(--warn);--kc-rgb:var(--c-warn-rgb)}
 .kcol[data-lane="hold"]{--kc:var(--danger);--kc-rgb:var(--c-danger-rgb)}
 .kcol[data-lane="done"]{--kc:var(--ok);--kc-rgb:var(--c-ok-rgb)}
-.kcard .pcno{font-family:var(--font-heading);font-weight:700;color:var(--spark);font-size:11.5px}
+/* The project's name is what a planner reads first; its number is a reference,
+   not a headline, so it sits above at a size that stays out of the way. */
+.kcard .pcno{display:block;font-family:var(--font-heading);font-weight:600;color:var(--steel-400);
+  font-size:10px;letter-spacing:.08em;margin-bottom:1px}
+.kcard>b{font-size:14px!important;font-weight:700;line-height:1.25}
 .kcard .pccust{display:block;margin-top:2px;font-size:11px;color:var(--steel-400)}
 .kcard .pcdates{display:flex;gap:8px;margin-top:5px;font-size:11px;color:var(--steel-300);font-variant-numeric:tabular-nums}
 .kcard .pcdates .late{color:var(--danger);font-weight:600}
@@ -166,7 +190,8 @@ body{overflow:hidden}
 .waitrow:last-child{border-bottom:0}
 .waitrow .wkind{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);border:1px solid var(--field-line);padding:3px 7px;white-space:nowrap}
 .waitrow .wkind.quote{color:var(--spark);border-color:rgba(var(--c-accent-rgb),.45)}
-.waitrow b{display:block;color:var(--ice);font-size:12.5px}
+.waitrow .wno{display:block;font:600 10px var(--font-heading);letter-spacing:.08em;color:var(--steel-400)}
+.waitrow b{display:block;color:var(--ice);font-size:13.5px;font-weight:700;line-height:1.3}
 .waitrow small{display:block;color:var(--steel-400);margin-top:2px}
 .waitrow .missing{color:var(--warn)}
 .waitempty{padding:16px 12px;color:var(--steel-400);text-align:center}
@@ -181,7 +206,8 @@ body{overflow:hidden}
 .grow{display:grid;grid-template-columns:250px 1fr;border-bottom:1px solid var(--line)}
 .grow:hover{background:rgba(var(--c-accent-rgb),.06)}
 .glabel{padding:9px 10px 9px 0;min-width:0}
-.glabel b{display:block;font-size:12px;color:var(--ice);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.glabel .gno{display:block;font:600 10px var(--font-heading);letter-spacing:.08em;color:var(--steel-400)}
+.glabel b{display:block;font-size:13.5px;font-weight:700;color:var(--ice);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .glabel small{display:block;color:var(--steel-400);margin-top:2px;font-variant-numeric:tabular-nums}
 .gtrack{position:relative;min-height:44px;border-left:1px solid var(--line);background-image:repeating-linear-gradient(90deg,transparent,transparent calc(var(--gw) - 1px),var(--line) calc(var(--gw) - 1px),var(--line) var(--gw))}
 .gbar{position:absolute;top:9px;height:22px;border:1px solid var(--spark);background:rgba(var(--c-accent-rgb),.22);min-width:3px}
@@ -305,12 +331,15 @@ body{overflow:hidden}
 <div class="modal" id="dateModal"><div class="modalcard" style="width:min(520px,92vw)"><div class="phead"><h3 id="dateFormTitle" data-i="dateFormTitle">Schedule a project</h3><button class="btn" onclick="closeDateForm()">×</button></div><div class="formbody">
   <div class="fields" style="grid-template-columns:1fr 1fr">
     <div class="field wide" style="grid-column:1/-1"><label for="dfProject" data-i="lblProject">Project</label><select id="dfProject" onchange="fillDateForm()"></select></div>
-    <div class="field"><label for="dfStart" data-i="lblStart">Start</label><input id="dfStart" type="date"></div>
-    <div class="field"><label for="dfDeadline" data-i="lblDeadline">Deadline</label><input id="dfDeadline" type="date"></div>
+    <div class="field"><label for="dfStart" data-i="lblStart">Start</label><input id="dfStart" type="date" onchange="renderItemNotes()"></div>
+    <div class="field"><label for="dfDeadline" data-i="lblDeadline">Deadline</label><input id="dfDeadline" type="date" onchange="renderItemNotes()"></div>
     <div class="field"><label for="dfExpected" data-i="lblExpected">Expected completion</label><input id="dfExpected" type="date"></div>
     <div class="field"><label for="dfHours" data-i="lblPlannedHours">Planned hours</label><input id="dfHours" type="number" min="0" step="0.5"></div>
     <div class="field wide" style="grid-column:1/-1"><div class="boardnote" id="dateFormNote" style="border:0;padding:0"></div></div>
   </div>
+  <div class="itemhead"><b data-i="itemsTitle">The work it is made of</b><small data-i="itemsDesc">Each item gets its own start and finish</small><span class="count" id="itemCount"></span></div>
+  <div id="itemRows"></div>
+  <div id="itemSpan"></div>
   <div class="actions"><button class="btn" onclick="closeDateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveDates()"><span data-i="btnSaveDates">Save dates</span></button></div>
 </div></div></div>
 
@@ -330,6 +359,7 @@ const dayOf=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?null:new Da
 const TODAY=dayOf(new Date().toISOString().slice(0,10));
 const TODAY_ISO=iso(TODAY);
 const num=n=>(Math.round((Number(n)||0)*10)/10).toLocaleString('sv-SE');
+const clone=v=>JSON.parse(JSON.stringify(v));
 const dateShort=v=>{const d=dayOf(v);return d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',timeZone:'UTC'}):'';};
 
 const T={};
@@ -357,6 +387,15 @@ T.en={
   machinesTitle:'Machines on the plan',machinesDesc:'Matched against the equipment register',
   dateFormTitle:'Schedule a project',lblProject:'Project',lblStart:'Start',lblDeadline:'Deadline',
   lblExpected:'Expected completion',lblPlannedHours:'Planned hours',btnCancel:'Cancel',btnSaveDates:'Save dates',
+  lblFinish:'Finish',itemsTitle:'The work it is made of',itemsDesc:'Each item gets its own start and finish',
+  itemCount:'{n} items',itemCount1:'1 item',
+  itemsNone:'This project lists no items yet. Items come from the work described on it in Estimating, and become jobcards on the floor.',
+  itemBefore:'starts before the project does ({date})',itemAfter:'finishes after the deadline ({date})',
+  itemReversed:'finish is before the start',
+  itemSpanLine:'{n} dated items run',itemSpanNone:'No item carries both of its dates yet.',btnUseSpan:'Use as the project span',
+  errItemOrder:'{item}: the finish cannot fall before the start.',
+  notifyDatesItems:'{no} scheduled {start} → {end}, with dates written on {n} items.',
+  notifyDatesItems1:'{no} scheduled {start} → {end}, with one item dated too.',
   lane_toschedule:'To schedule',lane_planned:'Planned',lane_progress:'In progress',lane_hold:'On hold',lane_done:'Done',
   laneEmpty:'Nothing here',boardEmpty:'No projects match.',
   boardNote:'{n} projects on the board · {hidden} cancelled and not shown · dragging a card writes the new stage to the project.',
@@ -407,6 +446,15 @@ T.sv={
   machinesTitle:'Maskiner i planen',machinesDesc:'Matchat mot maskinregistret',
   dateFormTitle:'Planera ett projekt',lblProject:'Projekt',lblStart:'Start',lblDeadline:'Deadline',
   lblExpected:'Förväntat klart',lblPlannedHours:'Planerade timmar',btnCancel:'Avbryt',btnSaveDates:'Spara datum',
+  lblFinish:'Slut',itemsTitle:'Arbetet det består av',itemsDesc:'Varje post får sin egen start och sitt eget slut',
+  itemCount:'{n} poster',itemCount1:'1 post',
+  itemsNone:'Detta projekt listar inga poster än. Posterna kommer från arbetet som beskrivs på det i Kalkyl, och blir jobbkort i verkstaden.',
+  itemBefore:'startar före projektet ({date})',itemAfter:'slutar efter deadline ({date})',
+  itemReversed:'slutet ligger före starten',
+  itemSpanLine:'{n} daterade poster löper',itemSpanNone:'Ingen post har båda sina datum än.',btnUseSpan:'Använd som projektets period',
+  errItemOrder:'{item}: slutet kan inte ligga före starten.',
+  notifyDatesItems:'{no} planerat {start} → {end}, med datum sparade på {n} poster.',
+  notifyDatesItems1:'{no} planerat {start} → {end}, med en post daterad också.',
   lane_toschedule:'Att planera',lane_planned:'Planerat',lane_progress:'Pågår',lane_hold:'Pausat',lane_done:'Klart',
   laneEmpty:'Inget här',boardEmpty:'Inga projekt matchar.',
   boardNote:'{n} projekt på tavlan · {hidden} avbrutna visas inte · att dra ett kort skriver det nya steget till projektet.',
@@ -457,6 +505,15 @@ T.mk={
   machinesTitle:'Машини во планот',machinesDesc:'Споредено со регистарот на опрема',
   dateFormTitle:'Планирај проект',lblProject:'Проект',lblStart:'Почеток',lblDeadline:'Рок',
   lblExpected:'Очекувано завршување',lblPlannedHours:'Планирани часови',btnCancel:'Откажи',btnSaveDates:'Зачувај датуми',
+  lblFinish:'Крај',itemsTitle:'Работата од која се состои',itemsDesc:'Секоја ставка добива свој почеток и свој крај',
+  itemCount:'{n} ставки',itemCount1:'1 ставка',
+  itemsNone:'Овој проект сè уште нема ставки. Ставките доаѓаат од работата опишана на него во Пресметки, и стануваат работни налози во работилницата.',
+  itemBefore:'почнува пред проектот ({date})',itemAfter:'завршува по рокот ({date})',
+  itemReversed:'крајот е пред почетокот',
+  itemSpanLine:'{n} датирани ставки траат',itemSpanNone:'Ниту една ставка сè уште нема и двата датума.',btnUseSpan:'Стави како период на проектот',
+  errItemOrder:'{item}: крајот не може да биде пред почетокот.',
+  notifyDatesItems:'{no} планиран {start} → {end}, со датуми запишани на {n} ставки.',
+  notifyDatesItems1:'{no} планиран {start} → {end}, со датирана и една ставка.',
   lane_toschedule:'За планирање',lane_planned:'Планирано',lane_progress:'Во работа',lane_hold:'Во пауза',lane_done:'Завршено',
   laneEmpty:'Тука нема ништо',boardEmpty:'Нема проект што одговара.',
   boardNote:'{n} проекти на таблата · {hidden} откажани не се прикажани · повлекување на картичка го запишува новото ниво на проектот.',
@@ -639,11 +696,11 @@ function renderWaiting(){
   const t=currentT,rows=PlanningRules.awaitingSchedule(projects(),shared().estimations);
   const html=rows.map(r=>{
     if(r.kind==='estimation')return `<div class="waitrow"><span class="wkind quote">${escapeHtml(t.waitKindQuote)}</span>
-      <div><b>${escapeHtml(r.no)} — ${escapeHtml(r.name)}</b><small>${escapeHtml(r.customer||'')} · ${escapeHtml(t.waitQuoteDesc)}</small></div>
+      <div><span class="wno">${escapeHtml(r.no)}</span><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.customer||'')} · ${escapeHtml(t.waitQuoteDesc)}</small></div>
       <button class="mini" onclick="createFromQuote(${Number(r.id)})">${escapeHtml(t.btnCreateProject)}</button></div>`;
     const what=r.missing.map(m=>t['missing_'+m]||m).join(', ');
     return `<div class="waitrow"><span class="wkind">${escapeHtml(t.waitKindProject)}</span>
-      <div><b>${escapeHtml(r.no)} — ${escapeHtml(r.name)}</b><small>${escapeHtml(r.customer||'')} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what}))}</span></small></div>
+      <div><span class="wno">${escapeHtml(r.no)}</span><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.customer||'')} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what}))}</span></small></div>
       <button class="mini" onclick="openDateForm('${escapeHtml(r.no)}')">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
   }).join('');
   $('waitList').innerHTML=html||`<div class="waitempty">${escapeHtml(t.waitNone)}</div>`;
@@ -692,7 +749,7 @@ function renderSchedule(){
     const far=b.late?addDays(dayOf(b.expected),1):e;
     const over=b.late?`<div class="gover" style="left:${Math.max(0,Math.min(100,pos(e)))}%;width:${Math.max(0,Math.min(100,pos(far))-Math.max(0,pos(e)))}%"></div>`:'';
     return `<div class="grow" role="link" tabindex="0" onclick="openDateForm('${escapeHtml(b.no)}')" onkeydown="if(event.key==='Enter')openDateForm('${escapeHtml(b.no)}')">
-      <div class="glabel"><b>${escapeHtml(b.no)} — ${escapeHtml(b.name||'')}</b>
+      <div class="glabel"><span class="gno">${escapeHtml(b.no)}</span><b>${escapeHtml(b.name||'')}</b>
         <small>${dateShort(b.start)} → ${dateShort(b.end)} · ${b.days} d · ${num(PlanningRules.remainingHours(p))} h</small></div>
       <div class="gtrack">${todayLine}
         ${pos(s)<0?`<span class="goff left">${escapeHtml(t.earlier)}</span>`:''}
@@ -715,7 +772,7 @@ function renderSchedule(){
     const missing=[PlanningRules.startOf(p)?null:'start',PlanningRules.endOf(p)?null:'deadline'].filter(Boolean)
       .map(m=>t['missing_'+m]||m).join(', ');
     return `<div class="waitrow"><span class="wkind">${escapeHtml(t['lane_'+PlanningRules.laneOf(p)]||'')}</span>
-      <div><b>${escapeHtml(p.no)} — ${escapeHtml(p.name||'')}</b><small>${escapeHtml(customerOf(p))} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what:missing}))}</span></small></div>
+      <div><span class="wno">${escapeHtml(p.no)}</span><b>${escapeHtml(p.name||'')}</b><small>${escapeHtml(customerOf(p))} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what:missing}))}</span></small></div>
       <button class="mini" onclick="openDateForm('${escapeHtml(p.no)}')">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
   }).join('')||`<div class="waitempty">${escapeHtml(t.unschedNone)}</div>`;
 }
@@ -814,6 +871,72 @@ function fillDateForm(){
   $('dfDeadline').value=e?iso(e):'';
   $('dfExpected').value=x?iso(x):'';
   $('dfHours').value=Number(p.plannedHours)||0;
+  renderItemRows();
+}
+
+// The items a project is made of, each planned on its own. A date typed here goes back to
+// wherever that item actually lives - a registered jobcard, or the project's own list.
+function currentItems(){
+  const p=projects().find(x=>x.no===$('dfProject').value);
+  return p?PlanningRules.itemsOf(p,WorkshopData.listJobcards()):[];
+}
+function renderItemRows(){
+  const t=currentT,items=currentItems();
+  $('itemCount').textContent=items.length?(items.length===1?t.itemCount1:fill(t.itemCount,{n:items.length})):'';
+  if(!items.length){
+    $('itemRows').innerHTML=`<div class="itemempty">${escapeHtml(t.itemsNone)}</div>`;
+    $('itemSpan').innerHTML='';
+    return;
+  }
+  $('itemRows').innerHTML=items.map((it,i)=>`
+    <div class="itemrow" data-no="${escapeHtml(it.no)}" data-source="${it.source}">
+      <div class="iname"><b>${escapeHtml(it.title||it.no)}</b>
+        <small>${escapeHtml(it.no)}${it.hours?' · '+escapeHtml(fill(t.resHours,{h:num(it.hours)})):''}${it.responsible?' · '+escapeHtml(it.responsible):''}</small></div>
+      <div><label for="itStart${i}">${escapeHtml(t.lblStart)}</label><input id="itStart${i}" type="date" value="${escapeHtml(it.start)}" onchange="renderItemNotes()"></div>
+      <div><label for="itEnd${i}">${escapeHtml(t.lblFinish)}</label><input id="itEnd${i}" type="date" value="${escapeHtml(it.end)}" onchange="renderItemNotes()"></div>
+    </div>`).join('');
+  renderItemNotes();
+}
+function typedItems(){
+  return [...document.querySelectorAll('#itemRows .itemrow')].map(row=>({
+    no:row.dataset.no,source:row.dataset.source,
+    start:row.querySelector('input[id^=itStart]').value,
+    end:row.querySelector('input[id^=itEnd]').value
+  }));
+}
+// What the items say about the project, checked against what the project says about itself.
+// Both are shown; neither is quietly moved to agree with the other.
+function renderItemNotes(){
+  const t=currentT;
+  const claimed={start:$('dfStart').value,deadline:$('dfDeadline').value};
+  const typed=typedItems();
+  typed.forEach(it=>{
+    const row=document.querySelector(`#itemRows .itemrow[data-no="${CSS.escape(it.no)}"]`);
+    if(!row)return;
+    const old=row.querySelector('.itemnote');if(old)old.remove();
+    const fit=PlanningRules.itemFit(claimed,it);
+    const msgs=[];
+    if(fit.reversed)msgs.push(t.itemReversed);
+    else{
+      if(fit.before)msgs.push(fill(t.itemBefore,{date:dateShort(claimed.start)}));
+      if(fit.after)msgs.push(fill(t.itemAfter,{date:dateShort(claimed.deadline)}));
+    }
+    row.classList.toggle('flag',msgs.length>0);
+    if(msgs.length){
+      const n=document.createElement('div');n.className='itemnote';n.textContent=msgs.join(' · ');
+      row.appendChild(n);
+    }
+  });
+  const span=PlanningRules.itemSpan(typed);
+  $('itemSpan').innerHTML=span
+    ? `<div class="itemspan"><span>${escapeHtml(fill(t.itemSpanLine,{n:span.counted}))}</span><b>${dateShort(span.start)} → ${dateShort(span.end)}</b>
+        <button class="mini" type="button" onclick="useItemSpan('${span.start}','${span.end}')">${escapeHtml(t.btnUseSpan)}</button></div>`
+    : `<div class="itemspan">${escapeHtml(t.itemSpanNone)}</div>`;
+}
+function useItemSpan(start,end){
+  $('dfStart').value=start;$('dfDeadline').value=end;
+  if(!$('dfExpected').value)$('dfExpected').value=end;
+  renderItemNotes();
 }
 function closeDateForm(){$('dateModal').classList.remove('show');}
 function saveDates(){
@@ -824,12 +947,42 @@ function saveDates(){
   if(end<start)return wAlert(t.errDateOrder);
   // Both spellings are written, because Estimating reads plannedStart/plannedCompletion and the
   // older records read start/deadline. Leaving one behind would hide the project from one of them.
+  const typed=typedItems();
+  const reversed=typed.find(it=>it.start&&it.end&&it.end<it.start);
+  if(reversed)return wAlert(fill(t.errItemOrder,{item:reversed.no}));
+
   const res=WorkshopData.updateProject(no,{start,plannedStart:start,deadline:end,plannedCompletion:end,
     expectedCompletion:expected||end,plannedHours:Number($('dfHours').value)||0});
   if(res&&res.error)return wAlert(res.message||res.error);
+
+  // Each item goes back where it came from: a registered jobcard through the jobcard register,
+  // one the project carries itself by patching that project's own list.
+  const before=PlanningRules.itemsOf(p,WorkshopData.listJobcards());
+  const changed=typed.filter(it=>{
+    const was=before.find(b=>b.no===it.no);
+    return was&&(was.start!==it.start||was.end!==it.end);
+  });
+  let failed=null;
+  changed.filter(it=>it.source==='jobcard').forEach(it=>{
+    const r=WorkshopData.updateJobcard(it.no,{plannedStart:it.start,plannedCompletion:it.end});
+    if(r&&r.error)failed=r.message||r.error;
+  });
+  const own=changed.filter(it=>it.source==='project');
+  if(own.length){
+    const list=clone(WorkshopData.findProject(no).jobcards||[]);
+    own.forEach(it=>{
+      const row=list.find(x=>x.no===it.no);
+      if(row){row.plannedStart=it.start;row.plannedCompletion=it.end;}
+    });
+    const r=WorkshopData.updateProject(no,{jobcards:list});
+    if(r&&r.error)failed=r.message||r.error;
+  }
+  if(failed)return wAlert(failed);
+
   closeDateForm();
   renderAll();
-  notify(fill(t.notifyDates,{no,start:dateShort(start),end:dateShort(end)}));
+  const said={no,start:dateShort(start),end:dateShort(end),n:changed.length};
+  notify(fill(changed.length===0?t.notifyDates:(changed.length===1?t.notifyDatesItems1:t.notifyDatesItems),said));
 }
 
 // ── Pages ────────────────────────────────────────────────────────────────────────────────────
