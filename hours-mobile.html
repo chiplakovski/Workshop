@@ -115,6 +115,14 @@
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
+  /* What the item is called is what a worker reads while booking time against it;
+     the jobcard number is a reference. So the description leads and is set a size
+     up, and the numbering that groups it steps back. */
+  #project option,#item option,#equipList select option{font-size:15px;font-weight:500;}
+  #item optgroup,#equipList select optgroup{font-size:11px;font-weight:600;letter-spacing:.05em;}
+  /* The picked item is read far more often than the list is opened, so the closed
+     control carries the description at the same size the list shows it. */
+  #project,#item{font-size:15px;}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
 <div class="bg"></div>
 <div class="phone">
@@ -242,7 +250,7 @@
     const list=(WorkshopData.listProjects()||[]).filter(p=>open.has(p.no));
     proj.innerHTML='';
     const ph=document.createElement('option');ph.value='';ph.textContent=list.length?'—':t.noopenjobs;proj.appendChild(ph);
-    list.forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+    list.forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.name} · ${p.no}`;proj.appendChild(o);});
     if([...proj.options].some(o=>o.value===prevValue))proj.value=prevValue;
   }
   populateProjects();
@@ -257,12 +265,12 @@
       updateEst();refreshEquipRows();return;
     }
     jobcards.forEach(j=>{
-      const grp=document.createElement('optgroup');grp.label=`${j.no} — ${j.title||''}`;
+      const grp=document.createElement('optgroup');grp.label=`${j.title||j.no} · ${j.no}`;
       const ops=(j.operations&&j.operations.length)?j.operations:[null];
       ops.forEach(op=>{
         const o=document.createElement('option');
         o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=op?op.plannedHours:'';o.dataset.desc=op?op.desc:(j.title||j.no);
-        o.textContent=op?op.desc:`${j.no} — ${t.wholejobcard}`;
+        o.textContent=op?op.desc:t.wholejobcard;
         grp.appendChild(o);
       });
       item.appendChild(grp);
@@ -291,7 +299,7 @@
     const ph=document.createElement('option');ph.value='';ph.textContent=jc?t.eqph:t.noeqlinked;sel.appendChild(ph);
     if(linked.length){
       const g=document.createElement('optgroup');g.label=t.eq_onjob;
-      linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.equipmentId} — ${m.name}`;g.appendChild(o);});
+      linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.name} · ${m.equipmentId}`;g.appendChild(o);});
       sel.appendChild(g);
     }
     if(jc){
@@ -303,7 +311,7 @@
           const gate=WorkshopData.getEquipmentSafetyGate(e.equipmentId,{requirePreUseCheck:true,jobcardNo:jc.no,projectNo:jc.projectNo});
           const d=JobcardEquipmentRules.canAddEquipmentToJobcard(e,jc.machines||[],jc.no,gate);
           const o=document.createElement('option');o.value=e.equipmentId;
-          o.textContent=`${e.equipmentId} — ${e.name}`+(d.allowed?'':` · ${eqReasonShort(d,gate,e)}`);
+          o.textContent=`${e.name} · ${e.equipmentId}`+(d.allowed?'':` — ${eqReasonShort(d,gate,e)}`);
           o.disabled=!d.allowed;
           g.appendChild(o);
         });
