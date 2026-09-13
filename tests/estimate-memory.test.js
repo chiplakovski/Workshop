@@ -121,6 +121,59 @@ test('bias: a project with no type stated is still counted, under no type', ()=>
   assert.equal(bias[0].factor,1.2);
 });
 
+// ── The factor that applies to one project ───────────────────────────────────────────────────
+test('bias for a project: read from the kinds of work it says it is', ()=>{
+  const projects=[
+    {no:'P-1',status:'completed',plannedHours:100,usedHours:120,types:['Fabrication']},
+    {no:'P-2',status:'closed',plannedHours:100,usedHours:90,types:['Service']}
+  ];
+  const b=Memory.biasFor({types:['Fabrication']},projects);
+  assert.equal(b.scope,'type');
+  assert.equal(b.samples,1);
+  assert.equal(b.factor,1.2);
+  assert.deepEqual(b.refs,['P-1']);
+  assert.deepEqual(b.types,['Fabrication']);
+});
+test('bias for a project: a project under two of its own types is still one project', ()=>{
+  const projects=[{no:'P-1',status:'completed',plannedHours:24,usedHours:23.5,types:['Fabrication','Installation']}];
+  const b=Memory.biasFor({types:['Fabrication','Installation']},projects);
+  assert.equal(b.samples,1,'counting it once per type would double the evidence and halve the honesty');
+  assert.equal(b.planned,24);
+  assert.equal(b.actual,23.5);
+  assert.deepEqual(b.refs,['P-1']);
+});
+test('bias for a project: with no matching kind of work it falls back to everything, and says so', ()=>{
+  const projects=[
+    {no:'P-1',status:'completed',plannedHours:100,usedHours:110,types:['Fabrication']},
+    {no:'P-2',status:'closed',plannedHours:100,usedHours:100,types:['Service']}
+  ];
+  const b=Memory.biasFor({types:['Electrical']},projects);
+  assert.equal(b.scope,'all','"your fabrication runs long" and "your work runs long" are different claims');
+  assert.equal(b.samples,2);
+  assert.equal(b.factor,1.05);
+  assert.deepEqual(b.types,[],'no kind of work is being claimed');
+  // A project that states no kind of work at all lands in the same place.
+  assert.equal(Memory.biasFor({types:[]},projects).scope,'all');
+  assert.equal(Memory.biasFor(null,projects).scope,'all');
+});
+test('bias for a project: with nothing finished there is no factor at all', ()=>{
+  assert.equal(Memory.biasFor({types:['Service']},[]),null);
+  assert.equal(Memory.biasFor({types:['Service']},[{no:'P-1',status:'active',plannedHours:10,usedHours:5,types:['Service']}]),null,
+    'work still running is not evidence');
+});
+test('real data: the factor a seeded project would be offered names the projects behind it', ()=>{
+  const WD=loadWorkshopData();
+  const projects=WD.get().projects;
+  const b=Memory.biasFor({types:['Fabrication']},projects);
+  assert.equal(b.scope,'type');
+  assert.equal(b.samples,1);
+  assert.deepEqual(b.refs,['P-26-0004']);
+  assert.equal(b.factor,0.98);
+  const none=Memory.biasFor({types:['Electrical']},projects);
+  assert.equal(none.scope,'all','the workshop has finished no electrical work, so it must not claim to have');
+  assert.equal(none.samples,2);
+});
+
 // ── Proposing dates ──────────────────────────────────────────────────────────────────────────
 test('schedule: items run one after another at the stated hours a day', ()=>{
   const r=Memory.proposeSchedule([{no:'A',hours:16},{no:'B',hours:8}],{start:'2026-10-05',hoursPerDay:8});

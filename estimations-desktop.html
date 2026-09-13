@@ -393,6 +393,14 @@
   .recall .under{color:var(--ok);}
   .recall .from{display:block;margin-top:4px;font-size:11.5px;color:var(--steel-400);}
   .recall .apply{margin-top:8px;}
+  /* How the workshop's own estimates have turned out, on the kind of work this project is.
+     Offered against the durations, never applied to them on its own. */
+  .biasrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line);}
+  .biasfig{font-family:var(--font-heading);font-size:19px;font-weight:700;color:var(--ice);font-variant-numeric:tabular-nums;}
+  .biasfig.over{color:var(--warn);}
+  .biasfig.under{color:var(--ok);}
+  .biastext{flex:1 1 240px;min-width:0;font-size:12px;line-height:1.5;color:var(--steel-300);}
+  .biastext .from{display:block;margin-top:3px;font-size:11.5px;color:var(--steel-400);}
   .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
   .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
@@ -906,7 +914,17 @@ const T={
 recall_none:"The workshop has no finished work described like this to compare against.",
 recall_one:"1 finished job like this",recall_many:"{n} finished jobs like this",
 recall_line:"estimated {est} h, took {real} h —",
-recall_apply:"Take {d} days from that",recall_apply1:"Take 1 day from that",effort_err:"Days and people cannot be negative.",effort_err_pair:"Give both, or neither — one without the other says nothing.",effort_tip:"Estimated duration and crew for this item",effort_chip:"{d} d · {p} ppl",effort_none:"Effort",effort_panel:"Time & labour",effort_duration:"Start to finish",effort_avg:"Average crew",effort_peak:"Peak crew",effort_persondays:"Total labour",effort_partial:"{a} of {b} items estimated",effort_days_unit:"days",effort_people_unit:"people",effort_pd_unit:"person-days",np_title:"New project",np_body:"A project starts as the quotation it is being priced for, so it needs a customer, a name and a price.",np_name:"Project name",np_customer:"Customer",np_deadline:"Deadline",np_save:"Create project",np_created:"{no} created with {n} item(s)",qh_blocked:"Blocked by an active Quality Hold.",p_list:"Projects",p_list_hint:"pick one to price",n_items:"{n} items",no_items_short:"No items yet",no_items_body:"This project has no items yet. Items are created on the project itself — add them in Projects ({p}), then price them here.",retired_note:"{n} priced item(s) are no longer on the project — their pricing is kept but not counted:",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",showing_n:"Showing {b} of {n}",
+recall_apply:"Take {d} days from that",recall_apply1:"Take 1 day from that",
+bias_one_type:"1 finished {types} job",bias_many_type:"{n} finished {types} jobs",
+bias_one_all:"1 finished job, across all kinds of work",bias_many_all:"{n} finished jobs, across all kinds of work",
+bias_line:"estimated {est} h, took {real} h",
+bias_apply:"Apply {f}× to the durations",bias_apply_yes:"Apply it",
+bias_confirm:"Scale {n} item durations by {f}×?\n\nStart to finish goes from {before} to {after} days. Prices are not touched.",
+bias_confirm1:"Scale one item duration by {f}×?\n\nStart to finish goes from {before} to {after} days. Prices are not touched.",
+bias_skips_locked:"{n} locked items are left as they are.",bias_skips_locked1:"One locked item is left as it is.",
+bias_done:"{n} durations scaled by {f}×.",bias_done1:"One duration scaled by {f}×.",
+bias_nothing:"No item has a duration to scale yet.",
+bias_all_locked:"Every item with a duration is locked, so there is nothing to scale.",effort_err:"Days and people cannot be negative.",effort_err_pair:"Give both, or neither — one without the other says nothing.",effort_tip:"Estimated duration and crew for this item",effort_chip:"{d} d · {p} ppl",effort_none:"Effort",effort_panel:"Time & labour",effort_duration:"Start to finish",effort_avg:"Average crew",effort_peak:"Peak crew",effort_persondays:"Total labour",effort_partial:"{a} of {b} items estimated",effort_days_unit:"days",effort_people_unit:"people",effort_pd_unit:"person-days",np_title:"New project",np_body:"A project starts as the quotation it is being priced for, so it needs a customer, a name and a price.",np_name:"Project name",np_customer:"Customer",np_deadline:"Deadline",np_save:"Create project",np_created:"{no} created with {n} item(s)",qh_blocked:"Blocked by an active Quality Hold.",p_list:"Projects",p_list_hint:"pick one to price",n_items:"{n} items",no_items_short:"No items yet",no_items_body:"This project has no items yet. Items are created on the project itself — add them in Projects ({p}), then price them here.",retired_note:"{n} priced item(s) are no longer on the project — their pricing is kept but not counted:",p_summary:"Quick Summary",showing:"Showing {a} to {b} of {n}",showing_n:"Showing {b} of {n}",
     sum_total:"Total Estimations",sum_value:"Total Value (All)",
     edit:"Edit",duplicate:"Duplicate",print:"Print / PDF",
     st_draft:"Draft",st_review:"In Review",st_sent:"Sent",st_accepted:"Accepted",st_declined:"Declined",st_expired:"Expired",
@@ -985,7 +1003,17 @@ recall_apply:"Take {d} days from that",recall_apply1:"Take 1 day from that",effo
 recall_none:"Verkstaden har inget avslutat arbete beskrivet så här att jämföra med.",
 recall_one:"1 avslutat jobb som detta",recall_many:"{n} avslutade jobb som detta",
 recall_line:"beräknat {est} h, tog {real} h —",
-recall_apply:"Ta {d} dagar därifrån",recall_apply1:"Ta 1 dag därifrån",effort_err:"Dagar och personer kan inte vara negativa.",effort_err_pair:"Ange båda, eller ingen — en utan den andra säger inget.",effort_tip:"Uppskattad tid och bemanning för posten",effort_chip:"{d} d · {p} pers",effort_none:"Tid",effort_panel:"Tid & bemanning",effort_duration:"Start till slut",effort_avg:"Snittbemanning",effort_peak:"Toppbemanning",effort_persondays:"Total arbetsinsats",effort_partial:"{a} av {b} poster uppskattade",effort_days_unit:"dagar",effort_people_unit:"personer",effort_pd_unit:"persondagar",np_title:"Nytt projekt",np_body:"Ett projekt börjar som offerten det prissätts för, så det behöver kund, namn och pris.",np_name:"Projektnamn",np_customer:"Kund",np_deadline:"Deadline",np_save:"Skapa projekt",np_created:"{no} skapat med {n} post(er)",qh_blocked:"Blockerat av en aktiv kvalitetsspärr.",p_list:"Projekt",p_list_hint:"välj ett att prissätta",n_items:"{n} poster",no_items_short:"Inga poster ännu",no_items_body:"Projektet har inga poster ännu. Poster skapas på projektet — lägg till dem i Projekt ({p}) och prissätt dem sedan här.",retired_note:"{n} prissatt(a) post(er) finns inte längre på projektet — prissättningen behålls men räknas inte:",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",showing_n:"Visar {b} av {n}",
+recall_apply:"Ta {d} dagar därifrån",recall_apply1:"Ta 1 dag därifrån",
+bias_one_type:"1 avslutat {types}-jobb",bias_many_type:"{n} avslutade {types}-jobb",
+bias_one_all:"1 avslutat jobb, över alla typer av arbete",bias_many_all:"{n} avslutade jobb, över alla typer av arbete",
+bias_line:"beräknat {est} h, tog {real} h",
+bias_apply:"Använd {f}× på tiderna",bias_apply_yes:"Använd det",
+bias_confirm:"Skala {n} posttider med {f}×?\n\nStart till slut går från {before} till {after} dagar. Priserna rörs inte.",
+bias_confirm1:"Skala en posttid med {f}×?\n\nStart till slut går från {before} till {after} dagar. Priserna rörs inte.",
+bias_skips_locked:"{n} låsta poster lämnas som de är.",bias_skips_locked1:"En låst post lämnas som den är.",
+bias_done:"{n} tider skalade med {f}×.",bias_done1:"En tid skalad med {f}×.",
+bias_nothing:"Ingen post har en tid att skala än.",
+bias_all_locked:"Varje post med en tid är låst, så det finns inget att skala.",effort_err:"Dagar och personer kan inte vara negativa.",effort_err_pair:"Ange båda, eller ingen — en utan den andra säger inget.",effort_tip:"Uppskattad tid och bemanning för posten",effort_chip:"{d} d · {p} pers",effort_none:"Tid",effort_panel:"Tid & bemanning",effort_duration:"Start till slut",effort_avg:"Snittbemanning",effort_peak:"Toppbemanning",effort_persondays:"Total arbetsinsats",effort_partial:"{a} av {b} poster uppskattade",effort_days_unit:"dagar",effort_people_unit:"personer",effort_pd_unit:"persondagar",np_title:"Nytt projekt",np_body:"Ett projekt börjar som offerten det prissätts för, så det behöver kund, namn och pris.",np_name:"Projektnamn",np_customer:"Kund",np_deadline:"Deadline",np_save:"Skapa projekt",np_created:"{no} skapat med {n} post(er)",qh_blocked:"Blockerat av en aktiv kvalitetsspärr.",p_list:"Projekt",p_list_hint:"välj ett att prissätta",n_items:"{n} poster",no_items_short:"Inga poster ännu",no_items_body:"Projektet har inga poster ännu. Poster skapas på projektet — lägg till dem i Projekt ({p}) och prissätt dem sedan här.",retired_note:"{n} prissatt(a) post(er) finns inte längre på projektet — prissättningen behålls men räknas inte:",p_summary:"Snabböversikt",showing:"Visar {a} till {b} av {n}",showing_n:"Visar {b} av {n}",
     sum_total:"Totalt antal kalkyler",sum_value:"Totalt värde (alla)",
     edit:"Redigera",duplicate:"Duplicera",print:"Skriv ut / PDF",
     st_draft:"Utkast",st_review:"Under granskning",st_sent:"Skickad",st_accepted:"Accepterad",st_declined:"Nekad",st_expired:"Utgången",
@@ -1064,7 +1092,17 @@ recall_apply:"Ta {d} dagar därifrån",recall_apply1:"Ta 1 dag därifrån",effor
 recall_none:"Rabotilnicata nema završena rabota opišana vaka za sporedba.",
 recall_one:"1 završena slična rabota",recall_many:"{n} završeni slični raboti",
 recall_line:"proceneto {est} č, potrošeno {real} č —",
-recall_apply:"Zemi {d} dena ottamu",recall_apply1:"Zemi 1 den ottamu",effort_err:"Denovite i lugjeto ne možat da bidat negativni.",effort_err_pair:"Vnesi gi dvete, ili nitu edno — ednoto bez drugoto ne kažuva ništo.",effort_tip:"Proceneto traenje i lugje za ovaa stavka",effort_chip:"{d} d · {p} l.",effort_none:"Traenje",effort_panel:"Vreme i rabotna sila",effort_duration:"Od početok do kraj",effort_avg:"Prosečno lugje",effort_peak:"Najmnogu lugje",effort_persondays:"Vkupna rabota",effort_partial:"{a} od {b} stavki proceneti",effort_days_unit:"dena",effort_people_unit:"lugje",effort_pd_unit:"čovek-dena",np_title:"Nov proekt",np_body:"Proektot počnuva kako ponudata za koja se procenuva, pa mu treba klient, ime i cena.",np_name:"Ime na proekt",np_customer:"Klient",np_deadline:"Rok",np_save:"Kreiraj proekt",np_created:"{no} e kreiran so {n} stavki",qh_blocked:"Blokirano od aktivna kontrola na kvalitet.",p_list:"Proekti",p_list_hint:"izberi eden za procenka",n_items:"{n} stavki",no_items_short:"Sè ušte nema stavki",no_items_body:"Ovoj proekt sè ušte nema stavki. Stavkite se kreiraat na samiot proekt — dodaj gi vo Proekti ({p}), pa procenkaj gi tuka.",retired_note:"{n} procenet(i) stavk(i) veḱe ne se na proektot — procenkata e začuvana no ne se broi:",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",showing_n:"Prikažani {b} od {n}",
+recall_apply:"Zemi {d} dena ottamu",recall_apply1:"Zemi 1 den ottamu",
+bias_one_type:"1 završena {types} rabota",bias_many_type:"{n} završeni {types} raboti",
+bias_one_all:"1 završena rabota, niz site vidovi rabota",bias_many_all:"{n} završeni raboti, niz site vidovi rabota",
+bias_line:"proceneto {est} č, potrošeno {real} č",
+bias_apply:"Primeni {f}× na traenjata",bias_apply_yes:"Primeni",
+bias_confirm:"Da se skaliraat {n} traenja na stavki so {f}×?\n\nOd početok do kraj odi od {before} na {after} dena. Cenite ne se menuvaat.",
+bias_confirm1:"Da se skalira ednoto traenje so {f}×?\n\nOd početok do kraj odi od {before} na {after} dena. Cenite ne se menuvaat.",
+bias_skips_locked:"{n} zaklučeni stavki ostanuvaat kako što se.",bias_skips_locked1:"Edna zaklučena stavka ostanuva kako što e.",
+bias_done:"{n} traenja skalirani so {f}×.",bias_done1:"Ednoto traenje e skalirano so {f}×.",
+bias_nothing:"Nitu edna stavka nema traenje za skaliranje.",
+bias_all_locked:"Sekoja stavka so traenje e zaklučena, pa nema što da se skalira.",effort_err:"Denovite i lugjeto ne možat da bidat negativni.",effort_err_pair:"Vnesi gi dvete, ili nitu edno — ednoto bez drugoto ne kažuva ništo.",effort_tip:"Proceneto traenje i lugje za ovaa stavka",effort_chip:"{d} d · {p} l.",effort_none:"Traenje",effort_panel:"Vreme i rabotna sila",effort_duration:"Od početok do kraj",effort_avg:"Prosečno lugje",effort_peak:"Najmnogu lugje",effort_persondays:"Vkupna rabota",effort_partial:"{a} od {b} stavki proceneti",effort_days_unit:"dena",effort_people_unit:"lugje",effort_pd_unit:"čovek-dena",np_title:"Nov proekt",np_body:"Proektot počnuva kako ponudata za koja se procenuva, pa mu treba klient, ime i cena.",np_name:"Ime na proekt",np_customer:"Klient",np_deadline:"Rok",np_save:"Kreiraj proekt",np_created:"{no} e kreiran so {n} stavki",qh_blocked:"Blokirano od aktivna kontrola na kvalitet.",p_list:"Proekti",p_list_hint:"izberi eden za procenka",n_items:"{n} stavki",no_items_short:"Sè ušte nema stavki",no_items_body:"Ovoj proekt sè ušte nema stavki. Stavkite se kreiraat na samiot proekt — dodaj gi vo Proekti ({p}), pa procenkaj gi tuka.",retired_note:"{n} procenet(i) stavk(i) veḱe ne se na proektot — procenkata e začuvana no ne se broi:",p_summary:"Brz pregled",showing:"Prikažani {a} do {b} od {n}",showing_n:"Prikažani {b} od {n}",
     sum_total:"Vkupno kalkulacii",sum_value:"Vkupna vrednost (site)",
     edit:"Uredi",duplicate:"Dupliciraj",print:"Pečati / PDF",
     st_draft:"Nacrt",st_review:"Vo pregled",st_sent:"Ispratena",st_accepted:"Prifatena",st_declined:"Odbiena",st_expired:"Istekla",
@@ -2815,8 +2853,59 @@ function renderEffortSummary(e){
       <div class="eff"><div class="effk">${esc(t.effort_avg)}</div><div class="effv">${val(tot.avgPeople)}<span class="effu">${esc(t.effort_people_unit)}</span></div></div>
       <div class="eff"><div class="effk">${esc(t.effort_peak)}</div><div class="effv">${val(tot.peakPeople)}<span class="effu">${esc(t.effort_people_unit)}</span></div></div>
       <div class="eff"><div class="effk">${esc(t.effort_persondays)}</div><div class="effv">${val(tot.personDays)}<span class="effu">${esc(t.effort_pd_unit)}</span></div></div>
-    </div></div>`;
+    </div>
+    ${biasRow(e)}
+    </div>`;
 }
+
+// What the workshop's finished work says about its own estimates, on the kind of work this
+// project is. Two claims are kept apart on purpose: a factor from projects of this kind, and a
+// factor from everything finished when there is nothing of this kind to go on.
+function biasRow(e){
+  if(typeof EstimateMemory==='undefined'||!window.WorkshopData)return '';
+  const t=T[LANG];
+  const project=e.projectNo?WorkshopData.findProject(e.projectNo):null;
+  const b=EstimateMemory.biasFor(project,WorkshopData.getProjects());
+  if(!b||!b.factor)return '';
+  const cls=b.factor>1.05?'over':(b.factor<0.95?'under':'');
+  const one=b.samples===1;
+  const scope=b.scope==='type'
+    ? (one?t.bias_one_type:t.bias_many_type).replace('{n}',b.samples).replace('{types}',b.types.join(', '))
+    : (one?t.bias_one_all:t.bias_many_all).replace('{n}',b.samples);
+  const tot=effortTotals(e.workItems);
+  const canApply=tot.totalDays>0&&Math.abs(b.factor-1)>=0.02;
+  return `<div class="biasrow">
+    <span class="biasfig ${cls}">${b.factor}×</span>
+    <span class="biastext">${esc(scope)} — ${esc(t.bias_line.replace('{est}',b.planned).replace('{real}',b.actual))}
+      <span class="from">${esc(b.refs.join(' · '))}</span></span>
+    ${canApply?`<button type="button" class="tbtn" onclick="applyBias(${e.id},${b.factor})">${esc(t.bias_apply.replace('{f}',b.factor))}</button>`:''}
+  </div>`;
+}
+// Scales every unpriced-in-stone item's duration by the factor. A locked item is left alone -
+// its price is agreed, and this must not quietly move it. Nothing is scaled without a yes.
+function applyBias(id,factor){
+  const t=T[LANG],e=getEst(id);
+  if(!e||!guardEdit(e))return;
+  const open=e.workItems.filter(wi=>itemDays(wi)>0&&!isItemLocked(wi));
+  const locked=e.workItems.filter(wi=>itemDays(wi)>0&&isItemLocked(wi)).length;
+  if(!open.length){wAlert(locked?t.bias_all_locked:t.bias_nothing);return;}
+  const before=effortTotals(e.workItems).totalDays;
+  const after=Math.round(e.workItems.reduce((sum,wi)=>{
+    const d=itemDays(wi);
+    if(!d)return sum;
+    return sum+(isItemLocked(wi)?d:scaleDays(d,factor));
+  },0)*10)/10;
+  wConfirm((open.length===1?t.bias_confirm1:t.bias_confirm).replace('{n}',open.length).replace('{f}',factor)
+      .replace('{before}',before).replace('{after}',after)
+      +(locked?'\n\n'+(locked===1?t.bias_skips_locked1:t.bias_skips_locked).replace('{n}',locked):''),
+    ()=>{
+      open.forEach(wi=>{wi.days=scaleDays(itemDays(wi),factor);});
+      syncEstimation(e);renderAll();
+      toast((open.length===1?t.bias_done1:t.bias_done).replace('{n}',open.length).replace('{f}',factor));
+    },{yes:t.bias_apply_yes});
+}
+// Durations are typed in half days, so a scaled one is rounded to the same step and never to zero.
+function scaleDays(days,factor){return Math.max(0.5,Math.round(days*factor*2)/2);}
 
 </script>
 </body></html>

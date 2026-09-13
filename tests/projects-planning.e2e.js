@@ -104,6 +104,58 @@ async function projectWorkflow(page) {
   assert.ok(effort.avgPeople > 1.4 && effort.avgPeople < 1.5, 'the average crew is weighted by duration, not a plain average');
   step('Estimating: duration and crew roll up from the items');
 
+  // How the workshop's own estimates have turned out, offered against these durations. The
+  // project is a Fabrication job, and the workshop has finished one of those.
+  await page.evaluate((no) => { const p = WorkshopData.findProject(no); p.types = ['Fabrication']; WorkshopData.upsertProject(p); }, project.no);
+  await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
+  await page.waitForTimeout(150);
+  const bias = await page.evaluate(() => { const el = document.querySelector('.biasrow'); return el && el.innerText.replace(/\s+/g, ' '); });
+  assert.ok(bias, 'a project of a kind the workshop has finished must be told how those went');
+  assert.match(bias, /1 finished Fabrication job|1 avslutat Fabrication|1 završena Fabrication/i, bias);
+  assert.ok(bias.includes('P-26-0004'), `the project behind the figure must be named: ${bias}`);
+  assert.ok(/0\.98/.test(bias), `the factor those jobs actually produced must be shown: ${bias}`);
+  step('Estimating: the factor is drawn from finished work of this kind, and names it');
+
+  // Give the workshop a finished job of this kind that genuinely ran long.
+  await page.evaluate(() => WorkshopData.upsertProject({ name: 'Past fabrication overrun', customer: 'MarineVent AB',
+    status: 'completed', plannedHours: 100, usedHours: 130, types: ['Fabrication'] }));
+  await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
+  await page.waitForTimeout(150);
+  const factor = Number((await page.locator('.biasrow .biasfig').innerText()).replace('×', ''));
+  assert.ok(factor > 1.2, `pooling the overrun with the earlier job must move the factor well above 1: ${factor}`);
+  const wasDays = await page.evaluate(() => getEst(selectedId).workItems.map((w) => w.days));
+  const wasLines = await page.evaluate(() => getEst(selectedId).workItems.map((w) => (w.lines || []).length));
+  await page.locator('.biasrow .tbtn').click();
+  await page.locator('.wask .waskmsg').waitFor();
+  const ask = (await page.locator('.wask .waskmsg').innerText()).replace(/\s+/g, ' ');
+  assert.ok(ask.includes(String(factor)), `the factor it will apply must be in the question: ${ask}`);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => getEst(selectedId).workItems.map((w) => w.days));
+  // Durations are typed in half days, so a scaled one lands on the same step and never on zero.
+  const expected = wasDays.map((d) => Math.max(0.5, Math.round(d * factor * 2) / 2));
+  assert.deepEqual(after, expected, `each duration is scaled and rounded to the half day it is typed in: ${after} vs ${expected}`);
+  assert.deepEqual(await page.evaluate(() => getEst(selectedId).workItems.map((w) => (w.lines || []).length)), wasLines,
+    'scaling durations must not touch the priced lines');
+  step('Estimating: applying the factor scales the durations, and only the durations');
+
+  // A locked item is agreed, and must not be moved by this.
+  await page.evaluate(() => { const e = getEst(selectedId); e.workItems[0].lock = lockItem(e.workItems[0], 'Aleksandar C.', '2026-09-13'); syncEstimation(e); renderAll(); });
+  await page.waitForTimeout(150);
+  await page.locator('.biasrow .tbtn').click();
+  await page.locator('.wask .waskmsg').waitFor();
+  assert.match(await page.locator('.wask .waskmsg').innerText(), /locked item is left|låst post lämnas|zaklučena stavka ostanuva/i);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(200);
+  const withLock = await page.evaluate(() => getEst(selectedId).workItems.map((w) => w.days));
+  assert.equal(withLock[0], after[0], 'the locked duration is exactly where it was');
+  // The unlocked one follows the same half-day rule — a one-day item at this factor still rounds
+  // back to one day, which is the rounding working, not the scaling failing.
+  assert.equal(withLock[1], Math.max(0.5, Math.round(after[1] * factor * 2) / 2));
+  await page.evaluate(() => { const e = getEst(selectedId); delete e.workItems[0].lock; e.workItems[0].days = 10; e.workItems[1].days = 1; syncEstimation(e); renderAll(); });
+  await page.waitForTimeout(120);
+  step('Estimating: a locked item is left exactly where it was agreed');
+
   // The workflow ported from the Projects module drives the project from here.
   await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
   await page.locator('.pstep[data-status="approved"]').click();

@@ -116,6 +116,27 @@
       .sort((a,b)=>b.samples-a.samples||a.type.localeCompare(b.type));
   }
 
+  // The factor that applies to one project: taken from the kinds of work it says it is, and only
+  // from everything the workshop has finished when it does not say - labelled so, because "your
+  // fabrication runs long" and "your work runs long" are not the same claim. A project counted
+  // under two of its own types is still one project, so the sum is over projects, not over types.
+  function biasFor(project,projects){
+    const all=projectEntries(projects);
+    if(!all.length)return null;
+    const types=(project&&Array.isArray(project.types)?project.types:[]).filter(Boolean);
+    const matched=types.length?all.filter(e=>e.types.some(t=>types.includes(t))):[];
+    const used=matched.length?matched:all;
+    const planned=round1(used.reduce((s,e)=>s+e.planned,0));
+    const actual=round1(used.reduce((s,e)=>s+e.actual,0));
+    return {
+      scope:matched.length?'type':'all',
+      types:matched.length?types.filter(t=>all.some(e=>e.types.includes(t))):[],
+      samples:used.length,planned,actual,
+      factor:planned?round2(actual/planned):null,
+      refs:used.map(e=>e.ref)
+    };
+  }
+
   // ── Proposing dates for a project's items ────────────────────────────────────────────────
   // One item after another at a stated number of hours a day, skipping weekends. Sequential is
   // the honest shape for a workshop this size: the same people move from one item to the next.
@@ -163,7 +184,7 @@
     DAY_HOURS,
     tokens,similarity,
     operationEntries,projectEntries,entries,
-    recall,biasByType,proposeSchedule
+    recall,biasByType,biasFor,proposeSchedule
   };
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimateMemory;
   if(global)global.EstimateMemory=EstimateMemory;
