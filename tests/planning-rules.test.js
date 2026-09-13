@@ -78,6 +78,23 @@ test('schedule: a project needs both ends of its own span before it can be drawn
   assert.equal(Planning.isScheduled(proj({start:'not a date'})),false);
   assert.equal(Planning.isScheduled(null),false);
 });
+test('schedule: the two spellings of a schedule are read as the same fact', ()=>{
+  // Estimating's scheduling step writes plannedStart/plannedCompletion; the seeded records use
+  // start/deadline. A project scheduled through Estimating must appear on the plan, not be
+  // reported as missing its dates.
+  const viaEstimating={no:'P-EST-1',status:'planned',start:'',deadline:'',
+    plannedStart:'2026-10-01',plannedCompletion:'2026-11-08',plannedHours:40,usedHours:0};
+  assert.equal(Planning.isScheduled(viaEstimating),true);
+  const bar=Planning.scheduleBar(viaEstimating);
+  assert.equal(bar.start,'2026-10-01');
+  assert.equal(bar.end,'2026-11-08');
+  assert.deepEqual(Planning.awaitingSchedule([viaEstimating],[]),[],'a scheduled project is not waiting');
+  // deadline still wins where both are present, because that is the date given to the customer.
+  const both=Object.assign({},viaEstimating,{deadline:'2026-11-02'});
+  assert.equal(Planning.scheduleBar(both).end,'2026-11-02');
+  assert.equal(Planning.scheduleBar(both).late,true,'a later planned completion than the deadline is an overrun');
+  assert.equal(Planning.scheduleBar(both).overrunDays,6);
+});
 test('schedule: a bar spans its own dates inclusively', ()=>{
   const bar=Planning.scheduleBar(proj({start:'2026-09-07',deadline:'2026-09-07'}));
   assert.equal(bar.days,1,'a one-day job is one day long, not zero');

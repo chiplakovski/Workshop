@@ -49,10 +49,19 @@
   }
   function statusForLane(laneId){return LANE_STATUS[laneId]||null;}
 
+  // The schedule a project carries is spelled differently depending on which
+  // module wrote it: the seeded records use start/deadline, while Estimating's
+  // scheduling step writes plannedStart/plannedCompletion. Both are the same
+  // fact, so they are read through one pair of accessors instead of each
+  // function picking its own favourite field.
+  function startOf(project){return project?day(project.start||project.plannedStart):null;}
+  function endOf(project){return project?day(project.deadline||project.plannedCompletion||project.expectedCompletion):null;}
+  function expectedOf(project){return project?day(project.expectedCompletion||project.plannedCompletion):null;}
+
   // A project with no dates cannot be drawn on a schedule. Rather than invent
   // a span, it is reported as unscheduled so the board can ask for the dates.
   function isScheduled(project){
-    return Boolean(project&&day(project.start)&&day(project.deadline||project.expectedCompletion));
+    return Boolean(startOf(project)&&endOf(project));
   }
 
   function board(projects){
@@ -70,10 +79,10 @@
   // thing a planner needs to see.
   function scheduleBar(project){
     if(!isScheduled(project))return null;
-    const start=day(project.start);
-    const end=day(project.deadline||project.expectedCompletion);
+    const start=startOf(project);
+    const end=endOf(project);
     if(end<start)return null;
-    const expected=day(project.expectedCompletion);
+    const expected=expectedOf(project);
     const days=Math.round((end-start)/DAY)+1;
     return {
       no:project.no,name:project.name,
@@ -131,7 +140,7 @@
     (Array.isArray(projects)?projects:[]).forEach(p=>{
       if(!isScheduled(p))return;
       if(laneOf(p)==='done'||laneOf(p)===null)return;
-      const start=day(p.start),end=day(p.deadline||p.expectedCompletion);
+      const start=startOf(p),end=endOf(p);
       const days=Math.round((end-start)/DAY)+1;
       const perDay=remainingHours(p)/days;
       if(!perDay)return;
@@ -205,13 +214,13 @@
     const undated=list
       .filter(p=>laneOf(p)&&laneOf(p)!=='done'&&!isScheduled(p))
       .map(p=>({kind:'project',no:p.no,name:p.name||'',customer:p.customer||'',
-        missing:[day(p.start)?null:'start',day(p.deadline||p.expectedCompletion)?null:'deadline'].filter(Boolean)}));
+        missing:[startOf(p)?null:'start',endOf(p)?null:'deadline'].filter(Boolean)}));
     return quotes.concat(undated);
   }
 
   const PlanningRules={
     LANES,HIDDEN_STATUSES,
-    laneOf,statusForLane,isScheduled,board,
+    laneOf,statusForLane,startOf,endOf,expectedOf,isScheduled,board,
     scheduleBar,schedule,
     weekStart,weeks,remainingHours,demandByWeek,loadByWeek,
     peopleOnPlan,machinesOnPlan,awaitingSchedule

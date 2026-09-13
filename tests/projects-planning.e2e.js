@@ -93,32 +93,116 @@ async function projectWorkflow(page) {
 }
 
 async function planningWorkflow(page, project) {
-  const planningRecord = await page.evaluate((no) => PROJECTS.find((item) => item.no === no), project.no);
-  assert.ok(planningRecord, 'shared project did not hydrate into Planning');
-  assert.equal(planningRecord.name, PROJECT_EDITED_NAME);
-  assert.equal(planningRecord.start, '2026-10-01');
-  assert.equal(planningRecord.deadline, '2026-11-08');
-  assert.equal(planningRecord.updatedCompletion, '2026-11-01');
+  // Planning keeps no project list of its own: it reads the shared records, so the project that
+  // Estimating just scheduled has to appear on the board with the dates Estimating wrote.
+  const card = page.locator(`#planBoard .kcard[data-no="${project.no}"]`);
+  await card.waitFor();
+  const lane = await page.evaluate((no) => {
+    const el = [...document.querySelectorAll('#planBoard .kcol')].find((c) => c.querySelector(`[data-no="${no}"]`));
+    return el && el.dataset.lane;
+  }, project.no);
+  assert.equal(lane, 'planned', 'a planned project belongs in the Planned lane');
+  const cardText = (await card.innerText()).replace(/\s+/g, ' ');
+  assert.ok(cardText.includes(project.no), cardText);
+  assert.ok(cardText.includes(PROJECT_EDITED_NAME), cardText);
+  // Estimating writes plannedStart/plannedCompletion; the board must read that as a real schedule
+  // rather than reporting the project as missing its dates.
+  assert.ok(/01 Oct.*08 Nov/.test(cardText), `the card must carry the dates Estimating set: ${cardText}`);
+  const waiting = await page.evaluate(() => document.getElementById('waitList').innerText);
+  assert.ok(!waiting.includes(project.no), 'a project with both dates is not waiting to be scheduled');
+  step('Estimating → Planning: the project appears on the board with its real schedule');
 
-  await page.evaluate((no) => { setSub('existing'); selectedProjNo = no; renderAll(); }, project.no);
-  const body = await page.locator('body').innerText();
-  assert.ok(body.includes(`${project.no} — ${PROJECT_EDITED_NAME}`));
-  assert.ok(body.includes('2026-10-01'));
-  step('Projects → Planning: project hydrates with its real schedule');
+  // It is drawn on the schedule from its own dates, and its expected completion is ahead of the
+  // deadline, so no overrun may be marked on it.
+  await page.evaluate(() => showView('schedule'));
+  await page.waitForTimeout(120);
+  const bar = await page.evaluate((no) => {
+    const row = [...document.querySelectorAll('#gantt .grow')].find((r) => r.querySelector('.glabel b').textContent.startsWith(no));
+    if (!row) return null;
+    return { label: row.querySelector('.glabel').innerText.replace(/\s+/g, ' '), over: !!row.querySelector('.gover') };
+  }, project.no);
+  assert.ok(bar, 'the project must be drawn on the schedule');
+  assert.ok(/39 d/.test(bar.label), `the bar spans its own dates: ${bar.label}`);
+  assert.equal(bar.over, false, 'expected completion before the deadline is not an overrun');
+  step('Planning: the schedule draws the project from its own dates');
 
-  await page.evaluate((no) => setPhase(no, 'production'), project.no);
-  const updated = await page.evaluate((no) => WorkshopData.findProject(no), project.no);
-  assert.equal(updated.phase, 'production');
-  step('Planning → Projects: phase update persists to shared project data');
+  // Dragging a card is how a stage is changed, and it writes through to the shared project.
+  await page.evaluate(() => showView('board'));
+  await page.waitForTimeout(120);
+  const from = await card.boundingBox();
+  const to = await page.locator('#planBoard .kcol[data-lane="progress"] .kcbody').boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + 24, { steps: 10 });
+  await page.mouse.up();
+  await page.locator('.wask .waskmsg').waitFor();
+  const question = await page.locator('.wask .waskmsg').innerText();
+  assert.ok(question.includes(project.no) && question.includes('In progress'), `the move must be confirmed by name: ${question}`);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(150);
+  let updated = await page.evaluate((no) => WorkshopData.findProject(no), project.no);
+  assert.equal(updated.status, 'production', 'the lane is the project status');
+  assert.equal(updated.phase, 'production', 'the stage the work is at moves with it');
+  step('Planning → Projects: moving a card writes the stage to the shared project');
+
+  // A project missing a date is asked about, never given one silently.
+  await page.evaluate((no) => WorkshopData.updateProject(no, { deadline: '', plannedCompletion: '', expectedCompletion: '' }), project.no);
+  await page.evaluate(() => renderAll());
+  await page.waitForTimeout(120);
+  const waitRow = await page.evaluate((no) => {
+    const row = [...document.querySelectorAll('#waitList .waitrow')].find((r) => r.innerText.includes(no));
+    return row && row.innerText.replace(/\s+/g, ' ');
+  }, project.no);
+  assert.ok(waitRow, 'a project with no deadline must be listed as waiting to be scheduled');
+  assert.ok(/deadline/i.test(waitRow), `the row must say which date is missing: ${waitRow}`);
+  const drawn = await page.evaluate((no) => {
+    showView('schedule');
+    return [...document.querySelectorAll('#gantt .grow')].some((r) => r.querySelector('.glabel b').textContent.startsWith(no));
+  }, project.no);
+  assert.equal(drawn, false, 'no bar may be drawn for a project without both dates');
+  step('Planning: a missing date is reported, not invented');
+
+  // Giving it the date puts it back on the schedule, written where every module reads it.
+  await page.evaluate(() => showView('board'));
+  await page.waitForTimeout(120);
+  await page.evaluate((no) => openDateForm(no), project.no);
+  await page.locator('#dateModal.show').waitFor();
+  await page.locator('#dfDeadline').fill('2026-11-20');
+  await page.locator('#dfHours').fill('96');
+  await page.locator('#dateModal .primary').click();
+  await page.waitForTimeout(200);
+  updated = await page.evaluate((no) => WorkshopData.findProject(no), project.no);
+  assert.equal(updated.deadline, '2026-11-20');
+  assert.equal(updated.plannedCompletion, '2026-11-20', 'both spellings are written, so no module loses sight of it');
+  assert.equal(updated.plannedHours, 96);
+  step('Planning: the dates given here are written to the shared project');
 
   await page.reload({ waitUntil: 'load' });
-  const restoredPhase = await page.evaluate((no) => {
-    const item = PROJECTS.find((candidate) => candidate.no === no);
-    if (item) { setSub('existing'); selectedProjNo = no; renderAll(); }
-    return item && item.phase;
+  await page.waitForTimeout(200);
+  const restored = await page.evaluate((no) => {
+    const p = WorkshopData.findProject(no);
+    const el = [...document.querySelectorAll('#planBoard .kcol')].find((c) => c.querySelector(`[data-no="${no}"]`));
+    return { status: p.status, deadline: p.deadline, hours: p.plannedHours, lane: el && el.dataset.lane };
   }, project.no);
-  assert.equal(restoredPhase, 'production');
-  step('Planning: project phase survives reload');
+  assert.deepEqual(restored, { status: 'production', deadline: '2026-11-20', hours: 96, lane: 'progress' });
+  step('Planning: stage and dates survive reload');
+
+  // Capacity states what it is measured against, or says nothing rather than a made-up percentage.
+  await page.evaluate(() => showView('capacity'));
+  await page.waitForTimeout(150);
+  const blank = await page.evaluate(() => ({
+    note: document.getElementById('supplyNote').innerText,
+    load: [...document.querySelectorAll('#loadRows .loadrow .loadnums b')].length,
+    hours: [...document.querySelectorAll('#loadRows .loadrow')].some((r) => /\d/.test(r.innerText))
+  }));
+  assert.match(blank.note, /No hours per week stated|Inga timmar per vecka|Не се внесени часови/i);
+  assert.equal(blank.load, 0, 'with no hours per week stated, no load percentage may be shown');
+  assert.ok(blank.hours, 'the hours the projects owe are still real and still shown');
+  await page.locator('#hoursPerWeek').fill('160');
+  await page.waitForTimeout(200);
+  const stated = await page.evaluate(() => [...document.querySelectorAll('#loadRows .loadrow .loadnums b')].map((b) => b.textContent));
+  assert.ok(stated.length > 0 && stated.every((v) => /%$/.test(v)), `a stated supply produces real percentages: ${stated.join()}`);
+  step('Planning: weekly load is a percentage only of a supply somebody stated');
 }
 
 async function main() {
