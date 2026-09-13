@@ -107,7 +107,11 @@ html.kdragging .kcard{cursor:grabbing}
 @media(max-width:900px){.kboard{grid-template-columns:1fr}.kcbody{max-height:none}}
 .ksub.empty{opacity:.5}
 
-.kcacts{position:absolute;top:5px;right:5px;display:none;gap:4px}
+/* The actions appear over the card's corner on hover. The card is painted in translucent layers,
+   so rather than try to match it the strip floats on an opaque one of its own — otherwise it lands
+   half on top of the quantity and neither the quantity nor the buttons read. */
+.kcacts{position:absolute;top:3px;right:3px;display:none;gap:4px;padding:3px;
+  background:var(--navy-800);border:1px solid var(--line);box-shadow:0 4px 14px var(--shade-40)}
 .kcard:hover .kcacts{display:flex}
 .kcacts .mini{min-width:27px;min-height:27px;padding:0 6px;line-height:1;font-size:14px;
   display:grid;place-items:center;font-family:var(--font-heading)}
