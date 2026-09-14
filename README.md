@@ -135,4 +135,5 @@ one `WorkshopData` state and re-renders on the `workshop:data` event, rather tha
 copy. The remaining steps are a real backend/API/database and real authentication.
 
 For where the work stands, what was decided and why, and what to pick up next, see
-[`HANDOVER.md`](HANDOVER.md).
+[`HANDOVER.md`](HANDOVER.md). For a platform-independent description of the whole system — the
+data model, the business rules and the workflows — see [`APP-SPEC.md`](APP-SPEC.md).
