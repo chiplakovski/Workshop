@@ -1,0 +1,184 @@
+# Handover — 14 September 2026
+
+Where the Varmak Workshop prototype stands, what was decided and why, and what to pick up next.
+Written so a later session can continue without re-opening settled questions.
+
+**Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
+**HEAD:** `6bbaceb` — Pass 4.34.
+**Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
+**Green:** 681 unit tests · 16-page browser smoke · 94 end-to-end steps.
+
+---
+
+## 1. What this is
+
+A frontend prototype of an internal workshop system: 16 HTML pages, no backend, all data in one
+`localStorage` key (`varmak.workshop.frontend.v5`). It is also published as a single ~7 MB HTML
+file — every page inlined and served to an iframe via `srcdoc` — which is the link above.
+
+Two consequences of that packaging shape every decision below, and both have bitten:
+
+- **The sandboxed iframe refuses `window.confirm()` silently.** It returns `false`, so a guarded
+  action just quietly does nothing. Use `wConfirm` / `wAlert` / `wPrompt` from `workshop-ui.js`.
+- **HTML5 drag never fires there** — `dragstart` does not happen. Planning's board uses pointer
+  events instead. Do not "fix" it back to native drag.
+
+**Verification must happen in the packaged bundle**, not only against the files served from disk.
+A change that works locally and fails in the iframe is the normal failure mode, not a rare one.
+
+## 2. The rule that governs the whole project
+
+**Never show an invented figure. Report "no data" instead.**
+
+This is not a style preference — it is why the app can be trusted on a shop floor, and it is
+enforced structurally rather than by good intentions:
+
+- A finding with no source URL is dropped, not shown with a caveat.
+- What the workshop can do is read from the equipment register, never from a typed list, so a job
+  needing a machine it does not own is reported as missing rather than quietly accepted.
+- A lead created from a public post carries no email, no phone and no value, because a forum
+  thread has none. A lead with no value reads as `—`, never `0 kr`.
+- Estimating's recall counts only finished work as evidence, and says when the evidence is thin.
+
+When adding anything, ask what happens when the data is absent. The honest answer is always a
+visible gap, never a plausible number.
+
+## 3. Architecture worth knowing before changing anything
+
+**Business rules live in pure shared modules**, loaded by the page *and* required by the Node
+tests, so the browser and the test suite can never disagree about a rule. Adding a rule means
+adding it to the module, not to the page.
+
+`jobcard-rules` · `estimation-rules` · `project-rules` · `quality-gates` · `equipment-gates` ·
+`jobcard-equipment-rules` · `planning-rules` · `estimate-memory` · `material-reference` ·
+`prospect-rules`
+
+**One state, one event.** Every module reads `WorkshopData.get()` and re-renders on the
+`workshop:data` event. No module keeps its own copy. *(One exception — see §6.)*
+
+**Three themes, and Iris is the honest one.** Navy and Carbon are dark; Iris is light. Anything
+relying on a dark ground — a button with no explicit `color`, a chip tinted by opacity alone —
+breaks in Iris and nowhere else. Check every new colour there.
+
+## 4. What was built in this session
+
+**Pass 4.22–4.26 — Planning rebuilt.** It was called a catastrophe in both UI and workflow, and
+was rebuilt as Board / Schedule / Capacity against `planning-rules.js`. Clicking a board project
+opens its items, each with its own start and finish dates. Titles lead, numbering steps back.
+
+**Pass 4.27–4.28 — the workshop answers from its own record.** `estimate-memory.js` lets
+Estimating recall how similar past work actually turned out, and offer a bias factor by job type.
+Only finished work counts. Thin evidence is reported as thin.
+
+**Pass 4.29–4.33 — Store.** A wide item form, validation that names the field it rejects, an
+information panel per item (where it lives, when it was bought, the last projects it went into),
+and card actions that are big enough to hit and no longer overlap the quantity.
+
+**Pass 4.34 — the Marketing findings queue (Phase 0 of the marketing rework).**
+Marketing → **Findings**. Run a sweep, get a queue of cards, Accept or Reject each. Accepted
+becomes a real lead. It works offline with no server and no spend, because the point was to test
+whether the workflow is worth paying for *before* paying for it.
+
+Three things are enforced in code, not intention:
+- Capability matching reads the real equipment register; a quarantined machine counts as *owned
+  but not usable today*.
+- A verdict has a **ceiling**, not just a score. Freshness and proximity rank work the shop *can*
+  take; they can never lift work it cannot. "100-ton pressing, posted yesterday, 5 km away" comes
+  out **SKIP**.
+- Reported once, never reported again — rejected findings included.
+
+Everything is labelled as sample: `demo:true` on every finding, a banner above the queue, and
+**no source URL points at a live page** (all on `demo.varmak.local`). A fabricated thread id on a
+real forum is the one lie this project does not tell.
+
+## 5. Decisions already made — do not re-open these
+
+| Decision | Why |
+|---|---|
+| **No 50,000-item material catalogue** | Generated rows carry no supplier article number, price or availability — you cannot order from them. Real supplier catalogues will be imported instead once there is a backend. |
+| **No catalogue search index / virtualised picker** | It existed only to survive 50k rows. Dropped with the 50k. The current search is fine for a few thousand. |
+| **No fabricated beam weights** | IPE/HEA/HEB weight per metre is tabulated (root radii, tapered flanges). Computing one lands ~2–3% wrong and presents it as fact. Either carry the designation with no weight, or load a real supplier table. |
+| **No auto-created opportunities from findings** | A GO verdict means *worth a phone call*, not *there is a budget*. An auto-created opportunity carries a value that flows into the pipeline total, the weighted forecast and the win rate. One bad entry corrupts every figure downstream. |
+| **The AI brings things; it never commits you** | It may draft a reply. It does not send one. |
+| **Model backing needs a server** | The API key cannot live in browser JS, and the published artifact cannot make network calls at all (CSP blocks fetch to every host). Anything model-backed can never run inside the shareable demo. |
+
+## 6. Known problems, in the order they are worth fixing
+
+1. **Tenders are page-local and are lost on reload.** `TENDERS` is a plain array inside
+   `marketing-desktop.html` (~line 375) — not in `workshop-data.js`, not saved, not refreshed on
+   the `workshop:data` event. This is a plain bug and the only module that breaks the one-state
+   rule. *Fix first.*
+
+2. **An item has exactly one price.** Buy the same plate from two suppliers and only the last one
+   entered survives. Needs a supplier–item table: item ↔ supplier ↔ their article number ↔ their
+   price ↔ pack size ↔ lead time. Useful immediately, and it is the landing zone every catalogue
+   import writes into later — building it after the import means redesigning instead of loading.
+
+3. **`code` is overloaded** — one field labelled "Supplier / drawing code" doing two jobs. The
+   supplier article number needs to be its own field.
+
+4. **A lookup for a missing record throws.** `clone(undefined)` is a `JSON.parse` error, so
+   `findMarketingLead('nope')` and its siblings throw rather than returning nothing.
+   `findProspectFinding` and `lastProspectSweep` guard against this; the older ones do not.
+
+5. **A page offers a file through a plain download link**, which the artifact viewer never grants
+   permission for — the link silently does nothing for viewers. Pre-existing; surfaced by the
+   Version 72 publish warning.
+
+## 7. The road to live, in order
+
+**Step 1 — finish the prototype.** §6 items 1–4. None need a backend.
+
+**Step 2 — the backend.** A database and a small API. This is the real project; the AI is the
+cheap half. Auth, backups, hosting, someone to fix it at 11pm.
+
+**Step 3 — the real sweep.** Managed Agents *scheduled deployments* run the agent nightly on
+Anthropic's side — no scheduler of your own. `web_search` / `web_fetch` take `allowed_domains`, so
+it is pointed at named sources only. The API token lives in a **vault credential**: substituted at
+egress, never visible inside the agent's sandbox. **Session budgets** are hard dollar caps, so it
+cannot overspend. Start on `claude-opus-5`; move reading-heavy sub-tasks to Haiku 4.5 workers once
+there is a baseline of what gets accepted and rejected. Roughly $9–19/month.
+
+**The app barely changes at that point.** The findings queue already does all of it. One swap:
+
+```js
+ProspectStub.sample()   →   fetch('/api/findings')
+```
+
+That was the entire reason Phase 0 was built against a stub.
+
+**Step 4 — supplier catalogue import.** Excel/CSV by email is what a small customer actually gets;
+punchout/OCI exists but usually needs a bigger account. The model reads the first rows and proposes
+the column mapping (`Artikelnr` / `Art.nr` / `Benämning` / `Nettopris` differ per supplier); you
+confirm it once; every import after is plain deterministic code. AI for the ambiguous one-time
+step, none in the repeating path.
+
+Barcodes will cover the consumables half of the store — fasteners, abrasives, welding wire and gas
+have real EANs. **Steel cut to size does not**; it is identified by heat number, which the app
+already tracks. `barcodeLinks` + `linkBarcode()` already exist and support several codes per item.
+Pictures need the backend — they cannot live in `localStorage`.
+
+**Step 5 — push notifications, last.** Web Push works on Android and desktop. **On iPhone it only
+works if the app is installed to the home screen as a PWA.** If that will not happen, use email or
+a Telegram bot instead. Decide before building, not after.
+
+## 8. Two things to settle before going live
+
+**GDPR.** Names and contacts taken from public forums are personal data. B2B prospecting can rest
+on legitimate interest, but those people are owed notice and a right to object. The `dnc` flag
+helps, and the queue already records where every record came from — which is what you would have
+to show. Worth twenty minutes with someone who knows Swedish practice *before* launch.
+
+**The sources' own terms.** Blocket in particular is unfriendly to automated access, whoever runs
+the fetch. Check each source and drop the ones that forbid it.
+
+## 9. Working notes
+
+- Tests: `npm test`, `npm run test:syntax`, `npm run test:browser`, `npm run test:e2e`.
+  The browser suites need `PLAYWRIGHT_CHROME_PATH` set to an installed Chromium. Never run
+  `playwright install`.
+- Commit style: `Pass N.NN - <what changed, in plain words>`, then why it mattered.
+- A Python edit script that asserts at the end and fails has saved **nothing** — the write is the
+  last statement. Write after each edit, or verify the file afterwards.
+- Do not re-derive expectations in tests from your own reasoning. Derive them from what the code
+  actually produces, then judge whether that output is right.

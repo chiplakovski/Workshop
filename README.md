@@ -16,8 +16,7 @@ permission is actually enforced beyond the UI.
 | Hub | `hub-desktop.html`, `hub-mobile.html` |
 | Customers | `customers-desktop.html` |
 | Suppliers | `suppliers-desktop.html` |
-| Estimation | `estimations-desktop.html` |
-| Projects | `projects-desktop.html` |
+| Project / Estimator | `estimations-desktop.html` |
 | Planning | `planning-desktop.html` |
 | Store | `store-desktop.html` |
 | Hours | `hours-desktop.html`, `hours-mobile.html` |
@@ -33,19 +32,26 @@ Shared logic used across modules:
   the customers/estimations/projects/inventory/jobcards/equipment/quality records, the v3→v4
   migration and backup/import safeguards described below.
 - `workshop-forms.js` — shared form helpers.
-- `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
-  `equipment-gates.js`, `jobcard-equipment-rules.js`, `store-purchasing-rules.js` — small pure
-  business-rule modules shared between a page and the automated test suite (see **Tests** below).
+- `workshop-ui.js` / `workshop-ui.css` — the shared UI layer: one type scale, delayed tooltips, the
+  per-module Help panel, and `wConfirm`/`wAlert`/`wPrompt`. The last of those matter: a sandboxed
+  iframe silently refuses `window.confirm()`, so the packaged demo asks and tells in its own markup.
+- Pure business-rule modules, each shared between a page and the automated test suite (see
+  **Tests** below), so the browser and the tests can never disagree about a rule:
+  `jobcard-rules.js`, `estimation-rules.js`, `project-rules.js`, `quality-gates.js`,
+  `equipment-gates.js`, `jobcard-equipment-rules.js`, `planning-rules.js`, `estimate-memory.js`,
+  `material-reference.js`, `prospect-rules.js`.
+- `prospect-stub.js` — fixed sample findings standing in for an outward sweep of public sources,
+  so the Marketing findings queue can be driven before anything is wired to a model or a network.
 
 ## Access model
 - Worker logs in → Hours module only (demo only, not enforced by any backend)
 - Admin logs in → Hub → any module (demo only, not enforced by any backend)
 
 ## Data storage and migration
-All data is stored client-side under the `varmak.workshop.frontend.v4` localStorage key. On load,
-if that key is missing or unreadable, `workshop-data.js` will look for the older
-`varmak.workshop.frontend.v3` key and migrate it forward automatically, without ever deleting the
-original v3 record or overwriting a valid v4 record with corrupted data. Call
+All data is stored client-side under the `varmak.workshop.frontend.v5` localStorage key. On load,
+if that key is missing or unreadable, `workshop-data.js` looks for the older
+`varmak.workshop.frontend.v4` and `...v3` keys and migrates them forward automatically, without
+ever deleting the original record or overwriting valid data with corrupted data. Call
 `WorkshopData.getDataHealth()` from the browser console to see the current migration/data-health
 status. `WorkshopData.backupData()` downloads a JSON backup; `WorkshopData.validateBackup(obj)`
 and `WorkshopData.importBackup(obj)` validate and safely restore one (the current data is kept as
@@ -67,23 +73,28 @@ Sharp edges, engineering-grid + spark animation, compact SV / EN / MK language s
 3K/4K scaling on desktop screens.
 
 ### Themes
-Two themes ship with the prototype:
+Three themes ship with the prototype:
 
 | Theme | Look | Type |
 |---|---|---|
 | **Navy** (default) | The original navy palette (#013179) | Sora / Inter |
 | **Carbon** | Near-black ground, dimmed ambient wash, white-hot sparks | Space Grotesk / IBM Plex Sans |
+| **Iris** | Light: white panels, indigo accent, dark text | Public Sans |
 
 The theme toggle lives on `login.html` (bottom-right, next to the language switcher). It writes
 the choice to the `varmak.theme` localStorage key, and every page reads that key in a small
 inline script in `<head>` — before first paint, so there is no flash of the wrong theme — and
-sets `data-theme="carbon"` on `<html>` when it applies.
+sets `data-theme="carbon"` or `data-theme="iris"` on `<html>` when it applies.
+
+Iris is the one that catches mistakes: it is the only light theme, so anything that relies on a
+dark ground — a button with no explicit `color`, a chip tinted by opacity alone — becomes
+unreadable there and nowhere else. Check every new colour in Iris before calling it done.
 
 Theming is entirely CSS-variable driven: each page defines its palette in `:root` and overrides
-the same variable names under `:root[data-theme="carbon"]`. Colours that used to be hardcoded in
+the same variable names under `:root[data-theme="carbon"]` and `:root[data-theme="iris"]`. Colours that used to be hardcoded in
 `rgba()`/gradients were given `--c-*` custom properties (with `--c-*-rgb` triplet companions for
 values used at several alpha levels) so both themes flow from one set of declarations. Adding a
-third theme therefore means adding one more `:root[data-theme="..."]` block per page — no
+fourth theme therefore means adding one more `:root[data-theme="..."]` block per page — no
 component CSS has to change.
 
 Two deliberate exceptions: colours built inside `<script>` blocks (a handful of calendar/chart
@@ -95,19 +106,21 @@ Open any `.html` file in a browser, or use the VS Code **Live Server** extension
 (right-click a file → "Open with Live Server"). Keep online — fonts load from Google.
 
 ## Tests
-A lightweight test suite (Node's built-in test runner, no external dependencies) covers data
-migration, backup/import safety, and pure business-rule helpers for Jobcards, Estimation,
-Projects, Quality, Equipment, and Store/Purchasing. It requires Node.js 18+ on your PATH.
+A test suite (Node's built-in test runner, no external dependencies) covers data migration,
+backup/import safety, and every pure business-rule module — Jobcards, Estimation, Projects,
+Quality, Equipment, Planning, estimate recall, the material reference and the findings queue.
+**681 unit tests, a 16-page browser smoke test and 94 end-to-end steps, all passing.** Requires
+Node.js 18+ on your PATH.
 
 ```
 npm test          # runs tests/*.test.js via node --test
 npm run test:syntax   # checks every .js file and every HTML page's inline scripts parse,
                        # and that every literal internal .html link resolves to a real file
-npm run test:browser  # opens all 18 HTML entry points in headless Chrome/Edge and exercises
+npm run test:browser  # opens all 16 HTML entry points in headless Chrome/Edge and exercises
                       # safe tabs/views/filters/language controls while checking browser errors
-npm run test:e2e      # runs persisted Customers/Estimations, Projects/Planning,
-                      # Jobcards/Hours/Equipment, Store/Purchasing/Suppliers, and
-                      # Documents/Reports and Marketing/Sales workflows
+npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Planning,
+                      # Jobcards/Hours/Equipment, Store/Suppliers, Documents/Reports
+                      # and Marketing/Sales workflows
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
@@ -117,5 +130,9 @@ access.
 
 ## Status
 Frontend prototype. No production backend, database, secure file storage or real permission
-enforcement exists yet. Next steps (not started): a shared-data consolidation pass, a real
-backend/API/database, and real authentication.
+enforcement exists yet. The shared-data consolidation is done — every module now reads and writes
+one `WorkshopData` state and re-renders on the `workshop:data` event, rather than keeping its own
+copy. The remaining steps are a real backend/API/database and real authentication.
+
+For where the work stands, what was decided and why, and what to pick up next, see
+[`HANDOVER.md`](HANDOVER.md).
