@@ -266,23 +266,70 @@ installed to the home screen. Email or a messaging bot is the simpler alternativ
 those people are owed notice and a right to object. And check each source's terms on automated
 access.
 
-## 10. Notes for rebuilding on a no-code platform
+## 10. Choosing a platform to run this on
 
-**What transfers cleanly:** the 40 tables, all CRUD, list views with filtering and search, the
-linked-record workflows, roles and permissions, file storage, multi-user access — and the whole
-backend problem disappears. Existing data exports as JSON (`backupData()`) and converts to CSV for
-import. The generated catalogue becomes ~1,900 ordinary rows.
+There are three shapes of answer, and they differ in what they hand you and what they cost.
 
-**What must be rebuilt:** all 16 pages of UI, three themes, and the three-language switching.
+### A — An all-in-one platform (e.g. Bubble)
+Frontend, database, auth and hosting in one proprietary product.
 
-**What deserves real care:** the business rules in §5 currently live in ten pure modules with 681
-tests proving they hold. Rebuilt as visual workflows, they become clickable configuration with no
-test suite behind them — and some of them are safety logic. A quality hold that stops blocking, or
-an equipment gate that lets an operation start on a machine that is out of service, is not a
-cosmetic bug. Whatever the platform, budget time to re-verify those rules deliberately, and keep
-the existing test suite as the specification of what correct behaviour looks like.
+- **Hands you:** the entire backend problem, solved, with no schema design and no SQL.
+- **Costs you:** all 16 pages of UI rebuilt, three themes, three-language switching. The business
+  rules in §5 become clickable configuration with no test suite behind them. The data layer is
+  proprietary — hard to export, and this model is heavily relational (project → jobcards →
+  operations → hours; hold → project/jobcard), which is not where these data layers are fastest.
+- **Best when:** the priority is getting something live quickly without technical depth.
 
-**Worth checking before committing:** performance on list views over the larger tables, the cost
-tier needed for 40 tables and this many workflows, whether the three-language requirement is
-comfortable or awkward, and whether an external scheduled agent can post into the platform's data
-API (needed for step 3).
+### B — A frontend builder over a real database (e.g. WeWeb + Supabase)
+WeWeb publishes a standard **Vue.js single-page app that can be exported and self-hosted**, and
+connects to Supabase, Xano, Airtable, Google Sheets, REST or GraphQL — it also now offers a native
+backend of its own.
+
+- **Hands you:** the same freedom from hosting and auth work, **without lock-in** — the code is
+  exportable and, on Postgres, so is the data.
+- **Fits this system unusually well**, for a specific reason: the §5 rules can live in the
+  *database* rather than in the UI. A quality hold that blocks completion becomes a constraint or
+  trigger — it then holds against direct API access too, not only when someone clicks through the
+  interface. Status transitions become functions. And they can be **tested** (pgTAP or plain SQL
+  test scripts), so the discipline behind the current 681 tests survives in another form. For
+  rules that are safety logic rather than convenience, that is the difference that matters.
+- Forty related tables with foreign keys is Postgres's home ground, and an external scheduled
+  agent can write findings straight in through the REST API or an edge function (§9, step 3).
+- **Costs you:** the 16 pages still get rebuilt. More technical — SQL, row-level security,
+  possibly triggers. Two products to pay for and learn unless the native backend is used.
+
+### C — Keep the frontend, add a backend to it
+The pages already exist, work, are tested, and run in three languages and three themes.
+`workshop-data.js` is **the only file that touches storage** — 221 operations behind one stable
+interface. Replacing its persistence with a real database leaves the 16 pages untouched, the ten
+rule modules untouched, and most of the test suite intact.
+
+- **Costs you:** it stays code. Changing a screen means editing code, not dragging a box.
+- **Best when:** the goal is the system being right and staying right, rather than being editable
+  without a developer.
+
+### How to weigh them
+Option A is fastest to something live. Option B is the best technical fit for *this* system, and
+the only one of the three that both removes the infrastructure work and keeps the rules testable.
+Option C is the least total work, because rebuilding sixteen working pages is more effort than
+swapping one file's storage layer — but it does not answer the wish to maintain the app without
+touching code, which is usually the real reason for asking.
+
+**What transfers to A or B regardless:** the 40 tables, all CRUD, list views with filtering and
+search, the linked-record workflows, roles and permissions, file storage, multi-user access.
+Existing data exports as JSON (`backupData()`) and converts to CSV. The generated catalogue
+becomes ~1,900 ordinary rows.
+
+**What must be rebuilt for A or B:** all 16 pages of UI, three themes, three-language switching.
+
+**What deserves real care in every case:** the rules in §5 currently live in ten pure modules with
+681 tests proving they hold. A quality hold that stops blocking, or an equipment gate that lets an
+operation start on a machine that is out of service, is not a cosmetic bug. Whatever the platform,
+budget time to re-verify those rules deliberately, and keep the existing test suite as the
+specification of what correct behaviour looks like.
+
+**Worth checking before committing to any of them:** performance on list views over the larger
+tables, the price tier needed for 40 tables and this many workflows, whether three-language
+switching is comfortable or awkward, and whether an external scheduled agent can write into the
+platform's data API — that last one decides whether step 3 works at all. Platform pricing and AI
+features move quickly; check them directly rather than trusting any summary, this one included.
