@@ -234,6 +234,63 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
+
+  /* ── The findings queue ──────────────────────────────────────────────────────────────────── */
+  .swbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .swwhen{font-size:13px;color:var(--steel-300);}
+  .swwhen b{color:var(--ice);font-weight:600;}
+  .swwhen small{display:block;font-size:11px;color:var(--steel-400);margin-top:3px;}
+  .swtally{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .swchip{display:flex;align-items:baseline;gap:7px;padding:8px 12px;background:var(--lift-04);border:1px solid var(--line);}
+  .swchip b{font-family:var(--font-heading);font-size:17px;font-weight:700;color:var(--ice);line-height:1;}
+  .swchip span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);}
+  .swchip.go b{color:var(--ok)}.swchip.maybe b{color:var(--warn)}.swchip.skip b{color:var(--steel-400)}
+  /* A stub is a stub. It says so above the queue, on every card, and on any lead made from one. */
+  .swdemo{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;margin-bottom:16px;
+    background:rgba(var(--c-warn-rgb),.10);border:1px solid rgba(var(--c-warn-rgb),.38);}
+  .swdemo i{font-style:normal;color:var(--warn);font-size:16px;line-height:1.2;}
+  .swdemo p{font-size:12.5px;color:var(--steel-300);line-height:1.5;}
+  .swdemo p b{color:var(--tint-warn);font-weight:600;}
+  .fdlist{display:flex;flex-direction:column;gap:12px;}
+  .fdcard{border:1px solid var(--line);background:var(--lift-03);padding:15px 17px;transition:.16s;}
+  .fdcard:hover{border-color:rgba(var(--c-line-rgb),.32);background:var(--lift-045);}
+  .fdcard.decided{opacity:.62;}
+  .fdtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px;}
+  .fdklass{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:4px 8px;
+    border:1px solid var(--line);color:var(--steel-300);background:var(--lift-06);}
+  .fdklass.hot{color:var(--tint-danger);border-color:rgba(var(--c-danger-rgb),.4);background:rgba(var(--c-danger-rgb),.12);}
+  .fdklass.repair{color:var(--tint-warn);border-color:rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.12);}
+  .fdklass.prototype{color:var(--idea);border-color:rgba(var(--c-purple-rgb),.4);background:rgba(var(--c-purple-rgb),.12);}
+  .fdklass.subcontract{color:var(--tint-info);border-color:rgba(var(--c-accent-rgb),.4);background:rgba(var(--c-accent-rgb),.12);}
+  .fdverdict{font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 9px;}
+  .fdverdict.go{color:var(--tint-ok);background:rgba(var(--c-ok-rgb),.15);border:1px solid rgba(var(--c-ok-rgb),.4);}
+  .fdverdict.maybe{color:var(--tint-warn);background:rgba(var(--c-warn-rgb),.15);border:1px solid rgba(var(--c-warn-rgb),.4);}
+  .fdverdict.skip{color:var(--steel-400);background:var(--lift-06);border:1px solid var(--line);}
+  .fdfrom{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);}
+  .fdstate{margin-left:auto;font-size:11px;color:var(--steel-400);}
+  .fdstate b{color:var(--ok);font-weight:600;}
+  /* The title is the finding. Everything else on the card is there to judge it by. */
+  .fdcard h4{font-family:var(--font-heading);font-size:16.5px;font-weight:600;color:var(--ice);
+    line-height:1.35;margin-bottom:6px;}
+  .fdmeta{font-size:11.5px;color:var(--steel-400);margin-bottom:11px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+  .fdmeta em{font-style:normal;color:var(--steel-300);}
+  .fdneed{font-size:13px;color:var(--steel-300);line-height:1.55;margin-bottom:11px;}
+  .fdgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px;}
+  .fdfact{padding:9px 11px;background:var(--sunken);border:1px solid var(--line);}
+  .fdfact span{display:block;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;}
+  .fdfact p{font-size:12px;color:var(--steel-300);line-height:1.45;}
+  .fdfact p.none{color:var(--steel-400);font-style:italic;}
+  .fdwhy{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .fdwhy b{font-size:10.5px;padding:3px 8px;background:var(--lift-05);border:1px solid var(--line);
+    color:var(--steel-400);font-weight:500;}
+  .fdwhy b.good{color:var(--tint-ok);border-color:rgba(var(--c-ok-rgb),.3);}
+  .fdwhy b.bad{color:var(--tint-danger);border-color:rgba(var(--c-danger-rgb),.3);}
+  .fdacts{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line);}
+  .fdacts a.src{font-size:11.5px;color:var(--spark);text-decoration:none;border-bottom:1px dashed rgba(var(--c-accent-rgb),.45);
+    margin-right:auto;max-width:100%;overflow-wrap:anywhere;}
+  .fdacts a.src:hover{color:var(--ice);}
+  .fdacts .tbtn{padding:8px 15px;}
+  .fdfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
@@ -242,6 +299,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <div class="ms-brand"><div class="ms-icon">&#9650;</div><div><h2>MARKETING</h2><small data-i="msub_short">Leads &amp; growth</small></div></div>
   <nav class="module-side-nav" id="moduleSideNav">
     <button class="on" data-ms="overview" onclick="setView('overview')"><i>&#9638;</i><span data-i="nav_overview">Marketing Overview</span></button>
+    <button data-ms="findings" onclick="setView('findings')"><i>&#9906;</i><span data-i="nav_findings">Findings</span></button>
     <button data-ms="leads" onclick="setView('leads')"><i>&#9673;</i><span data-i="nav_leads">Leads</span></button>
     <button data-ms="opportunities" onclick="setView('opportunities')"><i>&#9670;</i><span data-i="nav_opportunities">Opportunities</span></button>
     <button data-ms="tenders" onclick="setView('tenders')"><i>&#9636;</i><span data-i="nav_tenders">Tenders / RFQs</span></button>
@@ -279,11 +337,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="prospect-rules.js"></script><script src="prospect-stub.js"></script><script src="workshop-data.js"></script>
 <script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+// A value nobody has estimated yet reads as a dash, never as 0 kr — a lead off a forum post
+// carries no budget, and showing one as worthless is as wrong as inventing a figure for it.
+function fmtValue(n){return (n===null||n===undefined||n==='')?'—':fmt(n);}
 function initials(name){return String(name||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
 function d(s){return s?new Date(s+"T00:00:00"):null;}
 function daysBetween(a,b){return Math.round((b-a)/86400000);}
@@ -474,6 +535,175 @@ mk:{
   chart_none:"Sè uште nema podatoci."
 }
 };
+// ── The findings queue (Pass 4.34). The reason codes come off prospect-rules.js as codes, not
+// sentences, so each language says them in its own words and the stored record stays language-free.
+Object.assign(T.en,{
+  nav_findings:"Findings",
+  fd_title:"Findings from the sweep",
+  fd_sub:"Public sources, triaged against what this shop can actually do",
+  fd_ranat:"Last run",
+  fd_ranwhat:"{sources} sources checked · {secs} s",
+  fd_neverran:"No sweep has run yet",
+  fd_neverran_sub:"Run one to see what the queue would put in front of you.",
+  fd_run:"Run the sweep",
+  fd_running:"Sweeping…",
+  fd_done:"{n} new of {found} found.",
+  fd_done_none:"{found} found, nothing new — everything had been reported already.",
+  fd_t_sources:"Sources",fd_t_found:"Found",fd_t_new:"New",fd_t_known:"Seen before",
+  fd_t_dropped:"No source",fd_t_go:"Go",fd_t_maybe:"Maybe",fd_t_skip:"Skip",
+  fd_f_waiting:"Waiting for you",fd_f_go:"Go",fd_f_maybe:"Maybe",fd_f_skip:"Skip",fd_f_decided:"Decided",
+  fd_demo_t:"Sample findings.",
+  fd_demo_p:"Nothing was searched and nothing was found. These are fixed examples, so the workflow "+
+            "can be judged before anything is wired to a model. Every source link points at a demo "+
+            "address, not a live page.",
+  fd_sample:"sample",
+  fd_bysweep:"verdict from the sweep",fd_byrules:"verdict from the rules",
+  fd_accepted:"Accepted →",fd_dismissed:"Rejected",
+  fd_canwedo:"Machines for it",fd_cantwedo:"Not covered",fd_size:"Likely size",fd_approach:"How to approach",
+  fd_more:"+{n} more",fd_down:"{n} down, not counted",fd_alldown:"the only {n} it has are down",
+  fd_nomachine:"no machine in the register for this",
+  fd_nothingmissing:"nothing — all of it is in the shop",
+  fd_unknown:"not stated",
+  fd_nosource:"no source",
+  fd_today:"today",fd_daysago:"{n} d ago",fd_nodate:"no date",
+  fd_accept:"Accept",fd_reject:"Reject",
+  fd_reject_q:"Reject this finding? It will not come back in a later sweep.",
+  fd_accept_t:"Accept as a lead",
+  fd_company:"Company",fd_contact:"Contact",fd_owner:"Owner",
+  fd_accept_note:"Only what the finding actually says goes onto the lead. No email, no phone and no "+
+                 "value are filled in — a made-up figure on a lead card is worse than an empty field.",
+  fd_makelead:"Create the lead",
+  fd_made:"Lead {no} created.",
+  fd_empty:"Nothing waiting under this filter.",
+  fd_empty_never:"Nothing yet. Run the sweep to fill the queue.",
+  fd_disclaimer:"What the shop can do is read from the equipment register, so a finding needing a "+
+                "machine it does not own is shown as such rather than accepted. A finding with no "+
+                "source is dropped, and one already shown is never shown again.",
+  fdv_go:"GO",fdv_maybe:"MAYBE",fdv_skip:"SKIP",
+  fdk_hot:"Hot lead",fdk_prototype:"Prototype",fdk_repair:"Repair",fdk_subcontract:"Subcontract",
+  fdk_weak:"Weak signal",fdk_watch:"Watch",
+  fdp_welding:"welding",fdp_cutting:"cutting",fdp_bending:"bending / forming",
+  fdp_finishing:"grinding / finishing",fdp_lifting:"lifting",fdp_pressing:"pressing",
+  // Keyed by the exact reason code prospect-rules.js returns, so a new rule shows up as a missing
+  // translation rather than silently reading as something it is not.
+  'fdr_covered':"the shop can do it",
+  'fdr_missing-capability':"no machine for",
+  'fdr_outside-trade':"not our trade",
+  'fdr_machine-busy':"machine down",
+  'fdr_no-process-named':"no work named",
+  'fdr_fresh':"fresh",'fdr_stale':"old",'fdr_near':"nearby",'fdr_far':"far",
+  'fdr_no-date':"no date given",'fdr_held-back':"held back to"
+});
+Object.assign(T.sv,{
+  nav_findings:"Fynd",
+  fd_title:"Fynd från genomsökningen",
+  fd_sub:"Offentliga källor, prövade mot vad verkstaden faktiskt kan",
+  fd_ranat:"Senast körd",
+  fd_ranwhat:"{sources} källor genomsökta · {secs} s",
+  fd_neverran:"Ingen genomsökning har körts",
+  fd_neverran_sub:"Kör en för att se vad kön skulle lägga framför dig.",
+  fd_run:"Kör genomsökningen",
+  fd_running:"Söker…",
+  fd_done:"{n} nya av {found} hittade.",
+  fd_done_none:"{found} hittade, inget nytt — allt var redan rapporterat.",
+  fd_t_sources:"Källor",fd_t_found:"Hittade",fd_t_new:"Nya",fd_t_known:"Sedda förut",
+  fd_t_dropped:"Utan källa",fd_t_go:"Kör",fd_t_maybe:"Kanske",fd_t_skip:"Skippa",
+  fd_f_waiting:"Väntar på dig",fd_f_go:"Kör",fd_f_maybe:"Kanske",fd_f_skip:"Skippa",fd_f_decided:"Avgjorda",
+  fd_demo_t:"Exempelfynd.",
+  fd_demo_p:"Ingenting har sökts och ingenting har hittats. Det här är fasta exempel, så att arbetsflödet "+
+            "kan bedömas innan något kopplas till en modell. Varje källänk pekar på en demoadress, "+
+            "inte en riktig sida.",
+  fd_sample:"exempel",
+  fd_bysweep:"omdöme från genomsökningen",fd_byrules:"omdöme från reglerna",
+  fd_accepted:"Accepterad →",fd_dismissed:"Avvisad",
+  fd_canwedo:"Maskiner för det",fd_cantwedo:"Täcks inte",fd_size:"Trolig omfattning",fd_approach:"Hur man tar kontakt",
+  fd_more:"+{n} till",fd_down:"{n} står stilla, ej medräknad",fd_alldown:"de {n} den har står stilla",
+  fd_nomachine:"ingen maskin i registret för detta",
+  fd_nothingmissing:"inget — allt finns i verkstaden",
+  fd_unknown:"anges inte",
+  fd_nosource:"ingen källa",
+  fd_today:"idag",fd_daysago:"{n} d sedan",fd_nodate:"inget datum",
+  fd_accept:"Acceptera",fd_reject:"Avvisa",
+  fd_reject_q:"Avvisa det här fyndet? Det kommer inte tillbaka i en senare genomsökning.",
+  fd_accept_t:"Acceptera som lead",
+  fd_company:"Företag",fd_contact:"Kontakt",fd_owner:"Ansvarig",
+  fd_accept_note:"Bara det fyndet faktiskt säger förs över till leadet. Ingen e-post, inget telefonnummer "+
+                 "och inget värde fylls i — en påhittad siffra på ett lead är värre än ett tomt fält.",
+  fd_makelead:"Skapa leadet",
+  fd_made:"Lead {no} skapat.",
+  fd_empty:"Inget väntar under det här filtret.",
+  fd_empty_never:"Inget än. Kör genomsökningen för att fylla kön.",
+  fd_disclaimer:"Vad verkstaden kan läses ur maskinregistret, så ett fynd som kräver en maskin den inte "+
+                "har visas som just det i stället för att accepteras. Ett fynd utan källa förkastas, och "+
+                "ett som redan visats visas aldrig igen.",
+  fdv_go:"KÖR",fdv_maybe:"KANSKE",fdv_skip:"SKIPPA",
+  fdk_hot:"Hett lead",fdk_prototype:"Prototyp",fdk_repair:"Reparation",fdk_subcontract:"Underleverans",
+  fdk_weak:"Svag signal",fdk_watch:"Bevaka",
+  fdp_welding:"svetsning",fdp_cutting:"skärning",fdp_bending:"kantning / formning",
+  fdp_finishing:"slipning / efterbearbetning",fdp_lifting:"lyft",fdp_pressing:"pressning",
+  'fdr_covered':"verkstaden klarar det",
+  'fdr_missing-capability':"ingen maskin för",
+  'fdr_outside-trade':"inte vår bransch",
+  'fdr_machine-busy':"maskinen står",
+  'fdr_no-process-named':"inget arbete angivet",
+  'fdr_fresh':"färskt",'fdr_stale':"gammalt",'fdr_near':"nära",'fdr_far':"långt bort",
+  'fdr_no-date':"inget datum angivet",'fdr_held-back':"nedgraderat till"
+});
+Object.assign(T.mk,{
+  nav_findings:"Naodi",
+  fd_title:"Naodi od pregledot",
+  fd_sub:"Javni izvori, proverени sprema toa što rabotilnicata navistina može",
+  fd_ranat:"Posleden pregled",
+  fd_ranwhat:"{sources} izvori proverени · {secs} s",
+  fd_neverran:"Ušte nemа pušteno pregled",
+  fd_neverran_sub:"Pušti eden za da vidiš što bi ti stavila redicata pred tebe.",
+  fd_run:"Pušti pregled",
+  fd_running:"Pregleduva…",
+  fd_done:"{n} novi od {found} najdeni.",
+  fd_done_none:"{found} najdeni, ništo novo — se beše veće javeno.",
+  fd_t_sources:"Izvori",fd_t_found:"Najdeni",fd_t_new:"Novi",fd_t_known:"Veće videni",
+  fd_t_dropped:"Bez izvor",fd_t_go:"Odi",fd_t_maybe:"Možebi",fd_t_skip:"Preskoči",
+  fd_f_waiting:"Čeka na tebe",fd_f_go:"Odi",fd_f_maybe:"Možebi",fd_f_skip:"Preskoči",fd_f_decided:"Rešeni",
+  fd_demo_t:"Primeri, ne vistinski naodi.",
+  fd_demo_p:"Ništo ne e pretražuvano i ništo ne e najdeno. Ova se fiksni primeri, za da se oceni "+
+            "rabotniot tek pred da se vrzе za model. Sekoj link vodi na demo adresa, ne na živa stranica.",
+  fd_sample:"primer",
+  fd_bysweep:"ocena od pregledot",fd_byrules:"ocena od praviлата",
+  fd_accepted:"Prifateno →",fd_dismissed:"Otfrleno",
+  fd_canwedo:"Mašini za toa",fd_cantwedo:"Ne e pokrieno",fd_size:"Vervojatna golemina",fd_approach:"Kako da se pristapi",
+  fd_more:"+{n} ušte",fd_down:"{n} ne rabotat, ne se brojат",fd_alldown:"edinstvenite {n} ne rabotat",
+  fd_nomachine:"nemа mašina vo registarot za ova",
+  fd_nothingmissing:"ništo — se e vo rabotilnicata",
+  fd_unknown:"ne e navedeno",
+  fd_nosource:"bez izvor",
+  fd_today:"denes",fd_daysago:"pred {n} d",fd_nodate:"bez datum",
+  fd_accept:"Prifati",fd_reject:"Otfrli",
+  fd_reject_q:"Da se otfrli ovoj naod? Nemа da se vrati vo naredniot pregled.",
+  fd_accept_t:"Prifati kako lead",
+  fd_company:"Firma",fd_contact:"Kontakt",fd_owner:"Odgovoren",
+  fd_accept_note:"Samo ona što naodot navistina go veli odi na leadot. Ne se polni ni mejl, ni telefon, "+
+                 "ni vrednost — izmislena cifra na lead e pološa od prazno pole.",
+  fd_makelead:"Napravi lead",
+  fd_made:"Lead {no} napraven.",
+  fd_empty:"Ništo ne čeka pod ovoj filter.",
+  fd_empty_never:"Ušte ništo. Pušti pregled za da se napolni redicata.",
+  fd_disclaimer:"Što može rabotilnicata se čita od registarot na mašini, pa naod što bara mašina što "+
+                "ja nemа se prikažuva kako takov namesto da se prifati. Naod bez izvor se otfrla, a "+
+                "veće prikažan nikogaš ne se prikažuva povtorno.",
+  fdv_go:"ODI",fdv_maybe:"MOŽEBI",fdv_skip:"PRESKOČI",
+  fdk_hot:"Vruć lead",fdk_prototype:"Prototip",fdk_repair:"Popravka",fdk_subcontract:"Podizveduvač",
+  fdk_weak:"Slab signal",fdk_watch:"Nadgleduvaj",
+  fdp_welding:"variење",fdp_cutting:"režeње",fdp_bending:"krivење / formiraње",
+  fdp_finishing:"brusење / dorabotka",fdp_lifting:"kreneње",fdp_pressing:"presuvaње",
+  'fdr_covered':"rabotilnicata može",
+  'fdr_missing-capability':"nemа mašina za",
+  'fdr_outside-trade':"ne e naša struka",
+  'fdr_machine-busy':"mašinata ne raboti",
+  'fdr_no-process-named':"ne e navedena rabota",
+  'fdr_fresh':"sveže",'fdr_stale':"staro",'fdr_near':"blizu",'fdr_far':"daleku",
+  'fdr_no-date':"bez daden datum",'fdr_held-back':"spušteno na"
+});
+
 let LANG='en';
 function t(){return T[LANG];}
 function tpl(str,vals){return str.replace(/\{(\w+)\}/g,(m,k)=>(vals[k]!==undefined?vals[k]:m));}
@@ -696,6 +926,227 @@ function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}<
 function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]}));}
 function ownerOptions(){return [{v:'Aleksandar C.',l:'Aleksandar C.'},{v:'Elena N.',l:'Elena N.'},{v:'Marko K.',l:'Marko K.'}];}
 
+// ═══════════════ FINDINGS VIEW ═══════════════
+// The queue between an outward sweep of public sources and the person who has to decide what to
+// do about it. Everything shown here has already been triaged by prospect-rules.js against the
+// real equipment register, so no card can offer work the shop cannot do. Nothing on a card is
+// written by this page: the verdict, the reasons and the machines all come off the record.
+let fdFilter='waiting';
+let fdSweeping=false;
+
+function fdFindings(){return WorkshopData.getProspectFindings();}
+const FD_ORDER={go:0,maybe:1,skip:2};
+function fdSort(rows){
+  return rows.slice().sort((a,b)=>{
+    const v=(FD_ORDER[a.verdict]??3)-(FD_ORDER[b.verdict]??3);
+    if(v)return v;
+    return String(b.date||'').localeCompare(String(a.date||''));
+  });
+}
+function fdVisible(){
+  const all=fdFindings();
+  if(fdFilter==='decided')return all.filter(f=>f.status!=='new')
+    .sort((a,b)=>String(b.decidedAt||'').localeCompare(String(a.decidedAt||'')));
+  if(fdFilter==='waiting')return fdSort(all.filter(f=>f.status==='new'));
+  return fdSort(all.filter(f=>f.status==='new'&&f.verdict===fdFilter));
+}
+function fdAgo(iso){
+  const tt=t();if(!iso)return tt.fd_nodate;
+  const days=Math.floor((currentDate()-new Date(iso))/86400000);
+  if(days<=0)return tt.fd_today;
+  return tpl(tt.fd_daysago,{n:days});
+}
+function fdWhen(iso){
+  if(!iso)return '—';
+  try{return new Date(iso).toLocaleString(T[LANG].locale||'en-GB',
+    {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}
+}
+// The rules hand back reason codes so the page can say them in the reader's own language rather
+// than storing one language's wording in the data.
+const FD_GOOD=['covered','fresh','near'];
+const FD_BAD=['missing-capability','outside-trade','stale','far','held-back'];
+function fdReason(r){
+  const tt=t();
+  const label=tt['fdr_'+r.code]||r.code;
+  const cls=FD_GOOD.includes(r.code)?'good':(FD_BAD.includes(r.code)?'bad':'');
+  const detail=r.detail
+    ?(': '+(r.code==='held-back'?(tt['fdv_'+r.detail]||r.detail):fdProcessNames(r.detail)))
+    :'';
+  return `<b class="${cls}">${esc(label)}${esc(detail)}</b>`;
+}
+function fdProcessNames(detail){
+  const tt=t();
+  return String(detail).split(',').map(x=>x.trim()).map(x=>tt['fdp_'+x]||x).join(', ');
+}
+
+// "Machines for it" must mean machines that could do it today. A quarantined press listed under
+// that heading reads as capacity the shop has not got, so the ones that are down are counted
+// separately rather than padding the list. The statuses come from the rules module, so the page
+// and the triage never disagree about what "down" means.
+function fdDown(m){
+  const out=(window.ProspectRules&&ProspectRules.OUT_OF_ACTION)||[];
+  return out.includes(String(m.status||'').toLowerCase());
+}
+function renderFindingsCard(f){
+  const tt=t();
+  const all=(f.match&&f.match.machines)||[];
+  const machines=all.filter(m=>!fdDown(m));
+  const down=all.length-machines.length;
+  const missing=((f.match&&f.match.missing)||[]).concat((f.match&&f.match.outside)||[]);
+  const state=f.status==='accepted'
+    ? `<span class="fdstate">${tt.fd_accepted} <b>${esc(f.leadNo||'')}</b></span>`
+    : (f.status==='dismissed'?`<span class="fdstate">${tt.fd_dismissed}</span>`:'');
+  const acts=f.status==='new'
+    ? `<button class="tbtn primary" onclick="fdAccept('${esc(f.id)}')">${tt.fd_accept}</button>
+       <button class="tbtn" onclick="fdDismiss('${esc(f.id)}')">${tt.fd_reject}</button>`
+    : '';
+  return `<div class="fdcard ${f.status!=='new'?'decided':''}">
+    <div class="fdtop">
+      <span class="fdklass ${esc(f.klass)}">${esc(tt['fdk_'+f.klass]||f.klass)}</span>
+      <span class="fdverdict ${esc(f.verdict)}">${esc(tt['fdv_'+f.verdict]||f.verdict)}</span>
+      <span class="fdfrom">${f.verdictFrom==='sweep'?tt.fd_bysweep:tt.fd_byrules}</span>
+      ${state}
+    </div>
+    <h4>${esc(f.title)}</h4>
+    <div class="fdmeta">
+      <em>${esc(f.sourceName||tt.fd_nosource)}</em> ·
+      <span>${esc(fdAgo(f.date))}</span> ·
+      <span>${esc(f.place||'—')}${Number.isFinite(f.distanceKm)&&f.distanceKm?` · ${f.distanceKm} km`:''}</span>
+      ${f.demo?` · <span style="color:var(--warn)">${tt.fd_sample}</span>`:''}
+    </div>
+    ${f.need?`<p class="fdneed">${esc(f.need)}</p>`:''}
+    <div class="fdgrid">
+      <div class="fdfact"><span>${tt.fd_canwedo}</span>${machines.length
+        ? `<p>${machines.slice(0,3).map(m=>esc(m.name)+' ('+esc(m.status)+')').join('<br>')}
+           ${machines.length>3?`<br>${tpl(tt.fd_more,{n:machines.length-3})}`:''}
+           ${down?`<br><span style="color:var(--steel-400)">${tpl(tt.fd_down,{n:down})}</span>`:''}</p>`
+        : `<p class="none">${down?tpl(tt.fd_alldown,{n:down}):tt.fd_nomachine}</p>`}</div>
+      <div class="fdfact"><span>${tt.fd_cantwedo}</span>${missing.length
+        ? `<p>${esc(fdProcessNames(missing.join(', ')))}</p>`
+        : `<p class="none">${tt.fd_nothingmissing}</p>`}</div>
+      <div class="fdfact"><span>${tt.fd_size}</span><p ${f.size?'':'class="none"'}>${esc(f.size||tt.fd_unknown)}</p></div>
+      <div class="fdfact"><span>${tt.fd_approach}</span><p ${f.approach?'':'class="none"'}>${esc(f.approach||tt.fd_unknown)}</p></div>
+    </div>
+    <div class="fdwhy">${(f.reasons||[]).map(fdReason).join('')}</div>
+    <div class="fdacts">
+      ${f.sourceUrl?`<a class="src" href="${esc(f.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(f.sourceUrl)}</a>`:`<span class="fdstate" style="margin-right:auto">${tt.fd_nosource}</span>`}
+      ${acts}
+    </div>
+  </div>`;
+}
+
+function renderFindings(){
+  const tt=t();
+  const sum=WorkshopData.prospectQueueSummary();
+  const sweep=sum.lastSweep;
+  const rows=fdVisible();
+  const chip=(n,label,cls)=>`<div class="swchip ${cls||''}"><b>${n}</b><span>${label}</span></div>`;
+  const tab=(key,label,n)=>`<button class="tbtn ${fdFilter===key?'primary':''}" onclick="fdSetFilter('${key}')">${label}${n!==null?` (${n})`:''}</button>`;
+
+  const bar=`<div class="swbar">
+    <div class="swwhen">${sweep
+      ? `<b>${tt.fd_ranat} ${esc(fdWhen(sweep.ranAt))}</b>
+         <small>${esc(tpl(tt.fd_ranwhat,{
+             sources:sweep.sourcesChecked||'—',
+             secs:sweep.durationMs?(Math.round(sweep.durationMs/100)/10):'—'}))}</small>`
+      : `<b>${tt.fd_neverran}</b><small>${tt.fd_neverran_sub}</small>`}</div>
+    <button class="tbtn primary" id="fdRun" onclick="fdRunSweep()">${fdSweeping?tt.fd_running:tt.fd_run}</button>
+  </div>`;
+
+  const tally=sweep?`<div class="swtally">
+    ${chip(sweep.sourcesChecked||'—',tt.fd_t_sources)}
+    ${chip(sweep.tally.found,tt.fd_t_found)}
+    ${chip(sweep.tally.ready,tt.fd_t_new)}
+    ${chip(sweep.tally.known,tt.fd_t_known)}
+    ${chip(sweep.tally.dropped,tt.fd_t_dropped)}
+    ${chip(sum.go,tt.fd_t_go,'go')}
+    ${chip(sum.maybe,tt.fd_t_maybe,'maybe')}
+    ${chip(sum.skip,tt.fd_t_skip,'skip')}
+  </div>`:'';
+
+  // Anybody could pick this page up and believe the shop had a nightly sweep running. It does not.
+  const demo=(sweep&&sweep.source==='stub')
+    ?`<div class="swdemo"><i>&#9888;</i><p><b>${tt.fd_demo_t}</b> ${tt.fd_demo_p}</p></div>`:'';
+
+  const body=rows.length
+    ?`<div class="fdlist">${rows.map(renderFindingsCard).join('')}</div>`
+    :`<div class="empty3">${sweep?tt.fd_empty:tt.fd_empty_never}</div>`;
+
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.fd_title}</h3><span class="phsub">${tt.fd_sub}</span></div>
+    ${bar}${demo}${tally}
+    <div class="fdfilters">
+      ${tab('waiting',tt.fd_f_waiting,sum.waiting)}
+      ${tab('go',tt.fd_f_go,sum.go)}
+      ${tab('maybe',tt.fd_f_maybe,sum.maybe)}
+      ${tab('skip',tt.fd_f_skip,sum.skip)}
+      ${tab('decided',tt.fd_f_decided,sum.accepted+sum.dismissed)}
+    </div>
+    ${body}
+    <div class="disclaimer">${tt.fd_disclaimer}</div>
+  </div>`;
+}
+
+function fdSetFilter(v){fdFilter=v;renderApp();}
+
+// Running the sweep means, for now, handing the stub's fixed list to the same triage a real sweep
+// would go through. When there is a model behind it, only the source of the list changes.
+function fdRunSweep(){
+  const tt=t();
+  if(fdSweeping)return;
+  fdSweeping=true;renderApp();
+  const started=Date.now();
+  setTimeout(()=>{
+    const got=WorkshopData.recordProspectSweep(
+      (window.ProspectStub?ProspectStub.sample():[]),
+      {source:'stub',sourcesChecked:(window.ProspectStub?ProspectStub.SOURCE_COUNT:null),
+       durationMs:Date.now()-started});
+    fdSweeping=false;
+    refreshMarketingFromShared();
+    fdFilter='waiting';
+    renderApp();
+    if(got&&!got.error){
+      wAlert(got.tally.ready
+        ? tpl(tt.fd_done,{n:got.tally.ready,found:got.tally.found})
+        : tpl(tt.fd_done_none,{found:got.tally.found}));
+    }
+  },350);
+}
+
+// A lead needs a name to sit under. The finding may not carry one — a classified ad rarely does —
+// so the page asks rather than inventing a company, and offers what the post itself said.
+function fdAccept(id){
+  const tt=t();
+  const f=WorkshopData.findProspectFinding(id);
+  if(!f)return;
+  openModal(`<h2>${tt.fd_accept_t}</h2><div class="fsub">${esc(f.title)}</div>
+    <div class="frow2">${field('fdCompany',tt.fd_company,f.company||f.title)}${field('fdContact',tt.fd_contact,'')}</div>
+    <div class="frow2">${fieldSelect('fdOwner',tt.fd_owner,ownerOptions(),'Aleksandar C.')}</div>
+    <p class="disclaimer">${tt.fd_accept_note}</p>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button>
+      <button class="tbtn primary" onclick="fdAcceptSave('${esc(id)}')">${tt.fd_makelead}</button></div>`,true);
+}
+function fdAcceptSave(id){
+  const tt=t();
+  const got=WorkshopData.acceptProspectFinding(id,{
+    company:$('fdCompany').value.trim(),
+    contact:$('fdContact').value.trim(),
+    by:$('fdOwner').value});
+  if(got&&got.error){wAlert(got.error);return;}
+  closeModal();
+  refreshMarketingFromShared();
+  renderApp();
+  wAlert(tpl(tt.fd_made,{no:got.lead.no}));
+}
+function fdDismiss(id){
+  const tt=t();
+  wConfirm(tt.fd_reject_q,()=>{
+    const got=WorkshopData.dismissProspectFinding(id,{by:'Aleksandar C.'});
+    if(got&&got.error){wAlert(got.error);return;}
+    renderApp();
+  },{yes:tt.fd_reject,no:tt.btn_cancel});
+}
+
 // ═══════════════ LEADS VIEW ═══════════════
 function leadIndustryList(){return [...new Set(LEADS.map(l=>l.industry))];}
 function filteredLeads(){const q=leadQuery.trim().toLowerCase();
@@ -712,8 +1163,8 @@ function renderLeads(){
   if(!getLead(selectedLeadId)&&rows.length)selectedLeadId=rows[0].id;
   const listHtml=rows.length?rows.map(l=>`<div class="leadrow ${l.id===selectedLeadId?'sel':''}" role="button" tabindex="0" onclick="selectLead(${l.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectLead(${l.id})}">
       <div class="avc">${initials(l.company)}</div>
-      <div style="min-width:0;"><div class="lrname">${esc(l.company)}</div><div class="lrsub">${esc(l.no)} · ${esc(l.contact)}</div></div>
-      <div class="lrmeta"><div class="lrval">${fmt(l.value)}</div><span class="tagpill ${PRIORITY_CLASS[l.priority]}">${tt['pr_'+l.priority]}</span></div>
+      <div style="min-width:0;"><div class="lrname">${esc(l.company)}</div><div class="lrsub">${esc(l.no)}${l.contact?' · '+esc(l.contact):''}</div></div>
+      <div class="lrmeta"><div class="lrval">${fmtValue(l.value)}</div><span class="tagpill ${PRIORITY_CLASS[l.priority]}">${tt['pr_'+l.priority]}</span></div>
     </div>`).join(''):`<div class="empty3">${tt.empty_leads}</div>`;
   const industries=leadIndustryList();
   return `<div class="panel">
@@ -775,8 +1226,8 @@ function renderLeadDetail(){
   }else{
     body=l.notes&&l.notes.length?l.notes.map(n=>`<div class="noteitem"><div style="color:var(--steel-400);font-size:11px;">${fmtDate(n.date)} · ${esc(n.author)}</div>${esc(n.text)}</div>`).join(''):`<div class="empty3">${tt.empty_notes}</div>`;
   }
-  return `<div class="dhead2"><div><h2>${esc(l.company)}</h2><div class="dsub">${esc(l.no)} · ${esc(l.contact)} · <span class="tagpill ${LEAD_STATUS_CLASS[l.status]}">${tt['ls_'+l.status]}</span></div></div>
-    <div class="lrval" style="font-size:19px;">${fmt(l.value)}</div></div>
+  return `<div class="dhead2"><div><h2>${esc(l.company)}</h2><div class="dsub">${esc(l.no)}${l.contact?' · '+esc(l.contact):''} · <span class="tagpill ${LEAD_STATUS_CLASS[l.status]}">${tt['ls_'+l.status]}</span></div></div>
+    <div class="lrval" style="font-size:19px;">${fmtValue(l.value)}</div></div>
     ${tabs}${body}
     <div class="actionbar">
       <button onclick="openLeadForm(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>${tt.act_editlead}</button>
@@ -1314,6 +1765,7 @@ function renderAnalytics(){
 // ═══════════════ APP DISPATCH ═══════════════
 const VIEWS={
   overview:{render:renderOverview},
+  findings:{render:renderFindings},
   leads:{render:renderLeads,attach:attachLeads},
   opportunities:{render:renderOpportunities,attach:attachOpportunities},
   tenders:{render:renderTenders,attach:attachTenders},

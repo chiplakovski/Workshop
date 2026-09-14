@@ -299,6 +299,12 @@
       {"id":8,"no":"OPP-2026-108","company":"Nordvent Installation AB","contact":"Michael Sørensen","leadId":7,"customerId":null,"title":"Welding & Installation Framework Agreement","services":["Welding","Installation"],"scope":"Multi-site framework agreement for welding and installation call-outs.","industry":"Welding and installation","value":156000,"probability":70,"stage":"negotiation","expectedDecision":"2026-09-08","requiredDelivery":"2026-10-01","competitor":"Baltic Weld Partners","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Finalize framework pricing tiers","followUpDate":"2026-08-31","activity":[{"date":"2026-08-23","text":"Entered negotiation on framework pricing."}]},
       {"id":9,"no":"OPP-2026-109","company":"Schröder Nordic","contact":"Anna Berg","leadId":null,"customerId":3,"title":"Machinery Retrofit Inquiry","services":["Retrofit"],"scope":"Retrofit of folding machine line — postponed by customer.","industry":"Industrial Machinery","value":85000,"probability":0,"stage":"lost","expectedDecision":"2026-08-10","requiredDelivery":"","competitor":"","decisionReason":"Customer reallocated budget to another site.","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Re-engage in Q1 2027","followUpDate":null,"activity":[{"date":"2026-07-20","text":"Retrofit inquiry opened."},{"date":"2026-08-10","text":"Marked lost — budget reallocated."}]}
     ],
+    // The outward sweep: what it found, what has been shown once already, and the runs themselves.
+    // Seeded empty on purpose — an unrun sweep has no findings, and inventing some would be the
+    // one thing this queue exists not to do.
+    prospectFindings:[],
+    prospectSeen:[],
+    prospectSweeps:[],
     marketingCampaigns:[
       {"id":1,"name":"Stainless Solutions for Food Producers","objective":"Generate qualified leads among food-production and bakery companies in Skåne.","targetIndustries":["Food-production equipment","Stainless-steel fabrication"],"targetServices":["Fabrication","Installation"],"segment":"Food-production companies","channels":["LinkedIn","Email","Trade fair"],"start":"2026-06-01","end":"2026-09-30","budget":45000,"spend":31200,"owner":"Elena N.","status":"active","leads":14,"qualified":6,"estimates":4,"wonValue":138000,"activity":[{"date":"2026-08-10","text":"Trade fair follow-up emails sent to 22 contacts."}]},
       {"id":2,"name":"Workshop Repair & Maintenance Services","objective":"Drive service call-outs and maintenance contracts from local industrial sites.","targetIndustries":["Industrial maintenance","Machinery repair"],"targetServices":["Repair","Maintenance contracts"],"segment":"Property and facility maintenance","channels":["Google Ads","Referral programme"],"start":"2026-05-15","end":"2026-09-15","budget":25000,"spend":24100,"owner":"Marko K.","status":"active","leads":22,"qualified":5,"estimates":3,"wonValue":42000,"activity":[{"date":"2026-08-05","text":"Referral programme generated 4 new leads this week."}]},
@@ -588,6 +594,9 @@
     if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
     if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
     if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
+    if(!Array.isArray(s.prospectFindings))s.prospectFindings=[];
+    if(!Array.isArray(s.prospectSeen))s.prospectSeen=[];
+    if(!Array.isArray(s.prospectSweeps))s.prospectSweeps=[];
     if(!Array.isArray(s.savedReports))s.savedReports=base.savedReports;
     if(!s.reportConfig||typeof s.reportConfig!=='object')s.reportConfig={};
     s.qualityInspections.forEach(r=>{if(!Array.isArray(r.notes))r.notes=[];if(!Array.isArray(r.activity))r.activity=[];if(!Array.isArray(r.checklist))r.checklist=[];if(!Array.isArray(r.documents))r.documents=[];});
@@ -3502,6 +3511,115 @@
       }
       save(`Marketing campaign saved: ${c.name}`);
       return clone(c);
+    },
+
+    // ── The outward sweep: findings waiting to be judged. ──
+    // The rules in prospect-rules.js decide what is worth showing; this side only remembers. The
+    // division matters: nothing is stored that the rules have not already triaged against the real
+    // equipment register, so the queue can never offer work the shop cannot do.
+    getProspectFindings:()=>clone(state.prospectFindings),
+    findProspectFinding(id){const f=state.prospectFindings.find(x=>x.id===id);return f?clone(f):null;},
+    getProspectSweeps:()=>clone(state.prospectSweeps),
+    // null, not undefined: "no sweep has ever run" is an answer the page has to be able to show.
+    lastProspectSweep(){return state.prospectSweeps.length?clone(state.prospectSweeps[0]):null;},
+    // Everything the queue has ever shown, so a finding reported once is never reported again —
+    // including the ones that were binned. A rejected finding coming back tomorrow is exactly how
+    // a review queue teaches people to stop reading it.
+    getProspectSeen:()=>clone(state.prospectSeen),
+
+    // Takes the raw output of a sweep, triages it, and keeps what is worth a person's time.
+    // Returns what was stored and what was not, so the page can report the shape of the sweep
+    // honestly: how much came back, how much had been seen before, how much had nowhere to point.
+    recordProspectSweep(findings,options){
+      if(!global.ProspectRules)return{error:'prospect-rules.js must be loaded before workshop-data.js'};
+      const opts=options||{};
+      const list=Array.isArray(findings)?findings:[];
+      const t=global.ProspectRules.triage(list,state.prospectSeen,state.equipment,opts);
+      const sweep={
+        id:`sw-${Date.now()}`,
+        ranAt:now(),
+        source:opts.source||'stub',
+        sourcesChecked:Number(opts.sourcesChecked)||null,
+        durationMs:Number(opts.durationMs)||null,
+        tally:t.tally
+      };
+      state.prospectSweeps.unshift(sweep);
+      if(state.prospectSweeps.length>50)state.prospectSweeps.length=50;
+      t.ready.forEach(f=>{
+        state.prospectFindings.unshift(Object.assign(clone(f),{
+          id:`pf-${sweep.id}-${state.prospectFindings.length}-${Math.random().toString(36).slice(2,7)}`,
+          sweepId:sweep.id,
+          foundAt:sweep.ranAt,
+          status:'new',
+          decidedAt:null,decidedBy:'',leadNo:null
+        }));
+        if(!state.prospectSeen.includes(f.fingerprint))state.prospectSeen.push(f.fingerprint);
+      });
+      save(`Prospect sweep: ${t.tally.ready} new of ${t.tally.found} found`);
+      return clone({sweep,ready:t.ready,tally:t.tally});
+    },
+
+    // Accepting turns a finding into a real lead. What it knows goes across; what it does not know
+    // stays empty. A forum post carries no contact name, no email and no value, so the lead is
+    // created without them rather than with plausible-looking blanks filled in.
+    acceptProspectFinding(id,extra){
+      const f=state.prospectFindings.find(x=>x.id===id);
+      if(!f)return{error:'Finding not found'};
+      if(f.status!=='new')return{error:`This finding was already ${f.status}`};
+      const who=(extra&&extra.by)||'';
+      const lead=this.upsertMarketingLead({
+        company:(extra&&extra.company)||f.company||f.title,
+        contact:(extra&&extra.contact)||'',
+        email:'',phone:'',
+        country:'Sweden',
+        city:f.place||'',
+        industry:'',
+        source:'prospect',
+        service:f.need||f.title,
+        value:Number.isFinite(Number(f.value))?Number(f.value):null,
+        priority:f.verdict==='go'?'high':(f.verdict==='skip'?'low':'medium'),
+        status:'new',
+        owner:who,
+        created:now().slice(0,10),
+        fromProspect:f.id,
+        demo:!!f.demo,
+        notes:[{date:now().slice(0,10),author:who,
+          text:`From the outward sweep${f.demo?' (sample finding, nothing was actually found)':''}. `+
+               `Source: ${f.sourceName||'—'} ${f.sourceUrl||''}`.trim()}],
+        activity:[{date:now().slice(0,10),type:'created',
+          text:`Accepted from the findings queue — ${f.klass}, ${f.verdict.toUpperCase()}.`}]
+      });
+      if(lead&&lead.error)return lead;
+      f.status='accepted';f.decidedAt=now();f.decidedBy=who;f.leadNo=lead.no;
+      save(`Finding accepted: ${f.title} → ${lead.no}`);
+      return clone({finding:f,lead});
+    },
+
+    dismissProspectFinding(id,extra){
+      const f=state.prospectFindings.find(x=>x.id===id);
+      if(!f)return{error:'Finding not found'};
+      if(f.status!=='new')return{error:`This finding was already ${f.status}`};
+      f.status='dismissed';
+      f.decidedAt=now();
+      f.decidedBy=(extra&&extra.by)||'';
+      f.dismissReason=(extra&&extra.reason)||'';
+      save(`Finding dismissed: ${f.title}`);
+      return clone(f);
+    },
+
+    // What the queue looks like right now: what is waiting, and what has been decided since.
+    prospectQueueSummary(){
+      const all=state.prospectFindings;
+      const waiting=all.filter(f=>f.status==='new');
+      const count=v=>waiting.filter(f=>f.verdict===v).length;
+      return clone({
+        waiting:waiting.length,
+        go:count('go'),maybe:count('maybe'),skip:count('skip'),
+        accepted:all.filter(f=>f.status==='accepted').length,
+        dismissed:all.filter(f=>f.status==='dismissed').length,
+        seen:state.prospectSeen.length,
+        lastSweep:state.prospectSweeps[0]||null
+      });
     },
 
     // ── Reports: saved report definitions and report-page configuration (UI state that Pass 2

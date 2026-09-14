@@ -7,6 +7,7 @@ const COMPANY = 'E2E Skane Process Systems AB';
 const CONTACT = 'Elin Andersson';
 const SERVICE = 'E2E stainless process platform';
 const OPPORTUNITY_VALUE = 285000;
+const FINDING_COMPANY = 'E2E Eslovs Entreprenad AB';
 
 function step(message) {
   console.log(`OK   ${message}`);
@@ -151,12 +152,117 @@ async function verifyIdempotentEstimateAndWin(page, baseUrl, opportunityId, esti
   }
 }
 
+// The findings queue, driven the way a person drives it: run the sweep, read the top card, accept
+// one and reject one, and check that what the page claims matches what the shop actually owns.
+async function runFindingsQueue(page) {
+  await page.evaluate(() => setView('findings'));
+  await page.waitForTimeout(60);
+  assert.equal(await page.locator('.fdcard').count(), 0, 'nothing has been swept yet');
+  assert.match(await page.textContent('.swwhen'), /No sweep has run yet/);
+  step('Findings: an unrun sweep shows an empty queue rather than made-up leads');
+
+  await page.evaluate(() => fdRunSweep());
+  await page.waitForTimeout(700);
+  await page.locator('.waskyes').click();
+  await page.waitForTimeout(120);
+
+  const tally = await page.evaluate(() => WorkshopData.prospectQueueSummary());
+  const sweep = await page.evaluate(() => WorkshopData.lastProspectSweep());
+  assert.equal(sweep.source, 'stub');
+  assert.ok(sweep.tally.dropped > 0, 'the sample deliberately contains a finding with no source');
+  assert.equal(await page.locator('.fdcard').count(), tally.waiting);
+  assert.ok(await page.locator('.swdemo').isVisible(), 'a stubbed sweep says so above the queue');
+  step('Findings: running the sweep fills the queue and says it is a sample');
+
+  // The morning is read top down, so what deserves the first call has to be on top.
+  const order = await page.evaluate(() => fdVisible().map((f) => f.verdict));
+  const rank = { go: 0, maybe: 1, skip: 2 };
+  order.forEach((v, i) => {
+    if (i) assert.ok(rank[v] >= rank[order[i - 1]], `queue is out of order at ${i}: ${order.join(',')}`);
+  });
+  step('Findings: the queue puts the calls to make above the judgement calls');
+
+  // No card may offer a machine the register does not carry, in any status.
+  const offered = await page.evaluate(() => {
+    const known = new Set(WorkshopData.get().equipment.map((e) => e.equipmentId || e.id));
+    return WorkshopData.getProspectFindings()
+      .flatMap((f) => f.match.machines.map((m) => m.id))
+      .filter((id) => !known.has(id));
+  });
+  assert.deepEqual(offered, [], 'a finding offered a machine that is not in the equipment register');
+  step('Findings: every machine a card offers is one the shop really owns');
+
+  // 100-ton pressing is the thing the shop must never claim.
+  const press = await page.evaluate(() =>
+    WorkshopData.getProspectFindings().find((f) => /100 ton/.test(f.title)));
+  assert.equal(press.verdict, 'skip', 'work outside the trade must not come back as a lead to chase');
+  assert.deepEqual(press.match.outside, ['pressing']);
+  step('Findings: work the shop cannot do is marked skip, not dressed up');
+
+  const before = await page.evaluate(() => WorkshopData.getMarketingLeads().length);
+  const top = await page.evaluate(() => fdVisible()[0].id);
+  await page.locator('.fdcard').first().locator('.fdacts button.tbtn.primary').click();
+  await page.waitForTimeout(120);
+  await page.locator('#fdCompany').fill(FINDING_COMPANY);
+  await page.locator('#fcard .fbtns .primary').click();
+  await page.waitForTimeout(200);
+  await page.locator('.waskyes').click();
+  await page.waitForTimeout(120);
+
+  const lead = await page.evaluate((company) =>
+    WorkshopData.getMarketingLeads().find((l) => l.company === company), FINDING_COMPANY);
+  assert.ok(lead, 'accepting a finding must create a real lead');
+  assert.equal(await page.evaluate(() => WorkshopData.getMarketingLeads().length), before + 1);
+  assert.equal(lead.source, 'prospect');
+  // The one thing a lead off a public post must never carry is a figure nobody quoted.
+  assert.equal(lead.value, null);
+  assert.equal(lead.email, '');
+  assert.equal(lead.phone, '');
+  assert.equal(await page.evaluate((id) => WorkshopData.findProspectFinding(id).leadNo, top), lead.no);
+  step('Findings: accepting creates a lead carrying only what the finding actually said');
+
+  // ...and an unknown value is shown as unknown, not as nothing.
+  await page.evaluate(() => setView('leads'));
+  await page.waitForTimeout(120);
+  const shown = await page.evaluate((company) => {
+    const row = [...document.querySelectorAll('.leadrow')]
+      .find((r) => r.textContent.includes(company));
+    return row ? row.querySelector('.lrval').textContent.trim() : null;
+  }, FINDING_COMPANY);
+  assert.equal(shown, '—', 'a lead with no estimated value must not read as 0 kr');
+  step('Findings: a lead with no value yet reads as unknown, never as worth nothing');
+
+  await page.evaluate(() => setView('findings'));
+  await page.waitForTimeout(120);
+  const waiting = await page.evaluate(() => WorkshopData.prospectQueueSummary().waiting);
+  const rejected = await page.evaluate(() => fdVisible()[0].fingerprint);
+  await page.locator('.fdcard').first().locator('.fdacts button.tbtn:not(.primary)').click();
+  await page.waitForTimeout(120);
+  await page.locator('.waskyes').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => WorkshopData.prospectQueueSummary().waiting), waiting - 1);
+  step('Findings: rejecting takes it out of the queue');
+
+  // The whole point of remembering: the second sweep of the same morning is not a second morning.
+  await page.evaluate(() => fdRunSweep());
+  await page.waitForTimeout(700);
+  await page.locator('.waskyes').click();
+  await page.waitForTimeout(150);
+  const second = await page.evaluate(() => WorkshopData.lastProspectSweep());
+  assert.equal(second.tally.ready, 0, 'the same findings came back as new');
+  const again = await page.evaluate((fp) =>
+    WorkshopData.getProspectFindings().filter((f) => f.fingerprint === fp).length, rejected);
+  assert.equal(again, 1, 'a rejected finding must not reappear');
+  step('Findings: a second sweep repeats nothing, not even what was rejected');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/marketing-desktop.html`, { waitUntil: 'load' });
+    await runFindingsQueue(page);
     const { leadId, opportunityId } = await createAndQualifyLead(page);
     await convertLead(page, leadId, opportunityId);
     await page.goto(`${harness.baseUrl}/customers-desktop.html`, { waitUntil: 'load' });

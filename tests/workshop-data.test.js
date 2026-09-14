@@ -4133,3 +4133,186 @@ test('history: what it is committed to now is the same answer the delete guard g
   assert.deepEqual(W.itemHistory(item.code).usedIn,W.itemUsage(item.code),
     'one question, one answer — the information panel and the delete guard must not disagree');
 });
+
+// ── The findings queue: the outward sweep's output, waiting to be judged (Pass 4.34) ───────────
+// The queue is the one place in the workshop where information arrives from outside and nobody
+// has checked it. Three things keep it trustworthy, and they are what these tests hold down: what
+// is stored has been triaged against the real equipment register, a finding is shown to a person
+// exactly once, and accepting one creates a lead out of what is known rather than what would look
+// good on a lead card.
+const Stub=require('../prospect-stub.js');
+
+test('queue: an unrun sweep has nothing to show', ()=>{
+  const W=loadWorkshopData();
+  assert.deepEqual(W.getProspectFindings(),[],'no sweep has run, so there is nothing found');
+  assert.deepEqual(W.getProspectSweeps(),[]);
+  assert.equal(W.lastProspectSweep(),null,'"nothing has ever run" is an answer, not a crash');
+  assert.equal(W.findProspectFinding('pf-nope'),null);
+  const sum=W.prospectQueueSummary();
+  assert.equal(sum.waiting,0);
+  assert.equal(sum.lastSweep,null,'and the page is told plainly that nothing has run');
+});
+test('queue: a sweep stores what survives triage and reports what did not', ()=>{
+  const W=loadWorkshopData();
+  const got=W.recordProspectSweep(Stub.sample(),{source:'stub',sourcesChecked:8,durationMs:1200});
+  assert.equal(got.tally.found,10);
+  assert.equal(got.tally.dropped,1,'the hearsay finding points nowhere and is not stored');
+  assert.equal(W.getProspectFindings().length,got.tally.ready);
+  const sweep=W.lastProspectSweep();
+  assert.equal(sweep.source,'stub');
+  assert.equal(sweep.sourcesChecked,8);
+  assert.equal(sweep.durationMs,1200);
+  assert.deepEqual(sweep.tally,got.tally);
+});
+test('queue: nothing is stored that the register has not been consulted about', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const known=new Set(W.get().equipment.map(e=>e.equipmentId||e.id));
+  W.getProspectFindings().forEach(f=>{
+    assert.ok(f.match,`"${f.title}" was stored without being matched against the shop`);
+    assert.ok(['go','maybe','skip'].includes(f.verdict));
+    assert.ok(f.reasons.length>0,'and never without saying why');
+    f.match.machines.forEach(m=>assert.ok(known.has(m.id),
+      `"${f.title}" offers machine ${m.id}, which is not in the register`));
+  });
+});
+test('queue: a finding with nowhere to point never reaches a person', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep([
+    {title:'Somebody said something',klass:'hot',sourceUrl:''},
+    {title:'Real one',klass:'hot',sourceUrl:'https://demo.varmak.local/x/1',needs:['welding']}
+  ],{});
+  const q=W.getProspectFindings();
+  assert.equal(q.length,1);
+  assert.equal(q[0].title,'Real one');
+});
+test('queue: work the shop cannot do arrives marked as such, not hidden', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const press=W.getProspectFindings().find(f=>/100 ton/.test(f.title));
+  assert.ok(press,'it is still shown — the user decides, not the sweep');
+  assert.equal(press.verdict,'skip');
+  assert.deepEqual(press.match.outside,['pressing'],'and the reason is on the record');
+});
+test('queue: a finding is put in front of a person exactly once', ()=>{
+  const W=loadWorkshopData();
+  const first=W.recordProspectSweep(Stub.sample(),{});
+  const again=W.recordProspectSweep(Stub.sample(),{});
+  assert.equal(again.tally.ready,0,'the same morning twice is not two mornings of work');
+  assert.equal(again.tally.known,first.tally.ready);
+  assert.equal(W.getProspectFindings().length,first.tally.ready,'and nothing was duplicated');
+});
+test('queue: a finding binned yesterday does not come back tomorrow', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const skip=W.getProspectFindings().find(f=>f.verdict==='skip');
+  W.dismissProspectFinding(skip.id,{by:'Marko K.',reason:'not our trade'});
+  W.recordProspectSweep(Stub.sample(),{});
+  const same=W.getProspectFindings().filter(f=>f.fingerprint===skip.fingerprint);
+  assert.equal(same.length,1,'a rejected finding returning is how a queue teaches people to ignore it');
+  assert.equal(same[0].status,'dismissed');
+});
+test('queue: accepting makes a real lead out of what is known, and nothing else', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const before=W.getMarketingLeads().length;
+  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  assert.ok(got.lead&&got.lead.no,'a lead with a real number is created');
+  assert.equal(W.getMarketingLeads().length,before+1);
+  // A forum post carries no contact, no email and no budget. None are invented to fill the card.
+  assert.equal(got.lead.contact,'');
+  assert.equal(got.lead.email,'');
+  assert.equal(got.lead.phone,'');
+  assert.equal(got.lead.value,null,'a made-up value is the one thing a lead must never carry');
+  assert.equal(got.lead.city,f.place,'what it does know goes across');
+  assert.equal(got.lead.source,'prospect');
+  assert.ok(got.lead.notes[0].text.includes(f.sourceUrl),'and the lead can be traced back to the page');
+});
+test('queue: a lead made from a sample finding says so on its face', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  assert.equal(got.lead.demo,true);
+  assert.match(got.lead.notes[0].text,/sample finding/i,
+    'nobody should ever ring a number believing a stub was a real find');
+});
+test('queue: the company can be named on the way in', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.',company:'Höörs Bygg AB',contact:'Jonas'});
+  assert.equal(got.lead.company,'Höörs Bygg AB');
+  assert.equal(got.lead.contact,'Jonas');
+  assert.equal(got.lead.owner,'Elena N.');
+});
+test('queue: with no company known, the lead carries the post itself rather than a guess', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  assert.equal(got.lead.company,f.title);
+});
+test('queue: a decision is made once', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const q=W.getProspectFindings();
+  const a=q.find(x=>x.verdict==='go'),b=q.find(x=>x.verdict==='skip');
+  W.acceptProspectFinding(a.id,{by:'X'});
+  assert.ok(W.acceptProspectFinding(a.id,{by:'X'}).error,'accepting twice would make two leads');
+  assert.ok(W.dismissProspectFinding(a.id,{by:'X'}).error);
+  W.dismissProspectFinding(b.id,{by:'X'});
+  assert.ok(W.acceptProspectFinding(b.id,{by:'X'}).error);
+  assert.ok(W.acceptProspectFinding('pf-nope',{by:'X'}).error);
+  assert.ok(W.dismissProspectFinding('pf-nope',{by:'X'}).error);
+});
+test('queue: a decision records who made it and when', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  assert.equal(got.finding.status,'accepted');
+  assert.equal(got.finding.decidedBy,'Elena N.');
+  assert.ok(got.finding.decidedAt);
+  assert.equal(got.finding.leadNo,got.lead.no,'and which lead it became');
+});
+test('queue: the summary counts what is actually there', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const q=W.getProspectFindings();
+  W.acceptProspectFinding(q.find(x=>x.verdict==='go').id,{by:'X'});
+  W.dismissProspectFinding(q.find(x=>x.verdict==='skip').id,{by:'X'});
+  const sum=W.prospectQueueSummary();
+  const waiting=W.getProspectFindings().filter(f=>f.status==='new');
+  assert.equal(sum.waiting,waiting.length);
+  assert.equal(sum.go+sum.maybe+sum.skip,sum.waiting,'every waiting finding is counted under one verdict');
+  assert.equal(sum.accepted,1);
+  assert.equal(sum.dismissed,1);
+  assert.ok(sum.lastSweep,'and the page can say when the sweep ran');
+});
+test('queue: an empty sweep is recorded as an empty sweep', ()=>{
+  const W=loadWorkshopData();
+  const got=W.recordProspectSweep([],{source:'stub'});
+  assert.deepEqual(got.tally,{found:0,ready:0,known:0,dropped:0});
+  assert.ok(W.lastProspectSweep(),'"it ran and found nothing" is itself worth knowing');
+  assert.equal(W.prospectQueueSummary().waiting,0);
+});
+test('queue: it survives the trip through storage', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  WD.recordProspectSweep(Stub.sample(),{source:'stub'});
+  const before=WD.getProspectFindings();
+  const raw=localStorage.getItem('varmak.workshop.frontend.v5');
+  const reloaded=loadWorkshopData({'varmak.workshop.frontend.v5':raw});
+  assert.equal(reloaded.getProspectFindings().length,before.length);
+  assert.equal(reloaded.getProspectSeen().length,before.length);
+  assert.equal(reloaded.recordProspectSweep(Stub.sample(),{}).tally.ready,0,
+    'what was already shown is still remembered after a reload');
+});
+test('queue: data saved before the queue existed opens without one', ()=>{
+  const older=JSON.stringify({version:5,counters:{},customers:[],projects:[],equipment:[],marketingLeads:[]});
+  const W=loadWorkshopData({'varmak.workshop.frontend.v5':older});
+  assert.deepEqual(W.getProspectFindings(),[]);
+  assert.deepEqual(W.getProspectSweeps(),[]);
+  assert.equal(W.prospectQueueSummary().waiting,0);
+});
