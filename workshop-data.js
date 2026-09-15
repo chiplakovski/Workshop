@@ -22,7 +22,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:5},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -34,21 +34,21 @@
       {id:8,no:'C-008',name:'Trelleborg Snacks',status:'active',city:'Trelleborg',country:'Sweden',org:'559333-6654',terms:'30 days',credit:0,currency:'SEK',industry:'Food Production',type:'Company',contacts:[{name:'Jonas P.',role:'Contact',primary:true,email:'jonas@trelleborgsnacks.se',phone:''}],notes:[],documents:[]}
     ],
     estimations:[
-      {id:18,no:'EST-2026-018',customerId:1,customer:'MarineVent AB',title:'Ventilation Duct System',status:'accepted',revision:1,created:'2026-08-14',validUntil:'2026-09-14',currency:'SEK',estimatedMaterial:72450,estimatedLabour:48600,estimatedMachine:12600,estimatedOther:8400,totalCost:142050,sellingPrice:198000,plannedHours:184,machines:['Laser','Press Brake','TIG Station 1'],deliveryTarget:'2026-11-12',projectId:14,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:8,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:36,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:45,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',qty:40,unit:'EA'}],revisions:[{rev:0,date:'2026-08-14',author:'Aleksandar C.',reason:'Initial quotation'},{rev:1,date:'2026-08-18',author:'Aleksandar C.',reason:'Updated material grade and delivery'}]},
-      {id:23,no:'EST-2026-023',customerId:1,customer:'MarineVent AB',title:'Ventilation Upgrade Package',status:'draft',revision:0,created:'2026-08-22',validUntil:'2026-09-22',currency:'SEK',estimatedMaterial:9800,estimatedLabour:7200,estimatedMachine:3200,estimatedOther:1920,totalCost:22120,sellingPrice:28503,plannedHours:30,machines:['Laser','TIG Station 1'],deliveryTarget:'2026-10-15',projectId:null,bom:[],revisions:[{rev:0,date:'2026-08-22',author:'Aleksandar C.',reason:'Initial quotation'}]}
-      ,{id:24,no:'EST-2026-024',customerId:2,customer:'Sanus Glutenfri AB',title:'Stainless Platform Extension',status:'accepted',revision:0,created:'2026-08-24',validUntil:'2026-09-24',currency:'SEK',estimatedMaterial:48500,estimatedLabour:36200,estimatedMachine:9800,estimatedOther:5500,totalCost:100000,sellingPrice:138000,plannedHours:126,machines:['Laser','Press Brake','TIG Station 1'],deliveryTarget:'2026-11-28',projectId:null,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:12,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:24,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:18,unit:'KG'}],revisions:[{rev:0,date:'2026-08-24',author:'Aleksandar C.',reason:'Accepted quotation'}]}
+      {id:18,no:'EST-2026-018',customerId:1,customer:'MarineVent AB',title:'Ventilation Duct System',status:'accepted',revision:1,created:'2026-08-14',validUntil:'2026-09-14',currency:'SEK',estimatedMaterial:72450,estimatedLabour:48600,estimatedMachine:12600,estimatedOther:8400,totalCost:142050,sellingPrice:198000,plannedHours:184,machines:['Laser Cutting Machine','Press Brake','TIG Welding Machine'],deliveryTarget:'2026-11-12',projectId:14,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:8,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:36,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:45,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',qty:40,unit:'EA'}],revisions:[{rev:0,date:'2026-08-14',author:'Aleksandar C.',reason:'Initial quotation'},{rev:1,date:'2026-08-18',author:'Aleksandar C.',reason:'Updated material grade and delivery'}]},
+      {id:23,no:'EST-2026-023',customerId:1,customer:'MarineVent AB',title:'Ventilation Upgrade Package',status:'draft',revision:0,created:'2026-08-22',validUntil:'2026-09-22',currency:'SEK',estimatedMaterial:9800,estimatedLabour:7200,estimatedMachine:3200,estimatedOther:1920,totalCost:22120,sellingPrice:28503,plannedHours:30,machines:['Laser Cutting Machine','TIG Welding Machine'],deliveryTarget:'2026-10-15',projectId:null,bom:[],revisions:[{rev:0,date:'2026-08-22',author:'Aleksandar C.',reason:'Initial quotation'}]}
+      ,{id:24,no:'EST-2026-024',customerId:2,customer:'Sanus Glutenfri AB',title:'Stainless Platform Extension',status:'accepted',revision:0,created:'2026-08-24',validUntil:'2026-09-24',currency:'SEK',estimatedMaterial:48500,estimatedLabour:36200,estimatedMachine:9800,estimatedOther:5500,totalCost:100000,sellingPrice:138000,plannedHours:126,machines:['Laser Cutting Machine','Press Brake','TIG Welding Machine'],deliveryTarget:'2026-11-28',projectId:null,bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',qty:12,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',qty:24,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',qty:18,unit:'KG'}],revisions:[{rev:0,date:'2026-08-24',author:'Aleksandar C.',reason:'Accepted quotation'}]}
     ],
     projects:[
-      {id:14,no:'P-2026-014',customerId:1,customer:'MarineVent AB',name:'Ventilation Duct System',estimationId:18,status:'production',phase:'production',start:'2026-08-15',deadline:'2026-09-12',expectedCompletion:'2026-09-12',progress:62,plannedHours:184,usedHours:96,responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'],machines:['Laser','Press Brake','TIG Station 1'],materialStatus:'shortage',bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',required:8,reserved:8,issued:4,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',required:36,reserved:30,issued:12,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',required:45,reserved:12,issued:10,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',required:40,reserved:40,issued:40,unit:'EA'}],tasks:[],milestones:[]},
-      {"id":101,"no":"P-26-0001","customerId":2,"customer":"Sanus Glutenfri AB","name":"Bakery Conveyor Modification","estimationId":null,"status":"active","phase":"production","start":"2026-08-18","deadline":"2026-09-10","expectedCompletion":"2026-09-08","progress":50,"plannedHours":80,"usedHours":25,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"PO-48215","poNumber":"PO-48215","description":"Fabricate and install stainless steel conveyor extension including supports and guarding.","notes":[{"date":"2026-08-15","author":"Aleksandar","text":"Customer confirmed guard color RAL 7035.","tag":"customer","pinned":false},{"date":"2026-08-20","author":"Elena","text":"Drawing revision B approved — proceed with cutting.","tag":"workshop","pinned":true}],"types":["Fabrication","Stainless Steel","Installation"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-10","plannedStart":"2026-08-18","actualStart":"2026-08-18","plannedCompletion":"2026-09-08","actualCompletion":"","closedDate":"","quotedValue":92000,"estLabourHours":80,"estMaterialCost":20000,"estPurchaseCost":8000,"otherCostEst":0,"otherCostAct":500,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0034","desc":"Cut Frame Profiles","assigned":"Marko","status":"completed","est":8,"act":8,"progress":100,"estMaterial":3200},{"no":"JC-26-0035","desc":"Weld Main Frame","assigned":"Marko","status":"active","est":20,"act":14,"progress":70,"estMaterial":9000},{"no":"JC-26-0036","desc":"Fabricate Guarding","assigned":"Elena","status":"planned","est":10,"act":0,"progress":0,"estMaterial":4800},{"no":"JC-26-0037","desc":"Installation","assigned":"Team","status":"planned","est":16,"act":0,"progress":0,"estMaterial":1500},{"no":"JC-26-0038","desc":"Panel & Controls Wiring","assigned":"Marko","status":"planned","est":26,"act":0,"progress":0,"estMaterial":1500}],"hours":[{"date":"2026-08-18","worker":"Marko","jobcard":"JC-26-0034","desc":"Cut Frame Profiles","hours":8},{"date":"2026-08-19","worker":"Marko","jobcard":"JC-26-0035","desc":"Weld Main Frame — setup","hours":6},{"date":"2026-08-20","worker":"Marko","jobcard":"JC-26-0035","desc":"Weld Main Frame","hours":8},{"date":"2026-08-21","worker":"Aleksandar","jobcard":"","desc":"Project management / site coordination","hours":3}],"materials":[{"name":"304L Sheet 2mm","spec":"2mm stainless","qty":3,"unit":"sheets","source":"store","jobcard":"JC-26-0034","cost":4800,"status":"used"},{"name":"RHS 40x40x2","spec":"box section","qty":24,"unit":"m","source":"store","jobcard":"JC-26-0035","cost":1560,"status":"issued"},{"name":"M8 Stainless Bolts","spec":"A2 stainless","qty":40,"unit":"pcs","source":"store","jobcard":"JC-26-0034","cost":280,"status":"used"},{"name":"Stainless Hinges","spec":"316 grade","qty":6,"unit":"pcs","source":"purchase","jobcard":"JC-26-0037","cost":780,"status":"reserved"}],"purchases":[{"po":"PO-26-0018","supplier":"Ahlsell","date":"2026-08-20","items":"Fittings, Bolts, Grinding Discs","ordered":12350,"received":8550,"status":"partdelivered","expected":"2026-08-27"}],"documents":{"Drawings":[{"name":"Frame Drawing","rev":"A","date":"2026-08-10","by":"Aleksandar","status":"superseded"},{"name":"Frame Drawing","rev":"B","date":"2026-08-20","by":"Aleksandar","status":"current"},{"name":"Guard Drawing.dxf","rev":"-","date":"2026-08-15","by":"Elena","status":"current"}],"Customer Documents":[{"name":"Customer PO.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar","status":"current"},{"name":"Customer Specification.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar","status":"current"}],"Material Certificates":[{"name":"EN 10204 3.1 Certificate.pdf","rev":"-","date":"2026-08-19","by":"Marko","status":"current"}],"Photos":[{"name":"Before Work.jpg","rev":"-","date":"2026-08-18","by":"Marko","status":"current"},{"name":"Fabrication.jpg","rev":"-","date":"2026-08-20","by":"Marko","status":"current"}],"Quality":[{"name":"WPS-01.pdf","rev":"-","date":"2026-08-10","by":"Aleksandar","status":"current"}],"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Approved)","rev":"-","date":"2026-08-20","by":"Aleksandar","status":"current"},{"name":"Welding Report RPT-26-0002 (Draft)","rev":"-","date":"2026-08-21","by":"Marko","status":"current"}]},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-10","time":"09:05","user":"Aleksandar","action":"Status changed: DRAFT → QUOTATION"},{"date":"2026-08-12","time":"11:20","user":"Aleksandar","action":"Quotation approved by customer — status changed: QUOTATION → APPROVED"},{"date":"2026-08-14","time":"10:00","user":"Aleksandar","action":"Jobcards created (JC-26-0034 … JC-26-0038)"},{"date":"2026-08-15","time":"14:40","user":"Aleksandar","action":"Note added (customer)"},{"date":"2026-08-16","time":"08:30","user":"Aleksandar","action":"Status changed: APPROVED → PLANNED"},{"date":"2026-08-18","time":"07:15","user":"Marko","action":"Status changed: PLANNED → ACTIVE — first hours logged"},{"date":"2026-08-18","time":"15:30","user":"Marko","action":"Logged 8h on JC-26-0034"},{"date":"2026-08-20","time":"09:10","user":"Aleksandar","action":"Drawing updated REV A → REV B"},{"date":"2026-08-20","time":"09:42","user":"Aleksandar","action":"PO-26-0018 created (Ahlsell)"},{"date":"2026-08-20","time":"16:05","user":"Elena","action":"Note pinned (workshop)"},{"date":"2026-08-21","time":"17:00","user":"Aleksandar","action":"Logged 3h — Project management"}]},
-      {"id":102,"no":"P-26-0002","customerId":3,"customer":"Schröder Nordic","name":"Folding Machine Retrofit","estimationId":null,"status":"quotation","phase":"design","start":"2026-08-14","deadline":"2026-09-20","expectedCompletion":"2026-09-20","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-114","poNumber":"","description":"Retrofit MAK 2500/1.25 folding machine — new panel wiring, HMI bracket and safety cover.","notes":[{"date":"2026-08-16","author":"Aleksandar","text":"Waiting for customer confirmation on final scope.","tag":"customer","pinned":false}],"types":["Fabrication","Electrical"],"pm":"Aleksandar","workshop":"","sales":"Aleksandar","createdDate":"2026-08-14","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":145000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{"Customer Documents":[{"name":"Specification Draft.pdf","rev":"-","date":"2026-08-14","by":"Aleksandar","status":"current"}]},"activity":[{"date":"2026-08-14","time":"10:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-14","time":"10:05","user":"Aleksandar","action":"Status changed: DRAFT → QUOTATION"}]},
-      {"id":103,"no":"P-26-0003","customerId":4,"customer":"Lund Konditori","name":"Mixer Overhaul — Preliminary","estimationId":null,"status":"draft","phase":"design","start":"2026-08-22","deadline":"","expectedCompletion":"","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"","poNumber":"","description":"Preliminary gearbox service and bowl guard replacement.","notes":[],"types":["Repair"],"pm":"Aleksandar","workshop":"","sales":"","createdDate":"2026-08-22","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":0,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-22","time":"13:10","user":"Aleksandar","action":"Project Created"}]},
-      {"id":104,"no":"P-26-0004","customerId":5,"customer":"Helsingborg Foods","name":"Guard Fabrication","estimationId":null,"status":"completed","phase":"closeout","start":"2026-06-02","deadline":"2026-06-20","expectedCompletion":"2026-06-19","progress":100,"plannedHours":24,"usedHours":23.5,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"HF-2201","poNumber":"HF-2201","description":"Sheet metal guards for packing line P2, fabricated and installed on-site.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-05-28","plannedStart":"2026-06-02","actualStart":"2026-06-02","plannedCompletion":"2026-06-19","actualCompletion":"2026-06-20","closedDate":"","quotedValue":58000,"estLabourHours":24,"estMaterialCost":12000,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0011","desc":"Sheet metal guards","assigned":"Marko","status":"completed","est":18,"act":17,"progress":100,"estMaterial":9500},{"no":"JC-26-0012","desc":"Install on-site","assigned":"Team","status":"completed","est":6,"act":6.5,"progress":100,"estMaterial":2500}],"hours":[{"date":"2026-06-18","worker":"Marko","jobcard":"JC-26-0011","desc":"Guard fabrication","hours":17},{"date":"2026-06-20","worker":"Elena","jobcard":"JC-26-0012","desc":"Site install","hours":6.5}],"materials":[{"name":"Mild Steel Sheet 3mm","spec":"3mm","qty":6,"unit":"sheets","source":"store","jobcard":"JC-26-0011","cost":4100,"status":"used"}],"purchases":[],"documents":{"Photos":[{"name":"Install Complete.jpg","rev":"-","date":"2026-06-20","by":"Marko","status":"current"}],"Inspection Reports":[{"name":"Completion Report RPT-26-0001 (Signed)","rev":"-","date":"2026-06-20","by":"Aleksandar","status":"current"}]},"activity":[{"date":"2026-05-28","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-06-20","time":"16:00","user":"Aleksandar","action":"Status changed: ACTIVE → COMPLETED"}]},
-      {"id":105,"no":"P-26-0005","customerId":6,"customer":"Malmö Livs","name":"Service — Malmö Slicer","estimationId":null,"status":"closed","phase":"closeout","start":"2026-08-10","deadline":"2026-08-20","expectedCompletion":"2026-08-18","progress":100,"plannedHours":12,"usedHours":12,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-99","poNumber":"","description":"On-site inspection and bearing replacement on Slicer L-40.","notes":[],"types":["Service"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-05","plannedStart":"2026-08-10","actualStart":"2026-08-10","plannedCompletion":"2026-08-18","actualCompletion":"2026-08-18","closedDate":"2026-08-19","quotedValue":16500,"estLabourHours":12,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0009","desc":"On-site inspection","assigned":"Marko","status":"completed","est":4,"act":4,"progress":100,"estMaterial":0},{"no":"JC-26-0010","desc":"Bearing replacement","assigned":"Marko","status":"completed","est":8,"act":8,"progress":100,"estMaterial":900}],"hours":[{"date":"2026-08-10","worker":"Marko","jobcard":"JC-26-0009","desc":"Inspection","hours":4},{"date":"2026-08-18","worker":"Marko","jobcard":"JC-26-0010","desc":"Bearing replacement","hours":8}],"materials":[{"name":"Bearing 6205-2RS","spec":"-","qty":2,"unit":"pcs","source":"store","jobcard":"JC-26-0010","cost":900,"status":"used"}],"purchases":[],"documents":{"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Signed)","rev":"-","date":"2026-08-18","by":"Marko","status":"current"}]},"activity":[{"date":"2026-08-05","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-19","time":"09:00","user":"Aleksandar","action":"Status changed: COMPLETED → CLOSED"}]},
-      {"id":106,"no":"P-26-0006","customerId":7,"customer":"Ystad Bageri","name":"Spiral Mixer Service","estimationId":null,"status":"hold","phase":"production","start":"2026-08-19","deadline":"2026-09-05","expectedCompletion":"2026-09-05","progress":40,"plannedHours":16,"usedHours":3,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"YB-33","poNumber":"","description":"Gearbox service on spiral mixer SM-80.","notes":[{"date":"2026-08-19","author":"Aleksandar","text":"Supplier delay on gearbox seal kit.","tag":"purchase","pinned":true}],"types":["Repair","Service"],"pm":"Aleksandar","workshop":"Marko","sales":"","createdDate":"2026-08-12","plannedStart":"2026-08-19","actualStart":"2026-08-19","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":24000,"estLabourHours":16,"estMaterialCost":3700,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"material","holdComment":"Waiting for gearbox seal kit from supplier.","expectedResume":"2026-09-01","cancelReason":"","jobcards":[{"no":"JC-26-0022","desc":"Gearbox service","assigned":"Marko","status":"active","est":10,"act":3,"progress":30,"estMaterial":2400},{"no":"JC-26-0023","desc":"New bowl guard","assigned":"Elena","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1300}],"hours":[{"date":"2026-08-19","worker":"Marko","jobcard":"JC-26-0022","desc":"Gearbox teardown","hours":3}],"materials":[],"purchases":[{"po":"PO-26-0016","supplier":"SKF Sverige","date":"2026-08-19","items":"Gearbox seal kit","ordered":1300,"received":0,"status":"ordered","expected":"2026-09-02"}],"documents":{},"activity":[{"date":"2026-08-12","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-19","time":"10:00","user":"Aleksandar","action":"Status changed: ACTIVE → ON HOLD (Waiting for Material)"}]},
-      {"id":107,"no":"P-26-0007","customerId":8,"customer":"Trelleborg Snacks","name":"Packing Line Extension","estimationId":null,"status":"cancelled","phase":"closeout","start":"2026-07-20","deadline":"2026-10-01","expectedCompletion":"2026-10-01","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"TS-500","poNumber":"","description":"Extension of packing line with additional conveyor section.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar","workshop":"","sales":"Aleksandar","createdDate":"2026-07-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":210000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"Customer postponed investment.","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-07-20","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-05","time":"12:00","user":"Aleksandar","action":"Status changed: QUOTATION → CANCELLED"}]},
-      {"id":108,"no":"P-26-0008","customerId":6,"customer":"Malmö Livs","name":"Bearing Replacement","estimationId":null,"status":"approved","phase":"design","start":"2026-08-20","deadline":"2026-09-15","expectedCompletion":"2026-09-15","progress":0,"plannedHours":8,"usedHours":0,"responsible":"Aleksandar","workers":["Marko"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-101","poNumber":"","description":"Bearing replacement on Slicer L-40, approved and awaiting scheduling.","notes":[],"types":["Repair"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":14000,"estLabourHours":8,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-20","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-22","time":"14:00","user":"Aleksandar","action":"Status changed: QUOTATION → APPROVED"}]},
-      {"id":109,"no":"P-26-0009","customerId":3,"customer":"Schröder Nordic","name":"HMI Upgrade","estimationId":null,"status":"planned","phase":"design","start":"2026-08-28","deadline":"2026-09-18","expectedCompletion":"2026-09-15","progress":0,"plannedHours":18,"usedHours":0,"responsible":"Aleksandar","workers":["Marko","Elena"],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-108","poNumber":"","description":"HMI panel upgrade, jobcards prepared, work not yet started.","notes":[],"types":["Electrical"],"pm":"Aleksandar","workshop":"Marko","sales":"Aleksandar","createdDate":"2026-08-10","plannedStart":"2026-08-28","actualStart":"","plannedCompletion":"2026-09-15","actualCompletion":"","closedDate":"","quotedValue":31000,"estLabourHours":18,"estMaterialCost":4200,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0030","desc":"HMI panel wiring","assigned":"Marko","status":"planned","est":12,"act":0,"progress":0,"estMaterial":2700},{"no":"JC-26-0031","desc":"Bracket fabrication","assigned":"Elena","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1500}],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar","action":"Project Created"},{"date":"2026-08-24","time":"08:00","user":"Aleksandar","action":"Status changed: APPROVED → PLANNED"}]}
+      {id:14,no:'P-2026-014',customerId:1,customer:'MarineVent AB',name:'Ventilation Duct System',estimationId:18,status:'production',phase:'production',start:'2026-08-15',deadline:'2026-09-12',expectedCompletion:'2026-09-12',progress:62,plannedHours:184,usedHours:96,responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'],machines:['Laser Cutting Machine','Press Brake','TIG Welding Machine'],materialStatus:'shortage',bom:[{code:'SS-SHT-304-2.0',description:'AISI 304 sheet 2 mm',required:8,reserved:8,issued:4,unit:'EA'},{code:'MS-TUBE-40SQ-2.0',description:'Square tube 40x40x2 mm',required:36,reserved:30,issued:12,unit:'EA'},{code:'ER70S-6-1.0',description:'Welding wire ER70S-6',required:45,reserved:12,issued:10,unit:'KG'},{code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',required:40,reserved:40,issued:40,unit:'EA'}],tasks:[],milestones:[]},
+      {"id":101,"no":"P-26-0001","customerId":2,"customer":"Sanus Glutenfri AB","name":"Bakery Conveyor Modification","estimationId":null,"status":"active","phase":"production","start":"2026-08-18","deadline":"2026-09-10","expectedCompletion":"2026-09-08","progress":50,"plannedHours":80,"usedHours":25,"responsible":"Aleksandar C.","workers":["Marko K.","Elena N."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"PO-48215","poNumber":"PO-48215","description":"Fabricate and install stainless steel conveyor extension including supports and guarding.","notes":[{"date":"2026-08-15","author":"Aleksandar C.","text":"Customer confirmed guard color RAL 7035.","tag":"customer","pinned":false},{"date":"2026-08-20","author":"Elena N.","text":"Drawing revision B approved — proceed with cutting.","tag":"workshop","pinned":true}],"types":["Fabrication","Stainless Steel","Installation"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"Aleksandar C.","createdDate":"2026-08-10","plannedStart":"2026-08-18","actualStart":"2026-08-18","plannedCompletion":"2026-09-08","actualCompletion":"","closedDate":"","quotedValue":92000,"estLabourHours":80,"estMaterialCost":20000,"estPurchaseCost":8000,"otherCostEst":0,"otherCostAct":500,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0034","desc":"Cut Frame Profiles","assigned":"Marko K.","status":"completed","est":8,"act":8,"progress":100,"estMaterial":3200},{"no":"JC-26-0035","desc":"Weld Main Frame","assigned":"Marko K.","status":"active","est":20,"act":14,"progress":70,"estMaterial":9000},{"no":"JC-26-0036","desc":"Fabricate Guarding","assigned":"Elena N.","status":"planned","est":10,"act":0,"progress":0,"estMaterial":4800},{"no":"JC-26-0037","desc":"Installation","assigned":"Team","status":"planned","est":16,"act":0,"progress":0,"estMaterial":1500},{"no":"JC-26-0038","desc":"Panel & Controls Wiring","assigned":"Marko K.","status":"planned","est":26,"act":0,"progress":0,"estMaterial":1500}],"hours":[{"date":"2026-08-18","worker":"Marko K.","jobcard":"JC-26-0034","desc":"Cut Frame Profiles","hours":8},{"date":"2026-08-19","worker":"Marko K.","jobcard":"JC-26-0035","desc":"Weld Main Frame — setup","hours":6},{"date":"2026-08-20","worker":"Marko K.","jobcard":"JC-26-0035","desc":"Weld Main Frame","hours":8},{"date":"2026-08-21","worker":"Aleksandar C.","jobcard":"","desc":"Project management / site coordination","hours":3}],"materials":[{"name":"304L Sheet 2mm","spec":"2mm stainless","qty":3,"unit":"sheets","source":"store","jobcard":"JC-26-0034","cost":4800,"status":"used"},{"name":"RHS 40x40x2","spec":"box section","qty":24,"unit":"m","source":"store","jobcard":"JC-26-0035","cost":1560,"status":"issued"},{"name":"M8 Stainless Bolts","spec":"A2 stainless","qty":40,"unit":"pcs","source":"store","jobcard":"JC-26-0034","cost":280,"status":"used"},{"name":"Stainless Hinges","spec":"316 grade","qty":6,"unit":"pcs","source":"purchase","jobcard":"JC-26-0037","cost":780,"status":"reserved"}],"purchases":[{"po":"PO-26-0018","supplier":"Ahlsell","date":"2026-08-20","items":"Fittings, Bolts, Grinding Discs","ordered":12350,"received":8550,"status":"partdelivered","expected":"2026-08-27"}],"documents":{"Drawings":[{"name":"Frame Drawing","rev":"A","date":"2026-08-10","by":"Aleksandar C.","status":"superseded"},{"name":"Frame Drawing","rev":"B","date":"2026-08-20","by":"Aleksandar C.","status":"current"},{"name":"Guard Drawing.dxf","rev":"-","date":"2026-08-15","by":"Elena N.","status":"current"}],"Customer Documents":[{"name":"Customer PO.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar C.","status":"current"},{"name":"Customer Specification.pdf","rev":"-","date":"2026-08-08","by":"Aleksandar C.","status":"current"}],"Material Certificates":[{"name":"EN 10204 3.1 Certificate.pdf","rev":"-","date":"2026-08-19","by":"Marko K.","status":"current"}],"Photos":[{"name":"Before Work.jpg","rev":"-","date":"2026-08-18","by":"Marko K.","status":"current"},{"name":"Fabrication.jpg","rev":"-","date":"2026-08-20","by":"Marko K.","status":"current"}],"Quality":[{"name":"WPS-01.pdf","rev":"-","date":"2026-08-10","by":"Aleksandar C.","status":"current"}],"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Approved)","rev":"-","date":"2026-08-20","by":"Aleksandar C.","status":"current"},{"name":"Welding Report RPT-26-0002 (Draft)","rev":"-","date":"2026-08-21","by":"Marko K.","status":"current"}]},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-10","time":"09:05","user":"Aleksandar C.","action":"Status changed: DRAFT → QUOTATION"},{"date":"2026-08-12","time":"11:20","user":"Aleksandar C.","action":"Quotation approved by customer — status changed: QUOTATION → APPROVED"},{"date":"2026-08-14","time":"10:00","user":"Aleksandar C.","action":"Jobcards created (JC-26-0034 … JC-26-0038)"},{"date":"2026-08-15","time":"14:40","user":"Aleksandar C.","action":"Note added (customer)"},{"date":"2026-08-16","time":"08:30","user":"Aleksandar C.","action":"Status changed: APPROVED → PLANNED"},{"date":"2026-08-18","time":"07:15","user":"Marko K.","action":"Status changed: PLANNED → ACTIVE — first hours logged"},{"date":"2026-08-18","time":"15:30","user":"Marko K.","action":"Logged 8h on JC-26-0034"},{"date":"2026-08-20","time":"09:10","user":"Aleksandar C.","action":"Drawing updated REV A → REV B"},{"date":"2026-08-20","time":"09:42","user":"Aleksandar C.","action":"PO-26-0018 created (Ahlsell)"},{"date":"2026-08-20","time":"16:05","user":"Elena N.","action":"Note pinned (workshop)"},{"date":"2026-08-21","time":"17:00","user":"Aleksandar C.","action":"Logged 3h — Project management"}]},
+      {"id":102,"no":"P-26-0002","customerId":3,"customer":"Schröder Nordic","name":"Folding Machine Retrofit","estimationId":null,"status":"quotation","phase":"design","start":"2026-08-14","deadline":"2026-09-20","expectedCompletion":"2026-09-20","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar C.","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-114","poNumber":"","description":"Retrofit MAK 2500/1.25 folding machine — new panel wiring, HMI bracket and safety cover.","notes":[{"date":"2026-08-16","author":"Aleksandar C.","text":"Waiting for customer confirmation on final scope.","tag":"customer","pinned":false}],"types":["Fabrication","Electrical"],"pm":"Aleksandar C.","workshop":"","sales":"Aleksandar C.","createdDate":"2026-08-14","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":145000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{"Customer Documents":[{"name":"Specification Draft.pdf","rev":"-","date":"2026-08-14","by":"Aleksandar C.","status":"current"}]},"activity":[{"date":"2026-08-14","time":"10:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-14","time":"10:05","user":"Aleksandar C.","action":"Status changed: DRAFT → QUOTATION"}]},
+      {"id":103,"no":"P-26-0003","customerId":4,"customer":"Lund Konditori","name":"Mixer Overhaul — Preliminary","estimationId":null,"status":"quotation","phase":"design","start":"2026-08-22","deadline":"","expectedCompletion":"","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar C.","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"","poNumber":"","description":"Preliminary gearbox service and bowl guard replacement.","notes":[],"types":["Repair"],"pm":"Aleksandar C.","workshop":"","sales":"","createdDate":"2026-08-22","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":19500,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-22","time":"13:10","user":"Aleksandar C.","action":"Project Created"}]},
+      {"id":104,"no":"P-26-0004","customerId":5,"customer":"Helsingborg Foods","name":"Guard Fabrication","estimationId":null,"status":"completed","phase":"closeout","start":"2026-06-02","deadline":"2026-06-20","expectedCompletion":"2026-06-19","progress":100,"plannedHours":24,"usedHours":23.5,"responsible":"Aleksandar C.","workers":["Marko K."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"HF-2201","poNumber":"HF-2201","description":"Sheet metal guards for packing line P2, fabricated and installed on-site.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"Aleksandar C.","createdDate":"2026-05-28","plannedStart":"2026-06-02","actualStart":"2026-06-02","plannedCompletion":"2026-06-19","actualCompletion":"2026-06-20","closedDate":"","quotedValue":58000,"estLabourHours":24,"estMaterialCost":12000,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0011","desc":"Sheet metal guards","assigned":"Marko K.","status":"completed","est":18,"act":17,"progress":100,"estMaterial":9500},{"no":"JC-26-0012","desc":"Install on-site","assigned":"Team","status":"completed","est":6,"act":6.5,"progress":100,"estMaterial":2500}],"hours":[{"date":"2026-06-18","worker":"Marko K.","jobcard":"JC-26-0011","desc":"Guard fabrication","hours":17},{"date":"2026-06-20","worker":"Elena N.","jobcard":"JC-26-0012","desc":"Site install","hours":6.5}],"materials":[{"name":"Mild Steel Sheet 3mm","spec":"3mm","qty":6,"unit":"sheets","source":"store","jobcard":"JC-26-0011","cost":4100,"status":"used"}],"purchases":[],"documents":{"Photos":[{"name":"Install Complete.jpg","rev":"-","date":"2026-06-20","by":"Marko K.","status":"current"}],"Inspection Reports":[{"name":"Completion Report RPT-26-0001 (Signed)","rev":"-","date":"2026-06-20","by":"Aleksandar C.","status":"current"}]},"activity":[{"date":"2026-05-28","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-06-20","time":"16:00","user":"Aleksandar C.","action":"Status changed: ACTIVE → COMPLETED"}]},
+      {"id":105,"no":"P-26-0005","customerId":6,"customer":"Malmö Livs","name":"Service — Malmö Slicer","estimationId":null,"status":"closed","phase":"closeout","start":"2026-08-10","deadline":"2026-08-20","expectedCompletion":"2026-08-18","progress":100,"plannedHours":12,"usedHours":12,"responsible":"Aleksandar C.","workers":["Marko K."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-99","poNumber":"","description":"On-site inspection and bearing replacement on Slicer L-40.","notes":[],"types":["Service"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"Aleksandar C.","createdDate":"2026-08-05","plannedStart":"2026-08-10","actualStart":"2026-08-10","plannedCompletion":"2026-08-18","actualCompletion":"2026-08-18","closedDate":"2026-08-19","quotedValue":16500,"estLabourHours":12,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0009","desc":"On-site inspection","assigned":"Marko K.","status":"completed","est":4,"act":4,"progress":100,"estMaterial":0},{"no":"JC-26-0010","desc":"Bearing replacement","assigned":"Marko K.","status":"completed","est":8,"act":8,"progress":100,"estMaterial":900}],"hours":[{"date":"2026-08-10","worker":"Marko K.","jobcard":"JC-26-0009","desc":"Inspection","hours":4},{"date":"2026-08-18","worker":"Marko K.","jobcard":"JC-26-0010","desc":"Bearing replacement","hours":8}],"materials":[{"name":"Bearing 6205-2RS","spec":"-","qty":2,"unit":"pcs","source":"store","jobcard":"JC-26-0010","cost":900,"status":"used"}],"purchases":[],"documents":{"Inspection Reports":[{"name":"Inspection Report RPT-26-0001 (Signed)","rev":"-","date":"2026-08-18","by":"Marko K.","status":"current"}]},"activity":[{"date":"2026-08-05","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-19","time":"09:00","user":"Aleksandar C.","action":"Status changed: COMPLETED → CLOSED"}]},
+      {"id":106,"no":"P-26-0006","customerId":7,"customer":"Ystad Bageri","name":"Spiral Mixer Service","estimationId":null,"status":"hold","phase":"production","start":"2026-08-19","deadline":"2026-09-05","expectedCompletion":"2026-09-05","progress":40,"plannedHours":16,"usedHours":3,"responsible":"Aleksandar C.","workers":["Marko K.","Elena N."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"YB-33","poNumber":"","description":"Gearbox service on spiral mixer SM-80.","notes":[{"date":"2026-08-19","author":"Aleksandar C.","text":"Supplier delay on gearbox seal kit.","tag":"purchase","pinned":true}],"types":["Repair","Service"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"","createdDate":"2026-08-12","plannedStart":"2026-08-19","actualStart":"2026-08-19","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":24000,"estLabourHours":16,"estMaterialCost":3700,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"material","holdComment":"Waiting for gearbox seal kit from supplier.","expectedResume":"2026-09-01","cancelReason":"","jobcards":[{"no":"JC-26-0022","desc":"Gearbox service","assigned":"Marko K.","status":"active","est":10,"act":3,"progress":30,"estMaterial":2400},{"no":"JC-26-0023","desc":"New bowl guard","assigned":"Elena N.","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1300}],"hours":[{"date":"2026-08-19","worker":"Marko K.","jobcard":"JC-26-0022","desc":"Gearbox teardown","hours":3}],"materials":[],"purchases":[{"po":"PO-26-0016","supplier":"SKF Sverige","date":"2026-08-19","items":"Gearbox seal kit","ordered":1300,"received":0,"status":"ordered","expected":"2026-09-02"}],"documents":{},"activity":[{"date":"2026-08-12","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-19","time":"10:00","user":"Aleksandar C.","action":"Status changed: ACTIVE → ON HOLD (Waiting for Material)"}]},
+      {"id":107,"no":"P-26-0007","customerId":8,"customer":"Trelleborg Snacks","name":"Packing Line Extension","estimationId":null,"status":"cancelled","phase":"closeout","start":"2026-07-20","deadline":"2026-10-01","expectedCompletion":"2026-10-01","progress":0,"plannedHours":0,"usedHours":0,"responsible":"Aleksandar C.","workers":[],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"TS-500","poNumber":"","description":"Extension of packing line with additional conveyor section.","notes":[],"types":["Fabrication","Installation"],"pm":"Aleksandar C.","workshop":"","sales":"Aleksandar C.","createdDate":"2026-07-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":210000,"estLabourHours":0,"estMaterialCost":0,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"Customer postponed investment.","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-07-20","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-05","time":"12:00","user":"Aleksandar C.","action":"Status changed: QUOTATION → CANCELLED"}]},
+      {"id":108,"no":"P-26-0008","customerId":6,"customer":"Malmö Livs","name":"Bearing Replacement","estimationId":null,"status":"approved","phase":"design","start":"2026-08-20","deadline":"2026-09-15","expectedCompletion":"2026-09-15","progress":0,"plannedHours":8,"usedHours":0,"responsible":"Aleksandar C.","workers":["Marko K."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"ML-101","poNumber":"","description":"Bearing replacement on Slicer L-40, approved and awaiting scheduling.","notes":[],"types":["Repair"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"Aleksandar C.","createdDate":"2026-08-20","plannedStart":"","actualStart":"","plannedCompletion":"","actualCompletion":"","closedDate":"","quotedValue":14000,"estLabourHours":8,"estMaterialCost":900,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-20","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-22","time":"14:00","user":"Aleksandar C.","action":"Status changed: QUOTATION → APPROVED"}]},
+      {"id":109,"no":"P-26-0009","customerId":3,"customer":"Schröder Nordic","name":"HMI Upgrade","estimationId":null,"status":"planned","phase":"design","start":"2026-08-28","deadline":"2026-09-18","expectedCompletion":"2026-09-15","progress":0,"plannedHours":18,"usedHours":0,"responsible":"Aleksandar C.","workers":["Marko K.","Elena N."],"machines":[],"materialStatus":"unchecked","bom":[],"tasks":[],"milestones":[],"customerRef":"SN-Q-108","poNumber":"","description":"HMI panel upgrade, jobcards prepared, work not yet started.","notes":[],"types":["Electrical"],"pm":"Aleksandar C.","workshop":"Marko K.","sales":"Aleksandar C.","createdDate":"2026-08-10","plannedStart":"2026-08-28","actualStart":"","plannedCompletion":"2026-09-15","actualCompletion":"","closedDate":"","quotedValue":31000,"estLabourHours":18,"estMaterialCost":4200,"estPurchaseCost":0,"otherCostEst":0,"otherCostAct":0,"holdReason":"","holdComment":"","expectedResume":"","cancelReason":"","jobcards":[{"no":"JC-26-0030","desc":"HMI panel wiring","assigned":"Marko K.","status":"planned","est":12,"act":0,"progress":0,"estMaterial":2700},{"no":"JC-26-0031","desc":"Bracket fabrication","assigned":"Elena N.","status":"planned","est":6,"act":0,"progress":0,"estMaterial":1500}],"hours":[],"materials":[],"purchases":[],"documents":{},"activity":[{"date":"2026-08-10","time":"09:00","user":"Aleksandar C.","action":"Project Created"},{"date":"2026-08-24","time":"08:00","user":"Aleksandar C.","action":"Status changed: APPROVED → PLANNED"}]}
     ],
     equipment:[
       {id:'E-1001',equipmentId:'E-1001',name:'MIG/MAG Welding Machine',category:'Welding Machine',manufacturer:'ESAB',model:'Renegade VOLT',serial:'ESB-24105',assetNumber:'AS-1001',status:'Available',currentLocation:'Bay 1',homeLocation:'Welding bay',department:'Fabrication',responsiblePerson:'Marko K.',condition:'Good',criticality:'High',description:'Industrial MIG/MAG process machine used for sheet and tube fabrication.',purchaseDate:'2024-02-14',purchaseSupplier:'WeldSupply',purchasePrice:18200,warrantyExpiry:'2028-02-14',yearOfManufacture:2024,operatingHourMeter:2845,serviceInterval:250,qrCode:'EQ-1001-MIG',maintenanceDate:'2026-09-08',inspectionDate:'2026-09-12',certificationExpiry:'2026-11-20',calibrationDate:'2026-10-15',safetyWarnings:['Guard inspection due'],assignedProject:'P-2026-014',assignedJobcard:'JC-2026-0001',operator:'Marko K.',notes:'Demo equipment record; production safety controls require backend in real use.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-22',lastActivity:new Date().toISOString() },
@@ -60,15 +60,34 @@
       {id:'E-1007',equipmentId:'E-1007',name:'Angle Grinder',category:'Power Tool',manufacturer:'Makita',model:'GA5040C',serial:'MK-4762',assetNumber:'AS-1007',status:'Available',currentLocation:'Tool crib',homeLocation:'Tool crib',department:'Workshop',responsiblePerson:'Marko K.',condition:'Good',criticality:'Medium',description:'Portable grinder for deburring and finishing operations.',purchaseDate:'2025-01-10',purchaseSupplier:'ToolPro',purchasePrice:4200,warrantyExpiry:'2029-01-10',yearOfManufacture:2025,operatingHourMeter:264,serviceInterval:60,qrCode:'EQ-1007-GRINDER',maintenanceDate:'2026-09-16',inspectionDate:'2026-09-25',certificationExpiry:'2026-12-12',calibrationDate:null,safetyWarnings:[],assignedProject:null,assignedJobcard:null,operator:'Marko K.',notes:'Demo tool for quick issue and return workflow.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-07',lastActivity:new Date().toISOString() },
       {id:'E-1008',equipmentId:'E-1008',name:'Vernier Caliper',category:'Measuring Instrument',manufacturer:'Mitutoyo',model:'CD-6" CS',serial:'MIT-60240',assetNumber:'AS-1008',status:'Inspection Required',currentLocation:'Quality lab',homeLocation:'Quality lab',department:'Quality',responsiblePerson:'Elena N.',condition:'Good',criticality:'Critical',description:'Precision measurement tool used for quality inspection and first-article check.',purchaseDate:'2022-05-09',purchaseSupplier:'Metrolab',purchasePrice:3200,warrantyExpiry:'2027-05-09',yearOfManufacture:2022,operatingHourMeter:0,serviceInterval:0,qrCode:'EQ-1008-CALIPER',maintenanceDate:'2026-09-01',inspectionDate:'2026-08-11',certificationExpiry:'2026-08-30',calibrationDate:'2026-08-12',safetyWarnings:['Calibration overdue. Quality inspection use blocked.'],assignedProject:null,assignedJobcard:null,operator:'Elena N.',notes:'Example of an overdue calibration that blocks inspection use.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-07-24',lastActivity:new Date().toISOString() },
       {id:'E-1009',equipmentId:'E-1009',name:'Gas Detector',category:'Safety Equipment',manufacturer:'Crowcon',model:'Gas-Pro',serial:'CRW-9012',assetNumber:'AS-1009',status:'Available',currentLocation:'Safety locker',homeLocation:'Safety locker',department:'Safety',responsiblePerson:'Sven O.',condition:'Good',criticality:'Critical',description:'Portable gas detector safety check instrument for confined spaces and welding areas.',purchaseDate:'2024-04-12',purchaseSupplier:'SafetyWorks',purchasePrice:7800,warrantyExpiry:'2027-04-12',yearOfManufacture:2024,operatingHourMeter:620,serviceInterval:90,qrCode:'EQ-1009-GAS',maintenanceDate:'2026-09-21',inspectionDate:'2026-09-04',certificationExpiry:'2026-09-11',calibrationDate:'2026-09-10',safetyWarnings:['Safety certificate expiring soon'],assignedProject:null,assignedJobcard:null,operator:'Sven O.',notes:'Demo safety equipment record for certification expiry logic.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-14',lastActivity:new Date().toISOString() },
+      {id:'E-1011',equipmentId:'E-1011',name:'Laser Cutting Machine',category:'Cutting Equipment',manufacturer:'Trumpf',model:'TruLaser 1030',serial:'TRU-3312',assetNumber:'AS-1011',status:'In Use',currentLocation:'Cutting cell',homeLocation:'Cutting cell',department:'Fabrication',responsiblePerson:'Aleksandar C.',condition:'Good',criticality:'High',description:'Fiber laser for sheet cutting; the cutting step on most fabrication jobcards runs here.',purchaseDate:'2022-11-08',purchaseSupplier:'CutEdge Nordic',purchasePrice:412000,warrantyExpiry:'2027-11-08',yearOfManufacture:2022,operatingHourMeter:3120,serviceInterval:150,qrCode:'EQ-1011-LASER',maintenanceDate:'2026-09-05',inspectionDate:'2026-09-18',certificationExpiry:'2026-12-01',calibrationDate:'2026-10-02',safetyWarnings:['Lens replaced 2026-08-21 — check focus on first cut'],assignedProject:'P-2026-014',assignedJobcard:'JC-2026-0001',operator:'Marko K.',notes:'Named on project and jobcard machine lists; status here is what Planning reads.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-05',lastActivity:new Date().toISOString() },
+      {id:'E-1012',equipmentId:'E-1012',name:'Press Brake',category:'Forming Equipment',manufacturer:'Amada',model:'HFE 1003S',serial:'AMA-7741',assetNumber:'AS-1012',status:'Available',currentLocation:'Bay 3',homeLocation:'Bay 3',department:'Fabrication',responsiblePerson:'Marko K.',condition:'Good',criticality:'High',description:'CNC press brake for duct and panel bending after cutting.',purchaseDate:'2020-06-17',purchaseSupplier:'Nordic Machine Tools',purchasePrice:268000,warrantyExpiry:'2025-06-17',yearOfManufacture:2020,operatingHourMeter:5260,serviceInterval:200,qrCode:'EQ-1012-BRAKE',maintenanceDate:'2026-09-22',inspectionDate:'2026-10-04',certificationExpiry:'2026-11-28',calibrationDate:'2026-09-30',safetyWarnings:[],assignedProject:null,assignedJobcard:null,operator:null,notes:'Named on project and jobcard machine lists; status here is what Planning reads.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-05',lastActivity:new Date().toISOString() },
       {id:'E-1010',equipmentId:'E-1010',name:'Overhead Lifting Equipment',category:'Lifting Equipment',manufacturer:'Demag',model:'Gantry 5T',serial:'DEM-9901',assetNumber:'AS-1010',status:'Quarantined',currentLocation:'Service bay',homeLocation:'Service bay',department:'Fabrication',responsiblePerson:'Aleksandar C.',condition:'Fair',criticality:'Critical',description:'Workshop gantry lifting assembly used for moving sheet packs and fabricated sections.',purchaseDate:'2018-06-11',purchaseSupplier:'LiftNord',purchasePrice:56200,warrantyExpiry:'2026-06-11',yearOfManufacture:2018,operatingHourMeter:9100,serviceInterval:180,qrCode:'EQ-1010-LIFT',maintenanceDate:'2026-08-27',inspectionDate:'2026-08-15',certificationExpiry:'2026-08-18',calibrationDate:null,safetyWarnings:['Failure on lifting inspection requires return-to-service review'],assignedProject:null,assignedJobcard:null,operator:null,notes:'This item demonstrates quarantine and blocking safety workflow.',activity:[],inspections:[],maintenance:[],certifications:[],calibrations:[],notesLog:[],usageHistory:[],downtimeRecords:[],currentAssignment:null,usageSessions:[],isRetired:false,retirementReason:'',creationDate:'2026-08-04',lastActivity:new Date().toISOString() }
     ],
+    locationGroups:[
+      {id:'warehouse',name:'Warehouse',subgroups:[
+        {id:'wh1-shelves',name:'Warehouse 1 - shelves'},
+        {id:'wh2-rack',name:'Warehouse 2 - rack'}]}
+    ],
+    itemGroups:[
+      {id:'materials',name:'Materials',start:1000,next:1003,subgroups:[
+        {id:'stainless-steel',name:'Stainless steel'},{id:'mild-steel',name:'Mild steel'},
+        {id:'aluminium',name:'Aluminium'},{id:'copper',name:'Copper'},{id:'pipe-fittings',name:'Pipe & fittings'}]},
+      {id:'consumables',name:'Consumables',start:2000,next:2002,subgroups:[
+        {id:'welding',name:'Welding consumables'},{id:'abrasives',name:'Abrasives'},
+        {id:'gases',name:'Gases'},{id:'paint',name:'Paint & coatings'}]},
+      {id:'hardware',name:'Hardware',start:3000,next:3001,subgroups:[
+        {id:'fasteners',name:'Fasteners'},{id:'seals',name:'Seals & gaskets'}]},
+      {id:'tooling',name:'Tooling',start:4000,next:4000,subgroups:[
+        {id:'cutting-tools',name:'Cutting tools'},{id:'hand-tools',name:'Hand tools'}]}
+    ],
     inventory:[
-      {code:'SS-SHT-304-2.0',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
-      {code:'MS-TUBE-25SQ-1.6',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
-      {code:'MS-TUBE-40SQ-2.0',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
-      {code:'ER70S-6-1.0',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
-      {code:'BOLT-HEX-M10X25',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
-      {code:'GRD-DISC-4.5',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
+      {code:'SS-SHT-304-2.0',itemNo:1000,baseUnit:'m2',sizePerUnit:3.125,weightPerBase:15.8,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'materials',subgroup:'stainless-steel',description:'Stainless sheet AISI 304',category:'Stainless Sheet',grade:'AISI 304',dimensions:'2.0 × 1250 × 2500 mm',unit:'EA',stock:68,reserved:24,location:'A1-01-02',minStock:20,reorderQty:40,avgCost:1840,lastPrice:1910,supplier:'SteelCo Pty Ltd',heat:'H240516-S534',certificate:'MTC_H240516-S534.pdf',status:'good'},
+      {code:'MS-TUBE-25SQ-1.6',itemNo:1001,baseUnit:'m',sizePerUnit:6,weightPerBase:1.12,locationGroup:'warehouse',locationSub:'wh2-rack',group:'materials',subgroup:'mild-steel',description:'Square tube 25×25×1.6 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'25 × 25 × 1.6 mm · 6 m',unit:'EA',stock:120,reserved:30,location:'A2-03-01',minStock:30,reorderQty:60,avgCost:210,lastPrice:219,supplier:'Nordic Steel',heat:'B250814-41',certificate:'MTC_B250814-41.pdf',status:'good'},
+      {code:'MS-TUBE-40SQ-2.0',itemNo:1002,baseUnit:'m',sizePerUnit:6,weightPerBase:2.31,locationGroup:'warehouse',locationSub:'wh2-rack',group:'materials',subgroup:'mild-steel',description:'Square tube 40×40×2.0 mm 6 m',category:'Mild Steel Tube',grade:'S235JR',dimensions:'40 × 40 × 2.0 mm · 6 m',unit:'EA',stock:85,reserved:45,location:'A2-03-02',minStock:25,reorderQty:50,avgCost:318,lastPrice:329,supplier:'Nordic Steel',heat:'B250812-09',certificate:'MTC_B250812-09.pdf',status:'good'},
+      {code:'ER70S-6-1.0',itemNo:2000,baseUnit:'kg',sizePerUnit:1,weightPerBase:1,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'consumables',subgroup:'welding',description:'Welding wire ER70S-6 1.0 mm 15 kg',category:'Welding Consumable',grade:'ER70S-6',dimensions:'1.0 mm · 15 kg',unit:'KG',stock:56,reserved:12,location:'B1-02-01',minStock:10,reorderQty:30,avgCost:465,lastPrice:482,supplier:'WeldSupply',heat:'L260801',certificate:'CERT_L260801.pdf',status:'good'},
+      {code:'BOLT-HEX-M10X25',itemNo:3000,baseUnit:'pcs',sizePerUnit:1,weightPerBase:0.0255,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'hardware',subgroup:'fasteners',description:'Hex bolt M10 × 25 mm zinc',category:'Fasteners',grade:'8.8 Zn',dimensions:'M10 × 25 mm',unit:'EA',stock:920,reserved:110,location:'C1-04-01',minStock:200,reorderQty:500,avgCost:2.8,lastPrice:3.1,supplier:'FastenAll',heat:'L260822',certificate:null,status:'good'},
+      {code:'GRD-DISC-4.5',itemNo:2001,baseUnit:'pcs',sizePerUnit:1,weightPerBase:0.06,locationGroup:'warehouse',locationSub:'wh1-shelves',group:'consumables',subgroup:'abrasives',description:'Grinding disc 115×4.5×22.2 mm',category:'Abrasives',grade:'A24R',dimensions:'115 × 4.5 × 22.2 mm',unit:'EA',stock:64,reserved:10,location:'D1-01-01',minStock:60,reorderQty:100,avgCost:18,lastPrice:19,supplier:'ToolPro',heat:'L260701',certificate:null,status:'low'}
     ],
     barcodeLinks:{'7350123456789':'SS-SHT-304-2.0','7350123456796':'MS-TUBE-25SQ-1.6','7350123456802':'MS-TUBE-40SQ-2.0'},
     movements:[
@@ -88,11 +107,11 @@
         plannedHours:120,progress:55,status:'in-progress',materialReadiness:'partial',inspectionRequired:true,
         deliveryTarget:'2026-11-12',created:'2026-08-15',createdBy:'Aleksandar C.',archived:false,
         operations:[
-          {id:1,no:1,desc:'Material preparation',instructions:'Check heat numbers against MTC before cutting.',worker:'Marko K.',machine:'Laser',plannedHours:8,loggedHours:8,plannedStart:'2026-08-18',actualStart:'2026-08-18',actualCompletion:'2026-08-18',status:'completed',dependency:null,inspectionCheckpoint:false,notes:'',attachments:''},
+          {id:1,no:1,desc:'Material preparation',instructions:'Check heat numbers against MTC before cutting.',worker:'Marko K.',machine:'Laser Cutting Machine',plannedHours:8,loggedHours:8,plannedStart:'2026-08-18',actualStart:'2026-08-18',actualCompletion:'2026-08-18',status:'completed',dependency:null,inspectionCheckpoint:false,notes:'',attachments:''},
           {id:2,no:2,desc:'Measuring and marking',instructions:'Mark cut lines per DWG-VD-014-A rev A.',worker:'Marko K.',machine:'',plannedHours:6,loggedHours:6,plannedStart:'2026-08-18',actualStart:'2026-08-18',actualCompletion:'2026-08-19',status:'completed',dependency:1,inspectionCheckpoint:false,notes:'',attachments:''},
-          {id:3,no:3,desc:'Cutting',instructions:'Laser cut sheet sections, verify kerf allowance.',worker:'Marko K.',machine:'Laser',plannedHours:16,loggedHours:18,plannedStart:'2026-08-19',actualStart:'2026-08-19',actualCompletion:'2026-08-21',status:'completed',dependency:2,inspectionCheckpoint:false,notes:'Ran 2h over due to laser lens change.',attachments:''},
+          {id:3,no:3,desc:'Cutting',instructions:'Laser cut sheet sections, verify kerf allowance.',worker:'Marko K.',machine:'Laser Cutting Machine',plannedHours:16,loggedHours:18,plannedStart:'2026-08-19',actualStart:'2026-08-19',actualCompletion:'2026-08-21',status:'completed',dependency:2,inspectionCheckpoint:false,notes:'Ran 2h over due to laser lens change.',attachments:''},
           {id:4,no:4,desc:'Fit-up',instructions:'Tack sections per drawing, check squareness before welding.',worker:'Elena N.',machine:'',plannedHours:20,loggedHours:14,plannedStart:'2026-08-22',actualStart:'2026-08-22',actualCompletion:null,status:'in-progress',dependency:3,inspectionCheckpoint:false,notes:'',attachments:''},
-          {id:5,no:5,desc:'Welding',instructions:'TIG weld per WPS-304-02, stainless filler only.',worker:'Elena N.',machine:'TIG Station 1',plannedHours:40,loggedHours:0,plannedStart:'2026-08-27',actualStart:null,actualCompletion:null,status:'pending',dependency:4,inspectionCheckpoint:false,notes:'',attachments:''},
+          {id:5,no:5,desc:'Welding',instructions:'TIG weld per WPS-304-02, stainless filler only.',worker:'Elena N.',machine:'TIG Welding Machine',plannedHours:40,loggedHours:0,plannedStart:'2026-08-27',actualStart:null,actualCompletion:null,status:'pending',dependency:4,inspectionCheckpoint:false,notes:'',attachments:''},
           {id:6,no:6,desc:'Grinding',instructions:'Grind and finish welds, break sharp edges.',worker:'',machine:'',plannedHours:12,loggedHours:0,plannedStart:'2026-08-29',actualStart:null,actualCompletion:null,status:'pending',dependency:5,inspectionCheckpoint:false,notes:'',attachments:''},
           {id:7,no:7,desc:'Final inspection',instructions:'Dimensional and visual weld check before packing.',worker:'Aleksandar C.',machine:'',plannedHours:4,loggedHours:0,plannedStart:'2026-09-02',actualStart:null,actualCompletion:null,status:'pending',dependency:6,inspectionCheckpoint:true,notes:'',attachments:''},
           {id:8,no:8,desc:'Packing',instructions:'Pack for delivery, protect welded edges.',worker:'',machine:'',plannedHours:4,loggedHours:0,plannedStart:'2026-09-04',actualStart:null,actualCompletion:null,status:'pending',dependency:7,inspectionCheckpoint:false,notes:'',attachments:''}
@@ -104,9 +123,9 @@
           {code:'BOLT-HEX-M10X25',description:'Hex bolts M10x25',spec:'8.8 Zn',grade:'8.8 Zn',dimension:'M10 × 25 mm',required:40,reserved:40,issued:40,unit:'EA',location:'C1-04-01',heat:'L260822',certificate:null,status:'issued'}
         ],
         machines:[
-          {name:'Laser',assigned:true,status:'available',plannedUsage:16,actualUsage:18,operator:'Marko K.',preUseCheck:'passed',maintenanceWarning:false},
+          {name:'Laser Cutting Machine',assigned:true,status:'available',plannedUsage:16,actualUsage:18,operator:'Marko K.',preUseCheck:'passed',maintenanceWarning:false},
           {name:'Press Brake',assigned:true,status:'available',plannedUsage:8,actualUsage:0,operator:'',preUseCheck:'pending',maintenanceWarning:false},
-          {name:'TIG Station 1',assigned:true,status:'reserved',plannedUsage:40,actualUsage:0,operator:'Elena N.',preUseCheck:'pending',maintenanceWarning:false}
+          {name:'TIG Welding Machine',assigned:true,status:'reserved',plannedUsage:40,actualUsage:0,operator:'Elena N.',preUseCheck:'pending',maintenanceWarning:false}
         ],
         inspections:[
           {id:1,type:'material-cert',inspector:'Aleksandar C.',requirement:'required',status:'passed',date:'2026-08-18',result:'passed',comments:'MTC 3.1 verified against heat H240516-S534.',relatedOperation:1,reference:'MTC_H240516-S534.pdf'},
@@ -280,6 +299,19 @@
       {"id":8,"no":"OPP-2026-108","company":"Nordvent Installation AB","contact":"Michael Sørensen","leadId":7,"customerId":null,"title":"Welding & Installation Framework Agreement","services":["Welding","Installation"],"scope":"Multi-site framework agreement for welding and installation call-outs.","industry":"Welding and installation","value":156000,"probability":70,"stage":"negotiation","expectedDecision":"2026-09-08","requiredDelivery":"2026-10-01","competitor":"Baltic Weld Partners","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Finalize framework pricing tiers","followUpDate":"2026-08-31","activity":[{"date":"2026-08-23","text":"Entered negotiation on framework pricing."}]},
       {"id":9,"no":"OPP-2026-109","company":"Schröder Nordic","contact":"Anna Berg","leadId":null,"customerId":3,"title":"Machinery Retrofit Inquiry","services":["Retrofit"],"scope":"Retrofit of folding machine line — postponed by customer.","industry":"Industrial Machinery","value":85000,"probability":0,"stage":"lost","expectedDecision":"2026-08-10","requiredDelivery":"","competitor":"","decisionReason":"Customer reallocated budget to another site.","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Re-engage in Q1 2027","followUpDate":null,"activity":[{"date":"2026-07-20","text":"Retrofit inquiry opened."},{"date":"2026-08-10","text":"Marked lost — budget reallocated."}]}
     ],
+    // Existing tender demo records, now shared and persisted alongside the other Marketing data.
+    marketingTenders:[
+      {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
+      {id:2,ref:'RFQ-2026-012',company:'Copenhagen–Malmö Ferry Terminal',source:'Direct RFQ',description:'Steel platform and railing fabrication for terminal upgrade.',industry:'Marine and shipyard work',deadline:'2026-09-20',value:610000,requirements:'Marine-grade steel certification, on-site installation capability.',documents:['Drawings_RevB.pdf'],responsible:'Marko K.',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-10'},
+      {id:3,ref:'RFQ-2026-013',company:'Landskrona Kommun',source:'Public tender',description:'Steel structure maintenance for municipal recreation facilities.',industry:'Industrial maintenance',deadline:'2026-08-30',value:95000,requirements:'Municipal supplier registration, safety inspection certificate.',documents:['Kommun_Tender.pdf'],responsible:'Elena N.',bidDecision:'bid',status:'submitted',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-08-29'},
+      {id:4,ref:'RFQ-2026-014',company:'Sydstål Prototyping',source:'Private RFQ',description:'Prototype fabrication programme, 3 enclosure units.',industry:'Custom equipment and prototypes',deadline:'2026-09-10',value:210000,requirements:'CNC machining capability, NDA required.',documents:['NDA_Sydstal.pdf','Concept_Drawings.pdf'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:1,linkedEstimateNo:null,reminderDate:'2026-09-05'},
+      {id:5,ref:'RFQ-2026-015',company:'Nordic Frys AB',source:'Direct RFQ',description:'Stainless freezer room fabrication and cold-chain fittings.',industry:'Food-production equipment',deadline:'2026-10-05',value:275000,requirements:'Food-grade stainless certification.',documents:[],responsible:'Elena N.',bidDecision:'no-bid',status:'declined',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:null}
+    ],
+    // The outward sweep: what it found, what has been shown once already, and the runs themselves.
+    // Seeded empty on purpose — an unrun sweep has no findings.
+    prospectFindings:[],
+    prospectSeen:[],
+    prospectSweeps:[],
     marketingCampaigns:[
       {"id":1,"name":"Stainless Solutions for Food Producers","objective":"Generate qualified leads among food-production and bakery companies in Skåne.","targetIndustries":["Food-production equipment","Stainless-steel fabrication"],"targetServices":["Fabrication","Installation"],"segment":"Food-production companies","channels":["LinkedIn","Email","Trade fair"],"start":"2026-06-01","end":"2026-09-30","budget":45000,"spend":31200,"owner":"Elena N.","status":"active","leads":14,"qualified":6,"estimates":4,"wonValue":138000,"activity":[{"date":"2026-08-10","text":"Trade fair follow-up emails sent to 22 contacts."}]},
       {"id":2,"name":"Workshop Repair & Maintenance Services","objective":"Drive service call-outs and maintenance contracts from local industrial sites.","targetIndustries":["Industrial maintenance","Machinery repair"],"targetServices":["Repair","Maintenance contracts"],"segment":"Property and facility maintenance","channels":["Google Ads","Referral programme"],"start":"2026-05-15","end":"2026-09-15","budget":25000,"spend":24100,"owner":"Marko K.","status":"active","leads":22,"qualified":5,"estimates":3,"wonValue":42000,"activity":[{"date":"2026-08-05","text":"Referral programme generated 4 new leads this week."}]},
@@ -301,7 +333,7 @@
   // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
   const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
     'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs',
-    'purchaseOrders','purchaseRfqs','supplierInvoices','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
+    'purchaseOrders','purchaseRfqs','supplierInvoices','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','marketingTenders','savedReports'];
   function safeParseJSON(raw){
     if(!raw)return null;
     try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
@@ -479,6 +511,51 @@
   // Safe default-normalization: older localStorage records (saved before Jobcards or Equipment existed)
   // are backfilled in place rather than being wiped. This preserves the user's prior browser data while
   // adding the missing arrays and counters required by the new Equipment & Machines workflow.
+  // ---- Item groups, subgroups and per-group numbering ----------------------
+  // Every stock item belongs to a group whose numbers run from its own start
+  // (Materials 1000, Consumables 2000, ...). The number is allocated once, on
+  // creation, and never reused, so an issued or received line always points at
+  // the same item even after the item is renamed or moved between subgroups.
+  const round2=n=>Math.round((Number(n)||0)*100)/100;
+  const slug=v=>String(v||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  // Categories the pre-group data used, mapped onto a group and subgroup so
+  // inventory saved before this change keeps its meaning instead of landing in
+  // an "uncategorised" bucket.
+  const LEGACY_CATEGORY_MAP={
+    'stainless sheet':['materials','stainless-steel'],'stainless steel':['materials','stainless-steel'],
+    'mild steel tube':['materials','mild-steel'],'mild steel':['materials','mild-steel'],
+    'aluminium':['materials','aluminium'],'copper':['materials','copper'],
+    'pipe':['materials','pipe-fittings'],'fittings':['materials','pipe-fittings'],
+    'welding consumable':['consumables','welding'],'abrasives':['consumables','abrasives'],
+    'gases':['consumables','gases'],'paint':['consumables','paint'],
+    'fasteners':['hardware','fasteners'],'seals':['hardware','seals'],
+    'cutting tools':['tooling','cutting-tools'],'hand tools':['tooling','hand-tools']
+  };
+  function groupFor(st,id){return (st.itemGroups||[]).find(g=>g.id===id)||null;}
+  function allocateItemNumber(st,groupId){
+    const g=groupFor(st,groupId);
+    if(!g)return null;
+    const start=Number(g.start)||0;
+    // Never hand out a number an item already holds, even if `next` is stale
+    // from an import or a hand-edited backup.
+    const used=(st.inventory||[]).filter(x=>x.group===groupId).reduce((m,x)=>Math.max(m,Number(x.itemNo)||0),0);
+    const nextNo=Math.max(Number(g.next)||start,start,used?used+1:start);
+    g.next=nextNo+1;
+    return nextNo;
+  }
+  function migrateItemNumbers(st){
+    if(!Array.isArray(st.inventory)||!Array.isArray(st.itemGroups))return;
+    const fallback=st.itemGroups[0];
+    st.inventory.forEach(item=>{
+      if(!item.group||!groupFor(st,item.group)){
+        const mapped=LEGACY_CATEGORY_MAP[String(item.category||'').trim().toLowerCase()];
+        if(mapped&&groupFor(st,mapped[0])){item.group=mapped[0];if(!item.subgroup)item.subgroup=mapped[1];}
+        else if(fallback)item.group=fallback.id;
+      }
+      if(!Number(item.itemNo))item.itemNo=allocateItemNumber(st,item.group);
+    });
+  }
+
   function normalize(s){
     if(!s||typeof s!=='object')s={};
     const base=seed();
@@ -488,6 +565,11 @@
     if(!Array.isArray(s.estimations))s.estimations=base.estimations;
     if(!Array.isArray(s.projects))s.projects=base.projects;
     if(!Array.isArray(s.inventory))s.inventory=base.inventory;
+    if(!Array.isArray(s.locationGroups)||!s.locationGroups.length)s.locationGroups=base.locationGroups;
+    s.locationGroups.forEach(g=>{if(!Array.isArray(g.subgroups))g.subgroups=[];});
+    if(!Array.isArray(s.itemGroups)||!s.itemGroups.length)s.itemGroups=base.itemGroups;
+    s.itemGroups.forEach(g=>{if(!Array.isArray(g.subgroups))g.subgroups=[];});
+    migrateItemNumbers(s);
     if(!Array.isArray(s.movements))s.movements=base.movements;
     if(!Array.isArray(s.offcuts))s.offcuts=base.offcuts;
     if(!Array.isArray(s.suppliers))s.suppliers=[];
@@ -519,6 +601,20 @@
     if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
     if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
     if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
+    if(!Array.isArray(s.marketingTenders))s.marketingTenders=base.marketingTenders;
+    s.marketingTenders.forEach(t=>{
+      if(!Array.isArray(t.documents))t.documents=[];
+      if(t.status==null)t.status='reviewing';
+      if(t.bidDecision==null)t.bidDecision='pending';
+      if(t.value==null||t.value==='')t.value=null;
+      ['source','description','industry','deadline','requirements','responsible'].forEach(k=>{if(t[k]==null)t[k]='';});
+      ['linkedOpportunityId','linkedEstimateNo','reminderDate'].forEach(k=>{if(t[k]===undefined)t[k]=null;});
+    });
+    // Backups can omit counters or carry an older one. Never reuse an existing tender's id.
+    s.counters.marketingTender=s.marketingTenders.reduce((max,t)=>Math.max(max,Number(t.id)||0),Number(s.counters.marketingTender)||0);
+    if(!Array.isArray(s.prospectFindings))s.prospectFindings=[];
+    if(!Array.isArray(s.prospectSeen))s.prospectSeen=[];
+    if(!Array.isArray(s.prospectSweeps))s.prospectSweeps=[];
     if(!Array.isArray(s.savedReports))s.savedReports=base.savedReports;
     if(!s.reportConfig||typeof s.reportConfig!=='object')s.reportConfig={};
     s.qualityInspections.forEach(r=>{if(!Array.isArray(r.notes))r.notes=[];if(!Array.isArray(r.activity))r.activity=[];if(!Array.isArray(r.checklist))r.checklist=[];if(!Array.isArray(r.documents))r.documents=[];});
@@ -1351,18 +1447,344 @@
       return clone(p);
     },
     readiness:no=>{const p=project(no);return p?clone(projectReadiness(p)):null},
+    // ---- Where an item is referenced ---------------------------------------
+    // An item that has moved, been reserved or been quoted cannot simply be
+    // deleted: its number is written on records that would stop making sense.
+    // This answers where it is used, so the refusal can say so rather than just
+    // saying no.
+    itemUsage(code){
+      const key=String(code||'');
+      if(!key)return[];
+      const found=[];
+      const add=(where,detail)=>{const hit=found.find(x=>x.where===where);
+        if(hit){hit.count+=1;if(hit.examples.length<3&&detail)hit.examples.push(detail);}
+        else found.push({where,count:1,examples:detail?[detail]:[]});};
+      state.movements.forEach(m=>{if(String(m.code)===key)add('movements',`${m.action} ${m.qty} · ${m.time}`);});
+      state.projects.forEach(p=>(p.bom||[]).forEach(line=>{if(String(line.code)===key)add('projectBom',p.no);}));
+      state.jobcards.forEach(j=>(j.materials||[]).forEach(line=>{if(String(line.code)===key)add('jobcards',j.no);}));
+      state.offcuts.forEach(o=>{if(String(o.materialCode)===key||String(o.code)===key)add('offcuts',o.code||o.id);});
+      (state.purchaseOrders||[]).forEach(po=>{
+        if(String(po.itemCode||'')===key||String(po.items||'').indexOf(key)>=0)add('purchaseOrders',po.no);});
+      // An estimation's lines sit inside its work items, not on the estimation.
+      (state.estimations||[]).forEach(e=>{
+        const lines=[].concat(e.lines||[],e.items||[],...(e.workItems||[]).map(wi=>wi.lines||[]));
+        lines.forEach(line=>{if(String(line.code||line.itemCode||'')===key)add('estimations',e.no||e.ref);});
+      });
+      Object.entries(state.barcodeLinks||{}).forEach(([barcode,linked])=>{if(String(linked)===key)add('barcodes',barcode);});
+      (state.stockCounts||[]).forEach(c=>(c.lines||[]).forEach(line=>{
+        if(String(line.code)===key)add('stockCounts',c.no||c.id);}));
+      return found;
+    },
+    // Everything the store knows about one item's own past: where it sits, where it came from,
+    // and where it went. Read-only, and it invents nothing - an item nobody has ever received
+    // comes back with an empty receipts list, not with a blank date pretending to be one.
+    itemHistory(code){
+      const item=inventory(code);
+      if(!item)return null;
+      const key=String(item.code);
+      const newestFirst=(a,b)=>String(b.time||'').localeCompare(String(a.time||''));
+      const mine=state.movements.filter(m=>String(m.code)===key).slice().sort(newestFirst);
+      const line=m=>({time:m.time||'',action:m.action,qty:Number(m.qty)||0,unit:m.unit||item.unit||'',
+        from:m.from||'',to:m.to||'',projectNo:m.projectNo||'',jobcard:m.jobcard||'',user:m.user||''});
+      const received=mine.filter(m=>String(m.action).toUpperCase()==='RECEIVED').map(line);
+      const issued=mine.filter(m=>String(m.action).toUpperCase()==='ISSUED').map(line);
+      const other=mine.filter(m=>!['RECEIVED','ISSUED'].includes(String(m.action).toUpperCase())).map(line);
+      const group=(state.locationGroups||[]).find(g=>g.id===item.locationGroup);
+      const sub=group&&(group.subgroups||[]).find(x=>x.id===item.locationSub);
+      return {
+        code:item.code,itemNo:item.itemNo,description:item.description,
+        where:{warehouse:group?group.name:'',sublocation:sub?sub.name:'',bin:item.location||'',
+          stock:Number(item.stock)||0,reserved:Number(item.reserved)||0,
+          available:(Number(item.stock)||0)-(Number(item.reserved)||0),unit:item.unit||''},
+        bought:{supplier:item.supplier||'',lastPrice:Number(item.lastPrice)||0,avgCost:Number(item.avgCost)||0,
+          heat:item.heat||'',
+          // The first and last time it actually came through the door, from the movements
+          // themselves rather than from a field somebody could have typed anything into.
+          first:received.length?received[received.length-1]:null,last:received.length?received[0]:null},
+        received,issued,other,
+        // Where it is committed right now, as the delete guard already reads it.
+        usedIn:api.itemUsage(item.code)
+      };
+    },
+    // A patch, not a replacement: only what is passed is changed, and the
+    // fields that identify the item are not up for editing here.
+    updateInventoryItem(code,patch){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const data=clone(patch||{});
+      delete data.code;delete data.itemNo;
+      if(data.group!==undefined||data.subgroup!==undefined){
+        const groupId=data.group!==undefined?String(data.group):item.group;
+        const g=groupFor(state,groupId);
+        if(!g)return{error:'Item group is required'};
+        const subId=String(data.subgroup!==undefined?data.subgroup:(item.subgroup||''));
+        if(subId&&!(g.subgroups||[]).some(x=>x.id===subId))return{error:`${g.name} has no subgroup ${subId}`};
+        data.group=groupId;data.subgroup=subId;
+        data.category=((g.subgroups||[]).find(x=>x.id===subId)||{}).name||g.name;
+      }
+      if(data.locationGroup!==undefined||data.locationSub!==undefined){
+        const lgId=String(data.locationGroup!==undefined?data.locationGroup:(item.locationGroup||''));
+        if(lgId){
+          const lg=(state.locationGroups||[]).find(x=>x.id===lgId);
+          if(!lg)return{error:'Warehouse not found'};
+          const lsId=String(data.locationSub!==undefined?data.locationSub:(item.locationSub||''));
+          if(lsId&&!lg.subgroups.some(x=>x.id===lsId))return{error:`${lg.name} has no sublocation ${lsId}`};
+          data.locationGroup=lgId;data.locationSub=lsId;
+        }
+      }
+      if(data.description!==undefined){
+        data.description=String(data.description).trim();
+        if(!data.description)return{error:'Description is required'};
+      }
+      if(data.unit!==undefined){
+        data.unit=String(data.unit).trim().toUpperCase();
+        if(!data.unit)return{error:'Unit is required'};
+      }
+      for(const field of ['stock','reserved','minStock','reorderQty','avgCost','lastPrice','sizePerUnit','weightPerBase']){
+        if(data[field]===undefined)continue;
+        const value=Number(data[field]);
+        if(!Number.isFinite(value)||value<0)return{error:`${field} must be zero or greater`};
+        data[field]=value;
+      }
+      const nextStock=data.stock!==undefined?data.stock:item.stock;
+      const nextReserved=data.reserved!==undefined?data.reserved:item.reserved;
+      if(Number(nextReserved)>Number(nextStock))return{error:'Reserved quantity cannot exceed stock'};
+      Object.assign(item,data);
+      if(!(Number(item.sizePerUnit)>0))item.sizePerUnit=1;
+      item.status=item.stock-item.reserved<=item.minStock?'low':'good';
+      save(`Item ${item.itemNo} updated: ${item.description}`);
+      return clone(item);
+    },
+    deleteInventoryItem(code){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const usage=api.itemUsage(item.code);
+      if(usage.length)return{error:'Item is in use',usage};
+      if(Number(item.stock)>0)return{error:'Item still has stock on the shelf',
+        usage:[{where:'stock',count:Number(item.stock),examples:[`${item.stock} ${item.unit} in ${item.location||'—'}`]}]};
+      state.inventory=state.inventory.filter(x=>String(x.code)!==String(item.code));
+      save(`Item ${item.itemNo} deleted: ${item.description}`);
+      return{ok:true,itemNo:item.itemNo,description:item.description};
+    },
+    // ---- What a quantity actually amounts to -------------------------------
+    // Stock is counted in whole units - a length of pipe, a sheet, a spool -
+    // but the measure that matters downstream is metres, square metres or
+    // kilos. sizePerUnit says how much of the base measure one stock unit is,
+    // so three 6 m lengths read as 18 m and, through weightPerBase, as kilos.
+    itemMeasure(codeOrItem,qty){
+      const item=typeof codeOrItem==='object'&&codeOrItem
+        ?codeOrItem
+        :state.inventory.find(x=>String(x.code)===String(codeOrItem));
+      if(!item)return null;
+      const units=Number(qty);
+      const count=Number.isFinite(units)?units:0;
+      const size=Number(item.sizePerUnit)>0?Number(item.sizePerUnit):1;
+      const perBase=Number(item.weightPerBase)>0?Number(item.weightPerBase):0;
+      const base=String(item.baseUnit||'pcs');
+      const baseQty=round2(count*size);
+      return {
+        units:count,
+        unit:item.unit||'EA',
+        baseUnit:base,
+        sizePerUnit:size,
+        baseQty,
+        // A zero weight means nobody has recorded one, which is not the same as
+        // weighing nothing - the caller shows a dash rather than "0 kg".
+        weightKg:perBase?round2(baseQty*perBase):null,
+        weightPerBase:perBase||null
+      };
+    },
+    // ---- Where stock is kept: a warehouse, its sublocations, and the bin code
+    // written on the shelf. The bin stays free text because it is what is
+    // physically labelled; the two above it are managed lists.
+    listLocationGroups:()=>clone(state.locationGroups),
+    findLocationGroup:id=>clone((state.locationGroups||[]).find(g=>g.id===id)||null),
+    upsertLocationGroup(payload){
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Warehouse name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Warehouse name must contain at least one letter or digit'};
+      const existing=(state.locationGroups||[]).find(g=>g.id===id);
+      if(isEdit&&!existing)return{error:'Warehouse not found'};
+      const clash=(state.locationGroups||[]).find(g=>g.id!==id&&g.name.trim().toLowerCase()===name.toLowerCase());
+      if(clash||(!isEdit&&existing))return{error:`A warehouse called ${name} already exists`};
+      if(existing){existing.name=name;save(`Warehouse updated: ${name}`);return clone(existing);}
+      const rec={id,name,subgroups:[]};
+      state.locationGroups.push(rec);
+      save(`Warehouse created: ${name}`);
+      return clone(rec);
+    },
+    deleteLocationGroup(id){
+      const g=(state.locationGroups||[]).find(x=>x.id===id);
+      if(!g)return{error:'Warehouse not found'};
+      const used=state.inventory.filter(x=>x.locationGroup===id).length;
+      if(used)return{error:`${g.name} still holds ${used} item${used===1?'':'s'}`};
+      state.locationGroups=state.locationGroups.filter(x=>x.id!==id);
+      save(`Warehouse deleted: ${g.name}`);
+      return{ok:true};
+    },
+    upsertSublocation(groupId,payload){
+      const g=(state.locationGroups||[]).find(x=>x.id===groupId);
+      if(!g)return{error:'Warehouse not found'};
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Sublocation name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Sublocation name must contain at least one letter or digit'};
+      const existing=g.subgroups.find(x=>x.id===id);
+      if(isEdit&&!existing)return{error:'Sublocation not found'};
+      if(g.subgroups.some(x=>x.id!==id&&x.name.trim().toLowerCase()===name.toLowerCase())||(!isEdit&&existing))return{error:`${g.name} already has ${name}`};
+      if(existing){existing.name=name;save(`Sublocation updated: ${name}`);return clone(existing);}
+      const rec={id,name};
+      g.subgroups.push(rec);
+      save(`Sublocation created: ${g.name} / ${name}`);
+      return clone(rec);
+    },
+    deleteSublocation(groupId,id){
+      const g=(state.locationGroups||[]).find(x=>x.id===groupId);
+      if(!g)return{error:'Warehouse not found'};
+      const sub=g.subgroups.find(x=>x.id===id);
+      if(!sub)return{error:'Sublocation not found'};
+      const used=state.inventory.filter(x=>x.locationGroup===groupId&&x.locationSub===id).length;
+      if(used)return{error:`${sub.name} still holds ${used} item${used===1?'':'s'}`};
+      g.subgroups=g.subgroups.filter(x=>x.id!==id);
+      save(`Sublocation deleted: ${g.name} / ${sub.name}`);
+      return{ok:true};
+    },
+    // ---- Item groups and subgroups ----
+    listItemGroups:()=>clone(state.itemGroups),
+    findItemGroup:id=>clone((state.itemGroups||[]).find(g=>g.id===id)||null),
+    // Peek at the number the next item in this group would take, so the create
+    // form can show it before anything is saved. It allocates nothing.
+    peekItemNumber(groupId){
+      const g=groupFor(state,groupId);
+      if(!g)return null;
+      const start=Number(g.start)||0;
+      const used=state.inventory.filter(x=>x.group===groupId).reduce((m,x)=>Math.max(m,Number(x.itemNo)||0),0);
+      return Math.max(Number(g.next)||start,start,used?used+1:start);
+    },
+    upsertItemGroup(payload){
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Group name is required'};
+      const start=Number(data.start);
+      if(!Number.isFinite(start)||start<0||Math.floor(start)!==start)return{error:'Start number must be a whole number of zero or more'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Group name must contain at least one letter or digit'};
+      const existing=groupFor(state,id);
+      if(isEdit&&!existing)return{error:'Group not found'};
+      const clash=(state.itemGroups||[]).find(g=>g.id!==id&&g.name.trim().toLowerCase()===name.toLowerCase());
+      if(clash||(!isEdit&&existing))return{error:`A group called ${name} already exists`};
+      // Two groups sharing a number range would hand out the same item number
+      // twice, so ranges have to stay apart. A group runs from its start up to
+      // the next group's start.
+      const others=(state.itemGroups||[]).filter(g=>g.id!==id).map(g=>Number(g.start)||0);
+      if(others.includes(start))return{error:`Another group already starts at ${start}`};
+      if(existing){
+        const lowest=state.inventory.filter(x=>x.group===id).reduce((m,x)=>Math.min(m,Number(x.itemNo)||Infinity),Infinity);
+        if(Number.isFinite(lowest)&&start>lowest)return{error:`This group already has item ${lowest}, so it cannot start at ${start}`};
+        existing.name=name;existing.start=start;
+        if(Number(existing.next)<start)existing.next=start;
+        save(`Item group updated: ${name}`);
+        return clone(existing);
+      }
+      const rec={id,name,start,next:start,subgroups:[]};
+      state.itemGroups.push(rec);
+      save(`Item group created: ${name}`);
+      return clone(rec);
+    },
+    deleteItemGroup(id){
+      const g=groupFor(state,id);
+      if(!g)return{error:'Group not found'};
+      const used=state.inventory.filter(x=>x.group===id).length;
+      if(used)return{error:`${g.name} still holds ${used} item${used===1?'':'s'}`};
+      state.itemGroups=state.itemGroups.filter(x=>x.id!==id);
+      save(`Item group deleted: ${g.name}`);
+      return{ok:true};
+    },
+    upsertSubgroup(groupId,payload){
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const data=clone(payload||{});
+      const name=String(data.name||'').trim();
+      if(!name)return{error:'Subgroup name is required'};
+      const isEdit=data.id!=null&&String(data.id).trim()!=='';
+      const id=isEdit?String(data.id).trim():slug(name);
+      if(!id)return{error:'Subgroup name must contain at least one letter or digit'};
+      const existing=g.subgroups.find(x=>x.id===id);
+      if(isEdit&&!existing)return{error:'Subgroup not found'};
+      if(g.subgroups.some(x=>x.id!==id&&x.name.trim().toLowerCase()===name.toLowerCase())||(!isEdit&&existing))return{error:`${g.name} already has a subgroup called ${name}`};
+      if(existing){existing.name=name;save(`Subgroup updated: ${name}`);return clone(existing);}
+      const rec={id,name};
+      g.subgroups.push(rec);
+      save(`Subgroup created: ${g.name} / ${name}`);
+      return clone(rec);
+    },
+    deleteSubgroup(groupId,id){
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const sub=g.subgroups.find(x=>x.id===id);
+      if(!sub)return{error:'Subgroup not found'};
+      const used=state.inventory.filter(x=>x.group===groupId&&x.subgroup===id).length;
+      if(used)return{error:`${sub.name} still holds ${used} item${used===1?'':'s'}`};
+      g.subgroups=g.subgroups.filter(x=>x.id!==id);
+      save(`Subgroup deleted: ${g.name} / ${sub.name}`);
+      return{ok:true};
+    },
+    // Refiling an item keeps its number. The number identifies the item and is
+    // already written on receipts, issues and movements, so it travels with the
+    // item rather than with the shelf it is filed on.
+    setItemGroup(code,groupId,subgroupId){
+      const item=state.inventory.find(x=>String(x.code)===String(code));
+      if(!item)return{error:'Item not found'};
+      const g=groupFor(state,groupId);
+      if(!g)return{error:'Group not found'};
+      const subId=String(subgroupId||'');
+      const sub=subId?(g.subgroups||[]).find(x=>x.id===subId):null;
+      if(subId&&!sub)return{error:`${g.name} has no subgroup ${subId}`};
+      if(item.group===groupId&&String(item.subgroup||'')===subId)return clone(item);
+      const wasGroup=groupFor(state,item.group);
+      item.group=groupId;
+      item.subgroup=subId;
+      item.category=(sub&&sub.name)||g.name;
+      save(`Item ${item.itemNo} moved from ${wasGroup?wasGroup.name:'—'} to ${g.name}${sub?' / '+sub.name:''}`);
+      return clone(item);
+    },
     createInventoryItem(payload){
       const data=clone(payload||{});
-      data.code=String(data.code||'').trim().toUpperCase();
       data.description=String(data.description||'').trim();
       data.category=String(data.category||'').trim();
       data.unit=String(data.unit||'').trim().toUpperCase();
       data.location=String(data.location||'').trim();
+      data.group=String(data.group||'').trim();
+      data.subgroup=String(data.subgroup||'').trim();
+      data.locationGroup=String(data.locationGroup||'').trim();
+      data.locationSub=String(data.locationSub||'').trim();
+      data.baseUnit=String(data.baseUnit||'pcs').trim();
+      data.sizePerUnit=Number(data.sizePerUnit)>0?Number(data.sizePerUnit):1;
+      data.weightPerBase=Number(data.weightPerBase)>0?Number(data.weightPerBase):0;
+      if(data.locationGroup){
+        const lg=(state.locationGroups||[]).find(x=>x.id===data.locationGroup);
+        if(!lg)return{error:'Warehouse not found'};
+        if(data.locationSub&&!lg.subgroups.some(x=>x.id===data.locationSub))return{error:`${lg.name} has no sublocation ${data.locationSub}`};
+      }
+      const grp=groupFor(state,data.group);
+      if(!grp)return{error:'Item group is required'};
+      if(data.subgroup&&!grp.subgroups.some(x=>x.id===data.subgroup))return{error:`${grp.name} has no subgroup ${data.subgroup}`};
+      // The group hands out the number. Unless the user typed a code of their
+      // own - a supplier or drawing reference - the number is the code, so a
+      // new item carries one identifier rather than two.
+      const itemNo=allocateItemNumber(state,data.group);
+      data.itemNo=itemNo;
+      data.code=String(data.code||itemNo).trim().toUpperCase();
       if(!data.code)return{error:'Item code is required'};
       if(!/^[A-Z0-9][A-Z0-9._/-]*$/.test(data.code))return{error:'Item code contains unsupported characters'};
       if(state.inventory.some(item=>String(item.code||'').trim().toUpperCase()===data.code))return{error:`Item ${data.code} already exists`};
       if(!data.description)return{error:'Description is required'};
-      if(!data.category)return{error:'Category is required'};
       if(!data.unit)return{error:'Unit is required'};
       if(!data.location)return{error:'Location is required'};
       const numeric=['stock','reserved','minStock','reorderQty','avgCost','lastPrice'];
@@ -1372,6 +1794,10 @@
         data[field]=value;
       }
       if(data.reserved>data.stock)return{error:'Reserved quantity cannot exceed stock'};
+      // The subgroup name stands in as the category, so records written before
+      // groups existed and records written now read the same way.
+      const subName=(grp.subgroups.find(x=>x.id===data.subgroup)||{}).name||grp.name;
+      if(!data.category)data.category=subName;
       const rec=Object.assign({grade:'',dimensions:'',supplier:'',heat:'',certificate:null,status:'good'},data);
       rec.status=rec.stock-rec.reserved<=rec.minStock?'low':'good';
       state.inventory.push(rec);
@@ -3088,6 +3514,41 @@
       save(`Marketing opportunity saved: ${o.no}`);
       return clone(o);
     },
+    getMarketingTenders:()=>clone(state.marketingTenders),
+    findMarketingTender(id){const tender=state.marketingTenders.find(t=>t.id===id);return tender?clone(tender):null;},
+    nextMarketingTenderRef(){
+      // The existing demo sequence starts at 011 for id 1. Keep that numbering convention.
+      let serial=(state.counters.marketingTender||0)+11;
+      let ref;
+      do{ref=`RFQ-${new Date().getFullYear()}-${String(serial++).padStart(3,'0')}`;}
+      while(state.marketingTenders.some(t=>String(t.ref).toLowerCase()===ref.toLowerCase()));
+      return ref;
+    },
+    upsertMarketingTender(payload){
+      if(!payload||typeof payload.company!=='string'||!payload.company.trim())return{error:'A company name is required'};
+      const current=payload.id==null?null:state.marketingTenders.find(t=>t.id===payload.id);
+      if(payload.id!=null&&!current)return{error:'Tender not found. Reload the register and try again.'};
+      const data=clone(payload);
+      data.company=data.company.trim();
+      data.ref=typeof data.ref==='string'?data.ref.trim():'';
+      if(!data.ref)data.ref=current?current.ref:api.nextMarketingTenderRef();
+      if(state.marketingTenders.some(t=>t!==current&&String(t.ref).toLowerCase()===data.ref.toLowerCase()))return{error:'This tender reference is already in use'};
+      if(Object.prototype.hasOwnProperty.call(data,'value')){
+        data.value=payload.value==null||String(payload.value).trim()===''?null:Number(payload.value);
+        if(data.value!==null&&(!Number.isFinite(data.value)||data.value<0))return{error:'Tender value must be a non-negative number or left blank'};
+      }
+      let tender=current;
+      if(tender){Object.assign(tender,data);}
+      else{
+        tender=Object.assign({source:'',description:'',industry:'',deadline:'',value:null,requirements:'',
+          documents:[],responsible:'',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,
+          linkedEstimateNo:null,reminderDate:null},data);
+        tender.id=++state.counters.marketingTender;
+        state.marketingTenders.unshift(tender);
+      }
+      save(`Marketing tender saved: ${tender.ref}`);
+      return clone(tender);
+    },
     getMarketingCampaigns:()=>clone(state.marketingCampaigns),
     findMarketingCampaign:id=>clone(state.marketingCampaigns.find(x=>x.id===id)),
     upsertMarketingCampaign(payload){
@@ -3103,6 +3564,115 @@
       }
       save(`Marketing campaign saved: ${c.name}`);
       return clone(c);
+    },
+
+    // ── The outward sweep: findings waiting to be judged. ──
+    // The rules in prospect-rules.js decide what is worth showing; this side only remembers. The
+    // division matters: nothing is stored that the rules have not already triaged against the real
+    // equipment register, so the queue can never offer work the shop cannot do.
+    getProspectFindings:()=>clone(state.prospectFindings),
+    findProspectFinding(id){const f=state.prospectFindings.find(x=>x.id===id);return f?clone(f):null;},
+    getProspectSweeps:()=>clone(state.prospectSweeps),
+    // null, not undefined: "no sweep has ever run" is an answer the page has to be able to show.
+    lastProspectSweep(){return state.prospectSweeps.length?clone(state.prospectSweeps[0]):null;},
+    // Everything the queue has ever shown, so a finding reported once is never reported again —
+    // including the ones that were binned. A rejected finding coming back tomorrow is exactly how
+    // a review queue teaches people to stop reading it.
+    getProspectSeen:()=>clone(state.prospectSeen),
+
+    // Takes the raw output of a sweep, triages it, and keeps what is worth a person's time.
+    // Returns what was stored and what was not, so the page can report the shape of the sweep
+    // honestly: how much came back, how much had been seen before, how much had nowhere to point.
+    recordProspectSweep(findings,options){
+      if(!global.ProspectRules)return{error:'prospect-rules.js must be loaded before workshop-data.js'};
+      const opts=options||{};
+      const list=Array.isArray(findings)?findings:[];
+      const t=global.ProspectRules.triage(list,state.prospectSeen,state.equipment,opts);
+      const sweep={
+        id:`sw-${Date.now()}`,
+        ranAt:now(),
+        source:opts.source||'stub',
+        sourcesChecked:Number(opts.sourcesChecked)||null,
+        durationMs:Number(opts.durationMs)||null,
+        tally:t.tally
+      };
+      state.prospectSweeps.unshift(sweep);
+      if(state.prospectSweeps.length>50)state.prospectSweeps.length=50;
+      t.ready.forEach(f=>{
+        state.prospectFindings.unshift(Object.assign(clone(f),{
+          id:`pf-${sweep.id}-${state.prospectFindings.length}-${Math.random().toString(36).slice(2,7)}`,
+          sweepId:sweep.id,
+          foundAt:sweep.ranAt,
+          status:'new',
+          decidedAt:null,decidedBy:'',leadNo:null
+        }));
+        if(!state.prospectSeen.includes(f.fingerprint))state.prospectSeen.push(f.fingerprint);
+      });
+      save(`Prospect sweep: ${t.tally.ready} new of ${t.tally.found} found`);
+      return clone({sweep,ready:t.ready,tally:t.tally});
+    },
+
+    // Accepting turns a finding into a real lead. What it knows goes across; what it does not know
+    // stays empty. A forum post carries no contact name, no email and no value, so the lead is
+    // created without them rather than with plausible-looking blanks filled in.
+    acceptProspectFinding(id,extra){
+      const f=state.prospectFindings.find(x=>x.id===id);
+      if(!f)return{error:'Finding not found'};
+      if(f.status!=='new')return{error:`This finding was already ${f.status}`};
+      const who=(extra&&extra.by)||'';
+      const lead=this.upsertMarketingLead({
+        company:(extra&&extra.company)||f.company||f.title,
+        contact:(extra&&extra.contact)||'',
+        email:'',phone:'',
+        country:'Sweden',
+        city:f.place||'',
+        industry:'',
+        source:'prospect',
+        service:f.need||f.title,
+        value:Number.isFinite(Number(f.value))?Number(f.value):null,
+        priority:f.verdict==='go'?'high':(f.verdict==='skip'?'low':'medium'),
+        status:'new',
+        owner:who,
+        created:now().slice(0,10),
+        fromProspect:f.id,
+        demo:!!f.demo,
+        notes:[{date:now().slice(0,10),author:who,
+          text:`From the outward sweep${f.demo?' (sample finding, nothing was actually found)':''}. `+
+               `Source: ${f.sourceName||'—'} ${f.sourceUrl||''}`.trim()}],
+        activity:[{date:now().slice(0,10),type:'created',
+          text:`Accepted from the findings queue — ${f.klass}, ${f.verdict.toUpperCase()}.`}]
+      });
+      if(lead&&lead.error)return lead;
+      f.status='accepted';f.decidedAt=now();f.decidedBy=who;f.leadNo=lead.no;
+      save(`Finding accepted: ${f.title} → ${lead.no}`);
+      return clone({finding:f,lead});
+    },
+
+    dismissProspectFinding(id,extra){
+      const f=state.prospectFindings.find(x=>x.id===id);
+      if(!f)return{error:'Finding not found'};
+      if(f.status!=='new')return{error:`This finding was already ${f.status}`};
+      f.status='dismissed';
+      f.decidedAt=now();
+      f.decidedBy=(extra&&extra.by)||'';
+      f.dismissReason=(extra&&extra.reason)||'';
+      save(`Finding dismissed: ${f.title}`);
+      return clone(f);
+    },
+
+    // What the queue looks like right now: what is waiting, and what has been decided since.
+    prospectQueueSummary(){
+      const all=state.prospectFindings;
+      const waiting=all.filter(f=>f.status==='new');
+      const count=v=>waiting.filter(f=>f.verdict===v).length;
+      return clone({
+        waiting:waiting.length,
+        go:count('go'),maybe:count('maybe'),skip:count('skip'),
+        accepted:all.filter(f=>f.status==='accepted').length,
+        dismissed:all.filter(f=>f.status==='dismissed').length,
+        seen:state.prospectSeen.length,
+        lastSweep:state.prospectSweeps[0]||null
+      });
     },
 
     // ── Reports: saved report definitions and report-page configuration (UI state that Pass 2

@@ -1,10 +1,10 @@
-// Pure-helper tests for project-rules.js — the exact module projects-desktop.html loads, so these
+// Pure-helper tests for project-rules.js — the exact module estimations-desktop.html loads, so these
 // tests exercise the real customer-resolution and status-adapter logic the page runs.
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const ProjectRules=require('../project-rules.js');
-const {custName,custObj,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,isReadonlyStatus,statusCssClass,mergeProjectFormStateAfterCustomer,STATUS_ORDER}=ProjectRules;
+const {custName,custObj,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,canApprove,canPlan,canStart,isReadonlyStatus,statusCssClass,mergeProjectFormStateAfterCustomer,STATUS_ORDER,PIPELINE}=ProjectRules;
 
 // A minimal shared-customers fixture matching real v5 ids (MarineVent AB = 1, Sanus Glutenfri AB = 2)
 // — the exact mismatch that caused Pass 2's Projects page to show the wrong customer name.
@@ -76,7 +76,7 @@ test('unknown statuses stay visible (isKnownUiStatus false) but receive no state
 });
 
 test('normal Projects-created statuses (draft/active/hold/completed/closed/cancelled) keep working exactly as before', ()=>{
-  assert.equal(canHold({status:'draft'}),false);
+  assert.equal(canHold({status:'quotation'}),false);
   assert.equal(canHold({status:'planned'}),true);
   assert.equal(canHold({status:'active'}),true);
   assert.equal(canResume({status:'hold'}),true);
@@ -86,7 +86,7 @@ test('normal Projects-created statuses (draft/active/hold/completed/closed/cance
   assert.equal(canCancel({status:'closed'}),false);
   assert.equal(canCancel({status:'cancelled'}),false);
   assert.equal(canCancel({status:'completed'}),false);
-  assert.equal(canCancel({status:'draft'}),true);
+  assert.equal(canCancel({status:'quotation'}),true);
   assert.equal(isReadonlyStatus({status:'closed'}),true);
 });
 
@@ -132,4 +132,95 @@ test('mergeProjectFormStateAfterCustomer: works identically for a captured edit-
   const cancelled=mergeProjectFormStateAfterCustomer(editState,null);
   assert.equal(cancelled.name,'Edited MarineVent Name (unsaved)');
   assert.equal(cancelled.customerId,1,'cancelling must keep the customer the project already had, unchanged');
+});
+
+// ── The quoting chain (Pass 3.68) ──
+// Before this, 'quotation', 'approved' and 'planned' were unreachable: nothing in the app could
+// put a project into them, so only seeded demo projects were ever in those states.
+
+test('quoting chain: each step is reachable from exactly one predecessor', ()=>{
+  const steps=[[canApprove,'quotation'],[canPlan,'approved'],[canStart,'planned']];
+  for(const [check,from] of steps){
+    for(const status of STATUS_ORDER){
+      assert.equal(check({status}),status===from,
+        `${check.name} must be true only for "${from}", but returned ${check({status})} for "${status}"`);
+    }
+  }
+});
+
+test('quoting chain: an unknown status is never eligible, exactly like every other transition', ()=>{
+  const p={status:'in-limbo'};
+  assert.equal(canApprove(p),false);
+  assert.equal(canPlan(p),false);
+  assert.equal(canStart(p),false);
+});
+
+test('quoting chain: the production alias is treated as active, so it can no longer be started again', ()=>{
+  assert.equal(uiStatus('production'),'active');
+  assert.equal(canStart({status:'production'}),canStart({status:'active'}));
+  assert.equal(canStart({status:'production'}),false,'a project already running must not offer Start');
+});
+
+test('quoting chain: the chain walks a new quotation all the way to active with no gap and no shortcut', ()=>{
+  let status='quotation';
+  const walked=[status];
+  const next={quotation:[canApprove,'approved'],approved:[canPlan,'planned'],planned:[canStart,'active']};
+  while(next[status]){
+    const [check,to]=next[status];
+    assert.equal(check({status}),true,`${status} must be able to advance to ${to}`);
+    status=to;walked.push(status);
+  }
+  assert.deepEqual(walked,['quotation','approved','planned','active']);
+  assert.deepEqual(walked,PIPELINE,'PIPELINE must describe the same order the checks actually allow');
+});
+
+test('quoting chain: a new quotation cannot skip ahead — only Approve (and Cancel) are open to it', ()=>{
+  const quote={status:'quotation'};
+  assert.equal(canApprove(quote),true);
+  assert.equal(canPlan(quote),false);
+  assert.equal(canStart(quote),false);
+  assert.equal(canHold(quote),false);
+  assert.equal(canComplete(quote),false);
+  assert.equal(canCancel(quote),true,'a quotation that comes to nothing must still be cancellable');
+});
+
+// ── Retiring 'draft' (Pass 3.69) ──
+// A project used to be created as a draft and only then sent out as a quotation. The two steps
+// recorded the same thing, so a project now starts at 'quotation'. Projects already saved as drafts
+// must keep working rather than becoming unrecognised.
+
+test('retired draft: it is no longer one of the statuses a project can be in', ()=>{
+  assert.equal(STATUS_ORDER.includes('draft'),false);
+  assert.equal(PIPELINE.includes('draft'),false);
+  assert.equal(PIPELINE[0],'quotation','the chain now starts at the quotation itself');
+});
+
+test('retired draft: an already-saved draft still resolves, and behaves exactly like a quotation', ()=>{
+  assert.equal(uiStatus('draft'),'quotation');
+  assert.equal(isKnownUiStatus('draft'),true,'a stored draft must never fall through as an unknown status');
+  assert.equal(statusCssClass('draft'),'quotation');
+  for(const check of [canApprove,canPlan,canStart,canHold,canComplete,canCancel]){
+    assert.equal(check({status:'draft'}),check({status:'quotation'}),
+      `${check.name} must treat a stored draft exactly as it treats a quotation`);
+  }
+});
+
+test('retired draft: a stored draft can still be moved on, so no project is left stranded', ()=>{
+  const stored={status:'draft'};
+  assert.equal(canApprove(stored),true,'a stored draft must still be approvable');
+  assert.equal(canCancel(stored),true,'a stored draft must still be cancellable');
+});
+
+test('quoting chain: PIPELINE contains only statuses the adapter recognises, in STATUS_ORDER order', ()=>{
+  for(const s of PIPELINE)assert.equal(isKnownUiStatus(s),true,`PIPELINE status "${s}" must be a known status`);
+  const positions=PIPELINE.map(s=>STATUS_ORDER.indexOf(s));
+  assert.deepEqual(positions,[...positions].sort((a,b)=>a-b),'PIPELINE must not contradict STATUS_ORDER');
+});
+
+test('quoting chain: terminal statuses stay terminal — none of the new steps reopens them', ()=>{
+  for(const status of ['completed','closed','cancelled']){
+    assert.equal(canApprove({status}),false);
+    assert.equal(canPlan({status}),false);
+    assert.equal(canStart({status}),false);
+  }
 });

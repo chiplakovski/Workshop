@@ -1,81 +1,86 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="en" data-compact><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><title>Varmak — Hours (Mobile)</title><style>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><title>Varmak — Hours (Mobile)</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
-    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);}
+    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);;--c-accent:#4a90ff;--c-accent-rgb:74,144,255;--c-accent2:#2c6bd6;--c-accent2-rgb:44,107,214;--c-brand:#013179;--c-brand-rgb:1,49,121;--c-danger:#ff6b6b;--c-deep:#02080f;--c-est-rgb:255,138,74;--c-fieldline-rgb:185,198,218;--c-line-rgb:142,163,192;--c-panel-rgb:7,26,51;--c-panel2:#0a2447;--c-panel2-rgb:10,36,71;--c-slate:#0c1626;--c-tint:#cfe0ff;--font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;color-scheme:dark;--select-bg:#0a2447;--select-fg:#e8f0fb;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="carbon"]{--navy-950:#020305;--navy-900:#06080c;--navy-800:#0a0d13;--navy-brand:#16326a;--steel-400:#a3adbd;--steel-300:#c6cedb;--spark:#4f8cff;--ice:#f2f5fa;--line:rgba(135,146,163,0.16);--field-line:rgba(170,180,196,0.24);--c-accent:#4f8cff;--c-accent-rgb:79,140,255;--c-accent2:#2f6ccc;--c-accent2-rgb:47,108,204;--c-brand:#16326a;--c-brand-rgb:22,50,106;--c-danger:#f4635f;--c-deep:#010203;--c-est-rgb:240,130,72;--c-fieldline-rgb:170,180,196;--c-line-rgb:135,146,163;--c-panel-rgb:6,8,12;--c-panel2:#0a0d13;--c-panel2-rgb:10,13,19;--c-slate:#08090e;--c-tint:#dbe8ff;--font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;--select-bg:#0f131b;--select-fg:#f2f5fa;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="iris"]{--navy-950:#f1f3fb;--navy-900:#ffffff;--navy-800:#e9edf9;--navy-brand:#4b49ac;--steel-400:#5f6889;--steel-300:#4e5573;--spark:#4b49ac;--ice:#191d3d;--line:rgba(75,73,172,0.16);--field:#ffffff;--field-line:rgba(75,73,172,0.24);--c-accent:#4b49ac;--c-accent-rgb:75,73,172;--c-accent2:#7978e9;--c-accent2-rgb:121,120,233;--c-brand:#4b49ac;--c-brand-rgb:75,73,172;--c-danger:#e0555b;--c-deep:#e4e8f6;--c-est-rgb:230,110,50;--c-fieldline-rgb:75,73,172;--c-line-rgb:75,73,172;--c-panel-rgb:255,255,255;--c-panel2:#e9edf9;--c-panel2-rgb:233,237,249;--c-slate:#f4f6fd;--c-tint:#3b39a0;--font-heading:'Public Sans',system-ui,sans-serif;--font-body:'Public Sans',system-ui,sans-serif;color-scheme:light;--select-bg:#ffffff;--select-fg:#191d3d;--lift-008:rgba(255,255,255,.35);--lift-015:rgba(255,255,255,.45);--lift-02:rgba(255,255,255,.55);--lift-025:rgba(255,255,255,.62);--lift-03:rgba(255,255,255,.7);--lift-033:rgba(255,255,255,.74);--lift-035:rgba(255,255,255,.78);--lift-04:rgba(255,255,255,.86);--lift-045:rgba(255,255,255,.93);--lift-05:#ffffff;--lift-06:rgba(75,73,172,.05);--lift-08:rgba(75,73,172,.07);--lift-10:rgba(75,73,172,.09);--lift-12:rgba(75,73,172,.11);--lift-16:rgba(75,73,172,.14);--lift-18:rgba(75,73,172,.16);--lift-28:rgba(75,73,172,.24);--shade-12:rgba(75,73,172,.05);--shade-16:rgba(75,73,172,.07);--shade-18:rgba(75,73,172,.08);--shade-35:rgba(75,73,172,.10);--shade-40:rgba(75,73,172,.12);--shade-45:rgba(75,73,172,.13);--shade-50:rgba(75,73,172,.15);--shade-55:rgba(75,73,172,.17);--shade-60:rgba(75,73,172,.19);--sunken:#e9edf9;--nav-on-bg:#4b49ac;--on-accent:#2e2c86;--on-danger:#b23a40;--tint-danger:#c0343b;--tint-warn:#7a4f10;--tint-est:#9a4f14;--tint-info:#3b39a0;--tint-ok:#0b6b4d;--nav-on-icon:#ffffff;--bg-glow0:rgba(152,189,255,0.18);--bg-glow1:rgba(152,189,255,0.18);--bg-glow2:rgba(121,120,233,0.09);--nav-on-fg:#ffffff;--glow-core:rgba(75,73,172,0.05);}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);}
+  body{font-family:var(--font-body);color:var(--ice);}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
   .bg::before{content:"";position:absolute;inset:0;
-    background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),
-      radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),
+    background:radial-gradient(120% 70% at 82% 0%,var(--bg-glow1),transparent 55%),
+      radial-gradient(80% 60% at 10% 100%,var(--bg-glow2),transparent 60%),
       linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .grid{position:absolute;inset:0;opacity:0.28;
     background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
     background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 60% 8%,#000 20%,transparent 80%);mask-image:radial-gradient(circle at 60% 8%,#000 20%,transparent 80%);}
   .glow{position:absolute;left:50%;top:38%;width:460px;height:460px;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(74,144,255,0.2),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+    background:radial-gradient(circle,rgba(var(--c-accent-rgb),0.2),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
-  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(var(--c-accent-rgb),.8);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
-  .brand .logo{font-family:'Sora';font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .logo{font-family:var(--font-heading);font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(var(--c-accent-rgb),.9);}
   .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;}
   .clock{text-align:right;font-variant-numeric:tabular-nums;}
-  .clock .time{font-family:'Sora';font-weight:600;}
+  .clock .time{font-family:var(--font-heading);font-weight:600;}
   .clock .date{font-size:11px;color:var(--steel-400);}
 
   .modhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
   .modleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .back{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:11px;padding:6px 10px;cursor:pointer;transition:.15s;}
+  .back{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:11px;padding:6px 10px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .title{display:flex;align-items:center;gap:10px;}
-  .modhead .title .ic{background:rgba(74,144,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
-  .modhead .title h1{font-family:'Sora';font-weight:600;letter-spacing:-.01em;}
+  .modhead .title .ic{background:rgba(var(--c-accent-rgb),.14);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
+  .modhead .title h1{font-family:var(--font-heading);font-weight:600;letter-spacing:-.01em;}
   .modhead .title p{font-size:11px;color:var(--steel-400);}
   .who{display:flex;align-items:center;gap:8px;}
-  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
-  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
-  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:var(--lift-05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:var(--font-heading);}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .card{background:rgba(255,255,255,.035);border:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 16px 50px rgba(0,0,0,.35);}
+  .card{background:var(--lift-035);border:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 16px 50px var(--shade-35);}
   label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;font-weight:500;}
-  .fld{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:14px;padding:10px 12px;outline:none;transition:.15s;}
-  .fld:focus{border-color:var(--spark);box-shadow:0 0 0 3px rgba(74,144,255,.16);}
+  .fld{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:14px;padding:10px 12px;outline:none;transition:.15s;}
+  .fld:focus{border-color:var(--spark);box-shadow:0 0 0 3px rgba(var(--c-accent-rgb),.16);}
   select.fld{appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="%238ea3c0" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>');background-repeat:no-repeat;background-position:right 10px center;padding-right:36px;}
   textarea.fld{resize:vertical;line-height:1.45;}
   .itemhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .itemhead label{margin-bottom:0;}
-  .est{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;background:rgba(74,144,255,.12);border:1px solid rgba(74,144,255,.35);font-size:11px;color:#cfe0ff;}
-  .est b{font-family:'Sora';font-weight:600;}
-  .est.warn{background:rgba(255,138,74,.12);border-color:rgba(255,138,74,.4);color:#ffd0b0;}
+  .est{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;background:rgba(var(--c-accent-rgb),.12);border:1px solid rgba(var(--c-accent-rgb),.35);font-size:11px;color:var(--c-tint);}
+  .est b{font-family:var(--font-heading);font-weight:600;}
+  .est.warn{background:rgba(var(--c-est-rgb),.12);border-color:rgba(var(--c-est-rgb),.4);color:var(--tint-est);}
   .eqrow{display:grid;grid-template-columns:1fr 96px 38px;gap:8px;margin-bottom:8px;}
+  /* A material row carries a unit as well as a quantity, so it needs the extra column. */
+  .eqrow.matrow{grid-template-columns:1fr 84px 70px 38px;}
+  @media(max-width:560px){.eqrow.matrow{grid-template-columns:1fr 64px 56px 34px;gap:6px;}}
   .eqrow .eqdel{background:transparent;border:1px solid var(--field-line);color:var(--steel-400);cursor:pointer;font-size:16px;line-height:1;transition:.15s;}
-  .eqrow .eqdel:hover{border-color:#ff6b6b;color:#ff9d9d;}
-  .addeq{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px dashed var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12.5px;padding:9px 12px;cursor:pointer;transition:.15s;}
+  .eqrow .eqdel:hover{border-color:var(--c-danger);color:var(--tint-danger);}
+  .addeq{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px dashed var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:9px 12px;cursor:pointer;transition:.15s;}
   .addeq:hover{border-color:var(--spark);color:var(--ice);}
   .actions{display:flex;flex-wrap:wrap;gap:8px;}
-  .chip{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:12.5px;cursor:pointer;font-family:'Inter';transition:.15s;user-select:none;}
-  .chip:hover{color:var(--ice);border-color:rgba(185,198,218,.4);}
-  .chip.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-size:12.5px;cursor:pointer;font-family:var(--font-body);transition:.15s;user-select:none;}
+  .chip:hover{color:var(--ice);border-color:rgba(var(--c-fieldline-rgb),.4);}
+  .chip.on{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
   .save{display:flex;gap:10px;}
-  .save button{font-family:'Sora';font-weight:600;font-size:14px;padding:13px;cursor:pointer;transition:.18s;border:none;}
-  .btn-primary{flex:1;background:linear-gradient(180deg,#2c6bd6,#013179);color:#fff;box-shadow:0 8px 24px rgba(1,49,121,.5);}
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(44,107,214,.5);}
+  .save button{font-family:var(--font-heading);font-weight:600;font-size:14px;padding:13px;cursor:pointer;transition:.18s;border:none;}
+  .btn-primary{flex:1;background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));color:#fff;box-shadow:0 8px 24px var(--bg-glow1);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(var(--c-accent2-rgb),.5);}
   .btn-ghost{background:transparent;border:1px solid var(--field-line)!important;color:var(--steel-300);padding:13px 16px;}
   .btn-ghost:hover{border-color:var(--spark)!important;color:var(--ice);}
-  body{min-height:100vh;background:#02080f;display:flex;align-items:flex-start;justify-content:center;padding:24px 0 90px;}
-  .bg{background:#02080f;}
+  body{min-height:100vh;background:var(--c-deep);display:flex;align-items:flex-start;justify-content:center;padding:24px 0 90px;}
+  .bg{background:var(--c-deep);}
   .phone{position:relative;z-index:2;width:390px;max-width:100vw;min-height:800px;background:transparent;
-    border:10px solid #0c1626;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden;}
+    border:10px solid var(--c-slate);box-shadow:0 30px 80px var(--shade-60);overflow:hidden;}
   .phone .inbg{position:absolute;inset:0;z-index:0;overflow:hidden;}
-  .phone .inbg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 60% at 80% 0%,rgba(1,49,121,.5),transparent 55%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .phone .inbg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 60% at 80% 0%,var(--bg-glow1),transparent 55%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .phone .grid{position:absolute;inset:0;opacity:.24;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:52px 52px;-webkit-mask-image:radial-gradient(circle at 60% 6%,#000 15%,transparent 78%);mask-image:radial-gradient(circle at 60% 6%,#000 15%,transparent 78%);}
-  .phone .glow{position:absolute;left:50%;top:30%;width:320px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,.2),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  .phone .glow{position:absolute;left:50%;top:30%;width:320px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(var(--c-accent-rgb),.2),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   .scr{position:relative;z-index:2;padding:16px 15px 72px;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
   .brand .logo{font-size:14px;} .clock{text-align:right;} .clock .time{font-size:14px;} .clock .date{font-size:10px;}
@@ -91,20 +96,33 @@
   .save{margin-top:100px;}
   
   /* compact collapsible language switcher */
-  .langc{position:absolute;z-index:60;left:18px;bottom:16px;font-family:'Inter';}
-  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
-  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
+  .langc{position:absolute;z-index:60;left:18px;bottom:16px;font-family:var(--font-body);}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(var(--c-panel-rgb),.8);border:1px solid rgba(var(--c-line-rgb),0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(var(--c-fieldline-rgb),0.35);}
   .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);}
   .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
   .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
   .langc.open .langtoggle .chev{transform:rotate(180deg);}
-  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--c-panel-rgb),.96);border:1px solid rgba(var(--c-line-rgb),0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
-  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
-  .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
-  .langmenu button.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
+  .langmenu button:hover{background:rgba(var(--c-accent-rgb),.12);color:var(--ice);}
+  .langmenu button.active{color:var(--c-tint);box-shadow:inset 2px 0 0 var(--spark);}
 
-</style></head><body>
+
+  :root[data-theme="carbon"] .ember{background:#dbe9ff;box-shadow:0 0 7px 2px rgba(79,140,255,.95),0 0 17px 5px rgba(79,140,255,.42);}
+  :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
+  :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
+
+  select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
+  #project option,#equipList select option{font-size:15px;font-weight:500;}
+  #equipList select optgroup{font-size:11px;font-weight:600;letter-spacing:.05em;}
+  /* Jobcard headings lead the item menu; selectable rows are smaller underneath. */
+  #item optgroup{font-size:16px;font-weight:700;letter-spacing:0;}
+  #item option{font-size:13px;font-weight:400;}
+  /* Keep the selected value comfortably readable when the menu is closed. */
+  #project,#item{font-size:15px;}
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
 <div class="bg"></div>
 <div class="phone">
   <div class="inbg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
@@ -116,7 +134,7 @@
     <div class="modhead">
       <div class="modleft">
         <button class="back" onclick="location.href='hub-mobile.html'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
-        <div class="title"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="title"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
           <div><h1 data-i="modtitle">Hours</h1><p data-i="modsub">Log time &amp; materials</p></div></div>
       </div>
       <div class="who"><div class="badge"><span class="av">MK</span><span id="whoName">Marko K.</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
@@ -180,26 +198,26 @@
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </button>
 </div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script><script src="workshop-ui.js"></script><script>
   // Project/Item/Equipment are real, live WorkshopData records — never a page-local fake list — and
   // equipment usage is gated the same way jobcard-desktop.html's own Log Time modal gates it (see
   // saveHours() below), reusing that page's resolveLogTimeEquipment() helper so there is exactly one
   // implementation of "is this equipment currently held by this jobcard" in the app.
   const {resolveLogTimeEquipment}=JobcardEquipmentRules;
   const T={
-    sv:{back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
+    sv:{noopenjobs:"Inget projekt har ett öppet jobbkort",eq_onjob:"På detta jobbkort",eq_attach:"Koppla från verkstaden",eq_attached:"Kopplad till jobbkortet: {list}",mat_logged:"{n} materialrad(er) noterade på {jc}",unit:"Enhet",back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
       wholejobcard:"(helt jobbkort)",noitems:"Inga jobbkort hittades för detta projekt",noeqlinked:"Ingen utrustning kopplad till detta jobbkort ännu",
       err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
       eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
       eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
       eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad."},
-    en:{back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
+    en:{noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
       wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
       err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
       eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
       eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
       eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved."},
-    mk:{back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
+    mk:{noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
       wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
       err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
       eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
@@ -219,38 +237,49 @@
   // elsewhere now appears in this dropdown without a full reload. Resets to the placeholder option
   // first (rather than appending again) so a repeat call never duplicates the list; preserves the
   // current selection across the refresh so a user mid-entry isn't silently reset.
+  // Hours are logged against a jobcard, so a project with no open jobcard is not a choice - it was
+  // one of eleven rows that led to "no items" on ten of them.
+  function openJobcards(){
+    return (WorkshopData.listJobcards()||[])
+      .filter(j=>!j.archived&&!['completed','closed','cancelled'].includes(j.status));
+  }
   function populateProjects(){
-    const prevValue=proj.value;
-    proj.innerHTML='<option value="">—</option>';
-    (WorkshopData.listProjects()||[]).forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.no} — ${p.name}`;proj.appendChild(o);});
+    const t=T[current],prevValue=proj.value;
+    const open=new Set(openJobcards().map(j=>j.projectNo));
+    const list=(WorkshopData.listProjects()||[]).filter(p=>open.has(p.no));
+    proj.innerHTML='';
+    const ph=document.createElement('option');ph.value='';ph.textContent=list.length?'—':t.noopenjobs;proj.appendChild(ph);
+    list.forEach(p=>{const o=document.createElement('option');o.value=p.no;o.textContent=`${p.name} · ${p.no}`;proj.appendChild(o);});
     if([...proj.options].some(o=>o.value===prevValue))proj.value=prevValue;
   }
   populateProjects();
-  // Item = a real Jobcard operation (falls back to "(whole jobcard)" when the jobcard has none),
-  // grouped by jobcard — mirrors jobcard-desktop.html's own opOpts/machineOpts construction. Never
-  // the old page-local fake {n,est} list.
+  // Items show real operation names, or the named jobcard when no operations exist.
+  // Stable values keep the selected work item intact when shared data refreshes.
   function loadItems(){
-    const t=T[current];item.innerHTML='';
+    const t=T[current],previousValue=item.value;item.innerHTML='';
     const jobcards=(WorkshopData.listJobcards()||[]).filter(j=>j.projectNo===proj.value&&!j.archived&&!['completed','closed','cancelled'].includes(j.status));
     if(!proj.value||!jobcards.length){
       const ph=document.createElement('option');ph.value='';ph.textContent=proj.value?t.noitems:'—';item.appendChild(ph);
       updateEst();refreshEquipRows();return;
     }
     jobcards.forEach(j=>{
-      const grp=document.createElement('optgroup');grp.label=`${j.no} — ${j.title||''}`;
+      const grp=document.createElement('optgroup');grp.label=`${j.title||j.no} · ${j.no}`;
       const ops=(j.operations&&j.operations.length)?j.operations:[null];
       ops.forEach(op=>{
         const o=document.createElement('option');
-        o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=op?op.plannedHours:'';o.dataset.desc=op?op.desc:(j.title||j.no);
-        o.textContent=op?op.desc:`${j.no} — ${t.wholejobcard}`;
+        const name=j.title||j.item||j.no;
+        o.value=JSON.stringify([j.no,op?op.id:null]);
+        o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=(op?op.plannedHours:j.plannedHours)??'';o.dataset.desc=op?op.desc:name;
+        o.textContent=op?op.desc:(name===j.no?j.no:name+' · '+j.no);
         grp.appendChild(o);
       });
       item.appendChild(grp);
     });
+    if([...item.options].some(o=>o.value===previousValue))item.value=previousValue;
     updateEst();refreshEquipRows();
   }
   proj.addEventListener('change',loadItems);
-  item.addEventListener('change',()=>{updateEst();refreshEquipRows();});document.getElementById('hours').addEventListener('input',updateEst);
+  item.addEventListener('change',()=>{updateEst();refreshEquipRows();refreshMatOptions();});document.getElementById('hours').addEventListener('input',updateEst);
   function updateEst(){const chip=document.getElementById('estChip'),val=document.getElementById('estVal');const sel=item.options[item.selectedIndex];
     if(sel&&sel.dataset.est){chip.style.display='inline-flex';val.textContent=sel.dataset.est+' h';const h=parseFloat(document.getElementById('hours').value||0);chip.classList.toggle('warn',h>parseFloat(sel.dataset.est));}else chip.style.display='none';}
   // Equipment rows may only offer equipment already linked to the SELECTED item's Jobcard (never
@@ -260,12 +289,44 @@
     if(!jcNo)return null;
     return (WorkshopData.listJobcards()||[]).find(j=>j.no===jcNo)||null;
   }
+  // A machine already on the jobcard can simply be logged. One that is not is still offered - the
+  // plasma cutter you actually used is not absent from the workshop just because nobody linked it
+  // first - and saving attaches it through exactly the call the Jobcard module makes. Equipment the
+  // safety gate refuses is shown with its reason and cannot be picked, rather than being hidden.
   function populateEqSelect(sel){
     const t=T[current];const prev=sel.value;sel.innerHTML='';
-    const jc=selectedJobcard();const linked=jc?(jc.machines||[]).filter(m=>m.equipmentId):[];
-    const ph=document.createElement('option');ph.value='';ph.textContent=linked.length?t.eqph:t.noeqlinked;sel.appendChild(ph);
-    linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.equipmentId} — ${m.name}`;sel.appendChild(o);});
-    if(linked.some(m=>m.equipmentId===prev))sel.value=prev;
+    const jc=selectedJobcard();
+    const linked=jc?(jc.machines||[]).filter(m=>m.equipmentId):[];
+    const ph=document.createElement('option');ph.value='';ph.textContent=jc?t.eqph:t.noeqlinked;sel.appendChild(ph);
+    if(linked.length){
+      const g=document.createElement('optgroup');g.label=t.eq_onjob;
+      linked.forEach(m=>{const o=document.createElement('option');o.value=m.equipmentId;o.textContent=`${m.name} · ${m.equipmentId}`;g.appendChild(o);});
+      sel.appendChild(g);
+    }
+    if(jc){
+      const onJob=new Set(linked.map(m=>m.equipmentId));
+      const rest=(WorkshopData.getEquipment()||[]).filter(e=>!onJob.has(e.equipmentId));
+      if(rest.length){
+        const g=document.createElement('optgroup');g.label=t.eq_attach;
+        rest.forEach(e=>{
+          const gate=WorkshopData.getEquipmentSafetyGate(e.equipmentId,{requirePreUseCheck:true,jobcardNo:jc.no,projectNo:jc.projectNo});
+          const d=JobcardEquipmentRules.canAddEquipmentToJobcard(e,jc.machines||[],jc.no,gate);
+          const o=document.createElement('option');o.value=e.equipmentId;
+          o.textContent=`${e.name} · ${e.equipmentId}`+(d.allowed?'':` — ${eqReasonShort(d,gate,e)}`);
+          o.disabled=!d.allowed;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      }
+    }
+    if([...sel.options].some(o=>o.value===prev&&!o.disabled))sel.value=prev;
+  }
+  // The decision says why; which jobcard holds the equipment is on the equipment record itself.
+  function eqReasonShort(decision,gate,eq){
+    const t=T[current];
+    if(decision.reasonCode==='ASSIGNED_ELSEWHERE')return tpl(t.eq_assignedelsewhere,{jc:(eq&&eq.assignedJobcard)||'—'});
+    if(decision.reasonCode==='BLOCKED')return (gate&&gate.reasons||[]).join('; ')||t.eq_blocked;
+    return t.eq_blocked;
   }
   function refreshEquipRows(){document.querySelectorAll('#equipList .eqsel').forEach(populateEqSelect);}
   const equipList=document.getElementById('equipList');
@@ -276,11 +337,26 @@
     row.append(sel,hrs,del);equipList.appendChild(row);populateEqSelect(sel);}
   document.getElementById('addEq').addEventListener('click',addEqRow);
   const matList=document.getElementById('matList');
-  function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow';
+  // The jobcard already lists the material the job planned for, so typing here offers those lines
+  // first: what is logged then ticks off a planned line rather than inventing a second record of it.
+  function matListId(){return 'matopts';}
+  function refreshMatOptions(){
+    let dl=document.getElementById(matListId());
+    if(!dl){dl=document.createElement('datalist');dl.id=matListId();document.body.appendChild(dl);}
+    const jc=selectedJobcard();dl.innerHTML='';
+    (jc&&jc.materials||[]).forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m.code?`${m.code} — ${m.description||''}`.trim():(m.description||'');
+      dl.appendChild(o);
+    });
+  }
+  function addMatRow(){const t=T[current];const row=document.createElement('div');row.className='eqrow matrow';
     const name=document.createElement('input');name.className='fld matname';name.type='text';name.placeholder=t.matph;
+    name.setAttribute('list',matListId());
     const qty=document.createElement('input');qty.className='fld matqty';qty.type='number';qty.step='0.1';qty.min='0';qty.placeholder=t.qty;
+    const unit=document.createElement('input');unit.className='fld matunit';unit.type='text';unit.placeholder=t.unit;
     const del=document.createElement('button');del.type='button';del.className='eqdel';del.setAttribute('aria-label','Remove material');del.textContent='×';del.onclick=()=>row.remove();
-    row.append(name,qty,del);matList.appendChild(row);}
+    row.append(name,qty,unit,del);matList.appendChild(row);refreshMatOptions();}
   document.getElementById('addMat').addEventListener('click',addMatRow);
   function refreshEqLang(){const t=T[current];refreshEquipRows();document.querySelectorAll('.eqhrs').forEach(h=>h.placeholder=t.hrs);
     document.querySelectorAll('.matname').forEach(n=>n.placeholder=t.matph);document.querySelectorAll('.matqty').forEach(q=>q.placeholder=t.qty);}
@@ -297,7 +373,7 @@
       hours:document.getElementById('hours').value,date:document.getElementById('date2').value,notes:document.getElementById('notes').value,
       worker:document.getElementById('whoName').textContent,
       equipment:[...document.querySelectorAll('#equipList .eqrow')].map(row=>({equipmentId:row.querySelector('.eqsel')?.value,hours:row.querySelector('.eqhrs')?.value})).filter(x=>x.equipmentId||x.hours),
-      materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value})).filter(x=>x.name||x.qty)
+      materials:[...document.querySelectorAll('#matList .eqrow')].map(row=>({name:row.querySelector('.matname')?.value,qty:row.querySelector('.matqty')?.value,unit:row.querySelector('.matunit')?.value})).filter(x=>x.name||x.qty)
     };
   }
   function tpl(str,vals){return String(str||'').replace(/\{(\w+)\}/g,(m,k)=>vals&&vals[k]!=null?vals[k]:'');}
@@ -325,40 +401,94 @@
   // authoritative Equipment Safety Gate BEFORE committing anything, then log equipment usage via
   // WorkshopData.logEquipmentUsage() BEFORE labour hours via logHours() — if any row is blocked,
   // neither equipment usage nor labour hours are recorded. No equipment rows simply logs labour hours.
+  // Matching is by the jobcard's own code or description, so "SS-SHT-304-2.0 — AISI 304 sheet 2 mm"
+  // picked from the list lands on that line rather than beside it.
+  function postMaterialsToJobcard(jc,rows){
+    const use=(rows||[]).filter(r=>r&&String(r.name||'').trim()&&Number(r.qty)>0);
+    if(!use.length)return 0;
+    const mats=(jc.materials||[]).map(m=>Object.assign({},m));
+    use.forEach(r=>{
+      const typed=String(r.name).trim().toLowerCase();
+      const hit=mats.find(m=>{
+        const code=String(m.code||'').toLowerCase(),desc=String(m.description||'').toLowerCase();
+        return (code&&typed.startsWith(code))||(desc&&typed===desc)||(code&&typed===code);
+      });
+      const qty=Number(r.qty)||0;
+      if(hit){
+        hit.issued=(Number(hit.issued)||0)+qty;
+        const req=Number(hit.required)||0;
+        hit.status=req&&hit.issued>=req?'issued':(hit.issued>0?'partial':hit.status);
+      }else{
+        mats.push({code:'',description:String(r.name).trim(),unit:String(r.unit||'').trim()||'EA',
+          required:0,reserved:0,issued:qty,status:'issued',spec:'',grade:'',dimension:'',location:'',heat:'',certificate:''});
+      }
+    });
+    WorkshopData.updateJobcard(jc.no,{materials:mats});
+    jc.materials=mats;
+    return use.length;
+  }
   function saveHours(reset){
     const entry=collectHours();const hours=Number(entry.hours);
-    if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){alert(T[current].err_select);return false;}
+    if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){wAlert(T[current].err_select);return false;}
     const jc=(WorkshopData.listJobcards()||[]).find(j=>j.no===entry.jobcard);
-    if(!jc){alert(T[current].err_jobcard_missing);return false;}
+    if(!jc){wAlert(T[current].err_jobcard_missing);return false;}
+
+    // A machine used but not yet on the jobcard is attached first, through the same two calls the
+    // Jobcard module makes - assignEquipment() decides, and the link is written only if it succeeds.
+    // The safety gate is never bypassed: a refused assignment stops the whole save, so neither
+    // equipment usage nor labour hours are recorded against a machine that may not be run.
+    const attached=[];
+    for(const row of entry.equipment){
+      if(!row.equipmentId)continue;
+      if((jc.machines||[]).some(m=>m.equipmentId===row.equipmentId))continue;
+      const eq=(WorkshopData.getEquipment()||[]).find(e=>e.equipmentId===row.equipmentId);
+      if(!eq){wAlert(equipBlockMessage({code:'EQUIPMENT_MISSING'}));return false;}
+      const gate=WorkshopData.getEquipmentSafetyGate(eq.equipmentId,{requirePreUseCheck:true,jobcardNo:jc.no,projectNo:jc.projectNo});
+      const decision=JobcardEquipmentRules.canAddEquipmentToJobcard(eq,jc.machines||[],jc.no,gate);
+      if(!decision.allowed){wAlert(eqReasonShort(decision,gate,eq));return false;}
+      const res=WorkshopData.assignEquipment(eq.equipmentId,{project:jc.projectNo,jobcard:jc.no,worker:entry.worker,assignedBy:entry.worker});
+      if(res&&res.error){wAlert(equipBlockMessage(res));return false;}
+      jc.machines=(jc.machines||[]).concat([{equipmentId:eq.equipmentId,name:eq.name,plannedUsage:0}]);
+      WorkshopData.updateJobcard(jc.no,{machines:jc.machines});
+      WorkshopData.recordJobcardActivity(jc.no,{action:`Equipment linked from Hours: ${eq.equipmentId} — ${eq.name}`});
+      attached.push(eq.equipmentId);
+    }
 
     const toLog=[];
     for(const row of entry.equipment){
       if(!row.equipmentId)continue;
       const resolved=resolveLogTimeEquipment(jc.machines,row.equipmentId,WorkshopData.getEquipment(),jc.no);
-      if(!resolved.ok){alert(equipBlockMessage(resolved));return false;}
+      if(!resolved.ok){wAlert(equipBlockMessage(resolved));return false;}
       const use=WorkshopData.canUseEquipment(row.equipmentId,{date:entry.date,projectNo:jc.projectNo,jobcardNo:jc.no});
-      if(!use.allowed){alert(equipBlockMessage({code:'EQUIPMENT_SAFETY_BLOCKED',reasons:(use.gate&&use.gate.reasons)||[]}));return false;}
+      if(!use.allowed){wAlert(equipBlockMessage({code:'EQUIPMENT_SAFETY_BLOCKED',reasons:(use.gate&&use.gate.reasons)||[]}));return false;}
       toLog.push({equipmentId:row.equipmentId,name:resolved.machine.name,hours:Number(row.hours)||hours});
     }
 
     for(const eqEntry of toLog){
       const usageRes=WorkshopData.logEquipmentUsage(eqEntry.equipmentId,{hours:eqEntry.hours,date:entry.date,worker:entry.worker,project:jc.projectNo,jobcard:jc.no,notes:entry.notes});
-      if(usageRes&&usageRes.error){alert(equipBlockMessage(usageRes));return false;}
+      if(usageRes&&usageRes.error){wAlert(equipBlockMessage(usageRes));return false;}
     }
 
     // Sets both `worker` (jobcard-desktop.html's own hours panel filters by this — SHARED.hours
     // matching h.jobcard/h.worker) and `user` (reports-desktop.html's Hours-by-user/by-worker tables
     // group by this) — logHours() itself only defaults `user`, never derives one from `worker`.
     const result=WorkshopData.logHours({project:jc.projectNo,jobcard:jc.no,item:entry.item,operation:entry.item,worker:entry.worker,user:entry.worker,hours,date:entry.date,notes:entry.notes,equipment:toLog,materials:entry.materials});
-    if(result&&result.error){alert(result.error);return false;}
+    if(result&&result.error){wAlert(result.error);return false;}
 
     if(entry.operationId!=null){
       const op=(jc.operations||[]).find(o=>o.id===entry.operationId);
       WorkshopData.updateJobcardOperation(jc.no,entry.operationId,{loggedHours:(Number(op&&op.loggedHours)||0)+hours});
     }
+    // Material consumed here is material consumed on the jobcard. A line the jobcard already plans
+    // for has its issued quantity raised; anything else is added as a line that was not planned, so
+    // the jobcard shows what actually went into the job rather than only what was intended.
+    const matCount=postMaterialsToJobcard(jc,entry.materials);
     WorkshopData.recordJobcardActivity(jc.no,{action:`${hours}h logged by ${entry.worker}${entry.item?' on '+entry.item:''}`});
 
-    alert(T[current].savedok);
+    const t=T[current];
+    const extra=[attached.length?tpl(t.eq_attached,{list:attached.join(', ')}):'',
+                 matCount?tpl(t.mat_logged,{n:matCount,jc:jc.no}):''].filter(Boolean);
+    wAlert(t.savedok+(extra.length?'\n\n'+extra.join('\n'):''));
     if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}
     return true;
   }

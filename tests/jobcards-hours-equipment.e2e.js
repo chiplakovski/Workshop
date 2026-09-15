@@ -33,6 +33,13 @@ async function jobcardWorkflow(page) {
   assert.equal(jobcard.status, 'draft');
   step('Jobcards: create-from-project persists a real production record');
 
+  await page.evaluate(() => setView('overview'));
+  await page.locator('#jcOverviewSearch').fill(JOBCARD_TITLE);
+  const searchRows = page.locator('#app tbody tr');
+  assert.equal(await searchRows.filter({ hasText: JOBCARD_TITLE }).count(), 1, 'Jobcard landing search should find the new card');
+  assert.equal(await searchRows.count(), 1, 'Jobcard landing search should narrow the full list');
+  step('Jobcards: landing-page search finds a card by title');
+
   await page.evaluate((id) => openOpForm(id), jobcard.id);
   await page.locator('#opDesc').fill(OPERATION_NAME);
   await page.locator('#opWorker').selectOption('Marko K.');
@@ -82,11 +89,12 @@ async function hoursWorkflow(page, jobcard) {
   await page.locator('#equipList .eqsel').selectOption(EQUIPMENT_ID);
   await page.locator('#equipList .eqhrs').fill(String(LOGGED_HOURS));
 
-  page.once('dialog', async (dialog) => {
-    assert.match(dialog.message(), /saved/i);
-    await dialog.accept();
-  });
   await page.locator('#saveEntry').click();
+  await page.waitForTimeout(150);
+  // The app tells you in its own markup: a native alert() is invisible in a sandboxed frame.
+  const saidSaved = await page.locator('.wask .waskmsg').first().textContent();
+  assert.match(saidSaved, /saved|sparad|začuvan/i);
+  await page.locator('.wask .waskyes').click();
   await page.waitForTimeout(70);
 
   const state = await page.evaluate(({ no, operationId, equipmentId, operationName }) => {
@@ -107,12 +115,71 @@ async function hoursWorkflow(page, jobcard) {
   assert.equal(state.usage.meterAfter - state.usage.meterBefore, LOGGED_HOURS);
   step('Hours → Jobcards/Equipment: one save updates labour, operation, and machine usage');
 
+  // Only projects with an open jobcard are offered: hours are logged against a jobcard, so a project
+  // without one is not a choice a person can act on.
+  const offered = await page.evaluate(() => {
+    const open = new Set((WorkshopData.listJobcards() || [])
+      .filter((j) => !j.archived && !['completed', 'closed', 'cancelled'].includes(j.status))
+      .map((j) => j.projectNo));
+    const listed = [...document.querySelectorAll('#project option')].map((o) => o.value).filter(Boolean);
+    return { listed, withoutJobcard: listed.filter((no) => !open.has(no)) };
+  });
+  assert.ok(offered.listed.length > 0, 'the project list must offer the projects that have work open');
+  assert.deepEqual(offered.withoutJobcard, [], 'a project with no open jobcard must not be offered');
+  step('Hours: only projects with an open jobcard can be picked');
+
+  // A machine that was used but never linked to the jobcard is attached on save, through the same
+  // assignEquipment() call the Jobcard module makes - the safety gate still decides.
+  const spare = await page.evaluate((used) => {
+    const jc = WorkshopData.listJobcards().find((j) => j.no === document.querySelector('#item').selectedOptions[0].dataset.jobcard);
+    const onJob = new Set((jc.machines || []).map((m) => m.equipmentId));
+    const free = (WorkshopData.getEquipment() || []).find((e) => {
+      if (onJob.has(e.equipmentId) || e.equipmentId === used) return false;
+      const gate = WorkshopData.getEquipmentSafetyGate(e.equipmentId, { requirePreUseCheck: true, jobcardNo: jc.no, projectNo: jc.projectNo });
+      return JobcardEquipmentRules.canAddEquipmentToJobcard(e, jc.machines || [], jc.no, gate).allowed;
+    });
+    return free ? { equipmentId: free.equipmentId, jobcard: jc.no } : null;
+  }, EQUIPMENT_ID);
+
+  if (spare) {
+    await page.locator('#hours').fill('2');
+    await page.locator('#equipList .eqsel').selectOption(spare.equipmentId);
+    await page.locator('#equipList .eqhrs').fill('1');
+    await page.locator('#matList .matname').fill('E2E consumable');
+    await page.locator('#matList .matqty').fill('4');
+    await page.locator('#matList .matunit').fill('pcs');
+    await page.locator('#saveEntry').click();
+    await page.waitForTimeout(200);
+    await page.locator('.wask .waskyes').click();
+    await page.waitForTimeout(150);
+
+    const linked = await page.evaluate(({ no, equipmentId }) => {
+      const jc = WorkshopData.findJobcard(no);
+      const eq = WorkshopData.getEquipment().find((e) => e.equipmentId === equipmentId);
+      return {
+        onJobcard: (jc.machines || []).some((m) => m.equipmentId === equipmentId),
+        assignedTo: eq.assignedJobcard,
+        usedHere: (eq.usageHistory || []).some((u) => u.jobcard === no),
+        material: (jc.materials || []).find((m) => m.description === 'E2E consumable')
+      };
+    }, { no: spare.jobcard, equipmentId: spare.equipmentId });
+    assert.equal(linked.onJobcard, true, 'a machine used in Hours must end up on the jobcard');
+    assert.equal(linked.assignedTo, spare.jobcard, 'and assigned to it in the equipment register');
+    assert.equal(linked.usedHere, true, 'with its usage logged against the jobcard');
+    assert.ok(linked.material, 'material used in Hours must reach the jobcard');
+    assert.equal(linked.material.issued, 4, 'with the quantity that was consumed');
+    assert.equal(linked.material.unit, 'pcs');
+    step('Hours → Jobcards: an unlinked machine is attached and material lands on the jobcard');
+  }
+
   await page.reload({ waitUntil: 'load' });
-  const restored = await page.evaluate(({ no, equipmentId, operationName }) => {
-    const hour = WorkshopData.get().hours.find((item) => item.jobcard === no && item.operation === operationName);
+  // A second save now correctly stays on the selected operation. Find the original entry by id,
+  // rather than assuming it is the only entry for that operation.
+  const restored = await page.evaluate(({ no, equipmentId, hourId }) => {
+    const hour = WorkshopData.get().hours.find((item) => item.id === hourId);
     const equipment = WorkshopData.getEquipment().find((item) => item.equipmentId === equipmentId);
     return { hour, assignedJobcard: equipment.assignedJobcard, usageCount: equipment.usageHistory.filter((item) => item.jobcard === no).length };
-  }, { no: jobcard.no, equipmentId: EQUIPMENT_ID, operationName: OPERATION_NAME });
+  }, { no: jobcard.no, equipmentId: EQUIPMENT_ID, hourId: state.hour.id });
   assert.equal(restored.hour.hours, LOGGED_HOURS);
   assert.equal(restored.assignedJobcard, jobcard.no);
   assert.equal(restored.usageCount, 1);
@@ -137,6 +204,34 @@ async function equipmentWorkflow(page, jobcard) {
   step('Equipment: detail view reflects the real Jobcard assignment and usage');
 }
 
+async function namedHoursItems(page, baseUrl) {
+  for (const file of ['hours-desktop.html', 'hours-mobile.html']) {
+    await page.goto(`${baseUrl}/${file}`, { waitUntil: 'load' });
+    const cards = await page.evaluate(projectNo => ['Fabrication & Materials', 'Labour & Installation'].map(title =>
+      WorkshopData.upsertJobcard({ projectNo, title, status: 'draft', operations: [], plannedHours: 8 })), PROJECT_NO);
+    assert.ok(cards.every(card => card.no && !card.error));
+    await page.locator('#project').selectOption(PROJECT_NO);
+    const options = await page.locator('#item option').allTextContents();
+    for (const card of cards) assert.ok(options.includes(`${card.title} · ${card.no}`));
+    assert.ok(options.every(text => !text.includes('(whole jobcard)')));
+    const selected = cards[1];
+    await page.locator('#item').selectOption({ label: `${selected.title} · ${selected.no}` });
+    const value = await page.locator('#item').inputValue();
+    await page.evaluate(() => WorkshopData.save('Hours selection refresh test'));
+    assert.equal(await page.locator('#item').inputValue(), value, 'a shared refresh must preserve the selected item');
+    assert.equal(await page.locator('#estVal').innerText(), '8 h');
+    await page.locator('#hours').fill('1');
+    await page.locator('#notes').fill(`Named item regression: ${file}`);
+    await page.locator('#saveEntry').click();
+    await page.locator('.wask .waskyes').click();
+    const saved = await page.evaluate(no => WorkshopData.get().hours.find(h => h.jobcard === no), selected.no);
+    assert.equal(saved.item, 'Labour & Installation');
+    assert.equal(saved.hours, 1);
+    assert.equal(await page.locator('#item').inputValue(), value, 'saving must not switch to the first jobcard');
+    step(`${file}: named items, preserved selection and hours saved against the correct jobcard`);
+  }
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -148,6 +243,7 @@ async function main() {
     await hoursWorkflow(page, jobcard);
     await page.goto(`${harness.baseUrl}/equipment-machines-desktop.html`, { waitUntil: 'load' });
     await equipmentWorkflow(page, jobcard);
+    await namedHoursItems(page, harness.baseUrl);
     monitor.assertClean();
     console.log('\nJobcards/Hours/Equipment browser E2E passed.');
   } finally {

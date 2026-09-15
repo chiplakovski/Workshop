@@ -1,57 +1,64 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Varmak — Hub</title><style>
-  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
-    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
-    --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);}
+  :root{--navy-950:#04101f;--navy-900:#071a33;--navy-900-rgb:7,26,51;--navy-800:#0a2447;--navy-800-rgb:10,36,71;--navy-brand:#013179;--navy-brand-rgb:1,49,121;
+    --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--spark-rgb:74,144,255;--accent-2:#2c6bd6;--accent-tint:#cfe0ff;--ice:#e8f0fb;
+    --line-rgb:142,163,192;--line:rgba(var(--line-rgb),0.16);--field:rgba(255,255,255,0.045);--field-line-rgb:185,198,218;--field-line:rgba(var(--field-line-rgb),0.24);
+    --font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;
+    --ambient-glow:radial-gradient(circle,var(--glow-core),transparent 62%);--ember-core:var(--spark);
+    --ember-glow:0 0 6px 1px rgba(var(--spark-rgb),.8);--dot-glow:0 0 9px 1px rgba(var(--spark-rgb),.9);color-scheme:dark;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--c-tint:#cfe0ff;--c-accent-rgb:74,144,255;}
+  :root[data-theme="carbon"]{--navy-950:#020305;--navy-900:#06080c;--navy-900-rgb:6,8,12;--navy-800:#0a0d13;--navy-800-rgb:10,13,19;--navy-brand:#16326a;--navy-brand-rgb:22,50,106;
+    --steel-400:#a3adbd;--steel-300:#c6cedb;--spark:#4f8cff;--spark-rgb:79,140,255;--accent-2:#2f6ccc;--accent-tint:#dbe8ff;--ice:#f2f5fa;
+    --line-rgb:135,146,163;--field-line-rgb:170,180,196;
+    --font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --ambient-glow:radial-gradient(circle,var(--glow-core),transparent 66%);--ember-core:#dbe9ff;
+    --ember-glow:0 0 7px 2px rgba(var(--spark-rgb),.95),0 0 17px 5px rgba(var(--spark-rgb),.42);--dot-glow:0 0 12px 2px rgba(var(--spark-rgb),1),0 0 24px 7px rgba(var(--spark-rgb),.45);--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--c-tint:#dbe8ff;--c-accent-rgb:79,140,255;}
+:root[data-theme="iris"]{--navy-950:#f1f3fb;--navy-900:#ffffff;--navy-900-rgb:255,255,255;--navy-800:#e9edf9;--navy-800-rgb:233,237,249;--navy-brand:#4b49ac;--navy-brand-rgb:75,73,172;--steel-400:#5f6889;--steel-300:#4e5573;--spark:#4b49ac;--spark-rgb:75,73,172;--accent-2:#7978e9;--accent-tint:#3b39a0;--ice:#191d3d;--line-rgb:75,73,172;--line:rgba(75,73,172,0.16);--field:#ffffff;--field-line-rgb:75,73,172;--field-line:rgba(75,73,172,0.24);--font-heading:'Public Sans',system-ui,sans-serif;--font-body:'Public Sans',system-ui,sans-serif;--ambient-glow:radial-gradient(circle,rgba(75,73,172,0.07),transparent 62%);--ember-core:var(--spark);--ember-glow:0 0 6px 1px rgba(75,73,172,0.45);--dot-glow:0 0 10px 1px rgba(75,73,172,0.45);color-scheme:light;--lift-008:rgba(255,255,255,.35);--lift-015:rgba(255,255,255,.45);--lift-02:rgba(255,255,255,.55);--lift-025:rgba(255,255,255,.62);--lift-03:rgba(255,255,255,.7);--lift-033:rgba(255,255,255,.74);--lift-035:rgba(255,255,255,.78);--lift-04:rgba(255,255,255,.86);--lift-045:rgba(255,255,255,.93);--lift-05:#ffffff;--lift-06:rgba(75,73,172,.05);--lift-08:rgba(75,73,172,.07);--lift-10:rgba(75,73,172,.09);--lift-12:rgba(75,73,172,.11);--lift-16:rgba(75,73,172,.14);--lift-18:rgba(75,73,172,.16);--lift-28:rgba(75,73,172,.24);--shade-12:rgba(75,73,172,.05);--shade-16:rgba(75,73,172,.07);--shade-18:rgba(75,73,172,.08);--shade-35:rgba(75,73,172,.10);--shade-40:rgba(75,73,172,.12);--shade-45:rgba(75,73,172,.13);--shade-50:rgba(75,73,172,.15);--shade-55:rgba(75,73,172,.17);--shade-60:rgba(75,73,172,.19);--sunken:#e9edf9;--nav-on-bg:#4b49ac;--on-accent:#2e2c86;--on-danger:#b23a40;--tint-danger:#c0343b;--tint-warn:#7a4f10;--tint-est:#9a4f14;--tint-info:#3b39a0;--tint-ok:#0b6b4d;--nav-on-icon:#ffffff;--bg-glow0:rgba(152,189,255,0.18);--bg-glow1:rgba(152,189,255,0.18);--bg-glow2:rgba(121,120,233,0.09);--nav-on-fg:#ffffff;--c-tint:#3b39a0;--c-accent-rgb:75,73,172;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  body{font-family:var(--font-body);color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
   .bg::before{content:"";position:absolute;inset:0;
-    background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),
-      radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),
+    background:radial-gradient(120% 70% at 82% 0%,rgba(var(--navy-brand-rgb),0.5),transparent 55%),
+      radial-gradient(80% 60% at 10% 100%,rgba(var(--navy-800-rgb),0.6),transparent 60%),
       linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .grid{position:absolute;inset:0;opacity:0.28;
     background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
     background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
   .glow{position:absolute;left:50%;top:34%;width:520px;height:520px;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(74,144,255,0.18),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+    background:var(--ambient-glow);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
-  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--ember-core);box-shadow:var(--ember-glow);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
   /* full-width top bar */
   .topfull{position:relative;z-index:2;width:100%;padding:22px 48px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
-  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .logo{font-family:var(--font-heading);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:var(--dot-glow);}
   .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
   .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .clock{text-align:right;font-variant-numeric:tabular-nums;}
-  .clock .time{font-family:'Sora';font-weight:600;font-size:16px;}
+  .clock .time{font-family:var(--font-heading);font-weight:600;font-size:16px;}
   .clock .date{font-size:11px;color:var(--steel-400);}
   .who{display:flex;align-items:center;gap:8px;}
-  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
-  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:var(--lift-05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,var(--accent-2),var(--navy-800));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:var(--font-heading);}
   .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
-  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
-  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:34px 40px 90px;}
-  .hubtitle{margin-bottom:20px;}
-  .hubtitle h1{font-family:'Sora';font-weight:600;font-size:22px;letter-spacing:-.01em;}
-  .hubtitle p{font-size:12px;color:var(--steel-400);margin-top:2px;}
+  .wrap{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:16px 40px 90px;}
 
   .hub{display:grid;grid-template-columns:3fr 1.15fr;gap:18px;align-items:stretch;}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,1fr);gap:18px;}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:auto;gap:18px;}
   .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:190px;
-    background:rgba(255,255,255,.035);border:1px solid var(--line);padding:20px;cursor:pointer;overflow:hidden;
+    background:var(--lift-035);border:1px solid var(--line);padding:20px;cursor:pointer;overflow:hidden;
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transition:transform .18s,border-color .18s,box-shadow .18s,background .18s;}
-  .tile:hover{transform:translateY(-3px);border-color:rgba(74,144,255,.6);background:rgba(74,144,255,.07);box-shadow:0 16px 44px rgba(1,49,121,.5);}
-  .tile .ic{width:46px;height:46px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
-  .tile h3{font-family:'Sora';font-weight:600;font-size:17px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;}
+  .tile:hover{transform:translateY(-3px);border-color:rgba(var(--spark-rgb),.6);background:rgba(var(--spark-rgb),.07);box-shadow:0 16px 44px rgba(var(--navy-brand-rgb),.5);}
+  .tile .ic{width:46px;height:46px;display:flex;align-items:center;justify-content:center;background:rgba(var(--spark-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--spark-rgb),.35);}
+  .tile h3{font-family:var(--font-heading);font-weight:600;font-size:17px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;}
   .tile p{font-size:12px;color:var(--steel-400);}
   .tile .arrow{position:absolute;top:20px;right:18px;color:var(--steel-400);opacity:0;transform:translateX(-4px);transition:.18s;}
   .tile:hover .arrow{opacity:1;transform:translateX(0);color:var(--spark);}
@@ -63,37 +70,40 @@
   .tile-stack .tile h3{font-size:14px;margin-bottom:2px;}
   .tile-stack .tile p{font-size:11px;}
   .tile-stack .tile .art{display:none;}
+  /* Estimations and Store take full cells, so the leftover pair runs along the
+     bottom rather than leaving a ragged row */
+  .tile-stack.wide{grid-column:1/-1;grid-template-rows:none;grid-template-columns:1fr 1fr;min-height:0;}
+  .tile-stack.wide .tile{min-height:90px;}
 
   /* team talk panel */
-  .teamtalk{display:flex;flex-direction:column;background:rgba(255,255,255,.035);border:1px solid var(--line);
+  .teamtalk{display:flex;flex-direction:column;background:var(--lift-035);border:1px solid var(--line);
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);overflow:hidden;}
   .tt-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);}
-  .tt-head .ic{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
-  .tt-head h3{font-family:'Sora';font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;}
+  .tt-head .ic{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:rgba(var(--spark-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--spark-rgb),.35);}
+  .tt-head h3{font-family:var(--font-heading);font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;}
   .tt-head p{font-size:10.5px;color:var(--steel-400);}
   .tt-feed{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow:auto;}
   .msg{display:flex;gap:10px;}
-  .msg .mav{flex:none;width:26px;height:26px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .msg .mav{flex:none;width:26px;height:26px;background:linear-gradient(135deg,var(--accent-2),var(--navy-800));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:var(--font-heading);}
   .msg .mbody .mname{font-size:12px;font-weight:600;} .msg .mbody .mname span{color:var(--steel-400);font-weight:400;font-size:10.5px;margin-left:6px;}
   .msg .mbody .mtext{font-size:12.5px;color:var(--steel-300);line-height:1.5;margin-top:2px;}
   .tt-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);}
-  .tt-input input{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:10px 12px;outline:none;}
+  .tt-input input{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:10px 12px;outline:none;}
   .tt-input input:focus{border-color:var(--spark);}
-  .tt-input button{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;padding:0 14px;cursor:pointer;display:flex;align-items:center;}
+  .tt-input button{background:linear-gradient(180deg,var(--accent-2),var(--navy-brand));border:none;color:#fff;padding:0 14px;cursor:pointer;display:flex;align-items:center;}
 
   /* language switcher */
-  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
-  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
-  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);}
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:var(--font-body);}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(var(--navy-900-rgb),.8);border:1px solid rgba(var(--line-rgb),0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(var(--field-line-rgb),0.35);}
   .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
   .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
   .langc.open .langtoggle .chev{transform:rotate(180deg);}
-  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--navy-900-rgb),.96);border:1px solid rgba(var(--line-rgb),0.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
-  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
-  .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
-  .langmenu button.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
-
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
+  .langmenu button:hover{background:rgba(var(--spark-rgb),.12);color:var(--ice);}
+  .langmenu button.active{color:var(--accent-tint);box-shadow:inset 2px 0 0 var(--spark);}
 
   .tile .art{position:absolute;right:-6%;bottom:-9%;width:58%;max-width:210px;height:auto;color:var(--steel-400);opacity:.5;pointer-events:none;z-index:0;
     -webkit-mask-image:linear-gradient(135deg,transparent 12%,#000 80%);mask-image:linear-gradient(135deg,transparent 12%,#000 80%);transition:opacity .18s,color .18s;}
@@ -104,12 +114,11 @@
     -webkit-mask-image:linear-gradient(135deg,transparent 22%,#000 88%);mask-image:linear-gradient(135deg,transparent 22%,#000 88%);}
   .tt-head,.tt-feed,.tt-input{position:relative;z-index:1;}
 
-
   /* DAB / web radio widget (bottom-right) */
-  .radio{position:fixed;right:18px;bottom:16px;z-index:40;font-family:'Inter';}
-  .radio-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:rgba(7,26,51,.82);border:1px solid rgba(142,163,192,0.16);
+  .radio{position:fixed;right:18px;bottom:16px;z-index:40;font-family:var(--font-body);}
+  .radio-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;background:rgba(var(--navy-900-rgb),.82);border:1px solid rgba(var(--line-rgb),0.16);
     -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
-  .radio-bar:hover{border-color:rgba(185,198,218,0.35);}
+  .radio-bar:hover{border-color:rgba(var(--field-line-rgb),0.35);}
   .radio .rico{width:16px;height:16px;color:var(--spark);flex:none;}
   .radio .rstation{font-size:12px;font-weight:600;letter-spacing:.02em;min-width:78px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ice);}
   .radio .rsub{font-size:9.5px;color:var(--steel-400);letter-spacing:.06em;text-transform:uppercase;}
@@ -121,19 +130,19 @@
   @keyframes eq{0%,100%{height:4px;opacity:.45}50%{height:15px;opacity:1}}
   @media (prefers-reduced-motion:reduce){.radio.playing .eq span{animation:none;height:9px;}}
   .radio .rbtn{width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
-    background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;transition:.15s;}
+    background:linear-gradient(180deg,var(--accent-2),var(--navy-brand));border:none;color:#fff;transition:.15s;}
   .radio .rbtn:hover{filter:brightness(1.12);}
   .radio .rexp{width:28px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;color:var(--steel-400);}
   .radio .rexp:hover{color:var(--ice);}
   .radio .rexp svg{transition:transform .18s;} .radio.open .rexp svg{transform:rotate(180deg);}
-  .radio-panel{position:absolute;right:0;bottom:calc(100% + 6px);width:230px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);
-    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .radio-panel{position:absolute;right:0;bottom:calc(100% + 6px);width:230px;background:rgba(var(--navy-900-rgb),.96);border:1px solid rgba(var(--line-rgb),0.18);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .radio.open .radio-panel{opacity:1;visibility:visible;transform:translateY(0);}
   .radio-panel .ph{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel-400);padding:11px 14px 7px;}
-  .radio-panel .st{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:9px 14px;cursor:pointer;transition:.13s;}
-  .radio-panel .st:hover{background:rgba(74,144,255,.12);color:var(--ice);}
-  .radio-panel .st.active{color:#cfe0ff;box-shadow:inset 2px 0 0 var(--spark);}
-  .radio-panel .vol{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(142,163,192,0.14);}
+  .radio-panel .st{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:13px;padding:9px 14px;cursor:pointer;transition:.13s;}
+  .radio-panel .st:hover{background:rgba(var(--spark-rgb),.12);color:var(--ice);}
+  .radio-panel .st.active{color:var(--accent-tint);box-shadow:inset 2px 0 0 var(--spark);}
+  .radio-panel .vol{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(var(--line-rgb),0.14);}
   .radio-panel .vol svg{width:15px;height:15px;color:var(--steel-400);flex:none;}
   .radio-panel .vol input{flex:1;accent-color:var(--spark);}
 
@@ -141,34 +150,32 @@
     .hub{grid-template-columns:1fr;} .teamtalk{min-height:420px;}
     .tiles{grid-template-columns:repeat(2,1fr);grid-template-rows:auto;}
   }
-  @media(max-width:560px){ .tiles{grid-template-columns:1fr;} .topfull{padding:18px 18px 0;} .wrap{padding:24px 18px 90px;} }
+  @media(max-width:560px){ .tiles{grid-template-columns:1fr;} .tile-stack.wide{grid-template-columns:1fr;} .topfull{padding:18px 18px 0;} .wrap{padding:12px 18px 90px;} }
 
   /* 3K / 4K scaling */
   @media(min-width:1800px){
-    .wrap{max-width:1620px;padding:48px 60px 100px;}
+    .wrap{max-width:1620px;padding:24px 60px 100px;}
     .topfull{padding:32px 60px 0;}
     .hub{gap:24px;} .tiles{gap:24px;} .tile{min-height:240px;padding:26px;}
     .tile-stack{min-height:240px;gap:14px;} .tile-stack .tile{min-height:0;padding:18px 20px;gap:16px;}
     .tile-stack .tile .ic{width:46px;height:46px;} .tile-stack .tile h3{font-size:17px;} .tile-stack .tile p{font-size:13px;}
     .tile .ic{width:56px;height:56px;} .tile h3{font-size:20px;} .tile p{font-size:14px;}
-    .hubtitle h1{font-size:26px;} .hubtitle p{font-size:14px;}
     .brand .logo{font-size:19px;} .clock .time{font-size:19px;} .clock .date{font-size:13px;}
     .tt-head h3{font-size:17px;} .tt-feed .mtext{font-size:14px;} .tt-input input{font-size:15px;}
   }
   @media(min-width:2600px){
-    .wrap{max-width:2200px;padding:70px 90px 130px;}
+    .wrap{max-width:2200px;padding:34px 90px 130px;}
     .topfull{padding:46px 90px 0;}
     .hub{gap:34px;} .tiles{gap:34px;} .tile{min-height:320px;padding:38px;}
     .tile-stack{min-height:320px;gap:18px;} .tile-stack .tile{min-height:0;padding:24px 28px;gap:20px;}
     .tile-stack .tile .ic{width:58px;height:58px;} .tile-stack .tile h3{font-size:22px;} .tile-stack .tile p{font-size:16px;}
     .tile .ic{width:74px;height:74px;} .tile h3{font-size:27px;} .tile p{font-size:18px;}
-    .hubtitle h1{font-size:34px;} .hubtitle p{font-size:18px;}
     .brand .logo{font-size:24px;} .clock .time{font-size:26px;} .clock .date{font-size:16px;}
     .who .badge{font-size:16px;padding:8px 14px;} .who .out{font-size:16px;padding:9px 15px;}
     .tt-head h3{font-size:21px;} .tt-feed .mtext{font-size:17px;} .tt-input input{font-size:18px;padding:14px 16px;}
     .langtoggle{font-size:15px;padding:11px 16px;} .langmenu button{font-size:16px;padding:14px 18px;}
   }
-</style><script src="workshop-forms.js"></script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script><script src="workshop-forms.js"></script></head><body>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
 <div class="topfull">
@@ -176,105 +183,94 @@
     <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se</div></div>
     <div class="topright">
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-      <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
+      <div class="who" data-help-slot><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
     </div>
   </div>
 </div>
 
 <div class="wrap">
-  <div class="hubtitle"><h1 data-i="welcome">Choose a module</h1><p data-i="welcomesub">Full access · all workshop tools</p></div>
   <div class="hub">
     <div class="tiles">
-      <div class="tile" role="link" tabindex="0" onclick="location.href='projects-desktop.html'">
-        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 46h30l8 8h50v52H16z"/><path d="M16 46v-9h24l8 9"/><path d="M30 70h62M30 82h62M30 94h40"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2"/></svg></div>
-        <div><h3 data-i="m_projects">Projects</h3><p data-i="c_projects">Jobs & items</p></div>
+      <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
+        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/><path d="M22 46l19-15 17 9 22-24"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
+        <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
+      
       <div class="tile-stack" aria-label="Customers and suppliers">
         <div class="tile" role="link" tabindex="0" onclick="location.href='customers-desktop.html'">
-          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div><h3 data-i="m_customers">Customers</h3><p data-i="c_customers">Contacts & accounts</p></div>
           <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
         <div class="tile" role="link" tabindex="0" onclick="location.href='suppliers-desktop.html'">
-          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div>
           <div><h3 data-i="m_suppliers">Suppliers</h3><p data-i="c_suppliers">Vendor directory</p></div>
           <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
-        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 104h86"/><rect x="26" y="72" width="15" height="32"/><rect x="52" y="52" width="15" height="52"/><rect x="78" y="34" width="15" height="70"/><path d="M22 46l19-15 17 9 22-24"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></div>
-        <div><h3 data-i="m_estim">Estimations</h3><p data-i="c_estim">Quotes & costing</p></div>
-        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='jobcard-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="28" y="26" width="54" height="70"/><rect x="45" y="19" width="20" height="13"/><path d="M38 50h34M38 63h34M38 76h20"/><path d="M78 78l9 9 16-18" stroke-width="4"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg></div>
         <div><h3 data-i="m_jobcard">Jobcard</h3><p data-i="c_jobcard">Work orders</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='hours-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="56" cy="62" r="38"/><path d="M56 38v24l17 11"/><path d="M56 18v6M56 100v6M16 62h6M90 62h6"/><circle cx="98" cy="28" r="11"/><path d="M98 23v-5M98 38v-4M93 28h-5M108 28h-4"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
         <div><h3 data-i="m_hours">Hours</h3><p data-i="c_hours">Log time & materials</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='planning-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><rect x="18" y="26" width="84" height="76"/><path d="M40 16v20M80 16v20M18 50h84"/><path d="M38 68h12M58 68h12M38 84h12M58 84h12"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><rect x="3" y="5" width="18" height="16"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M8 14h2M13 14h2M8 17h2"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><rect x="3" y="5" width="18" height="16"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M8 14h2M13 14h2M8 17h2"/></svg></div>
         <div><h3 data-i="m_planning">Planning</h3><p data-i="c_planning">Schedule & capacity</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='store-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M58 20l36 19v42L58 100 22 81V39z"/><path d="M22 39l36 19 36-19M58 58v42"/><path d="M40 29l36 19"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M3 9l9-5 9 5v10l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v10"/></svg></div>
         <div><h3 data-i="m_store">Store</h3><p data-i="c_store">Inventory & parts</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
-      <div class="tile" role="link" tabindex="0" onclick="location.href='purchasing-desktop.html'">
-        <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="46" cy="102" r="8"/><circle cx="88" cy="102" r="8"/><path d="M14 20h12l14 62h48a10 10 0 0 0 10-8l10-38H30"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg></div>
-        <div><h3 data-i="m_purchasing">Purchasing</h3><p data-i="c_purchasing">Purchase orders</p></div>
-        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </div>
-      <div class="tile-stack" aria-label="Documents and reports">
-        <div class="tile" role="link" tabindex="0" onclick="location.href='documents-desktop.html'">
-          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 12h5M10 16h5"/></svg></div>
-          <div><h3 data-i="m_documents">Documents</h3><p data-i="c_documents">Files & templates</p></div>
-          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </div>
-        <div class="tile" role="link" tabindex="0" onclick="location.href='reports-desktop.html'">
-          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 3h7l5 5v13H3z"/><path d="M10 3v5h5M8 13h6M8 17h6"/></svg></div>
-          <div><h3 data-i="m_reports">Reports</h3><p data-i="c_reports">Analytics & insights</p></div>
-          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </div>
-      </div>
+
       <div class="tile" role="link" tabindex="0" onclick="location.href='equipment-machines-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><circle cx="60" cy="60" r="18"/><path d="M60 14v14M60 92v14M14 60h14M92 60h14M25 25l10 10M85 85l10 10M95 25l-10 10M35 85l-10 10"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></div>
         <div><h3 data-i="m_equipment">Equipment / Machines</h3><p data-i="c_equipment">Machines & maintenance</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='marketing-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 52v16a10 10 0 0 0 10 10h6l40 20V22L32 42h-6a10 10 0 0 0-10 10z"/><path d="M88 40a26 26 0 0 1 0 40"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
         <div><h3 data-i="m_marketing">Marketing</h3><p data-i="c_marketing">Leads, campaigns & growth</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </div>
       <div class="tile" role="link" tabindex="0" onclick="location.href='quality-desktop.html'">
         <div class="art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M60 12l40 18v28c0 26-18 46-40 52-22-6-40-26-40-52V30z"/><path d="M42 60l13 13 23-23"/></svg></div>
-        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 5-5"/></svg></div>
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 5-5"/></svg></div>
         <div><h3 data-i="m_quality">Quality</h3><p data-i="c_quality">Inspections & defects</p></div>
         <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    <div class="tile-stack wide" aria-label="Documents and reports">
+        <div class="tile" role="link" tabindex="0" onclick="location.href='documents-desktop.html'">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 12h5M10 16h5"/></svg></div>
+          <div><h3 data-i="m_documents">Documents</h3><p data-i="c_documents">Files & templates</p></div>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
+        <div class="tile" role="link" tabindex="0" onclick="location.href='reports-desktop.html'">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M3 3h7l5 5v13H3z"/><path d="M10 3v5h5M8 13h6M8 17h6"/></svg></div>
+          <div><h3 data-i="m_reports">Reports</h3><p data-i="c_reports">Analytics & insights</p></div>
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
       </div>
     </div>
 
     <div class="teamtalk">
       <div class="ttart"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 34h58a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H42l-16 14V76h-6a8 8 0 0 1-8-8V42a8 8 0 0 1 8-8z"/><path d="M34 50h30M34 62h20"/></svg></div>
       <div class="tt-head">
-        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <div><h3 data-i="m_team">Team Talk</h3><p data-i="c_team">Internal feed</p></div>
       </div>
       <div class="tt-feed">
@@ -320,41 +316,31 @@
   </button>
 </div>
 
-<script>
-  function combineModuleTiles(){
-    [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning'],['m_store','m_purchasing','Store and purchasing']].forEach(([firstKey,secondKey,label])=>{
-      const first=document.querySelector(`[data-i="${firstKey}"]`)?.closest('.tile');
-      const second=document.querySelector(`[data-i="${secondKey}"]`)?.closest('.tile');
-      if(!first||!second||first.parentElement.classList.contains('tile-stack'))return;
-      const stack=document.createElement('div');stack.className='tile-stack';stack.setAttribute('aria-label',label);
-      first.parentElement.insertBefore(stack,first);stack.append(first,second);
-    });
-  }
-  combineModuleTiles();
+<script src="workshop-ui.js"></script><script>
   const T={
-    sv:{role:"Admin",logout:"Logga ut",welcome:"Välj en modul",welcomesub:"Full åtkomst · alla verktyg",
+    sv:{role:"Admin",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
-      m_estim:"Kalkyler",c_estim:"Offerter & kostnad",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
+      m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
-      m_store:"Lager",c_store:"Inventarie & delar",m_purchasing:"Inköp",c_purchasing:"Inköpsordrar",
+      m_store:"Lager",c_store:"Inventarie & delar",
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
       m_reports:"Rapporter",c_reports:"Besiktning & test",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhåll",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
-    en:{role:"Admin",logout:"Log out",welcome:"Choose a module",welcomesub:"Full access · all workshop tools",
+    en:{role:"Admin",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
-      m_estim:"Estimations",c_estim:"Quotes & costing",m_jobcard:"Jobcard",c_jobcard:"Work orders",
+      m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
-      m_store:"Store",c_store:"Inventory & parts",m_purchasing:"Purchasing",c_purchasing:"Purchase orders",
+      m_store:"Store",c_store:"Inventory & parts",
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
       m_reports:"Reports",c_reports:"Inspection & test",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
-    mk:{role:"Admin",logout:"Odjavi se",welcome:"Izberi modul",welcomesub:"Poln pristap · site alatki",
+    mk:{role:"Admin",logout:"Odjavi se",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
-      m_estim:"Procenki",c_estim:"Ponudi i trošoci",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
+      m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
       m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_planning:"Planiranje",c_planning:"Raspored i kapacitet",
-      m_store:"Magacin",c_store:"Inventar i delovi",m_purchasing:"Nabavki",c_purchasing:"Nabavni nalozi",
+      m_store:"Magacin",c_store:"Inventar i delovi",
       m_suppliers:"Dobavuvači",c_suppliers:"Registar na dobavuvači",m_documents:"Dokumenti",c_documents:"Datoteki i šabloni",
       m_reports:"Izveštai",c_reports:"Inspekcija i test",m_equipment:"Oprema / Mašini",c_equipment:"Mašini i održuvanje",
       m_marketing:"Marketing",c_marketing:"Potencijalni klienti, kampanji i razvoj",m_quality:"Kvalitet",c_quality:"Inspekcii i defekti",

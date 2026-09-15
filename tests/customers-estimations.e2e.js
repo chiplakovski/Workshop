@@ -85,44 +85,225 @@ async function customerWorkflow(page) {
   await page.waitForTimeout(60);
   assert.ok((await page.locator('body').innerText()).includes(CUSTOMER_EDITED_NAME), 'customer disappeared after reload');
   step('Customers: persisted record survives reload');
+
+  // The shell is fixed and the quick actions ride in the header rather than
+  // sitting at the foot of the page.
+  const shell = await page.evaluate(() => {
+    const bar = document.querySelector('.actionbar');
+    const head = document.querySelector('.modhead');
+    const wrap = document.querySelector('.wrap');
+    const br = bar.getBoundingClientRect(), hr = head.getBoundingClientRect();
+    wrap.scrollTop = 400;
+    return {
+      windowScrolls: document.documentElement.scrollHeight - window.innerHeight,
+      bodyIsTheScroller: getComputedStyle(wrap).overflowY === 'auto',
+      sidebarFixed: getComputedStyle(document.querySelector('.module-sidebar')).position === 'fixed',
+      barVisible: br.height > 0,
+      barInHeader: br.top >= hr.top - 1 && br.bottom <= hr.bottom + 1,
+      buttons: [...bar.querySelectorAll('button')].length,
+      headTopAfterScroll: Math.round(document.querySelector('.modhead').getBoundingClientRect().top)
+    };
+  });
+  assert.ok(shell.windowScrolls <= 2, 'the window itself must not scroll');
+  assert.ok(shell.sidebarFixed, 'the sidebar stands fixed');
+  assert.ok(shell.bodyIsTheScroller, 'the page body is what scrolls');
+  assert.ok(shell.barVisible, 'the quick actions must actually be on screen, not in a hidden header');
+  assert.ok(shell.barInHeader, 'and they must sit in the header, not at the foot of the page');
+  assert.equal(shell.buttons, 7, 'all seven actions moved up');
+  assert.equal(shell.headTopAfterScroll, 0, 'the header stays put while the body scrolls under it');
+  step('Customers: the shell is fixed and the quick actions sit in the header');
+
+  // The body fills the shell rather than shrink-wrapping and leaving the right
+  // of the window empty, and no column runs off the edge.
+  const layout = await page.evaluate(() => {
+    const wrap = document.querySelector('.wrap');
+    const shell = wrap.parentElement;
+    const cols = [...document.querySelectorAll('.crmgrid > .col')].map((c) => c.getBoundingClientRect());
+    const pager = document.querySelector('.pager');
+    const nav = document.querySelector('.pager .pnav');
+    return {
+      unusedToTheRight: Math.round(shell.getBoundingClientRect().right - wrap.getBoundingClientRect().right),
+      colWidths: cols.map((c) => Math.round(c.width)),
+      rightColumnEnd: Math.round(cols[cols.length - 1].right),
+      windowWidth: window.innerWidth,
+      pagerNavFlushRight: pager && nav ? Math.round(pager.getBoundingClientRect().right - nav.getBoundingClientRect().right) : null
+    };
+  });
+  assert.ok(layout.unusedToTheRight <= 2, `the body must fill the shell, ${layout.unusedToTheRight}px was left empty`);
+  assert.ok(layout.rightColumnEnd <= layout.windowWidth,
+    'the right-hand column must not be cut off by the window edge');
+  assert.equal(layout.colWidths.length, 3, 'three columns');
+  assert.ok(layout.colWidths[1] > layout.colWidths[0],
+    'the middle column takes the space the other two do not need');
+  assert.ok(layout.pagerNavFlushRight !== null && layout.pagerNavFlushRight <= 2,
+    'the page nav sits against the right edge of the list');
+  step('Customers: the layout fills the window and nothing is clipped');
 }
+
+const nativeDialogs = [];
 
 async function estimationWorkflow(page) {
   const quoteVisible = await page.evaluate((name) => WorkshopData.listEstimations().some((item) => item.customer === name && item.title === 'E2E cross-module quote'), CUSTOMER_EDITED_NAME);
   assert.equal(quoteVisible, true, 'quote created in Customers is not visible to Estimations data');
   step('Estimations: sees the quote created by Customers');
 
-  await page.locator('button[onclick="openNewEst()"]').first().click();
-  await page.locator('#neCustomer').selectOption({ label: CUSTOMER_EDITED_NAME });
-  await page.locator('#neTitle').fill(ESTIMATION_TITLE);
-  await page.locator('#neOppRef').fill('E2E-OPP-39');
-  await page.locator('#neTemplate').selectOption('blank');
-  await saveModal(page);
+  // The module is project-first: every card is a project, and picking one is how you start pricing.
+  const rowCount = await page.locator('.kcard').count();
+  assert.ok(rowCount > 0, 'the project board is empty');
+  // Pick a card that is still open, not one in a terminal lane: the steps below edit it, and an
+  // accepted estimate is read-only by design. Which lane comes first is a layout choice, not a rule.
+  const listedProject = await page.evaluate(() => {
+    const open = [...document.querySelectorAll('.kcard')].find((c) => {
+      const e = getEst(Number(c.dataset.estId));
+      return e && !['accepted', 'declined', 'expired'].includes(e.status);
+    });
+    return open ? open.dataset.projectNo : null;
+  });
+  assert.ok(listedProject, 'the board must show at least one project still open for pricing');
+  await page.locator(`.kcard[data-project-no="${listedProject}"]`).click();
+  const selected = await page.evaluate(() => { const e = getEst(selectedId); return { project: e.projectNo, ref: estRef(e) }; });
+  assert.equal(selected.project, listedProject, 'clicking a project must select that project');
+  assert.equal(selected.ref, listedProject, "the estimate's reference is the project's own number");
+  step('Estimations: the board is projects, and picking one selects its estimate');
 
-  let estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
-  assert.ok(estimation, 'new estimation was not persisted');
-  assert.equal(estimation.customer, CUSTOMER_EDITED_NAME);
-  assert.equal(estimation.status, 'draft');
-  step('Estimations: create persists a shared draft');
+  // A card's column IS its status, and every project is on the board somewhere.
+  const board = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('.kcard')];
+    const active = ESTIMATIONS.filter((e) => !e.archived && e.projectNo && PROJECTS[e.projectNo]);
+    const misplaced = cards.filter((c) => {
+      const e = getEst(Number(c.dataset.estId));
+      const col = c.closest('.kcol').dataset.stage;
+      return !KCOLS.find((k) => k.k === col).has.includes(e.status);
+    }).map((c) => c.dataset.projectNo);
+    return { cards: cards.length, active: active.length, misplaced,
+      lanes: [...document.querySelectorAll('.kcol')].map((c) => c.dataset.stage) };
+  });
+  assert.equal(board.cards, board.active, 'every project must be on the board, none dropped');
+  assert.deepEqual(board.misplaced, [], 'a card must sit in the column its status names');
+  assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
+  step('Estimations: the board shows every project in the lane its status names');
+
+  // Dragging a card is the stepper by another name: it obeys the same transition rules. Driven with
+  // a real mouse, because that is the only way to prove the gesture a person makes actually works.
+  const dragCard = async (estId, stage) => {
+    const card = page.locator(`.kcard[data-est-id="${estId}"]`);
+    const lane = page.locator(`.kcol[data-stage="${stage}"]`);
+    const cb = await card.boundingBox();
+    const tb = await lane.boundingBox();
+    const [sx, sy] = [cb.x + 40, cb.y + cb.height / 2];
+    const [ex, ey] = [tb.x + tb.width / 2, tb.y + 60];
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    for (let k = 1; k <= 12; k += 1) {
+      await page.mouse.move(sx + ((ex - sx) * k) / 12, sy + ((ey - sy) * k) / 12);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    // The app asks in its own markup, not through window.confirm() - which a sandboxed frame refuses.
+    const ask = page.locator('.wask .waskyes');
+    if (await ask.count()) { await ask.click(); await page.waitForTimeout(300); }
+  };
+  // Any native dialog here is a bug: it would be invisible in the packaged demo.
+  page.on('dialog', (d) => { nativeDialogs.push(d.message()); d.dismiss(); });
+
+  const draftId = await page.evaluate(() => {
+    const e = ESTIMATIONS.find((x) => x.status === 'draft' && x.projectNo);
+    return e ? e.id : null;
+  });
+  assert.ok(draftId, 'the seed needs a draft to drag');
+  await dragCard(draftId, 'review');
+  assert.equal(await page.evaluate((i) => getEst(i).status, draftId), 'review',
+    'dragging a Draft card into In Review must move it');
+  const selectionKept = await page.evaluate(() => getEst(selectedId).projectNo);
+  assert.equal(selectionKept, listedProject, 'a drag must not be mistaken for a click that selects');
+  step('Estimations: dragging a card between lanes moves the estimate');
+
+  // A board is a board: a card goes to any lane, including straight past the middle of the workflow.
+  // The move is taken, and the estimate's history says the usual order was bypassed.
+  const jumped = await page.evaluate(() =>
+    ESTIMATIONS.find((e) => e.status === 'draft' && e.projectNo)
+      || ESTIMATIONS.find((e) => e.status === 'review' && e.projectNo));
+  await dragCard(jumped.id, 'accepted');
+  const after = await page.evaluate((i) => {
+    const e = getEst(i);
+    return { status: e.status, last: e.history[e.history.length - 1].action };
+  }, jumped.id);
+  assert.equal(after.status, 'accepted', 'a card must be able to go straight to Accepted');
+  assert.match(after.last, /out of the usual order/,
+    'a move that skips the usual order must say so in the history, not pass as a normal step');
+
+  // Even a closed stage lets go - a customer changing their mind is a real thing.
+  const acceptedId = await page.evaluate(() =>
+    ESTIMATIONS.find((e) => e.status === 'accepted' && e.projectNo && e.id !== getEst(selectedId).id).id);
+  await dragCard(acceptedId, 'declined');
+  assert.equal(await page.evaluate((i) => getEst(i).status, acceptedId), 'declined',
+    'an accepted estimate must be movable to Declined');
+  assert.equal(await page.evaluate(() => !document.querySelector('.kghost')), true,
+    'the dragged card must never be left behind on screen');
+  step('Estimations: any lane takes any card, and an unusual move is recorded as one');
+
+  // The board tests move real estimates about; put them back so what follows sees the world it expects.
+  await page.evaluate(([a, b]) => {
+    [[a, 'draft'], [b, 'accepted']].forEach(([id, status]) => {
+      const e = getEst(id); if (e) { e.status = status; syncEstimation(e); }
+    });
+    renderAll();
+  }, [jumped.id, acceptedId]);
+  await page.waitForTimeout(300);
+
+  // The offer is the whole project as one customer-facing document, produced from the top bar.
+  const offer = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    window.print = () => { window.__printed = (window.__printed || 0) + 1; };
+    printOffer(e.id);
+    const sheet = document.getElementById('printSheet');
+    const base = baseAndIncludedLines(e).filter((l) => !l.fromOption);
+    return {
+      ref: document.querySelector('.offerbar .offerref').textContent.trim(),
+      off: document.querySelector('.offerbar').classList.contains('off'),
+      dialogs: window.__printed,
+      missing: base.filter((l) => !sheet.textContent.includes(l.desc)).map((l) => l.desc),
+      carriesTotal: sheet.textContent.includes(computeTotals(e).grandTotal.toFixed(2)),
+      leaksInternal: /overhead|contingency|margin/i.test(sheet.textContent),
+      deadOpenProject: [...document.querySelectorAll('.dbtns .tbtn')].some((b) => /Open Project|Convert to Project/.test(b.textContent)),
+    };
+  });
+  assert.equal(offer.off, false, 'a selected project must have its offer actions live');
+  assert.equal(offer.ref, listedProject, 'the offer bar must name the project it produces');
+  assert.equal(offer.dialogs, 1, 'Print must open the print dialog exactly once');
+  assert.deepEqual(offer.missing, [], 'the offer must carry every priced line of the project');
+  assert.equal(offer.carriesTotal, true, 'the offer must carry the grand total');
+  assert.equal(offer.leaksInternal, false, 'a customer-facing offer must not print internal cost or margin');
+  assert.equal(offer.deadOpenProject, false, 'Open Project led back to this same page and is gone');
+  step('Estimations: the top bar produces the whole project as one offer');
+
+  // The items being priced are the project's items - not a second list kept here.
+  const items = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    return { estimate: e.workItems.map((w) => w.no), project: projectItems(e.projectNo).map((i) => i.no) };
+  });
+  assert.deepEqual(items.estimate, items.project, "the estimate must price exactly the project's items, in the project's order");
+  assert.ok(items.project.length > 0, 'the selected project has no items to price');
+  step('Estimations: work items are the project items themselves');
+
+  // References are read off the project: <project no>-<item position>.
+  const refs = await page.evaluate(() => Array.from(document.querySelectorAll('.itemref')).map((x) => x.textContent));
+  assert.equal(refs[0], `${listedProject}-01`);
+  if (refs.length > 1) assert.equal(refs[1], `${listedProject}-02`);
+  step('Estimations: item references are numbered from the project');
 
   await page.evaluate(() => openEditEst(selectedId));
   await page.locator('#eeRfq').fill('E2E-RFQ-0039');
   await page.locator('#eeDelivery').fill('4 weeks');
   await page.locator('#eeTerms').fill('45 days');
   await saveModal(page);
-  estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
+  let estimation = await page.evaluate(() => WorkshopData.listEstimations().find((item) => item.id === getEst(selectedId).sharedId));
   assert.equal(estimation.customerRfq, 'E2E-RFQ-0039');
   assert.equal(estimation.deliveryTime, '4 weeks');
   step('Estimations: commercial edit persists');
 
-  await page.evaluate(() => openAddWorkItem(selectedId));
-  await page.locator('#awNo').fill('E2E-WI-01');
-  await page.locator('#awDesc').fill('Guard platform fabrication');
-  await saveModal(page);
-  const workItemIndex = await page.evaluate(() => getEst(selectedId).workItems.findIndex((item) => item.no === 'E2E-WI-01'));
-  assert.ok(workItemIndex >= 0, 'work item was not added');
-
-  await page.evaluate((index) => openAddLine(selectedId, index), workItemIndex);
+  // Pricing is what this module owns: a line lands on a real project item.
+  await page.evaluate(() => openAddLine(selectedId, 0));
   await page.locator('#aiDesc').fill('Stainless guard rail');
   await page.locator('#aiCat').selectOption('material');
   await page.locator('#aiQty').fill('2');
@@ -131,35 +312,51 @@ async function estimationWorkflow(page) {
   await page.locator('#aiCost').fill('900');
   await page.locator('#aiWaste').fill('5');
   await saveModal(page);
-  estimation = await page.evaluate((title) => WorkshopData.listEstimations().find((item) => item.title === title), ESTIMATION_TITLE);
-  const workItem = estimation.workItems.find((item) => item.no === 'E2E-WI-01');
-  assert.ok(workItem && workItem.lines.some((line) => line.desc === 'Stainless guard rail' && line.qty === 2));
+  estimation = await page.evaluate(() => WorkshopData.listEstimations().find((item) => item.id === getEst(selectedId).sharedId));
+  const pricedItem = estimation.workItems.find((item) => item.no === items.project[0]);
+  assert.ok(pricedItem && pricedItem.lines.some((line) => line.desc === 'Stainless guard rail' && line.qty === 2),
+    'the priced line must be stored against the project item it was added to');
   assert.ok(estimation.sellingPrice > 0, 'cost line did not update the shared estimation total');
-  step('Estimations: work item and priced line persist');
+  step('Estimations: a priced line attaches to a real project item');
 
-  const beforeDuplicate = await page.evaluate(() => WorkshopData.listEstimations().map((item) => item.id));
-  await page.evaluate(() => duplicateEst(selectedId));
-  const duplicated = await page.evaluate((ids) => WorkshopData.listEstimations().find((item) => !ids.includes(item.id)), beforeDuplicate);
-  assert.ok(duplicated, 'duplicate estimation was not created');
-  assert.notEqual(duplicated.no, estimation.no);
-  step('Estimations: duplicate creates an independent shared record');
+  // The estimate is the project's price, so the project must carry the same figure.
+  const rolled = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    const p = WorkshopData.getProjects().find((x) => x.no === e.projectNo);
+    return { quoted: p.quotedValue, net: computeTotals(e).netSellingPrice, customer: p.customer };
+  });
+  assert.equal(rolled.quoted, rolled.net, "the project's quoted value must follow the estimate");
+  assert.ok(rolled.customer, 'writing the price back must not blank the project customer');
+  step('Estimations: totals roll back onto the project');
 
-  page.once('dialog', (dialog) => dialog.accept());
-  await page.evaluate(() => deleteEst(selectedId));
-  const duplicateStillExists = await page.evaluate((id) => WorkshopData.listEstimations().some((item) => item.id === id), duplicated.id);
-  assert.equal(duplicateStillExists, false, 'deleted duplicate remained in shared data');
-  step('Estimations: delete removes the unlinked duplicate from shared data');
+  // An item removed from the project stops being priced, but its pricing is reported, not lost.
+  const retired = await page.evaluate(() => {
+    const e = getEst(selectedId);
+    const first = projectItems(e.projectNo)[0];
+    const jc = WorkshopData.listJobcards().find((j) => j.no === first.no);
+    WorkshopData.upsertJobcard(Object.assign({}, jc, { archived: true }));
+    syncWorkItemsToProject(e);
+    return { priced: e.workItems.map((w) => w.no), retired: (e.retiredWorkItems || []).map((w) => w.no) };
+  });
+  assert.equal(retired.priced.includes(items.project[0]), false, 'an archived item must stop being priced');
+  assert.ok(retired.retired.includes(items.project[0]), 'its pricing must be retired and reported, never silently dropped');
+  step('Estimations: pricing for a removed item is retired, not lost');
 
   await page.reload({ waitUntil: 'load' });
-  const restored = await page.evaluate((title) => {
-    const shared = WorkshopData.listEstimations().find((item) => item.title === title);
-    const local = shared && ESTIMATIONS.find((item) => item.sharedId === shared.id);
+  const restored = await page.evaluate((no) => {
+    const local = ESTIMATIONS.find((item) => item.projectNo === no);
     if (local) { selectedId = local.id; renderAll(); }
-    return shared;
-  }, ESTIMATION_TITLE);
-  assert.ok(restored, 'original estimation is missing from shared data after reload');
-  assert.ok((await page.locator('body').innerText()).includes(ESTIMATION_TITLE), 'estimation disappeared after reload');
-  step('Estimations: original record survives reload');
+    return local ? { ref: estRef(local), rfq: local.customerRfq } : null;
+  }, listedProject);
+  assert.ok(restored, 'the project estimate is missing after reload');
+  assert.equal(restored.ref, listedProject, 'the project reference must survive a reload');
+  assert.equal(restored.rfq, 'E2E-RFQ-0039', 'the commercial edit must survive a reload');
+  step('Estimations: the project estimate survives reload');
+
+  assert.deepEqual(nativeDialogs, [],
+    'nothing may use window.confirm()/alert(): a sandboxed frame returns false without showing them, '
+    + 'so the guarded action silently does nothing');
+  step('Estimations: every question is asked in the page, never through a native dialog');
 }
 
 async function main() {

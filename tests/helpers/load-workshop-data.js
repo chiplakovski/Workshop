@@ -35,6 +35,9 @@ function buildEnv(seedEntries,customLocalStorage){
   // Mirrors jobcard-desktop.html's <script src="jobcard-equipment-rules.js"></script> loading BEFORE
   // workshop-data.js — startJobcardOperation() depends on it being present on `window`.
   g.JobcardEquipmentRules=require(path.join(__dirname,'..','..','jobcard-equipment-rules.js'));
+  // Mirrors marketing-desktop.html's <script src="prospect-rules.js"></script> loading BEFORE
+  // workshop-data.js — recordProspectSweep() triages through it rather than reimplementing it.
+  g.ProspectRules=require(path.join(__dirname,'..','..','prospect-rules.js'));
   if(seedEntries){for(const[key,value]of Object.entries(seedEntries))g.localStorage.setItem(key,value);}
   return g;
 }

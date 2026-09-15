@@ -9,6 +9,15 @@
     const qty=Math.max(0,Number(it.qty)||0),sell=Math.max(0,Number(it.sell)||0),disc=Math.min(100,Math.max(0,Number(it.disc)||0));
     return money(qty*sell*(1-disc/100));
   }
+  // VAT on a line is charged on that line's already-discounted sell total.
+  function lineVat(it){
+    const tax=Math.min(100,Math.max(0,Number(it.tax)||0));
+    return money(lineTotal(it)*tax/100);
+  }
+  // What the line actually costs the customer: the discounted sell total plus its own VAT. This is
+  // the figure the items table, the printed offer and an item's own sheet all show, so a reader
+  // never has to add the tax column up in their head.
+  function lineGross(it){return money(lineTotal(it)+lineVat(it));}
   // Internal cost: for MATERIAL lines, waste% inflates the quantity actually consumed (offcuts, kerf, spoilage).
   function lineCostTotal(it){
     const qty=Math.max(0,Number(it.qty)||0),cost=Math.max(0,Number(it.cost)||0);
@@ -26,7 +35,94 @@
     const includedOptLines=(e.options||[]).filter(o=>o.included).flatMap(o=>o.lines.map(l=>Object.assign({},l,{fromOption:o.name,optionId:o.id})));
     return base.concat(includedOptLines);
   }
-  const EstimationRules={money,lineTotal,lineCostTotal,baseAndIncludedLines};
+  // ── The estimate's work items ARE the project's items ──
+  // An estimate prices work that a project already describes: the project owns which items exist,
+  // what they are called and what order they come in, and the estimate owns only their pricing.
+  // Reconciling on every read is what keeps that true - an item added, renamed or reordered on the
+  // project shows up here without a second list that can drift away from it.
+
+  // An item's reference is read off the project, not invented here: the project number plus the
+  // item's position in it, so P-26-0008's second item is always P-26-0008-02.
+  function itemEstRef(projectNo,seq){
+    const n=Math.max(1,Math.floor(Number(seq)||1));
+    return String(projectNo||'')+'-'+String(n).padStart(2,'0');
+  }
+
+  // Rebuilds the priced work items from the project's current items, carrying each item's saved
+  // lines across by item number. Pricing for an item that has since left the project is NOT
+  // discarded - it is returned separately as `retired`, so it can be reported rather than silently
+  // dropped, and comes back intact if the item is restored. Pass previously retired items back in
+  // as part of `stored` for that to work.
+  function reconcileWorkItems(projectItems,stored){
+    const byNo=new Map();
+    (stored||[]).forEach(w=>{if(w&&w.no!=null&&!byNo.has(w.no))byNo.set(w.no,w);});
+    const claimed=new Set();
+    const workItems=(projectItems||[]).map((item,i)=>{
+      const prev=byNo.get(item.no);
+      if(prev)claimed.add(item.no);
+      return{no:item.no,seq:i+1,desc:item.desc||String(item.no),
+        lines:prev&&Array.isArray(prev.lines)?prev.lines:[],
+        // The lock and the effort belong to the pricing, not to the project's item record, so they
+        // are carried across with the lines rather than reset every time the project is re-read.
+        lock:prev&&prev.lock?prev.lock:null,
+        days:prev&&prev.days!=null?prev.days:0,
+        people:prev&&prev.people!=null?prev.people:0};
+    });
+    const retired=(stored||[]).filter(w=>w&&w.no!=null&&!claimed.has(w.no)&&Array.isArray(w.lines)&&w.lines.length);
+    return{workItems,retired};
+  }
+
+  // ── Locking an item's calculation ──
+  // Once an item's pricing is agreed it can be locked, so the figures behind a quoted price cannot
+  // drift without someone taking responsibility for the change. A lock is never just a flag: it
+  // records who set it and when, and every lock and unlock is appended to the item's own trail, so
+  // the question "who changed this, and why" always has an answer on the item itself.
+  function isItemLocked(wi){return !!(wi&&wi.lock&&wi.lock.locked);}
+  // What the estimator may do to an item's cost lines. A locked item is read-only until unlocked.
+  function canEditItemLines(wi){return !isItemLocked(wi);}
+
+  function lockTrail(lock){return (lock&&Array.isArray(lock.trail))?lock.trail:[];}
+
+  // Returns the NEW lock state; callers assign it. `by` and `at` are supplied by the caller rather
+  // than read from a clock here, so this stays pure and testable.
+  function lockItem(lock,by,at){
+    return{locked:true,by:by||'',at:at||'',trail:lockTrail(lock).concat({action:'locked',by:by||'',at:at||''})};
+  }
+  // Unlocking always carries a reason: it is the one moment an agreed figure becomes editable again.
+  function unlockItem(lock,by,at,reason){
+    return{locked:false,by:'',at:'',
+      trail:lockTrail(lock).concat({action:'unlocked',by:by||'',at:at||'',reason:(reason||'').trim()})};
+  }
+  // The trail newest-first, for display.
+  function itemLockHistory(wi){return lockTrail(wi&&wi.lock).slice().reverse();}
+
+  // ── How long, and how many ──
+  // Priced lines say what an item costs; they do not say how long it takes or how many people it
+  // occupies. Those are estimated per item, because that is the only level anyone can judge them
+  // at, and the project's own figures are derived from them rather than typed a second time.
+  function itemDays(wi){const n=Number(wi&&wi.days);return Number.isFinite(n)&&n>0?n:0;}
+  function itemPeople(wi){const n=Number(wi&&wi.people);return Number.isFinite(n)&&n>0?n:0;}
+  // One item's labour commitment: people working it, for as long as it lasts.
+  function itemPersonDays(wi){return money(itemDays(wi)*itemPeople(wi));}
+
+  // Start to finish, the items run one after another, so the duration is their sum. The average
+  // crew is weighted by duration - a two-week item with one person and a one-day item with six
+  // does not average to three and a half. An item with no duration cannot weight anything, so it
+  // is left out of the average rather than counted as zero.
+  function effortTotals(workItems){
+    const items=(workItems||[]).filter(w=>w&&!w.isOption);
+    const totalDays=money(items.reduce((a,w)=>a+itemDays(w),0));
+    const personDays=money(items.reduce((a,w)=>a+itemPersonDays(w),0));
+    const weighted=items.filter(w=>itemDays(w)>0&&itemPeople(w)>0);
+    const weightedDays=weighted.reduce((a,w)=>a+itemDays(w),0);
+    const avgPeople=weightedDays>0?money(weighted.reduce((a,w)=>a+itemPersonDays(w),0)/weightedDays):0;
+    const peakPeople=items.reduce((a,w)=>Math.max(a,itemPeople(w)),0);
+    const estimated=items.filter(w=>itemDays(w)>0).length;
+    return{totalDays,personDays,avgPeople,peakPeople,estimated,items:items.length};
+  }
+
+  const EstimationRules={money,lineTotal,lineVat,lineGross,lineCostTotal,baseAndIncludedLines,itemEstRef,reconcileWorkItems,itemDays,itemPeople,itemPersonDays,effortTotals,
+    isItemLocked,canEditItemLines,lockItem,unlockItem,itemLockHistory};
   root.EstimationRules=EstimationRules;
   if(typeof module!=='undefined'&&module.exports)module.exports=EstimationRules;
 })(typeof window!=='undefined'?window:globalThis);

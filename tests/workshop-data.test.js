@@ -1487,6 +1487,96 @@ test('legacy migration: repeated migration (reloading the app) does not duplicat
   assert.equal(secondCount,1,'the record must not be duplicated on a subsequent load');
 });
 
+test('tenders: creating and editing survive a fresh application load', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const created=WD.upsertMarketingTender({company:'Persistence Test Co',ref:'RFQ-TEST-01',documents:['drawing.pdf'],linkedEstimateNo:'EST-TEST',value:250});
+  assert.ok(created.id);
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.deepEqual(reloaded.findMarketingTender(created.id),created);
+  reloaded.upsertMarketingTender({id:created.id,company:'Updated Test Co',ref:created.ref,bidDecision:'bid',value:null});
+  const saved=loadWorkshopData(null,localStorage).findMarketingTender(created.id);
+  assert.equal(saved.company,'Updated Test Co');
+  assert.equal(saved.bidDecision,'bid');
+  assert.equal(saved.value,null);
+  assert.deepEqual(saved.documents,['drawing.pdf']);
+  assert.equal(saved.linkedEstimateNo,'EST-TEST');
+  assert.equal(reloaded.getMarketingTenders().filter(t=>t.id===created.id).length,1);
+});
+
+test('tenders: old v5 records receive the former demo register without replacing existing data', ()=>{
+  const older=minimalState({version:5,marketingLeads:[{id:701,company:'Keep this lead'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:JSON.stringify(older)});
+  assert.equal(WD.getMarketingTenders().length,5);
+  assert.equal(WD.getMarketingLeads()[0].company,'Keep this lead');
+  WD.upsertMarketingTender({id:1,ref:'RFQ-2026-011',company:'Edited demo'});
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.equal(reloaded.getMarketingTenders().length,5);
+  assert.equal(reloaded.findMarketingTender(1).company,'Edited demo');
+});
+
+test('tenders: backups preserve an empty register and restore records with safe counters', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const backup=WD.get();
+  backup.marketingTenders=[];
+  assert.equal(WD.importBackup(backup).success,true);
+  assert.deepEqual(loadWorkshopData(null,localStorage).getMarketingTenders(),[]);
+  const year=new Date().getFullYear();
+  backup.marketingTenders=[{id:800,ref:`RFQ-${year}-811`,company:'Imported Co',value:0}];
+  backup.counters.marketingTender=1;
+  assert.equal(WD.importBackup(backup).success,true);
+  const created=WD.upsertMarketingTender({company:'Next Co'});
+  assert.equal(created.id,801);
+  assert.equal(created.ref,`RFQ-${year}-812`,'skip a reference already used by an imported record');
+  assert.equal(loadWorkshopData(null,localStorage).findMarketingTender(800).value,0);
+  assert.equal(WD.getDataHealth().counts.marketingTenders,2);
+  const before=WD.get();
+  assert.equal(WD.importBackup({...backup,marketingTenders:'broken'}).success,false);
+  assert.deepEqual(WD.get(),before,'invalid imports must leave the entire state unchanged');
+});
+
+test('tenders: ids and references continue after reload', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const first=WD.upsertMarketingTender({company:'First Co'});
+  const second=loadWorkshopData(null,localStorage).upsertMarketingTender({company:'Second Co'});
+  assert.ok(second.id>first.id);
+  assert.notEqual(second.ref,first.ref);
+});
+
+test('tenders: unknown value stays absent while an explicit zero remains zero', ()=>{
+  const WD=loadWorkshopData();
+  for(const value of [undefined,null,'','   ']){
+    const record=WD.upsertMarketingTender({company:'No budget Co',value});
+    assert.equal(record.value,null);
+  }
+  assert.equal(WD.upsertMarketingTender({company:'Zero Co',value:0}).value,0);
+});
+
+test('tenders: invalid edits are rejected without changing records or counters', ()=>{
+  const WD=loadWorkshopData();
+  const record=WD.upsertMarketingTender({company:'Test Co',ref:'RFQ-UNIQUE'});
+  for(const payload of [
+    {company:'   '},
+    {company:'Other Co',ref:'rfq-unique'},
+    {company:'Missing Co',id:999999},
+    ...[-1,Infinity,NaN,'invalid'].map(value=>({id:record.id,company:'Changed Co',value}))
+  ]){
+    const before=WD.get();
+    assert.ok(WD.upsertMarketingTender(payload).error);
+    assert.deepEqual(WD.get(),before);
+  }
+  assert.equal(WD.findMarketingTender(999999),null);
+});
+
+test('tenders: getter results and saved payloads cannot mutate shared records', ()=>{
+  const WD=loadWorkshopData();
+  const payload={company:'Cloned Co',documents:['original.pdf']};
+  const saved=WD.upsertMarketingTender(payload);
+  payload.documents.push('payload-edit.pdf');
+  saved.documents.push('result-edit.pdf');
+  WD.getMarketingTenders()[0].documents.push('getter-edit.pdf');
+  assert.deepEqual(WD.findMarketingTender(saved.id).documents,['original.pdf']);
+});
+
 test('legacy migration: Marketing leads/opportunities/campaigns persist through the shared API', ()=>{
   const WD=loadWorkshopData();
   const before=WD.getMarketingLeads().length;
@@ -3740,7 +3830,7 @@ test('backup validation and old-state normalization include documentFolders and 
 // ── Pass 3.35: real Store item creation ─────────────────────────────────────────────
 test('inventory: create item persists a normalized, immediately usable Store record', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  const created=WD.createInventoryItem({code:' test-item-01 ',description:'Test plate',category:'Plate',unit:'ea',location:'Z1-01',stock:12,reserved:2,minStock:4,reorderQty:10,avgCost:25,lastPrice:27,supplier:'Test Supplier'});
+  const created=WD.createInventoryItem({code:' test-item-01 ',description:'Test plate',group:'materials',category:'Plate',unit:'ea',location:'Z1-01',stock:12,reserved:2,minStock:4,reorderQty:10,avgCost:25,lastPrice:27,supplier:'Test Supplier'});
   assert.equal(created.code,'TEST-ITEM-01');
   assert.equal(created.unit,'EA');
   assert.equal(created.status,'good');
@@ -3752,10 +3842,10 @@ test('inventory: create item persists a normalized, immediately usable Store rec
 test('inventory: duplicate, incomplete, invalid and over-reserved items are rejected atomically', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().inventory.length;
-  assert.ok(WD.createInventoryItem({code:'SS-SHT-304-2.0',description:'Duplicate',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW-1',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW ITEM',description:'Bad code',category:'Plate',unit:'EA',location:'A1'}).error);
-  assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',category:'Plate',unit:'EA',location:'A1',stock:1,reserved:2}).error);
+  assert.ok(WD.createInventoryItem({code:'SS-SHT-304-2.0',description:'Duplicate',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-1',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW ITEM',description:'Bad code',group:'materials',unit:'EA',location:'A1'}).error);
+  assert.ok(WD.createInventoryItem({code:'NEW-2',description:'Over reserved',group:'materials',unit:'EA',location:'A1',stock:1,reserved:2}).error);
   assert.equal(WD.get().inventory.length,before);
 });
 
@@ -3791,7 +3881,7 @@ test('backup validation and normalization include purchase RFQs and supplier inv
 // â”€â”€ Pass 3.42: Store receipt closes the linked Purchasing lifecycle â”€â”€
 test('receiving: linked PO progresses from partial to received and persists receipt evidence', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  WD.createInventoryItem({code:'PO-RECEIPT-ITEM',description:'Receipt test plate',category:'Plate',unit:'EA',location:'R1-01',stock:0,minStock:2,reorderQty:10,avgCost:20,lastPrice:25,supplier:'Receipt Supplier'});
+  WD.createInventoryItem({code:'PO-RECEIPT-ITEM',description:'Receipt test plate',group:'materials',unit:'EA',location:'R1-01',stock:0,minStock:2,reorderQty:10,avgCost:20,lastPrice:25,supplier:'Receipt Supplier'});
   const po=WD.upsertPurchaseOrder({supplier:'Receipt Supplier',itemCode:'PO-RECEIPT-ITEM',items:'Receipt test plate',orderedQty:10,receivedQty:0,receivedValue:0,status:'Confirmed'});
 
   const partial=WD.receive({code:'PO-RECEIPT-ITEM',qty:4,supplier:'Receipt Supplier',po:po.no,deliveryNote:'DN-PART',location:'R1-02',lastPrice:25,user:'Store User'});
@@ -3818,10 +3908,501 @@ test('receiving: linked PO progresses from partial to received and persists rece
 
 test('receiving: cancelled or wrong-item linked POs are rejected before stock changes', ()=>{
   const WD=loadWorkshopData();
-  WD.createInventoryItem({code:'PO-SAFE-ITEM',description:'Safe receipt item',category:'Parts',unit:'EA',location:'R1',stock:0,minStock:0});
+  WD.createInventoryItem({code:'PO-SAFE-ITEM',description:'Safe receipt item',group:'materials',unit:'EA',location:'R1',stock:0,minStock:0});
   const cancelled=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'PO-SAFE-ITEM',items:'Safe item',orderedQty:2,status:'Cancelled'});
   const wrong=WD.upsertPurchaseOrder({supplier:'Safe Supplier',itemCode:'OTHER-ITEM',items:'Other item',orderedQty:2,status:'Confirmed'});
   assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:cancelled.no}).error,/cancelled/);
   assert.match(WD.receive({code:'PO-SAFE-ITEM',qty:1,po:wrong.no}).error,/OTHER-ITEM/);
   assert.equal(WD.get().inventory.find(i=>i.code==='PO-SAFE-ITEM').stock,0);
+});
+
+// ---- Item groups, subgroups and per-group numbering -------------------------
+
+test('item groups: every seeded item sits in a group and carries its group number', ()=>{
+  const W=loadWorkshopData();
+  const groups=W.listItemGroups();
+  assert.ok(groups.length>=4,'the seed must define item groups');
+  assert.deepEqual(groups.map(g=>g.start),[1000,2000,3000,4000]);
+  for(const item of W.get().inventory){
+    assert.ok(item.group,`${item.code} has no group`);
+    assert.ok(W.findItemGroup(item.group),`${item.code} is in a group that does not exist`);
+    assert.equal(typeof item.itemNo,'number');
+    assert.ok(item.itemNo>=W.findItemGroup(item.group).start,`${item.code} is numbered below its group start`);
+  }
+});
+
+test('item groups: a new item takes the next number in its own group', ()=>{
+  const W=loadWorkshopData();
+  const expected=W.peekItemNumber('materials');
+  const pipe=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-01',stock:12});
+  assert.equal(pipe.itemNo,expected);
+  assert.equal(pipe.code,String(expected),'with no code of its own the number is the code');
+  assert.equal(pipe.category,'Pipe & fittings','the subgroup name stands in as the category');
+  const second=W.createInventoryItem({description:'Pipe DN80 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-02'});
+  assert.equal(second.itemNo,expected+1);
+  const consumable=W.createInventoryItem({description:'Argon 50L',group:'consumables',subgroup:'gases',unit:'EA',location:'G1'});
+  assert.ok(consumable.itemNo>=2000&&consumable.itemNo<3000,'a consumable must be numbered in the 2000 range');
+});
+
+test('item groups: a supplier or drawing code of its own is kept instead of the number', ()=>{
+  const W=loadWorkshopData();
+  const rec=W.createInventoryItem({code:'PIPE-DN100-S40',description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',unit:'M',location:'A3-01-01'});
+  assert.equal(rec.code,'PIPE-DN100-S40');
+  assert.ok(Number(rec.itemNo)>=1000,'it still gets a group number');
+});
+
+test('item groups: an item cannot be created without a real group or subgroup', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.createInventoryItem({description:'x',unit:'EA',location:'A'}).error,/group is required/i);
+  assert.match(W.createInventoryItem({description:'x',group:'nope',unit:'EA',location:'A'}).error,/group is required/i);
+  assert.match(W.createInventoryItem({description:'x',group:'materials',subgroup:'nope',unit:'EA',location:'A'}).error,/no subgroup/i);
+});
+
+test('item groups: numbers are never reused, even after the item is deleted from state', ()=>{
+  const W=loadWorkshopData();
+  const first=W.createInventoryItem({description:'One',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'A'});
+  const state=W.get();
+  state.inventory.splice(state.inventory.findIndex(x=>x.code===first.code),1);
+  const second=W.createInventoryItem({description:'Two',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'A'});
+  assert.ok(second.itemNo>first.itemNo,'a freed number must not come back around');
+});
+
+test('item groups: a group can be added, renamed and given its own number range', ()=>{
+  const W=loadWorkshopData();
+  const made=W.upsertItemGroup({name:'Paint & chemicals',start:5000});
+  assert.equal(made.id,'paint-chemicals');
+  assert.equal(made.next,5000);
+  const item=W.createInventoryItem({description:'Primer grey 5L',group:'paint-chemicals',unit:'EA',location:'P1'});
+  assert.equal(item.itemNo,5000);
+  const renamed=W.upsertItemGroup({id:'paint-chemicals',name:'Paint and chemicals',start:5000});
+  assert.equal(renamed.name,'Paint and chemicals');
+  assert.match(W.upsertItemGroup({name:'Something',start:1000}).error,/already starts at 1000/);
+  assert.match(W.upsertItemGroup({name:'Materials',start:9000}).error,/already exists/i);
+  assert.match(W.upsertItemGroup({name:'No start',start:-1}).error,/whole number/i);
+});
+
+test('item groups: a range cannot move above a number the group already handed out', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.upsertItemGroup({id:'materials',name:'Materials',start:1500}).error,/already has item 1000/);
+});
+
+test('item groups: subgroups can be added and renamed, and a group keeps its own set', ()=>{
+  const W=loadWorkshopData();
+  const sub=W.upsertSubgroup('materials',{name:'Brass'});
+  assert.equal(sub.id,'brass');
+  assert.ok(W.findItemGroup('materials').subgroups.some(x=>x.id==='brass'));
+  assert.ok(!W.findItemGroup('consumables').subgroups.some(x=>x.id==='brass'),'subgroups belong to one group');
+  assert.match(W.upsertSubgroup('materials',{name:'Copper'}).error,/already has a subgroup/i);
+  assert.match(W.upsertSubgroup('nope',{name:'X'}).error,/Group not found/);
+});
+
+test('item groups: a group or subgroup still holding stock cannot be deleted', ()=>{
+  const W=loadWorkshopData();
+  assert.match(W.deleteItemGroup('materials').error,/still holds/);
+  assert.match(W.deleteSubgroup('materials','stainless-steel').error,/still holds/);
+  W.upsertItemGroup({name:'Empty group',start:7000});
+  assert.equal(W.deleteItemGroup('empty-group').ok,true);
+  W.upsertSubgroup('materials',{name:'Titanium'});
+  assert.equal(W.deleteSubgroup('materials','titanium').ok,true);
+});
+
+test('item groups: inventory saved before groups existed is migrated by its old category', ()=>{
+  const {localStorage:storage}=loadWorkshopDataWithStorage();
+  const legacy={version:5,inventory:[
+    {code:'OLD-SS-1',description:'Old stainless plate',category:'Stainless Sheet',unit:'EA',stock:4,reserved:0,location:'A1',minStock:1},
+    {code:'OLD-WIRE',description:'Old welding wire',category:'Welding Consumable',unit:'KG',stock:9,reserved:0,location:'B1',minStock:2},
+    {code:'OLD-ODD',description:'Something uncategorised',category:'Mystery',unit:'EA',stock:1,reserved:0,location:'C1',minStock:0}
+  ]};
+  storage.setItem('varmak.workshop.frontend.v5',JSON.stringify(legacy));
+  const W=loadWorkshopData(null,storage);
+  const byCode=Object.fromEntries(W.get().inventory.map(x=>[x.code,x]));
+  assert.equal(byCode['OLD-SS-1'].group,'materials');
+  assert.equal(byCode['OLD-SS-1'].subgroup,'stainless-steel');
+  assert.equal(byCode['OLD-WIRE'].group,'consumables');
+  assert.equal(byCode['OLD-WIRE'].subgroup,'welding');
+  assert.equal(byCode['OLD-ODD'].group,'materials','an unknown category falls back to the first group rather than vanishing');
+  const numbers=W.get().inventory.map(x=>x.itemNo);
+  assert.equal(new Set(numbers).size,numbers.length,'migration must not hand out a number twice');
+  numbers.forEach(n=>assert.equal(typeof n,'number'));
+});
+
+test('item groups: refiling an item changes its shelf but never its number', ()=>{
+  const W=loadWorkshopData();
+  const before=W.get().inventory.find(x=>x.code==='GRD-DISC-4.5');
+  assert.equal(before.group,'consumables');
+  const moved=W.setItemGroup('GRD-DISC-4.5','tooling','cutting-tools');
+  assert.equal(moved.group,'tooling');
+  assert.equal(moved.subgroup,'cutting-tools');
+  assert.equal(moved.itemNo,before.itemNo,'the number travels with the item');
+  assert.equal(moved.category,'Cutting tools','the category follows the new subgroup');
+  const within=W.setItemGroup('GRD-DISC-4.5','tooling','hand-tools');
+  assert.equal(within.subgroup,'hand-tools');
+  assert.equal(within.itemNo,before.itemNo);
+  assert.match(W.setItemGroup('GRD-DISC-4.5','nope').error,/Group not found/);
+  assert.match(W.setItemGroup('GRD-DISC-4.5','tooling','nope').error,/no subgroup/);
+  assert.match(W.setItemGroup('NO-SUCH-ITEM','tooling').error,/Item not found/);
+});
+
+// ---- Locations, measurement, edit and delete --------------------------------
+
+test('locations: a warehouse holds sublocations and both can be managed', ()=>{
+  const W=loadWorkshopData();
+  const [wh]=W.listLocationGroups();
+  assert.equal(wh.id,'warehouse');
+  assert.deepEqual(wh.subgroups.map(s=>s.name),['Warehouse 1 - shelves','Warehouse 2 - rack']);
+  const added=W.upsertSublocation('warehouse',{name:'Yard'});
+  assert.equal(added.id,'yard');
+  assert.match(W.upsertSublocation('warehouse',{name:'Warehouse 1 - shelves'}).error,/already has/i);
+  const second=W.upsertLocationGroup({name:'Outside store'});
+  assert.equal(second.id,'outside-store');
+  assert.match(W.upsertLocationGroup({name:'Warehouse'}).error,/already exists/i);
+  assert.match(W.deleteLocationGroup('warehouse').error,/still holds/,'a warehouse holding stock cannot be deleted');
+  assert.match(W.deleteSublocation('warehouse','wh1-shelves').error,/still holds/);
+  assert.equal(W.deleteSublocation('warehouse','yard').ok,true);
+  assert.equal(W.deleteLocationGroup('outside-store').ok,true);
+});
+
+test('locations: an item is created into a real warehouse and sublocation', ()=>{
+  const W=loadWorkshopData();
+  const ok=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',
+    unit:'EA',location:'A3-01-01',locationGroup:'warehouse',locationSub:'wh2-rack'});
+  assert.equal(ok.locationGroup,'warehouse');
+  assert.equal(ok.locationSub,'wh2-rack');
+  assert.equal(ok.location,'A3-01-01','the bin code is still the label on the shelf');
+  assert.match(W.createInventoryItem({description:'x',group:'materials',unit:'EA',location:'A',locationGroup:'nope'}).error,/Warehouse not found/);
+  assert.match(W.createInventoryItem({description:'x',group:'materials',unit:'EA',location:'A',locationGroup:'warehouse',locationSub:'nope'}).error,/no sublocation/);
+});
+
+test('measurement: a count of whole units reads as length and as weight', ()=>{
+  const W=loadWorkshopData();
+  const pipe=W.createInventoryItem({description:'Pipe DN100 SCH40',group:'materials',subgroup:'pipe-fittings',
+    unit:'EA',location:'A3-01-01',baseUnit:'m',sizePerUnit:6,weightPerBase:16.08,stock:3});
+  const three=W.itemMeasure(pipe.code,3);
+  assert.equal(three.baseQty,18,'three 6 m lengths are 18 m');
+  assert.equal(three.baseUnit,'m');
+  assert.equal(three.weightKg,289.44,'and 18 m of DN100 SCH40 is 289.44 kg');
+  assert.equal(W.itemMeasure(pipe.code,0).baseQty,0);
+  assert.equal(W.itemMeasure(pipe.code,0.5).baseQty,3,'half a length is three metres');
+  // An item nobody has measured still answers, without inventing a weight.
+  const plain=W.createInventoryItem({description:'Box of clips',group:'hardware',unit:'EA',location:'C1'});
+  const one=W.itemMeasure(plain.code,7);
+  assert.equal(one.baseQty,7,'with no size per unit, the count is the measure');
+  assert.equal(one.weightKg,null,'no recorded weight is not a weight of zero');
+  assert.equal(W.itemMeasure('NO-SUCH-ITEM',1),null);
+});
+
+test('items: editing changes what it may and leaves identity alone', ()=>{
+  const W=loadWorkshopData();
+  const before=W.get().inventory.find(x=>x.code==='MS-TUBE-25SQ-1.6');
+  const after=W.updateInventoryItem('MS-TUBE-25SQ-1.6',{minStock:35,weightPerBase:1.12,description:'Square tube 25×25×1.6 mm 6 m',
+    code:'HACKED',itemNo:9999,subgroup:'copper'});
+  assert.equal(after.code,before.code,'the code is not editable here');
+  assert.equal(after.itemNo,before.itemNo,'nor is the number');
+  assert.equal(after.minStock,35);
+  assert.equal(after.weightPerBase,1.12);
+  assert.equal(after.subgroup,'copper');
+  assert.equal(after.category,'Copper','the category follows the subgroup');
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{description:'  '}).error,/Description is required/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{minStock:-1}).error,/zero or greater/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{reserved:99999}).error,/cannot exceed stock/);
+  assert.match(W.updateInventoryItem('MS-TUBE-25SQ-1.6',{subgroup:'nope'}).error,/no subgroup/);
+  assert.match(W.updateInventoryItem('NO-SUCH-ITEM',{minStock:1}).error,/Item not found/);
+});
+
+test('items: one that is used anywhere cannot be deleted, and the refusal says where', ()=>{
+  const W=loadWorkshopData();
+  const usage=W.itemUsage('SS-SHT-304-2.0');
+  const where=usage.map(u=>u.where);
+  ['movements','projectBom','jobcards','offcuts','barcodes'].forEach(w=>
+    assert.ok(where.includes(w),`usage must report ${w}`));
+  usage.forEach(u=>{
+    assert.ok(u.count>0);
+    assert.ok(u.examples.length>0,`${u.where} must name at least one record`);
+  });
+  const refused=W.deleteInventoryItem('SS-SHT-304-2.0');
+  assert.equal(refused.error,'Item is in use');
+  assert.deepEqual(refused.usage.map(u=>u.where).sort(),where.sort());
+  assert.ok(W.get().inventory.some(x=>x.code==='SS-SHT-304-2.0'),'a refused delete must change nothing');
+});
+
+test('items: stock on the shelf blocks a delete on its own', ()=>{
+  const W=loadWorkshopData();
+  const held=W.createInventoryItem({description:'Still on the shelf',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9',stock:4});
+  const refused=W.deleteInventoryItem(held.code);
+  assert.match(refused.error,/still has stock/i);
+  assert.equal(refused.usage[0].where,'stock');
+  W.updateInventoryItem(held.code,{stock:0});
+  const gone=W.deleteInventoryItem(held.code);
+  assert.equal(gone.ok,true);
+  assert.equal(gone.itemNo,held.itemNo);
+  assert.ok(!W.get().inventory.some(x=>x.code===held.code));
+  assert.match(W.deleteInventoryItem(held.code).error,/Item not found/);
+});
+
+test('items: a number freed by a delete is still never handed out again', ()=>{
+  const W=loadWorkshopData();
+  const first=W.createInventoryItem({description:'First',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9'});
+  assert.equal(W.deleteInventoryItem(first.code).ok,true);
+  const second=W.createInventoryItem({description:'Second',group:'tooling',subgroup:'hand-tools',unit:'EA',location:'Z9'});
+  assert.ok(second.itemNo>first.itemNo,'deleting must not recycle the number');
+});
+
+test('items: an item quoted on an estimation line counts as in use', ()=>{
+  const W=loadWorkshopData();
+  const spare=W.createInventoryItem({description:'Quoted only',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Q1'});
+  assert.equal(W.itemUsage(spare.code).length,0,'nothing points at it yet');
+  // Estimation lines live inside work items, which is where the Estimations
+  // module writes them back from.
+  const est=W.get().estimations[0];
+  est.workItems=[{desc:'Fabrication',lines:[{desc:'Quoted only',code:spare.code,qty:2,unit:'EA',sell:10}]}];
+  W.upsertEstimation(est);
+  const usage=W.itemUsage(spare.code);
+  assert.ok(usage.some(u=>u.where==='estimations'),'a line inside a work item must be found');
+  assert.match(W.deleteInventoryItem(spare.code).error,/in use/i);
+});
+
+// ── itemHistory: what the store knows about one item's own past (Pass 4.31) ─────────────────────
+test('history: an item nobody has moved reports no receipts and no issues, never a blank date', ()=>{
+  const W=loadWorkshopData();
+  const fresh=W.createInventoryItem({description:'Never moved',group:'materials',subgroup:'mild-steel',
+    unit:'EA',location:'Z1',supplier:'Somebody AB'});
+  const h=W.itemHistory(fresh.code);
+  assert.deepEqual(h.received,[]);
+  assert.deepEqual(h.issued,[]);
+  assert.equal(h.bought.first,null,'a typed-in supplier is not evidence that anything arrived');
+  assert.equal(h.bought.last,null);
+  assert.equal(h.bought.supplier,'Somebody AB','what was typed is still reported, as what it is');
+});
+test('history: an unknown code has no history rather than an empty one', ()=>{
+  assert.equal(loadWorkshopData().itemHistory('NO-SUCH-CODE'),null);
+  assert.equal(loadWorkshopData().itemHistory(''),null);
+  assert.equal(loadWorkshopData().itemHistory(null),null);
+});
+test('history: where it sits is read through the location register, not printed as raw ids', ()=>{
+  const W=loadWorkshopData();
+  const item=W.get().inventory.find(i=>i.locationGroup&&i.locationSub);
+  const h=W.itemHistory(item.code);
+  const group=W.listLocationGroups().find(g=>g.id===item.locationGroup);
+  assert.equal(h.where.warehouse,group.name);
+  assert.equal(h.where.sublocation,(group.subgroups||[]).find(s=>s.id===item.locationSub).name);
+  assert.equal(h.where.bin,item.location);
+  assert.equal(h.where.available,h.where.stock-h.where.reserved,'available is what is not spoken for');
+});
+test('history: receipts and issues are separated, newest first', ()=>{
+  const W=loadWorkshopData();
+  const item=W.createInventoryItem({description:'Moved about',group:'materials',subgroup:'mild-steel',
+    unit:'EA',location:'Z2',stock:0});
+  W.receive({code:item.code,qty:10,supplier:'First AB',po:'PO-1',location:'Z2',user:'A'});
+  W.receive({code:item.code,qty:5,supplier:'Second AB',po:'PO-2',location:'Z2',user:'B'});
+  W.issue({code:item.code,qty:3,projectNo:'P-26-0001',jobcard:'JC-1',user:'C'});
+  const h=W.itemHistory(item.code);
+  assert.equal(h.received.length,2);
+  assert.equal(h.issued.length,1);
+  assert.equal(h.issued[0].projectNo,'P-26-0001','an issue carries the job it went to');
+  assert.equal(h.issued[0].jobcard,'JC-1');
+  assert.equal(h.issued[0].qty,3);
+  // Newest first, and the first receipt is the oldest one - which is when it first arrived.
+  assert.ok(h.received[0].time>=h.received[1].time,'receipts come back newest first');
+  assert.equal(h.bought.last.time,h.received[0].time);
+  assert.equal(h.bought.first.time,h.received[h.received.length-1].time);
+  assert.ok(h.bought.first.time<=h.bought.last.time,'the first receipt cannot be after the last');
+});
+test('history: one item\'s movements only', ()=>{
+  const W=loadWorkshopData();
+  const mine=W.createInventoryItem({description:'Mine',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Z3',stock:0});
+  const other=W.createInventoryItem({description:'Other',group:'materials',subgroup:'mild-steel',unit:'EA',location:'Z4',stock:0});
+  W.receive({code:mine.code,qty:4,supplier:'S',po:'PO-9',location:'Z3'});
+  W.receive({code:other.code,qty:99,supplier:'S',po:'PO-9',location:'Z4'});
+  const h=W.itemHistory(mine.code);
+  assert.equal(h.received.length,1);
+  assert.equal(h.received[0].qty,4,'the other item\'s receipt must not appear here');
+});
+test('history: what it is committed to now is the same answer the delete guard gives', ()=>{
+  const W=loadWorkshopData();
+  const item=W.get().inventory.find(i=>W.itemUsage(i.code).length>0);
+  assert.deepEqual(W.itemHistory(item.code).usedIn,W.itemUsage(item.code),
+    'one question, one answer — the information panel and the delete guard must not disagree');
+});
+
+// ── The findings queue: the outward sweep's output, waiting to be judged (Pass 4.34) ───────────
+// The queue is the one place in the workshop where information arrives from outside and nobody
+// has checked it. Three things keep it trustworthy, and they are what these tests hold down: what
+// is stored has been triaged against the real equipment register, a finding is shown to a person
+// exactly once, and accepting one creates a lead out of what is known rather than what would look
+// good on a lead card.
+const Stub=require('../prospect-stub.js');
+
+test('queue: an unrun sweep has nothing to show', ()=>{
+  const W=loadWorkshopData();
+  assert.deepEqual(W.getProspectFindings(),[],'no sweep has run, so there is nothing found');
+  assert.deepEqual(W.getProspectSweeps(),[]);
+  assert.equal(W.lastProspectSweep(),null,'"nothing has ever run" is an answer, not a crash');
+  assert.equal(W.findProspectFinding('pf-nope'),null);
+  const sum=W.prospectQueueSummary();
+  assert.equal(sum.waiting,0);
+  assert.equal(sum.lastSweep,null,'and the page is told plainly that nothing has run');
+});
+test('queue: a sweep stores what survives triage and reports what did not', ()=>{
+  const W=loadWorkshopData();
+  const got=W.recordProspectSweep(Stub.sample(),{source:'stub',sourcesChecked:8,durationMs:1200});
+  assert.equal(got.tally.found,10);
+  assert.equal(got.tally.dropped,1,'the hearsay finding points nowhere and is not stored');
+  assert.equal(W.getProspectFindings().length,got.tally.ready);
+  const sweep=W.lastProspectSweep();
+  assert.equal(sweep.source,'stub');
+  assert.equal(sweep.sourcesChecked,8);
+  assert.equal(sweep.durationMs,1200);
+  assert.deepEqual(sweep.tally,got.tally);
+});
+test('queue: nothing is stored that the register has not been consulted about', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const known=new Set(W.get().equipment.map(e=>e.equipmentId||e.id));
+  W.getProspectFindings().forEach(f=>{
+    assert.ok(f.match,`"${f.title}" was stored without being matched against the shop`);
+    assert.ok(['go','maybe','skip'].includes(f.verdict));
+    assert.ok(f.reasons.length>0,'and never without saying why');
+    f.match.machines.forEach(m=>assert.ok(known.has(m.id),
+      `"${f.title}" offers machine ${m.id}, which is not in the register`));
+  });
+});
+test('queue: a finding with nowhere to point never reaches a person', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep([
+    {title:'Somebody said something',klass:'hot',sourceUrl:''},
+    {title:'Real one',klass:'hot',sourceUrl:'https://demo.varmak.local/x/1',needs:['welding']}
+  ],{});
+  const q=W.getProspectFindings();
+  assert.equal(q.length,1);
+  assert.equal(q[0].title,'Real one');
+});
+test('queue: work the shop cannot do arrives marked as such, not hidden', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const press=W.getProspectFindings().find(f=>/100 ton/.test(f.title));
+  assert.ok(press,'it is still shown — the user decides, not the sweep');
+  assert.equal(press.verdict,'skip');
+  assert.deepEqual(press.match.outside,['pressing'],'and the reason is on the record');
+});
+test('queue: a finding is put in front of a person exactly once', ()=>{
+  const W=loadWorkshopData();
+  const first=W.recordProspectSweep(Stub.sample(),{});
+  const again=W.recordProspectSweep(Stub.sample(),{});
+  assert.equal(again.tally.ready,0,'the same morning twice is not two mornings of work');
+  assert.equal(again.tally.known,first.tally.ready);
+  assert.equal(W.getProspectFindings().length,first.tally.ready,'and nothing was duplicated');
+});
+test('queue: a finding binned yesterday does not come back tomorrow', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const skip=W.getProspectFindings().find(f=>f.verdict==='skip');
+  W.dismissProspectFinding(skip.id,{by:'Marko K.',reason:'not our trade'});
+  W.recordProspectSweep(Stub.sample(),{});
+  const same=W.getProspectFindings().filter(f=>f.fingerprint===skip.fingerprint);
+  assert.equal(same.length,1,'a rejected finding returning is how a queue teaches people to ignore it');
+  assert.equal(same[0].status,'dismissed');
+});
+test('queue: accepting makes a real lead out of what is known, and nothing else', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const before=W.getMarketingLeads().length;
+  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  assert.ok(got.lead&&got.lead.no,'a lead with a real number is created');
+  assert.equal(W.getMarketingLeads().length,before+1);
+  // A forum post carries no contact, no email and no budget. None are invented to fill the card.
+  assert.equal(got.lead.contact,'');
+  assert.equal(got.lead.email,'');
+  assert.equal(got.lead.phone,'');
+  assert.equal(got.lead.value,null,'a made-up value is the one thing a lead must never carry');
+  assert.equal(got.lead.city,f.place,'what it does know goes across');
+  assert.equal(got.lead.source,'prospect');
+  assert.ok(got.lead.notes[0].text.includes(f.sourceUrl),'and the lead can be traced back to the page');
+});
+test('queue: a lead made from a sample finding says so on its face', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  assert.equal(got.lead.demo,true);
+  assert.match(got.lead.notes[0].text,/sample finding/i,
+    'nobody should ever ring a number believing a stub was a real find');
+});
+test('queue: the company can be named on the way in', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.',company:'Höörs Bygg AB',contact:'Jonas'});
+  assert.equal(got.lead.company,'Höörs Bygg AB');
+  assert.equal(got.lead.contact,'Jonas');
+  assert.equal(got.lead.owner,'Elena N.');
+});
+test('queue: with no company known, the lead carries the post itself rather than a guess', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  assert.equal(got.lead.company,f.title);
+});
+test('queue: a decision is made once', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const q=W.getProspectFindings();
+  const a=q.find(x=>x.verdict==='go'),b=q.find(x=>x.verdict==='skip');
+  W.acceptProspectFinding(a.id,{by:'X'});
+  assert.ok(W.acceptProspectFinding(a.id,{by:'X'}).error,'accepting twice would make two leads');
+  assert.ok(W.dismissProspectFinding(a.id,{by:'X'}).error);
+  W.dismissProspectFinding(b.id,{by:'X'});
+  assert.ok(W.acceptProspectFinding(b.id,{by:'X'}).error);
+  assert.ok(W.acceptProspectFinding('pf-nope',{by:'X'}).error);
+  assert.ok(W.dismissProspectFinding('pf-nope',{by:'X'}).error);
+});
+test('queue: a decision records who made it and when', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const f=W.getProspectFindings().find(x=>x.verdict==='go');
+  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  assert.equal(got.finding.status,'accepted');
+  assert.equal(got.finding.decidedBy,'Elena N.');
+  assert.ok(got.finding.decidedAt);
+  assert.equal(got.finding.leadNo,got.lead.no,'and which lead it became');
+});
+test('queue: the summary counts what is actually there', ()=>{
+  const W=loadWorkshopData();
+  W.recordProspectSweep(Stub.sample(),{});
+  const q=W.getProspectFindings();
+  W.acceptProspectFinding(q.find(x=>x.verdict==='go').id,{by:'X'});
+  W.dismissProspectFinding(q.find(x=>x.verdict==='skip').id,{by:'X'});
+  const sum=W.prospectQueueSummary();
+  const waiting=W.getProspectFindings().filter(f=>f.status==='new');
+  assert.equal(sum.waiting,waiting.length);
+  assert.equal(sum.go+sum.maybe+sum.skip,sum.waiting,'every waiting finding is counted under one verdict');
+  assert.equal(sum.accepted,1);
+  assert.equal(sum.dismissed,1);
+  assert.ok(sum.lastSweep,'and the page can say when the sweep ran');
+});
+test('queue: an empty sweep is recorded as an empty sweep', ()=>{
+  const W=loadWorkshopData();
+  const got=W.recordProspectSweep([],{source:'stub'});
+  assert.deepEqual(got.tally,{found:0,ready:0,known:0,dropped:0});
+  assert.ok(W.lastProspectSweep(),'"it ran and found nothing" is itself worth knowing');
+  assert.equal(W.prospectQueueSummary().waiting,0);
+});
+test('queue: it survives the trip through storage', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  WD.recordProspectSweep(Stub.sample(),{source:'stub'});
+  const before=WD.getProspectFindings();
+  const raw=localStorage.getItem('varmak.workshop.frontend.v5');
+  const reloaded=loadWorkshopData({'varmak.workshop.frontend.v5':raw});
+  assert.equal(reloaded.getProspectFindings().length,before.length);
+  assert.equal(reloaded.getProspectSeen().length,before.length);
+  assert.equal(reloaded.recordProspectSweep(Stub.sample(),{}).tally.ready,0,
+    'what was already shown is still remembered after a reload');
+});
+test('queue: data saved before the queue existed opens without one', ()=>{
+  const older=JSON.stringify({version:5,counters:{},customers:[],projects:[],equipment:[],marketingLeads:[]});
+  const W=loadWorkshopData({'varmak.workshop.frontend.v5':older});
+  assert.deepEqual(W.getProspectFindings(),[]);
+  assert.deepEqual(W.getProspectSweeps(),[]);
+  assert.equal(W.prospectQueueSummary().waiting,0);
 });

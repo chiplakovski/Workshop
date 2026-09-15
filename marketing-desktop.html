@@ -1,57 +1,59 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Varmak — Marketing</title><style>
   :root{--navy-950:#04101f;--navy-900:#071a33;--navy-800:#0a2447;--navy-brand:#013179;
     --steel-400:#8ea3c0;--steel-300:#b9c6da;--spark:#4a90ff;--ice:#e8f0fb;
     --line:rgba(142,163,192,0.16);--field:rgba(255,255,255,0.045);--field-line:rgba(185,198,218,0.24);
-    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;}
+    --ok:#4ad48a;--warn:#ffb057;--danger:#ff6b6b;--idea:#c084fc;;--c-accent:#4a90ff;--c-accent-rgb:74,144,255;--c-accent2:#2c6bd6;--c-accent2-rgb:44,107,214;--c-avatar:#16385b;--c-avatar-line:#3e6288;--c-brand:#013179;--c-brand-rgb:1,49,121;--c-card-rgb:9,23,45;--c-danger-rgb:255,107,107;--c-fieldline-rgb:185,198,218;--c-line-rgb:142,163,192;--c-navhover-rgb:31,91,164;--c-navicon:#78a7d9;--c-ok-rgb:74,212,138;--c-panel-rgb:7,26,51;--c-panel2:#0a2447;--c-panel2-rgb:10,36,71;--c-purple-rgb:192,132,252;--c-scrim-rgb:2,8,15;--c-side1-rgb:6,26,49;--c-side2-rgb:4,19,38;--c-side3-rgb:7,26,48;--c-tint:#cfe0ff;--c-warn-rgb:255,176,87;--font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;color-scheme:dark;--select-bg:#0a2447;--select-fg:#e8f0fb;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="carbon"]{--navy-950:#020305;--navy-900:#06080c;--navy-800:#0a0d13;--navy-brand:#16326a;--steel-400:#a3adbd;--steel-300:#c6cedb;--spark:#4f8cff;--ice:#f2f5fa;--line:rgba(135,146,163,0.16);--field-line:rgba(170,180,196,0.24);--ok:#35c98a;--warn:#f0a544;--danger:#f4635f;--idea:#b07cf5;--c-accent:#4f8cff;--c-accent-rgb:79,140,255;--c-accent2:#2f6ccc;--c-accent2-rgb:47,108,204;--c-avatar:#14202e;--c-avatar-line:#2a3444;--c-brand:#16326a;--c-brand-rgb:22,50,106;--c-card-rgb:9,11,16;--c-danger-rgb:244,99,95;--c-fieldline-rgb:170,180,196;--c-line-rgb:135,146,163;--c-navhover-rgb:26,52,102;--c-navicon:#8ba0b8;--c-ok-rgb:53,201,138;--c-panel-rgb:6,8,12;--c-panel2:#0a0d13;--c-panel2-rgb:10,13,19;--c-purple-rgb:176,124,245;--c-scrim-rgb:1,2,4;--c-side1-rgb:6,8,12;--c-side2-rgb:3,4,7;--c-side3-rgb:6,8,12;--c-tint:#dbe8ff;--c-warn-rgb:240,165,68;--font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;--select-bg:#0f131b;--select-fg:#f2f5fa;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="iris"]{--navy-950:#f1f3fb;--navy-900:#ffffff;--navy-800:#e9edf9;--navy-brand:#4b49ac;--steel-400:#5f6889;--steel-300:#4e5573;--spark:#4b49ac;--ice:#191d3d;--line:rgba(75,73,172,0.16);--field:#ffffff;--field-line:rgba(75,73,172,0.24);--ok:#0f7a58;--warn:#a35f0e;--danger:#e0555b;--idea:#a35f0e;--c-accent:#4b49ac;--c-accent-rgb:75,73,172;--c-accent2:#7978e9;--c-accent2-rgb:121,120,233;--c-avatar:#e3e6f8;--c-avatar-line:#b9bce8;--c-brand:#4b49ac;--c-brand-rgb:75,73,172;--c-card-rgb:255,255,255;--c-danger-rgb:243,121,126;--c-fieldline-rgb:75,73,172;--c-line-rgb:75,73,172;--c-navhover-rgb:75,73,172;--c-navicon:#7978e9;--c-ok-rgb:15,122,88;--c-panel-rgb:255,255,255;--c-panel2:#e9edf9;--c-panel2-rgb:233,237,249;--c-purple-rgb:139,92,246;--c-scrim-rgb:40,44,90;--c-side1-rgb:255,255,255;--c-side2-rgb:250,251,255;--c-side3-rgb:244,246,253;--c-tint:#3b39a0;--c-warn-rgb:163,95,14;--font-heading:'Public Sans',system-ui,sans-serif;--font-body:'Public Sans',system-ui,sans-serif;color-scheme:light;--select-bg:#ffffff;--select-fg:#191d3d;--lift-008:rgba(255,255,255,.35);--lift-015:rgba(255,255,255,.45);--lift-02:rgba(255,255,255,.55);--lift-025:rgba(255,255,255,.62);--lift-03:rgba(255,255,255,.7);--lift-033:rgba(255,255,255,.74);--lift-035:rgba(255,255,255,.78);--lift-04:rgba(255,255,255,.86);--lift-045:rgba(255,255,255,.93);--lift-05:#ffffff;--lift-06:rgba(75,73,172,.05);--lift-08:rgba(75,73,172,.07);--lift-10:rgba(75,73,172,.09);--lift-12:rgba(75,73,172,.11);--lift-16:rgba(75,73,172,.14);--lift-18:rgba(75,73,172,.16);--lift-28:rgba(75,73,172,.24);--shade-12:rgba(75,73,172,.05);--shade-16:rgba(75,73,172,.07);--shade-18:rgba(75,73,172,.08);--shade-35:rgba(75,73,172,.10);--shade-40:rgba(75,73,172,.12);--shade-45:rgba(75,73,172,.13);--shade-50:rgba(75,73,172,.15);--shade-55:rgba(75,73,172,.17);--shade-60:rgba(75,73,172,.19);--sunken:#e9edf9;--nav-on-bg:#4b49ac;--on-accent:#2e2c86;--on-danger:#b23a40;--tint-danger:#c0343b;--tint-warn:#7a4f10;--tint-est:#9a4f14;--tint-info:#3b39a0;--tint-ok:#0b6b4d;--nav-on-icon:#ffffff;--bg-glow0:rgba(152,189,255,0.18);--bg-glow1:rgba(152,189,255,0.18);--bg-glow2:rgba(121,120,233,0.09);--nav-on-fg:#ffffff;--glow-core:rgba(75,73,172,0.05);}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;color:var(--ice);min-height:100vh;}
+  body{font-family:var(--font-body);color:var(--ice);min-height:100vh;}
   .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--navy-950);}
-  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,rgba(1,49,121,0.5),transparent 55%),radial-gradient(80% 60% at 10% 100%,rgba(10,36,71,0.6),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
+  .bg::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 0%,var(--bg-glow1),transparent 55%),radial-gradient(80% 60% at 10% 100%,var(--bg-glow2),transparent 60%),linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-950));}
   .grid{position:absolute;inset:0;opacity:0.28;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);}
-  .glow{position:absolute;left:50%;top:16%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(74,144,255,0.14),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
+  .glow{position:absolute;left:50%;top:16%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(var(--c-accent-rgb),0.14),transparent 62%);filter:blur(8px);animation:pulse 6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
-  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(74,144,255,.8);animation:rise linear infinite;opacity:0;}
+  .ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--spark);box-shadow:0 0 6px 1px rgba(var(--c-accent-rgb),.8);animation:rise linear infinite;opacity:0;}
   @keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.9}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}
   @media (prefers-reduced-motion:reduce){.glow,.ember{animation:none}}
 
   .topfull{position:relative;z-index:2;width:100%;padding:22px 40px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
-  .brand .logo{font-family:'Sora';font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(74,144,255,.9);}
+  .brand .logo{font-family:var(--font-heading);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(var(--c-accent-rgb),.9);}
   .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
   .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
-  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:'Sora';font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:var(--font-heading);font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
   .who{display:flex;align-items:center;gap:8px;}
-  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;}
-  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'Sora';}
+  .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:var(--lift-05);border:1px solid var(--line);font-size:12px;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:var(--font-heading);}
   .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
-  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1680px;margin:0 auto;padding:22px 30px 46px;}
-  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:'Inter';font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s;margin-bottom:10px;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;justify-content:space-between;}
   .modhead .ttl{display:flex;align-items:center;gap:12px;}
-  .modhead .ic{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(74,144,255,.14);box-shadow:inset 0 0 0 1px rgba(74,144,255,.35);}
-  .modhead h1{font-family:'Sora';font-weight:700;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+  .modhead .ic{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
+  .modhead h1{font-family:var(--font-heading);font-weight:700;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
-  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:var(--font-heading);font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
   .tbtn:hover{border-color:var(--spark);color:var(--ice);}
-  .tbtn.primary{background:linear-gradient(180deg,#2c6bd6,#013179);border:none;color:#fff;}
-  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(44,107,214,.5);}
+  .tbtn.primary{background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));border:none;color:#fff;}
+  .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(var(--c-accent2-rgb),.5);}
   .tbtn.small{padding:6px 10px;font-size:11.5px;}
-  .tbtn.on{background:rgba(74,144,255,.16);border-color:rgba(74,144,255,.5);color:#cfe0ff;}
+  .tbtn.on{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
   .tbtn svg{flex:none;width:13px;height:13px;}
-  .toggrp{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:3px;}
-  .toggrp button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.15s;}
-  .toggrp button.on{background:rgba(74,144,255,.16);color:#cfe0ff;}
+  .toggrp{display:flex;gap:2px;background:var(--lift-03);border:1px solid var(--line);padding:3px;}
+  .toggrp button{background:transparent;border:none;color:var(--steel-400);font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.15s;}
+  .toggrp button.on{background:rgba(var(--c-accent-rgb),.16);color:var(--c-tint);}
   .toggrp button:hover{color:var(--ice);}
 
-  .panel{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin-bottom:16px;}
+  .panel{background:var(--lift-035);border:1px solid var(--line);padding:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin-bottom:16px;}
   .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
   .panel .phead h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
   .panel .phead .phsub{font-size:11px;color:var(--steel-400);}
@@ -60,9 +62,9 @@
   @media(max-width:1400px){.kpigrid{grid-template-columns:repeat(3,1fr);}}
   @media(max-width:700px){.kpigrid{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:460px){.kpigrid{grid-template-columns:1fr;}}
-  .kpi-card{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:15px;}
+  .kpi-card{background:var(--lift-035);border:1px solid var(--line);padding:15px;}
   .kpi-label{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;}
-  .kpi-value{font-family:'Sora';font-weight:700;font-size:24px;margin-bottom:6px;}
+  .kpi-value{font-family:var(--font-heading);font-weight:700;font-size:24px;margin-bottom:6px;}
   .kpi-trend{font-size:11px;display:flex;align-items:center;gap:4px;}
   .kpi-trend.up{color:var(--ok);} .kpi-trend.down{color:var(--danger);} .kpi-trend.flat{color:var(--steel-400);}
 
@@ -70,34 +72,34 @@
   .funnel-row{display:grid;grid-template-columns:140px 1fr 150px;align-items:center;gap:12px;font-size:12px;}
   @media(max-width:700px){.funnel-row{grid-template-columns:100px 1fr;} .funnel-meta{grid-column:1/-1;text-align:left!important;}}
   .funnel-name{color:var(--steel-300);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .funnel-track{background:rgba(255,255,255,.06);height:22px;position:relative;overflow:hidden;}
-  .funnel-fill{height:100%;background:linear-gradient(90deg,#2c6bd6,var(--spark));display:flex;align-items:center;padding-left:8px;font-size:10.5px;font-weight:600;color:#fff;white-space:nowrap;min-width:2px;}
+  .funnel-track{background:var(--lift-06);height:22px;position:relative;overflow:hidden;}
+  .funnel-fill{height:100%;background:linear-gradient(90deg,var(--c-accent2),var(--spark));display:flex;align-items:center;padding-left:8px;font-size:10.5px;font-weight:600;color:#fff;white-space:nowrap;min-width:2px;}
   .funnel-meta{text-align:right;color:var(--steel-400);white-space:nowrap;}
 
   .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
-  .filterbar select,.filterbar input[type=text]{background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:12px;padding:8px 10px;outline:none;}
+  .filterbar select,.filterbar input[type=text]{background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:12px;padding:8px 10px;outline:none;}
   .filterbar select:focus,.filterbar input:focus{border-color:var(--spark);}
   .search{position:relative;flex:1;min-width:160px;}
   .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
-  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+  .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:9px 10px 9px 32px;outline:none;}
   .search input:focus{border-color:var(--spark);}
 
   .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
   .stbl th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap;}
   .stbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
   .stbl tr:last-child td{border-bottom:none;}
-  .stbl tr.click{cursor:pointer;} .stbl tr.click:hover{background:rgba(74,144,255,.06);}
+  .stbl tr.click{cursor:pointer;} .stbl tr.click:hover{background:rgba(var(--c-accent-rgb),.06);}
   .tblwrap{overflow-x:auto;}
   .empty3{text-align:center;color:var(--steel-400);padding:26px;font-size:12.5px;}
 
   .tagpill{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;font-weight:600;white-space:nowrap;border:1px solid;}
   .tagpill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
-  .tagpill.g{color:var(--ok);border-color:rgba(74,212,138,.4);background:rgba(74,212,138,.1);}
-  .tagpill.b{color:#cfe0ff;border-color:rgba(74,144,255,.4);background:rgba(74,144,255,.12);}
-  .tagpill.w{color:var(--warn);border-color:rgba(255,176,87,.4);background:rgba(255,176,87,.1);}
-  .tagpill.r{color:var(--danger);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1);}
-  .tagpill.n{color:var(--steel-400);border-color:var(--line);background:rgba(142,163,192,.08);}
-  .tagpill.p{color:var(--idea);border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12);}
+  .tagpill.g{color:var(--ok);border-color:rgba(var(--c-ok-rgb),.4);background:rgba(var(--c-ok-rgb),.1);}
+  .tagpill.b{color:var(--c-tint);border-color:rgba(var(--c-accent-rgb),.4);background:rgba(var(--c-accent-rgb),.12);}
+  .tagpill.w{color:var(--warn);border-color:rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.1);}
+  .tagpill.r{color:var(--danger);border-color:rgba(var(--c-danger-rgb),.4);background:rgba(var(--c-danger-rgb),.1);}
+  .tagpill.n{color:var(--steel-400);border-color:var(--line);background:rgba(var(--c-line-rgb),.08);}
+  .tagpill.p{color:var(--idea);border-color:rgba(var(--c-purple-rgb),.4);background:rgba(var(--c-purple-rgb),.12);}
 
   .rowactions{display:flex;gap:6px;flex-wrap:wrap;}
   .iconbtn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);cursor:pointer;transition:.15s;}
@@ -108,15 +110,15 @@
   @media(max-width:1200px){.leadgrid{grid-template-columns:1fr;}}
   .rowlist{display:flex;flex-direction:column;gap:4px;max-height:640px;overflow-y:auto;margin:-4px;padding:4px;}
   .leadrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid transparent;cursor:pointer;transition:.14s;}
-  .leadrow:hover{background:rgba(255,255,255,.03);}
-  .leadrow.sel{background:rgba(74,144,255,.12);border-color:rgba(74,144,255,.45);}
-  .avc{flex:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2c6bd6,#0a2447);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .leadrow:hover{background:var(--lift-03);}
+  .leadrow.sel{background:rgba(var(--c-accent-rgb),.12);border-color:rgba(var(--c-accent-rgb),.45);}
+  .avc{flex:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--lift-08);}
   .lrname{font-size:12.5px;font-weight:600;} .lrsub{font-size:10.5px;color:var(--steel-400);}
   .lrmeta{margin-left:auto;text-align:right;flex:none;}
-  .lrval{font-family:'Sora';font-weight:700;font-size:12px;}
+  .lrval{font-family:var(--font-heading);font-weight:700;font-size:12px;}
 
   .dhead2{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
-  .dhead2 h2{font-family:'Sora';font-weight:600;font-size:20px;margin-bottom:5px;}
+  .dhead2 h2{font-family:var(--font-heading);font-weight:600;font-size:20px;margin-bottom:5px;}
   .dhead2 .dsub{font-size:12px;color:var(--steel-400);}
   .factcols{display:flex;gap:36px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line);}
   .ifacts{display:flex;flex-direction:column;gap:8px;}
@@ -128,13 +130,13 @@
   .kv .v{font-size:13px;font-weight:600;} .kv{margin-bottom:12px;}
 
   .ptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto;}
-  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:'Sora';font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:10px 13px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+  .ptabs button{background:transparent;border:none;color:var(--steel-400);font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:10px 13px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
   .ptabs button:hover{color:var(--ice);}
-  .ptabs button.on{color:#cfe0ff;border-bottom-color:var(--spark);}
+  .ptabs button.on{color:var(--c-tint);border-bottom-color:var(--spark);}
 
   .actionbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:20px;}
-  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:7px;background:rgba(255,255,255,.03);border:1px solid var(--field-line);color:var(--steel-300);font-family:'Sora';font-weight:600;font-size:11px;padding:14px 6px;cursor:pointer;transition:.16s;text-align:center;}
-  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(74,144,255,.07);transform:translateY(-2px);}
+  .actionbar button{display:flex;flex-direction:column;align-items:center;gap:7px;background:var(--lift-03);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-heading);font-weight:600;font-size:11px;padding:14px 6px;cursor:pointer;transition:.16s;text-align:center;}
+  .actionbar button:hover{border-color:var(--spark);color:var(--ice);background:rgba(var(--c-accent-rgb),.07);transform:translateY(-2px);}
   .actionbar button svg{width:17px;height:17px;color:var(--spark);}
 
   .timeline{display:flex;flex-direction:column;gap:12px;}
@@ -143,30 +145,30 @@
   .tlbody .tld{color:var(--steel-400);font-size:11px;} .tlbody .tlt{color:var(--steel-300);line-height:1.5;}
 
   .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:240px;gap:12px;overflow-x:auto;padding-bottom:8px;}
-  .kcol{background:rgba(255,255,255,.025);border:1px solid var(--line);display:flex;flex-direction:column;min-height:120px;}
+  .kcol{background:var(--lift-025);border:1px solid var(--line);display:flex;flex-direction:column;min-height:120px;}
   .kcol-head{padding:10px 12px;border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--steel-300);display:flex;justify-content:space-between;}
   .kcol-body{padding:8px;display:flex;flex-direction:column;gap:8px;}
-  .kcard{background:rgba(255,255,255,.04);border:1px solid var(--field-line);padding:10px;cursor:pointer;transition:.15s;font-size:11.5px;}
-  .kcard:hover{border-color:var(--spark);background:rgba(74,144,255,.08);}
+  .kcard{background:var(--lift-04);border:1px solid var(--field-line);padding:10px;cursor:pointer;transition:.15s;font-size:11.5px;}
+  .kcard:hover{border-color:var(--spark);background:rgba(var(--c-accent-rgb),.08);}
   .kcard b{display:block;font-size:12px;margin-bottom:3px;}
-  .kcard .kval{font-family:'Sora';font-weight:700;color:var(--spark);margin-top:6px;}
+  .kcard .kval{font-family:var(--font-heading);font-weight:700;color:var(--spark);margin-top:6px;}
   .kcard .kmeta{color:var(--steel-400);font-size:10.5px;}
 
   .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-  .ccard2{background:rgba(255,255,255,.035);border:1px solid var(--line);padding:16px;cursor:pointer;transition:.15s;}
-  .ccard2:hover{border-color:rgba(74,144,255,.5);}
-  .ccard2 h4{font-family:'Sora';font-size:14px;margin-bottom:4px;}
+  .ccard2{background:var(--lift-035);border:1px solid var(--line);padding:16px;cursor:pointer;transition:.15s;}
+  .ccard2:hover{border-color:rgba(var(--c-accent-rgb),.5);}
+  .ccard2 h4{font-family:var(--font-heading);font-size:14px;margin-bottom:4px;}
   .ccard2 .csub{font-size:11px;color:var(--steel-400);margin-bottom:10px;}
   .ccmetrics{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:10px 0;}
-  .ccmetrics .cm{font-size:11px;} .ccmetrics .cm b{display:block;font-family:'Sora';font-size:14px;font-weight:700;}
-  .progbar{height:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px;}
+  .ccmetrics .cm{font-size:11px;} .ccmetrics .cm b{display:block;font-family:var(--font-heading);font-size:14px;font-weight:700;}
+  .progbar{height:6px;background:var(--lift-08);overflow:hidden;margin-top:4px;}
   .progbar i{display:block;height:100%;background:var(--spark);}
   .progbar.over i{background:var(--danger);}
 
   .barchart{display:flex;flex-direction:column;gap:9px;}
   .barrow{display:grid;grid-template-columns:110px 1fr 60px;align-items:center;gap:10px;font-size:11.5px;}
   @media(max-width:600px){.barrow{grid-template-columns:80px 1fr 44px;}}
-  .barrow .btrack{background:rgba(255,255,255,.06);height:14px;position:relative;overflow:hidden;}
+  .barrow .btrack{background:var(--lift-06);height:14px;position:relative;overflow:hidden;}
   .barrow .bfill{height:100%;background:var(--spark);}
   .barrow .bval{text-align:right;color:var(--steel-400);}
 
@@ -180,7 +182,7 @@
 
   .insight-card{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
   .insight-card:last-child{border-bottom:none;}
-  .insight-ic{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(192,132,252,.14);box-shadow:inset 0 0 0 1px rgba(192,132,252,.35);color:var(--idea);}
+  .insight-ic{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-purple-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-purple-rgb),.35);color:var(--idea);}
   .insight-body b{font-size:12.5px;display:block;margin-bottom:2px;}
   .insight-body p{font-size:12px;color:var(--steel-300);line-height:1.5;}
   .disclaimer{font-size:10.5px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
@@ -188,45 +190,108 @@
   .segrow{display:flex;flex-direction:column;gap:8px;}
   .calmonth{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .caldow{font-size:9.5px;text-align:center;color:var(--steel-400);letter-spacing:.05em;text-transform:uppercase;}
-  .calcell{min-height:64px;background:rgba(255,255,255,.025);border:1px solid var(--line);padding:5px;font-size:10px;position:relative;}
+  .calcell{min-height:64px;background:var(--lift-025);border:1px solid var(--line);padding:5px;font-size:10px;position:relative;}
   .calcell.pad{background:transparent;border-color:transparent;}
   .calcell .cd{color:var(--steel-400);margin-bottom:3px;}
-  .caldot{display:block;background:rgba(74,144,255,.18);border-left:2px solid var(--spark);color:#cfe0ff;padding:2px 4px;margin-bottom:2px;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+  .caldot{display:block;background:rgba(var(--c-accent-rgb),.18);border-left:2px solid var(--spark);color:var(--c-tint);padding:2px 4px;margin-bottom:2px;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
 
-  .fov{position:fixed;inset:0;z-index:90;background:rgba(2,8,15,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
+  .fov{position:fixed;inset:0;z-index:90;background:rgba(var(--c-scrim-rgb),.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
   .fov.show{display:flex;}
-  .fcard{background:rgba(9,23,45,.98);border:1px solid var(--line);width:560px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .fcard{background:rgba(var(--c-card-rgb),.98);border:1px solid var(--line);width:560px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px var(--shade-55);}
   .fcard.wide{width:760px;}
-  .fcard h2{font-family:'Sora';font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard h2{font-family:var(--font-heading);font-weight:600;font-size:18px;margin-bottom:6px;}
   .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
   .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
   @media(max-width:560px){.fcard .frow2,.fcard .frow3{grid-template-columns:1fr;}}
   .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
-  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:'Inter';font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13.5px;padding:9px 11px;outline:none;}
   .fcard input:focus,.fcard select:focus,.fcard textarea:focus{border-color:var(--spark);}
   .fcard textarea{min-height:64px;resize:vertical;}
   .fcard .checkrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--steel-300);}
   .fcard .checkrow input{width:auto;}
   .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap;}
   .fcard .noteitem{border-bottom:1px solid var(--line);padding:8px 0;font-size:12px;color:var(--steel-300);}
-  .convertbox{background:rgba(74,144,255,.08);border:1px solid rgba(74,144,255,.3);padding:12px;font-size:12px;color:var(--steel-300);margin-bottom:14px;line-height:1.6;}
+  .convertbox{background:rgba(var(--c-accent-rgb),.08);border:1px solid rgba(var(--c-accent-rgb),.3);padding:12px;font-size:12px;color:var(--steel-300);margin-bottom:14px;line-height:1.6;}
 
-  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:'Inter';}
-  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(7,26,51,.8);border:1px solid rgba(142,163,192,0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
-  .langtoggle:hover{color:var(--ice);border-color:rgba(185,198,218,0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
+  .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:var(--font-body);}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(var(--c-panel-rgb),.8);border:1px solid rgba(var(--c-line-rgb),0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:rgba(var(--c-fieldline-rgb),0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--steel-400);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--steel-400);transition:transform .18s;}
   .langc.open .langtoggle .chev{transform:rotate(180deg);}
-  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(7,26,51,.96);border:1px solid rgba(142,163,192,0.18);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--c-panel-rgb),.96);border:1px solid rgba(var(--c-line-rgb),0.18);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
   .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
-  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:'Inter';font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(74,144,255,.12);color:#cfe0ff;}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(var(--c-accent-rgb),.12);color:var(--c-tint);}
 
-.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(6,26,49,.99),rgba(4,19,38,.99));border-right:1px solid rgba(74,144,255,.22);display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(0,0,0,.16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(142,163,192,.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:'Sora';font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:rgba(31,91,164,.35);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:#78a7d9;font-style:normal;text-align:center;font-size:13px}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(7,26,48,.72)}.ms-sidebox b{display:block;color:#cfe0ff;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#16385b;border:1px solid #3e6288;font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(var(--c-side1-rgb),.99),rgba(var(--c-side2-rgb),.99));border-right:1px solid rgba(var(--c-accent-rgb),.22);display:flex;flex-direction:column;box-shadow:12px 0 34px var(--shade-16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(var(--c-line-rgb),.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:var(--font-heading);font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:var(--nav-on-bg);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:var(--c-navicon);font-style:normal;text-align:center;font-size:13px}.module-side-nav button:hover i,.module-side-nav button.on i{color:var(--nav-on-icon)}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(var(--c-side3-rgb),.72)}.ms-sidebox b{display:block;color:var(--c-tint);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--c-avatar);border:1px solid var(--c-avatar-line);font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 @media(max-width:768px){.wrap{padding:16px 16px 40px;} .factcols,.kvcols{gap:18px;}}
 @media(max-width:480px){.fcard{padding:22px 18px;} .modhead h1{font-size:19px;}}
 @media(max-width:900px){.ovsplit{grid-template-columns:1fr!important;}}
-</style></head><body>
+
+  :root[data-theme="carbon"] .ember{background:#dbe9ff;box-shadow:0 0 7px 2px rgba(79,140,255,.95),0 0 17px 5px rgba(79,140,255,.42);}
+  :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
+  :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
+
+  select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
+
+  /* ── The findings queue ──────────────────────────────────────────────────────────────────── */
+  .swbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .swwhen{font-size:13px;color:var(--steel-300);}
+  .swwhen b{color:var(--ice);font-weight:600;}
+  .swwhen small{display:block;font-size:11px;color:var(--steel-400);margin-top:3px;}
+  .swtally{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .swchip{display:flex;align-items:baseline;gap:7px;padding:8px 12px;background:var(--lift-04);border:1px solid var(--line);}
+  .swchip b{font-family:var(--font-heading);font-size:17px;font-weight:700;color:var(--ice);line-height:1;}
+  .swchip span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);}
+  .swchip.go b{color:var(--ok)}.swchip.maybe b{color:var(--warn)}.swchip.skip b{color:var(--steel-400)}
+  /* A stub is a stub. It says so above the queue, on every card, and on any lead made from one. */
+  .swdemo{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;margin-bottom:16px;
+    background:rgba(var(--c-warn-rgb),.10);border:1px solid rgba(var(--c-warn-rgb),.38);}
+  .swdemo i{font-style:normal;color:var(--warn);font-size:16px;line-height:1.2;}
+  .swdemo p{font-size:12.5px;color:var(--steel-300);line-height:1.5;}
+  .swdemo p b{color:var(--tint-warn);font-weight:600;}
+  .fdlist{display:flex;flex-direction:column;gap:12px;}
+  .fdcard{border:1px solid var(--line);background:var(--lift-03);padding:15px 17px;transition:.16s;}
+  .fdcard:hover{border-color:rgba(var(--c-line-rgb),.32);background:var(--lift-045);}
+  .fdcard.decided{opacity:.62;}
+  .fdtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px;}
+  .fdklass{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:4px 8px;
+    border:1px solid var(--line);color:var(--steel-300);background:var(--lift-06);}
+  .fdklass.hot{color:var(--tint-danger);border-color:rgba(var(--c-danger-rgb),.4);background:rgba(var(--c-danger-rgb),.12);}
+  .fdklass.repair{color:var(--tint-warn);border-color:rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.12);}
+  .fdklass.prototype{color:var(--idea);border-color:rgba(var(--c-purple-rgb),.4);background:rgba(var(--c-purple-rgb),.12);}
+  .fdklass.subcontract{color:var(--tint-info);border-color:rgba(var(--c-accent-rgb),.4);background:rgba(var(--c-accent-rgb),.12);}
+  .fdverdict{font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 9px;}
+  .fdverdict.go{color:var(--tint-ok);background:rgba(var(--c-ok-rgb),.15);border:1px solid rgba(var(--c-ok-rgb),.4);}
+  .fdverdict.maybe{color:var(--tint-warn);background:rgba(var(--c-warn-rgb),.15);border:1px solid rgba(var(--c-warn-rgb),.4);}
+  .fdverdict.skip{color:var(--steel-400);background:var(--lift-06);border:1px solid var(--line);}
+  .fdfrom{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);}
+  .fdstate{margin-left:auto;font-size:11px;color:var(--steel-400);}
+  .fdstate b{color:var(--ok);font-weight:600;}
+  /* The title is the finding. Everything else on the card is there to judge it by. */
+  .fdcard h4{font-family:var(--font-heading);font-size:16.5px;font-weight:600;color:var(--ice);
+    line-height:1.35;margin-bottom:6px;}
+  .fdmeta{font-size:11.5px;color:var(--steel-400);margin-bottom:11px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+  .fdmeta em{font-style:normal;color:var(--steel-300);}
+  .fdneed{font-size:13px;color:var(--steel-300);line-height:1.55;margin-bottom:11px;}
+  .fdgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px;}
+  .fdfact{padding:9px 11px;background:var(--sunken);border:1px solid var(--line);}
+  .fdfact span{display:block;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;}
+  .fdfact p{font-size:12px;color:var(--steel-300);line-height:1.45;}
+  .fdfact p.none{color:var(--steel-400);font-style:italic;}
+  .fdwhy{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .fdwhy b{font-size:10.5px;padding:3px 8px;background:var(--lift-05);border:1px solid var(--line);
+    color:var(--steel-400);font-weight:500;}
+  .fdwhy b.good{color:var(--tint-ok);border-color:rgba(var(--c-ok-rgb),.3);}
+  .fdwhy b.bad{color:var(--tint-danger);border-color:rgba(var(--c-danger-rgb),.3);}
+  .fdacts{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line);}
+  .fdacts a.src{font-size:11.5px;color:var(--spark);text-decoration:none;border-bottom:1px dashed rgba(var(--c-accent-rgb),.45);
+    margin-right:auto;max-width:100%;overflow-wrap:anywhere;}
+  .fdacts a.src:hover{color:var(--ice);}
+  .fdacts .tbtn{padding:8px 15px;}
+  .fdfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -234,6 +299,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <div class="ms-brand"><div class="ms-icon">&#9650;</div><div><h2>MARKETING</h2><small data-i="msub_short">Leads &amp; growth</small></div></div>
   <nav class="module-side-nav" id="moduleSideNav">
     <button class="on" data-ms="overview" onclick="setView('overview')"><i>&#9638;</i><span data-i="nav_overview">Marketing Overview</span></button>
+    <button data-ms="findings" onclick="setView('findings')"><i>&#9906;</i><span data-i="nav_findings">Findings</span></button>
     <button data-ms="leads" onclick="setView('leads')"><i>&#9673;</i><span data-i="nav_leads">Leads</span></button>
     <button data-ms="opportunities" onclick="setView('opportunities')"><i>&#9670;</i><span data-i="nav_opportunities">Opportunities</span></button>
     <button data-ms="tenders" onclick="setView('tenders')"><i>&#9636;</i><span data-i="nav_tenders">Tenders / RFQs</span></button>
@@ -257,7 +323,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <div class="wrap">
   <button class="back" onclick="location.href='hub-desktop.html'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></button>
   <div class="modhead">
-    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90ff" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
+    <div class="ttl"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h1l8 4V5l-8 4H5a2 2 0 0 0-2 2z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg></div>
       <div><h1 data-i="mtitle">Marketing &amp; Sales</h1><p data-i="msub">Leads, campaigns &amp; business growth</p></div></div>
   </div>
 
@@ -271,11 +337,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script>
-<script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="prospect-rules.js"></script><script src="prospect-stub.js"></script><script src="workshop-data.js"></script>
+<script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
+// A value nobody has estimated yet reads as a dash, never as 0 kr — a lead off a forum post
+// carries no budget, and showing one as worthless is as wrong as inventing a figure for it.
+function fmtValue(n){return (n===null||n===undefined||n==='')?'—':fmt(n);}
 function initials(name){return String(name||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();}
 function d(s){return s?new Date(s+"T00:00:00"):null;}
 function daysBetween(a,b){return Math.round((b-a)/86400000);}
@@ -303,14 +372,8 @@ const STAGES=['discovery','qualified','rfq','preparing','quotesent','negotiation
 // Opportunities come from the shared v5 state (WorkshopData) — no page-local seed or counters.
 let OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
 
-let TENDERS=[
-  {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
-  {id:2,ref:'RFQ-2026-012',company:'Copenhagen–Malmö Ferry Terminal',source:'Direct RFQ',description:'Steel platform and railing fabrication for terminal upgrade.',industry:'Marine and shipyard work',deadline:'2026-09-20',value:610000,requirements:'Marine-grade steel certification, on-site installation capability.',documents:['Drawings_RevB.pdf'],responsible:'Marko K.',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-10'},
-  {id:3,ref:'RFQ-2026-013',company:'Landskrona Kommun',source:'Public tender',description:'Steel structure maintenance for municipal recreation facilities.',industry:'Industrial maintenance',deadline:'2026-08-30',value:95000,requirements:'Municipal supplier registration, safety inspection certificate.',documents:['Kommun_Tender.pdf'],responsible:'Elena N.',bidDecision:'bid',status:'submitted',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-08-29'},
-  {id:4,ref:'RFQ-2026-014',company:'Sydstål Prototyping',source:'Private RFQ',description:'Prototype fabrication programme, 3 enclosure units.',industry:'Custom equipment and prototypes',deadline:'2026-09-10',value:210000,requirements:'CNC machining capability, NDA required.',documents:['NDA_Sydstal.pdf','Concept_Drawings.pdf'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:1,linkedEstimateNo:null,reminderDate:'2026-09-05'},
-  {id:5,ref:'RFQ-2026-015',company:'Nordic Frys AB',source:'Direct RFQ',description:'Stainless freezer room fabrication and cold-chain fittings.',industry:'Food-production equipment',deadline:'2026-10-05',value:275000,requirements:'Food-grade stainless certification.',documents:[],responsible:'Elena N.',bidDecision:'no-bid',status:'declined',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:null}
-];
-let nextTenderId=6;
+// Tenders share the same persisted state, backup path and refresh event as leads and campaigns.
+let TENDERS=WorkshopData.getMarketingTenders();
 
 // Campaigns come from the shared v5 state (WorkshopData) — no page-local seed or counters.
 let CAMPAIGNS=WorkshopData.getMarketingCampaigns();
@@ -466,6 +529,175 @@ mk:{
   chart_none:"Sè uште nema podatoci."
 }
 };
+// ── The findings queue (Pass 4.34). The reason codes come off prospect-rules.js as codes, not
+// sentences, so each language says them in its own words and the stored record stays language-free.
+Object.assign(T.en,{
+  nav_findings:"Findings",
+  fd_title:"Findings from the sweep",
+  fd_sub:"Public sources, triaged against what this shop can actually do",
+  fd_ranat:"Last run",
+  fd_ranwhat:"{sources} sources checked · {secs} s",
+  fd_neverran:"No sweep has run yet",
+  fd_neverran_sub:"Run one to see what the queue would put in front of you.",
+  fd_run:"Run the sweep",
+  fd_running:"Sweeping…",
+  fd_done:"{n} new of {found} found.",
+  fd_done_none:"{found} found, nothing new — everything had been reported already.",
+  fd_t_sources:"Sources",fd_t_found:"Found",fd_t_new:"New",fd_t_known:"Seen before",
+  fd_t_dropped:"No source",fd_t_go:"Go",fd_t_maybe:"Maybe",fd_t_skip:"Skip",
+  fd_f_waiting:"Waiting for you",fd_f_go:"Go",fd_f_maybe:"Maybe",fd_f_skip:"Skip",fd_f_decided:"Decided",
+  fd_demo_t:"Sample findings.",
+  fd_demo_p:"Nothing was searched and nothing was found. These are fixed examples, so the workflow "+
+            "can be judged before anything is wired to a model. Every source link points at a demo "+
+            "address, not a live page.",
+  fd_sample:"sample",
+  fd_bysweep:"verdict from the sweep",fd_byrules:"verdict from the rules",
+  fd_accepted:"Accepted →",fd_dismissed:"Rejected",
+  fd_canwedo:"Machines for it",fd_cantwedo:"Not covered",fd_size:"Likely size",fd_approach:"How to approach",
+  fd_more:"+{n} more",fd_down:"{n} down, not counted",fd_alldown:"the only {n} it has are down",
+  fd_nomachine:"no machine in the register for this",
+  fd_nothingmissing:"nothing — all of it is in the shop",
+  fd_unknown:"not stated",
+  fd_nosource:"no source",
+  fd_today:"today",fd_daysago:"{n} d ago",fd_nodate:"no date",
+  fd_accept:"Accept",fd_reject:"Reject",
+  fd_reject_q:"Reject this finding? It will not come back in a later sweep.",
+  fd_accept_t:"Accept as a lead",
+  fd_company:"Company",fd_contact:"Contact",fd_owner:"Owner",
+  fd_accept_note:"Only what the finding actually says goes onto the lead. No email, no phone and no "+
+                 "value are filled in — a made-up figure on a lead card is worse than an empty field.",
+  fd_makelead:"Create the lead",
+  fd_made:"Lead {no} created.",
+  fd_empty:"Nothing waiting under this filter.",
+  fd_empty_never:"Nothing yet. Run the sweep to fill the queue.",
+  fd_disclaimer:"What the shop can do is read from the equipment register, so a finding needing a "+
+                "machine it does not own is shown as such rather than accepted. A finding with no "+
+                "source is dropped, and one already shown is never shown again.",
+  fdv_go:"GO",fdv_maybe:"MAYBE",fdv_skip:"SKIP",
+  fdk_hot:"Hot lead",fdk_prototype:"Prototype",fdk_repair:"Repair",fdk_subcontract:"Subcontract",
+  fdk_weak:"Weak signal",fdk_watch:"Watch",
+  fdp_welding:"welding",fdp_cutting:"cutting",fdp_bending:"bending / forming",
+  fdp_finishing:"grinding / finishing",fdp_lifting:"lifting",fdp_pressing:"pressing",
+  // Keyed by the exact reason code prospect-rules.js returns, so a new rule shows up as a missing
+  // translation rather than silently reading as something it is not.
+  'fdr_covered':"the shop can do it",
+  'fdr_missing-capability':"no machine for",
+  'fdr_outside-trade':"not our trade",
+  'fdr_machine-busy':"machine down",
+  'fdr_no-process-named':"no work named",
+  'fdr_fresh':"fresh",'fdr_stale':"old",'fdr_near':"nearby",'fdr_far':"far",
+  'fdr_no-date':"no date given",'fdr_held-back':"held back to"
+});
+Object.assign(T.sv,{
+  nav_findings:"Fynd",
+  fd_title:"Fynd från genomsökningen",
+  fd_sub:"Offentliga källor, prövade mot vad verkstaden faktiskt kan",
+  fd_ranat:"Senast körd",
+  fd_ranwhat:"{sources} källor genomsökta · {secs} s",
+  fd_neverran:"Ingen genomsökning har körts",
+  fd_neverran_sub:"Kör en för att se vad kön skulle lägga framför dig.",
+  fd_run:"Kör genomsökningen",
+  fd_running:"Söker…",
+  fd_done:"{n} nya av {found} hittade.",
+  fd_done_none:"{found} hittade, inget nytt — allt var redan rapporterat.",
+  fd_t_sources:"Källor",fd_t_found:"Hittade",fd_t_new:"Nya",fd_t_known:"Sedda förut",
+  fd_t_dropped:"Utan källa",fd_t_go:"Kör",fd_t_maybe:"Kanske",fd_t_skip:"Skippa",
+  fd_f_waiting:"Väntar på dig",fd_f_go:"Kör",fd_f_maybe:"Kanske",fd_f_skip:"Skippa",fd_f_decided:"Avgjorda",
+  fd_demo_t:"Exempelfynd.",
+  fd_demo_p:"Ingenting har sökts och ingenting har hittats. Det här är fasta exempel, så att arbetsflödet "+
+            "kan bedömas innan något kopplas till en modell. Varje källänk pekar på en demoadress, "+
+            "inte en riktig sida.",
+  fd_sample:"exempel",
+  fd_bysweep:"omdöme från genomsökningen",fd_byrules:"omdöme från reglerna",
+  fd_accepted:"Accepterad →",fd_dismissed:"Avvisad",
+  fd_canwedo:"Maskiner för det",fd_cantwedo:"Täcks inte",fd_size:"Trolig omfattning",fd_approach:"Hur man tar kontakt",
+  fd_more:"+{n} till",fd_down:"{n} står stilla, ej medräknad",fd_alldown:"de {n} den har står stilla",
+  fd_nomachine:"ingen maskin i registret för detta",
+  fd_nothingmissing:"inget — allt finns i verkstaden",
+  fd_unknown:"anges inte",
+  fd_nosource:"ingen källa",
+  fd_today:"idag",fd_daysago:"{n} d sedan",fd_nodate:"inget datum",
+  fd_accept:"Acceptera",fd_reject:"Avvisa",
+  fd_reject_q:"Avvisa det här fyndet? Det kommer inte tillbaka i en senare genomsökning.",
+  fd_accept_t:"Acceptera som lead",
+  fd_company:"Företag",fd_contact:"Kontakt",fd_owner:"Ansvarig",
+  fd_accept_note:"Bara det fyndet faktiskt säger förs över till leadet. Ingen e-post, inget telefonnummer "+
+                 "och inget värde fylls i — en påhittad siffra på ett lead är värre än ett tomt fält.",
+  fd_makelead:"Skapa leadet",
+  fd_made:"Lead {no} skapat.",
+  fd_empty:"Inget väntar under det här filtret.",
+  fd_empty_never:"Inget än. Kör genomsökningen för att fylla kön.",
+  fd_disclaimer:"Vad verkstaden kan läses ur maskinregistret, så ett fynd som kräver en maskin den inte "+
+                "har visas som just det i stället för att accepteras. Ett fynd utan källa förkastas, och "+
+                "ett som redan visats visas aldrig igen.",
+  fdv_go:"KÖR",fdv_maybe:"KANSKE",fdv_skip:"SKIPPA",
+  fdk_hot:"Hett lead",fdk_prototype:"Prototyp",fdk_repair:"Reparation",fdk_subcontract:"Underleverans",
+  fdk_weak:"Svag signal",fdk_watch:"Bevaka",
+  fdp_welding:"svetsning",fdp_cutting:"skärning",fdp_bending:"kantning / formning",
+  fdp_finishing:"slipning / efterbearbetning",fdp_lifting:"lyft",fdp_pressing:"pressning",
+  'fdr_covered':"verkstaden klarar det",
+  'fdr_missing-capability':"ingen maskin för",
+  'fdr_outside-trade':"inte vår bransch",
+  'fdr_machine-busy':"maskinen står",
+  'fdr_no-process-named':"inget arbete angivet",
+  'fdr_fresh':"färskt",'fdr_stale':"gammalt",'fdr_near':"nära",'fdr_far':"långt bort",
+  'fdr_no-date':"inget datum angivet",'fdr_held-back':"nedgraderat till"
+});
+Object.assign(T.mk,{
+  nav_findings:"Naodi",
+  fd_title:"Naodi od pregledot",
+  fd_sub:"Javni izvori, proverени sprema toa što rabotilnicata navistina može",
+  fd_ranat:"Posleden pregled",
+  fd_ranwhat:"{sources} izvori proverени · {secs} s",
+  fd_neverran:"Ušte nemа pušteno pregled",
+  fd_neverran_sub:"Pušti eden za da vidiš što bi ti stavila redicata pred tebe.",
+  fd_run:"Pušti pregled",
+  fd_running:"Pregleduva…",
+  fd_done:"{n} novi od {found} najdeni.",
+  fd_done_none:"{found} najdeni, ništo novo — se beše veće javeno.",
+  fd_t_sources:"Izvori",fd_t_found:"Najdeni",fd_t_new:"Novi",fd_t_known:"Veće videni",
+  fd_t_dropped:"Bez izvor",fd_t_go:"Odi",fd_t_maybe:"Možebi",fd_t_skip:"Preskoči",
+  fd_f_waiting:"Čeka na tebe",fd_f_go:"Odi",fd_f_maybe:"Možebi",fd_f_skip:"Preskoči",fd_f_decided:"Rešeni",
+  fd_demo_t:"Primeri, ne vistinski naodi.",
+  fd_demo_p:"Ništo ne e pretražuvano i ništo ne e najdeno. Ova se fiksni primeri, za da se oceni "+
+            "rabotniot tek pred da se vrzе za model. Sekoj link vodi na demo adresa, ne na živa stranica.",
+  fd_sample:"primer",
+  fd_bysweep:"ocena od pregledot",fd_byrules:"ocena od praviлата",
+  fd_accepted:"Prifateno →",fd_dismissed:"Otfrleno",
+  fd_canwedo:"Mašini za toa",fd_cantwedo:"Ne e pokrieno",fd_size:"Vervojatna golemina",fd_approach:"Kako da se pristapi",
+  fd_more:"+{n} ušte",fd_down:"{n} ne rabotat, ne se brojат",fd_alldown:"edinstvenite {n} ne rabotat",
+  fd_nomachine:"nemа mašina vo registarot za ova",
+  fd_nothingmissing:"ništo — se e vo rabotilnicata",
+  fd_unknown:"ne e navedeno",
+  fd_nosource:"bez izvor",
+  fd_today:"denes",fd_daysago:"pred {n} d",fd_nodate:"bez datum",
+  fd_accept:"Prifati",fd_reject:"Otfrli",
+  fd_reject_q:"Da se otfrli ovoj naod? Nemа da se vrati vo naredniot pregled.",
+  fd_accept_t:"Prifati kako lead",
+  fd_company:"Firma",fd_contact:"Kontakt",fd_owner:"Odgovoren",
+  fd_accept_note:"Samo ona što naodot navistina go veli odi na leadot. Ne se polni ni mejl, ni telefon, "+
+                 "ni vrednost — izmislena cifra na lead e pološa od prazno pole.",
+  fd_makelead:"Napravi lead",
+  fd_made:"Lead {no} napraven.",
+  fd_empty:"Ništo ne čeka pod ovoj filter.",
+  fd_empty_never:"Ušte ništo. Pušti pregled za da se napolni redicata.",
+  fd_disclaimer:"Što može rabotilnicata se čita od registarot na mašini, pa naod što bara mašina što "+
+                "ja nemа se prikažuva kako takov namesto da se prifati. Naod bez izvor se otfrla, a "+
+                "veće prikažan nikogaš ne se prikažuva povtorno.",
+  fdv_go:"ODI",fdv_maybe:"MOŽEBI",fdv_skip:"PRESKOČI",
+  fdk_hot:"Vruć lead",fdk_prototype:"Prototip",fdk_repair:"Popravka",fdk_subcontract:"Podizveduvač",
+  fdk_weak:"Slab signal",fdk_watch:"Nadgleduvaj",
+  fdp_welding:"variење",fdp_cutting:"režeње",fdp_bending:"krivење / formiraње",
+  fdp_finishing:"brusење / dorabotka",fdp_lifting:"kreneње",fdp_pressing:"presuvaње",
+  'fdr_covered':"rabotilnicata može",
+  'fdr_missing-capability':"nemа mašina za",
+  'fdr_outside-trade':"ne e naša struka",
+  'fdr_machine-busy':"mašinata ne raboti",
+  'fdr_no-process-named':"ne e navedena rabota",
+  'fdr_fresh':"sveže",'fdr_stale':"staro",'fdr_near':"blizu",'fdr_far':"daleku",
+  'fdr_no-date':"bez daden datum",'fdr_held-back':"spušteno na"
+});
+
 let LANG='en';
 function t(){return T[LANG];}
 function tpl(str,vals){return str.replace(/\{(\w+)\}/g,(m,k)=>(vals[k]!==undefined?vals[k]:m));}
@@ -688,6 +920,227 @@ function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}<
 function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]}));}
 function ownerOptions(){return [{v:'Aleksandar C.',l:'Aleksandar C.'},{v:'Elena N.',l:'Elena N.'},{v:'Marko K.',l:'Marko K.'}];}
 
+// ═══════════════ FINDINGS VIEW ═══════════════
+// The queue between an outward sweep of public sources and the person who has to decide what to
+// do about it. Everything shown here has already been triaged by prospect-rules.js against the
+// real equipment register, so no card can offer work the shop cannot do. Nothing on a card is
+// written by this page: the verdict, the reasons and the machines all come off the record.
+let fdFilter='waiting';
+let fdSweeping=false;
+
+function fdFindings(){return WorkshopData.getProspectFindings();}
+const FD_ORDER={go:0,maybe:1,skip:2};
+function fdSort(rows){
+  return rows.slice().sort((a,b)=>{
+    const v=(FD_ORDER[a.verdict]??3)-(FD_ORDER[b.verdict]??3);
+    if(v)return v;
+    return String(b.date||'').localeCompare(String(a.date||''));
+  });
+}
+function fdVisible(){
+  const all=fdFindings();
+  if(fdFilter==='decided')return all.filter(f=>f.status!=='new')
+    .sort((a,b)=>String(b.decidedAt||'').localeCompare(String(a.decidedAt||'')));
+  if(fdFilter==='waiting')return fdSort(all.filter(f=>f.status==='new'));
+  return fdSort(all.filter(f=>f.status==='new'&&f.verdict===fdFilter));
+}
+function fdAgo(iso){
+  const tt=t();if(!iso)return tt.fd_nodate;
+  const days=Math.floor((currentDate()-new Date(iso))/86400000);
+  if(days<=0)return tt.fd_today;
+  return tpl(tt.fd_daysago,{n:days});
+}
+function fdWhen(iso){
+  if(!iso)return '—';
+  try{return new Date(iso).toLocaleString(T[LANG].locale||'en-GB',
+    {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}
+}
+// The rules hand back reason codes so the page can say them in the reader's own language rather
+// than storing one language's wording in the data.
+const FD_GOOD=['covered','fresh','near'];
+const FD_BAD=['missing-capability','outside-trade','stale','far','held-back'];
+function fdReason(r){
+  const tt=t();
+  const label=tt['fdr_'+r.code]||r.code;
+  const cls=FD_GOOD.includes(r.code)?'good':(FD_BAD.includes(r.code)?'bad':'');
+  const detail=r.detail
+    ?(': '+(r.code==='held-back'?(tt['fdv_'+r.detail]||r.detail):fdProcessNames(r.detail)))
+    :'';
+  return `<b class="${cls}">${esc(label)}${esc(detail)}</b>`;
+}
+function fdProcessNames(detail){
+  const tt=t();
+  return String(detail).split(',').map(x=>x.trim()).map(x=>tt['fdp_'+x]||x).join(', ');
+}
+
+// "Machines for it" must mean machines that could do it today. A quarantined press listed under
+// that heading reads as capacity the shop has not got, so the ones that are down are counted
+// separately rather than padding the list. The statuses come from the rules module, so the page
+// and the triage never disagree about what "down" means.
+function fdDown(m){
+  const out=(window.ProspectRules&&ProspectRules.OUT_OF_ACTION)||[];
+  return out.includes(String(m.status||'').toLowerCase());
+}
+function renderFindingsCard(f){
+  const tt=t();
+  const all=(f.match&&f.match.machines)||[];
+  const machines=all.filter(m=>!fdDown(m));
+  const down=all.length-machines.length;
+  const missing=((f.match&&f.match.missing)||[]).concat((f.match&&f.match.outside)||[]);
+  const state=f.status==='accepted'
+    ? `<span class="fdstate">${tt.fd_accepted} <b>${esc(f.leadNo||'')}</b></span>`
+    : (f.status==='dismissed'?`<span class="fdstate">${tt.fd_dismissed}</span>`:'');
+  const acts=f.status==='new'
+    ? `<button class="tbtn primary" onclick="fdAccept('${esc(f.id)}')">${tt.fd_accept}</button>
+       <button class="tbtn" onclick="fdDismiss('${esc(f.id)}')">${tt.fd_reject}</button>`
+    : '';
+  return `<div class="fdcard ${f.status!=='new'?'decided':''}">
+    <div class="fdtop">
+      <span class="fdklass ${esc(f.klass)}">${esc(tt['fdk_'+f.klass]||f.klass)}</span>
+      <span class="fdverdict ${esc(f.verdict)}">${esc(tt['fdv_'+f.verdict]||f.verdict)}</span>
+      <span class="fdfrom">${f.verdictFrom==='sweep'?tt.fd_bysweep:tt.fd_byrules}</span>
+      ${state}
+    </div>
+    <h4>${esc(f.title)}</h4>
+    <div class="fdmeta">
+      <em>${esc(f.sourceName||tt.fd_nosource)}</em> ·
+      <span>${esc(fdAgo(f.date))}</span> ·
+      <span>${esc(f.place||'—')}${Number.isFinite(f.distanceKm)&&f.distanceKm?` · ${f.distanceKm} km`:''}</span>
+      ${f.demo?` · <span style="color:var(--warn)">${tt.fd_sample}</span>`:''}
+    </div>
+    ${f.need?`<p class="fdneed">${esc(f.need)}</p>`:''}
+    <div class="fdgrid">
+      <div class="fdfact"><span>${tt.fd_canwedo}</span>${machines.length
+        ? `<p>${machines.slice(0,3).map(m=>esc(m.name)+' ('+esc(m.status)+')').join('<br>')}
+           ${machines.length>3?`<br>${tpl(tt.fd_more,{n:machines.length-3})}`:''}
+           ${down?`<br><span style="color:var(--steel-400)">${tpl(tt.fd_down,{n:down})}</span>`:''}</p>`
+        : `<p class="none">${down?tpl(tt.fd_alldown,{n:down}):tt.fd_nomachine}</p>`}</div>
+      <div class="fdfact"><span>${tt.fd_cantwedo}</span>${missing.length
+        ? `<p>${esc(fdProcessNames(missing.join(', ')))}</p>`
+        : `<p class="none">${tt.fd_nothingmissing}</p>`}</div>
+      <div class="fdfact"><span>${tt.fd_size}</span><p ${f.size?'':'class="none"'}>${esc(f.size||tt.fd_unknown)}</p></div>
+      <div class="fdfact"><span>${tt.fd_approach}</span><p ${f.approach?'':'class="none"'}>${esc(f.approach||tt.fd_unknown)}</p></div>
+    </div>
+    <div class="fdwhy">${(f.reasons||[]).map(fdReason).join('')}</div>
+    <div class="fdacts">
+      ${f.sourceUrl?`<a class="src" href="${esc(f.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(f.sourceUrl)}</a>`:`<span class="fdstate" style="margin-right:auto">${tt.fd_nosource}</span>`}
+      ${acts}
+    </div>
+  </div>`;
+}
+
+function renderFindings(){
+  const tt=t();
+  const sum=WorkshopData.prospectQueueSummary();
+  const sweep=sum.lastSweep;
+  const rows=fdVisible();
+  const chip=(n,label,cls)=>`<div class="swchip ${cls||''}"><b>${n}</b><span>${label}</span></div>`;
+  const tab=(key,label,n)=>`<button class="tbtn ${fdFilter===key?'primary':''}" onclick="fdSetFilter('${key}')">${label}${n!==null?` (${n})`:''}</button>`;
+
+  const bar=`<div class="swbar">
+    <div class="swwhen">${sweep
+      ? `<b>${tt.fd_ranat} ${esc(fdWhen(sweep.ranAt))}</b>
+         <small>${esc(tpl(tt.fd_ranwhat,{
+             sources:sweep.sourcesChecked||'—',
+             secs:sweep.durationMs?(Math.round(sweep.durationMs/100)/10):'—'}))}</small>`
+      : `<b>${tt.fd_neverran}</b><small>${tt.fd_neverran_sub}</small>`}</div>
+    <button class="tbtn primary" id="fdRun" onclick="fdRunSweep()">${fdSweeping?tt.fd_running:tt.fd_run}</button>
+  </div>`;
+
+  const tally=sweep?`<div class="swtally">
+    ${chip(sweep.sourcesChecked||'—',tt.fd_t_sources)}
+    ${chip(sweep.tally.found,tt.fd_t_found)}
+    ${chip(sweep.tally.ready,tt.fd_t_new)}
+    ${chip(sweep.tally.known,tt.fd_t_known)}
+    ${chip(sweep.tally.dropped,tt.fd_t_dropped)}
+    ${chip(sum.go,tt.fd_t_go,'go')}
+    ${chip(sum.maybe,tt.fd_t_maybe,'maybe')}
+    ${chip(sum.skip,tt.fd_t_skip,'skip')}
+  </div>`:'';
+
+  // Anybody could pick this page up and believe the shop had a nightly sweep running. It does not.
+  const demo=(sweep&&sweep.source==='stub')
+    ?`<div class="swdemo"><i>&#9888;</i><p><b>${tt.fd_demo_t}</b> ${tt.fd_demo_p}</p></div>`:'';
+
+  const body=rows.length
+    ?`<div class="fdlist">${rows.map(renderFindingsCard).join('')}</div>`
+    :`<div class="empty3">${sweep?tt.fd_empty:tt.fd_empty_never}</div>`;
+
+  return `<div class="panel">
+    <div class="phead"><h3>${tt.fd_title}</h3><span class="phsub">${tt.fd_sub}</span></div>
+    ${bar}${demo}${tally}
+    <div class="fdfilters">
+      ${tab('waiting',tt.fd_f_waiting,sum.waiting)}
+      ${tab('go',tt.fd_f_go,sum.go)}
+      ${tab('maybe',tt.fd_f_maybe,sum.maybe)}
+      ${tab('skip',tt.fd_f_skip,sum.skip)}
+      ${tab('decided',tt.fd_f_decided,sum.accepted+sum.dismissed)}
+    </div>
+    ${body}
+    <div class="disclaimer">${tt.fd_disclaimer}</div>
+  </div>`;
+}
+
+function fdSetFilter(v){fdFilter=v;renderApp();}
+
+// Running the sweep means, for now, handing the stub's fixed list to the same triage a real sweep
+// would go through. When there is a model behind it, only the source of the list changes.
+function fdRunSweep(){
+  const tt=t();
+  if(fdSweeping)return;
+  fdSweeping=true;renderApp();
+  const started=Date.now();
+  setTimeout(()=>{
+    const got=WorkshopData.recordProspectSweep(
+      (window.ProspectStub?ProspectStub.sample():[]),
+      {source:'stub',sourcesChecked:(window.ProspectStub?ProspectStub.SOURCE_COUNT:null),
+       durationMs:Date.now()-started});
+    fdSweeping=false;
+    refreshMarketingFromShared();
+    fdFilter='waiting';
+    renderApp();
+    if(got&&!got.error){
+      wAlert(got.tally.ready
+        ? tpl(tt.fd_done,{n:got.tally.ready,found:got.tally.found})
+        : tpl(tt.fd_done_none,{found:got.tally.found}));
+    }
+  },350);
+}
+
+// A lead needs a name to sit under. The finding may not carry one — a classified ad rarely does —
+// so the page asks rather than inventing a company, and offers what the post itself said.
+function fdAccept(id){
+  const tt=t();
+  const f=WorkshopData.findProspectFinding(id);
+  if(!f)return;
+  openModal(`<h2>${tt.fd_accept_t}</h2><div class="fsub">${esc(f.title)}</div>
+    <div class="frow2">${field('fdCompany',tt.fd_company,f.company||f.title)}${field('fdContact',tt.fd_contact,'')}</div>
+    <div class="frow2">${fieldSelect('fdOwner',tt.fd_owner,ownerOptions(),'Aleksandar C.')}</div>
+    <p class="disclaimer">${tt.fd_accept_note}</p>
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button>
+      <button class="tbtn primary" onclick="fdAcceptSave('${esc(id)}')">${tt.fd_makelead}</button></div>`,true);
+}
+function fdAcceptSave(id){
+  const tt=t();
+  const got=WorkshopData.acceptProspectFinding(id,{
+    company:$('fdCompany').value.trim(),
+    contact:$('fdContact').value.trim(),
+    by:$('fdOwner').value});
+  if(got&&got.error){wAlert(got.error);return;}
+  closeModal();
+  refreshMarketingFromShared();
+  renderApp();
+  wAlert(tpl(tt.fd_made,{no:got.lead.no}));
+}
+function fdDismiss(id){
+  const tt=t();
+  wConfirm(tt.fd_reject_q,()=>{
+    const got=WorkshopData.dismissProspectFinding(id,{by:'Aleksandar C.'});
+    if(got&&got.error){wAlert(got.error);return;}
+    renderApp();
+  },{yes:tt.fd_reject,no:tt.btn_cancel});
+}
+
 // ═══════════════ LEADS VIEW ═══════════════
 function leadIndustryList(){return [...new Set(LEADS.map(l=>l.industry))];}
 function filteredLeads(){const q=leadQuery.trim().toLowerCase();
@@ -704,8 +1157,8 @@ function renderLeads(){
   if(!getLead(selectedLeadId)&&rows.length)selectedLeadId=rows[0].id;
   const listHtml=rows.length?rows.map(l=>`<div class="leadrow ${l.id===selectedLeadId?'sel':''}" role="button" tabindex="0" onclick="selectLead(${l.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectLead(${l.id})}">
       <div class="avc">${initials(l.company)}</div>
-      <div style="min-width:0;"><div class="lrname">${esc(l.company)}</div><div class="lrsub">${esc(l.no)} · ${esc(l.contact)}</div></div>
-      <div class="lrmeta"><div class="lrval">${fmt(l.value)}</div><span class="tagpill ${PRIORITY_CLASS[l.priority]}">${tt['pr_'+l.priority]}</span></div>
+      <div style="min-width:0;"><div class="lrname">${esc(l.company)}</div><div class="lrsub">${esc(l.no)}${l.contact?' · '+esc(l.contact):''}</div></div>
+      <div class="lrmeta"><div class="lrval">${fmtValue(l.value)}</div><span class="tagpill ${PRIORITY_CLASS[l.priority]}">${tt['pr_'+l.priority]}</span></div>
     </div>`).join(''):`<div class="empty3">${tt.empty_leads}</div>`;
   const industries=leadIndustryList();
   return `<div class="panel">
@@ -767,8 +1220,8 @@ function renderLeadDetail(){
   }else{
     body=l.notes&&l.notes.length?l.notes.map(n=>`<div class="noteitem"><div style="color:var(--steel-400);font-size:11px;">${fmtDate(n.date)} · ${esc(n.author)}</div>${esc(n.text)}</div>`).join(''):`<div class="empty3">${tt.empty_notes}</div>`;
   }
-  return `<div class="dhead2"><div><h2>${esc(l.company)}</h2><div class="dsub">${esc(l.no)} · ${esc(l.contact)} · <span class="tagpill ${LEAD_STATUS_CLASS[l.status]}">${tt['ls_'+l.status]}</span></div></div>
-    <div class="lrval" style="font-size:19px;">${fmt(l.value)}</div></div>
+  return `<div class="dhead2"><div><h2>${esc(l.company)}</h2><div class="dsub">${esc(l.no)}${l.contact?' · '+esc(l.contact):''} · <span class="tagpill ${LEAD_STATUS_CLASS[l.status]}">${tt['ls_'+l.status]}</span></div></div>
+    <div class="lrval" style="font-size:19px;">${fmtValue(l.value)}</div></div>
     ${tabs}${body}
     <div class="actionbar">
       <button onclick="openLeadForm(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>${tt.act_editlead}</button>
@@ -1008,7 +1461,7 @@ function renderTenders(){
     <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tenderSearch" type="text" placeholder="${tt.search_tenders}" aria-label="${tt.search_tenders}" value="${esc(tenderQuery)}"></div></div>
     ${rows.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_ref}</th><th>${tt.th_company}</th><th>${tt.th_industry}</th><th>${tt.th_deadline}</th><th>${tt.th_value}</th><th>${tt.th_bid}</th><th>${tt.th_status}</th><th>${tt.th_responsible}</th><th>${tt.th_actions}</th></tr></thead><tbody>
       ${rows.map(x=>`<tr class="${deadlineClass(x.deadline)}"><td><b>${esc(x.ref)}</b></td><td>${esc(x.company)}</td><td>${esc(x.industry)}</td>
-        <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmt(x.value)}</td>
+        <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmtValue(x.value)}</td>
         <td><span class="tagpill ${BID_CLASS[x.bidDecision]}">${tt['bid_'+x.bidDecision]}</span></td>
         <td><span class="tagpill ${TENDER_STATUS_CLASS[x.status]||'n'}">${tt['ts_'+x.status.replace('-','')]||x.status}</span></td>
         <td>${esc(x.responsible)}</td><td class="rowactions"><button class="iconbtn" title="${tt.btn_edit}" onclick="openTenderForm(${x.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></td></tr>`).join('')}
@@ -1019,7 +1472,7 @@ function attachTenders(){const s=$('tenderSearch');if(s)s.addEventListener('inpu
 function openTenderForm(id){
   const tt=t();const x=id?TENDERS.find(r=>r.id===id):null;
   const html=`<h2>${x?tt.btn_edit:tt.m_newtender_t}</h2>
-    <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:('RFQ-2026-0'+(TENDERS.length+11)))}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
+    <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:WorkshopData.nextMarketingTenderRef())}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
     <div class="frow2">${field('tfIndustry',tt.fl_industry,x?x.industry:'')}${field('tfSource',tt.fl_source,x?x.source:'')}</div>
     <div class="frow">${fieldTextarea('tfDesc',tt.fl_description,x?x.description:'')}</div>
     <div class="frow3">${field('tfDeadline',tt.fl_deadline,x?x.deadline:'','date')}${field('tfValue',tt.fl_value,x?x.value:'','number')}${fieldSelect('tfResponsible',tt.fl_responsible,ownerOptions(),x?x.responsible:'Aleksandar C.')}</div>
@@ -1031,10 +1484,12 @@ function openTenderForm(id){
 function saveTenderForm(id){
   const ref=$('tfRef').value.trim(),company=$('tfCompany').value.trim();if(!ref||!company)return;
   const data={ref,company,source:$('tfSource').value.trim(),industry:$('tfIndustry').value.trim(),description:$('tfDesc').value.trim(),
-    deadline:$('tfDeadline').value||'',value:Number($('tfValue').value)||0,responsible:$('tfResponsible').value,
+    deadline:$('tfDeadline').value||'',value:$('tfValue').value.trim()===''?null:Number($('tfValue').value),responsible:$('tfResponsible').value,
     bidDecision:$('tfBid').value,reminderDate:$('tfReminder').value||null,requirements:$('tfRequirements').value.trim()};
-  if(id){Object.assign(TENDERS.find(r=>r.id===id),data);}
-  else{TENDERS.unshift(Object.assign({id:nextTenderId++,documents:[],status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null},data));}
+  if(id!=null)data.id=id;
+  const saved=WorkshopData.upsertMarketingTender(data);
+  if(saved.error){wAlert(saved.error);return;}
+  // save() has already refreshed TENDERS through workshop:data; do not insert a second copy.
   closeModal();renderApp();
 }
 
@@ -1306,6 +1761,7 @@ function renderAnalytics(){
 // ═══════════════ APP DISPATCH ═══════════════
 const VIEWS={
   overview:{render:renderOverview},
+  findings:{render:renderFindings},
   leads:{render:renderLeads,attach:attachLeads},
   opportunities:{render:renderOpportunities,attach:attachOpportunities},
   tenders:{render:renderTenders,attach:attachTenders},
@@ -1331,6 +1787,7 @@ function refreshMarketingFromShared(){
   LEADS=WorkshopData.getMarketingLeads();
   OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
   CAMPAIGNS=WorkshopData.getMarketingCampaigns();
+  TENDERS=WorkshopData.getMarketingTenders();
 }
 window.addEventListener('workshop:data',()=>{refreshMarketingFromShared();renderApp();});
 
