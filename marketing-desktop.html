@@ -372,14 +372,8 @@ const STAGES=['discovery','qualified','rfq','preparing','quotesent','negotiation
 // Opportunities come from the shared v5 state (WorkshopData) — no page-local seed or counters.
 let OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
 
-let TENDERS=[
-  {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
-  {id:2,ref:'RFQ-2026-012',company:'Copenhagen–Malmö Ferry Terminal',source:'Direct RFQ',description:'Steel platform and railing fabrication for terminal upgrade.',industry:'Marine and shipyard work',deadline:'2026-09-20',value:610000,requirements:'Marine-grade steel certification, on-site installation capability.',documents:['Drawings_RevB.pdf'],responsible:'Marko K.',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-10'},
-  {id:3,ref:'RFQ-2026-013',company:'Landskrona Kommun',source:'Public tender',description:'Steel structure maintenance for municipal recreation facilities.',industry:'Industrial maintenance',deadline:'2026-08-30',value:95000,requirements:'Municipal supplier registration, safety inspection certificate.',documents:['Kommun_Tender.pdf'],responsible:'Elena N.',bidDecision:'bid',status:'submitted',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-08-29'},
-  {id:4,ref:'RFQ-2026-014',company:'Sydstål Prototyping',source:'Private RFQ',description:'Prototype fabrication programme, 3 enclosure units.',industry:'Custom equipment and prototypes',deadline:'2026-09-10',value:210000,requirements:'CNC machining capability, NDA required.',documents:['NDA_Sydstal.pdf','Concept_Drawings.pdf'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:1,linkedEstimateNo:null,reminderDate:'2026-09-05'},
-  {id:5,ref:'RFQ-2026-015',company:'Nordic Frys AB',source:'Direct RFQ',description:'Stainless freezer room fabrication and cold-chain fittings.',industry:'Food-production equipment',deadline:'2026-10-05',value:275000,requirements:'Food-grade stainless certification.',documents:[],responsible:'Elena N.',bidDecision:'no-bid',status:'declined',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:null}
-];
-let nextTenderId=6;
+// Tenders share the same persisted state, backup path and refresh event as leads and campaigns.
+let TENDERS=WorkshopData.getMarketingTenders();
 
 // Campaigns come from the shared v5 state (WorkshopData) — no page-local seed or counters.
 let CAMPAIGNS=WorkshopData.getMarketingCampaigns();
@@ -1467,7 +1461,7 @@ function renderTenders(){
     <div class="filterbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tenderSearch" type="text" placeholder="${tt.search_tenders}" aria-label="${tt.search_tenders}" value="${esc(tenderQuery)}"></div></div>
     ${rows.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${tt.th_ref}</th><th>${tt.th_company}</th><th>${tt.th_industry}</th><th>${tt.th_deadline}</th><th>${tt.th_value}</th><th>${tt.th_bid}</th><th>${tt.th_status}</th><th>${tt.th_responsible}</th><th>${tt.th_actions}</th></tr></thead><tbody>
       ${rows.map(x=>`<tr class="${deadlineClass(x.deadline)}"><td><b>${esc(x.ref)}</b></td><td>${esc(x.company)}</td><td>${esc(x.industry)}</td>
-        <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmt(x.value)}</td>
+        <td class="${followupClass(x.deadline)}">${fmtDate(x.deadline)}</td><td>${fmtValue(x.value)}</td>
         <td><span class="tagpill ${BID_CLASS[x.bidDecision]}">${tt['bid_'+x.bidDecision]}</span></td>
         <td><span class="tagpill ${TENDER_STATUS_CLASS[x.status]||'n'}">${tt['ts_'+x.status.replace('-','')]||x.status}</span></td>
         <td>${esc(x.responsible)}</td><td class="rowactions"><button class="iconbtn" title="${tt.btn_edit}" onclick="openTenderForm(${x.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></td></tr>`).join('')}
@@ -1478,7 +1472,7 @@ function attachTenders(){const s=$('tenderSearch');if(s)s.addEventListener('inpu
 function openTenderForm(id){
   const tt=t();const x=id?TENDERS.find(r=>r.id===id):null;
   const html=`<h2>${x?tt.btn_edit:tt.m_newtender_t}</h2>
-    <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:('RFQ-2026-0'+(TENDERS.length+11)))}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
+    <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:WorkshopData.nextMarketingTenderRef())}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
     <div class="frow2">${field('tfIndustry',tt.fl_industry,x?x.industry:'')}${field('tfSource',tt.fl_source,x?x.source:'')}</div>
     <div class="frow">${fieldTextarea('tfDesc',tt.fl_description,x?x.description:'')}</div>
     <div class="frow3">${field('tfDeadline',tt.fl_deadline,x?x.deadline:'','date')}${field('tfValue',tt.fl_value,x?x.value:'','number')}${fieldSelect('tfResponsible',tt.fl_responsible,ownerOptions(),x?x.responsible:'Aleksandar C.')}</div>
@@ -1490,10 +1484,12 @@ function openTenderForm(id){
 function saveTenderForm(id){
   const ref=$('tfRef').value.trim(),company=$('tfCompany').value.trim();if(!ref||!company)return;
   const data={ref,company,source:$('tfSource').value.trim(),industry:$('tfIndustry').value.trim(),description:$('tfDesc').value.trim(),
-    deadline:$('tfDeadline').value||'',value:Number($('tfValue').value)||0,responsible:$('tfResponsible').value,
+    deadline:$('tfDeadline').value||'',value:$('tfValue').value.trim()===''?null:Number($('tfValue').value),responsible:$('tfResponsible').value,
     bidDecision:$('tfBid').value,reminderDate:$('tfReminder').value||null,requirements:$('tfRequirements').value.trim()};
-  if(id){Object.assign(TENDERS.find(r=>r.id===id),data);}
-  else{TENDERS.unshift(Object.assign({id:nextTenderId++,documents:[],status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null},data));}
+  if(id!=null)data.id=id;
+  const saved=WorkshopData.upsertMarketingTender(data);
+  if(saved.error){wAlert(saved.error);return;}
+  // save() has already refreshed TENDERS through workshop:data; do not insert a second copy.
   closeModal();renderApp();
 }
 
@@ -1791,6 +1787,7 @@ function refreshMarketingFromShared(){
   LEADS=WorkshopData.getMarketingLeads();
   OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
   CAMPAIGNS=WorkshopData.getMarketingCampaigns();
+  TENDERS=WorkshopData.getMarketingTenders();
 }
 window.addEventListener('workshop:data',()=>{refreshMarketingFromShared();renderApp();});
 

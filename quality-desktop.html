@@ -45,6 +45,17 @@
   .sideitem.actionitem{color:var(--c-tint);}
   .sideitem.actionitem i{color:var(--spark);}
   .sidediv{height:1px;background:var(--line);margin:9px 3px;}
+  .navgroup-label{padding:9px 10px 3px;color:var(--steel-400);font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;}
+  .navgroup-label:first-child{padding-top:1px;}
+  .nav-more{margin-top:3px;}
+  .nav-more summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-top:1px solid var(--line);color:var(--steel-400);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
+  .nav-more summary::-webkit-details-marker{display:none;}
+  .nav-more summary:hover{color:var(--ice);}
+  .nav-more-chevron{color:var(--spark);font-size:14px;line-height:1;transition:.16s;}
+  .nav-more[open] .nav-more-chevron{transform:rotate(180deg);}
+  .nav-more-items{display:grid;gap:2px;margin-top:3px;}
+  .nav-more-items .sideitem{padding-left:16px;min-height:36px;font-size:11px;}
+  .navcount{margin-left:auto;color:var(--warn);font-size:11px;font-variant-numeric:tabular-nums;}
   .ms-sidebox{margin-top:14px;padding:12px;border:1px solid var(--line);background:rgba(var(--c-side3-rgb),.72);}
   .ms-sidebox b{display:block;color:var(--c-tint);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
   .ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55;margin:0;}
@@ -73,6 +84,7 @@
   }
 
   .filtbar{background:var(--lift-035);border:1px solid var(--line);padding:16px 18px;margin-bottom:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
+  .filtbar.overview-mode #printBtn,.filtbar.overview-mode #exportBtn{display:none;}
   .filtrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
   .filtrow:last-child{margin-bottom:0;}
   .filtlbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);font-weight:600;white-space:nowrap;}
@@ -160,6 +172,53 @@
   .rolecard b{display:block;font-size:12px;color:var(--c-tint);margin-bottom:5px;}
   .rolecard span{font-size:11px;color:var(--steel-400);line-height:1.5;}
 
+  .quality-head-actions{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .qm-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px;}
+  .qm-metric{background:var(--lift-035);border:1px solid var(--line);padding:16px 18px;min-height:108px;}
+  .qm-metric .qm-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-400);}
+  .qm-metric .qm-value{font-family:var(--font-heading);font-size:30px;font-weight:600;line-height:1.1;margin-top:13px;color:var(--ice);}
+  .qm-metric.warn .qm-value{color:var(--warn);}
+  .qm-metric.ok .qm-value{color:var(--ok);}
+  .qm-metric .qm-note{display:block;font-size:11px;color:var(--steel-400);margin-top:7px;}
+  .qm-overview-grid,.qm-overview-footer{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);gap:14px;margin-bottom:14px;}
+  .qm-overview-grid .panel,.qm-overview-footer .panel{margin-bottom:0;}
+  .qm-queue-panel .pstat{background:rgba(var(--c-warn-rgb),.12);color:var(--warn);border-color:rgba(var(--c-warn-rgb),.4);}
+  .qm-queue-panel .pstat.clear{background:rgba(var(--c-ok-rgb),.12);color:var(--ok);border-color:rgba(var(--c-ok-rgb),.4);}
+  .qm-queue{display:grid;gap:0;}
+  .qm-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);}
+  .qm-row:first-child{padding-top:0;}
+  .qm-row:last-child{border-bottom:0;padding-bottom:0;}
+  .qm-row-main{min-width:0;}
+  .qm-row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ice);}
+  .qm-row-title b{font-weight:600;}
+  .qm-row-meta{display:block;color:var(--steel-400);font-size:11px;line-height:1.45;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .qm-state{font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border:1px solid currentColor;white-space:nowrap;}
+  .qm-state.danger{color:var(--danger);background:rgba(var(--c-danger-rgb),.08);}
+  .qm-state.warn{color:var(--warn);background:rgba(var(--c-warn-rgb),.08);}
+  .qm-state.ok{color:var(--ok);background:rgba(var(--c-ok-rgb),.08);}
+  .qm-action-link{font-size:11px;color:var(--c-tint);white-space:nowrap;}
+  .qm-release-list{display:grid;gap:0;}
+  .qm-release-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .qm-release-item:first-child{padding-top:0;}
+  .qm-release-item:last-child{border-bottom:0;padding-bottom:0;}
+  .qm-release-item strong{display:block;font-size:12px;color:var(--ice);font-weight:600;}
+  .qm-release-item small{display:block;color:var(--steel-400);font-size:11px;margin-top:4px;line-height:1.4;}
+  .qm-release-state{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+  .qm-release-state.blocked{color:var(--danger);}
+  .qm-release-state.review{color:var(--warn);}
+  .qm-release-state.ready{color:var(--ok);}
+  .qm-activity{display:grid;gap:0;}
+  .qm-activity-item{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:11.5px;}
+  .qm-activity-item:first-child{padding-top:0;}
+  .qm-activity-item:last-child{border-bottom:0;padding-bottom:0;}
+  .qm-activity-time{color:var(--steel-400);font-variant-numeric:tabular-nums;}
+  .qm-activity-copy{color:var(--steel-300);min-width:0;}
+  .qm-activity-copy b{color:var(--ice);font-weight:600;}
+  .qm-principle{display:flex;flex-direction:column;justify-content:center;min-height:130px;}
+  .qm-principle h3{font-family:var(--font-heading);font-size:14px;font-weight:600;margin-bottom:9px;}
+  .qm-principle p{font-size:12px;line-height:1.6;color:var(--steel-300);}
+  .qm-empty{padding:10px 0;color:var(--steel-400);font-size:12px;font-style:italic;}
+
   .statuspanel{margin:14px 0 0;padding:14px 16px;background:var(--lift-03);border:1px solid var(--line);}
   .statuspanel h4{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:8px;}
   .statuspanel p{font-size:11px;color:var(--steel-300);line-height:1.5;}
@@ -211,6 +270,10 @@
   @media(max-width:1200px){.kpistrip{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:760px){
     .kpistrip{grid-template-columns:1fr;}
+    .qm-metrics,.qm-overview-grid,.qm-overview-footer{grid-template-columns:1fr;}
+    .qm-row{grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+    .qm-row .qm-action-link{grid-column:1 / -1;}
+    .qm-activity-item{grid-template-columns:1fr;gap:3px;}
     .mcard{width:100%;max-width:90vw;}
     .mcard .mrow2,.mcard .mrow3{grid-template-columns:1fr;}
     .attngrid{grid-template-columns:1fr;}
@@ -251,22 +314,29 @@
     <div><h2>QUALITY</h2><small data-i="quality_short">Inspections & defects</small></div>
   </div>
   <nav class="module-side-nav" id="qualityNav">
+    <div class="navgroup-label">Work queue</div>
     <button class="sideitem" data-section="overview"><i>▦</i><span data-i="overview">Overview</span></button>
-    <button class="sideitem" data-section="inspections"><i>✓</i><span data-i="inspections">Inspections</span></button>
-    <button class="sideitem" data-section="requests"><i>▤</i><span data-i="inspection_requests">Inspection Requests</span></button>
-    <button class="sideitem" data-section="welding"><i>◈</i><span data-i="welding_quality">Welding Quality</span></button>
-    <button class="sideitem" data-section="ndt"><i>◉</i><span data-i="ndt">NDT</span></button>
-    <button class="sideitem" data-section="ncr"><i>⚠</i><span data-i="ncr">NCR</span></button>
-    <button class="sideitem" data-section="capa"><i>↻</i><span data-i="corrective_actions">Corrective Actions</span></button>
+    <button class="sideitem" data-section="inspections"><i>✓</i><span data-i="inspections">Inspections</span><span class="navcount" id="navInspectionCount"></span></button>
+    <button class="sideitem" data-section="ncr"><i>⚠</i><span data-i="ncr">NCR</span><span class="navcount" id="navNcrCount"></span></button>
+    <button class="sideitem" data-section="capa"><i>↻</i><span data-i="corrective_actions">Corrective Actions</span><span class="navcount" id="navCapaCount"></span></button>
+    <div class="navgroup-label">Release</div>
     <button class="sideitem" data-section="itp"><i>▧</i><span data-i="itp">ITP / Control Plans</span></button>
-    <button class="sideitem" data-section="traceability"><i>◇</i><span data-i="material_traceability">Material Traceability</span></button>
-    <button class="sideitem" data-section="supplierquality"><i>▣</i><span data-i="supplier_quality">Supplier Quality</span></button>
-    <button class="sideitem" data-section="complaints"><i>✉</i><span data-i="customer_complaints">Customer Complaints</span></button>
-    <button class="sideitem" data-section="certificates"><i>▥</i><span data-i="certificates">Certificates</span></button>
-    <button class="sideitem" data-section="calibration"><i>◷</i><span data-i="calibration_status">Calibration Status</span></button>
     <button class="sideitem" data-section="dossiers"><i>▨</i><span data-i="quality_dossiers">Quality Dossiers</span></button>
     <button class="sideitem" data-section="release"><i>✔</i><span data-i="final_release">Final Release</span></button>
-    <button class="sideitem" data-section="qreports"><i>↗</i><span data-i="quality_reports">Quality Reports</span></button>
+    <details class="nav-more" id="qualitySpecialistMenu">
+      <summary><span>More quality records</span><span class="nav-more-chevron">⌄</span></summary>
+      <div class="nav-more-items">
+        <button class="sideitem" data-section="requests"><i>▤</i><span data-i="inspection_requests">Inspection Requests</span></button>
+        <button class="sideitem" data-section="welding"><i>◈</i><span data-i="welding_quality">Welding Quality</span></button>
+        <button class="sideitem" data-section="ndt"><i>◉</i><span data-i="ndt">NDT</span></button>
+        <button class="sideitem" data-section="traceability"><i>◇</i><span data-i="material_traceability">Material Traceability</span></button>
+        <button class="sideitem" data-section="supplierquality"><i>▣</i><span data-i="supplier_quality">Supplier Quality</span></button>
+        <button class="sideitem" data-section="complaints"><i>✉</i><span data-i="customer_complaints">Customer Complaints</span></button>
+        <button class="sideitem" data-section="certificates"><i>▥</i><span data-i="certificates">Certificates</span></button>
+        <button class="sideitem" data-section="calibration"><i>◷</i><span data-i="calibration_status">Calibration Status</span></button>
+        <button class="sideitem" data-section="qreports"><i>↗</i><span data-i="quality_reports">Quality Reports</span></button>
+      </div>
+    </details>
     <div class="sidediv"></div>
     <button class="sideitem actionitem" id="newInspectionNav"><i>＋</i><span data-i="new_inspection">New Inspection</span></button>
     <button class="sideitem actionitem" id="newNcrNav"><i>＋</i><span data-i="new_ncr">New NCR</span></button>
@@ -288,11 +358,12 @@
       <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 5-5"/></svg></div>
       <div><h1 data-i="quality_title">Quality Management</h1><p data-i="quality_sub">Inspections, NCR, welding quality, traceability and final release</p></div>
     </div>
+    <div class="quality-head-actions"><button class="fbtn primary" id="headerNewInspection" data-i="new_inspection">＋ New Inspection</button></div>
   </header>
 
   <div class="print-header" id="printHeader"><h2>Varmak AB — <span id="printSectionTitle">Quality Management</span></h2><div id="printMeta"></div></div>
 
-  <div class="filtbar">
+  <div class="filtbar" id="filtbar">
     <div class="filtrow">
       <label class="filtlbl" data-i="search" for="qSearch">Search:</label>
       <input class="filtinput" type="text" id="qSearch" placeholder="ID, project, jobcard, description…">
@@ -314,62 +385,32 @@
 
   <!-- OVERVIEW -->
   <div id="section-overview" class="section" style="display:none;">
-    <div class="noticebar" data-i="notice_prototype">This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.</div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="due_today">Inspections Due Today</div><div class="kv" id="kpi-due-today">—</div></div>
-      <div class="kpi"><div class="kl" data-i="waiting">Inspections Waiting</div><div class="kv warn" id="kpi-waiting">—</div></div>
-      <div class="kpi"><div class="kl" data-i="passed">Passed Inspections</div><div class="kv ok" id="kpi-passed">—</div></div>
-      <div class="kpi"><div class="kl" data-i="failed">Failed Inspections</div><div class="kv danger" id="kpi-failed">—</div></div>
-      <div class="kpi"><div class="kl" data-i="reinspections">Reinspections Required</div><div class="kv warn" id="kpi-reinsp">—</div></div>
-    </div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="open_ncrs">Open NCRs</div><div class="kv warn" id="kpi-open-ncr">—</div></div>
-      <div class="kpi"><div class="kl" data-i="critical_ncrs">Critical NCRs</div><div class="kv danger" id="kpi-critical-ncr">—</div></div>
-      <div class="kpi"><div class="kl" data-i="overdue_capa">Overdue Corrective Actions</div><div class="kv danger" id="kpi-overdue-capa">—</div></div>
-      <div class="kpi"><div class="kl" data-i="jc_hold">Jobcards on Quality Hold</div><div class="kv danger" id="kpi-jc-hold">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_certs">Missing Material Certificates</div><div class="kv warn" id="kpi-missing-cert">—</div></div>
-    </div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="missing_wps">Missing WPS/Qualifications</div><div class="kv warn" id="kpi-missing-wps">—</div></div>
-      <div class="kpi"><div class="kl" data-i="calib_expiring">Calibration Expiring</div><div class="kv warn" id="kpi-calib-exp">—</div></div>
-      <div class="kpi"><div class="kl" data-i="customer_approvals">Customer Approvals Required</div><div class="kv" id="kpi-cust-approval">—</div></div>
-      <div class="kpi"><div class="kl" data-i="not_ready_handover">Projects Not Ready for Handover</div><div class="kv warn" id="kpi-not-ready">—</div></div>
+    <div class="qm-metrics">
+      <div class="qm-metric warn"><div class="qm-label">Needs attention</div><div class="qm-value" id="qm-metric-attention">—</div><small class="qm-note" id="qm-metric-attention-note">Sorted by urgency</small></div>
+      <div class="qm-metric warn"><div class="qm-label">Open NCRs</div><div class="qm-value" id="qm-metric-ncr">—</div><small class="qm-note" id="qm-metric-ncr-note">Active quality issues</small></div>
+      <div class="qm-metric ok"><div class="qm-label">Ready for release</div><div class="qm-value" id="qm-metric-release">—</div><small class="qm-note" id="qm-metric-release-note">Projects with no quality blockers</small></div>
     </div>
 
-    <div class="phead" style="border:none;padding:0;margin:22px 0 10px;"><h3 data-i="requires_attention">Requires Attention</h3></div>
-    <div class="attngrid" id="attention-grid"></div>
-
-    <div class="panel">
-      <div class="phead"><h3 data-i="visual_summaries">Visual Summaries</h3></div>
-      <div class="tab-container">
-        <div class="tabs">
-          <button class="tab active" data-tab="viz-insp-result" data-i="inspection_results">Inspection Results</button>
-          <button class="tab" data-tab="viz-ncr-status" data-i="ncr_by_status">NCRs by Status</button>
-          <button class="tab" data-tab="viz-ncr-cat" data-i="ncr_by_category">NCRs by Category</button>
-          <button class="tab" data-tab="viz-issues-project" data-i="issues_by_project">Issues by Project</button>
-          <button class="tab" data-tab="viz-capa-status" data-i="capa_by_status">Corrective Actions by Status</button>
-          <button class="tab" data-tab="viz-dossier" data-i="dossier_readiness">Dossier Readiness</button>
-          <button class="tab" data-tab="viz-fpq" data-i="fpq_trend">First-Pass Quality Trend</button>
-        </div>
-        <div id="viz-insp-result" class="tabpanel active"><div class="barchart" id="viz-insp-result-body"></div></div>
-        <div id="viz-ncr-status" class="tabpanel"><div class="barchart" id="viz-ncr-status-body"></div></div>
-        <div id="viz-ncr-cat" class="tabpanel"><div class="barchart" id="viz-ncr-cat-body"></div></div>
-        <div id="viz-issues-project" class="tabpanel"><div class="barchart" id="viz-issues-project-body"></div></div>
-        <div id="viz-capa-status" class="tabpanel"><div class="barchart" id="viz-capa-status-body"></div></div>
-        <div id="viz-dossier" class="tabpanel"><div class="barchart" id="viz-dossier-body"></div></div>
-        <div id="viz-fpq" class="tabpanel"><div class="barchart" id="viz-fpq-body"></div><p class="dq-note" data-i="fpq_note">Demo calculation — first-pass quality trend requires more historical data than exists in this browser to be meaningful over time.</p></div>
-      </div>
+    <div class="qm-overview-grid">
+      <article class="panel qm-queue-panel">
+        <div class="phead"><h3>Needs Attention</h3><span class="pstat" id="qm-attention-summary">—</span></div>
+        <div class="qm-queue" id="qm-attention-queue"></div>
+      </article>
+      <aside class="panel qm-release-panel">
+        <div class="phead"><h3>Release Readiness</h3><span style="font-size:11px;color:var(--steel-400);">Next decisions</span></div>
+        <div class="qm-release-list" id="qm-release-list"></div>
+      </aside>
     </div>
 
-    <div class="panel">
-      <div class="phead"><h3 data-i="recent_activity">Recent Quality Activity</h3></div>
-      <table class="table"><thead><tr><th data-i="date">Date</th><th data-i="record">Record</th><th data-i="action">Action</th><th data-i="user">User</th><th data-i="details">Details</th></tr></thead><tbody id="recent-activity-body"></tbody></table>
-    </div>
-
-    <div class="panel">
-      <div class="phead"><h3 data-i="permissions_demo">Role Visibility (Demonstration)</h3></div>
-      <p style="font-size:11.5px;color:var(--warn);margin-bottom:6px;" data-i="permissions_notice">Frontend role visibility is a demonstration only. Production permission enforcement requires the secured backend.</p>
-      <div class="rolegrid" id="role-grid"></div>
+    <div class="qm-overview-footer">
+      <article class="panel">
+        <div class="phead"><h3>Recent Activity</h3><span style="font-size:11px;color:var(--steel-400);">Last 24 hours</span></div>
+        <div class="qm-activity" id="qm-recent-activity"></div>
+      </article>
+      <aside class="panel qm-principle">
+        <h3>Quality focus</h3>
+        <p>Resolve the next decision, keep release evidence together, and leave the detailed registers available when you need them.</p>
+      </aside>
     </div>
   </div>
 
@@ -1309,6 +1350,9 @@ function showSection(sectionId){
   currentSection=sectionId;
   document.querySelectorAll('.sideitem[data-section]').forEach(i=>i.classList.remove('active'));
   const nav=document.querySelector(`[data-section="${sectionId}"]`); if(nav)nav.classList.add('active');
+  const specialistMenu=$('qualitySpecialistMenu');
+  if(specialistMenu&&specialistMenu.contains(nav))specialistMenu.open=true;
+  const filtbar=$('filtbar'); if(filtbar)filtbar.classList.toggle('overview-mode',sectionId==='overview');
   populateStatusFilter(sectionId);
   loadSectionData(sectionId);
   saveConfig();
@@ -1316,6 +1360,7 @@ function showSection(sectionId){
 document.querySelectorAll('.sideitem[data-section]').forEach(btn=>btn.addEventListener('click',()=>showSection(btn.getAttribute('data-section'))));
 $('newInspectionNav').addEventListener('click',()=>openNewInspectionModal());
 $('newNcrNav').addEventListener('click',()=>openNewNcrModal());
+$('headerNewInspection').addEventListener('click',()=>openNewInspectionModal());
 
 // LANGUAGE
 $('langtoggle').addEventListener('click',()=>$('langc').classList.toggle('open'));
@@ -1409,6 +1454,61 @@ function loadSectionData(section){
 
 // ══════════════ OVERVIEW ══════════════
 function renderOverview(data){
+  {
+    const qmInsp=data.qualityInspections||[];
+    const qmNcrs=data.qualityNcrs||[];
+    const qmCapas=data.qualityCapas||[];
+    const qmHolds=activeHolds(data);
+    const qmProjects=data.projects||[];
+    const qmToday=todayStr();
+    const qmOpenNcr=qmNcrs.filter(n=>!['closed','rejected'].includes(n.status));
+    const qmCriticalNcr=qmOpenNcr.filter(n=>n.severity==='critical');
+    const qmOverdueCapa=qmCapas.filter(c=>c.dueDate&&safeDate(c.dueDate)<new Date()&&!['effective','closed'].includes(c.status));
+    const qmDueToday=qmInsp.filter(i=>i.plannedDate===qmToday&&!['completed','cancelled'].includes(i.status));
+    const qmFailed=qmInsp.filter(i=>i.result==='failed');
+    const qmAttention=[];
+    qmCriticalNcr.forEach(n=>qmAttention.push({title:n.title||'Critical NCR requires resolution',ref:n.no,meta:`${n.projectNo||'No project'} · ${genericLabel(n.status)}`,state:'Critical',cls:'danger',action:'Open NCR'}));
+    qmHolds.slice(0,4).forEach(h=>qmAttention.push({title:h.reason||'Quality hold is active',ref:h.no,meta:`${h.reference||'No reference'} · ${genericLabel(h.severity)}`,state:'Hold',cls:'danger',action:'Review hold'}));
+    qmFailed.slice(0,3).forEach(i=>qmAttention.push({title:i.findings||'Inspection failed',ref:i.no,meta:`${i.projectNo||'No project'} · ${typeLabel(i.type)}`,state:'Failed',cls:'danger',action:'Open inspection'}));
+    qmOverdueCapa.slice(0,3).forEach(c=>qmAttention.push({title:c.problemStatement||'Corrective action overdue',ref:c.no,meta:`Due ${c.dueDate||'—'} · ${c.responsible||'Unassigned'}`,state:'Overdue',cls:'warn',action:'Open action'}));
+    qmDueToday.slice(0,3).forEach(i=>qmAttention.push({title:`${typeLabel(i.type)} inspection due today`,ref:i.no,meta:`${i.projectNo||'No project'} · ${i.component||'Component not specified'}`,state:'Today',cls:'warn',action:'Open inspection'}));
+    const qmAttentionItems=qmAttention.slice(0,7);
+    const qmReleaseRows=qmProjects.map(p=>{
+      const result=computeReleaseBlocking(data,p.no);
+      const dossier=(data.qualityDossiers||[]).find(d=>d.projectNo===p.no);
+      const readiness=computeDossierReadiness(dossier);
+      const state=result.blockingReasons.length?'Blocked':readiness!=null&&readiness<100?'Review':'Ready';
+      return {project:p,blocking:result.blockingReasons,readiness,state};
+    }).sort((a,b)=>({Blocked:0,Review:1,Ready:2}[a.state]-({Blocked:0,Review:1,Ready:2}[b.state]))).slice(0,5);
+    const qmReadyCount=qmProjects.filter(p=>computeReleaseBlocking(data,p.no).blockingReasons.length===0).length;
+    const qmRecent=[];
+    ['qualityInspections','qualityNcrs','qualityCapas','qualityWelds','qualityNdt','qualityComplaints','qualityHolds'].forEach(coll=>{
+      (data[coll]||[]).forEach(r=>(r.activity||[]).forEach(a=>qmRecent.push({...a,recordNo:r.no})));
+    });
+    qmRecent.sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
+
+    $('qm-metric-attention').textContent=qmAttentionItems.length;
+    $('qm-metric-attention-note').textContent=qmAttentionItems.length?'Items sorted by urgency':'No urgent items';
+    $('qm-metric-ncr').textContent=qmOpenNcr.length;
+    $('qm-metric-ncr-note').textContent=qmCriticalNcr.length?`${qmCriticalNcr.length} critical`:'No critical NCRs';
+    $('qm-metric-release').textContent=qmReadyCount;
+    $('qm-metric-release-note').textContent=`${qmProjects.length} project${qmProjects.length===1?'':'s'} checked`;
+    $('navInspectionCount').textContent=qmInsp.filter(i=>['requested','planned','ready'].includes(i.status)).length||'';
+    $('navNcrCount').textContent=qmOpenNcr.length||'';
+    $('navCapaCount').textContent=qmOverdueCapa.length||'';
+    const qmSummary=$('qm-attention-summary');
+    qmSummary.classList.toggle('clear',!qmAttentionItems.length);
+    qmSummary.textContent=qmAttentionItems.length?`${qmAttentionItems.length} item${qmAttentionItems.length===1?'':'s'}`:'All clear';
+    $('qm-attention-queue').innerHTML=qmAttentionItems.length?qmAttentionItems.map(item=>`<div class="qm-row"><div class="qm-row-main"><div class="qm-row-title"><b>${esc(item.title)}</b><span class="qm-state ${item.cls}">${esc(item.state)}</span></div><span class="qm-row-meta">${esc(item.ref)} · ${esc(item.meta)}</span></div><span class="qm-action-link">${esc(item.action)} →</span></div>`).join(''):'<div class="qm-empty">Nothing needs immediate attention.</div>';
+    $('qm-release-list').innerHTML=qmReleaseRows.length?qmReleaseRows.map(row=>{
+      const p=row.project;
+      const detail=row.state==='Blocked'?row.blocking[0]:row.readiness!=null?`Dossier ${Math.round(row.readiness)}% complete`:'No active blockers';
+      const stateClass=row.state.toLowerCase();
+      return `<div class="qm-release-item"><div><strong>${esc(p.no)} · ${esc(p.name||'Unnamed project')}</strong><small>${esc(detail)}</small></div><span class="qm-release-state ${stateClass}">${esc(row.state)}</span></div>`;
+    }).join(''):'<div class="qm-empty">No projects are available for release review.</div>';
+    $('qm-recent-activity').innerHTML=qmRecent.slice(0,6).map(a=>`<div class="qm-activity-item"><span class="qm-activity-time">${esc((a.timestamp||'').replace('T',' ').slice(0,16)||'No date')}</span><span class="qm-activity-copy"><b>${esc(a.recordNo||'Record')}</b> · ${esc(a.action||'Activity recorded')}${a.user?` · ${esc(a.user)}`:''}</span></div>`).join('')||'<div class="qm-empty">No quality activity recorded yet.</div>';
+    return;
+  }
   const insp=data.qualityInspections||[];
   const ncrs=data.qualityNcrs||[];
   const capas=data.qualityCapas||[];

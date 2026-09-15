@@ -15,6 +15,7 @@
   --fs-field-label:11px;    /* form labels */
   --fs-field-input:13px;    /* what is typed into them */
   --fs-button:11.5px;
+  --fs-side-nav:14px;       /* left module menus share one larger readable scale */
 }
 
 /* The mobile layouts and the login screen keep their own sizes - they are not
@@ -32,6 +33,34 @@ html:not([data-compact]) .frow label,html:not([data-compact]) .frow2 label,html:
    from the shared forms module, which is the one reliable hook for all of them. */
 html:not([data-compact]) .workshop-form-control{font-size:var(--fs-field-input);}
 html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
+
+/* Keep every left-hand module menu on the same readable scale. Some pages use
+   the shared .module-side-nav, while planning/store/documents use .nav and
+   equipment uses .nav-item. */
+.module-side-nav button,
+.sideitem,
+.nav button,
+.nav-item{
+  font-size:var(--fs-side-nav);
+  line-height:1.3;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  min-height:42px;
+}
+.module-side-nav button,
+.sideitem,
+.nav button,
+.nav-item{align-items:flex-start;}
+.module-side-nav button i,
+.sideitem i,
+.nav button i,
+.nav-item .dot{flex:none;margin-top:1px;}
+
+/* Return-to-Hub controls use different class names in older modules, but they
+   are the same navigation action and should share the menu's readable scale. */
+.back,
+.back-link,
+.back-btn{font-size:var(--fs-side-nav);line-height:1.3;white-space:nowrap;}
 
 /* ── Tooltip ──
    Explains a control in place, after a short pause, so it never interrupts

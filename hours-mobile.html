@@ -115,13 +115,12 @@
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-  /* What the item is called is what a worker reads while booking time against it;
-     the jobcard number is a reference. So the description leads and is set a size
-     up, and the numbering that groups it steps back. */
-  #project option,#item option,#equipList select option{font-size:15px;font-weight:500;}
-  #item optgroup,#equipList select optgroup{font-size:11px;font-weight:600;letter-spacing:.05em;}
-  /* The picked item is read far more often than the list is opened, so the closed
-     control carries the description at the same size the list shows it. */
+  #project option,#equipList select option{font-size:15px;font-weight:500;}
+  #equipList select optgroup{font-size:11px;font-weight:600;letter-spacing:.05em;}
+  /* Jobcard headings lead the item menu; selectable rows are smaller underneath. */
+  #item optgroup{font-size:16px;font-weight:700;letter-spacing:0;}
+  #item option{font-size:13px;font-weight:400;}
+  /* Keep the selected value comfortably readable when the menu is closed. */
   #project,#item{font-size:15px;}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
 <div class="bg"></div>
@@ -254,11 +253,10 @@
     if([...proj.options].some(o=>o.value===prevValue))proj.value=prevValue;
   }
   populateProjects();
-  // Item = a real Jobcard operation (falls back to "(whole jobcard)" when the jobcard has none),
-  // grouped by jobcard — mirrors jobcard-desktop.html's own opOpts/machineOpts construction. Never
-  // the old page-local fake {n,est} list.
+  // Items show real operation names, or the named jobcard when no operations exist.
+  // Stable values keep the selected work item intact when shared data refreshes.
   function loadItems(){
-    const t=T[current];item.innerHTML='';
+    const t=T[current],previousValue=item.value;item.innerHTML='';
     const jobcards=(WorkshopData.listJobcards()||[]).filter(j=>j.projectNo===proj.value&&!j.archived&&!['completed','closed','cancelled'].includes(j.status));
     if(!proj.value||!jobcards.length){
       const ph=document.createElement('option');ph.value='';ph.textContent=proj.value?t.noitems:'—';item.appendChild(ph);
@@ -269,12 +267,15 @@
       const ops=(j.operations&&j.operations.length)?j.operations:[null];
       ops.forEach(op=>{
         const o=document.createElement('option');
-        o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=op?op.plannedHours:'';o.dataset.desc=op?op.desc:(j.title||j.no);
-        o.textContent=op?op.desc:t.wholejobcard;
+        const name=j.title||j.item||j.no;
+        o.value=JSON.stringify([j.no,op?op.id:null]);
+        o.dataset.jobcard=j.no;o.dataset.op=op?String(op.id):'';o.dataset.est=(op?op.plannedHours:j.plannedHours)??'';o.dataset.desc=op?op.desc:name;
+        o.textContent=op?op.desc:(name===j.no?j.no:name+' · '+j.no);
         grp.appendChild(o);
       });
       item.appendChild(grp);
     });
+    if([...item.options].some(o=>o.value===previousValue))item.value=previousValue;
     updateEst();refreshEquipRows();
   }
   proj.addEventListener('change',loadItems);

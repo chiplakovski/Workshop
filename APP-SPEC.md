@@ -124,6 +124,11 @@ type, WPS, welder qualification, filler, gas, preheat, repair history) · **qual
   decisionReason, owner, linkedEstimateNo, linkedProjectNo, nextAction, followUpDate
 - **marketingCampaigns** — objective, target industries and services, segment, channels, dates,
   budget, spend, leads, qualified, estimates, wonValue
+- **marketingTenders** (added to shared storage in Pass 4.35) — id, ref, company, source,
+  description, industry, deadline, value (null when unknown), requirements, documents[],
+  responsible, bidDecision, status, linkedOpportunityId, linkedEstimateNo, reminderDate.
+  Included in backup/import and cross-tab refresh. References are unique and ids are assigned
+  by a shared counter. Content calendar and case studies remain page-local pending migration.
 - **prospectFindings** / **prospectSeen** / **prospectSweeps** — the AI findings queue (§7)
 
 ### Documents

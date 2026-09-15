@@ -105,11 +105,33 @@ print window — that one is meant for paper and must stay light.
 Open any `.html` file in a browser, or use the VS Code **Live Server** extension
 (right-click a file → "Open with Live Server"). Keep online — fonts load from Google.
 
+For a consistent browser-storage origin, serve the repository folder, for example with
+`python -m http.server 4173 --bind 127.0.0.1`, then open
+`http://127.0.0.1:4173/hub-desktop.html`. Changing the port or hostname uses a different browser
+storage area; export a backup before moving your working data.
+
+## Latest frontend update — 15 September 2026
+
+Development continues on `codex/tender-persistence`.
+
+- Tenders persist in shared browser storage, including reloads, cross-tab updates and backups.
+- Hours on desktop and mobile shows named jobcards instead of `(whole jobcard)` and preserves
+  the selected item when shared data refreshes.
+- Jobcards search sits in the page header, above the register filters.
+- Shared sidebar labels and Hub return buttons use larger, consistent typography with wrapping
+  support for menu labels.
+- Quality has the approved simplified overview: three summary cards, an attention queue,
+  release readiness and recent activity. Specialist registers sit under **More quality records**.
+  This is an initial visual implementation; remaining Quality interaction and reporting gaps
+  are recorded in the handover.
+
+The previously published Version 72 demo has not been republished with these changes.
+
 ## Tests
 A test suite (Node's built-in test runner, no external dependencies) covers data migration,
 backup/import safety, and every pure business-rule module — Jobcards, Estimation, Projects,
 Quality, Equipment, Planning, estimate recall, the material reference and the findings queue.
-**681 unit tests, a 16-page browser smoke test and 94 end-to-end steps, all passing.** Requires
+**688 unit tests, a 16-page browser smoke test and the end-to-end workflow suites.** Requires
 Node.js 18+ on your PATH.
 
 ```
@@ -120,7 +142,9 @@ npm run test:browser  # opens all 16 HTML entry points in headless Chrome/Edge a
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Planning,
                       # Jobcards/Hours/Equipment, Store/Suppliers, Documents/Reports
-                      # and Marketing/Sales workflows
+                      # and Marketing/Sales workflows, plus tender persistence
+npm run test:tenders  # tender create/edit, reload, cross-tab updates and backup/import;
+                      # tests both a served page and an inlined sandboxed srcdoc fixture
 ```
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
@@ -130,9 +154,10 @@ access.
 
 ## Status
 Frontend prototype. No production backend, database, secure file storage or real permission
-enforcement exists yet. The shared-data consolidation is done — every module now reads and writes
-one `WorkshopData` state and re-renders on the `workshop:data` event, rather than keeping its own
-copy. The remaining steps are a real backend/API/database and real authentication.
+enforcement exists yet. Most modules read and write one `WorkshopData` state and re-render on
+the `workshop:data` event. Tenders now use that shared state and survive reloads and backup/import.
+Marketing's content calendar and case studies still need the same persistence migration. The
+remaining infrastructure steps are a real backend/API/database and real authentication.
 
 For where the work stands, what was decided and why, and what to pick up next, see
 [`HANDOVER.md`](HANDOVER.md). For a platform-independent description of the whole system — the

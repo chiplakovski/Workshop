@@ -1487,6 +1487,96 @@ test('legacy migration: repeated migration (reloading the app) does not duplicat
   assert.equal(secondCount,1,'the record must not be duplicated on a subsequent load');
 });
 
+test('tenders: creating and editing survive a fresh application load', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const created=WD.upsertMarketingTender({company:'Persistence Test Co',ref:'RFQ-TEST-01',documents:['drawing.pdf'],linkedEstimateNo:'EST-TEST',value:250});
+  assert.ok(created.id);
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.deepEqual(reloaded.findMarketingTender(created.id),created);
+  reloaded.upsertMarketingTender({id:created.id,company:'Updated Test Co',ref:created.ref,bidDecision:'bid',value:null});
+  const saved=loadWorkshopData(null,localStorage).findMarketingTender(created.id);
+  assert.equal(saved.company,'Updated Test Co');
+  assert.equal(saved.bidDecision,'bid');
+  assert.equal(saved.value,null);
+  assert.deepEqual(saved.documents,['drawing.pdf']);
+  assert.equal(saved.linkedEstimateNo,'EST-TEST');
+  assert.equal(reloaded.getMarketingTenders().filter(t=>t.id===created.id).length,1);
+});
+
+test('tenders: old v5 records receive the former demo register without replacing existing data', ()=>{
+  const older=minimalState({version:5,marketingLeads:[{id:701,company:'Keep this lead'}]});
+  const {WD,localStorage}=loadWorkshopDataWithStorage({[V5_KEY]:JSON.stringify(older)});
+  assert.equal(WD.getMarketingTenders().length,5);
+  assert.equal(WD.getMarketingLeads()[0].company,'Keep this lead');
+  WD.upsertMarketingTender({id:1,ref:'RFQ-2026-011',company:'Edited demo'});
+  const reloaded=loadWorkshopData(null,localStorage);
+  assert.equal(reloaded.getMarketingTenders().length,5);
+  assert.equal(reloaded.findMarketingTender(1).company,'Edited demo');
+});
+
+test('tenders: backups preserve an empty register and restore records with safe counters', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const backup=WD.get();
+  backup.marketingTenders=[];
+  assert.equal(WD.importBackup(backup).success,true);
+  assert.deepEqual(loadWorkshopData(null,localStorage).getMarketingTenders(),[]);
+  const year=new Date().getFullYear();
+  backup.marketingTenders=[{id:800,ref:`RFQ-${year}-811`,company:'Imported Co',value:0}];
+  backup.counters.marketingTender=1;
+  assert.equal(WD.importBackup(backup).success,true);
+  const created=WD.upsertMarketingTender({company:'Next Co'});
+  assert.equal(created.id,801);
+  assert.equal(created.ref,`RFQ-${year}-812`,'skip a reference already used by an imported record');
+  assert.equal(loadWorkshopData(null,localStorage).findMarketingTender(800).value,0);
+  assert.equal(WD.getDataHealth().counts.marketingTenders,2);
+  const before=WD.get();
+  assert.equal(WD.importBackup({...backup,marketingTenders:'broken'}).success,false);
+  assert.deepEqual(WD.get(),before,'invalid imports must leave the entire state unchanged');
+});
+
+test('tenders: ids and references continue after reload', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const first=WD.upsertMarketingTender({company:'First Co'});
+  const second=loadWorkshopData(null,localStorage).upsertMarketingTender({company:'Second Co'});
+  assert.ok(second.id>first.id);
+  assert.notEqual(second.ref,first.ref);
+});
+
+test('tenders: unknown value stays absent while an explicit zero remains zero', ()=>{
+  const WD=loadWorkshopData();
+  for(const value of [undefined,null,'','   ']){
+    const record=WD.upsertMarketingTender({company:'No budget Co',value});
+    assert.equal(record.value,null);
+  }
+  assert.equal(WD.upsertMarketingTender({company:'Zero Co',value:0}).value,0);
+});
+
+test('tenders: invalid edits are rejected without changing records or counters', ()=>{
+  const WD=loadWorkshopData();
+  const record=WD.upsertMarketingTender({company:'Test Co',ref:'RFQ-UNIQUE'});
+  for(const payload of [
+    {company:'   '},
+    {company:'Other Co',ref:'rfq-unique'},
+    {company:'Missing Co',id:999999},
+    ...[-1,Infinity,NaN,'invalid'].map(value=>({id:record.id,company:'Changed Co',value}))
+  ]){
+    const before=WD.get();
+    assert.ok(WD.upsertMarketingTender(payload).error);
+    assert.deepEqual(WD.get(),before);
+  }
+  assert.equal(WD.findMarketingTender(999999),null);
+});
+
+test('tenders: getter results and saved payloads cannot mutate shared records', ()=>{
+  const WD=loadWorkshopData();
+  const payload={company:'Cloned Co',documents:['original.pdf']};
+  const saved=WD.upsertMarketingTender(payload);
+  payload.documents.push('payload-edit.pdf');
+  saved.documents.push('result-edit.pdf');
+  WD.getMarketingTenders()[0].documents.push('getter-edit.pdf');
+  assert.deepEqual(WD.findMarketingTender(saved.id).documents,['original.pdf']);
+});
+
 test('legacy migration: Marketing leads/opportunities/campaigns persist through the shared API', ()=>{
   const WD=loadWorkshopData();
   const before=WD.getMarketingLeads().length;

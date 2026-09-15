@@ -1,7 +1,11 @@
-# Handover — 14 September 2026
+# Handover — updated 15 September 2026
 
 Where the Varmak Workshop prototype stands, what was decided and why, and what to pick up next.
 Written so a later session can continue without re-opening settled questions.
+
+**Current continuation:** `codex/tender-persistence`. See §10 for tender persistence and §11
+for the latest frontend work and remaining Quality issues. The branch, HEAD, demo and test
+counts immediately below describe the original snapshot, not the current continuation.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
 **HEAD:** `6bbaceb` — Pass 4.34.
@@ -104,10 +108,10 @@ real forum is the one lie this project does not tell.
 
 ## 6. Known problems, in the order they are worth fixing
 
-1. **Tenders are page-local and are lost on reload.** `TENDERS` is a plain array inside
-   `marketing-desktop.html` (~line 375) — not in `workshop-data.js`, not saved, not refreshed on
-   the `workshop:data` event. This is a plain bug and the only module that breaks the one-state
-   rule. *Fix first.*
+1. **Tenders lost on reload — fixed in Pass 4.35 (§10).** Tenders now use the shared
+   `marketingTenders` collection and refresh on `workshop:data`, including changes from another
+   tab. The earlier statement that tenders were the only exception was incorrect: Marketing's
+   content calendar (`CONTENT`) and case studies (`CASESTUDIES`) still use page-local arrays.
 
 2. **An item has exactly one price.** Buy the same plate from two suppliers and only the last one
    entered survives. Needs a supplier–item table: item ↔ supplier ↔ their article number ↔ their
@@ -127,7 +131,8 @@ real forum is the one lie this project does not tell.
 
 ## 7. The road to live, in order
 
-**Step 1 — finish the prototype.** §6 items 1–4. None need a backend.
+**Step 1 — finish the prototype.** §6 items 2–4, plus persistence for the content calendar and
+case studies. None need a backend. Tender persistence is complete (§10).
 
 **Step 2 — the backend.** A database and a small API. This is the real project; the AI is the
 cheap half. Auth, backups, hosting, someone to fix it at 11pm.
@@ -182,3 +187,83 @@ the fetch. Check each source and drop the ones that forbid it.
   last statement. Write after each edit, or verify the file afterwards.
 - Do not re-derive expectations in tests from your own reasoning. Derive them from what the code
   actually produces, then judge whether that output is right.
+
+## 10. Continuation — Pass 4.35, 14 September 2026
+
+Development continues locally on `codex/tender-persistence`, based on `7a08c33` from
+`claude/relaxed-albattani-sehl3a`. The source is checked out in the workspace's `Workshop` folder.
+
+**Completed:** tender creation and editing now go through `WorkshopData.upsertMarketingTender`.
+The former five demo rows live in the shared seed; existing v5 data receives that collection
+when it is absent. An explicitly empty register remains empty. Tender ids are assigned centrally,
+imported ids advance the counter, duplicate references are rejected, and editing preserves
+documents and linked records. Unknown values display `—`; an explicit zero still displays `0 kr`.
+Tenders are included in JSON backups, import validation, data-health counts and cross-tab refresh.
+
+**Verified:** 688 unit tests, syntax/link checks, the 16-page browser smoke test, and the
+Marketing/Customers/Estimations workflow. `npm run test:tenders` additionally exercises actual
+create/edit controls, reloads, cross-tab updates, duplicate errors and backup/import in both a
+served page and a reconstructed sandboxed `srcdoc` bundle with local dependencies inlined.
+The external Version 72 demo has not been republished or tested with these changes.
+
+**Next:** the supplier–item price table and separate supplier article numbers (§6 items 2–3),
+then missing-record lookup guards (§6 item 4). Also persist the content calendar and case studies;
+their current save handlers still update page-local arrays only.
+
+### Hours selector follow-up
+
+Desktop and mobile Hours now show the actual jobcard title and reference when a card has no
+operations, replacing the ambiguous `(whole jobcard)` option. Operation names remain available
+for cards with operations. Stable option values preserve the chosen item across shared-data
+refreshes and saves; the estimate chip uses the selected card's recorded planned hours.
+Verified with the Jobcards/Hours/Equipment browser workflow, including named-item selection and
+correct time attribution on both Hours pages, plus syntax/link checks.
+
+## 11. Frontend continuation — 15 September 2026
+
+**User direction:** finish the frontend first. Show changes in the local app so the user can
+review them. The user approved the simplified Quality concept before implementation.
+
+**Repository:** `https://github.com/chiplakovski/Workshop`, branch `codex/tender-persistence`.
+Local checkout: `C:\Users\chipl\Documents\ChatGPT\Varmak app\Workshop`.
+Local preview: `http://127.0.0.1:4173/hub-desktop.html` when the local server is running.
+The external Version 72 artifact remains the historical demo and has not been republished.
+
+### Changes included
+
+- Hours desktop/mobile: named jobcard choices, stable selection and corrected time attribution;
+  group labels and item text adjusted following the user's visual feedback.
+- Jobcards: search moved to the page header; status and priority filters remain by the register.
+- Shared UI: larger sidebar text and Hub return links; menu labels can wrap to avoid overlap.
+- Quality: Work queue and Release navigation groups, expandable specialist records, prominent
+  New Inspection action, three summary cards, attention queue, release readiness and activity.
+  Existing detailed register sections remain accessible. The new overview uses existing records
+  and release calculations; no backend was introduced.
+
+### Quality follow-up — do not assume the redesign is functionally complete
+
+The initial pass was visually reviewed in Iris and syntax/unit checks passed, but code inspection
+shows the following unfinished work:
+
+- Queue action labels such as “Open NCR” are spans, not working buttons or links. Connect them
+  to the corresponding record views; release rows also need useful navigation.
+- The overview currently ignores the global search/project filters. Its attention count reflects
+  the truncated list, not every matching issue. Define and display the full count separately.
+- “Last 24 hours” labels an unfiltered activity list. Filter by time or change the label.
+- A project without recorded blockers can be labelled ready even without dossier evidence.
+  Review the evidence requirements before using that card as a release decision.
+- `renderOverview` returns from a new nested block while the old rendering code remains below
+  it, unreachable. Remove the obsolete code and review the unused role rendering function.
+- New overview text is largely English-only. Complete SV/MK translations and check narrow
+  layouts and all themes. Navigation badges currently refresh only with the overview.
+
+### Verification and next work
+
+The implementation session reported 688 passing unit tests, syntax/link checks and a live
+Quality overview/navigation check. These checks do not establish that the new queue actions
+or overview filters work; the gaps above were found during the repository handover review.
+Tender-specific tests are available as `npm run test:tenders`, and the Hours changes have
+coverage in `tests/jobcards-hours-equipment.e2e.js`.
+
+Continue with the Quality interaction gaps above and the user's next visual feedback.
+The broader persistence/supplier-price backlog in §6 and §10 still applies.

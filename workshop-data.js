@@ -22,7 +22,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:5},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -299,9 +299,16 @@
       {"id":8,"no":"OPP-2026-108","company":"Nordvent Installation AB","contact":"Michael Sørensen","leadId":7,"customerId":null,"title":"Welding & Installation Framework Agreement","services":["Welding","Installation"],"scope":"Multi-site framework agreement for welding and installation call-outs.","industry":"Welding and installation","value":156000,"probability":70,"stage":"negotiation","expectedDecision":"2026-09-08","requiredDelivery":"2026-10-01","competitor":"Baltic Weld Partners","decisionReason":"","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Finalize framework pricing tiers","followUpDate":"2026-08-31","activity":[{"date":"2026-08-23","text":"Entered negotiation on framework pricing."}]},
       {"id":9,"no":"OPP-2026-109","company":"Schröder Nordic","contact":"Anna Berg","leadId":null,"customerId":3,"title":"Machinery Retrofit Inquiry","services":["Retrofit"],"scope":"Retrofit of folding machine line — postponed by customer.","industry":"Industrial Machinery","value":85000,"probability":0,"stage":"lost","expectedDecision":"2026-08-10","requiredDelivery":"","competitor":"","decisionReason":"Customer reallocated budget to another site.","owner":"Aleksandar C.","linkedEstimateNo":null,"linkedProjectNo":null,"nextAction":"Re-engage in Q1 2027","followUpDate":null,"activity":[{"date":"2026-07-20","text":"Retrofit inquiry opened."},{"date":"2026-08-10","text":"Marked lost — budget reallocated."}]}
     ],
+    // Existing tender demo records, now shared and persisted alongside the other Marketing data.
+    marketingTenders:[
+      {id:1,ref:'RFQ-2026-011',company:'Region Skåne Facility Services',source:'Public tender',description:'Framework agreement for ventilation duct fabrication across regional facilities.',industry:'Ventilation and HVAC fabrication',deadline:'2026-09-05',value:480000,requirements:'ISO 9001, welding certification EN 1090, references from 2 public-sector projects.',documents:['Tender_Spec.pdf','Pricing_Template.xlsx'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-01'},
+      {id:2,ref:'RFQ-2026-012',company:'Copenhagen–Malmö Ferry Terminal',source:'Direct RFQ',description:'Steel platform and railing fabrication for terminal upgrade.',industry:'Marine and shipyard work',deadline:'2026-09-20',value:610000,requirements:'Marine-grade steel certification, on-site installation capability.',documents:['Drawings_RevB.pdf'],responsible:'Marko K.',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-09-10'},
+      {id:3,ref:'RFQ-2026-013',company:'Landskrona Kommun',source:'Public tender',description:'Steel structure maintenance for municipal recreation facilities.',industry:'Industrial maintenance',deadline:'2026-08-30',value:95000,requirements:'Municipal supplier registration, safety inspection certificate.',documents:['Kommun_Tender.pdf'],responsible:'Elena N.',bidDecision:'bid',status:'submitted',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:'2026-08-29'},
+      {id:4,ref:'RFQ-2026-014',company:'Sydstål Prototyping',source:'Private RFQ',description:'Prototype fabrication programme, 3 enclosure units.',industry:'Custom equipment and prototypes',deadline:'2026-09-10',value:210000,requirements:'CNC machining capability, NDA required.',documents:['NDA_Sydstal.pdf','Concept_Drawings.pdf'],responsible:'Aleksandar C.',bidDecision:'bid',status:'in-progress',linkedOpportunityId:1,linkedEstimateNo:null,reminderDate:'2026-09-05'},
+      {id:5,ref:'RFQ-2026-015',company:'Nordic Frys AB',source:'Direct RFQ',description:'Stainless freezer room fabrication and cold-chain fittings.',industry:'Food-production equipment',deadline:'2026-10-05',value:275000,requirements:'Food-grade stainless certification.',documents:[],responsible:'Elena N.',bidDecision:'no-bid',status:'declined',linkedOpportunityId:null,linkedEstimateNo:null,reminderDate:null}
+    ],
     // The outward sweep: what it found, what has been shown once already, and the runs themselves.
-    // Seeded empty on purpose — an unrun sweep has no findings, and inventing some would be the
-    // one thing this queue exists not to do.
+    // Seeded empty on purpose — an unrun sweep has no findings.
     prospectFindings:[],
     prospectSeen:[],
     prospectSweeps:[],
@@ -326,7 +333,7 @@
   // actually workshop data (not garbage, not an unrelated app's leftover value under a reused key).
   const KNOWN_COLLECTION_KEYS=['customers','estimations','projects','inventory','equipment','jobcards',
     'suppliers','hours','movements','offcuts','stockCounts','activity','qualityInspections','qualityNcrs',
-    'purchaseOrders','purchaseRfqs','supplierInvoices','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','savedReports'];
+    'purchaseOrders','purchaseRfqs','supplierInvoices','documents','documentFolders','invoices','marketingLeads','marketingOpportunities','marketingCampaigns','marketingTenders','savedReports'];
   function safeParseJSON(raw){
     if(!raw)return null;
     try{const p=JSON.parse(raw);return(p&&typeof p==='object')?p:null;}catch(e){return null;}
@@ -594,6 +601,17 @@
     if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
     if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
     if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
+    if(!Array.isArray(s.marketingTenders))s.marketingTenders=base.marketingTenders;
+    s.marketingTenders.forEach(t=>{
+      if(!Array.isArray(t.documents))t.documents=[];
+      if(t.status==null)t.status='reviewing';
+      if(t.bidDecision==null)t.bidDecision='pending';
+      if(t.value==null||t.value==='')t.value=null;
+      ['source','description','industry','deadline','requirements','responsible'].forEach(k=>{if(t[k]==null)t[k]='';});
+      ['linkedOpportunityId','linkedEstimateNo','reminderDate'].forEach(k=>{if(t[k]===undefined)t[k]=null;});
+    });
+    // Backups can omit counters or carry an older one. Never reuse an existing tender's id.
+    s.counters.marketingTender=s.marketingTenders.reduce((max,t)=>Math.max(max,Number(t.id)||0),Number(s.counters.marketingTender)||0);
     if(!Array.isArray(s.prospectFindings))s.prospectFindings=[];
     if(!Array.isArray(s.prospectSeen))s.prospectSeen=[];
     if(!Array.isArray(s.prospectSweeps))s.prospectSweeps=[];
@@ -3495,6 +3513,41 @@
       }
       save(`Marketing opportunity saved: ${o.no}`);
       return clone(o);
+    },
+    getMarketingTenders:()=>clone(state.marketingTenders),
+    findMarketingTender(id){const tender=state.marketingTenders.find(t=>t.id===id);return tender?clone(tender):null;},
+    nextMarketingTenderRef(){
+      // The existing demo sequence starts at 011 for id 1. Keep that numbering convention.
+      let serial=(state.counters.marketingTender||0)+11;
+      let ref;
+      do{ref=`RFQ-${new Date().getFullYear()}-${String(serial++).padStart(3,'0')}`;}
+      while(state.marketingTenders.some(t=>String(t.ref).toLowerCase()===ref.toLowerCase()));
+      return ref;
+    },
+    upsertMarketingTender(payload){
+      if(!payload||typeof payload.company!=='string'||!payload.company.trim())return{error:'A company name is required'};
+      const current=payload.id==null?null:state.marketingTenders.find(t=>t.id===payload.id);
+      if(payload.id!=null&&!current)return{error:'Tender not found. Reload the register and try again.'};
+      const data=clone(payload);
+      data.company=data.company.trim();
+      data.ref=typeof data.ref==='string'?data.ref.trim():'';
+      if(!data.ref)data.ref=current?current.ref:api.nextMarketingTenderRef();
+      if(state.marketingTenders.some(t=>t!==current&&String(t.ref).toLowerCase()===data.ref.toLowerCase()))return{error:'This tender reference is already in use'};
+      if(Object.prototype.hasOwnProperty.call(data,'value')){
+        data.value=payload.value==null||String(payload.value).trim()===''?null:Number(payload.value);
+        if(data.value!==null&&(!Number.isFinite(data.value)||data.value<0))return{error:'Tender value must be a non-negative number or left blank'};
+      }
+      let tender=current;
+      if(tender){Object.assign(tender,data);}
+      else{
+        tender=Object.assign({source:'',description:'',industry:'',deadline:'',value:null,requirements:'',
+          documents:[],responsible:'',bidDecision:'pending',status:'reviewing',linkedOpportunityId:null,
+          linkedEstimateNo:null,reminderDate:null},data);
+        tender.id=++state.counters.marketingTender;
+        state.marketingTenders.unshift(tender);
+      }
+      save(`Marketing tender saved: ${tender.ref}`);
+      return clone(tender);
     },
     getMarketingCampaigns:()=>clone(state.marketingCampaigns),
     findMarketingCampaign:id=>clone(state.marketingCampaigns.find(x=>x.id===id)),
