@@ -89,12 +89,16 @@
   .filtinput{min-width:180px;}
   .activefilt{font-size:11px;color:var(--steel-400);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
 
-  .kpistrip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
-  .kpi{background:var(--lift-035);border:1px solid var(--line);padding:14px 16px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);position:relative;overflow:hidden;}
+  .kpistrip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+  /* A strip sizes itself to what it holds, so every one of them fills a single row and no
+     card is left stranded on a line of its own. Five suits most; a strip carrying six asks
+     for six. Adding a KPI later re-fits the row without anybody remembering to come here. */
+  .kpistrip:has(>.kpi:nth-child(6)){grid-template-columns:repeat(6,1fr);}
+  .kpi{background:var(--lift-035);border:1px solid var(--line);padding:11px 12px;min-width:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);position:relative;overflow:hidden;}
   .kpi::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(var(--c-accent-rgb),.1),transparent);opacity:0;transition:.3s;}
   .kpi:hover::before{opacity:1;}
-  .kpi .kl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
-  .kpi .kv{font-family:var(--font-heading);font-size:24px;font-weight:600;position:relative;z-index:1;}
+  .kpi .kl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;line-height:1.35;min-height:26px;overflow-wrap:anywhere;}
+  .kpi .kv{font-family:var(--font-heading);font-size:20px;font-weight:600;position:relative;z-index:1;line-height:1.1;}
   .kpi .kv.warn{color:var(--warn);}
   .kpi .kv.ok{color:var(--ok);}
   .kpi .kv.danger{color:var(--danger);}
@@ -208,7 +212,8 @@
   .langmenu button:hover{background:rgba(var(--c-accent-rgb),.12);color:var(--ice);}
   .langmenu button.active{color:var(--c-tint);box-shadow:inset 2px 0 0 var(--spark);}
 
-  @media(max-width:1200px){.kpistrip{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:1100px){.kpistrip{grid-template-columns:repeat(4,1fr);}}
+  @media(max-width:820px){.kpistrip{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:760px){
     .kpistrip{grid-template-columns:1fr;}
     .mcard{width:100%;max-width:90vw;}
