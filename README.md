@@ -134,6 +134,9 @@ enforcement exists yet. The shared-data consolidation is done — every module n
 one `WorkshopData` state and re-renders on the `workshop:data` event, rather than keeping its own
 copy. The remaining steps are a real backend/API/database and real authentication.
 
+The design system — every colour, font, type size and component recipe across the three themes —
+is written out in [`THEMES.md`](THEMES.md).
+
 For where the work stands, what was decided and why, and what to pick up next, see
 [`HANDOVER.md`](HANDOVER.md). For a platform-independent description of the whole system — the
 data model, the business rules and the workflows — see [`APP-SPEC.md`](APP-SPEC.md).

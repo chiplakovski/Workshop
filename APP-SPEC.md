@@ -321,6 +321,8 @@ Existing data exports as JSON (`backupData()`) and converts to CSV. The generate
 becomes ~1,900 ordinary rows.
 
 **What must be rebuilt for A or B:** all 16 pages of UI, three themes, three-language switching.
+Every colour, font and component recipe needed for that is in [`THEMES.md`](THEMES.md), read from
+the built application rather than described from memory.
 
 **What deserves real care in every case:** the rules in §5 currently live in ten pure modules with
 681 tests proving they hold. A quality hold that stops blocking, or an equipment gate that lets an
