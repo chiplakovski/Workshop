@@ -137,6 +137,9 @@ copy. The remaining steps are a real backend/API/database and real authenticatio
 The design system — every colour, font, type size and component recipe across the three themes —
 is written out in [`THEMES.md`](THEMES.md).
 
+A module-by-module review of the whole system, with an opinion on what would make it simpler and
+more useful, is in [`REVIEW.md`](REVIEW.md).
+
 For where the work stands, what was decided and why, and what to pick up next, see
 [`HANDOVER.md`](HANDOVER.md). For a platform-independent description of the whole system — the
 data model, the business rules and the workflows — see [`APP-SPEC.md`](APP-SPEC.md).
