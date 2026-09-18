@@ -76,40 +76,8 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 </div>
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
-const suppliers=[
-{id:'SUP-0001',name:'SteelSupply AB',category:'Metals & Steel',status:'preferred',rating:4.8,address:'Billingegatan 45, 212 44 Malmö, Sweden',email:'info@steelsupply.se',phone:'+46 40 123 45 67',website:'www.steelsupply.se',vat:'SE556789123401',currency:'SEK',type:'Company',country:'Sweden',established:'2012',payment:'30 days from invoice date',delivery:'DAP (Delivered At Place)',minimum:'5,000 SEK',notes:[['2026-06-10','Good partnership, fast delivery and good quality.','Per N.'],['2026-03-05','Discussed price adjustment for Q2 2026. New agreement valid from April.','Aleksandar C.']],contacts:[['AM','Anders Möller','Sales Manager','anders.moller@steelsupply.se','+46 70 123 45 01'],['LS','Linda Svensson','Order Coordinator','linda.svensson@steelsupply.se','+46 70 234 56 78'],['JP','Johan Persson','Logistics Manager','johan.persson@steelsupply.se','+46 70 345 67 89']],performance:{delivery:92,quality:92,invoice:96,response:80,score:'4.5 / 5'},docs:[['PDF','Company Certificate.pdf','2026-01-15'],['PDF','ISO 9001 Certificate.pdf','2025-11-20'],['XLS','Price List 2026.xlsx','2026-01-01']],
-  spendYtd:'2.45 M SEK',spendYtdChange:'+18%',openPOs:6,openPOsValue:'631,250 SEK',overdueDeliveries:1,overdueDeliveriesValue:'45,800 SEK',
-  purchaseOrders:[['PO-2026-024','2026-08-20','8','125,780','Partially Received','2026-08-28'],['PO-2026-021','2026-08-15','12','215,450','Confirmed','2026-08-25'],['PO-2026-019','2026-08-05','5','87,650','Received','2026-08-10'],['PO-2026-016','2026-07-28','9','156,900','Received','2026-08-02'],['PO-2026-012','2026-07-15','6','62,300','Cancelled','—']],
-  items:[['Sheet AISI 304 2.0mm','Metals','1,250 pcs','578,450'],['Square Tube 40x40x2','Metals','980 m','412,300'],['Flat Bar 40x5','Metals','650 m','215,600'],['Plate S355 10mm','Metals','420 pcs','198,250'],['Round Bar Ø20','Metals','310 pcs','86,450']]},
-{id:'SUP-0002',name:'InduMotion AB',category:'Machines & Parts',status:'preferred',rating:4.6,country:'Sweden',payment:'30 days',delivery:'FCA',currency:'SEK',
-  spendYtd:'1.12 M SEK',spendYtdChange:'+9%',openPOs:3,openPOsValue:'214,600 SEK',overdueDeliveries:0,overdueDeliveriesValue:'0 SEK',
-  purchaseOrders:[['PO-2026-022','2026-08-16','4','98,200','Confirmed','2026-08-26'],['PO-2026-014','2026-07-22','3','64,500','Received','2026-07-30'],['PO-2026-009','2026-06-30','2','51,900','Received','2026-07-06']],
-  items:[['Servo Motor 2.2kW','Machines','14 pcs','168,000'],['Gearbox Ratio 20:1','Machines','9 pcs','142,500'],['Bearing Set 6205','Parts','60 pcs','21,900']]},
-{id:'SUP-0003',name:'WeldTech Solutions',category:'Welding & Consumables',status:'active',rating:4.5,country:'Denmark',payment:'20 days',delivery:'DAP',currency:'DKK',
-  spendYtd:'640,000 DKK',spendYtdChange:'+4%',openPOs:2,openPOsValue:'88,400 DKK',overdueDeliveries:1,overdueDeliveriesValue:'22,100 DKK',
-  purchaseOrders:[['PO-2026-020','2026-08-11','6','52,300','Partially Received','2026-08-19'],['PO-2026-013','2026-07-18','5','36,100','Received','2026-07-24']],
-  items:[['Welding Wire ER70S-6','Consumables','420 kg','96,600'],['Shielding Gas Mix','Consumables','85 bottles','48,750']]},
-{id:'SUP-0004',name:'Fastener Norden AB',category:'Fasteners',status:'active',rating:4.7,country:'Sweden',payment:'30 days',delivery:'DAP',currency:'SEK',
-  spendYtd:'318,900 SEK',spendYtdChange:'+2%',openPOs:4,openPOsValue:'52,600 SEK',overdueDeliveries:0,overdueDeliveriesValue:'0 SEK',
-  purchaseOrders:[['PO-2026-017','2026-07-29','10','18,400','Received','2026-08-03'],['PO-2026-010','2026-07-02','7','14,900','Received','2026-07-08']],
-  items:[['Hex Bolt M10x25','Fasteners','9,200 pcs','25,760'],['Washer M10 Zinc','Fasteners','9,200 pcs','6,440']]},
-{id:'SUP-0005',name:'LogiTrans AB',category:'Logistics & Transport',status:'active',rating:4.4,country:'Sweden',payment:'15 days',delivery:'EXW',currency:'SEK',
-  spendYtd:'184,300 SEK',spendYtdChange:'-3%',openPOs:1,openPOsValue:'12,800 SEK',overdueDeliveries:0,overdueDeliveriesValue:'0 SEK',
-  purchaseOrders:[['PO-2026-015','2026-07-24','1','12,800','Confirmed','2026-08-30']],
-  items:[['Domestic Freight — Malmö','Logistics','6 runs','38,400'],['Regional Freight — Skåne','Logistics','11 runs','61,900']]},
-{id:'SUP-0006',name:'Cutting Tools Scandinavia',category:'Tools & Equipment',status:'active',rating:4.8,country:'Sweden',payment:'30 days',delivery:'DAP',currency:'SEK',
-  spendYtd:'256,700 SEK',spendYtdChange:'+11%',openPOs:2,openPOsValue:'41,200 SEK',overdueDeliveries:0,overdueDeliveriesValue:'0 SEK',
-  purchaseOrders:[['PO-2026-018','2026-08-02','5','24,600','Received','2026-08-07'],['PO-2026-011','2026-07-10','4','16,600','Received','2026-07-15']],
-  items:[['Grinding Disc 115mm','Tools','480 pcs','8,640'],['Carbide End Mill Ø10','Tools','60 pcs','21,300']]},
-{id:'SUP-0007',name:'Surface Treatment AB',category:'Surface & Coating',status:'inactive',rating:3.7,country:'Sweden',payment:'30 days',delivery:'FCA',currency:'SEK',
-  spendYtd:'42,000 SEK',spendYtdChange:'-62%',openPOs:0,openPOsValue:'0 SEK',overdueDeliveries:0,overdueDeliveriesValue:'0 SEK',
-  purchaseOrders:[['PO-2026-002','2026-03-14','2','42,000','Received','2026-03-20']],
-  items:[['Powder Coating — RAL 7035','Surface','180 m²','42,000']]},
-{id:'SUP-0008',name:'ElektroKomponenter AB',category:'Electrical Components',status:'inactive',rating:3.9,country:'Norway',payment:'30 days',delivery:'DAP',currency:'NOK',
-  spendYtd:'71,500 NOK',spendYtdChange:'-40%',openPOs:0,openPOsValue:'0 NOK',overdueDeliveries:0,overdueDeliveriesValue:'0 NOK',
-  purchaseOrders:[['PO-2026-006','2026-04-02','3','71,500','Received','2026-04-09']],
-  items:[['Contactor 25A','Electrical','12 pcs','28,800'],['Terminal Block Set','Electrical','40 sets','19,600']]}];
-const ncrDemo=[['NCR-026','2026-07-11','Damaged goods','Open','Corrective action'],['NCR-019','2026-03-22','Missing certificate','Closed','Credit issued']];
+const suppliers=[/* empty: hydrated from the shared supplier register */];
+const ncrDemo=[/* empty: quality findings come from the Quality module */];
 let selected=0,currentFilter='all',activeTab='overview',LANG='en';const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])), fmt=n=>new Intl.NumberFormat('sv-SE',{style:'currency',currency:'SEK',maximumFractionDigits:0}).format(n);
 // The "New Purchase Order" action (Pass 3.5) already creates a real WorkshopData purchase order,
 // but this page's own "Recent purchase orders" panel only ever read the static per-supplier demo
@@ -269,7 +237,20 @@ function renderMetrics(s){const t=T[LANG];const ms=[[t.metric_delivery,s.perform
 function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR';const po=isNcr?ncrDemo:supplierOrderRows(s);const head=isNcr?[t.th_ncr,t.th_date,t.th_issue,t.th_status,t.th_action]:[t.th_po_no,t.th_date,t.th_items,t.th_total_sek,t.th_status,t.th_expected];$('poTable').innerHTML=po.length?'<table><thead><tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+po.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i===3?'num':''}">${i===4?`<span class="status ${String(x).includes('Part')?'part':x==='Cancelled'?'cancel':''}">${esc(x)}</span>`:esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_records}</div>`;const items=s.items||[];$('itemsTable').innerHTML=items.length?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_category)+'</th><th class="num">'+esc(t.th_totalqty)+'</th><th class="num">'+esc(t.th_totalspend)+'</th></tr></thead><tbody>'+items.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_items}</div>`}
 function renderSide(s){const t=T[LANG];$('contacts').innerHTML=s.contacts.map((c,i)=>`<div class="contact"><span class="avatar" aria-hidden="true">${esc(c[0])}</span><span><b>${esc(c[1])}${i===0?` <i class="chip">${esc(t.primary_chip)}</i>`:''}</b><small>${esc(c[2])}</small><small>${esc(c[3])}<br>${esc(c[4])}</small></span><button type="button" class="btn mailto-btn" data-email="${esc(c[3])}" aria-label="Email ${esc(c[1])}">✉</button></div>`).join('');$('contacts').querySelectorAll('.mailto-btn').forEach(btn=>btn.addEventListener('click',()=>{location.href='mailto:'+btn.dataset.email}));const p=s.performance;$('performance').innerHTML=[[t.metric_delivery,p.delivery+'%',p.delivery],[t.metric_quality,(p.quality/20).toFixed(1)+' / 5',p.quality],[t.perf_invoice,p.invoice+'%',p.invoice],[t.perf_response,t.perf_response_value,p.response],[t.perf_overall,p.score,90]].map((r,i)=>`<div class="bar-row" ${i===4?'style="color:var(--green)"':''}><span>${esc(r[0])}</span><b>${esc(r[1])}</b><span class="bar" aria-hidden="true"><i style="width:${r[2]}%;${i===4?'background:var(--green)':''}"></i></span></div>`).join('');$('documents').innerHTML=supplierDocRows(s).map(d=>`<div class="doc"><b style="color:${d[0]==='PDF'?'var(--red)':'var(--green)'}">${esc(d[0])}</b><span>${esc(d[1])}</span><span>${esc(d[2])}</span></div>`).join('');$('activity').innerHTML=[['2026-08-20','PO-2026-024 updated','Aleksandar C.'],['2026-08-18','Delivery received (DEL-0038)','David H.'],['2026-08-15','New PO created','Aleksandar C.']].map(a=>`<div class="activity-row"><span>${esc(a[0])}</span><span>${esc(a[1])}</span><span>${esc(a[2])}</span></div>`).join('')}
 function renderBottom(s){const t=T[LANG];$('supplierInfo').innerHTML=[[t.info_type,s.type],[t.info_country,s.country],[t.info_established,s.established],[t.metric_payment,s.payment],[t.info_delivery,s.delivery],[t.info_minorder,s.minimum]].map(r=>`<div class="info-row"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('');$('notes').innerHTML=s.notes.map(n=>`<div class="note"><time>${esc(n[0])}</time>${esc(n[1])}<br><small>${esc(t.by_label)} ${esc(n[2])}</small></div>`).join('')}
-function render(){const t=T[LANG];const s=enrich(suppliers[selected]);renderList();renderProfile(s);renderMetrics(s);renderTables(s);renderBottom(s);renderSide(s);$('toggleLabel').textContent=s.status==='inactive'?t.act_activate:t.act_deactivate}
+function render(){const t=T[LANG];
+  // No suppliers yet is a state, not a fault: the profile panels have nothing to describe, so the
+  // page says so and offers the one action that changes it.
+  if(!suppliers.length){
+    renderList();
+    const host=document.querySelector('.profile')||document.querySelector('.shell');
+    if(host)host.innerHTML=`<div class="panel" style="text-align:center;padding:54px 30px;">
+      <div style="font-family:var(--font-heading);font-size:17px;color:var(--text);margin-bottom:8px;">${t.empty_title||'No suppliers yet'}</div>
+      <p style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 20px;line-height:1.6;">${t.empty_body||'Add the first supplier and the orders you raise, the prices you are quoted and the certificates you receive all point back to it.'}</p>
+      <button class="btn primary" onclick="openSupplierForm&&openSupplierForm()">${t.act_new||'New supplier'}</button>
+    </div>`;
+    return;
+  }
+  const s=enrich(suppliers[selected]);renderList();renderProfile(s);renderMetrics(s);renderTables(s);renderBottom(s);renderSide(s);$('toggleLabel').textContent=s.status==='inactive'?t.act_activate:t.act_deactivate}
 function toggleSupplier(){const t=T[LANG];const s=suppliers[selected];s.status=s.status==='inactive'?'active':'inactive';syncSupplier(s);notify(`${s.name} ${s.status==='inactive'?t.toast_deactivated:t.toast_activated}`);render()}
 function confirmToggleSupplier(){const t=T[LANG];const s=suppliers[selected];
   if(s.status==='inactive'){toggleSupplier();return;}

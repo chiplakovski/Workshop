@@ -372,7 +372,7 @@ const STAGES=['discovery','qualified','rfq','preparing','quotesent','negotiation
 // Opportunities come from the shared v5 state (WorkshopData) — no page-local seed or counters.
 let OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
 
-let TENDERS=[/* empty: a new workshop has none of these yet */];
+let TENDERS=(window.WorkshopData&&WorkshopData.getMarketingTenders)?WorkshopData.getMarketingTenders():[];
 let nextTenderId=6;
 
 // Campaigns come from the shared v5 state (WorkshopData) — no page-local seed or counters.
@@ -1454,13 +1454,21 @@ function openTenderForm(id){
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveTenderForm(${x?x.id:'null'})">${tt.btn_save}</button></div>`;
   openModal(html,true);
 }
+// Tenders used to live only inside this page, so closing the tab lost every one of them. They are
+// shared records now, written on save and read back on load like leads and opportunities.
+function syncTender(t){
+  if(!window.WorkshopData||!WorkshopData.upsertMarketingTender)return t;
+  return WorkshopData.upsertMarketingTender(t);
+}
 function saveTenderForm(id){
   const ref=$('tfRef').value.trim(),company=$('tfCompany').value.trim();if(!ref||!company)return;
   const data={ref,company,source:$('tfSource').value.trim(),industry:$('tfIndustry').value.trim(),description:$('tfDesc').value.trim(),
     deadline:$('tfDeadline').value||'',value:Number($('tfValue').value)||0,responsible:$('tfResponsible').value,
     bidDecision:$('tfBid').value,reminderDate:$('tfReminder').value||null,requirements:$('tfRequirements').value.trim()};
-  if(id){Object.assign(TENDERS.find(r=>r.id===id),data);}
-  else{TENDERS.unshift(Object.assign({id:nextTenderId++,documents:[],status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null},data));}
+  const existing=id?TENDERS.find(r=>r.id===id):null;
+  const saved=syncTender(Object.assign({},existing||{},data,id?{id}:{}));
+  if(saved&&saved.error){wAlert(saved.error);return;}
+  refreshMarketingFromShared();
   closeModal();renderApp();
 }
 
@@ -1758,6 +1766,7 @@ function refreshMarketingFromShared(){
   LEADS=WorkshopData.getMarketingLeads();
   OPPORTUNITIES=WorkshopData.getMarketingOpportunities();
   CAMPAIGNS=WorkshopData.getMarketingCampaigns();
+  if(WorkshopData.getMarketingTenders)TENDERS=WorkshopData.getMarketingTenders();
 }
 window.addEventListener('workshop:data',()=>{refreshMarketingFromShared();renderApp();});
 

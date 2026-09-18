@@ -16,14 +16,18 @@
   // name, since that legacy key's customerId numbering is relative to this fixed local list, not
   // to the shared customers collection.
   const LEGACY_PROJECTS_CUSTOMER_NAMES={1:'Sanus Glutenfri AB',2:'Schröder Nordic',3:'Lund Konditori',4:'Helsingborg Foods',5:'Malmö Livs',6:'Ystad Bageri',7:'Trelleborg Snacks'};
-  const clone=value=>JSON.parse(JSON.stringify(value));
+  // A lookup for a record that is not there answers "not there". It used to throw, because
+  // JSON.parse("undefined") is a syntax error - so findCustomer('nope') crashed the page rather
+  // than returning nothing. Twenty-two lookups shared that fault, and on an empty system they are
+  // reached constantly.
+  const clone=value=>value===undefined?null:JSON.parse(JSON.stringify(value));
   const now=()=>new Date().toISOString();
   // A new workshop opens an empty system. Nothing here is invented: no customers it has not
   // won, no machines it does not own, no jobs it has not been given. The shape is complete so
   // every module has something real to read; the content is what the workshop puts in.
   const emptyState=()=>({
     version:VERSION,
-    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0},
+    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0},
     customers:[],
     estimations:[],
     projects:[],
@@ -60,6 +64,7 @@
     invoices:[],
     marketingLeads:[],
     marketingOpportunities:[],
+    marketingTenders:[],
     prospectFindings:[],
     prospectSeen:[],
     prospectSweeps:[],
@@ -75,7 +80,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:0},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -355,6 +360,7 @@
     // The outward sweep: what it found, what has been shown once already, and the runs themselves.
     // Seeded empty on purpose — an unrun sweep has no findings, and inventing some would be the
     // one thing this queue exists not to do.
+    marketingTenders:[],
     prospectFindings:[],
     prospectSeen:[],
     prospectSweeps:[],
@@ -649,6 +655,7 @@
     if(!Array.isArray(s.marketingLeads))s.marketingLeads=base.marketingLeads;
     if(!Array.isArray(s.marketingOpportunities))s.marketingOpportunities=base.marketingOpportunities;
     if(!Array.isArray(s.marketingCampaigns))s.marketingCampaigns=base.marketingCampaigns;
+    if(!Array.isArray(s.marketingTenders))s.marketingTenders=[];
     if(!Array.isArray(s.prospectFindings))s.prospectFindings=[];
     if(!Array.isArray(s.prospectSeen))s.prospectSeen=[];
     if(!Array.isArray(s.prospectSweeps))s.prospectSweeps=[];
@@ -3555,6 +3562,24 @@
       }
       save(`Marketing opportunity saved: ${o.no}`);
       return clone(o);
+    },
+    // Tenders and RFQs. These lived inside the Marketing page as a plain array until now, which
+    // meant a tender survived exactly as long as the tab stayed open - closing it lost the lot.
+    getMarketingTenders:()=>clone(state.marketingTenders),
+    findMarketingTender:idOrRef=>clone(state.marketingTenders.find(x=>x.id===idOrRef||x.ref===idOrRef)),
+    upsertMarketingTender(payload){
+      if(!payload||!String(payload.ref||'').trim())return{error:'A reference number is required'};
+      if(!String(payload.company||'').trim())return{error:'A company name is required'};
+      let t=state.marketingTenders.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.ref&&x.ref===payload.ref));
+      const data=clone(payload);
+      if(t){Object.assign(t,data);}
+      else{
+        t=Object.assign({documents:[],status:'reviewing',linkedOpportunityId:null,linkedEstimateNo:null},data);
+        t.id=t.id||(state.counters.marketingTender=(state.counters.marketingTender||0)+1);
+        state.marketingTenders.unshift(t);
+      }
+      save(`Tender saved: ${t.ref}`);
+      return clone(t);
     },
     getMarketingCampaigns:()=>clone(state.marketingCampaigns),
     findMarketingCampaign:id=>clone(state.marketingCampaigns.find(x=>x.id===id)),

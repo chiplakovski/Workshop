@@ -6,7 +6,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('fs');
 const path=require('path');
-const {loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage}=require('./helpers/load-workshop-data');
+const {loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage,loadEmptyWorkshopData}=require('./helpers/load-workshop-data');
 
 const V5_KEY='varmak.workshop.frontend.v5';
 const V4_KEY='varmak.workshop.frontend.v4';
@@ -4331,4 +4331,58 @@ test('queue: data saved before the queue existed opens without one', ()=>{
   assert.deepEqual(W.getProspectFindings(),[]);
   assert.deepEqual(W.getProspectSweeps(),[]);
   assert.equal(W.prospectQueueSummary().waiting,0);
+});
+
+// ── A lookup for a record that is not there ──────────────────────────────────────────────────
+test('lookups: asking for a record that does not exist answers "not there", never throws', ()=>{
+  const W=loadWorkshopData();
+  // Twenty-two of these shared one fault: clone(undefined) is JSON.parse("undefined"), a syntax
+  // error. On a system that opens empty they are reached constantly, and each one took the page
+  // down with it rather than returning nothing.
+  const lookups=Object.keys(W).filter(k=>/^find[A-Z]/.test(k));
+  assert.ok(lookups.length>=20,'the data layer is expected to expose many lookups');
+  lookups.forEach(name=>{
+    let got;
+    assert.doesNotThrow(()=>{got=W[name]('no-such-record-anywhere');},`${name}() threw on a missing record`);
+    assert.equal(got,null,`${name}() must answer null, not undefined`);
+  });
+});
+test('lookups: a record that does exist still comes back whole', ()=>{
+  const W=loadWorkshopData();
+  const first=W.getCustomers()[0];
+  assert.ok(first,'the fixture is expected to carry customers');
+  // findCustomer takes the id; its siblings take an id or a document number. Both paths matter.
+  assert.equal(W.findCustomer(first.id).name,first.name,'guarding the miss must not break the hit');
+  const lead=W.getMarketingLeads()[0];
+  assert.equal(W.findMarketingLead(lead.no).company,lead.company,'nor the lookups that take a number');
+});
+
+// ── Tenders and RFQs (Pass 4.37) ─────────────────────────────────────────────────────────────
+test('tenders: a tender is a stored record, not something the page holds until it closes', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage();
+  const saved=WD.upsertMarketingTender({ref:'RFQ-2026-501',company:'Höörs Kommun',
+    description:'Railings for the sports hall',deadline:'2026-11-01',value:180000});
+  assert.ok(saved.id,'a tender gets a real id');
+  assert.equal(saved.status,'reviewing','and a starting status');
+  // The bug this closes: it used to live in a page-local array, so closing the tab lost it.
+  const raw=localStorage.getItem('varmak.workshop.frontend.v5');
+  const reloaded=loadWorkshopData({'varmak.workshop.frontend.v5':raw});
+  const back=reloaded.findMarketingTender('RFQ-2026-501');
+  assert.ok(back,'the tender must still be there after a reload');
+  assert.equal(back.company,'Höörs Kommun');
+  assert.equal(back.value,180000);
+});
+test('tenders: a reference and a company are required, and editing does not duplicate', ()=>{
+  const W=loadEmptyWorkshopData();
+  assert.ok(W.upsertMarketingTender({ref:'',company:'X'}).error,'a tender with no reference is refused');
+  assert.ok(W.upsertMarketingTender({ref:'RFQ-1',company:''}).error,'and one with no company');
+  const first=W.upsertMarketingTender({ref:'RFQ-1',company:'X'});
+  W.upsertMarketingTender({id:first.id,ref:'RFQ-1',company:'X Renamed'});
+  assert.equal(W.getMarketingTenders().length,1,'editing must change the record, not add another');
+  assert.equal(W.findMarketingTender('RFQ-1').company,'X Renamed');
+});
+test('tenders: a system that has never had one reports none', ()=>{
+  const W=loadEmptyWorkshopData();
+  assert.deepEqual(W.getMarketingTenders(),[]);
+  assert.equal(W.findMarketingTender('RFQ-nope'),null);
 });
