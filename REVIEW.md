@@ -155,10 +155,16 @@ certified to **EN 1090** for structural steel — which is normal in Sweden — 
 and welder qualifications are not optional, they are what the certificate requires. Five-whys and
 fishbone diagrams on a CAPA, however, are consultancy furniture.
 
-**Do:** tell me which certification you hold. Keep exactly what it demands and delete the rest.
-My guess at the split: **keep** inspections, NCRs, holds, welds, WPS, welder qualifications;
-**drop or collapse** CAPA's analysis tooling, ITPs, dossiers, supplier quality, complaints.
-The **hold gate** — an active hold blocks completion — is the most valuable thing in the module.
+**Decided (18 September): no certification is held.** So: **keep** inspections, NCRs and holds —
+the three that stop bad work going out. **Drop** welds, WPS, welder qualifications, CAPA's analysis
+tooling, ITPs, dossiers, supplier quality and complaints: nine record types down to three.
+
+One exception, because it cannot be recovered later: record **who welded it and with what filler**
+as plain fields on the operation. If certification is pursued in two years that history exists;
+the subsystem can be built then, the facts cannot.
+
+The **hold gate** — an active hold blocks completion — is the most valuable thing in the module and
+survives any trimming.
 
 ### Documents — 46 lines
 The smallest module in the app, and `documentFolders` has never held a row.
@@ -246,7 +252,14 @@ Group → subgroup → warehouse → sublocation → bin, for one building. A sh
 
 ---
 
-## Three questions only you can answer
+## Three questions only you can answer — **answered 18 September**
+
+> **No certification yet** · **both a shared tablet and personal phones** · **2–4 people will log
+> in.** What each settled is in [`BACKEND.md`](BACKEND.md) §6. The consequences for this review:
+> the Quality trim below is now decided rather than proposed, the shop-floor half genuinely does
+> need rebuilding around a device, and two roles are enough.
+
+The original questions, kept for the reasoning behind them:
 
 **Which certification do you hold?** It decides how much of Quality is legally required and how
 much is furniture. I will not guess at this — getting it wrong in either direction is expensive.

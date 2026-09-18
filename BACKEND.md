@@ -48,13 +48,20 @@ breaking.
 
 ### 1b. Who may do what
 
-Three roles, because that is how the workshop actually divides:
+**Decided: two to four people will log in.** That settles the roles at **two**, not three:
 
 | Role | Can |
 |---|---|
-| **admin** | everything, including prices, invoices and deleting records |
-| **office** | quote, plan, buy, invoice; cannot change quality records or delete |
-| **workshop** | book hours, start and pause operations, issue material, record an inspection result; sees no prices at all |
+| **admin** | everything — quoting, pricing, buying, invoicing, quality, deleting |
+| **workshop** | book hours, start and pause operations, issue material, record an inspection result; **sees no prices at all** |
+
+The `office` role in between is for a workshop that has hired somebody to do the quoting. At two to
+four people that person is you. Add it the day it describes a real person — the role is a row in a
+table, not a rebuild.
+
+Two roles rather than three also keeps the row-level security simple enough to read in one sitting,
+which matters more than it sounds: a security policy nobody can follow is a security policy nobody
+maintains.
 
 Enforced with **row-level security**, not by hiding buttons. A welder's session must be unable to
 read the customer's agreed price even by asking the API directly.
@@ -111,11 +118,21 @@ merchants loses one of them. It is also where every supplier catalogue import la
 One event table replaces twelve tabs. An inspection, a service, a calibration, a breakdown and a
 pre-use check are the same shape — a thing that happened to a machine on a date, with a result.
 
-**Quality** — `inspections` · `ncrs` · `holds` · `welds` · `wps` · `welder_quals`
+**Quality** — `inspections` · `ncrs` · `holds`
 
-Only what a certification demands. **Which certification Varmak holds decides this list** and is
-still unanswered; EN 1090 would make welds, WPS and welder qualifications mandatory rather than
-optional.
+**Decided: no certification is held yet**, so the list is three tables, not six. `welds`, `wps` and
+`welder_quals` exist to satisfy EN 1090 and ISO 3834 auditors. Building them before there is an
+auditor is building paperwork for nobody.
+
+One thing is kept anyway, because it costs nothing and cannot be recovered later: **who did the
+work, and on what material.** The jobcard already carries a heat number and a certificate
+reference; add the welder's name and the filler used as plain fields on the operation. If
+certification is pursued in two years, that history is the difference between starting from a
+record and starting from nothing. The subsystem can be built then; the facts cannot be
+back-filled then.
+
+The three that stay are the ones that protect the workshop rather than an auditor: an inspection
+result, a non-conformance, and a hold that stops work going out wrong.
 
 **System** — `users` · `documents` · `audit_log`
 
@@ -131,10 +148,14 @@ optional.
 
 ## 3. Login
 
+**Decided: both a shared tablet in the hall and personal phones on site.** So there really are two
+doors, and they guard different things.
+
 ### Two different doors, because there are two different situations
 
-**Office — email and password.** Supabase Auth, standard. Anything touching prices, invoices,
-approvals or deletion sits behind it.
+**Office and site — email and password.** Supabase Auth, standard. Anything touching prices,
+invoices, approvals or deletion sits behind it. This is also the door on a personal phone: a phone
+is one person's, so it gets that person's real login and their real role.
 
 **Shop floor — a shared tablet and a personal PIN.** A welder in gloves will not type a password
 forty times a day, and if you make them, they will share one login and your hours data becomes
@@ -148,6 +169,35 @@ change a price, or release a quality hold. Those need the office door.
 So the rule is: **the strength of the door matches what is behind it.** The shop-floor session gets
 the `workshop` role and nothing more, and the role is enforced by row-level security, so the limit
 holds even if somebody works out the PIN.
+
+### Offline — the part "both devices" actually costs
+
+A tablet in a steel hall and a phone on somebody else's site are both places the signal dies. This
+is the largest piece of engineering in the whole backend, so it needs scoping rather than a promise
+that everything works offline.
+
+**Offline for writing, not for reading everything.** Three actions must survive no signal, because
+they happen at the machine and cannot wait:
+
+| Action | Why it must queue |
+|---|---|
+| Book hours against an operation | happens at the machine, several times a shift |
+| Start / pause / finish an operation | the timestamp is the point; recording it later is a guess |
+| Issue material to a jobcard | the steel leaves the shelf whether or not there is signal |
+
+All three are **append-only**. That is what makes this tractable: they add a row, they do not edit
+one, so two devices offline at once cannot conflict. Queue them locally with a device-generated id,
+replay when the signal returns, and let the server reject a duplicate by that id.
+
+**Everything else requires a connection and says so.** Quoting, pricing, purchase orders, the
+findings queue, reports — all of it needs the current state of the database to be correct, and a
+stale offline copy of a price is worse than no price. The screen says "no connection" rather than
+showing something that might be wrong.
+
+**The gates still hold.** An operation queued offline is still checked when it replays — if the
+machine was out of service, the server refuses it and the person is told. Offline delays the
+check; it does not skip it. This is exactly why the rules have to be in the database: the tablet
+cannot be the thing that decides.
 
 ### Practical points
 
@@ -194,13 +244,28 @@ cannot touch anything else.
 
 ---
 
-## 6. Still to decide — these are yours, not mine
+## 6. The three questions, answered
 
-**Which certification does the workshop hold?** It sets the Quality table list. Guessing costs
-either money on tables nobody needs or a failed audit.
+| Question | Answer | What it settled |
+|---|---|---|
+| Which certification? | **None yet** | Quality is three tables, not six. No WPS or welder-qualification subsystem. But the welder's name and the filler used are recorded on the operation from day one, because that history cannot be back-filled. |
+| Shop floor devices? | **Both** — tablet at the machines, phone on site | Two doors: PIN on the shared tablet, password on a personal phone. Offline queueing for three append-only actions, and nothing else. |
+| How many people? | **2–4** | Two roles, not three. `office` is added the day somebody is hired to do the quoting. Audit log still built, because it is one trigger and it answers "what happened to this job". |
 
-**Shop floor: shared tablet, or personal phones?** A shared tablet with PINs and a personal phone
-with a login are different security models and different offline problems. The answer changes §3.
+### What these answers removed from the build
 
-**How many people will actually log in?** Five changes nothing. Fifteen makes roles and audit
-matter much more than they do at five.
+- Three quality tables and their screens — `welds`, `wps`, `welder_quals`
+- One role and its policies
+- Offline support for reading the whole database, which was never worth its cost
+
+### What they added
+
+- The welder and filler as fields on the operation, so certification stays possible later
+- An offline write queue for hours, operation timing and material issues
+- A second login mode, because a tablet and a phone are not the same thing
+
+### Still genuinely open
+
+**When do you want the AI sweep turned on?** It is cheap ($9–19/month) but it is the only part
+with a running cost, and it only earns anything once somebody reads the queue every morning. It
+can wait until the rest is in daily use without losing anything.
