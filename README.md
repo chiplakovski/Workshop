@@ -147,6 +147,9 @@ copy. The remaining steps are a real backend/API/database and real authenticatio
 The design system — every colour, font, type size and component recipe across the three themes —
 is written out in [`THEMES.md`](THEMES.md).
 
+What has to exist behind the interface — the database, the login, and which rules must move out of
+the browser to hold at all — is in [`BACKEND.md`](BACKEND.md).
+
 A module-by-module review of the whole system, with an opinion on what would make it simpler and
 more useful, is in [`REVIEW.md`](REVIEW.md).
 
