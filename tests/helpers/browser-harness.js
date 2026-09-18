@@ -136,4 +136,12 @@ function monitorPage(page, baseUrl) {
   };
 }
 
-module.exports = { appPages, monitorPage, startBrowserHarness };
+// The application now opens on an empty system, the way a workshop meets it on its first day.
+// These suites exercise workflows over a populated one - a board with projects on it, a store with
+// stock in it - so each asks for the demonstration fixture explicitly before it starts.
+async function loadDemoData(page) {
+  await page.evaluate(() => window.WorkshopData.loadDemoData());
+  await page.reload({ waitUntil: 'load' });
+}
+
+module.exports = { appPages, monitorPage, startBrowserHarness, loadDemoData };

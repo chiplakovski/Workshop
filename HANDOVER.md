@@ -91,6 +91,27 @@ Everything is labelled as sample: `demo:true` on every finding, a banner above t
 **no source URL points at a live page** (all on `demo.varmak.local`). A fabricated thread id on a
 real forum is the one lie this project does not tell.
 
+## 4b. The system now starts empty (18 September)
+
+Every fictional record is gone from what a user sees. `seed()` returns an empty state; the
+demonstration data lives on as `demoState()` behind `WorkshopData.loadDemoData()`, which the test
+helpers and the e2e suites call explicitly. Item groups and warehouse locations stay, because they
+are a classification scheme rather than anything invented about this workshop.
+
+Three things were found doing this and are worth remembering:
+
+- **Pages carried their own fixtures.** Customers, Estimations and Marketing each held hard-coded
+  record arrays that had nothing to do with the data layer. Emptying `seed()` did not touch them.
+- **Two pages crashed on an empty system** — Customers and Estimations both read `.id` off the
+  first record without checking there was one. Both now have a real empty state.
+- **Store showed invented figures that came from nowhere** — "Across 8 projects", "$12,640",
+  "28 bins, 78% utilisation" — static text no code ever updated. All six are computed now.
+
+Typography was unified at the same time: 29 arbitrary font sizes across the pages collapsed onto
+an eight-step scale (9.5 / 11 / 12 / 13 / 15 / 17 / 21 / 26 px), 480 declarations moved. Colour
+tokens were already consistent bar two pages; `suppliers` carried a dead palette that the shared
+one shadowed, now removed.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |

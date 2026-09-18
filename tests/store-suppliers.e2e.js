@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const SUPPLIER = 'E2E Nordic Materials AB';
 const ITEM_CODE = 'E2E-PLATE-42';
@@ -246,6 +246,7 @@ async function receiveGoods(page, poNo) {
   step('Store: every page reads in all three languages without touching stored data');
 
   await page.goto(page.url().split('#')[0] + '#stockcount', { waitUntil: 'load' });
+
   await page.waitForTimeout(250);
   assert.equal(await page.evaluate(() => storeView), 'stockcount',
     'a Store page must be reachable by its own link');
@@ -498,6 +499,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     await createSupplier(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);

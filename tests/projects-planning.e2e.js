@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const PROJECT_NAME = 'E2E Packaging Platform';
 const PROJECT_EDITED_NAME = 'E2E Packaging Platform Rev B';
@@ -398,6 +398,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/estimations-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     const project = await projectWorkflow(page);
     await page.goto(`${harness.baseUrl}/planning-desktop.html`, { waitUntil: 'load' });
     await planningWorkflow(page, project);

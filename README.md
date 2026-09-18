@@ -48,6 +48,16 @@ Shared logic used across modules:
 - Admin logs in → Hub → any module (demo only, not enforced by any backend)
 
 ## Data storage and migration
+**The application opens on an empty system.** No customers, no projects, no machines, no stock —
+a workshop meeting it on its first day sees its own empty workshop, and the first customer it
+creates is C-001. The only things present are the classification scheme (item groups and warehouse
+locations), because without them you would have to design a numbering system before entering a
+single bolt; rename or delete them freely.
+
+The demonstration records still exist as a fixture. `WorkshopData.loadDemoData()` fills the system
+with them — used by the test suites, and available from the browser console for showing the system
+populated. `WorkshopData.reset()` empties it again.
+
 All data is stored client-side under the `varmak.workshop.frontend.v5` localStorage key. On load,
 if that key is missing or unreadable, `workshop-data.js` looks for the older
 `varmak.workshop.frontend.v4` and `...v3` keys and migrates them forward automatically, without

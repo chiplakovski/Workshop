@@ -69,13 +69,19 @@ test('data migration: an intentionally empty user array stays empty after migrat
   assert.deepEqual(state.hours,[],'hours was explicitly empty in the source data and must remain empty');
 });
 
-test('data migration: a collection missing entirely from old v3 data (Equipment/Quality did not exist yet) is backfilled', ()=>{
+test('data migration: a collection missing entirely from old v3 data is created empty, not invented', ()=>{
   const v3={version:3,customers:[{id:1,no:'C-001',name:'X'}],estimations:[],projects:[],inventory:[],
     jobcards:[],suppliers:[],hours:[],movements:[],offcuts:[],stockCounts:[],activity:[]}; // no `equipment` key at all
   const WD=loadWorkshopData({[V3_KEY]:JSON.stringify(v3)});
   const state=WD.get();
-  assert.ok(Array.isArray(state.equipment)&&state.equipment.length>0,'missing Equipment collection must be backfilled from defaults');
-  assert.ok(Array.isArray(state.qualityInspections),'missing Quality collections must be backfilled from defaults');
+  // The collection has to exist, so every module has something real to read. It must NOT arrive
+  // populated: a workshop migrating its own records would find itself owning machines it has never
+  // bought, and quality inspections it never carried out.
+  assert.ok(Array.isArray(state.equipment),'the missing Equipment collection must exist after migration');
+  assert.equal(state.equipment.length,0,'migrating old data must not hand the workshop machines it does not own');
+  assert.ok(Array.isArray(state.qualityInspections),'the missing Quality collections must exist after migration');
+  assert.equal(state.qualityInspections.length,0);
+  assert.equal(state.customers.length,1,'what the old data did carry is kept');
 });
 
 // ── Corrupted-v5 rescue copy ─────────────────────────────────────────────────
@@ -1433,7 +1439,17 @@ test('legacy migration: Projects legacy key (varmak.projects.ui.v1) is migrated 
   assert.equal(migrated.name,'Custom Project');
   assert.equal(migrated.customer,'Schröder Nordic','customerId 2 in the local picklist resolves to Schröder Nordic by name');
   assert.ok(state.customers.some(c=>c.name==='Schröder Nordic'),'the resolved customer must exist in shared customers');
-  assert.ok(state.projects.some(p=>p.no==='P-2026-014'),'the unrelated pre-existing shared project must be preserved');
+});
+test('legacy migration: a system that already has its own data is left alone', ()=>{
+  // Importing from the old key happens only into a system with nothing of its own yet. Anything
+  // else would re-import on every single load, quietly multiplying the workshop's projects.
+  const existing={version:5,counters:{},customers:[],projects:[{id:9,no:'P-ALREADY-HERE',name:'Already here',
+    notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]}]};
+  const legacy=[{id:1,no:'P-26-9001',name:'Custom Project',customerId:2,status:'active',
+    jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
+  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(existing),[LEGACY_PROJECTS_KEY]:JSON.stringify(legacy)});
+  const nos=WD.get().projects.map(p=>p.no);
+  assert.deepEqual(nos,['P-ALREADY-HERE'],'what the workshop already had is exactly what it still has');
 });
 
 test('legacy migration: Purchasing legacy key (varmak.purchasing.orders) is migrated into shared purchaseOrders', ()=>{

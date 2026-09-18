@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const FOLDER_NAME = 'E2E Compliance Evidence';
 const DOCUMENT_NAME = 'E2E Inspection & Material Evidence';
@@ -136,6 +136,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/documents-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     const reportId = await documentsWorkflow(page);
     await page.goto(`${harness.baseUrl}/reports-desktop.html`, { waitUntil: 'load' });
     await reportsWorkflow(page, reportId);

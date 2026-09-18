@@ -50,7 +50,19 @@ function loadWorkshopData(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
   const g=buildEnv(seedEntries,customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
-  return fn(g);
+  const WD=fn(g);
+  // The application itself now opens on an empty system - a workshop should not find somebody
+  // else's customers waiting for it. The suite still needs records to exercise the rules against,
+  // so unless a test seeded its own storage it asks for the demonstration fixture explicitly.
+  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
+  return WD;
+}
+
+// A workshop's first day: nothing stored, nothing assumed.
+function loadEmptyWorkshopData(){
+  const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
+  const fn=new Function('window',src+'\nreturn window.WorkshopData;');
+  return fn(buildEnv());
 }
 
 // Same as loadWorkshopData, but also returns the localStorage instance backing it, so a test can
@@ -59,7 +71,9 @@ function loadWorkshopDataWithStorage(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
   const g=buildEnv(seedEntries,customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
-  return {WD:fn(g),localStorage:g.localStorage};
+  const WD=fn(g);
+  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
+  return {WD,localStorage:g.localStorage};
 }
 
 // Same as loadWorkshopData, but also returns the raw `window` stub itself (localStorage +
@@ -69,7 +83,9 @@ function loadWorkshopDataWithEnv(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
   const g=buildEnv(seedEntries,customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
-  return {WD:fn(g),localStorage:g.localStorage,window:g};
+  const WD=fn(g);
+  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
+  return {WD,localStorage:g.localStorage,window:g};
 }
 
-module.exports={loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage};
+module.exports={loadWorkshopData,loadEmptyWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage};

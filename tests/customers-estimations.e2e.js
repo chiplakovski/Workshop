@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const CUSTOMER_NAME = 'E2E Nordic Fabrication AB';
 const CUSTOMER_EDITED_NAME = 'E2E Nordic Fabrication Group AB';
@@ -365,6 +365,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/customers-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     await customerWorkflow(page);
     await page.goto(`${harness.baseUrl}/estimations-desktop.html`, { waitUntil: 'load' });
     await estimationWorkflow(page);

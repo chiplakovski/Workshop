@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const PROJECT_NO = 'P-2026-014';
 const JOBCARD_TITLE = 'E2E Grinder Production Job';
@@ -201,6 +201,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/jobcard-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     const jobcard = await jobcardWorkflow(page);
     await page.goto(`${harness.baseUrl}/hours-desktop.html`, { waitUntil: 'load' });
     await hoursWorkflow(page, jobcard);

@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { monitorPage, startBrowserHarness } = require('./helpers/browser-harness');
+const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const COMPANY = 'E2E Skane Process Systems AB';
 const CONTACT = 'Elin Andersson';
@@ -262,6 +262,7 @@ async function main() {
   const monitor = monitorPage(page, harness.baseUrl);
   try {
     await page.goto(`${harness.baseUrl}/marketing-desktop.html`, { waitUntil: 'load' });
+    await loadDemoData(page);
     await runFindingsQueue(page);
     const { leadId, opportunityId } = await createAndQualifyLead(page);
     await convertLead(page, leadId, opportunityId);

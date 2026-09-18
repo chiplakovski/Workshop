@@ -21,21 +21,21 @@
 
   .topfull{position:relative;z-index:2;width:100%;padding:22px 36px 0;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
-  .brand .logo{font-family:var(--font-heading);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .brand .logo{font-family:var(--font-heading);font-weight:700;font-size:15px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
   .brand .logo .dot{width:6px;height:6px;background:var(--spark);box-shadow:0 0 9px 1px rgba(var(--c-accent-rgb),.9);}
   .brand .meta{font-size:11px;color:var(--steel-400);margin-top:2px;line-height:1.5;}
   .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
-  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:var(--font-heading);font-weight:600;font-size:16px;} .clock .date{font-size:11px;color:var(--steel-400);}
+  .clock{text-align:right;font-variant-numeric:tabular-nums;} .clock .time{font-family:var(--font-heading);font-weight:600;font-size:15px;} .clock .date{font-size:11px;color:var(--steel-400);}
   .who{display:flex;align-items:center;gap:8px;}
   .who .badge{display:flex;align-items:center;gap:7px;padding:5px 10px;background:var(--lift-05);border:1px solid var(--line);font-size:12px;}
-  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:var(--font-heading);}
-  .who .role{color:var(--spark);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+  .who .badge .av{width:20px;height:20px;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;font-family:var(--font-heading);}
+  .who .role{color:var(--spark);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;}
   .who .out{background:transparent;border:1px solid var(--field-line);color:var(--steel-300);padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;}
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .wrap{position:relative;z-index:2;max-width:1620px;margin:0 auto;padding:26px 32px 40px;}
   .modhead{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
-  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.15s;}
+  .back{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:12px;padding:9px 13px;cursor:pointer;transition:.15s;}
   .back:hover{border-color:var(--spark);color:var(--ice);}
   .modhead .ttl{display:flex;align-items:center;gap:11px;}
   /* summary stats sit in the header so the estimation list gets the full width */
@@ -45,17 +45,17 @@
   .headsum .hsv{font-family:var(--font-heading);font-weight:600;font-size:15px;white-space:nowrap;}
   .headsum .hsv.draft{color:var(--steel-300);} .headsum .hsv.sent{color:var(--spark);}
   .headsum .hsv.accepted{color:var(--ok);} .headsum .hsv.declined{color:var(--danger);}
-  .headsum .hssub{font-size:10px;color:var(--steel-400);white-space:nowrap;}
+  .headsum .hssub{font-size:9.5px;color:var(--steel-400);white-space:nowrap;}
   .headsum .hsdiv{width:1px;align-self:stretch;background:var(--line);}
   @media(max-width:1100px){.modhead{flex-wrap:wrap;} .headsum{margin-left:0;width:100%;justify-content:flex-start;gap:16px;} .headsum .hsdiv{display:none;}}
   .modhead .ic{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
-  .modhead h1{font-family:var(--font-heading);font-weight:600;font-size:22px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
+  .modhead h1{font-family:var(--font-heading);font-weight:600;font-size:21px;letter-spacing:-.01em;} .modhead p{font-size:12px;color:var(--steel-400);}
 
-  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:var(--font-heading);font-weight:600;font-size:12.5px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
+  .tbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--field-line);background:transparent;color:var(--steel-300);font-family:var(--font-heading);font-weight:600;font-size:12px;padding:9px 13px;cursor:pointer;transition:.16s;white-space:nowrap;}
   .tbtn:hover{border-color:var(--spark);color:var(--ice);}
   .tbtn.primary{background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));border:none;color:#fff;}
   .tbtn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(var(--c-accent2-rgb),.5);}
-  .tbtn.small{padding:6px 10px;font-size:11.5px;}
+  .tbtn.small{padding:6px 10px;font-size:11px;}
   .tbtn.danger{border-color:rgba(var(--c-danger-rgb),.4);color:var(--tint-danger);}
   .tbtn.danger:hover{border-color:var(--danger);color:var(--on-danger);background:rgba(var(--c-danger-rgb),.1);}
   .tbtn svg{flex:none;width:13px;height:13px;}
@@ -73,7 +73,7 @@
   body{overflow-x:hidden;}
   .panel{background:var(--lift-035);border:1px solid var(--line);padding:17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
   .panel .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;gap:10px;}
-  .panel .phead h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
+  .panel .phead h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--spark);font-weight:700;}
 
   .search{position:relative;flex:1;}
   .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
@@ -90,8 +90,8 @@
   .offerlbl b{font-family:var(--font-heading);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--c-tint);}
   .offerbar.off .offerlbl b{color:var(--steel-400);}
   .offerref{font-size:13px;font-weight:600;color:var(--ice);font-variant-numeric:tabular-nums;}
-  .offersub{font-size:10.5px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .offerbar .tbtn{font-size:11.5px;padding:7px 11px;}
+  .offersub{font-size:11px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .offerbar .tbtn{font-size:11px;padding:7px 11px;}
   .offerbar .tbtn[disabled]{opacity:.45;cursor:not-allowed;}
   .offerbar .tbtn.warn2{border-color:rgba(var(--c-warn-rgb),.5);color:var(--tint-warn);}
   .offerbar .tbtn.warn2:hover{border-color:var(--warn);background:rgba(var(--c-warn-rgb),.1);}
@@ -109,7 +109,7 @@
   .iconbtn:hover{border-color:var(--spark);color:var(--ice);}
 
   .segtabs{display:flex;gap:5px;flex-wrap:wrap;}
-  .segtabs button{flex:0 0 auto;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:10.5px;padding:7px 4px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .segtabs button{flex:0 0 auto;background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);font-family:var(--font-body);font-size:11px;padding:7px 4px;cursor:pointer;transition:.15s;white-space:nowrap;}
   .segtabs button.on{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.5);color:var(--c-tint);}
 
   /* ── the mini board ──────────────────────────────────────────────────────
@@ -125,7 +125,7 @@
     color:var(--kc,var(--steel-300));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* The chip carries the lane's colour; the figure on it stays plain text, so a pale stage
      colour never has to double as readable type. */
-  .kccount{flex:none;font-size:10px;font-weight:700;color:var(--ice);
+  .kccount{flex:none;font-size:9.5px;font-weight:700;color:var(--ice);
     background:rgba(var(--kc-rgb),.24);padding:1px 7px;font-variant-numeric:tabular-nums;}
   .kcbody{display:flex;flex-direction:column;gap:5px;padding:6px;flex:1 1 auto;min-height:64px;max-height:236px;overflow-y:auto;}
   .kboard.solo .kcbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));max-height:260px;}
@@ -144,7 +144,7 @@
     background:var(--lift-04);padding:7px 8px 7px 15px;transition:.14s;
     touch-action:pan-y;user-select:none;-webkit-user-select:none;}
   /* A card says it can be picked up, without shouting it at every card at once. */
-  .kcard .kgrip{position:absolute;left:4px;top:7px;font-size:10px;line-height:1;color:var(--steel-400);
+  .kcard .kgrip{position:absolute;left:4px;top:7px;font-size:9.5px;line-height:1;color:var(--steel-400);
     opacity:0;transition:.14s;pointer-events:none;}
   .kcard:hover .kgrip,.kcard.sel .kgrip{opacity:.65;}
   .kcard.dragging{opacity:.35;}
@@ -159,16 +159,16 @@
   .kcard.sel{background:rgba(var(--c-accent-rgb),.16);border-color:rgba(var(--c-accent-rgb),.6);}
   .kcard .kc1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
   /* The name is what a card is read by; the number is how it is referred to afterwards. */
-  .kcard .kname{flex:1 1 auto;min-width:0;font-family:var(--font-heading);font-weight:600;font-size:12.5px;
+  .kcard .kname{flex:1 1 auto;min-width:0;font-family:var(--font-heading);font-weight:600;font-size:12px;
     color:var(--ice);line-height:1.3;}
   .kcard .kval{flex:none;font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ice);
     font-variant-numeric:tabular-nums;white-space:nowrap;}
   .kcard .kc2{display:flex;align-items:center;gap:7px;margin-top:4px;}
-  .kcard .kno{flex:none;font-size:10.5px;font-weight:700;color:var(--steel-300);
+  .kcard .kno{flex:none;font-size:11px;font-weight:700;color:var(--steel-300);
     font-variant-numeric:tabular-nums;letter-spacing:.02em;}
-  .kcard .kcust{min-width:0;font-size:10px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kcard .kcust{min-width:0;font-size:9.5px;color:var(--steel-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .kcard .kc2 .stpill{margin-left:auto;}
-  .kcempty{font-size:10.5px;color:var(--steel-400);text-align:center;padding:16px 0;}
+  .kcempty{font-size:11px;color:var(--steel-400);text-align:center;padding:16px 0;}
 
   /* While a card is in the air the lanes answer before the drop: which moves the rules allow, and
      which they do not. A refusal is then never a surprise toast after the fact. */
@@ -190,17 +190,17 @@
 
   .sumgrid2{display:flex;flex-direction:column;gap:0;}
   .sumtotal{display:flex;justify-content:space-between;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);}
-  .sumtotal .sl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
-  .sumtotal .sv{font-family:var(--font-heading);font-size:19px;font-weight:600;}
+  .sumtotal .sl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
+  .sumtotal .sv{font-family:var(--font-heading);font-size:17px;font-weight:600;}
   .sumbystatus{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .sumbystatus .ss{}
-  .sumbystatus .sl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;}
-  .sumbystatus .sv{font-family:var(--font-heading);font-size:16px;font-weight:600;} .sumbystatus .sv.draft{color:var(--steel-300);} .sumbystatus .sv.sent{color:var(--spark);} .sumbystatus .sv.accepted{color:var(--ok);} .sumbystatus .sv.declined{color:var(--danger);}
-  .sumbystatus .ssub{font-size:10.5px;color:var(--steel-400);}
+  .sumbystatus .sl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;}
+  .sumbystatus .sv{font-family:var(--font-heading);font-size:15px;font-weight:600;} .sumbystatus .sv.draft{color:var(--steel-300);} .sumbystatus .sv.sent{color:var(--spark);} .sumbystatus .sv.accepted{color:var(--ok);} .sumbystatus .sv.declined{color:var(--danger);}
+  .sumbystatus .ssub{font-size:11px;color:var(--steel-400);}
 
   .dhead3{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
   .dhead3 .idn{display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
-  .dhead3 h2{font-family:var(--font-heading);font-weight:700;font-size:19px;letter-spacing:-.01em;}
+  .dhead3 h2{font-family:var(--font-heading);font-weight:700;font-size:17px;letter-spacing:-.01em;}
   /* The heading is what the job IS; its number identifies it on the line below. */
   .dhead3 .estref2{flex-basis:100%;font-family:var(--font-heading);font-size:13px;font-weight:700;
     color:var(--steel-300);letter-spacing:.02em;font-variant-numeric:tabular-nums;}
@@ -224,7 +224,7 @@
   .stepper{display:flex;align-items:center;margin-bottom:22px;overflow-x:auto;padding-bottom:2px;}
   .step{display:flex;align-items:center;gap:8px;flex:none;cursor:pointer;padding:6px 4px;border:none;background:none;}
   .step .sdot{width:22px;height:22px;border-radius:50%;border:2px solid var(--field-line);display:flex;align-items:center;justify-content:center;color:var(--steel-400);flex:none;transition:.15s;}
-  .step .slabel{font-size:11.5px;font-weight:600;color:var(--steel-400);white-space:nowrap;}
+  .step .slabel{font-size:11px;font-weight:600;color:var(--steel-400);white-space:nowrap;}
   .step.done .sdot{border-color:var(--ok);background:rgba(var(--c-ok-rgb),.15);color:var(--ok);}
   .step.done .slabel{color:var(--steel-300);}
   .step.current .sdot{border-color:var(--spark);background:var(--spark);color:#fff;box-shadow:0 0 0 4px rgba(var(--c-accent-rgb),.18);}
@@ -237,20 +237,20 @@
   @media(max-width:1000px){.infocard3{grid-template-columns:1fr;}}
   .icard{background:var(--lift-025);border:1px solid var(--line);padding:15px;}
   .icard .ich{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
-  .icard h4{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
-  .icard .irow2{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .icard h4{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
+  .icard .irow2{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--line);}
   .icard .irow2:last-child{border-bottom:none;}
   .icard .irow2 .ik{color:var(--steel-400);} .icard .irow2 .iv{font-weight:600;text-align:right;}
-  .icard .ilead{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .icard .ilead{font-size:13px;font-weight:700;margin-bottom:8px;}
   .icard .istatus{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ok);margin-bottom:10px;}
   .icard .istatus::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
-  .icard .iline{font-size:12.5px;color:var(--steel-300);display:flex;align-items:flex-start;gap:7px;margin-bottom:7px;}
+  .icard .iline{font-size:12px;color:var(--steel-300);display:flex;align-items:flex-start;gap:7px;margin-bottom:7px;}
   .icard .iline svg{flex:none;width:13px;height:13px;color:var(--steel-400);margin-top:1px;}
 
   .itemshead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
   .itemshead h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--spark);font-weight:700;}
   .itemsactions{display:flex;gap:8px;align-items:center;}
-  .costtoggle{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--steel-300);cursor:pointer;user-select:none;}
+  .costtoggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--steel-300);cursor:pointer;user-select:none;}
   .costtoggle input{accent-color:var(--spark);}
 
   .opttabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -261,12 +261,12 @@
   .opttab input{accent-color:var(--spark);}
   .opttab .odelta{font-variant-numeric:tabular-nums;font-weight:600;color:var(--steel-400);}
   .opttab.on .odelta,.opttab.included .odelta{color:var(--ok);}
-  .opttab .optinc{display:flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);cursor:pointer;border-left:1px solid var(--field-line);padding-left:9px;}
+  .opttab .optinc{display:flex;align-items:center;gap:5px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);cursor:pointer;border-left:1px solid var(--field-line);padding-left:9px;}
   .opttab.included .optinc{color:var(--ok);}
   .lockbanner{display:flex;align-items:center;gap:10px;background:rgba(var(--c-warn-rgb),.1);border:1px solid rgba(var(--c-warn-rgb),.4);color:var(--warn);font-size:12px;padding:10px 13px;margin-bottom:16px;}
   .lockbanner svg{flex:none;}
   .lockbanner button{margin-left:auto;}
-  .revbadge{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);background:var(--lift-05);border:1px solid var(--field-line);padding:3px 8px;}
+  .revbadge{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-400);background:var(--lift-05);border:1px solid var(--field-line);padding:3px 8px;}
   .fielderr{border-color:var(--danger)!important;}
   .errmsg{font-size:11px;color:var(--danger);margin-top:-10px;margin-bottom:12px;}
   .rowactions2{display:flex;gap:4px;margin-left:8px;}
@@ -278,13 +278,13 @@
   .wiactions button:hover{color:var(--ice);}
   .wiactions svg{width:12px;height:12px;}
   .previewrow td{opacity:.72;font-style:italic;}
-  .disclaimer2{font-size:10.5px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);}
+  .disclaimer2{font-size:11px;color:var(--steel-400);font-style:italic;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);}
 
   /* A price list is read down its columns, so each column is drawn as its own lane: a shaded
      heading band, a light rule between columns, alternating line rows, and every figure set
      directly under the heading it answers to. */
   .itable-wrap{overflow-x:auto;border:1px solid var(--line);background:var(--lift-02);margin-bottom:18px;}
-  .itable{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1180px;}
+  .itable{width:100%;border-collapse:collapse;font-size:12px;min-width:1180px;}
   .itable thead th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-300);
     background:var(--lift-05);border-bottom:2px solid rgba(var(--c-accent-rgb),.42);padding:9px 10px;white-space:nowrap;}
   .itable thead th+th{border-left:1px solid var(--line);}
@@ -306,24 +306,24 @@
   /* The description and its figures sit far apart on a wide screen, so the whole line lights up
      under the pointer and the eye can carry across the gap. */
   .itable tbody tr.lrow:hover td{background:rgba(var(--c-accent-rgb),.1);}
-  .itable tr.sectionrow td{background:rgba(var(--c-accent-rgb),.07);font-family:var(--font-heading);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--c-tint);padding:10px 10px;border-top:1px solid rgba(var(--c-accent-rgb),.28);}
+  .itable tr.sectionrow td{background:rgba(var(--c-accent-rgb),.07);font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--c-tint);padding:10px 10px;border-top:1px solid rgba(var(--c-accent-rgb),.28);}
   .itable tr.subtotalrow td{background:var(--lift-04);font-weight:600;color:var(--steel-300);border-bottom:1px solid var(--line);}
   /* An item subtotal closes its section, so it reads above the individual lines it sums. */
-  .itable tr.subtotalrow td:last-child{font-size:13.5px;font-weight:700;color:var(--ice);}
+  .itable tr.subtotalrow td:last-child{font-size:13px;font-weight:700;color:var(--ice);}
   .itable tbody tr.optrow td{background:rgba(var(--c-ok-rgb),.06);}
   /* What the offer comes to, closing the table under the columns it sums. */
   .itable tfoot td{background:rgba(var(--c-accent-rgb),.07);border-top:1px solid rgba(var(--c-accent-rgb),.3);
     border-bottom:none;padding:9px 10px;font-weight:600;color:var(--steel-300);}
-  .itable tfoot .tflabel{display:block;text-align:right;font-size:10px;letter-spacing:.07em;text-transform:uppercase;}
-  .itable tfoot tr.tfgrand td{background:rgba(var(--c-accent-rgb),.14);font-size:14px;font-weight:700;color:var(--ice);}
+  .itable tfoot .tflabel{display:block;text-align:right;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;}
+  .itable tfoot tr.tfgrand td{background:rgba(var(--c-accent-rgb),.14);font-size:13px;font-weight:700;color:var(--ice);}
   .itable tfoot tr.tfgrand .tflabel{font-family:var(--font-heading);font-size:11px;color:var(--c-tint);}
   .itable tfoot tr.tfdisc td{color:var(--tint-warn);}
   .itable .grip{color:var(--steel-400);opacity:.5;margin-right:6px;}
   .itable .idesc{font-weight:500;}
   .itable .isub{color:var(--steel-400);font-size:11px;}
-  .itable .costsub{color:var(--steel-400);font-size:10.5px;display:block;margin-top:1px;}
-  .subtag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);border:1px solid rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.1);padding:1px 6px;margin-left:6px;}
-  .cattag{display:inline-block;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;margin-left:6px;border:1px solid var(--field-line);color:var(--steel-300);background:var(--lift-04);}
+  .itable .costsub{color:var(--steel-400);font-size:11px;display:block;margin-top:1px;}
+  .subtag{display:inline-block;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);border:1px solid rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.1);padding:1px 6px;margin-left:6px;}
+  .cattag{display:inline-block;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;margin-left:6px;border:1px solid var(--field-line);color:var(--steel-300);background:var(--lift-04);}
   .cattag.cat-material{color:var(--c-tint);border-color:rgba(var(--c-accent-rgb),.35);background:rgba(var(--c-accent-rgb),.08);}
   .cattag.cat-subcontractor{color:var(--warn);border-color:rgba(var(--c-warn-rgb),.4);background:rgba(var(--c-warn-rgb),.1);}
   .subrow{display:flex;align-items:center;gap:14px;}
@@ -337,78 +337,78 @@
 
   .tccard{background:var(--lift-025);border:1px solid var(--line);padding:15px;margin-bottom:14px;}
   .tccard .ich{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
-  .tccard h4{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
-  .tccard p{font-size:12.5px;color:var(--steel-300);line-height:1.6;}
-  .tccard ul{padding-left:18px;font-size:12.5px;color:var(--steel-300);line-height:1.8;}
+  .tccard h4{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--spark);}
+  .tccard p{font-size:12px;color:var(--steel-300);line-height:1.6;}
+  .tccard ul{padding-left:18px;font-size:12px;color:var(--steel-300);line-height:1.8;}
 
   .pricerow{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;}
   .pricerow .pk{color:var(--steel-400);} .pricerow .pv{font-weight:600;font-variant-numeric:tabular-nums;}
   .pricerow.divider{border-top:1px solid var(--line);margin-top:4px;padding-top:12px;}
   .pricerow.grand{padding-top:12px;border-top:1px solid var(--line);margin-top:4px;}
   .pricerow.grand .pk{font-family:var(--font-heading);font-size:13px;color:var(--steel-300);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
-  .pricerow.grand .pv{font-family:var(--font-heading);font-size:22px;color:var(--spark);font-weight:700;}
-  .pricerow input.pctinput{width:48px;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-size:11.5px;padding:3px 5px;text-align:right;margin-left:6px;}
+  .pricerow.grand .pv{font-family:var(--font-heading);font-size:21px;color:var(--spark);font-weight:700;}
+  .pricerow input.pctinput{width:48px;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-size:11px;padding:3px 5px;text-align:right;margin-left:6px;}
 
-  .costrow{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;color:var(--steel-300);}
+  .costrow{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;color:var(--steel-300);}
   .costrow .ck{color:var(--steel-400);}
   .costrow.sub{padding-top:9px;border-top:1px solid var(--line);margin-top:3px;font-weight:600;color:var(--ice);}
-  .costrow.final{padding-top:10px;border-top:1px solid var(--line);margin-top:6px;font-weight:700;font-size:13.5px;color:var(--ice);}
+  .costrow.final{padding-top:10px;border-top:1px solid var(--line);margin-top:6px;font-weight:700;font-size:13px;color:var(--ice);}
   .costrow.profit{color:var(--ok);font-weight:700;font-size:15px;padding-top:10px;border-top:1px solid rgba(var(--c-ok-rgb),.25);margin-top:6px;}
   .costrow.margin{color:var(--ok);font-weight:700;font-size:15px;}
   .markupby{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
   .markupby .mb{flex:1;text-align:center;}
-  .markupby .ml{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
-  .markupby .mv{font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ok);}
+  .markupby .ml{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;}
+  .markupby .mv{font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ok);}
 
-  .stbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .stbl{width:100%;border-collapse:collapse;font-size:12px;}
   .empty3{text-align:center;color:var(--steel-400);padding:20px;font-size:12px;}
 
   .docrow2{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
   .docrow2:last-child{border-bottom:none;}
-  .dicon{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:700;font-size:8px;color:#fff;}
+  .dicon{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:700;font-size:9.5px;color:#fff;}
   .dicon.pdf{background:#c0392b;} .dicon.doc{background:var(--c-accent2);} .dicon.xls{background:#1f9d55;} .dicon.zip{background:#8e6bd6;}
-  .docrow2 .dn{flex:1;font-weight:500;} .docrow2 .dd{color:var(--steel-400);font-size:10.5px;white-space:nowrap;}
+  .docrow2 .dn{flex:1;font-weight:500;} .docrow2 .dd{color:var(--steel-400);font-size:11px;white-space:nowrap;}
   .docrow2 a{color:var(--steel-400);display:flex;} .docrow2 a:hover{color:var(--ice);}
 
   .histrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
   .histrow:last-child{border-bottom:none;}
-  .histrow .hdate{color:var(--steel-400);font-size:10.5px;white-space:nowrap;flex:none;width:76px;}
-  .histrow .haction{font-weight:500;} .histrow .hby{color:var(--steel-400);font-size:10.5px;margin-top:1px;}
+  .histrow .hdate{color:var(--steel-400);font-size:11px;white-space:nowrap;flex:none;width:76px;}
+  .histrow .haction{font-weight:500;} .histrow .hby{color:var(--steel-400);font-size:11px;margin-top:1px;}
 
-  .notecard{font-size:12.5px;color:var(--steel-300);line-height:1.55;padding:10px 0;border-bottom:1px solid var(--line);}
+  .notecard{font-size:12px;color:var(--steel-300);line-height:1.55;padding:10px 0;border-bottom:1px solid var(--line);}
   .notecard:last-child{border-bottom:none;}
 
 
   .fov{position:fixed;inset:0;z-index:90;background:rgba(var(--c-scrim-rgb),.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;}
   .fov.show{display:flex;}
   .fcard{background:rgba(var(--c-card-rgb),.98);border:1px solid var(--line);width:500px;max-width:100%;padding:30px 34px;box-shadow:0 30px 80px var(--shade-55);}
-  .fcard h2{font-family:var(--font-heading);font-weight:600;font-size:18px;margin-bottom:6px;}
+  .fcard h2{font-family:var(--font-heading);font-weight:600;font-size:17px;margin-bottom:6px;}
   .fcard .fsub{font-size:12px;color:var(--steel-400);margin-bottom:20px;}
   /* What the workshop did last time it took work like this on: a recollection with the job it
      came from, so the estimator can open it and judge the comparison rather than trust a ratio. */
   .recall{margin:-8px 0 18px;padding:10px 12px;border:1px solid rgba(var(--c-accent-rgb),.3);
-    background:rgba(var(--c-accent-rgb),.06);font-size:12.5px;line-height:1.5;color:var(--steel-300);}
+    background:rgba(var(--c-accent-rgb),.06);font-size:12px;line-height:1.5;color:var(--steel-300);}
   .recall b{color:var(--ice);font-variant-numeric:tabular-nums;}
   .recall .over{color:var(--warn);}
   .recall .under{color:var(--ok);}
-  .recall .from{display:block;margin-top:4px;font-size:11.5px;color:var(--steel-400);}
+  .recall .from{display:block;margin-top:4px;font-size:11px;color:var(--steel-400);}
   .recall .apply{margin-top:8px;}
   /* How the workshop's own estimates have turned out, on the kind of work this project is.
      Offered against the durations, never applied to them on its own. */
   .biasrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line);}
-  .biasfig{font-family:var(--font-heading);font-size:19px;font-weight:700;color:var(--ice);font-variant-numeric:tabular-nums;}
+  .biasfig{font-family:var(--font-heading);font-size:17px;font-weight:700;color:var(--ice);font-variant-numeric:tabular-nums;}
   .biasfig.over{color:var(--warn);}
   .biasfig.under{color:var(--ok);}
   .biastext{flex:1 1 240px;min-width:0;font-size:12px;line-height:1.5;color:var(--steel-300);}
-  .biastext .from{display:block;margin-top:3px;font-size:11.5px;color:var(--steel-400);}
+  .biastext .from{display:block;margin-top:3px;font-size:11px;color:var(--steel-400);}
   .fcard .frow{margin-bottom:14px;} .fcard .frow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
   .fcard .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
-  .fcard label{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
-  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13.5px;padding:9px 11px;outline:none;}
+  .fcard label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;}
+  .fcard input,.fcard select,.fcard textarea{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:9px 11px;outline:none;}
   .fcard input:focus,.fcard select:focus{border-color:var(--spark);}
   .fcard textarea{min-height:60px;resize:vertical;}
   .fcard .fbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
-  .fcard .fnote{font-size:11.5px;color:var(--steel-400);margin-top:-6px;margin-bottom:14px;}
+  .fcard .fnote{font-size:11px;color:var(--steel-400);margin-top:-6px;margin-bottom:14px;}
 
   .langc{position:fixed;z-index:30;left:18px;bottom:16px;font-family:var(--font-body);}
   .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(var(--c-panel-rgb),.8);border:1px solid rgba(var(--c-line-rgb),0.16);color:var(--steel-300);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
@@ -421,7 +421,7 @@
   @media print{body *{visibility:hidden;} #printSheet,#printSheet *{visibility:visible;} #printSheet{position:absolute;top:0;left:0;width:100%;padding:24px;color:#111;background:#fff;}
     #printSheet table{page-break-inside:auto;} #printSheet tr{page-break-inside:avoid;page-break-after:auto;} #printSheet .psection{page-break-inside:avoid;} }
   button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--spark);outline-offset:2px;}
-.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(var(--c-side1-rgb),.99),rgba(var(--c-side2-rgb),.99));border-right:1px solid rgba(var(--c-accent-rgb),.22);display:flex;flex-direction:column;box-shadow:12px 0 34px var(--shade-16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(var(--c-line-rgb),.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:var(--font-heading);font-size:16px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:10px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:var(--nav-on-bg);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:var(--c-navicon);font-style:normal;text-align:center;font-size:13px}.module-side-nav button:hover i,.module-side-nav button.on i{color:var(--nav-on-icon)}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(var(--c-side3-rgb),.72)}.ms-sidebox b{display:block;color:var(--c-tint);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:10.5px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--c-avatar);border:1px solid var(--c-avatar-line);font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:10px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(var(--c-side1-rgb),.99),rgba(var(--c-side2-rgb),.99));border-right:1px solid rgba(var(--c-accent-rgb),.22);display:flex;flex-direction:column;box-shadow:12px 0 34px var(--shade-16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(var(--c-line-rgb),.6);color:var(--spark);font-size:17px}.ms-brand h2{font-family:var(--font-heading);font-size:15px;letter-spacing:.04em}.ms-brand small{display:block;color:var(--steel-400);font-size:9.5px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--steel-300);font:500 11.5px 'Inter';text-align:left;cursor:pointer}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:var(--nav-on-bg);border-left-color:var(--spark)}.module-side-nav i{width:17px;color:var(--c-navicon);font-style:normal;text-align:center;font-size:13px}.module-side-nav button:hover i,.module-side-nav button.on i{color:var(--nav-on-icon)}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(var(--c-side3-rgb),.72)}.ms-sidebox b{display:block;color:var(--c-tint);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--steel-400);font-size:11px;line-height:1.55}.ms-user{margin-top:auto;margin-bottom:44px;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--c-avatar);border:1px solid var(--c-avatar-line);font-size:11px}.ms-user small{display:block;color:var(--steel-400);font-size:9.5px;margin-top:2px}.topfull{margin-left:205px;width:calc(100% - 205px)}.wrap{max-width:none;margin-left:205px}.langc{left:14px}@media(max-width:900px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.topfull,.wrap{margin-left:0;width:100%}.langc{left:auto;right:14px}}
   :root[data-theme="carbon"] .ember{background:#dbe9ff;box-shadow:0 0 7px 2px rgba(79,140,255,.95),0 0 17px 5px rgba(79,140,255,.42);}
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
@@ -437,11 +437,11 @@
   /* The reference states whether this item's calculation is still open or has been closed. */
   .itemref.isopen{color:var(--tint-danger);background:rgba(var(--c-danger-rgb),.13);border-color:rgba(var(--c-danger-rgb),.42);}
   .itemref.islocked{color:var(--ok);background:rgba(var(--c-ok-rgb),.14);border-color:rgba(var(--c-ok-rgb),.45);}
-  .itemsrc{margin-left:9px;font-size:10.5px;font-weight:500;letter-spacing:.03em;opacity:.55;text-transform:none;}
+  .itemsrc{margin-left:9px;font-size:11px;font-weight:500;letter-spacing:.03em;opacity:.55;text-transform:none;}
   .estnote{margin-bottom:12px;padding:11px 13px;font-size:12px;line-height:1.55;color:var(--steel-300);
     background:var(--lift-03);border:1px solid var(--line);border-left:2px solid rgba(var(--c-accent-rgb),.6);}
   .estnote.warn{border-left-color:var(--warn);color:var(--steel-200);}
-  .eitems{font-size:10.5px;letter-spacing:.03em;color:var(--steel-400);}
+  .eitems{font-size:11px;letter-spacing:.03em;color:var(--steel-400);}
 
   /* Two buttons can share a panel heading now that notes and history are one card. */
   .pheadbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
@@ -463,7 +463,7 @@
 
   /* The projects list is the module's main heading, so it is sized like the estimate title
      (P-26-0002) rather than like a small panel label. */
-  .crmgrid>.col:first-child .phead h3{font-family:var(--font-heading);font-size:19px;font-weight:700;
+  .crmgrid>.col:first-child .phead h3{font-family:var(--font-heading);font-size:17px;font-weight:700;
     letter-spacing:.02em;}
 
   /* Estimation info runs the full width now that nothing sits beside it, so its rows flow into
@@ -489,11 +489,11 @@
   .ibtn.lockchip:hover{border-color:var(--ok);background:rgba(74,212,138,.12);color:var(--ok);}
   .itable tr.sectionrow.islocked td{background:rgba(74,212,138,.07);}
   .lockfig{font-family:var(--font-heading);font-size:17px;font-weight:700;color:var(--ice);}
-  .lockfig.small{font-size:12.5px;font-weight:600;color:var(--steel-300);}
+  .lockfig.small{font-size:12px;font-weight:600;color:var(--steel-300);}
 
   /* ── Project workflow, from the retired Projects module ── */
   .pipe{display:flex;flex-direction:column;gap:9px;}
-  .pipelbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel-400);}
+  .pipelbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel-400);}
   .psteps{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;}
   .pstep{--bs:#8fa3bf;--bs-rgb:143,163,191;display:flex;align-items:center;gap:6px;font-family:var(--font-body);
     font-size:11px;letter-spacing:.02em;text-transform:uppercase;padding:7px 11px;border:1px solid var(--field-line);
@@ -510,16 +510,16 @@
     background:linear-gradient(rgba(var(--bs-rgb),.12),rgba(var(--bs-rgb),.12)),var(--field);}
   button.pstep.can::before{background:rgb(var(--bs-rgb));opacity:.55;}
   button.pstep.can:hover::before{opacity:1;box-shadow:0 0 8px rgba(var(--bs-rgb),.9);}
-  .pipeoff{font-size:11.5px;color:var(--steel-400);}
+  .pipeoff{font-size:11px;color:var(--steel-400);}
   .sbadge{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;font-weight:600;white-space:nowrap;border:1px solid;}
   .moremenu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:rgba(var(--c-panel-rgb),.98);border:1px solid var(--line);box-shadow:0 14px 34px var(--shade-50);z-index:50;}
   .more{position:relative;}
-  .moremenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:12.5px;padding:11px 14px;cursor:pointer;}
+  .moremenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel-300);font-family:var(--font-body);font-size:12px;padding:11px 14px;cursor:pointer;}
   .moremenu button:hover{background:rgba(var(--c-accent-rgb),.12);color:var(--ice);}
   .moremenu.open{display:block;}
   .issuelist{list-style:none;margin:14px 0;}
-  .issuelist li{font-size:12.5px;color:var(--tint-est);padding:8px 0 8px 22px;position:relative;border-top:1px solid var(--line);}
-  .roreadonly{margin-top:12px;font-size:11.5px;color:var(--warn);display:flex;align-items:center;gap:7px;}
+  .issuelist li{font-size:12px;color:var(--tint-est);padding:8px 0 8px 22px;position:relative;border-top:1px solid var(--line);}
+  .roreadonly{margin-top:12px;font-size:11px;color:var(--warn);display:flex;align-items:center;gap:7px;}
   .sbadge.draft{color:var(--st-draft);border-color:rgba(var(--c-line-rgb),.4);background:rgba(var(--c-line-rgb),.1);}
   .sbadge.quotation{color:var(--st-quotation);border-color:rgba(var(--c-quote-rgb),.4);background:rgba(var(--c-quote-rgb),.12);}
   .sbadge.approved{color:var(--c-tint);border-color:rgba(var(--c-accent-rgb),.4);background:rgba(var(--c-accent-rgb),.12);}
@@ -541,17 +541,17 @@
   /* Items collected while creating a project. */
   .npitems{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
   .npitem{display:flex;align-items:center;gap:9px;padding:6px 9px;background:var(--field);border:1px solid var(--field-line);}
-  .npitem .npn{font-family:var(--font-heading);font-size:10.5px;font-weight:700;color:var(--spark);min-width:14px;}
-  .npitem .npd{flex:1;font-size:12.5px;color:var(--ice);}
-  .npitem .npx{background:none;border:none;color:var(--steel-400);font-size:16px;line-height:1;cursor:pointer;padding:0 3px;}
+  .npitem .npn{font-family:var(--font-heading);font-size:11px;font-weight:700;color:var(--spark);min-width:14px;}
+  .npitem .npd{flex:1;font-size:12px;color:var(--ice);}
+  .npitem .npx{background:none;border:none;color:var(--steel-400);font-size:15px;line-height:1;cursor:pointer;padding:0 3px;}
   .npitem .npx:hover{color:var(--danger);}
   .npadd{display:flex;gap:7px;}
   .npadd input{flex:1;}
   /* What the priced items add up to in time and crew. */
   .effgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;}
   .eff .effk{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--steel-400);margin-bottom:5px;}
-  .eff .effv{font-family:var(--font-heading);font-size:19px;font-weight:700;color:var(--ice);}
-  .eff .effu{font-family:var(--font-body);font-size:10.5px;font-weight:500;color:var(--steel-400);margin-left:5px;}
+  .eff .effv{font-family:var(--font-heading);font-size:17px;font-weight:700;color:var(--ice);}
+  .eff .effu{font-family:var(--font-body);font-size:11px;font-weight:500;color:var(--steel-400);margin-left:5px;}
   .ibtn.effort.set{border-color:rgba(var(--c-accent-rgb),.45);color:var(--c-tint);}
 </style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
@@ -636,15 +636,7 @@ function toast(msg,kind){
   setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
 }
 
-const CUSTOMERS={
-  1:{name:"Sanus Glutenfri AB",city:"Landskrona",address:"Industrigatan 8, 261 42 Landskrona, Sweden",contact:"Per Nilsson",email:"per@sanusglutenfri.se",phone:"+46 70 123 45 67",org:"559812-4471",status:"active"},
-  2:{name:"Schröder Nordic",city:"Helsingborg",address:"Verkstadsvägen 22, 254 33 Helsingborg, Sweden",contact:"Anna Berg",email:"anna@schroder.se",phone:"+46 70 234 56 78",org:"556234-9012",status:"active"},
-  3:{name:"Lund Konditori",city:"Lund",address:"Storgatan 4, 222 22 Lund, Sweden",contact:"Sofia L.",email:"sofia@lundkond.se",phone:"+46 70 345 67 89",org:"559045-1123",status:"inactive"},
-  4:{name:"Helsingborg Foods",city:"Helsingborg",address:"Emballagevägen 9, 254 66 Helsingborg, Sweden",contact:"Erik S.",email:"erik@hbgfoods.se",phone:"+46 70 456 78 90",org:"556678-3345",status:"active"},
-  5:{name:"Malmö Livs",city:"Malmö",address:"Saluhallen 3, 211 34 Malmö, Sweden",contact:"Karim A.",email:"info@malmolivs.se",phone:"+46 70 567 89 01",org:"559211-7789",status:"active"},
-  6:{name:"Ystad Bageri",city:"Ystad",address:"Bagerigatan 2, 271 41 Ystad, Sweden",contact:"Nina H.",email:"nina@ystadbageri.se",phone:"+46 70 678 90 12",org:"556990-2201",status:"active"},
-  7:{name:"Trelleborg Snacks",city:"Trelleborg",address:"Fabriksgatan 15, 231 62 Trelleborg, Sweden",contact:"Jonas P.",email:"jonas@trelleborgsnacks.se",phone:"+46 70 789 01 23",org:"559333-6654",status:"inactive"}
-};
+const CUSTOMERS={/* empty: a new workshop has no customers yet */};
 // Estimations used to expose only its seven hardcoded customers plus a one-off MarineVent record.
 // Merge every shared customer instead, while preserving the local numeric ids referenced by the
 // detailed seed estimates. sharedId (or organisation number/name on first load) keeps updates and
@@ -702,127 +694,7 @@ function autoItems(total){
   ];
 }
 
-let ESTIMATIONS=[
-  {id:1,no:"EST-26-0001",customerId:1,projectNo:"P-26-0001",status:"accepted",created:"2026-08-10",validUntil:"2026-09-09",
-    currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(92000),options:[],
-    exclusions:["Electrical connection to plant mains excluded.","Customer to supply access for on-site installation."],
-    terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
-    documents:[{name:"Customer PO.pdf",type:"pdf",date:"2026-08-08"}],
-    history:[{date:"2026-08-10",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-12",action:"Accepted by customer",by:"Aleksandar C."}],
-    notes:[]},
-  {id:2,no:"EST-26-0002",customerId:2,projectNo:"P-26-0002",status:"sent",created:"2026-08-18",validUntil:"2026-09-17",
-    currency:"SEK",deliveryTime:"4–5 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-114",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,
-    workItems:[
-      {no:"JC-26-0040",desc:"Engineering & Preparation",lines:[
-        {desc:"Site Visit & Measurements",category:"labour",qty:4,unit:"h",cost:350,sell:450,disc:0,tax:25},
-        {desc:"Engineering / CAD Drawings",category:"labour",qty:14,unit:"h",cost:380,sell:490,disc:0,tax:25},
-        {desc:"CAM Programming",category:"labour",qty:5,unit:"h",cost:380,sell:490,disc:0,tax:25}
-      ]},
-      {no:"JC-26-0041",desc:"Frame & Bracket Fabrication",lines:[
-        {desc:"Steel Sheet 3mm (S235JR)",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:450,sell:620,disc:0,tax:25},
-        {desc:"Square Tube 40x40x3mm (S235JR)",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:95,sell:135,disc:0,tax:25},
-        {desc:"HMI Mounting Bracket Kit",category:"material",qty:1,unit:"set",weight:12,waste:0,cost:2100,sell:2850,disc:0,tax:25},
-        {desc:"Fasteners & Hardware Set",category:"material",qty:1,unit:"set",weight:4,waste:0,cost:680,sell:950,disc:0,tax:25},
-        {desc:"Cutting",category:"labour",qty:8,unit:"h",cost:320,sell:420,disc:0,tax:25},
-        {desc:"Fitting",category:"labour",qty:18,unit:"h",cost:320,sell:420,disc:0,tax:25},
-        {desc:"Grinding & Finishing",category:"labour",qty:10,unit:"h",cost:300,sell:400,disc:0,tax:25},
-        {desc:"CNC Laser Cutting (steel sheet)",category:"machine",qty:8,unit:"m²",cost:180,sell:240,disc:0,tax:25},
-        {desc:"CNC Bending",category:"machine",qty:22,unit:"bends",cost:45,sell:65,disc:0,tax:25},
-        {desc:"Powder Coating (RAL 7035)",category:"machine",qty:6,unit:"m²",cost:220,sell:310,disc:0,tax:25},
-        {desc:"Grinding & Cutting Discs",category:"consumable",qty:15,unit:"pcs",cost:28,sell:40,disc:0,tax:25},
-        {desc:"Fasteners (M8 stainless)",category:"consumable",qty:60,unit:"pcs",cost:4,sell:6,disc:0,tax:25}
-      ]},
-      {no:"JC-26-0042",desc:"Welding & Assembly",lines:[
-        {desc:"MIG/MAG Welding",category:"labour",qty:24,unit:"h",cost:340,sell:440,disc:0,tax:25},
-        {desc:"Assembly",category:"labour",qty:16,unit:"h",cost:320,sell:420,disc:0,tax:25},
-        {desc:"MIG Welding Wire ER70S-6 Ø1.0mm",category:"consumable",qty:12,unit:"kg",cost:85,sell:115,disc:0,tax:25},
-        {desc:"Shielding Gas (Ar/CO2 mix)",category:"consumable",qty:2,unit:"bottle",cost:450,sell:590,disc:0,tax:25}
-      ]},
-      {no:"JC-26-0043",desc:"Panel Wiring & HMI Integration",lines:[
-        {desc:"Panel Wiring (Electrical)",category:"labour",qty:26,unit:"h",cost:360,sell:470,disc:0,tax:25},
-        {desc:"External Subcontractor — HMI Touchscreen Programming",category:"subcontractor",qty:1,unit:"job",cost:4200,sell:5400,disc:0,tax:25}
-      ]},
-      {no:"JC-26-0044",desc:"Installation & Commissioning",lines:[
-        {desc:"Installation (On-site)",category:"labour",qty:20,unit:"h",cost:340,sell:450,disc:0,tax:25},
-        {desc:"Inspection & QA",category:"labour",qty:5,unit:"h",cost:350,sell:450,disc:0,tax:25},
-        {desc:"Delivery — Workshop to Helsingborg",category:"logistics",qty:1,unit:"trip",cost:900,sell:1200,disc:0,tax:25},
-        {desc:"Travel Time (2 technicians, on-site day)",category:"logistics",qty:8,unit:"h",cost:280,sell:350,disc:0,tax:25},
-        {desc:"Mileage Allowance",category:"logistics",qty:140,unit:"km",cost:4.5,sell:6,disc:0,tax:25},
-        {desc:"Packing & Crating",category:"other",qty:1,unit:"set",cost:450,sell:650,disc:0,tax:25}
-      ]}
-    ],
-    options:[
-      {id:1,name:"316L Stainless Upgrade",included:false,intoWorkItem:"JC-26-0041",
-        replacesDesc:["Steel Sheet 3mm (S235JR)","Square Tube 40x40x3mm (S235JR)"],lines:[
-        {desc:"Steel Sheet 3mm (AISI 316L) — upgrade from S235JR",category:"material",qty:8,unit:"m²",weight:18.8,waste:8,cost:980,sell:1340,disc:0,tax:25},
-        {desc:"Square Tube 40x40x3mm (AISI 316L) — upgrade",category:"material",qty:32,unit:"m",weight:115,waste:5,cost:210,sell:290,disc:0,tax:25}
-      ]},
-      {id:2,name:"Touchscreen HMI Panel",included:false,intoWorkItem:"JC-26-0043",lines:[
-        {desc:"10\" Industrial Touchscreen HMI Unit",category:"material",qty:1,unit:"pcs",weight:3,waste:0,cost:8200,sell:11400,disc:0,tax:25},
-        {desc:"External Subcontractor — HMI Panel Integration",category:"subcontractor",qty:1,unit:"job",cost:5100,sell:6600,disc:0,tax:25}
-      ]}
-    ],
-    exclusions:[
-      "Electrical connection to plant mains beyond the machine control cabinet is excluded.",
-      "Customer to supply existing machine drawings for reference where available.",
-      "Price is based on standard S235JR steel unless Option 1 (316L Stainless) is selected.",
-      "Installation assumes normal working-hours access to the customer's site.",
-      "Any structural modification to the existing machine base is out of scope."
-    ],
-    terms:"Prices valid for 30 days. Payment within 30 days from invoice date. Delivery time confirmed on order.",
-    documents:[{name:"Specification Draft.pdf",type:"pdf",date:"2026-08-14"},{name:"MAK 2500 Layout.pdf",type:"pdf",date:"2026-08-15"},{name:"Panel Wiring Diagram.docx",type:"doc",date:"2026-08-16"}],
-    history:[
-      {date:"2026-08-14",action:"Estimation created (Rev 0)",by:"Aleksandar C."},
-      {date:"2026-08-16",action:"Item 1.2 quantity updated — Rev 1",by:"Aleksandar C."},
-      {date:"2026-08-18",action:"Sent to customer for review",by:"Aleksandar C."}],
-    notes:[{date:"2026-08-16",author:"Aleksandar",text:"Waiting for customer confirmation on final retrofit scope before locking materials."}]},
-  {id:3,no:"EST-26-0003",customerId:3,projectNo:"P-26-0003",status:"draft",created:"2026-08-22",validUntil:"2026-09-21",
-    currency:"SEK",deliveryTime:"1–2 weeks",paymentTerms:"15 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"—",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(16000),options:[],
-    exclusions:["Preliminary estimate only, subject to inspection findings."],
-    terms:"Prices valid for 30 days.",documents:[],
-    history:[{date:"2026-08-22",action:"Estimation created (Rev 0)",by:"Aleksandar C."}],notes:[]},
-  {id:4,no:"EST-26-0004",customerId:4,projectNo:"P-26-0004",status:"accepted",created:"2026-05-28",validUntil:"2026-06-27",
-    currency:"SEK",deliveryTime:"3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"HF-2201",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(58000),options:[],
-    exclusions:["Painting/finishing beyond mill finish excluded."],
-    terms:"Prices valid for 30 days. Payment within 30 days from invoice date.",
-    documents:[{name:"Completion Report.pdf",type:"pdf",date:"2026-06-20"}],
-    history:[{date:"2026-05-28",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-05-30",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
-  {id:5,no:"EST-26-0005",customerId:5,projectNo:"P-26-0005",status:"accepted",created:"2026-08-05",validUntil:"2026-09-04",
-    currency:"SEK",deliveryTime:"Same week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-99",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(16500),options:[],
-    exclusions:["Parts availability subject to supplier stock."],
-    terms:"Prices valid for 14 days for service call-outs.",documents:[],
-    history:[{date:"2026-08-05",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-06",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
-  {id:6,no:"EST-26-0006",customerId:6,projectNo:"P-26-0006",status:"sent",created:"2026-08-12",validUntil:"2026-09-11",
-    currency:"SEK",deliveryTime:"2 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"YB-33",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(24000),options:[],
-    exclusions:["Seal kit lead time dependent on supplier — see notes."],
-    terms:"Prices valid for 30 days.",documents:[],
-    history:[{date:"2026-08-12",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-13",action:"Sent to customer for review",by:"Aleksandar C."}],
-    notes:[{date:"2026-08-19",author:"Aleksandar",text:"Supplier delay on gearbox seal kit, resume expected Sept 1."}]},
-  {id:7,no:"EST-26-0007",customerId:7,projectNo:"P-26-0007",status:"declined",created:"2026-07-20",validUntil:"2026-08-19",
-    currency:"SEK",deliveryTime:"6 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"TS-500",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(210000),options:[],
-    exclusions:["Civil works and conveyor pit modification excluded."],
-    terms:"Prices valid for 30 days.",documents:[],
-    history:[{date:"2026-07-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-05",action:"Declined — customer postponed investment",by:"Aleksandar C."}],notes:[]},
-  {id:8,no:"EST-26-0008",customerId:5,projectNo:"P-26-0008",status:"accepted",created:"2026-08-20",validUntil:"2026-09-19",
-    currency:"SEK",deliveryTime:"1 week",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Marieholm",reference:"ML-101",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(14000),options:[],
-    exclusions:["Scheduling subject to workshop capacity."],
-    terms:"Prices valid for 30 days.",documents:[],
-    history:[{date:"2026-08-20",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-22",action:"Accepted by customer",by:"Aleksandar C."}],notes:[]},
-  {id:9,no:"EST-26-0009",customerId:2,projectNo:"P-26-0009",status:"sent",created:"2026-08-24",validUntil:"2026-09-23",
-    currency:"SEK",deliveryTime:"2–3 weeks",paymentTerms:"30 days",priceList:"Standard Price List 2026",incoterms:"EXW Helsingborg",reference:"SN-Q-108",createdBy:"Aleksandar C.",
-    overheadPct:8,contingencyPct:5,discount:0,workItems:autoItems(31000),options:[],
-    exclusions:["PLC software licensing costs excluded, billed separately if required."],
-    terms:"Prices valid for 30 days.",documents:[],
-    history:[{date:"2026-08-24",action:"Estimation created (Rev 0)",by:"Aleksandar C."},{date:"2026-08-24",action:"Sent to customer for review",by:"Aleksandar C."}],notes:[]}
-];
+let ESTIMATIONS=[/* empty: a new workshop has none of these yet */];
 let nextEstId=10;
 // ── backfill new Phase-1 fields on the seed data so older records behave consistently with newly created ones ──
 (function normalizeSeedEstimations(){
@@ -2046,7 +1918,18 @@ function renderAll(){
   const t=T[LANG];
   document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(t[k]!==undefined)el.textContent=t[k];});
   hydrateProjects();
-  let e=getEst(selectedId);if(!e||e.archived){e=ESTIMATIONS.find(x=>!x.archived)||ESTIMATIONS[0];selectedId=e.id;}
+  let e=getEst(selectedId);
+  if(!e||e.archived){e=ESTIMATIONS.find(x=>!x.archived)||ESTIMATIONS[0]||null;selectedId=e?e.id:null;}
+  // Nothing has been quoted yet. Say so, and point at the one action that starts everything else,
+  // rather than leaving a blank page behind a working sidebar.
+  if(!e){
+    $("app").innerHTML=`<div class="panel" style="text-align:center;padding:56px 30px;">
+      <div style="font-family:var(--font-heading);font-size:17px;color:var(--ice);margin-bottom:8px;">${esc(t.empty_title||'No quotations yet')}</div>
+      <p style="font-size:13px;color:var(--steel-400);max-width:420px;margin:0 auto 20px;line-height:1.6;">${esc(t.empty_body||'A job starts as the quotation it is being priced for. Create the first one and it carries its items, hours and machines all the way through to the project.')}</p>
+      <button class="btn primary" onclick="openNewEstimation&&openNewEstimation()">${esc(t.act_new||'New Quotation')}</button>
+    </div>`;
+    return;
+  }
   // The project owns the item list, so re-read it before anything is priced or displayed.
   syncWorkItemsToProject(e);
   pushTotalsToProject(e);
@@ -2401,7 +2284,7 @@ function pdfOffer(id){
   w.document.write(`<!doctype html><html lang="${esc(document.documentElement.lang||'en')}"><head><meta charset="utf-8">
     <title>${esc(estRef(e))} — ${esc(offerName(e))}</title>
     <style>@page{size:A4;margin:16mm;}
-      body{margin:0;background:#fff;color:#111;font-family:system-ui,sans-serif;}
+      body{margin:0;background:#fff;color:#111;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;}
       table{border-collapse:collapse;} th,td{border:1px solid #999;padding:6px;}
       .psection{page-break-inside:avoid;}</style></head>
     <body>${$("printSheet").innerHTML}</body></html>`);
