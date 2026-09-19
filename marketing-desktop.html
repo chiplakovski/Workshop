@@ -82,6 +82,9 @@
   .search{position:relative;flex:1;min-width:160px;}
   .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
   .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+/* .filterbar input[type=text] is more specific than .search input, so it was winning the
+     padding and dropping the text under the magnifier. Name both, and it stops. */
+  .filterbar .search input{padding:9px 10px 9px 32px;}
   .search input:focus{border-color:var(--spark);}
 
   .stbl{width:100%;border-collapse:collapse;font-size:12px;}

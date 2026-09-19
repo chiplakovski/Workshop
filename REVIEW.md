@@ -84,9 +84,10 @@ is worth ten times more than this page.
 ### Project / Estimator — 6 views, 172 functions
 2,911 lines, 211k of JavaScript. **The largest page in the app.**
 
-**Read:** it is the heart of the system, so weight is partly earned. But the six "views" are not
-views — they are status filters (all / draft / review / sent / accepted / closed). And 172
-functions in one file is where bugs go to hide.
+**Read:** it is the heart of the system, so weight is partly earned. But the six "views" were not
+views — they were Kanban column visibility (all / draft / review / sent / accepted / closed),
+**removed in Pass 4.39**; focusing a stage is now done from the stage's own header. And 172
+functions in one file is where bugs go to hide — still true, still unaddressed.
 
 **Do:**
 - Status filters become a **chip row above one list**, not six sidebar entries. Five entries gone.
@@ -119,7 +120,8 @@ inspection / archived / all / overview). Nine separate modal forms for one modul
 places to get lost.
 
 **Do:**
-- Filters become chips. Seven entries gone.
+- ~~Filters become chips. Seven entries gone.~~ **Done, Pass 4.39** — and the duplicate raw-status
+  dropdown it was fighting with now releases it, instead of both being set at once.
 - **A jobcard needs to print onto paper and go to the machine.** It does have print styles — good.
   Make that a first-class button, not a browser afterthought.
 
@@ -232,11 +234,25 @@ Delete the other forty-nine tabs.
 one, scheduled in another, worked in a third, timed in a fourth. Nobody thinks that way. A job is
 one thing; give it one page with tabs.
 
-### 2. Status filters are not navigation
+### 2. Status filters are not navigation — done (Pass 4.39)
 
-Of 61 sidebar views, roughly twenty are status filters wearing a navigation costume. Estimator has
-six, Jobcards has eight. **One list with a row of filter chips** replaces all of them. This is the
-cheapest large improvement available.
+Of 61 sidebar views, roughly twenty were status filters wearing a navigation costume. Estimator had
+six, Jobcards eight. Both are done: Jobcards 9 sidebar entries → 3 with a counted chip row over the
+one table it always was, Estimations 6 → 2 with stage focus moved onto the board's own column
+headers, where the lane being focused can actually be seen.
+
+Two things this turned up that the count alone did not predict:
+
+- **Jobcards had two status controls, and they could disagree.** The sidebar view and the filter
+  bar's raw-status dropdown both narrowed by status, with nothing stopping you setting both — which
+  silently produced an empty list. They release each other now.
+- **On Estimations the "filter" was hiding Kanban columns.** A board exists to show every stage and
+  its count at once; a control that leaves one lane standing is not a filter, it is a way to throw
+  the board away. And it only narrowed the board — the detail panel below kept showing whatever was
+  selected, so "Drafts" could show a Draft board above an Accepted estimate.
+
+The remaining status-as-navigation cases are in the modules not yet reviewed for this; check each
+before assuming the count of twenty is spent.
 
 ### 3. Empty structures get filled or deleted
 

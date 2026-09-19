@@ -183,6 +183,27 @@ async function estimationWorkflow(page) {
   assert.deepEqual(board.lanes, ['draft', 'review', 'sent', 'accepted', 'declined'], 'the board covers every stage');
   step('Estimations: the board shows every project in the lane its status names');
 
+  // Narrowing to one stage used to be five sidebar entries, which meant the board's whole point -
+  // every lane and every count at once - was thrown away from a control that could not see it.
+  // It lives on the lane now: press a header to work in that stage alone, press it again to come
+  // back. The sidebar is a destination and an action, not five hidden filters.
+  const nav = await page.evaluate(() =>
+    [...document.querySelectorAll('.module-side-nav button')].map((b) => b.textContent.trim()));
+  assert.equal(nav.length, 2, `the sidebar should be one destination and one action, got: ${nav.join(' | ')}`);
+
+  assert.equal(await page.evaluate(() => filterStatus), 'all', 'the board opens whole');
+  await page.evaluate(() => focusStage('sent'));
+  assert.deepEqual(await page.evaluate(() => ({
+    lanes: [...document.querySelectorAll('.kcol')].map((c) => c.dataset.stage),
+    pressed: document.querySelector('.kchead').getAttribute('aria-pressed')
+  })), { lanes: ['sent'], pressed: 'true' }, 'pressing a lane header should leave that lane alone on the board');
+
+  await page.evaluate(() => focusStage('sent'));
+  assert.deepEqual(
+    await page.evaluate(() => [...document.querySelectorAll('.kcol')].map((c) => c.dataset.stage)),
+    ['draft', 'review', 'sent', 'accepted', 'declined'], 'pressing it again should bring the board back');
+  step('Estimations: a lane is focused from its own header, and released the same way');
+
   // Dragging a card is the stepper by another name: it obeys the same transition rules. Driven with
   // a real mouse, because that is the only way to prove the gesture a person makes actually works.
   const dragCard = async (estId, stage) => {

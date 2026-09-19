@@ -75,6 +75,9 @@
   .search{position:relative;flex:1;min-width:180px;}
   .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--steel-400);}
   .search input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:9px 10px 9px 32px;outline:none;}
+/* .filterbar input[type=text] is more specific than .search input, so it was winning the
+     padding and dropping the text under the magnifier. Name both, and it stops. */
+  .filterbar .search input{padding:9px 10px 9px 32px;}
   .search input:focus{border-color:var(--spark);}
   .morewrap{margin-bottom:14px;}
   .morepanel{display:none;grid-template-columns:repeat(4,1fr);gap:10px;background:var(--lift-03);border:1px solid var(--line);padding:14px;margin-top:8px;}
@@ -265,13 +268,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <div class="ms-brand"><div class="ms-icon">&#9635;</div><div><h2>JOBCARDS</h2><small data-i="msub_short">Work orders</small></div></div>
   <nav class="module-side-nav" id="moduleSideNav">
     <button class="on" data-ms="overview" onclick="setView('overview')"><i>&#9638;</i><span data-i="nav_overview">Overview</span></button>
-    <button data-ms="all" onclick="setView('all')"><i>&#9776;</i><span data-i="nav_all">All Jobcards</span></button>
-    <button data-ms="ready" onclick="setView('ready')"><i>&#9673;</i><span data-i="nav_ready">Ready to Start</span></button>
-    <button data-ms="inprogress" onclick="setView('inprogress')"><i>&#9654;</i><span data-i="nav_inprogress">In Progress</span></button>
-    <button data-ms="blocked" onclick="setView('blocked')"><i>&#9208;</i><span data-i="nav_blocked">Paused / Blocked</span></button>
-    <button data-ms="inspection" onclick="setView('inspection')"><i>&#9906;</i><span data-i="nav_inspection">Inspection Required</span></button>
-    <button data-ms="completed" onclick="setView('completed')"><i>&#10003;</i><span data-i="nav_completed">Completed</span></button>
-    <button data-ms="archived" onclick="setView('archived')"><i>&#9636;</i><span data-i="nav_archived">Archived</span></button>
+    <button data-ms="list" onclick="setView('list')"><i>&#9776;</i><span data-i="nav_jobcards">Jobcards</span></button>
     <button onclick="openNewJobcardMenu()"><i>&#65291;</i><span data-i="nav_newjc">New Jobcard</span></button>
   </nav>
   <div class="ms-sidebox"><b data-i="sbox_t">Connected workflow</b><p data-i="sbox_p">Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.</p></div>
@@ -414,7 +411,7 @@ const T={
 en:{
   locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Jobcards",msub:"Workshop production orders",msub_short:"Work orders",
   sbox_t:"Connected workflow",sbox_p:"Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.",
-  nav_overview:"Overview",nav_all:"All Jobcards",nav_ready:"Ready to Start",nav_inprogress:"In Progress",nav_blocked:"Paused / Blocked",nav_inspection:"Inspection Required",nav_completed:"Completed",nav_archived:"Archived",nav_newjc:"New Jobcard",
+  nav_overview:"Overview",nav_jobcards:"Jobcards",scope_label:"Narrow the list",nav_all:"All Jobcards",nav_ready:"Ready to Start",nav_inprogress:"In Progress",nav_blocked:"Paused / Blocked",nav_inspection:"Inspection Required",nav_completed:"Completed",nav_archived:"Archived",nav_newjc:"New Jobcard",
   kpi_open:"Total open jobcards",kpi_ready:"Ready to start",kpi_inprogress:"In progress",kpi_blocked:"Blocked",kpi_waitmat:"Waiting for material",kpi_waitinsp:"Waiting for inspection",kpi_completedweek:"Completed this week",kpi_overdue:"Overdue jobcards",
   ov_priority_t:"Today's Priority Work",ov_recent_t:"Recently Updated",ov_matshortage_t:"Material Shortage Warnings",ov_waitinsp_t:"Waiting for Inspection",ov_workload_t:"Worker & Machine Workload",ov_deadlines_t:"Upcoming Deadlines",
   th_jcno:"Jobcard #",th_project:"Project #",th_customer:"Customer",th_title:"Job title",th_item:"Item / assembly",th_operation:"Current operation",th_responsible:"Responsible",th_workers:"Workers",th_plannedhours:"Planned h",th_loggedhours:"Logged h",th_plannedstart:"Planned start",th_deadline:"Deadline",th_material:"Material",th_progress:"Progress",th_priority:"Priority",th_status:"Status",th_actions:"Actions",
@@ -473,7 +470,7 @@ en:{
 sv:{
   locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Jobbkort",msub:"Verkstadens tillverkningsorder",msub_short:"Arbetsorder",
   sbox_t:"Kopplat arbetsflöde",sbox_p:"Jobbkort skapas från accepterade, planerade projekt och för tillbaka timmar och materialförbrukning till den delade verkstadsdatan.",
-  nav_overview:"Översikt",nav_all:"Alla jobbkort",nav_ready:"Redo att starta",nav_inprogress:"Pågående",nav_blocked:"Pausade / Blockerade",nav_inspection:"Kräver besiktning",nav_completed:"Klara",nav_archived:"Arkiverade",nav_newjc:"Nytt jobbkort",
+  nav_overview:"Översikt",nav_jobcards:"Jobbkort",scope_label:"Avgränsa listan",nav_all:"Alla jobbkort",nav_ready:"Redo att starta",nav_inprogress:"Pågående",nav_blocked:"Pausade / Blockerade",nav_inspection:"Kräver besiktning",nav_completed:"Klara",nav_archived:"Arkiverade",nav_newjc:"Nytt jobbkort",
   kpi_open:"Totalt öppna jobbkort",kpi_ready:"Redo att starta",kpi_inprogress:"Pågående",kpi_blocked:"Blockerade",kpi_waitmat:"Väntar på material",kpi_waitinsp:"Väntar på besiktning",kpi_completedweek:"Klara denna vecka",kpi_overdue:"Försenade jobbkort",
   ov_priority_t:"Dagens prioriterade arbete",ov_recent_t:"Senast uppdaterade",ov_matshortage_t:"Materialbrist — varningar",ov_waitinsp_t:"Väntar på besiktning",ov_workload_t:"Beläggning — personal & maskiner",ov_deadlines_t:"Kommande deadlines",
   th_jcno:"Jobbkort #",th_project:"Projekt #",th_customer:"Kund",th_title:"Jobbtitel",th_item:"Artikel / enhet",th_operation:"Nuvarande moment",th_responsible:"Ansvarig",th_workers:"Personal",th_plannedhours:"Plan. tim",th_loggedhours:"Logg. tim",th_plannedstart:"Planerad start",th_deadline:"Deadline",th_material:"Material",th_progress:"Framsteg",th_priority:"Prioritet",th_status:"Status",th_actions:"Åtgärder",
@@ -532,7 +529,7 @@ sv:{
 mk:{
   locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Rabotni kartoni",msub:"Rabotni nalozi za rabotilnicata",msub_short:"Rabotni nalozi",
   sbox_t:"Poврзан tek na rabota",sbox_p:"Rabotnite kartoni se izdavaat od prifateni, planirani proekti i gi vraќaat časovite i upotrebata na materijal vo споделените podatoci.",
-  nav_overview:"Pregled",nav_all:"Site rabotni kartoni",nav_ready:"Podgotveni za početok",nav_inprogress:"Vo tek",nav_blocked:"Pauzirani / Blokirani",nav_inspection:"Baraat inspekcija",nav_completed:"Završeni",nav_archived:"Arhivirani",nav_newjc:"Nov raboten karton",
+  nav_overview:"Pregled",nav_jobcards:"Rabotni kartički",scope_label:"Stesni ja listata",nav_all:"Site rabotni kartoni",nav_ready:"Podgotveni za početok",nav_inprogress:"Vo tek",nav_blocked:"Pauzirani / Blokirani",nav_inspection:"Baraat inspekcija",nav_completed:"Završeni",nav_archived:"Arhivirani",nav_newjc:"Nov raboten karton",
   kpi_open:"Vkupno otvoreni kartoni",kpi_ready:"Podgotveni za početok",kpi_inprogress:"Vo tek",kpi_blocked:"Blokirani",kpi_waitmat:"Čekaat materijal",kpi_waitinsp:"Čekaat inspekcija",kpi_completedweek:"Završeni ovaa nedela",kpi_overdue:"Docnети kartoni",
   ov_priority_t:"Prioritetna rabota za denes",ov_recent_t:"Poslední ažurirani",ov_matshortage_t:"Predupreduvaña za nedostig na materijal",ov_waitinsp_t:"Čekaat inspekcija",ov_workload_t:"Optovaruvañe — rabotnici i mašini",ov_deadlines_t:"Idni rokovi",
   th_jcno:"Karton br.",th_project:"Proekt br.",th_customer:"Klient",th_title:"Naslov na rabota",th_item:"Artikl / sklop",th_operation:"Tekovna operacija",th_responsible:"Odgovoren",th_workers:"Rabotnici",th_plannedhours:"Plan. časovi",th_loggedhours:"Zapiš. časovi",th_plannedstart:"Planiran početok",th_deadline:"Rok",th_material:"Materijal",th_progress:"Napredok",th_priority:"Prioritet",th_status:"Status",th_actions:"Akcii",
@@ -603,6 +600,9 @@ function projectOptions(includeNone){const opts=SHARED.projects.map(p=>({v:p.no,
 
 // ── view / filter state ──
 let VIEW='overview';
+// The list is one screen. jcScope is which slice of it is on show - it used to be seven
+// sidebar entries pretending to be seven screens.
+let jcScope='all';
 let selectedJcId=null,detailTab='info';
 let jcQuery='',jcFilterStatus='all',jcFilterProject='all',jcFilterCustomer='all',jcFilterResp='all',jcFilterWorker='all',jcFilterMachine='all',jcFilterPriority='all',jcFilterMaterial='all',jcFilterInspection='all',moreFiltersOpen=false;
 let currentModal=null;
@@ -632,6 +632,10 @@ setInterval(tick,10000);
   if(!reduce&&box){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}})();
 
 function setView(v){VIEW=v;document.querySelectorAll('.module-side-nav button[data-ms]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-ms')===v));renderApp();window.scrollTo({top:0,behavior:'auto'});}
+// A chip and the raw-status dropdown are two ways to ask the same question, and holding both
+// answers at once is how a list comes back empty for no visible reason. Setting either clears
+// the other, so what the list is showing is always readable from one control.
+function setScope(s){jcScope=s;jcFilterStatus='all';setView('list');}
 
 // ═══════════════ OVERVIEW ═══════════════
 function activeJobcards(){return JOBCARDS.filter(j=>!j.archived&&!['completed','closed','cancelled'].includes(j.status));}
@@ -656,14 +660,14 @@ function kpiData(){
 function renderKPIGrid(){
   const k=kpiData();const tt=t();
   const cards=[
-    ['kpi_open',k.open,'',()=>setView('all')],
-    ['kpi_ready',k.ready,'ok',()=>setView('ready')],
-    ['kpi_inprogress',k.inprogress,'',()=>setView('inprogress')],
-    ['kpi_blocked',k.blocked,k.blocked>0?'warn':'',()=>setView('blocked')],
-    ['kpi_waitmat',k.waitmat,k.waitmat>0?'warn':'',()=>setView('all')],
-    ['kpi_waitinsp',k.waitinsp,k.waitinsp>0?'warn':'',()=>setView('inspection')],
-    ['kpi_completedweek',k.completedweek,'ok',()=>setView('completed')],
-    ['kpi_overdue',k.overdue,k.overdue>0?'danger':'',()=>setView('all')]
+    ['kpi_open',k.open,'',()=>setScope('all')],
+    ['kpi_ready',k.ready,'ok',()=>setScope('ready')],
+    ['kpi_inprogress',k.inprogress,'',()=>setScope('inprogress')],
+    ['kpi_blocked',k.blocked,k.blocked>0?'warn':'',()=>setScope('blocked')],
+    ['kpi_waitmat',k.waitmat,k.waitmat>0?'warn':'',()=>setScope('all')],
+    ['kpi_waitinsp',k.waitinsp,k.waitinsp>0?'warn':'',()=>setScope('inspection')],
+    ['kpi_completedweek',k.completedweek,'ok',()=>setScope('completed')],
+    ['kpi_overdue',k.overdue,k.overdue>0?'danger':'',()=>setScope('all')]
   ];
   window._kpiActions=cards.map(c=>c[3]);
   return `<div class="kpigrid">${cards.map((c,i)=>`<div class="kpi-card" onclick="_kpiActions[${i}]()"><div class="kpi-label">${esc(tt[c[0]])}</div><div class="kpi-value ${c[2]}">${c[1]}</div></div>`).join('')}</div>`;
@@ -728,6 +732,7 @@ function statusPill(s){const tt=t();const cls=STATUS_CLASS[s]||'n';return `<span
 const STATUS_CLASS={draft:'n',released:'b',ready:'b','in-progress':'b',inspection:'p',completed:'g',closed:'g',paused:'w',blocked:'r',cancelled:'r',archived:'n'};
 
 // ═══════════════ JOBCARD LIST (All / Ready / In Progress / Blocked / Inspection / Completed / Archived) ═══════════════
+const SCOPES=['all','ready','inprogress','blocked','inspection','completed','archived'];
 const VIEW_TITLES={all:'nav_all',ready:'nav_ready',inprogress:'nav_inprogress',blocked:'nav_blocked',inspection:'nav_inspection',completed:'nav_completed',archived:'nav_archived'};
 const VIEW_BASE_FILTER={
   all:j=>!j.archived,
@@ -742,7 +747,7 @@ function currentOperation(j){const ops=j.operations||[];return ops.find(o=>o.sta
 function jcMaterialStatus(j){if(!j.materials||!j.materials.length)return j.materialReadiness||'not-checked';if(j.materials.some(m=>m.status==='shortage'))return'shortage';if(j.materials.some(m=>m.status==='substitute'))return'substitute';if(j.materials.every(m=>m.status==='issued'))return'issued';if(j.materials.some(m=>m.status==='partial'))return'partial';if(j.materials.every(m=>m.status==='available'||m.status==='reserved'))return'available';return'not-checked';}
 
 function filteredJobcards(){
-  const base=VIEW_BASE_FILTER[VIEW]||(()=>true);
+  const base=VIEW_BASE_FILTER[jcScope]||(()=>true);
   const q=jcQuery.trim().toLowerCase();
   return JOBCARDS.filter(base)
     .filter(j=>jcFilterStatus==='all'||j.status===jcFilterStatus)
@@ -760,14 +765,33 @@ function filteredJobcards(){
 function allWorkersList(){const s=new Set();JOBCARDS.forEach(j=>(j.workers||[]).forEach(w=>s.add(w)));return[...s];}
 function allMachinesList(){const s=new Set();JOBCARDS.forEach(j=>(j.machines||[]).forEach(m=>s.add(m.name)));return[...s];}
 
+// Every scope counted against the filters that are actually set, so the numbers on the chips
+// are the numbers the list would show - not a headline figure that disagrees with the rows
+// underneath it once a project or a worker is picked.
+function scopeCounts(){
+  const out={};
+  const saved=jcScope;
+  SCOPES.forEach(k=>{jcScope=k;out[k]=filteredJobcards().length;});
+  jcScope=saved;
+  return out;
+}
+function renderScopeChips(){
+  const tt=t();const n=scopeCounts();
+  return `<div class="scopechips" role="group" aria-label="${esc(tt.scope_label)}">${SCOPES.map(k=>
+    `<button type="button" class="scopechip ${jcScope===k?'on':''} ${n[k]?'':'empty'}"
+       aria-pressed="${jcScope===k}" onclick="setScope('${k}')">
+       <span>${esc(tt[VIEW_TITLES[k]])}</span><span class="scopen">${n[k]}</span></button>`).join('')}</div>`;
+}
 function renderList(){
   const tt=t();const rows=filteredJobcards();
-  const title=VIEW==='all'?tt.nav_all:tt[VIEW_TITLES[VIEW]];
+  // The heading names the list; the lit chip below names the slice. Saying both in the
+  // heading just prints the same words twice, 40 pixels apart.
   return `<div class="panel">
-    <div class="phead"><h3>${esc(title)}</h3><button class="tbtn primary small" onclick="openNewJobcardMenu()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(tt.nav_newjc)}</button></div>
+    <div class="phead"><h3>${esc(tt.nav_jobcards)}</h3><button class="tbtn primary small" onclick="openNewJobcardMenu()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${esc(tt.nav_newjc)}</button></div>
+    ${renderScopeChips()}
     <div class="filterbar">
       <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="jcSearch" type="text" placeholder="${esc(tt.searchph)}" aria-label="${esc(tt.searchph)}" value="${esc(jcQuery)}"></div>
-      <select aria-label="${esc(tt.f_status)}" onchange="jcFilterStatus=this.value;renderApp();"><option value="all" ${jcFilterStatus==='all'?'selected':''}>${esc(tt.filt_allstatus)}</option>${MAIN_STAGES.concat(SIDE_STATUSES).map(s=>`<option value="${s}" ${jcFilterStatus===s?'selected':''}>${esc(tt['st_'+s])}</option>`).join('')}</select>
+      <select aria-label="${esc(tt.f_status)}" onchange="jcFilterStatus=this.value;if(this.value!=='all')jcScope='all';renderApp();"><option value="all" ${jcFilterStatus==='all'?'selected':''}>${esc(tt.filt_allstatus)}</option>${MAIN_STAGES.concat(SIDE_STATUSES).map(s=>`<option value="${s}" ${jcFilterStatus===s?'selected':''}>${esc(tt['st_'+s])}</option>`).join('')}</select>
       <select aria-label="${esc(tt.f_priority)}" onchange="jcFilterPriority=this.value;renderApp();"><option value="all" ${jcFilterPriority==='all'?'selected':''}>${esc(tt.filt_allpriorities)}</option>${['high','medium','low'].map(p=>`<option value="${p}" ${jcFilterPriority===p?'selected':''}>${esc(tt['pr_'+p])}</option>`).join('')}</select>
       <button class="tbtn small" onclick="moreFiltersOpen=!moreFiltersOpen;renderApp();">${esc(tt.morefilters)}</button>
       <button class="tbtn small" onclick="clearJcFilters();">${esc(tt.clearfilters)}</button>
@@ -784,7 +808,7 @@ function renderList(){
     ${renderJcTable(rows)}
   </div>`;
 }
-function clearJcFilters(){jcQuery='';jcFilterStatus='all';jcFilterProject='all';jcFilterCustomer='all';jcFilterResp='all';jcFilterWorker='all';jcFilterMachine='all';jcFilterPriority='all';jcFilterMaterial='all';jcFilterInspection='all';renderApp();}
+function clearJcFilters(){jcQuery='';jcScope='all';jcFilterStatus='all';jcFilterProject='all';jcFilterCustomer='all';jcFilterResp='all';jcFilterWorker='all';jcFilterMachine='all';jcFilterPriority='all';jcFilterMaterial='all';jcFilterInspection='all';renderApp();}
 function attachList(){const s=$('jcSearch');if(s)s.addEventListener('input',e=>{jcQuery=e.target.value;renderApp();});}
 
 function renderJcTable(rows){
@@ -1789,7 +1813,7 @@ function archiveJc(id){
     WorkshopData.archiveJobcard(id);
     WorkshopData.recordJobcardActivity(id,{action:'Archived'});
     refreshShared();document.querySelectorAll('.moremenu.open').forEach(m=>m.classList.remove('open'));
-    setView('archived');
+    setScope('archived');
   },{yes:'Archive',danger:true});
 }
 
@@ -1987,13 +2011,7 @@ function renderTabActivity(j){
 // ═══════════════ APP DISPATCH ═══════════════
 const VIEWS={
   overview:{render:renderOverview},
-  all:{render:renderList,attach:attachList},
-  ready:{render:renderList,attach:attachList},
-  inprogress:{render:renderList,attach:attachList},
-  blocked:{render:renderList,attach:attachList},
-  inspection:{render:renderList,attach:attachList},
-  completed:{render:renderList,attach:attachList},
-  archived:{render:renderList,attach:attachList},
+  list:{render:renderList,attach:attachList},
   detail:{render:renderDetail}
 };
 function renderApp(){

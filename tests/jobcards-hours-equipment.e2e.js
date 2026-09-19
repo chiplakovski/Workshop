@@ -195,6 +195,52 @@ async function equipmentWorkflow(page, jobcard) {
   step('Equipment: detail view reflects the real Jobcard assignment and usage');
 }
 
+// The list used to be seven sidebar entries over one table, with a status dropdown beside it
+// that could contradict whichever entry was picked - two controls answering the same question,
+// and an empty list with nothing on screen to explain it. It is one chip row now, and these
+// tests hold it to the two things that makes it worth having: the count on a chip is the
+// number of rows that chip shows, and only one status control is ever in force.
+async function jobcardScopeChips(page) {
+  await page.evaluate(() => setView('list'));
+  const scopes = await page.evaluate(() => SCOPES);
+  assert.deepEqual(scopes, ['all', 'ready', 'inprogress', 'blocked', 'inspection', 'completed', 'archived']);
+
+  const chips = await page.evaluate(() =>
+    [...document.querySelectorAll('.scopechip')].map((c) => c.querySelector('.scopen').textContent));
+  assert.equal(chips.length, scopes.length, 'every scope should have a chip');
+
+  for (let i = 0; i < scopes.length; i += 1) {
+    await page.evaluate((s) => setScope(s), scopes[i]);
+    const shown = await page.evaluate(() => ({
+      rows: document.querySelector('.empty3') ? 0 : document.querySelectorAll('tbody tr').length,
+      onChip: Number(document.querySelector('.scopechip.on .scopen').textContent),
+      onScope: document.querySelector('.scopechip.on span').textContent
+    }));
+    assert.equal(shown.rows, shown.onChip,
+      `the ${scopes[i]} chip says ${shown.onChip} but the list shows ${shown.rows}`);
+  }
+  step('Jobcards: every chip counts exactly the rows it shows');
+
+  await page.evaluate(() => setScope('ready'));
+  await page.evaluate(() => {
+    const sel = document.querySelector('.filterbar select');
+    sel.value = 'completed';
+    sel.dispatchEvent(new Event('change'));
+  });
+  assert.equal(await page.evaluate(() => jcScope), 'all', 'picking a raw status must release the chip');
+  assert.equal(await page.evaluate(() => jcFilterStatus), 'completed');
+
+  await page.evaluate(() => setScope('blocked'));
+  assert.equal(await page.evaluate(() => jcFilterStatus), 'all', 'picking a chip must release the raw status');
+  assert.equal(await page.evaluate(() => jcScope), 'blocked');
+  step('Jobcards: the chip and the status dropdown never hold two answers at once');
+
+  await page.evaluate(() => clearJcFilters());
+  assert.deepEqual(await page.evaluate(() => ({ scope: jcScope, status: jcFilterStatus, q: jcQuery })),
+    { scope: 'all', status: 'all', q: '' });
+  step('Jobcards: clearing the filters clears the chip too');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -203,6 +249,7 @@ async function main() {
     await page.goto(`${harness.baseUrl}/jobcard-desktop.html`, { waitUntil: 'load' });
     await loadDemoData(page);
     const jobcard = await jobcardWorkflow(page);
+    await jobcardScopeChips(page);
     await page.goto(`${harness.baseUrl}/hours-desktop.html`, { waitUntil: 'load' });
     await hoursWorkflow(page, jobcard);
     await page.goto(`${harness.baseUrl}/equipment-machines-desktop.html`, { waitUntil: 'load' });

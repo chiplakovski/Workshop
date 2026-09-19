@@ -90,3 +90,23 @@ html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
 .waskbtns .waskyes{border:none;color:#fff;
   background:linear-gradient(180deg,var(--c-accent2,#2c6bd6),var(--c-brand,#013179));}
 .wask.danger .waskyes{background:linear-gradient(180deg,var(--danger,#ff6b6b),#9e2a2a);}
+
+/* ── Scope chips ──
+   One row that says what a list can be narrowed to and how many are in each, so the
+   answer is visible before anything is clicked. This replaces the pattern of putting
+   the same filter in the sidebar as if each value were a separate screen - it is one
+   list, and a chip row says so. The count is part of the control, never decoration:
+   a chip reading zero is still shown, because "none of those" is an answer. */
+.scopechips{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 12px;}
+.scopechip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;cursor:pointer;
+  font-family:var(--font-body,system-ui,sans-serif);font-size:11.5px;font-weight:500;
+  color:var(--steel-300,#b9c6da);background:var(--field,rgba(255,255,255,.045));
+  border:1px solid var(--field-line,rgba(185,198,218,.24));transition:.15s;}
+.scopechip:hover{color:var(--ice,#e8f0fb);border-color:var(--spark,#4a90ff);}
+.scopechip .scopen{font-family:var(--font-heading,inherit);font-weight:700;font-size:10.5px;
+  min-width:17px;padding:1px 5px;text-align:center;
+  color:var(--steel-400,#7f90ab);background:rgba(var(--c-line-rgb,185,198,218),.14);}
+.scopechip.on{color:#fff;background:var(--nav-on-bg,rgba(74,144,255,.16));border-color:var(--spark,#4a90ff);}
+.scopechip.on .scopen{color:#fff;background:rgba(var(--c-accent-rgb,44,107,214),.5);}
+.scopechip.empty{opacity:.55;}
+.scopechip:focus-visible{outline:2px solid var(--spark,#4a90ff);outline-offset:2px;}

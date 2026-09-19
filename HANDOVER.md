@@ -137,6 +137,35 @@ A regression suite came with it: `tests/quality.e2e.js` holds the hold gate to i
 critical failed inspection raises a hold naming the jobcard, the jobcard cannot be completed while
 it stands, and it clears only against a named authority and written evidence.
 
+
+**Status filters stopped pretending to be screens (Pass 4.39).** Second on the agreed list.
+
+*Jobcards* had seven sidebar entries — Ready, In Progress, Paused/Blocked, Inspection, Completed,
+Archived, All — every one of them rendering the same table through the same function. Worse, the
+filter bar underneath carried a **second** status control, a dropdown over all eleven raw statuses.
+Nothing stopped you holding both: sidebar on *Ready to Start*, dropdown on *Completed*, and the
+list came back empty with nothing on screen to say why. That is now one chip row above the table,
+each chip carrying its own count, and the two controls release each other — setting either clears
+the other, so what the list is showing is always readable from one place. Sidebar: 9 entries → 3.
+
+*Estimations* was the same pattern doing more damage. Its five sidebar entries did not filter a
+list, they **hid columns on the Kanban board** — the one screen whose entire value is seeing every
+stage and its count at once. Picking "Drafts" left a single lane, while the detail panel below went
+on showing an Accepted estimate, because the filter narrowed the board and nothing else. The
+entries are gone; focusing a stage now lives on the stage — press a column header to work in that
+lane alone, press it again for the board back. Sidebar: 6 entries → 2 (the board, and New project).
+
+Found on the way: `.filterbar input[type=text]` is more specific than `.search input`, so it had
+been winning the padding and dropping the placeholder text underneath the magnifier icon, on
+Jobcards and Marketing both. Fixed on both.
+
+`.scopechips` / `.scopechip` now live in `workshop-ui.css` so the next module that needs this uses
+the same control. A chip reading zero is still shown — "none of those" is an answer.
+
+The jobcard list had **no e2e coverage at all**, which is why nothing broke when its view table
+was rewritten. It has some now: every chip's count is asserted against the rows that chip shows,
+and the exclusivity rule is asserted in both directions.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,
