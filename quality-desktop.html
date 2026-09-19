@@ -19,9 +19,14 @@
   @keyframes rise{0%{transform:translateY(0);opacity:0;}12%{opacity:.9;}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0;}}
   @keyframes enter{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
   .panel,.kpi,.attncard,.rolecard,.statuspanel{animation:enter .38s ease both;}
+  /* Record numbers and ISO dates read as one token; the description column takes the
+     slack instead of breaking them across lines. */
+  .table td:first-child{white-space:nowrap;}
+  #holdsBody td:nth-child(5),#ncr-list-body td:nth-child(3),#ncr-list-body td:nth-child(7),
+  #insp-list-body td:nth-child(2),#insp-list-body td:nth-child(3),#insp-list-body td:nth-child(6){white-space:nowrap;}
   .kpistrip .kpi:nth-child(1){animation-delay:.02s;} .kpistrip .kpi:nth-child(2){animation-delay:.06s;}
   .kpistrip .kpi:nth-child(3){animation-delay:.10s;} .kpistrip .kpi:nth-child(4){animation-delay:.14s;}
-  .kpistrip .kpi:nth-child(5){animation-delay:.18s;}
+  .kpistrip .kpi:nth-child(5){animation-delay:.18s;} .kpistrip .kpi:nth-child(6){animation-delay:.22s;}
   .panel:hover{border-color:rgba(var(--c-accent-rgb),.27);}
   .attncard:hover,.rolecard:hover{border-color:rgba(var(--c-accent-rgb),.27);transform:translateY(-1px);transition:.16s;}
   .fbtn:hover{transform:translateY(-1px);transition:.15s;}
@@ -89,10 +94,13 @@
   .filtinput{min-width:180px;}
   .activefilt{font-size:11px;color:var(--steel-400);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
 
-  .kpistrip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+  /* A strip is as wide as the figures it has: sizing up from four keeps every row
+     flush instead of leaving a dead column beside the last card. */
+  .kpistrip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
   /* A strip sizes itself to what it holds, so every one of them fills a single row and no
      card is left stranded on a line of its own. Five suits most; a strip carrying six asks
      for six. Adding a KPI later re-fits the row without anybody remembering to come here. */
+  .kpistrip:has(>.kpi:nth-child(5)){grid-template-columns:repeat(5,1fr);}
   .kpistrip:has(>.kpi:nth-child(6)){grid-template-columns:repeat(6,1fr);}
   .kpi{background:var(--lift-035);border:1px solid var(--line);padding:11px 12px;min-width:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);position:relative;overflow:hidden;}
   .kpi::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(var(--c-accent-rgb),.1),transparent);opacity:0;transition:.3s;}
@@ -144,7 +152,7 @@
   .barfill.danger{background:linear-gradient(90deg,#c94a4a,var(--danger));}
   .barrow .bv{text-align:right;color:var(--steel-400);font-variant-numeric:tabular-nums;}
 
-  .attngrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:18px;}
+  .attngrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
   .attncard{background:var(--lift-035);border:1px solid var(--line);padding:14px 16px;}
   .attncard h4{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--steel-300);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
   .attncard h4 .n{font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ice);}
@@ -212,8 +220,8 @@
   .langmenu button:hover{background:rgba(var(--c-accent-rgb),.12);color:var(--ice);}
   .langmenu button.active{color:var(--c-tint);box-shadow:inset 2px 0 0 var(--spark);}
 
-  @media(max-width:1100px){.kpistrip{grid-template-columns:repeat(4,1fr);}}
-  @media(max-width:820px){.kpistrip{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:1100px){.kpistrip,.kpistrip:has(>.kpi:nth-child(5)),.kpistrip:has(>.kpi:nth-child(6)){grid-template-columns:repeat(3,1fr);}.attngrid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:820px){.kpistrip,.kpistrip:has(>.kpi:nth-child(5)),.kpistrip:has(>.kpi:nth-child(6)){grid-template-columns:repeat(2,1fr);}.attngrid{grid-template-columns:1fr;}}
   @media(max-width:760px){
     .kpistrip{grid-template-columns:1fr;}
     .mcard{width:100%;max-width:90vw;}
@@ -258,27 +266,15 @@
   <nav class="module-side-nav" id="qualityNav">
     <button class="sideitem" data-section="overview"><i>▦</i><span data-i="overview">Overview</span></button>
     <button class="sideitem" data-section="inspections"><i>✓</i><span data-i="inspections">Inspections</span></button>
-    <button class="sideitem" data-section="requests"><i>▤</i><span data-i="inspection_requests">Inspection Requests</span></button>
-    <button class="sideitem" data-section="welding"><i>◈</i><span data-i="welding_quality">Welding Quality</span></button>
-    <button class="sideitem" data-section="ndt"><i>◉</i><span data-i="ndt">NDT</span></button>
     <button class="sideitem" data-section="ncr"><i>⚠</i><span data-i="ncr">NCR</span></button>
-    <button class="sideitem" data-section="capa"><i>↻</i><span data-i="corrective_actions">Corrective Actions</span></button>
-    <button class="sideitem" data-section="itp"><i>▧</i><span data-i="itp">ITP / Control Plans</span></button>
-    <button class="sideitem" data-section="traceability"><i>◇</i><span data-i="material_traceability">Material Traceability</span></button>
-    <button class="sideitem" data-section="supplierquality"><i>▣</i><span data-i="supplier_quality">Supplier Quality</span></button>
-    <button class="sideitem" data-section="complaints"><i>✉</i><span data-i="customer_complaints">Customer Complaints</span></button>
-    <button class="sideitem" data-section="certificates"><i>▥</i><span data-i="certificates">Certificates</span></button>
-    <button class="sideitem" data-section="calibration"><i>◷</i><span data-i="calibration_status">Calibration Status</span></button>
-    <button class="sideitem" data-section="dossiers"><i>▨</i><span data-i="quality_dossiers">Quality Dossiers</span></button>
-    <button class="sideitem" data-section="release"><i>✔</i><span data-i="final_release">Final Release</span></button>
-    <button class="sideitem" data-section="qreports"><i>↗</i><span data-i="quality_reports">Quality Reports</span></button>
+    <button class="sideitem" data-section="holds"><i>⛔</i><span data-i="nav_holds">Quality Holds</span></button>
     <div class="sidediv"></div>
     <button class="sideitem actionitem" id="newInspectionNav"><i>＋</i><span data-i="new_inspection">New Inspection</span></button>
     <button class="sideitem actionitem" id="newNcrNav"><i>＋</i><span data-i="new_ncr">New NCR</span></button>
   </nav>
   <div class="statuspanel">
     <h4 data-i="connected_workflow">Connected Workflow</h4>
-    <p><span class="statusdot"></span><span data-i="connected_workflow_text">Quality receives information from Projects, Jobcards, Store, Suppliers, Equipment and Documents, and provides release status to Production and Reports.</span></p>
+    <p><span class="statusdot"></span><span data-i="connected_workflow_text">Quality reads projects and jobcards, and an active hold here blocks them from being completed or closed until it is released. Material certificates and traceability live in Store; instrument calibration lives in Equipment.</span></p>
   </div>
   <div class="ms-user">
     <div class="ms-avatar">AK</div>
@@ -291,7 +287,7 @@
     <a class="back" id="backBtn" href="hub-desktop.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span data-i="back_hub">Hub</span></a>
     <div class="ttl">
       <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 5-5"/></svg></div>
-      <div><h1 data-i="quality_title">Quality Management</h1><p data-i="quality_sub">Inspections, NCR, welding quality, traceability and final release</p></div>
+      <div><h1 data-i="quality_title">Quality Management</h1><p data-i="quality_sub">Inspections, non-conformance reports and quality holds</p></div>
     </div>
   </header>
 
@@ -321,24 +317,12 @@
   <div id="section-overview" class="section" style="display:none;">
     <div class="noticebar" data-i="notice_prototype">This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.</div>
     <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="due_today">Inspections Due Today</div><div class="kv" id="kpi-due-today">—</div></div>
-      <div class="kpi"><div class="kl" data-i="waiting">Inspections Waiting</div><div class="kv warn" id="kpi-waiting">—</div></div>
-      <div class="kpi"><div class="kl" data-i="passed">Passed Inspections</div><div class="kv ok" id="kpi-passed">—</div></div>
-      <div class="kpi"><div class="kl" data-i="failed">Failed Inspections</div><div class="kv danger" id="kpi-failed">—</div></div>
-      <div class="kpi"><div class="kl" data-i="reinspections">Reinspections Required</div><div class="kv warn" id="kpi-reinsp">—</div></div>
-    </div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="open_ncrs">Open NCRs</div><div class="kv warn" id="kpi-open-ncr">—</div></div>
-      <div class="kpi"><div class="kl" data-i="critical_ncrs">Critical NCRs</div><div class="kv danger" id="kpi-critical-ncr">—</div></div>
-      <div class="kpi"><div class="kl" data-i="overdue_capa">Overdue Corrective Actions</div><div class="kv danger" id="kpi-overdue-capa">—</div></div>
-      <div class="kpi"><div class="kl" data-i="jc_hold">Jobcards on Quality Hold</div><div class="kv danger" id="kpi-jc-hold">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_certs">Missing Material Certificates</div><div class="kv warn" id="kpi-missing-cert">—</div></div>
-    </div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="missing_wps">Missing WPS/Qualifications</div><div class="kv warn" id="kpi-missing-wps">—</div></div>
-      <div class="kpi"><div class="kl" data-i="calib_expiring">Calibration Expiring</div><div class="kv warn" id="kpi-calib-exp">—</div></div>
-      <div class="kpi"><div class="kl" data-i="customer_approvals">Customer Approvals Required</div><div class="kv" id="kpi-cust-approval">—</div></div>
-      <div class="kpi"><div class="kl" data-i="not_ready_handover">Projects Not Ready for Handover</div><div class="kv warn" id="kpi-not-ready">—</div></div>
+      <div class="kpi"><div class="kl" data-i="due_today">Inspections Due Today</div><div class="kv" id="kpi-due-today">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="waiting">Inspections Waiting</div><div class="kv warn" id="kpi-waiting">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="failed">Failed Inspections</div><div class="kv danger" id="kpi-failed">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="open_ncrs">Open NCRs</div><div class="kv warn" id="kpi-open-ncr">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="holds_active">Active Holds</div><div class="kv danger" id="kpi-active-holds">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="not_ready_handover">Projects Not Ready</div><div class="kv warn" id="kpi-not-ready">N/A</div></div>
     </div>
 
     <div class="phead" style="border:none;padding:0;margin:22px 0 10px;"><h3 data-i="requires_attention">Requires Attention</h3></div>
@@ -352,16 +336,12 @@
           <button class="tab" data-tab="viz-ncr-status" data-i="ncr_by_status">NCRs by Status</button>
           <button class="tab" data-tab="viz-ncr-cat" data-i="ncr_by_category">NCRs by Category</button>
           <button class="tab" data-tab="viz-issues-project" data-i="issues_by_project">Issues by Project</button>
-          <button class="tab" data-tab="viz-capa-status" data-i="capa_by_status">Corrective Actions by Status</button>
-          <button class="tab" data-tab="viz-dossier" data-i="dossier_readiness">Dossier Readiness</button>
           <button class="tab" data-tab="viz-fpq" data-i="fpq_trend">First-Pass Quality Trend</button>
         </div>
         <div id="viz-insp-result" class="tabpanel active"><div class="barchart" id="viz-insp-result-body"></div></div>
         <div id="viz-ncr-status" class="tabpanel"><div class="barchart" id="viz-ncr-status-body"></div></div>
         <div id="viz-ncr-cat" class="tabpanel"><div class="barchart" id="viz-ncr-cat-body"></div></div>
         <div id="viz-issues-project" class="tabpanel"><div class="barchart" id="viz-issues-project-body"></div></div>
-        <div id="viz-capa-status" class="tabpanel"><div class="barchart" id="viz-capa-status-body"></div></div>
-        <div id="viz-dossier" class="tabpanel"><div class="barchart" id="viz-dossier-body"></div></div>
         <div id="viz-fpq" class="tabpanel"><div class="barchart" id="viz-fpq-body"></div><p class="dq-note" data-i="fpq_note">Demo calculation — first-pass quality trend requires more historical data than exists in this browser to be meaningful over time.</p></div>
       </div>
     </div>
@@ -371,11 +351,6 @@
       <table class="table"><thead><tr><th data-i="date">Date</th><th data-i="record">Record</th><th data-i="action">Action</th><th data-i="user">User</th><th data-i="details">Details</th></tr></thead><tbody id="recent-activity-body"></tbody></table>
     </div>
 
-    <div class="panel">
-      <div class="phead"><h3 data-i="permissions_demo">Role Visibility (Demonstration)</h3></div>
-      <p style="font-size:11.5px;color:var(--warn);margin-bottom:6px;" data-i="permissions_notice">Frontend role visibility is a demonstration only. Production permission enforcement requires the secured backend.</p>
-      <div class="rolegrid" id="role-grid"></div>
-    </div>
   </div>
 
   <!-- INSPECTIONS -->
@@ -404,72 +379,13 @@
   </div>
 
   <!-- INSPECTION REQUESTS -->
-  <div id="section-requests" class="section" style="display:none;">
-    <p style="font-size:11.5px;color:var(--steel-400);margin-bottom:14px;" data-i="requests_note">Requests move through Draft → Requested → Planned → Ready for Inspection → In Progress → Completed. Only inspections not yet completed are shown here.</p>
-    <div class="panel">
-      <div class="phead"><h3 data-i="open_requests">Open Inspection Requests</h3><button class="fbtn primary" id="openNewRequestBtn" data-i="new_request">New Request</button></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="id">ID</th><th data-i="project">Project</th><th data-i="jobcard">Jobcard</th><th data-i="operation">Operation</th><th data-i="type">Type</th>
-        <th data-i="requested_date">Requested Date</th><th data-i="responsible_inspector">Responsible Inspector</th><th data-i="material_status">Material Status</th><th data-i="witness">Witness</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="req-list-body"></tbody></table></div>
-    </div>
-  </div>
+  
 
   <!-- WELDING QUALITY -->
-  <div id="section-welding" class="section" style="display:none;">
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="total_welds">Total Weld Records</div><div class="kv" id="wld-total">—</div></div>
-      <div class="kpi"><div class="kl" data-i="accepted">Accepted</div><div class="kv ok" id="wld-accepted">—</div></div>
-      <div class="kpi"><div class="kl" data-i="repair_required">Repair Required</div><div class="kv danger" id="wld-repair">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_wps">Missing WPS/Qualifications</div><div class="kv warn" id="wld-missing">—</div></div>
-    </div>
-    <div class="tab-container">
-      <div class="tabs">
-        <button class="tab active" data-tab="wld-register" data-i="weld_register">Weld Register</button>
-        <button class="tab" data-tab="wld-wps" data-i="wps_register">WPS Register</button>
-        <button class="tab" data-tab="wld-quals" data-i="welder_quals">Welder Qualifications</button>
-      </div>
-      <div id="wld-register" class="tabpanel active">
-        <div class="filtrow" style="margin-bottom:10px;"><button class="fbtn primary" id="openNewWeldBtn" style="margin-left:auto;" data-i="new_weld">New Weld Record</button></div>
-        <div class="tablewrap"><table class="table"><thead><tr>
-          <th data-i="id">ID</th><th data-i="project">Project</th><th data-i="jobcard">Jobcard</th><th data-i="weld_position">Weld Position</th><th data-i="process">Process</th><th data-i="wps_no">WPS No.</th>
-          <th data-i="welder">Welder</th><th data-i="ndt_req">NDT Req.</th><th data-i="status">Status</th><th data-i="final_result">Final Result</th><th data-i="actions">Actions</th>
-        </tr></thead><tbody id="wld-list-body"></tbody></table></div>
-      </div>
-      <div id="wld-wps" class="tabpanel">
-        <div class="tablewrap"><table class="table"><thead><tr>
-          <th data-i="wps_no">WPS No.</th><th data-i="rev">Rev</th><th data-i="process">Process</th><th data-i="material_group">Material Group</th><th data-i="thickness_range">Thickness Range</th><th data-i="joint_type">Joint Type</th><th data-i="position">Position</th><th data-i="supporting_wpqr">Supporting WPQR</th><th data-i="status">Status</th>
-        </tr></thead><tbody id="wps-list-body"></tbody></table></div>
-      </div>
-      <div id="wld-quals" class="tabpanel">
-        <div class="tablewrap"><table class="table"><thead><tr>
-          <th data-i="welder">Welder</th><th data-i="qual_no">Qualification No.</th><th data-i="process">Process</th><th data-i="material_group">Material Group</th><th data-i="issued_by">Issued By</th><th data-i="expiry_date">Expiry Date</th><th data-i="status">Status</th>
-        </tr></thead><tbody id="qual-list-body"></tbody></table></div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- NDT -->
-  <div id="section-ndt" class="section" style="display:none;">
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="total_ndt">Total NDT Records</div><div class="kv" id="ndt-total">—</div></div>
-      <div class="kpi"><div class="kl" data-i="accepted">Accepted</div><div class="kv ok" id="ndt-accepted">—</div></div>
-      <div class="kpi"><div class="kl" data-i="rejected">Rejected</div><div class="kv danger" id="ndt-rejected">—</div></div>
-      <div class="kpi"><div class="kl" data-i="reinspection_required">Reinspection Required</div><div class="kv warn" id="ndt-reinsp">—</div></div>
-    </div>
-    <div class="filtrow" style="margin-bottom:10px;">
-      <label class="filtlbl" for="ndtMethodFilter" data-i="method">Method:</label>
-      <select class="filtsel" id="ndtMethodFilter"><option value="" data-i="all">All</option></select>
-      <button class="fbtn primary" id="openNewNdtBtn" style="margin-left:auto;" data-i="new_ndt">New NDT Record</button>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="ndt_register">NDT Register</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="report_no">Report No.</th><th data-i="project">Project</th><th data-i="weld_component">Weld/Component</th><th data-i="method">Method</th><th data-i="technician">Technician</th>
-        <th data-i="inspection_date">Inspection Date</th><th data-i="result">Result</th><th data-i="ncr_link">NCR</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="ndt-list-body"></tbody></table></div>
-    </div>
-  </div>
+  
 
   <!-- NCR -->
   <div id="section-ncr" class="section" style="display:none;">
@@ -494,181 +410,27 @@
       </tr></thead><tbody id="ncr-list-body"></tbody></table></div>
     </div>
   </div>
-
-  <!-- CORRECTIVE ACTIONS (CAPA) -->
-  <div id="section-capa" class="section" style="display:none;">
+  <!-- A hold is the one thing in this module that physically stops work leaving the building, and
+       until now it had no page of its own - it could be released from a modal and counted on the
+       overview, but never simply listed. -->
+  <div id="section-holds" class="section" style="display:none;">
     <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="total_actions">Total Actions</div><div class="kv" id="capa-total">—</div></div>
-      <div class="kpi"><div class="kl" data-i="open_actions">Open</div><div class="kv warn" id="capa-open">—</div></div>
-      <div class="kpi"><div class="kl" data-i="overdue_actions">Overdue</div><div class="kv danger" id="capa-overdue">—</div></div>
-      <div class="kpi"><div class="kl" data-i="effective">Effective</div><div class="kv ok" id="capa-effective">—</div></div>
+      <div class="kpi"><div class="kl" data-i="holds_active">Active Holds</div><div class="kv danger" id="hold-active">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="holds_projects">Projects Held</div><div class="kv warn" id="hold-projects">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="holds_jobcards">Jobcards Held</div><div class="kv warn" id="hold-jobcards">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="holds_released">Released</div><div class="kv ok" id="hold-released">N/A</div></div>
     </div>
     <div class="panel">
-      <div class="phead"><h3 data-i="capa_register">Corrective / Preventive Actions</h3><button class="fbtn primary" id="openNewCapaBtn" data-i="new_corrective_action">New Corrective Action</button></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="id">ID</th><th data-i="related">Related</th><th data-i="problem_statement">Problem Statement</th><th data-i="responsible">Responsible</th>
-        <th data-i="due_date">Due Date</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="capa-list-body"></tbody></table></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="root_cause_tools">Root-Cause Tools</h3></div>
-      <p style="font-size:11px;color:var(--steel-400);margin-bottom:10px;" data-i="rule_based_disclaimer">Rule-based prototype insight – not an AI conclusion.</p>
-      <div id="insights-list"></div>
-    </div>
-  </div>
-
-  <!-- ITP -->
-  <div id="section-itp" class="section" style="display:none;">
-    <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" for="itpSelect" data-i="select_itp">Select ITP:</label>
-      <select class="filtsel" id="itpSelect"></select>
-      <button class="fbtn primary" style="margin-left:auto;" id="openNewItpBtn" data-i="new_itp">New ITP</button>
-    </div>
-    <div class="panel" id="itp-header-panel"></div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="itp_lines">ITP Lines</h3><button class="fbtn" id="addItpLineBtn" data-i="add_line">+ Add Line</button></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="seq">Seq</th><th data-i="phase">Phase</th><th data-i="jobcard">Jobcard</th><th data-i="activity">Activity</th><th data-i="point_type">Point Type</th>
-        <th data-i="customer_involvement">Customer Involvement</th><th data-i="planned_date">Planned</th><th data-i="result">Result</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="itp-lines-body"></tbody></table></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="itp_progress">ITP Progress</h3></div>
-      <div class="barchart" id="itp-progress-body"></div>
-    </div>
-  </div>
-
-  <!-- MATERIAL TRACEABILITY -->
-  <div id="section-traceability" class="section" style="display:none;">
-    <p style="font-size:11px;color:var(--steel-400);margin-bottom:14px;" data-i="traceability_note">Supplier → Purchase Order → Goods Receipt → Heat/Batch → Certificate → Stock → Project → Jobcard → Component. Missing links are shown honestly rather than assumed complete.</p>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="total_items">Total Store Items</div><div class="kv" id="trace-total">—</div></div>
-      <div class="kpi"><div class="kl" data-i="fully_traceable">Fully Traceable</div><div class="kv ok" id="trace-full">—</div></div>
-      <div class="kpi"><div class="kl" data-i="incomplete_chain">Incomplete Chain</div><div class="kv warn" id="trace-incomplete">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_certs">Missing Certificates</div><div class="kv danger" id="trace-missing-cert">—</div></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="traceability_register">Traceability Register</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="item_code">Item Code</th><th data-i="description">Description</th><th data-i="supplier">Supplier</th><th data-i="heat_batch">Heat/Batch</th>
-        <th data-i="certificate">Certificate</th><th data-i="cert_status">Cert. Status</th><th data-i="stock_location">Location</th><th data-i="chain_status">Chain Status</th>
-      </tr></thead><tbody id="trace-list-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- SUPPLIER QUALITY -->
-  <div id="section-supplierquality" class="section" style="display:none;">
-    <p class="dq-note" style="margin-bottom:14px;" data-i="supplier_demo_note">Supplier approval status is a frontend demonstration until backend permissions and audit logging exist.</p>
-    <div class="panel">
-      <div class="phead"><h3 data-i="supplier_quality_register">Supplier Quality</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="supplier">Supplier</th><th data-i="approval_status">Approval Status</th><th data-i="rating">Rating</th><th data-i="deliveries">Deliveries</th>
-        <th data-i="rejected">Rejected</th><th data-i="missing_certs">Missing Certs</th><th data-i="open_ncrs">Open NCRs</th><th data-i="next_review">Next Review</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="supq-list-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- CUSTOMER COMPLAINTS -->
-  <div id="section-complaints" class="section" style="display:none;">
-    <div class="filtrow" style="margin-bottom:10px;"><button class="fbtn primary" id="openNewComplaintBtn" style="margin-left:auto;" data-i="new_complaint">New Complaint</button></div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="complaints_register">Customer Complaints</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="complaint_no">Complaint No.</th><th data-i="customer">Customer</th><th data-i="project">Project</th><th data-i="severity">Severity</th>
-        <th data-i="complaint_date">Date</th><th data-i="responsible">Responsible</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="cmp-list-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- CERTIFICATES -->
-  <div id="section-certificates" class="section" style="display:none;">
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="total_items">Total Store Items</div><div class="kv" id="cert-total">—</div></div>
-      <div class="kpi"><div class="kl" data-i="valid">Valid</div><div class="kv ok" id="cert-valid">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_certs">Missing</div><div class="kv danger" id="cert-missing">—</div></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="certificate_register">Certificate Register</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="item_code">Item Code</th><th data-i="description">Description</th><th data-i="cert_type">Certificate Type</th><th data-i="cert_no">Certificate No.</th><th data-i="cert_status">Status</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="certreg-list-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- CALIBRATION STATUS -->
-  <div id="section-calibration" class="section" style="display:none;">
-    <p class="dq-note" style="margin-bottom:14px;" id="calib-source-note"></p>
-    <div class="panel">
-      <div class="phead"><h3 data-i="calibration_register">Measuring Instrument Calibration</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="instrument">Instrument</th><th data-i="equipment_id">Equipment ID</th><th data-i="calib_status">Calibration Status</th><th data-i="last_calib">Last Calibration</th>
-        <th data-i="next_calib">Next Calibration</th><th data-i="usable">Usable for Official Measurement</th>
-      </tr></thead><tbody id="calib-list-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- QUALITY DOSSIERS -->
-  <div id="section-dossiers" class="section" style="display:none;">
-    <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" for="dossierSelect" data-i="select_project">Select project:</label>
-      <select class="filtsel" id="dossierSelect"></select>
-    </div>
-    <div class="kpistrip">
-      <div class="kpi"><div class="kl" data-i="required_docs">Required Documents</div><div class="kv" id="dos-required">—</div></div>
-      <div class="kpi"><div class="kl" data-i="available_docs">Available</div><div class="kv ok" id="dos-available">—</div></div>
-      <div class="kpi"><div class="kl" data-i="missing_docs">Missing</div><div class="kv danger" id="dos-missing">—</div></div>
-      <div class="kpi"><div class="kl" data-i="dossier_readiness">Readiness</div><div class="kv" id="dos-readiness">—</div></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="dossier_items">Dossier Items</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="document">Document</th><th data-i="required">Required</th><th data-i="status">Status</th><th data-i="reference">Reference</th>
-      </tr></thead><tbody id="dos-items-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- FINAL RELEASE -->
-  <div id="section-release" class="section" style="display:none;">
-    <div class="noticebar" data-i="release_notice">Frontend approval demonstration only. Production release authority, signatures and official audit records require the secured backend.</div>
-    <div class="filtrow" style="margin-bottom:10px;">
-      <label style="font-size:11px;color:var(--steel-400);" for="releaseProjectSelect" data-i="select_project">Select project:</label>
-      <select class="filtsel" id="releaseProjectSelect"></select>
-      <label style="font-size:11px;color:var(--steel-400);margin-left:10px;" for="releaseJobcardSelect" data-i="select_jobcard">Jobcard:</label>
-      <select class="filtsel" id="releaseJobcardSelect"><option value="" data-i="whole_project">Whole project</option></select>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="release_readiness_check">Release Readiness Check</h3></div>
-      <div id="release-checklist"></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="issue_release">Issue Final Release</h3></div>
-      <div id="release-form"></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><h3 data-i="release_history">Release History</h3></div>
-      <div class="tablewrap"><table class="table"><thead><tr>
-        <th data-i="release_no">Release No.</th><th data-i="project">Project</th><th data-i="result">Result</th><th data-i="released_by">Released By</th><th data-i="release_date">Date</th><th data-i="actions">Actions</th>
-      </tr></thead><tbody id="release-history-body"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- QUALITY REPORTS -->
-  <div id="section-qreports" class="section" style="display:none;">
-    <div class="tab-container">
-      <div class="tabs">
-        <button class="tab active" data-tab="qr-insp" data-i="inspection_status">Inspection Status</button>
-        <button class="tab" data-tab="qr-ncrproj" data-i="ncr_by_project">NCR by Project</button>
-        <button class="tab" data-tab="qr-ncrsupplier" data-i="ncr_by_supplier">NCR by Supplier</button>
-        <button class="tab" data-tab="qr-rework" data-i="rework_hours_cost">Rework Hours & Cost</button>
-        <button class="tab" data-tab="qr-wpsexp" data-i="wps_qual_expiry">WPS & Qualification Expiry</button>
-        <button class="tab" data-tab="qr-traceability" data-i="traceability_completeness">Traceability Completeness</button>
-      </div>
-      <div id="qr-insp" class="tabpanel active"><div class="tablewrap"><table class="table"><thead><tr><th data-i="status">Status</th><th data-i="count">Count</th></tr></thead><tbody id="qr-insp-body"></tbody></table></div></div>
-      <div id="qr-ncrproj" class="tabpanel"><div class="tablewrap"><table class="table"><thead><tr><th data-i="project">Project</th><th data-i="ncrs">NCRs</th><th data-i="critical">Critical</th></tr></thead><tbody id="qr-ncrproj-body"></tbody></table></div></div>
-      <div id="qr-ncrsupplier" class="tabpanel"><div class="tablewrap"><table class="table"><thead><tr><th data-i="supplier">Supplier</th><th data-i="ncrs">NCRs</th></tr></thead><tbody id="qr-ncrsupplier-body"></tbody></table></div></div>
-      <div id="qr-rework" class="tabpanel"><div class="tablewrap"><table class="table"><thead><tr><th data-i="ncr_no">NCR No.</th><th data-i="project">Project</th><th data-i="rework_hours">Rework Hours</th><th data-i="cost_impact">Cost Impact (SEK)</th></tr></thead><tbody id="qr-rework-body"></tbody></table></div></div>
-      <div id="qr-wpsexp" class="tabpanel"><div class="tablewrap"><table class="table"><thead><tr><th data-i="welder">Welder</th><th data-i="qual_no">Qualification No.</th><th data-i="expiry_date">Expiry</th><th data-i="status">Status</th></tr></thead><tbody id="qr-wpsexp-body"></tbody></table></div></div>
-      <div id="qr-traceability" class="tabpanel"><div class="barchart" id="qr-traceability-body"></div></div>
+      <div class="phead"><h3 data-i="holds_register">Quality Holds</h3></div>
+      <p class="dq-note" data-i="holds_note">An active hold blocks completing or closing whatever it names, and is cleared here and nowhere else.</p>
+      <div class="tablewrap"><table class="table">
+        <thead><tr>
+          <th data-i="hold_no">Hold No.</th><th data-i="hold_blocks">Blocks</th><th data-i="reason">Reason</th>
+          <th data-i="severity">Severity</th><th data-i="hold_applied">Applied</th>
+          <th data-i="status">Status</th><th data-i="actions">Actions</th>
+        </tr></thead>
+        <tbody id="holdsBody"></tbody>
+      </table></div>
     </div>
   </div>
 
@@ -784,191 +546,18 @@
 </div>
 
 <!-- CAPA MODAL -->
-<div class="modal" id="capaModal">
-  <div class="mcard wide">
-    <h2 data-i="new_corrective_action">New Corrective Action</h2>
-    <div class="mrow2">
-      <div><label data-i="related_ref" for="capa_related">Related NCR / Complaint / Inspection</label><input id="capa_related" type="text" placeholder="NCR-2026-001"></div>
-      <div><label data-i="responsible" for="capa_responsible">Responsible Person</label><input id="capa_responsible" type="text"></div>
-    </div>
-    <div class="mrow"><label data-i="problem_statement" for="capa_problem">Problem Statement</label><textarea id="capa_problem"></textarea></div>
-    <div class="mrow"><label data-i="immediate_correction" for="capa_correction">Immediate Correction</label><textarea id="capa_correction"></textarea></div>
-    <div class="mrow"><label data-i="root_cause" for="capa_rootcause">Root Cause</label><textarea id="capa_rootcause"></textarea></div>
-    <div class="mrow"><label data-i="corrective_action" for="capa_action">Corrective Action</label><textarea id="capa_action"></textarea></div>
-    <div class="mrow"><label data-i="preventive_action" for="capa_preventive">Preventive Action</label><textarea id="capa_preventive"></textarea></div>
-    <div class="mrow2">
-      <div><label data-i="start_date" for="capa_start">Start Date</label><input id="capa_start" type="date"></div>
-      <div><label data-i="due_date" for="capa_due">Due Date</label><input id="capa_due" type="date"></div>
-    </div>
-    <div class="phead" style="margin-top:6px;"><h3 style="font-size:12px;" data-i="five_whys">5 Whys (optional)</h3></div>
-    <div class="mrow" id="fiveWhysWrap">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 1?" aria-label="Why 1?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 2?" aria-label="Why 2?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 3?" aria-label="Why 3?">
-      <input class="mrow" style="margin-bottom:6px;" type="text" placeholder="Why 4?" aria-label="Why 4?">
-      <input type="text" placeholder="Why 5?" aria-label="Why 5?">
-    </div>
-    <div class="phead" style="margin-top:14px;"><h3 style="font-size:12px;" data-i="fishbone">Fishbone Category Notes (optional)</h3></div>
-    <div class="mrow3">
-      <div><label data-i="fb_people" for="fb_people">People</label><input id="fb_people" type="text"></div>
-      <div><label data-i="fb_machine" for="fb_machine">Machine</label><input id="fb_machine" type="text"></div>
-      <div><label data-i="fb_material" for="fb_material">Material</label><input id="fb_material" type="text"></div>
-    </div>
-    <div class="mrow3">
-      <div><label data-i="fb_method" for="fb_method">Method</label><input id="fb_method" type="text"></div>
-      <div><label data-i="fb_measurement" for="fb_measurement">Measurement</label><input id="fb_measurement" type="text"></div>
-      <div><label data-i="fb_environment" for="fb_environment">Environment</label><input id="fb_environment" type="text"></div>
-    </div>
-    <div class="mformerr" id="capaFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('capaModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitCapa()" data-i="create_action">Create Action</button>
-    </div>
-  </div>
-</div>
 
 <!-- WELD MODAL -->
-<div class="modal" id="weldModal">
-  <div class="mcard wide">
-    <h2 data-i="new_weld_record">New Weld Record</h2>
-    <div class="mrow3">
-      <div><label data-i="project" for="wld_project">Project</label><select id="wld_project"></select></div>
-      <div><label data-i="jobcard" for="wld_jobcard">Jobcard</label><select id="wld_jobcard"><option value="">—</option></select></div>
-      <div><label data-i="weld_position" for="wld_position">Weld Map Position</label><input id="wld_position" type="text"></div>
-    </div>
-    <div class="mrow3">
-      <div><label data-i="joint_type" for="wld_joint">Joint Type</label><input id="wld_joint" type="text"></div>
-      <div><label data-i="base_material" for="wld_material">Base Material</label><input id="wld_material" type="text"></div>
-      <div><label data-i="thickness" for="wld_thickness">Thickness (mm)</label><input id="wld_thickness" type="number" step="0.1" min="0"></div>
-    </div>
-    <div class="mrow3">
-      <div><label data-i="process" for="wld_process">Welding Process</label><select id="wld_process"></select></div>
-      <div><label data-i="wps_no" for="wld_wps">WPS No.</label><select id="wld_wps"></select></div>
-      <div><label data-i="welder" for="wld_welder">Welder</label><select id="wld_welder"></select></div>
-    </div>
-    <div class="mrow2">
-      <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="wld_visual" style="width:auto;" checked> <span data-i="visual_inspection_required">Visual inspection required</span></label></div>
-      <div><label style="display:flex;align-items:center;gap:7px;text-transform:none;"><input type="checkbox" id="wld_ndt" style="width:auto;"> <span data-i="ndt_required">NDT required</span></label></div>
-    </div>
-    <div class="mrow"><label data-i="weld_date" for="wld_date">Weld Date</label><input id="wld_date" type="date"></div>
-    <p class="dq-note" data-i="weld_wps_note">Final approval is blocked when the selected WPS or welder qualification is missing or expired, or when required NDT is incomplete.</p>
-    <div class="mformerr" id="wldFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('weldModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitWeld()" data-i="create_record">Create Record</button>
-    </div>
-  </div>
-</div>
 
 <!-- NDT MODAL -->
-<div class="modal" id="ndtModal">
-  <div class="mcard">
-    <h2 data-i="new_ndt_record">New NDT Record</h2>
-    <div class="mrow2">
-      <div><label data-i="project" for="ndt_project">Project</label><select id="ndt_project"></select></div>
-      <div><label data-i="weld_component" for="ndt_weld">Weld / Component</label><select id="ndt_weld"><option value="">—</option></select></div>
-    </div>
-    <div class="mrow2">
-      <div><label data-i="method" for="ndt_method">Method</label><select id="ndt_method"></select></div>
-      <div><label data-i="technician" for="ndt_tech">Technician</label><input id="ndt_tech" type="text"></div>
-    </div>
-    <div class="mrow2">
-      <div><label data-i="inspection_date" for="ndt_date">Inspection Date</label><input id="ndt_date" type="date"></div>
-      <div><label data-i="acceptance_criteria" for="ndt_criteria">Acceptance Criteria</label><input id="ndt_criteria" type="text"></div>
-    </div>
-    <div class="mrow"><label data-i="findings" for="ndt_findings">Findings</label><textarea id="ndt_findings"></textarea></div>
-    <div class="mrow"><label data-i="result" for="ndt_result">Result</label><select id="ndt_result"></select></div>
-    <p class="dq-note" data-i="ndt_reject_note">A Rejected mandatory NDT result blocks the related weld, operation and final release until resolved.</p>
-    <div class="mformerr" id="ndtFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('ndtModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitNdt()" data-i="create_record">Create Record</button>
-    </div>
-  </div>
-</div>
 
 <!-- ITP MODAL -->
-<div class="modal" id="itpModal">
-  <div class="mcard">
-    <h2 data-i="new_itp">New ITP</h2>
-    <div class="mrow2">
-      <div><label data-i="project" for="itp_project">Project</label><select id="itp_project"></select></div>
-      <div><label data-i="prepared_by" for="itp_prepared">Prepared By</label><input id="itp_prepared" type="text" value="Aleksandar C."></div>
-    </div>
-    <div class="mrow"><label data-i="effective_date" for="itp_effective">Effective Date</label><input id="itp_effective" type="date"></div>
-    <div class="mformerr" id="itpFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('itpModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitItp()" data-i="create_itp">Create ITP</button>
-    </div>
-  </div>
-</div>
 
 <!-- ITP LINE MODAL -->
-<div class="modal" id="itpLineModal">
-  <div class="mcard">
-    <h2 data-i="add_itp_line">Add ITP Line</h2>
-    <div class="mrow2">
-      <div><label data-i="phase" for="line_phase">Phase</label><input id="line_phase" type="text"></div>
-      <div><label data-i="jobcard" for="line_jobcard">Jobcard</label><select id="line_jobcard"><option value="">—</option></select></div>
-    </div>
-    <div class="mrow"><label data-i="activity" for="line_activity">Inspection Activity</label><input id="line_activity" type="text"></div>
-    <div class="mrow"><label data-i="acceptance_criteria" for="line_criteria">Acceptance Criteria</label><input id="line_criteria" type="text"></div>
-    <div class="mrow2">
-      <div><label data-i="responsible" for="line_responsible">Responsible Party</label><input id="line_responsible" type="text"></div>
-      <div><label data-i="point_type" for="line_type">Inspection Point Type</label><select id="line_type">
-        <option value="H" data-i="hold_point">H — Hold Point</option>
-        <option value="W" data-i="witness_point">W — Witness Point</option>
-        <option value="R" data-i="review_point">R — Review Point</option>
-        <option value="S" data-i="surveillance_point">S — Surveillance Point</option>
-      </select></div>
-    </div>
-    <div class="mrow2">
-      <div><label data-i="customer_involvement" for="line_customer">Customer Involvement</label><input id="line_customer" type="text"></div>
-      <div><label data-i="planned_date" for="line_planned">Planned Date</label><input id="line_planned" type="date"></div>
-    </div>
-    <div class="mformerr" id="lineFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('itpLineModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitItpLine()" data-i="add_line">Add Line</button>
-    </div>
-  </div>
-</div>
 
 <!-- COMPLAINT MODAL -->
-<div class="modal" id="complaintModal">
-  <div class="mcard">
-    <h2 data-i="new_complaint">New Customer Complaint</h2>
-    <div class="mrow2">
-      <div><label data-i="customer" for="cmp_customer">Customer</label><select id="cmp_customer"></select></div>
-      <div><label data-i="project" for="cmp_project">Project</label><select id="cmp_project"><option value="">—</option></select></div>
-    </div>
-    <div class="mrow2">
-      <div><label data-i="delivered_item" for="cmp_item">Delivered Item</label><input id="cmp_item" type="text"></div>
-      <div><label data-i="severity" for="cmp_severity">Severity</label><select id="cmp_severity"></select></div>
-    </div>
-    <div class="mrow"><label data-i="description" for="cmp_description">Description</label><textarea id="cmp_description"></textarea></div>
-    <div class="mrow2">
-      <div><label data-i="responsible" for="cmp_responsible">Responsible Person</label><input id="cmp_responsible" type="text" value="Aleksandar C."></div>
-      <div><label data-i="due_date" for="cmp_due">Due Date</label><input id="cmp_due" type="date"></div>
-    </div>
-    <div class="mformerr" id="cmpFormErr"></div>
-    <div class="mbtns">
-      <button class="mbtn" onclick="closeModal('complaintModal')" data-i="cancel">Cancel</button>
-      <button class="mbtn primary" onclick="submitComplaint()" data-i="create_complaint">Create Complaint</button>
-    </div>
-  </div>
-</div>
 
 <!-- GENERIC DETAIL MODAL (weld / ndt / complaint / supplier quality view) -->
-<div class="modal" id="detailModal">
-  <div class="mcard wide">
-    <h2 id="detailTitle">Details</h2>
-    <div class="msub" id="detailSub"></div>
-    <div id="detailBody"></div>
-    <div class="mbtns"><button class="mbtn" onclick="closeModal('detailModal')" data-i="close">Close</button></div>
-  </div>
-</div>
 
 <!-- HOLD RELEASE MODAL -->
 <div class="modal" id="holdReleaseModal">
@@ -1019,17 +608,11 @@ function formErr(id,msg){const el=$(id);if(!el)return;el.textContent=msg;el.clas
 function clearFormErr(id){const el=$(id);if(el){el.classList.remove('show');el.textContent='';}}
 
 // ── calculation / safety helpers ──
-function num(v){const n=Number(v);return Number.isFinite(n)?n:null;}
 function safeDate(v){if(!v)return null;const d=new Date(v);return isNaN(d.getTime())?null:d;}
 function pctStr(n){return n==null||!Number.isFinite(n)?'N/A':Math.round(n)+'%';}
-function sekStr(n){return n==null||!Number.isFinite(n)?'N/A':'SEK '+Math.round(n).toLocaleString('sv-SE');}
-function hrsStr(n){return n==null||!Number.isFinite(n)?'N/A':(Math.round(n*10)/10)+'h';}
-function naOr(v){return (v==null||v==='')?'N/A':v;}
-function safeDiv(a,b){return (typeof a==='number'&&typeof b==='number'&&Number.isFinite(a)&&Number.isFinite(b)&&b!==0)?a/b:null;}
 function groupBy(arr,keyFn){const m={};(arr||[]).forEach(x=>{const k=keyFn(x)||'—';(m[k]=m[k]||[]).push(x);});return m;}
 function daysBetween(a,b){if(!a||!b)return null;return Math.round((b.getTime()-a.getTime())/86400000);}
 function todayStr(){return new Date().toISOString().slice(0,10);}
-function fmtDate(v){const d=safeDate(v);return d?v:'N/A';}
 function badgeClass(status){
   const s=String(status||'').toLowerCase();
   if(/critical|reject|fail|expired|overdue|not.?released|scrap|ineffective|suspended/.test(s))return 'danger';
@@ -1051,193 +634,109 @@ let activeFilters={search:'',project:'',status:''};
 // ══════════════ TRANSLATIONS ══════════════
 const i18n={
   en:{
-    quality_short:'Inspections & defects',overview:'Overview',inspections:'Inspections',inspection_requests:'Inspection Requests',welding_quality:'Welding Quality',ndt:'NDT',ncr:'NCR',
-    corrective_actions:'Corrective Actions',itp:'ITP / Control Plans',material_traceability:'Material Traceability',supplier_quality:'Supplier Quality',customer_complaints:'Customer Complaints',
-    certificates:'Certificates',calibration_status:'Calibration Status',quality_dossiers:'Quality Dossiers',final_release:'Final Release',quality_reports:'Quality Reports',
-    new_inspection:'New Inspection',new_ncr:'New NCR',connected_workflow:'Connected Workflow',
-    connected_workflow_text:'Quality receives information from Projects, Jobcards, Store, Suppliers, Equipment and Documents, and provides release status to Production and Reports.',
-    back_hub:'Hub',role:'Admin',quality_title:'Quality Management',quality_sub:'Inspections, NCR, welding quality, traceability and final release',
-    search:'Search:',filt_project:'Project:',filt_status:'Status:',all_projects:'All Projects',all_statuses:'All Statuses',clear_filters:'Clear Filters',print:'Print',export_csv:'Export CSV',refresh:'Refresh',
+    quality_short:'Inspections & defects',overview:'Overview',inspections:'Inspections',ncr:'NCR',new_inspection:'New Inspection',new_ncr:'New NCR',
+    connected_workflow:'Connected Workflow',
+    connected_workflow_text:'Quality reads projects and jobcards, and an active hold here blocks them from being completed or closed until it is released. Material certificates and traceability live in Store; instrument calibration lives in Equipment.',
+    back_hub:'Hub',role:'Admin',quality_title:'Quality Management',quality_sub:'Inspections, non-conformance reports and quality holds',
+    search:'Search:',filt_project:'Project:',filt_status:'Status:',all_projects:'All Projects',all_statuses:'All Statuses',
+    clear_filters:'Clear Filters',print:'Print',export_csv:'Export CSV',refresh:'Refresh',
     notice_prototype:'This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.',
-    due_today:'Inspections Due Today',waiting:'Inspections Waiting',passed:'Passed Inspections',failed:'Failed Inspections',reinspections:'Reinspections Required',
-    open_ncrs:'Open NCRs',critical_ncrs:'Critical NCRs',overdue_capa:'Overdue Corrective Actions',jc_hold:'Jobcards on Quality Hold',missing_certs:'Missing Material Certificates',
-    missing_wps:'Missing WPS/Qualifications',calib_expiring:'Calibration Expiring',customer_approvals:'Customer Approvals Required',not_ready_handover:'Projects Not Ready for Handover',
-    requires_attention:'Requires Attention',visual_summaries:'Visual Summaries',inspection_results:'Inspection Results',ncr_by_status:'NCRs by Status',ncr_by_category:'NCRs by Category',
-    issues_by_project:'Issues by Project',capa_by_status:'Corrective Actions by Status',dossier_readiness:'Dossier Readiness',fpq_trend:'First-Pass Quality Trend',
+    due_today:'Inspections Due Today',waiting:'Inspections Waiting',passed:'Passed Inspections',failed:'Failed Inspections',open_ncrs:'Open NCRs',
+    critical_ncrs:'Critical NCRs',not_ready_handover:'Projects Not Ready for Handover',requires_attention:'Requires Attention',
+    visual_summaries:'Visual Summaries',inspection_results:'Inspection Results',ncr_by_status:'NCRs by Status',ncr_by_category:'NCRs by Category',
+    issues_by_project:'Issues by Project',fpq_trend:'First-Pass Quality Trend',
     fpq_note:'Demo calculation — first-pass quality trend requires more historical data than exists in this browser to be meaningful over time.',
     recent_activity:'Recent Quality Activity',date:'Date',record:'Record',action:'Action',user:'User',details:'Details',
-    permissions_demo:'Role Visibility (Demonstration)',permissions_notice:'Frontend role visibility is a demonstration only. Production permission enforcement requires the secured backend.',
-    total_inspections:'Total Inspections',fpr:'First-Pass Rate',type:'Type',result:'Result',all:'All',overdue_only:'Overdue only',inspection_register:'Inspection Register',
-    id:'ID',project:'Project',jobcard:'Jobcard',component:'Component',planned_date:'Planned',inspector:'Inspector',witness:'Witness',status:'Status',actions:'Actions',
-    requests_note:'Requests move through Draft → Requested → Planned → Ready for Inspection → In Progress → Completed. Only inspections not yet completed are shown here.',
-    open_requests:'Open Inspection Requests',new_request:'New Request',operation:'Operation',requested_date:'Requested Date',responsible_inspector:'Responsible Inspector',material_status:'Material Status',
-    total_welds:'Total Weld Records',accepted:'Accepted',repair_required:'Repair Required',weld_register:'Weld Register',wps_register:'WPS Register',welder_quals:'Welder Qualifications',
-    new_weld:'New Weld Record',weld_position:'Weld Position',process:'Process',wps_no:'WPS No.',welder:'Welder',ndt_req:'NDT Req.',final_result:'Final Result',
-    rev:'Rev',material_group:'Material Group',thickness_range:'Thickness Range',joint_type:'Joint Type',position:'Position',supporting_wpqr:'Supporting WPQR',
-    qual_no:'Qualification No.',issued_by:'Issued By',expiry_date:'Expiry Date',
-    total_ndt:'Total NDT Records',rejected:'Rejected',reinspection_required:'Reinspection Required',method:'Method',new_ndt:'New NDT Record',ndt_register:'NDT Register',
-    report_no:'Report No.',weld_component:'Weld/Component',technician:'Technician',inspection_date:'Inspection Date',ncr_link:'NCR',
-    total_ncrs:'Total NCRs',closed:'Closed',severity:'Severity',category:'Category',ncr_register:'NCR Register',ncr_no:'NCR No.',title:'Title',responsible:'Responsible',due_date:'Due Date',
-    total_actions:'Total Actions',open_actions:'Open',overdue_actions:'Overdue',effective:'Effective',capa_register:'Corrective / Preventive Actions',related:'Related',problem_statement:'Problem Statement',
-    root_cause_tools:'Root-Cause Tools',rule_based_disclaimer:'Rule-based prototype insight – not an AI conclusion.',
-    select_itp:'Select ITP:',new_itp:'New ITP',itp_lines:'ITP Lines',add_line:'+ Add Line',seq:'Seq',phase:'Phase',activity:'Activity',point_type:'Point Type',customer_involvement:'Customer Involvement',
-    itp_progress:'ITP Progress',hold_point:'H — Hold Point',witness_point:'W — Witness Point',review_point:'R — Review Point',surveillance_point:'S — Surveillance Point',
-    traceability_note:'Supplier → Purchase Order → Goods Receipt → Heat/Batch → Certificate → Stock → Project → Jobcard → Component. Missing links are shown honestly rather than assumed complete.',
-    total_items:'Total Store Items',fully_traceable:'Fully Traceable',incomplete_chain:'Incomplete Chain',traceability_register:'Traceability Register',item_code:'Item Code',description:'Description',
-    heat_batch:'Heat/Batch',certificate:'Certificate',cert_status:'Cert. Status',stock_location:'Location',chain_status:'Chain Status',
-    supplier_demo_note:'Supplier approval status is a frontend demonstration until backend permissions and audit logging exist.',supplier_quality_register:'Supplier Quality',
-    approval_status:'Approval Status',rating:'Rating',deliveries:'Deliveries',next_review:'Next Review',
-    new_complaint:'New Complaint',complaints_register:'Customer Complaints',complaint_no:'Complaint No.',customer:'Customer',complaint_date:'Date',
-    certificate_register:'Certificate Register',cert_type:'Certificate Type',cert_no:'Certificate No.',valid:'Valid',
-    calibration_register:'Measuring Instrument Calibration',instrument:'Instrument',equipment_id:'Equipment ID',calib_status:'Calibration Status',last_calib:'Last Calibration',next_calib:'Next Calibration',usable:'Usable for Official Measurement',
-    select_project:'Select project:',required_docs:'Required Documents',available_docs:'Available',missing_docs:'Missing',dossier_items:'Dossier Items',document:'Document',required:'Required',reference:'Reference',
-    release_notice:'Frontend approval demonstration only. Production release authority, signatures and official audit records require the secured backend.',
-    select_jobcard:'Jobcard:',whole_project:'Whole project',release_readiness_check:'Release Readiness Check',issue_release:'Issue Final Release',release_history:'Release History',
-    release_no:'Release No.',released_by:'Released By',release_date:'Date',
-    inspection_status:'Inspection Status',ncr_by_project:'NCR by Project',ncr_by_supplier:'NCR by Supplier',rework_hours_cost:'Rework Hours & Cost',wps_qual_expiry:'WPS & Qualification Expiry',
-    traceability_completeness:'Traceability Completeness',count:'Count',ncrs:'NCRs',critical:'Critical',rework_hours:'Rework Hours',cost_impact:'Cost Impact (SEK)',
-    new_inspection:'New Inspection',inspection_request_sub:'Create an inspection request. It moves through the workflow as work progresses.',
-    drawing_no:'Drawing No.',drawing_rev:'Revision',inspection_type:'Inspection Type',acceptance_criteria:'Acceptance Criteria',customer_witness_required:'Customer witness required',
-    material_traceability_ok:'Material traceability confirmed',notes:'Notes',cancel:'Cancel',create_request:'Create Request',
-    inspection_execution:'Inspection Execution',checklist:'Checklist',critical_failure:'Critical failure (applies Quality Hold)',findings:'Findings / Comments',close:'Close',
-    create_reinspection:'Create Reinspection',complete_inspection:'Complete Inspection',
-    new_ncr:'New NCR',ncr_severity_note:'Major and Critical NCRs require a responsible person and due date. Critical NCRs automatically apply a Quality Hold.',create_ncr:'Create NCR',
-    new_corrective_action:'New Corrective Action',related_ref:'Related NCR / Complaint / Inspection',immediate_correction:'Immediate Correction',root_cause:'Root Cause',corrective_action:'Corrective Action',
-    preventive_action:'Preventive Action',start_date:'Start Date',five_whys:'5 Whys (optional)',fishbone:'Fishbone Category Notes (optional)',fb_people:'People',fb_machine:'Machine',fb_material:'Material',
-    fb_method:'Method',fb_measurement:'Measurement',fb_environment:'Environment',create_action:'Create Action',
-    new_weld_record:'New Weld Record',base_material:'Base Material',thickness:'Thickness (mm)',visual_inspection_required:'Visual inspection required',ndt_required:'NDT required',weld_date:'Weld Date',
-    weld_wps_note:'Final approval is blocked when the selected WPS or welder qualification is missing or expired, or when required NDT is incomplete.',create_record:'Create Record',
-    new_ndt_record:'New NDT Record',ndt_reject_note:'A Rejected mandatory NDT result blocks the related weld, operation and final release until resolved.',
-    new_itp:'New ITP',prepared_by:'Prepared By',effective_date:'Effective Date',create_itp:'Create ITP',
-    add_itp_line:'Add ITP Line',new_complaint:'New Customer Complaint',delivered_item:'Delivered Item',create_complaint:'Create Complaint',
-    release_quality_hold:'Release Quality Hold',release_authority:'Release Authority',release_reason:'Resolution Evidence / Release Reason',release_hold:'Release Hold',
-    add_note:'Add Note',note:'Note',save:'Save',supplier:'Supplier'
+    total_inspections:'Total Inspections',fpr:'First-Pass Rate',type:'Type',result:'Result',all:'All',overdue_only:'Overdue only',
+    inspection_register:'Inspection Register',id:'ID',project:'Project',jobcard:'Jobcard',component:'Component',planned_date:'Planned',
+    inspector:'Inspector',witness:'Witness',status:'Status',actions:'Actions',operation:'Operation',responsible_inspector:'Responsible Inspector',
+    method:'Method',total_ncrs:'Total NCRs',closed:'Closed',severity:'Severity',category:'Category',ncr_register:'NCR Register',ncr_no:'NCR No.',
+    title:'Title',responsible:'Responsible',due_date:'Due Date',description:'Description',
+    inspection_request_sub:'Create an inspection request. It moves through the workflow as work progresses.',drawing_no:'Drawing No.',
+    drawing_rev:'Revision',inspection_type:'Inspection Type',acceptance_criteria:'Acceptance Criteria',
+    customer_witness_required:'Customer witness required',material_traceability_ok:'Material traceability confirmed',notes:'Notes',cancel:'Cancel',
+    create_request:'Create Request',inspection_execution:'Inspection Execution',checklist:'Checklist',
+    critical_failure:'Critical failure (applies Quality Hold)',findings:'Findings / Comments',close:'Close',create_reinspection:'Create Reinspection',
+    complete_inspection:'Complete Inspection',
+    ncr_severity_note:'Major and Critical NCRs require a responsible person and due date. Critical NCRs automatically apply a Quality Hold.',
+    create_ncr:'Create NCR',release_quality_hold:'Release Quality Hold',release_authority:'Release Authority',
+    release_reason:'Resolution Evidence / Release Reason',release_hold:'Release Hold',add_note:'Add Note',note:'Note',save:'Save',supplier:'Supplier',
+    nav_holds:'Quality Holds',holds_active:'Active Holds',holds_projects:'Projects Held',holds_jobcards:'Jobcards Held',holds_released:'Released',
+    holds_register:'Quality Holds',holds_note:'An active hold blocks completing or closing whatever it names, and is cleared here and nowhere else.',
+    holds_none:'No quality holds match these filters',hold_no:'Hold No.',hold_blocks:'Blocks',hold_applied:'Applied',reason:'Reason',
+    card_critical_alerts:'Critical Quality Alerts',card_due_today:'Inspections Required Today',card_failed:'Failed Inspections',
+    card_open_holds:'Active Quality Holds',card_blocked_projects:'Projects Blocked by Quality'
   },
   sv:{
-    quality_short:'Besiktningar & avvikelser',overview:'Översikt',inspections:'Inspektioner',inspection_requests:'Inspektionsförfrågningar',welding_quality:'Svetskvalitet',ndt:'OFP',ncr:'Avvikelserapport',
-    corrective_actions:'Åtgärder',itp:'ITP / Kontrollplaner',material_traceability:'Materialspårbarhet',supplier_quality:'Leverantörskvalitet',customer_complaints:'Kundreklamationer',
-    certificates:'Certifikat',calibration_status:'Kalibreringsstatus',quality_dossiers:'Kvalitetsdossierer',final_release:'Slutfrisläpp',quality_reports:'Kvalitetsrapporter',
-    new_inspection:'Ny Inspektion',new_ncr:'Ny Avvikelserapport',connected_workflow:'Kopplat Arbetsflöde',
-    connected_workflow_text:'Kvalitet tar emot information från Projekt, Arbetskort, Lager, Leverantörer, Utrustning och Dokument, och ger frisläppsstatus till Produktion och Rapporter.',
-    back_hub:'Hub',role:'Admin',quality_title:'Kvalitetsstyrning',quality_sub:'Inspektioner, avvikelser, svetskvalitet, spårbarhet och slutfrisläpp',
-    search:'Sök:',filt_project:'Projekt:',filt_status:'Status:',all_projects:'Alla Projekt',all_statuses:'Alla Statusar',clear_filters:'Rensa Filter',print:'Skriv Ut',export_csv:'Exportera CSV',refresh:'Uppdatera',
+    quality_short:'Besiktningar & avvikelser',overview:'Översikt',inspections:'Inspektioner',ncr:'Avvikelserapport',new_inspection:'Ny Inspektion',
+    new_ncr:'Ny Avvikelserapport',connected_workflow:'Kopplat Arbetsflöde',
+    connected_workflow_text:'Kvalitet läser projekt och arbetskort, och en aktiv spärr här hindrar att de slutförs eller stängs tills den släpps. Materialintyg och spårbarhet finns i Lager; kalibrering av instrument finns i Utrustning.',
+    back_hub:'Hub',role:'Admin',quality_title:'Kvalitetsstyrning',quality_sub:'Inspektioner, avvikelserapporter och kvalitetsspärrar',search:'Sök:',
+    filt_project:'Projekt:',filt_status:'Status:',all_projects:'Alla Projekt',all_statuses:'Alla Statusar',clear_filters:'Rensa Filter',
+    print:'Skriv Ut',export_csv:'Exportera CSV',refresh:'Uppdatera',
     notice_prototype:'Denna prototyp visar kvalitetsarbetsflöde och validering. Produktionsbehörigheter, officiella godkännanden, digitala signaturer, säker dokumentlagring, granskningsloggning och regelefterlevnad kräver den framtida säkra backend-lösningen.',
-    due_today:'Inspektioner Idag',waiting:'Väntande Inspektioner',passed:'Godkända Inspektioner',failed:'Underkända Inspektioner',reinspections:'Ombesiktningar Krävs',
-    open_ncrs:'Öppna Avvikelser',critical_ncrs:'Kritiska Avvikelser',overdue_capa:'Försenade Åtgärder',jc_hold:'Arbetskort på Kvalitetsspärr',missing_certs:'Saknade Materialcertifikat',
-    missing_wps:'Saknade WPS/Kvalifikationer',calib_expiring:'Kalibrering Går Ut',customer_approvals:'Kundgodkännanden Krävs',not_ready_handover:'Projekt Ej Klara för Överlämning',
-    requires_attention:'Kräver Åtgärd',visual_summaries:'Visuella Sammanfattningar',inspection_results:'Inspektionsresultat',ncr_by_status:'Avvikelser per Status',ncr_by_category:'Avvikelser per Kategori',
-    issues_by_project:'Problem per Projekt',capa_by_status:'Åtgärder per Status',dossier_readiness:'Dossierberedskap',fpq_trend:'Trend Rätt Från Början',
+    due_today:'Inspektioner Idag',waiting:'Väntande Inspektioner',passed:'Godkända Inspektioner',failed:'Underkända Inspektioner',
+    open_ncrs:'Öppna Avvikelser',critical_ncrs:'Kritiska Avvikelser',not_ready_handover:'Projekt Ej Klara för Överlämning',
+    requires_attention:'Kräver Åtgärd',visual_summaries:'Visuella Sammanfattningar',inspection_results:'Inspektionsresultat',
+    ncr_by_status:'Avvikelser per Status',ncr_by_category:'Avvikelser per Kategori',issues_by_project:'Problem per Projekt',
+    fpq_trend:'Trend Rätt Från Början',
     fpq_note:'Demoberäkning — trenden för kvalitet rätt från början kräver mer historisk data än vad som finns i denna webbläsare för att vara meningsfull över tid.',
     recent_activity:'Senaste Kvalitetsaktivitet',date:'Datum',record:'Post',action:'Åtgärd',user:'Användare',details:'Detaljer',
-    permissions_demo:'Rollsynlighet (Demonstration)',permissions_notice:'Frontend-rollsynlighet är endast en demonstration. Verklig behörighetskontroll kräver den säkrade backend-lösningen.',
-    total_inspections:'Totalt Antal Inspektioner',fpr:'Andel Rätt Första Gången',type:'Typ',result:'Resultat',all:'Alla',overdue_only:'Endast försenade',inspection_register:'Inspektionsregister',
-    id:'ID',project:'Projekt',jobcard:'Arbetskort',component:'Komponent',planned_date:'Planerat',inspector:'Inspektör',witness:'Bevittning',status:'Status',actions:'Åtgärder',
-    requests_note:'Förfrågningar går genom Utkast → Begärd → Planerad → Klar för Inspektion → Pågår → Slutförd. Endast ej slutförda inspektioner visas här.',
-    open_requests:'Öppna Inspektionsförfrågningar',new_request:'Ny Förfrågan',operation:'Operation',requested_date:'Begärt Datum',responsible_inspector:'Ansvarig Inspektör',material_status:'Materialstatus',
-    total_welds:'Totalt Antal Svetsposter',accepted:'Godkänd',repair_required:'Reparation Krävs',weld_register:'Svetsregister',wps_register:'WPS-register',welder_quals:'Svetsarkvalifikationer',
-    new_weld:'Ny Svetspost',weld_position:'Svetsposition',process:'Process',wps_no:'WPS-nr',welder:'Svetsare',ndt_req:'OFP Krävs',final_result:'Slutresultat',
-    rev:'Rev',material_group:'Materialgrupp',thickness_range:'Tjockleksintervall',joint_type:'Fogtyp',position:'Position',supporting_wpqr:'Stödjande WPQR',
-    qual_no:'Kvalifikationsnr',issued_by:'Utfärdad Av',expiry_date:'Utgångsdatum',
-    total_ndt:'Totalt Antal OFP-poster',rejected:'Underkänd',reinspection_required:'Ombesiktning Krävs',method:'Metod',new_ndt:'Ny OFP-post',ndt_register:'OFP-register',
-    report_no:'Rapportnr',weld_component:'Svets/Komponent',technician:'Tekniker',inspection_date:'Inspektionsdatum',ncr_link:'Avvikelse',
-    total_ncrs:'Totalt Antal Avvikelser',closed:'Stängd',severity:'Allvarlighetsgrad',category:'Kategori',ncr_register:'Avvikelseregister',ncr_no:'Avvikelsenr',title:'Titel',responsible:'Ansvarig',due_date:'Förfallodatum',
-    total_actions:'Totalt Antal Åtgärder',open_actions:'Öppna',overdue_actions:'Försenade',effective:'Effektiv',capa_register:'Korrigerande / Förebyggande Åtgärder',related:'Relaterad',problem_statement:'Problembeskrivning',
-    root_cause_tools:'Grundorsaksverktyg',rule_based_disclaimer:'Regelbaserad prototypinsikt – inte en AI-slutsats.',
-    select_itp:'Välj ITP:',new_itp:'Ny ITP',itp_lines:'ITP-rader',add_line:'+ Lägg Till Rad',seq:'Nr',phase:'Fas',activity:'Aktivitet',point_type:'Kontrollpunktstyp',customer_involvement:'Kundmedverkan',
-    itp_progress:'ITP-framsteg',hold_point:'H — Stopp-punkt',witness_point:'W — Bevittningspunkt',review_point:'R — Granskningspunkt',surveillance_point:'S — Övervakningspunkt',
-    traceability_note:'Leverantör → Inköpsorder → Godsmottagning → Charge/Sats → Certifikat → Lager → Projekt → Arbetskort → Komponent. Saknade länkar visas ärligt istället för att antas kompletta.',
-    total_items:'Totalt Antal Lagerartiklar',fully_traceable:'Fullt Spårbar',incomplete_chain:'Ofullständig Kedja',traceability_register:'Spårbarhetsregister',item_code:'Artikelkod',description:'Beskrivning',
-    heat_batch:'Charge/Sats',certificate:'Certifikat',cert_status:'Certifikatstatus',stock_location:'Plats',chain_status:'Kedjestatus',
-    supplier_demo_note:'Leverantörsgodkännandestatus är en frontend-demonstration tills backend-behörigheter och granskningsloggning finns.',supplier_quality_register:'Leverantörskvalitet',
-    approval_status:'Godkännandestatus',rating:'Betyg',deliveries:'Leveranser',next_review:'Nästa Granskning',
-    new_complaint:'Ny Reklamation',complaints_register:'Kundreklamationer',complaint_no:'Reklamationsnr',customer:'Kund',complaint_date:'Datum',
-    certificate_register:'Certifikatregister',cert_type:'Certifikattyp',cert_no:'Certifikatnr',valid:'Giltig',
-    calibration_register:'Kalibrering av Mätinstrument',instrument:'Instrument',equipment_id:'Utrustnings-ID',calib_status:'Kalibreringsstatus',last_calib:'Senaste Kalibrering',next_calib:'Nästa Kalibrering',usable:'Användbar för Officiell Mätning',
-    select_project:'Välj projekt:',required_docs:'Obligatoriska Dokument',available_docs:'Tillgängliga',missing_docs:'Saknade',dossier_items:'Dossierposter',document:'Dokument',required:'Obligatoriskt',reference:'Referens',
-    release_notice:'Endast frontend-godkännandedemonstration. Verklig frisläppsbehörighet, signaturer och officiella granskningsregister kräver den säkrade backend-lösningen.',
-    select_jobcard:'Arbetskort:',whole_project:'Hela projektet',release_readiness_check:'Frisläppskontroll',issue_release:'Utfärda Slutfrisläpp',release_history:'Frisläpphistorik',
-    release_no:'Frisläppnr',released_by:'Frisläppt Av',release_date:'Datum',
-    inspection_status:'Inspektionsstatus',ncr_by_project:'Avvikelser per Projekt',ncr_by_supplier:'Avvikelser per Leverantör',rework_hours_cost:'Omarbetningstimmar & Kostnad',wps_qual_expiry:'WPS- & Kvalifikationsutgång',
-    traceability_completeness:'Spårbarhetsfullständighet',count:'Antal',ncrs:'Avvikelser',critical:'Kritisk',rework_hours:'Omarbetningstimmar',cost_impact:'Kostnadspåverkan (SEK)',
-    inspection_request_sub:'Skapa en inspektionsförfrågan. Den går genom arbetsflödet allteftersom arbetet fortskrider.',
-    drawing_no:'Ritningsnr',drawing_rev:'Revision',inspection_type:'Inspektionstyp',acceptance_criteria:'Godkännandekriterier',customer_witness_required:'Kundbevittning krävs',
-    material_traceability_ok:'Materialspårbarhet bekräftad',notes:'Anteckningar',cancel:'Avbryt',create_request:'Skapa Förfrågan',
-    inspection_execution:'Inspektionsutförande',checklist:'Checklista',critical_failure:'Kritiskt fel (tillämpar kvalitetsspärr)',findings:'Fynd / Kommentarer',close:'Stäng',
-    create_reinspection:'Skapa Ombesiktning',complete_inspection:'Slutför Inspektion',
-    ncr_severity_note:'Stora och kritiska avvikelser kräver en ansvarig person och förfallodatum. Kritiska avvikelser tillämpar automatiskt en kvalitetsspärr.',create_ncr:'Skapa Avvikelse',
-    new_corrective_action:'Ny Åtgärd',related_ref:'Relaterad Avvikelse / Reklamation / Inspektion',immediate_correction:'Omedelbar Korrigering',root_cause:'Grundorsak',corrective_action:'Korrigerande Åtgärd',
-    preventive_action:'Förebyggande Åtgärd',start_date:'Startdatum',five_whys:'5 Varför (valfritt)',fishbone:'Fiskbensanteckningar (valfritt)',fb_people:'Personal',fb_machine:'Maskin',fb_material:'Material',
-    fb_method:'Metod',fb_measurement:'Mätning',fb_environment:'Miljö',create_action:'Skapa Åtgärd',
-    new_weld_record:'Ny Svetspost',base_material:'Basmaterial',thickness:'Tjocklek (mm)',visual_inspection_required:'Visuell inspektion krävs',ndt_required:'OFP krävs',weld_date:'Svetsdatum',
-    weld_wps_note:'Slutgodkännande blockeras när den valda WPS:n eller svetsarkvalifikationen saknas eller har gått ut, eller när obligatorisk OFP är ofullständig.',create_record:'Skapa Post',
-    new_ndt_record:'Ny OFP-post',ndt_reject_note:'Ett underkänt obligatoriskt OFP-resultat blockerar relaterad svets, operation och slutfrisläpp tills det är löst.',
-    prepared_by:'Framtagen Av',effective_date:'Ikraftträdandedatum',create_itp:'Skapa ITP',
-    add_itp_line:'Lägg Till ITP-rad',delivered_item:'Levererad Artikel',create_complaint:'Skapa Reklamation',
-    release_quality_hold:'Frisläpp Kvalitetsspärr',release_authority:'Frisläppsbehörighet',release_reason:'Åtgärdsbevis / Frisläppsorsak',release_hold:'Frisläpp Spärr',
-    add_note:'Lägg Till Anteckning',note:'Anteckning',save:'Spara',supplier:'Leverantör'
+    total_inspections:'Totalt Antal Inspektioner',fpr:'Andel Rätt Första Gången',type:'Typ',result:'Resultat',all:'Alla',
+    overdue_only:'Endast försenade',inspection_register:'Inspektionsregister',id:'ID',project:'Projekt',jobcard:'Arbetskort',component:'Komponent',
+    planned_date:'Planerat',inspector:'Inspektör',witness:'Bevittning',status:'Status',actions:'Åtgärder',operation:'Operation',
+    responsible_inspector:'Ansvarig Inspektör',method:'Metod',total_ncrs:'Totalt Antal Avvikelser',closed:'Stängd',severity:'Allvarlighetsgrad',
+    category:'Kategori',ncr_register:'Avvikelseregister',ncr_no:'Avvikelsenr',title:'Titel',responsible:'Ansvarig',due_date:'Förfallodatum',
+    description:'Beskrivning',inspection_request_sub:'Skapa en inspektionsförfrågan. Den går genom arbetsflödet allteftersom arbetet fortskrider.',
+    drawing_no:'Ritningsnr',drawing_rev:'Revision',inspection_type:'Inspektionstyp',acceptance_criteria:'Godkännandekriterier',
+    customer_witness_required:'Kundbevittning krävs',material_traceability_ok:'Materialspårbarhet bekräftad',notes:'Anteckningar',cancel:'Avbryt',
+    create_request:'Skapa Förfrågan',inspection_execution:'Inspektionsutförande',checklist:'Checklista',
+    critical_failure:'Kritiskt fel (tillämpar kvalitetsspärr)',findings:'Fynd / Kommentarer',close:'Stäng',create_reinspection:'Skapa Ombesiktning',
+    complete_inspection:'Slutför Inspektion',
+    ncr_severity_note:'Stora och kritiska avvikelser kräver en ansvarig person och förfallodatum. Kritiska avvikelser tillämpar automatiskt en kvalitetsspärr.',
+    create_ncr:'Skapa Avvikelse',release_quality_hold:'Frisläpp Kvalitetsspärr',release_authority:'Frisläppsbehörighet',
+    release_reason:'Åtgärdsbevis / Frisläppsorsak',release_hold:'Frisläpp Spärr',add_note:'Lägg Till Anteckning',note:'Anteckning',save:'Spara',
+    supplier:'Leverantör',nav_holds:'Kvalitetsspärrar',holds_active:'Aktiva spärrar',holds_projects:'Spärrade projekt',
+    holds_jobcards:'Spärrade jobbkort',holds_released:'Släppta',holds_register:'Kvalitetsspärrar',
+    holds_note:'En aktiv spärr hindrar att det den gäller slutförs eller stängs, och släpps här och ingen annanstans.',
+    holds_none:'Inga kvalitetsspärrar matchar dessa filter',hold_no:'Spärr nr',hold_blocks:'Spärrar',hold_applied:'Tillämpad',reason:'Orsak',
+    card_critical_alerts:'Kritiska Kvalitetslarm',card_due_today:'Inspektioner Som Krävs Idag',card_failed:'Underkända Inspektioner',
+    card_open_holds:'Aktiva Kvalitetsspärrar',card_blocked_projects:'Projekt Spärrade av Kvalitet'
   },
   mk:{
-    quality_short:'Инспекции & дефекти',overview:'Преглед',inspections:'Инспекции',inspection_requests:'Барања за Инспекција',welding_quality:'Квалитет на Заварување',ndt:'НДТ',ncr:'НЦР',
-    corrective_actions:'Корективни Дејствија',itp:'ИТП / Контролни Планови',material_traceability:'Следливост на Материјал',supplier_quality:'Квалитет на Добавувач',customer_complaints:'Рекламации на Клиенти',
-    certificates:'Сертификати',calibration_status:'Статус на Калибрација',quality_dossiers:'Досиеа за Квалитет',final_release:'Финално Ослободување',quality_reports:'Извештаи за Квалитет',
-    new_inspection:'Нова Инспекција',new_ncr:'Нов НЦР',connected_workflow:'Поврзан Работен Тек',
-    connected_workflow_text:'Квалитетот прима информации од Проекти, Работни картички, Магацин, Добавувачи, Опрема и Документи, и обезбедува статус на ослободување до Производство и Извештаи.',
-    back_hub:'Центар',role:'Администратор',quality_title:'Управување со Квалитет',quality_sub:'Инспекции, НЦР, квалитет на заварување, следливост и финално ослободување',
-    search:'Пребарување:',filt_project:'Проект:',filt_status:'Статус:',all_projects:'Сите Проекти',all_statuses:'Сите Статуси',clear_filters:'Исчисти Филтри',print:'Печати',export_csv:'Извези CSV',refresh:'Освежи',
+    quality_short:'Инспекции & дефекти',overview:'Преглед',inspections:'Инспекции',ncr:'НЦР',new_inspection:'Нова Инспекција',new_ncr:'Нов НЦР',
+    connected_workflow:'Поврзан Работен Тек',
+    connected_workflow_text:'Квалитетот ги чита проектите и работните картички, а активното задржување тука ги спречува да се завршат или затворат додека не се ослободи. Материјалните сертификати и следливоста се во Магацин; калибрацијата на инструментите е во Опрема.',
+    back_hub:'Центар',role:'Администратор',quality_title:'Управување со Квалитет',
+    quality_sub:'Инспекции, извештаи за неусогласеност и задржувања за квалитет',search:'Пребарување:',filt_project:'Проект:',filt_status:'Статус:',
+    all_projects:'Сите Проекти',all_statuses:'Сите Статуси',clear_filters:'Исчисти Филтри',print:'Печати',export_csv:'Извези CSV',refresh:'Освежи',
     notice_prototype:'Оваа прототип демонстрира работен тек и валидација на квалитет. Производствени дозволи, официјални одобренија, дигитални потписи, безбедно складирање документи, ревизиско логирање и регулаторна усогласеност бараат идна обезбедена позадинска инфраструктура.',
-    due_today:'Инспекции Денес',waiting:'Инспекции во Чекање',passed:'Поминати Инспекции',failed:'Неуспешни Инспекции',reinspections:'Потребни Реинспекции',
-    open_ncrs:'Отворени НЦР',critical_ncrs:'Критични НЦР',overdue_capa:'Задоцнети Корективни Дејствија',jc_hold:'Работни Картички на Задршка',missing_certs:'Недостасувачки Сертификати',
-    missing_wps:'Недостасувачки WPS/Квалификации',calib_expiring:'Калибрација Истекува',customer_approvals:'Потребни Одобренија од Клиент',not_ready_handover:'Проекти Не Спремни за Предавање',
-    requires_attention:'Бара Внимание',visual_summaries:'Визуелни Резимиња',inspection_results:'Резултати од Инспекција',ncr_by_status:'НЦР по Статус',ncr_by_category:'НЦР по Категорија',
-    issues_by_project:'Проблеми по Проект',capa_by_status:'Дејствија по Статус',dossier_readiness:'Подготвеност на Досие',fpq_trend:'Тренд на Квалитет од Прв Обид',
+    due_today:'Инспекции Денес',waiting:'Инспекции во Чекање',passed:'Поминати Инспекции',failed:'Неуспешни Инспекции',open_ncrs:'Отворени НЦР',
+    critical_ncrs:'Критични НЦР',not_ready_handover:'Проекти Не Спремни за Предавање',requires_attention:'Бара Внимание',
+    visual_summaries:'Визуелни Резимиња',inspection_results:'Резултати од Инспекција',ncr_by_status:'НЦР по Статус',
+    ncr_by_category:'НЦР по Категорија',issues_by_project:'Проблеми по Проект',fpq_trend:'Тренд на Квалитет од Прв Обид',
     fpq_note:'Демо пресметка — трендот на квалитет од прв обид бара повеќе историски податоци отколку што постојат во овој прелистувач за да биде значаен со текот на времето.',
     recent_activity:'Неодамнешна Активност за Квалитет',date:'Датум',record:'Запис',action:'Акција',user:'Корисник',details:'Детали',
-    permissions_demo:'Видливост по Улога (Демонстрација)',permissions_notice:'Видливоста по улога на фронтендот е само демонстрација. Вистинската контрола на дозволи бара обезбедена позадинска инфраструктура.',
-    total_inspections:'Вкупно Инспекции',fpr:'Стапка на Прв Успех',type:'Тип',result:'Резултат',all:'Сите',overdue_only:'Само задоцнети',inspection_register:'Регистар на Инспекции',
-    id:'ID',project:'Проект',jobcard:'Работна Картичка',component:'Компонента',planned_date:'Планирано',inspector:'Инспектор',witness:'Сведок',status:'Статус',actions:'Акции',
-    requests_note:'Барањата минуваат низ Нацрт → Побарано → Планирано → Спремно за Инспекција → Во Тек → Завршено. Тука се прикажани само незавршени инспекции.',
-    open_requests:'Отворени Барања за Инспекција',new_request:'Ново Барање',operation:'Операција',requested_date:'Побаран Датум',responsible_inspector:'Одговорен Инспектор',material_status:'Статус на Материјал',
-    total_welds:'Вкупно Записи за Заварување',accepted:'Прифатено',repair_required:'Потребна Поправка',weld_register:'Регистар на Заварувања',wps_register:'WPS Регистар',welder_quals:'Квалификации на Заварувачи',
-    new_weld:'Нов Запис за Заварување',weld_position:'Позиција на Заварување',process:'Процес',wps_no:'WPS Бр.',welder:'Заварувач',ndt_req:'НДТ Потребно',final_result:'Краен Резултат',
-    rev:'Рев',material_group:'Материјална Група',thickness_range:'Опсег на Дебелина',joint_type:'Тип на Спој',position:'Позиција',supporting_wpqr:'Придружен WPQR',
-    qual_no:'Бр. на Квалификација',issued_by:'Издадено Од',expiry_date:'Датум на Истек',
-    total_ndt:'Вкупно НДТ Записи',rejected:'Одбиено',reinspection_required:'Потребна Реинспекција',method:'Метод',new_ndt:'Нов НДТ Запис',ndt_register:'НДТ Регистар',
-    report_no:'Бр. на Извештај',weld_component:'Заварување/Компонента',technician:'Техничар',inspection_date:'Датум на Инспекција',ncr_link:'НЦР',
-    total_ncrs:'Вкупно НЦР',closed:'Затворено',severity:'Сериозност',category:'Категорија',ncr_register:'Регистар на НЦР',ncr_no:'НЦР Бр.',title:'Наслов',responsible:'Одговорен',due_date:'Краен Рок',
-    total_actions:'Вкупно Дејствија',open_actions:'Отворени',overdue_actions:'Задоцнети',effective:'Ефективно',capa_register:'Корективни / Превентивни Дејствија',related:'Поврзано',problem_statement:'Изјава за Проблем',
-    root_cause_tools:'Алатки за Основна Причина',rule_based_disclaimer:'Прототипски увид базиран на правила – не е AI заклучок.',
-    select_itp:'Избери ИТП:',new_itp:'Нов ИТП',itp_lines:'ИТП Редови',add_line:'+ Додади Ред',seq:'Бр',phase:'Фаза',activity:'Активност',point_type:'Тип на Точка',customer_involvement:'Вклученост на Клиент',
-    itp_progress:'ИТП Напредок',hold_point:'H — Точка на Задршка',witness_point:'W — Точка на Сведочење',review_point:'R — Точка на Преглед',surveillance_point:'S — Точка на Надзор',
-    traceability_note:'Добавувач → Нарачка → Прием на Стока → Топење/Серија → Сертификат → Магацин → Проект → Работна Картичка → Компонента. Недостасувачките врски се прикажани искрено наместо да се претпостават како комплетни.',
-    total_items:'Вкупно Магацински Артикли',fully_traceable:'Целосно Следливо',incomplete_chain:'Нецелосен Синџир',traceability_register:'Регистар на Следливост',item_code:'Код на Артикл',description:'Опис',
-    heat_batch:'Топење/Серија',certificate:'Сертификат',cert_status:'Статус на Сертификат',stock_location:'Локација',chain_status:'Статус на Синџир',
-    supplier_demo_note:'Статусот на одобрување на добавувач е фронтенд демонстрација додека не постојат бекенд дозволи и ревизиско логирање.',supplier_quality_register:'Квалитет на Добавувач',
-    approval_status:'Статус на Одобрување',rating:'Оценка',deliveries:'Испораки',next_review:'Следен Преглед',
-    new_complaint:'Нова Рекламација',complaints_register:'Рекламации на Клиенти',complaint_no:'Бр. на Рекламација',customer:'Клиент',complaint_date:'Датум',
-    certificate_register:'Регистар на Сертификати',cert_type:'Тип на Сертификат',cert_no:'Бр. на Сертификат',valid:'Валидно',
-    calibration_register:'Калибрација на Мерни Инструменти',instrument:'Инструмент',equipment_id:'ID на Опрема',calib_status:'Статус на Калибрација',last_calib:'Последна Калибрација',next_calib:'Следна Калибрација',usable:'Употребливо за Официјално Мерење',
-    select_project:'Избери проект:',required_docs:'Потребни Документи',available_docs:'Достапни',missing_docs:'Недостасуваат',dossier_items:'Ставки на Досие',document:'Документ',required:'Потребно',reference:'Референца',
-    release_notice:'Само фронтенд демонстрација на одобрување. Вистинската овластеност за ослободување, потписи и официјални ревизиски записи бараат обезбедена позадинска инфраструктура.',
-    select_jobcard:'Работна картичка:',whole_project:'Цел проект',release_readiness_check:'Проверка на Подготвеност за Ослободување',issue_release:'Издади Финално Ослободување',release_history:'Историја на Ослободувања',
-    release_no:'Бр. на Ослободување',released_by:'Ослободено Од',release_date:'Датум',
-    inspection_status:'Статус на Инспекција',ncr_by_project:'НЦР по Проект',ncr_by_supplier:'НЦР по Добавувач',rework_hours_cost:'Часови & Трошок за Дообработка',wps_qual_expiry:'Истек на WPS & Квалификации',
-    traceability_completeness:'Целосност на Следливост',count:'Број',ncrs:'НЦР',critical:'Критично',rework_hours:'Часови за Дообработка',cost_impact:'Влијание на Трошок (SEK)',
-    inspection_request_sub:'Создади барање за инспекција. Тоа минува низ работниот тек како што напредува работата.',
-    drawing_no:'Бр. на Цртеж',drawing_rev:'Ревизија',inspection_type:'Тип на Инспекција',acceptance_criteria:'Критериуми за Прифаќање',customer_witness_required:'Потребно сведочење на клиент',
-    material_traceability_ok:'Следливоста на материјал потврдена',notes:'Белешки',cancel:'Откажи',create_request:'Создади Барање',
-    inspection_execution:'Извршување на Инспекција',checklist:'Контролна Листа',critical_failure:'Критичен неуспех (применува задршка на квалитет)',findings:'Наоди / Коментари',close:'Затвори',
+    total_inspections:'Вкупно Инспекции',fpr:'Стапка на Прв Успех',type:'Тип',result:'Резултат',all:'Сите',overdue_only:'Само задоцнети',
+    inspection_register:'Регистар на Инспекции',id:'ID',project:'Проект',jobcard:'Работна Картичка',component:'Компонента',planned_date:'Планирано',
+    inspector:'Инспектор',witness:'Сведок',status:'Статус',actions:'Акции',operation:'Операција',responsible_inspector:'Одговорен Инспектор',
+    method:'Метод',total_ncrs:'Вкупно НЦР',closed:'Затворено',severity:'Сериозност',category:'Категорија',ncr_register:'Регистар на НЦР',
+    ncr_no:'НЦР Бр.',title:'Наслов',responsible:'Одговорен',due_date:'Краен Рок',description:'Опис',
+    inspection_request_sub:'Создади барање за инспекција. Тоа минува низ работниот тек како што напредува работата.',drawing_no:'Бр. на Цртеж',
+    drawing_rev:'Ревизија',inspection_type:'Тип на Инспекција',acceptance_criteria:'Критериуми за Прифаќање',
+    customer_witness_required:'Потребно сведочење на клиент',material_traceability_ok:'Следливоста на материјал потврдена',notes:'Белешки',
+    cancel:'Откажи',create_request:'Создади Барање',inspection_execution:'Извршување на Инспекција',checklist:'Контролна Листа',
+    critical_failure:'Критичен неуспех (применува задршка на квалитет)',findings:'Наоди / Коментари',close:'Затвори',
     create_reinspection:'Создади Реинспекција',complete_inspection:'Заврши Инспекција',
-    ncr_severity_note:'Големи и критични НЦР бараат одговорно лице и краен рок. Критичните НЦР автоматски применуваат задршка на квалитет.',create_ncr:'Создади НЦР',
-    new_corrective_action:'Ново Корективно Дејствие',related_ref:'Поврзан НЦР / Рекламација / Инспекција',immediate_correction:'Итна Корекција',root_cause:'Основна Причина',corrective_action:'Корективно Дејствие',
-    preventive_action:'Превентивно Дејствие',start_date:'Датум на Почеток',five_whys:'5 Зошто (опционално)',fishbone:'Белешки за Категории Риба-коска (опционално)',fb_people:'Луѓе',fb_machine:'Машина',fb_material:'Материјал',
-    fb_method:'Метод',fb_measurement:'Мерење',fb_environment:'Околина',create_action:'Создади Дејствие',
-    new_weld_record:'Нов Запис за Заварување',base_material:'Основен Материјал',thickness:'Дебелина (mm)',visual_inspection_required:'Потребна визуелна инспекција',ndt_required:'Потребно НДТ',weld_date:'Датум на Заварување',
-    weld_wps_note:'Финалното одобрување е блокирано кога избраниот WPS или квалификацијата на заварувачот недостасува или е истечена, или кога потребното НДТ е нецелосно.',create_record:'Создади Запис',
-    new_ndt_record:'Нов НДТ Запис',ndt_reject_note:'Одбиен задолжителен НДТ резултат го блокира поврзаното заварување, операција и финално ослободување додека не се реши.',
-    prepared_by:'Подготвено Од',effective_date:'Датум на Стапување на Сила',create_itp:'Создади ИТП',
-    add_itp_line:'Додади ИТП Ред',delivered_item:'Испорачана Ставка',create_complaint:'Создади Рекламација',
-    release_quality_hold:'Ослободи Задршка на Квалитет',release_authority:'Овластување за Ослободување',release_reason:'Доказ за Решение / Причина за Ослободување',release_hold:'Ослободи Задршка',
-    add_note:'Додади Белешка',note:'Белешка',save:'Зачувај',supplier:'Добавувач'
+    ncr_severity_note:'Големи и критични НЦР бараат одговорно лице и краен рок. Критичните НЦР автоматски применуваат задршка на квалитет.',
+    create_ncr:'Создади НЦР',release_quality_hold:'Ослободи Задршка на Квалитет',release_authority:'Овластување за Ослободување',
+    release_reason:'Доказ за Решение / Причина за Ослободување',release_hold:'Ослободи Задршка',add_note:'Додади Белешка',note:'Белешка',
+    save:'Зачувај',supplier:'Добавувач',nav_holds:'Задржувања за Квалитет',holds_active:'Активни задржувања',holds_projects:'Задржани проекти',
+    holds_jobcards:'Задржани работни налози',holds_released:'Ослободени',holds_register:'Задржувања за Квалитет',
+    holds_note:'Активното задржување спречува завршување или затворање на тоа што го именува, и се ослободува тука и никаде друго.',
+    holds_none:'Нема задржувања за квалитет што одговараат на овие филтри',hold_no:'Задржување бр.',hold_blocks:'Блокира',hold_applied:'Применето',
+    reason:'Причина',card_critical_alerts:'Критични Известувања за Квалитет',card_due_today:'Инспекции Потребни Денес',
+    card_failed:'Неуспешни Инспекции',card_open_holds:'Активни Задржувања за Квалитет',card_blocked_projects:'Проекти Блокирани од Квалитет'
   }
 };
 
@@ -1248,20 +747,12 @@ const INSPECTION_STATUSES=['draft','requested','planned','ready','in-progress','
 const INSPECTION_STATUS_LABEL={draft:'Draft',requested:'Requested',planned:'Planned',ready:'Ready for Inspection','in-progress':'In Progress','waiting-customer':'Waiting for Customer',completed:'Completed','reinspection-required':'Reinspection Required',cancelled:'Cancelled'};
 const INSPECTION_RESULTS=['pending','passed','passed-observations','failed','not-applicable'];
 const INSPECTION_RESULT_LABEL={pending:'Pending',passed:'Passed','passed-observations':'Passed with Observations',failed:'Failed','not-applicable':'Not Applicable'};
-const WELD_PROCESSES=['TIG','MIG','MAG','MMA','FCAW','SAW','Other'];
-const WELD_STATUSES=['planned','ready','in-progress','awaiting-visual','awaiting-ndt','accepted','repair-required','repaired','rejected'];
-const NDT_METHODS=['VT','PT','MT','UT','RT','Leak','Pressure','Other'];
-const NDT_METHOD_LABEL={VT:'VT – Visual Testing',PT:'PT – Penetrant Testing',MT:'MT – Magnetic Particle Testing',UT:'UT – Ultrasonic Testing',RT:'RT – Radiographic Testing',Leak:'Leak Testing',Pressure:'Pressure Testing',Other:'Other'};
-const NDT_STATUSES=['required','requested','planned','in-progress','waiting-report','accepted','rejected','reinspection-required','cancelled'];
-const NDT_RESULTS=['pending','accepted','accepted-observations','rejected','not-applicable'];
-const NDT_RESULT_LABEL={pending:'Pending',accepted:'Accepted','accepted-observations':'Accepted with Observations',rejected:'Rejected','not-applicable':'Not Applicable'};
 const NCR_CATEGORIES=['material','dimension','welding','documentation','supplier','process','equipment','surface-coating','customer-requirement','traceability','safety','other'];
 const NCR_CATEGORY_LABEL={material:'Material',dimension:'Dimension',welding:'Welding',documentation:'Documentation',supplier:'Supplier',process:'Process',equipment:'Equipment','surface-coating':'Surface/Coating','customer-requirement':'Customer Requirement',traceability:'Traceability',safety:'Safety-Related Quality Issue',other:'Other'};
 const NCR_SEVERITIES=['minor','major','critical'];
 const NCR_STATUSES=['draft','open','containment-required','under-investigation','disposition-required','corrective-action','waiting-verification','closed','rejected','reopened'];
 const NCR_DISPOSITIONS=['rework','repair','use-as-is','return-to-supplier','scrap','replace','reclassify','pending'];
-const CAPA_STATUSES=['open','planned','in-progress','waiting-evidence','waiting-verification','effective','ineffective','closed','overdue'];
-const COMPLAINT_STATUSES=['received','acknowledged','under-investigation','corrective-action','waiting-customer','resolved','closed','reopened'];
+const HOLD_STATUSES=['active','released'];
 
 function typeLabel(t){return INSPECTION_TYPE_LABEL[t]||t||'N/A';}
 function statusLabel(s){return INSPECTION_STATUS_LABEL[s]||(s?s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'N/A');}
@@ -1277,17 +768,14 @@ function fillSelect(el,options,placeholder){
 }
 function populateProjectSelect(el,placeholder){const data=getData();fillSelect(el,(data.projects||[]).map(p=>[p.no,`${p.no} — ${p.name}`]),placeholder);}
 function populateJobcardSelect(el,projectNo,placeholder){const data=getData();const jcs=(data.jobcards||[]).filter(j=>!projectNo||j.projectNo===projectNo);fillSelect(el,jcs.map(j=>[j.no,`${j.no} — ${j.title}`]),placeholder||'—');}
-function populateCustomerSelect(el){const data=getData();fillSelect(el,(data.customers||[]).map(c=>[c.name,c.name]));}
 function populateSupplierSelect(el){const data=getData();const names=[...new Set([...(data.suppliers||[]).map(s=>s.name),...(data.inventory||[]).map(i=>i.supplier).filter(Boolean)])];fillSelect(el,names.map(n=>[n,n]),'—');}
-function populateWelderSelect(el){const data=getData();fillSelect(el,(data.qualityWelderQuals||[]).map(w=>w.welder).filter((v,i,a)=>a.indexOf(v)===i).map(w=>[w,w]),'—');}
-function populateWpsSelect(el){const data=getData();fillSelect(el,(data.qualityWps||[]).map(w=>[w.no,w.no]),'—');}
 
 function populateFilterSelects(){
   populateProjectSelect($('filtProject'),tr('all_projects'));
 }
 function populateStatusFilter(section){
   const data=getData();let statuses=[];
-  const map={inspections:INSPECTION_STATUSES,requests:INSPECTION_STATUSES,welding:WELD_STATUSES,ndt:NDT_STATUSES,ncr:NCR_STATUSES,capa:CAPA_STATUSES,complaints:COMPLAINT_STATUSES};
+  const map={inspections:INSPECTION_STATUSES,ncr:NCR_STATUSES,holds:HOLD_STATUSES};
   statuses=map[section]||[];
   const sel=$('filtStatus');const cur=activeFilters.status;
   sel.innerHTML=`<option value="">${esc(tr('all_statuses'))}</option>`+statuses.map(s=>`<option value="${esc(s)}">${esc(genericLabel(s))}</option>`).join('');
@@ -1307,7 +795,7 @@ function barChartHtml(rows){
 }
 
 // ══════════════ NAVIGATION ══════════════
-const SECTION_TITLE_KEY={overview:'overview',inspections:'inspections',requests:'inspection_requests',welding:'welding_quality',ndt:'ndt',ncr:'ncr',capa:'corrective_actions',itp:'itp',traceability:'material_traceability',supplierquality:'supplier_quality',complaints:'customer_complaints',certificates:'certificates',calibration:'calibration_status',dossiers:'quality_dossiers',release:'final_release',qreports:'quality_reports'};
+const SECTION_TITLE_KEY={overview:'overview',inspections:'inspections',ncr:'ncr',holds:'nav_holds'};
 function showSection(sectionId){
   document.querySelectorAll('.section').forEach(s=>s.style.display='none');
   const sec=$('section-'+sectionId); if(sec)sec.style.display='block';
@@ -1396,83 +884,44 @@ function loadSectionData(section){
   renderHoldBanner();
   if(section==='overview')renderOverview(data);
   else if(section==='inspections')renderInspections(data);
-  else if(section==='requests')renderRequests(data);
-  else if(section==='welding')renderWelding(data);
-  else if(section==='ndt')renderNdt(data);
   else if(section==='ncr')renderNcrSection(data);
-  else if(section==='capa')renderCapa(data);
-  else if(section==='itp')renderItpSection(data);
-  else if(section==='traceability')renderTraceability(data);
-  else if(section==='supplierquality')renderSupplierQuality(data);
-  else if(section==='complaints')renderComplaints(data);
-  else if(section==='certificates')renderCertificates(data);
-  else if(section==='calibration')renderCalibration(data);
-  else if(section==='dossiers')renderDossiers(data);
-  else if(section==='release')renderRelease(data);
-  else if(section==='qreports')renderQualityReports(data);
+  else if(section==='holds')renderHolds(data);
 }
 
 // ══════════════ OVERVIEW ══════════════
 function renderOverview(data){
   const insp=data.qualityInspections||[];
   const ncrs=data.qualityNcrs||[];
-  const capas=data.qualityCapas||[];
   const holds=activeHolds(data);
-  const complaints=data.qualityComplaints||[];
-  const dossiers=data.qualityDossiers||[];
-  const welds=data.qualityWelds||[];
   const today=todayStr();
+  const projects=data.projects||[];
 
   const dueToday=insp.filter(i=>i.plannedDate===today&&!['completed','cancelled'].includes(i.status)).length;
   const waiting=insp.filter(i=>['requested','planned','ready'].includes(i.status)).length;
-  const passed=insp.filter(i=>['passed','passed-observations'].includes(i.result)).length;
   const failed=insp.filter(i=>i.result==='failed').length;
-  const reinsp=insp.filter(i=>i.reinspectionOf&&i.result==='pending').length;
   const openNcr=ncrs.filter(n=>!['closed','rejected'].includes(n.status)).length;
-  const criticalNcr=ncrs.filter(n=>n.severity==='critical'&&n.status!=='closed').length;
-  const overdueCapa=capas.filter(c=>c.dueDate&&safeDate(c.dueDate)<new Date()&&!['effective','closed'].includes(c.status)).length;
-  const jcHold=new Set(holds.filter(h=>h.scope==='jobcard').map(h=>h.reference)).size;
-  const missingCert=(data.inventory||[]).filter(i=>!i.certificate).length;
-  const missingWps=welds.filter(w=>wpsStatusFor(data,w.wpsNo)!=='valid'||['missing','expired'].includes(welderQualStatusFor(data,w.welder,w.process))).length;
-  const calibExp=(data.equipment||[]).filter(e=>{const d=safeDate(e.certificationExpiry);if(!d)return false;const days=daysBetween(new Date(),d);return days!=null&&days<=30;}).length;
-  const custApproval=insp.filter(i=>i.customerWitness&&!['completed','cancelled'].includes(i.status)).length;
-  const projects=data.projects||[];
   const notReady=projects.filter(p=>computeReleaseBlocking(data,p.no).blockingReasons.length>0).length;
 
   $('kpi-due-today').textContent=dueToday;
   $('kpi-waiting').textContent=waiting;
-  $('kpi-passed').textContent=passed;
   $('kpi-failed').textContent=failed;
-  $('kpi-reinsp').textContent=reinsp;
   $('kpi-open-ncr').textContent=openNcr;
-  $('kpi-critical-ncr').textContent=criticalNcr;
-  $('kpi-overdue-capa').textContent=overdueCapa;
-  $('kpi-jc-hold').textContent=jcHold;
-  $('kpi-missing-cert').textContent=missingCert;
-  $('kpi-missing-wps').textContent=missingWps;
-  $('kpi-calib-exp').textContent=calibExp;
-  $('kpi-cust-approval').textContent=custApproval;
+  $('kpi-active-holds').textContent=holds.length;
   $('kpi-not-ready').textContent=notReady;
 
   // Attention panels
   const cards=[];
-  cards.push({title:'Critical Quality Alerts',items:[...ncrs.filter(n=>n.severity==='critical'&&n.status!=='closed').map(n=>`${esc(n.no)} — ${esc(n.title||'')}`),...holds.map(h=>`${esc(h.no)} — ${esc(h.reason||'')}`)],critical:true});
-  cards.push({title:'Inspections Required Today',items:insp.filter(i=>i.plannedDate===today&&!['completed','cancelled'].includes(i.status)).map(i=>`${esc(i.no)} — ${esc(typeLabel(i.type))} (${esc(i.projectNo||'')})`)});
-  cards.push({title:'Failed Inspections',items:insp.filter(i=>i.result==='failed').map(i=>`${esc(i.no)} — ${esc(i.findings||'')}`)});
-  cards.push({title:'Overdue Corrective Actions',items:capas.filter(c=>c.dueDate&&safeDate(c.dueDate)<new Date()&&!['effective','closed'].includes(c.status)).map(c=>`${esc(c.no)} — due ${esc(c.dueDate)}`)});
-  cards.push({title:'Open Critical NCRs',items:ncrs.filter(n=>n.severity==='critical'&&n.status!=='closed').map(n=>`${esc(n.no)} — ${esc(n.title||'')}`)});
-  const heldPoints=[];
-  (data.qualityItps||[]).forEach(itp=>(itp.lines||[]).filter(l=>l.pointType==='H'&&l.status==='open').forEach(l=>heldPoints.push(`${esc(itp.no)} seq ${l.seq} — ${esc(l.activity||'')}`)));
-  cards.push({title:'Operations Waiting at Hold Points',items:heldPoints});
-  cards.push({title:'Missing Certificates',items:(data.inventory||[]).filter(i=>!i.certificate).map(i=>`${esc(i.code)} — ${esc(i.description||'')}`)});
-  cards.push({title:'Expiring Qualifications',items:(data.qualityWelderQuals||[]).filter(w=>w.status==='expiring-soon'||welderQualStatusFor(data,w.welder,w.process)==='expiring-soon').map(w=>`${esc(w.welder)} — ${esc(w.qualNo)} (${esc(w.expiryDate)})`)});
-  cards.push({title:'Projects Blocked by Quality',items:projects.filter(p=>computeReleaseBlocking(data,p.no).blockingReasons.length>0).map(p=>`${esc(p.no)} — ${esc(p.name)}`)});
+  cards.push({title:tr('card_critical_alerts'),items:[...ncrs.filter(n=>n.severity==='critical'&&n.status!=='closed').map(n=>`${esc(n.no)} — ${esc(n.title||'')}`),...holds.map(h=>`${esc(h.no)} — ${esc(h.reason||'')}`)],critical:true});
+  cards.push({title:tr('card_due_today'),items:insp.filter(i=>i.plannedDate===today&&!['completed','cancelled'].includes(i.status)).map(i=>`${esc(i.no)} — ${esc(typeLabel(i.type))} (${esc(i.projectNo||'')})`)});
+  cards.push({title:tr('card_failed'),items:insp.filter(i=>i.result==='failed').map(i=>`${esc(i.no)} — ${esc(i.findings||'')}`)});
+  cards.push({title:tr('card_open_holds'),items:holds.map(h=>`${esc(h.no)} — ${esc(genericLabel(h.scope))} ${esc(h.reference||'')}`)});
+  cards.push({title:tr('card_blocked_projects'),items:projects.filter(p=>computeReleaseBlocking(data,p.no).blockingReasons.length>0).map(p=>`${esc(p.no)} — ${esc(p.name)}`)});
   const recentAct=[];
-  ['qualityInspections','qualityNcrs','qualityCapas','qualityWelds','qualityNdt','qualityComplaints','qualityHolds'].forEach(coll=>{
+  ['qualityInspections','qualityNcrs','qualityHolds'].forEach(coll=>{
     (data[coll]||[]).forEach(r=>(r.activity||[]).forEach(a=>recentAct.push({...a,recordNo:r.no})));
   });
   recentAct.sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
-  cards.push({title:'Recent Quality Activity',items:recentAct.slice(0,8).map(a=>`${esc(a.recordNo)} — ${esc(a.action)}`)});
+  cards.push({title:tr('recent_activity'),items:recentAct.slice(0,8).map(a=>`${esc(a.recordNo)} — ${esc(a.action)}`)});
 
   $('attention-grid').innerHTML=cards.map(c=>{
     const has=c.items&&c.items.length>0;
@@ -1488,29 +937,12 @@ function renderOverview(data){
   $('viz-ncr-cat-body').innerHTML=barChartHtml(Object.entries(ncrCatGroups).map(([k,v])=>({label:k,value:v.length,display:v.length})));
   const issuesByProject=groupBy(ncrs,n=>n.projectNo||'—');
   $('viz-issues-project-body').innerHTML=barChartHtml(Object.entries(issuesByProject).map(([k,v])=>({label:k,value:v.length,display:v.length})));
-  const capaStatusGroups=groupBy(capas,c=>genericLabel(c.status));
-  $('viz-capa-status-body').innerHTML=barChartHtml(Object.entries(capaStatusGroups).map(([k,v])=>({label:k,value:v.length,display:v.length})));
-  $('viz-dossier-body').innerHTML=barChartHtml(dossiers.map(d=>{const r=computeDossierReadiness(d);return {label:d.projectNo,value:r||0,display:r==null?'N/A':Math.round(r)+'%',cls:r>=100?'ok':r>=60?'warn':'danger'};}));
   const monthly=groupBy(insp.filter(i=>i.actualDate),i=>(i.actualDate||'').slice(0,7));
   $('viz-fpq-body').innerHTML=barChartHtml(Object.entries(monthly).map(([k,v])=>{const p=v.filter(i=>['passed','passed-observations'].includes(i.result)).length;return {label:k,value:v.length?p/v.length*100:0,display:v.length?pctStr(p/v.length*100):'N/A'};}));
 
   // Recent activity table
   $('recent-activity-body').innerHTML=recentAct.slice(0,15).map(a=>`<tr><td>${esc((a.timestamp||'').replace('T',' ').slice(0,16))}</td><td>${esc(a.recordNo)}</td><td>${esc(a.action)}</td><td>${esc(a.user||'N/A')}</td><td>${esc(a.reason||'')}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="5">No activity recorded yet</td></tr>';
 
-  renderRoleGrid();
-}
-function renderRoleGrid(){
-  const roles=[
-    ['Administrator','Full access to all Quality sections and role demonstration controls.'],
-    ['Quality Manager','Verify corrective actions, release/reopen Quality Holds, issue final release.'],
-    ['Inspector','Complete inspections, record checklist results, create NCRs.'],
-    ['Project Manager','View project quality status, dossier readiness and release blocking reasons.'],
-    ['Workshop Supervisor','Request inspections, view jobcard quality hold status.'],
-    ['Workshop Employee','Report a defect and view inspection requirements for their operation.'],
-    ['Store / Purchasing','View material certificate and supplier quality status.'],
-    ['Customer / Third-Party Inspector','Limited witness-point information only.']
-  ];
-  $('role-grid').innerHTML=roles.map(r=>`<div class="rolecard"><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div>`).join('');
 }
 
 // ══════════════ INSPECTIONS ══════════════
@@ -1547,18 +979,6 @@ $('inspTypeFilter').addEventListener('change',()=>loadSectionData('inspections')
 $('inspResultFilter').addEventListener('change',()=>loadSectionData('inspections'));
 $('inspOverdueFilter').addEventListener('change',()=>loadSectionData('inspections'));
 
-function renderRequests(data){
-  populateFilterSelects();
-  let insp=(data.qualityInspections||[]).filter(i=>!['completed','cancelled'].includes(i.status));
-  insp=insp.filter(i=>matchProject(i.projectNo)&&matchSearch(i.no,i.projectNo,i.jobcard,i.component));
-  $('req-list-body').innerHTML=insp.map(i=>`<tr class="clickable" onclick="openExecInspection('${esc(i.no)}')">
-    <td><strong>${esc(i.no)}</strong></td><td>${esc(i.projectNo||'N/A')}</td><td>${esc(i.jobcard||'N/A')}</td><td>${esc(i.operation||'N/A')}</td><td>${esc(typeLabel(i.type))}</td>
-    <td>${esc(i.plannedDate||'N/A')}</td><td>${esc(i.inspector||'N/A')}</td><td>${esc(i.materialTraceabilityOk?'Confirmed':'Not confirmed')}</td><td>${i.customerWitness?'Required':'Not required'}</td>
-    <td>${badge(i.status,statusLabel(i.status))}</td>
-    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openExecInspection('${esc(i.no)}')" data-i="close">Open</button></td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="11">No open inspection requests</td></tr>';
-}
-$('openNewRequestBtn').addEventListener('click',()=>openNewInspectionModal());
 
 // ── New Inspection modal ──
 function openNewInspectionModal(){
@@ -1656,151 +1076,8 @@ function createReinspectionFromModal(){
 }
 
 // ══════════════ WELDING QUALITY ══════════════
-function renderWelding(data){
-  populateFilterSelects();
-  let welds=(data.qualityWelds||[]).filter(w=>matchProject(w.projectNo)&&matchStatus(w.status)&&matchSearch(w.no,w.projectNo,w.jobcard,w.weldMapPosition,w.welder));
-  $('wld-total').textContent=(data.qualityWelds||[]).length;
-  $('wld-accepted').textContent=(data.qualityWelds||[]).filter(w=>w.status==='accepted').length;
-  $('wld-repair').textContent=(data.qualityWelds||[]).filter(w=>w.status==='repair-required').length;
-  $('wld-missing').textContent=(data.qualityWelds||[]).filter(w=>wpsStatusFor(data,w.wpsNo)!=='valid'||['missing','expired'].includes(welderQualStatusFor(data,w.welder,w.process))).length;
-
-  $('wld-list-body').innerHTML=welds.map(w=>{
-    const wpsOk=wpsStatusFor(data,w.wpsNo)==='valid';
-    const qualStatus=welderQualStatusFor(data,w.welder,w.process);
-    return `<tr class="clickable" onclick="openWeldDetail('${esc(w.no)}')">
-      <td><strong>${esc(w.no)}</strong></td><td>${esc(w.projectNo||'N/A')}</td><td>${esc(w.jobcard||'N/A')}</td><td>${esc(w.weldMapPosition||'N/A')}</td><td>${esc(w.process||'N/A')}</td>
-      <td>${esc(w.wpsNo||'N/A')} ${wpsOk?'':'⚠'}</td><td>${esc(w.welder||'N/A')} ${badge(qualStatus,genericLabel(qualStatus))}</td><td>${w.ndtRequired?'Yes':'No'}</td>
-      <td>${badge(w.status,genericLabel(w.status))}</td><td>${badge(w.finalResult,genericLabel(w.finalResult))}</td>
-      <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openWeldDetail('${esc(w.no)}')">View</button></td>
-    </tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="11">No weld records match these filters</td></tr>';
-
-  $('wps-list-body').innerHTML=(data.qualityWps||[]).map(w=>`<tr>
-    <td><strong>${esc(w.no)}</strong></td><td>${esc(w.revision)}</td><td>${esc(w.process)}</td><td>${esc(w.materialGroup)}</td><td>${esc(w.thicknessRange)}</td>
-    <td>${esc(w.jointType)}</td><td>${esc(w.position)}</td><td>${esc(w.supportingWpqr||'N/A')}</td><td>${badge(w.status,genericLabel(w.status))}</td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="9">No WPS records</td></tr>';
-
-  $('qual-list-body').innerHTML=(data.qualityWelderQuals||[]).map(q=>{
-    const st=welderQualStatusFor(data,q.welder,q.process);
-    return `<tr><td><strong>${esc(q.welder)}</strong></td><td>${esc(q.qualNo)}</td><td>${esc(q.process)}</td><td>${esc(q.materialGroup)}</td><td>${esc(q.issuedBy)}</td><td>${esc(q.expiryDate)}</td><td>${badge(st,genericLabel(st))}</td></tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="7">No welder qualification records</td></tr>';
-}
-$('openNewWeldBtn').addEventListener('click',()=>openNewWeldModal());
-function openNewWeldModal(){
-  populateProjectSelect($('wld_project'));
-  populateJobcardSelect($('wld_jobcard'),$('wld_project').value);
-  $('wld_project').onchange=()=>populateJobcardSelect($('wld_jobcard'),$('wld_project').value);
-  fillSelect($('wld_process'),WELD_PROCESSES.map(p=>[p,p]));
-  populateWpsSelect($('wld_wps'));
-  populateWelderSelect($('wld_welder'));
-  ['wld_position','wld_joint','wld_material','wld_thickness'].forEach(id=>$(id).value='');
-  $('wld_date').value=todayStr();$('wld_visual').checked=true;$('wld_ndt').checked=false;
-  clearFormErr('wldFormErr');
-  openModal('weldModal');
-}
-function submitWeld(){
-  const payload={
-    projectNo:$('wld_project').value,jobcard:$('wld_jobcard').value||null,weldMapPosition:$('wld_position').value.trim(),
-    jointType:$('wld_joint').value.trim(),baseMaterial:$('wld_material').value.trim(),thickness:num($('wld_thickness').value),
-    process:$('wld_process').value,wpsNo:$('wld_wps').value,welder:$('wld_welder').value,
-    visualRequired:$('wld_visual').checked,ndtRequired:$('wld_ndt').checked,weldDate:$('wld_date').value,
-    status:'planned'
-  };
-  if(!payload.projectNo){formErr('wldFormErr','Select a project.');return;}
-  const rec=WorkshopData.recordWeld(payload);
-  invalidateDataCache();closeModal('weldModal');notify('Weld record created: '+rec.no);
-  if(currentSection)loadSectionData(currentSection);
-}
-function openWeldDetail(no){
-  const data=getData();const w=(data.qualityWelds||[]).find(x=>x.no===no);if(!w)return;
-  const wpsOk=wpsStatusFor(data,w.wpsNo);const qualStatus=welderQualStatusFor(data,w.welder,w.process);
-  $('detailTitle').textContent=w.no+' — Weld Record';
-  $('detailSub').textContent=`${w.projectNo||''} ${w.jobcard?'· '+w.jobcard:''}`;
-  $('detailBody').innerHTML=`
-    <div class="mrow2"><div><b>Position</b>: ${esc(w.weldMapPosition||'N/A')}</div><div><b>Joint Type</b>: ${esc(w.jointType||'N/A')}</div></div>
-    <div class="mrow2"><div><b>Base Material</b>: ${esc(w.baseMaterial||'N/A')}</div><div><b>Thickness</b>: ${w.thickness!=null?w.thickness+' mm':'N/A'}</div></div>
-    <div class="mrow2"><div><b>Process</b>: ${esc(w.process||'N/A')}</div><div><b>Filler</b>: ${esc(w.fillerMaterial||'N/A')}</div></div>
-    <div class="mrow2"><div><b>WPS</b>: ${esc(w.wpsNo||'N/A')} ${badge(wpsOk,genericLabel(wpsOk))}</div><div><b>Welder</b>: ${esc(w.welder||'N/A')} ${badge(qualStatus,genericLabel(qualStatus))}</div></div>
-    <div class="mrow2"><div><b>Consumable Batch</b>: ${esc(w.consumableBatch||'N/A')}</div><div><b>Shielding Gas</b>: ${esc(w.shieldingGas||'N/A')}</div></div>
-    <div class="mrow2"><div><b>Weld Date</b>: ${esc(w.weldDate||'N/A')}</div><div><b>Status</b>: ${badge(w.status,genericLabel(w.status))}</div></div>
-    <div class="mrow"><b>Repair History</b>: ${(w.repairHistory||[]).length?('<ul class="attnlist">'+w.repairHistory.map(r=>`<li>${esc(r.date)} — ${esc(r.reason||'')} (${esc(r.by||'')})</li>`).join('')+'</ul>'):'None'}</div>
-    <div class="mbtns" style="justify-content:flex-start;margin-top:10px;">
-      <button class="mbtn" onclick="promptWeldRepair('${esc(w.no)}')">Record Repair</button>
-      <button class="mbtn" onclick="setWeldStatus('${esc(w.no)}','accepted')">Mark Accepted</button>
-      <button class="mbtn" onclick="setWeldStatus('${esc(w.no)}','rejected')">Mark Rejected</button>
-    </div>
-  `;
-  openModal('detailModal');
-}
-function promptWeldRepair(no){
-  wPrompt('Repair reason:','',(reason)=>{
-    const rec=WorkshopData.addWeldRepair(no,{reason,by:'Aleksandar C.'});
-    if(rec.error){notify(rec.error);return;}
-    invalidateDataCache();notify('Repair recorded for '+no);closeModal('detailModal');
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
-function setWeldStatus(no,status){
-  const rec=WorkshopData.updateWeld(no,{status,finalResult:status==='accepted'?'accepted':status==='rejected'?'rejected':'pending'});
-  if(rec.error){notify(rec.error);return;}
-  invalidateDataCache();notify('Weld '+no+' status updated');closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
-}
 
 // ══════════════ NDT ══════════════
-function renderNdt(data){
-  populateFilterSelects();
-  fillSelect($('ndtMethodFilter'),NDT_METHODS.map(m=>[m,NDT_METHOD_LABEL[m]]),tr('all'));
-  let ndt=(data.qualityNdt||[]).filter(n=>matchProject(n.projectNo)&&matchStatus(n.status)&&matchSearch(n.no,n.projectNo,n.weldRef));
-  const methodF=$('ndtMethodFilter').value; if(methodF)ndt=ndt.filter(n=>n.method===methodF);
-  $('ndt-total').textContent=(data.qualityNdt||[]).length;
-  $('ndt-accepted').textContent=(data.qualityNdt||[]).filter(n=>n.result==='accepted').length;
-  $('ndt-rejected').textContent=(data.qualityNdt||[]).filter(n=>n.result==='rejected').length;
-  $('ndt-reinsp').textContent=(data.qualityNdt||[]).filter(n=>n.reinspectionRequired).length;
-  $('ndt-list-body').innerHTML=ndt.map(n=>`<tr class="clickable" onclick="openNdtDetail('${esc(n.no)}')">
-    <td><strong>${esc(n.no)}</strong></td><td>${esc(n.projectNo||'N/A')}</td><td>${esc(n.weldRef||'N/A')}</td><td>${esc(NDT_METHOD_LABEL[n.method]||n.method||'N/A')}</td><td>${esc(n.technician||'N/A')}</td>
-    <td>${esc(n.inspectionDate||'N/A')}</td><td>${badge(n.result,NDT_RESULT_LABEL[n.result]||n.result)}</td><td>${esc(n.ncrRef||'N/A')}</td><td>${badge(n.status,genericLabel(n.status))}</td>
-    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openNdtDetail('${esc(n.no)}')">View</button></td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="10">No NDT records match these filters</td></tr>';
-}
-$('openNewNdtBtn').addEventListener('click',()=>openNewNdtModal());
-$('ndtMethodFilter').addEventListener('change',()=>loadSectionData('ndt'));
-function openNewNdtModal(){
-  const data=getData();
-  populateProjectSelect($('ndt_project'));
-  fillSelect($('ndt_weld'),(data.qualityWelds||[]).map(w=>[w.no,w.no+' — '+(w.weldMapPosition||'')]),'—');
-  fillSelect($('ndt_method'),NDT_METHODS.map(m=>[m,NDT_METHOD_LABEL[m]]));
-  fillSelect($('ndt_result'),NDT_RESULTS.map(r=>[r,NDT_RESULT_LABEL[r]]));
-  ['ndt_tech','ndt_criteria','ndt_findings'].forEach(id=>$(id).value='');
-  $('ndt_date').value=todayStr();
-  clearFormErr('ndtFormErr');
-  openModal('ndtModal');
-}
-function submitNdt(){
-  const result=$('ndt_result').value;
-  const payload={
-    projectNo:$('ndt_project').value,weldRef:$('ndt_weld').value||null,method:$('ndt_method').value,technician:$('ndt_tech').value.trim(),
-    inspectionDate:$('ndt_date').value,acceptanceCriteria:$('ndt_criteria').value.trim(),findings:$('ndt_findings').value.trim(),
-    result,status:result==='accepted'?'accepted':result==='rejected'?'rejected':'in-progress',
-    repairRequired:result==='rejected',reinspectionRequired:result==='rejected'
-  };
-  if(!payload.projectNo){formErr('ndtFormErr','Select a project.');return;}
-  const rec=WorkshopData.recordNdt(payload);
-  invalidateDataCache();closeModal('ndtModal');notify('NDT record created: '+rec.no+(result==='rejected'?' — rejected, related weld should be reviewed':''));
-  if(currentSection)loadSectionData(currentSection);
-}
-function openNdtDetail(no){
-  const data=getData();const n=(data.qualityNdt||[]).find(x=>x.no===no);if(!n)return;
-  $('detailTitle').textContent=n.no+' — NDT Record';
-  $('detailSub').textContent=`${n.projectNo||''} ${n.weldRef?'· weld '+n.weldRef:''}`;
-  $('detailBody').innerHTML=`
-    <div class="mrow2"><div><b>Method</b>: ${esc(NDT_METHOD_LABEL[n.method]||n.method)}</div><div><b>Technician</b>: ${esc(n.technician||'N/A')}</div></div>
-    <div class="mrow2"><div><b>Inspection Date</b>: ${esc(n.inspectionDate||'N/A')}</div><div><b>Acceptance Criteria</b>: ${esc(n.acceptanceCriteria||'N/A')}</div></div>
-    <div class="mrow"><b>Findings</b>: ${esc(n.findings||'None recorded')}</div>
-    <div class="mrow2"><div><b>Result</b>: ${badge(n.result,NDT_RESULT_LABEL[n.result]||n.result)}</div><div><b>Related NCR</b>: ${esc(n.ncrRef||'N/A')}</div></div>
-  `;
-  openModal('detailModal');
-}
 
 // ══════════════ NCR ══════════════
 function renderNcrSection(data){
@@ -1906,446 +1183,28 @@ function ncrSubmitClose(no){const v=$('ncrActInput').value.trim();if(!v){ncrActE
 function ncrSubmitReopen(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('A reason is required to reopen.');return;}const r=WorkshopData.reopenNcr(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('NCR reopened.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
 
 // ══════════════ CORRECTIVE ACTIONS (CAPA) ══════════════
-function renderCapa(data){
-  populateFilterSelects();
-  let capas=(data.qualityCapas||[]).filter(c=>matchStatus(c.status)&&matchSearch(c.no,c.relatedRef,c.problemStatement));
-  $('capa-total').textContent=(data.qualityCapas||[]).length;
-  $('capa-open').textContent=(data.qualityCapas||[]).filter(c=>!['effective','closed'].includes(c.status)).length;
-  $('capa-overdue').textContent=(data.qualityCapas||[]).filter(c=>c.dueDate&&safeDate(c.dueDate)<new Date()&&!['effective','closed'].includes(c.status)).length;
-  $('capa-effective').textContent=(data.qualityCapas||[]).filter(c=>c.status==='effective').length;
-
-  $('capa-list-body').innerHTML=capas.map(c=>{
-    const overdue=c.dueDate&&safeDate(c.dueDate)<new Date()&&!['effective','closed'].includes(c.status);
-    return `<tr class="clickable" onclick="openCapaDetail('${esc(c.no)}')">
-      <td><strong>${esc(c.no)}</strong></td><td>${esc(c.relatedRef||'N/A')}</td><td>${esc((c.problemStatement||'').slice(0,60))}</td><td>${esc(c.responsiblePerson||'N/A')}</td>
-      <td>${esc(c.dueDate||'N/A')}${overdue?' ⚠':''}</td><td>${badge(overdue?'danger':c.status,genericLabel(c.status))}</td>
-      <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openCapaDetail('${esc(c.no)}')">Open</button></td>
-    </tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="7">No corrective actions match these filters</td></tr>';
-
-  // Rule-based repeated-issue insights
-  const insights=[];
-  const ncrCatCounts=groupBy(data.qualityNcrs||[],n=>n.category);
-  Object.entries(ncrCatCounts).forEach(([cat,list])=>{if(list.length>=2)insights.push(`<b>${list.length} NCRs</b> share category "${esc(NCR_CATEGORY_LABEL[cat]||cat)}" — consider a common root cause.`);});
-  const weldRepairs=(data.qualityWelds||[]).filter(w=>(w.repairHistory||[]).length>0);
-  if(weldRepairs.length>0)insights.push(`<b>${weldRepairs.length} weld(s)</b> have at least one repair recorded.`);
-  const supplierIssues=groupBy((data.qualityNcrs||[]).filter(n=>n.supplier),n=>n.supplier);
-  Object.entries(supplierIssues).forEach(([sup,list])=>{if(list.length>=1)insights.push(`Supplier <b>${esc(sup)}</b> is linked to ${list.length} NCR(s).`);});
-  $('insights-list').innerHTML=insights.length?insights.map(i=>`<div class="noticebar" style="background:rgba(74,144,255,.06);border-color:rgba(74,144,255,.3);color:var(--steel-300);">${i}</div>`).join(''):'<p class="attnempty">No repeated-issue patterns detected in current data.</p>';
-}
-function openCapaModal(){
-  ['capa_related','capa_responsible','capa_problem','capa_correction','capa_rootcause','capa_action','capa_preventive','fb_people','fb_machine','fb_material','fb_method','fb_measurement','fb_environment'].forEach(id=>$(id).value='');
-  document.querySelectorAll('#fiveWhysWrap input').forEach(i=>i.value='');
-  $('capa_start').value=todayStr();$('capa_due').value='';
-  clearFormErr('capaFormErr');
-  openModal('capaModal');
-}
-function submitCapa(){
-  const fiveWhys=[...document.querySelectorAll('#fiveWhysWrap input')].map(i=>i.value.trim()).filter(Boolean);
-  const fishbone={people:$('fb_people').value.trim(),machine:$('fb_machine').value.trim(),material:$('fb_material').value.trim(),method:$('fb_method').value.trim(),measurement:$('fb_measurement').value.trim(),environment:$('fb_environment').value.trim()};
-  const payload={
-    relatedRef:$('capa_related').value.trim(),problemStatement:$('capa_problem').value.trim(),immediateCorrection:$('capa_correction').value.trim(),
-    rootCause:$('capa_rootcause').value.trim(),correctiveAction:$('capa_action').value.trim(),preventiveAction:$('capa_preventive').value.trim(),
-    responsiblePerson:$('capa_responsible').value.trim(),startDate:$('capa_start').value,dueDate:$('capa_due').value,fiveWhys,fishbone,status:'open'
-  };
-  if(!payload.problemStatement){formErr('capaFormErr','Problem statement is required.');return;}
-  const rec=WorkshopData.createCapa(payload);
-  invalidateDataCache();closeModal('capaModal');notify('Corrective action created: '+rec.no);
-  if(currentSection)loadSectionData(currentSection);
-}
-function openCapaDetail(no){
-  const data=getData();const c=(data.qualityCapas||[]).find(x=>x.no===no);if(!c)return;
-  $('detailTitle').textContent=c.no+' — Corrective Action';
-  $('detailSub').textContent=c.relatedRef?('Related: '+c.relatedRef):'';
-  $('detailBody').innerHTML=`
-    <div class="mrow"><b>Problem</b>: ${esc(c.problemStatement||'N/A')}</div>
-    <div class="mrow"><b>Root Cause</b>: ${esc(c.rootCause||'Not recorded')}</div>
-    <div class="mrow"><b>Corrective Action</b>: ${esc(c.correctiveAction||'N/A')}</div>
-    <div class="mrow2"><div><b>Responsible</b>: ${esc(c.responsiblePerson||'N/A')}</div><div><b>Due</b>: ${esc(c.dueDate||'N/A')}</div></div>
-    <div class="mrow2"><div><b>Status</b>: ${badge(c.status,genericLabel(c.status))}</div><div><b>Verified By</b>: ${esc(c.verifiedBy||'Not verified')}</div></div>
-    ${c.fiveWhys&&c.fiveWhys.length?('<div class="mrow"><b>5 Whys</b>: <ol>'+c.fiveWhys.map(w=>`<li>${esc(w)}</li>`).join('')+'</ol></div>'):''}
-    <div class="phead" style="margin-top:10px;"><h3 style="font-size:12px;">Verify Effectiveness</h3></div>
-    <div class="mrow"><label for="capaVerifyInput">Effectiveness Check Evidence</label><textarea id="capaVerifyInput"></textarea></div>
-    <div class="mbtns" style="justify-content:flex-start;">
-      <button class="mbtn" onclick="submitCapaVerify('${esc(c.no)}','ineffective')">Mark Ineffective</button>
-      <button class="mbtn primary" onclick="submitCapaVerify('${esc(c.no)}','effective')">Mark Effective</button>
-    </div>
-    <div class="mformerr show" id="capaVerifyErr" style="display:none;margin-top:8px;"></div>
-  `;
-  openModal('detailModal');
-}
-function submitCapaVerify(no,result){
-  const evidence=$('capaVerifyInput').value.trim();
-  const r=WorkshopData.verifyCapa(no,{verifiedBy:'Aleksandar C.',effectivenessCheck:evidence,result});
-  if(r.error){const e=$('capaVerifyErr');e.textContent=r.error;e.style.display='block';return;}
-  invalidateDataCache();notify('Corrective action '+no+' marked '+result+'.');closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
-}
-$('openNewCapaBtn').addEventListener('click',()=>openCapaModal());
 
 // ══════════════ ITP / CONTROL PLANS ══════════════
-function renderItpSection(data){
-  const itps=data.qualityItps||[];
-  const sel=$('itpSelect');
-  fillSelect(sel,itps.map(i=>[i.no,i.no+' — '+(i.projectNo||'')]));
-  if(!sel.value&&itps.length)sel.value=itps[0].no;
-  sel.onchange=()=>renderItpDetail(sel.value);
-  if(itps.length===0){$('itp-header-panel').innerHTML='<p class="attnempty">No ITPs created yet.</p>';$('itp-lines-body').innerHTML='<tr class="emptyrow"><td colspan="10">No ITP selected</td></tr>';$('itp-progress-body').innerHTML='';return;}
-  renderItpDetail(sel.value||itps[0].no);
-}
-function renderItpDetail(no){
-  const data=getData();const itp=(data.qualityItps||[]).find(i=>i.no===no);
-  if(!itp){$('itp-header-panel').innerHTML='<p class="attnempty">ITP not found.</p>';return;}
-  $('itp-header-panel').innerHTML=`
-    <div class="mrow2"><div><b>Project</b>: ${esc(itp.projectNo)}</div><div><b>Customer</b>: ${esc(itp.customer||'N/A')}</div></div>
-    <div class="mrow2"><div><b>Revision</b>: ${esc(itp.revision)}</div><div><b>Status</b>: ${badge(itp.status,genericLabel(itp.status))}</div></div>
-    <div class="mrow2"><div><b>Prepared By</b>: ${esc(itp.preparedBy||'N/A')}</div><div><b>Effective Date</b>: ${esc(itp.effectiveDate||'N/A')}</div></div>
-  `;
-  const lines=itp.lines||[];
-  $('itp-lines-body').innerHTML=lines.map(l=>{
-    const holdBlocking=l.pointType==='H'&&l.status==='open';
-    return `<tr>
-      <td>${l.seq}</td><td>${esc(l.phase||'N/A')}</td><td>${esc(l.jobcard||'N/A')}</td><td>${esc(l.activity||'N/A')}</td>
-      <td>${badge(l.pointType==='H'?'warn':'info',l.pointType)}</td><td>${esc(l.customerInvolvement||'N/A')}</td><td>${esc(l.plannedDate||'N/A')}</td>
-      <td>${badge(l.result,resultLabel(l.result)||genericLabel(l.result))}</td><td>${badge(holdBlocking?'danger':l.status,genericLabel(l.status))}</td>
-      <td>
-        ${l.status!=='resolved'?`<button class="fbtn" style="padding:4px 8px;" onclick="resolveItpLine('${esc(itp.no)}',${l.seq})">Resolve</button>`:''}
-        ${l.status!=='resolved'?`<button class="fbtn" style="padding:4px 8px;" onclick="skipItpLine('${esc(itp.no)}',${l.seq})">Skip</button>`:''}
-      </td>
-    </tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="10">No ITP lines yet</td></tr>';
-  const resolved=lines.filter(l=>l.status==='resolved').length;
-  $('itp-progress-body').innerHTML=barChartHtml([{label:itp.no,value:lines.length?resolved/lines.length*100:0,display:lines.length?pctStr(resolved/lines.length*100):'N/A',cls:resolved===lines.length&&lines.length>0?'ok':'warn'}]);
-  $('addItpLineBtn').onclick=()=>openItpLineModal(itp.no);
-}
-function resolveItpLine(itpNo,seq){
-  const data=getData();const itp=(data.qualityItps||[]).find(i=>i.no===itpNo);
-  const line=itp&&(itp.lines||[]).find(l=>l.seq===seq);
-  let result=line?line.result:'';
-  if(line&&line.pointType==='H'&&(!result||result==='pending')){
-    wPrompt('Record result before resolving this Hold Point (passed/failed/accepted/rejected):','passed',
-      (v)=>doResolveItpLine(itpNo,seq,v||line.result));
-    return;
-  }
-  doResolveItpLine(itpNo,seq,result||line.result);
-}
-function doResolveItpLine(itpNo,seq,result){
-  const r=WorkshopData.updateItpLine(itpNo,seq,{status:'resolved',result,actualDate:todayStr()});
-  if(r.error){notify(r.error);return;}
-  invalidateDataCache();notify('ITP line resolved.');
-  if(currentSection)loadSectionData('itp');
-}
-function skipItpLine(itpNo,seq){
-  wPrompt('Reason for skipping this inspection point:','',(reason)=>{
-    wPrompt('Approval reference:','',(approvalRef)=>{
-      const r=WorkshopData.updateItpLine(itpNo,seq,{status:'skipped',comments:reason,approvalRef});
-      if(r.error){notify(r.error);return;}
-      invalidateDataCache();notify('ITP line skipped.');
-      if(currentSection)loadSectionData('itp');
-    });
-  });
-}
-$('openNewItpBtn').addEventListener('click',()=>{populateProjectSelect($('itp_project'));$('itp_effective').value=todayStr();clearFormErr('itpFormErr');openModal('itpModal');});
-function submitItp(){
-  const data=getData();const project=(data.projects||[]).find(p=>p.no===$('itp_project').value);
-  const payload={projectNo:$('itp_project').value,customer:project?project.customer:'',preparedBy:$('itp_prepared').value.trim(),effectiveDate:$('itp_effective').value};
-  if(!payload.projectNo){formErr('itpFormErr','Select a project.');return;}
-  const rec=WorkshopData.createItp(payload);
-  invalidateDataCache();closeModal('itpModal');notify('ITP created: '+rec.no);
-  if(currentSection)loadSectionData(currentSection);
-}
 let itpLineTarget=null;
-function openItpLineModal(itpNo){
-  itpLineTarget=itpNo;
-  const data=getData();const itp=(data.qualityItps||[]).find(i=>i.no===itpNo);
-  populateJobcardSelect($('line_jobcard'),itp?itp.projectNo:null);
-  ['line_phase','line_activity','line_criteria','line_responsible','line_customer'].forEach(id=>$(id).value='');
-  $('line_type').value='H';$('line_planned').value=todayStr();
-  clearFormErr('lineFormErr');
-  openModal('itpLineModal');
-}
-function submitItpLine(){
-  if(!itpLineTarget)return;
-  const payload={phase:$('line_phase').value.trim(),jobcard:$('line_jobcard').value||null,activity:$('line_activity').value.trim(),
-    acceptanceCriteria:$('line_criteria').value.trim(),responsible:$('line_responsible').value.trim(),pointType:$('line_type').value,
-    customerInvolvement:$('line_customer').value.trim(),plannedDate:$('line_planned').value};
-  if(!payload.activity){formErr('lineFormErr','Inspection activity is required.');return;}
-  const r=WorkshopData.addItpLine(itpLineTarget,payload);
-  if(r.error){formErr('lineFormErr',r.error);return;}
-  invalidateDataCache();closeModal('itpLineModal');notify('ITP line added.');
-  if(currentSection)loadSectionData('itp');
-}
 
 // ══════════════ MATERIAL TRACEABILITY ══════════════
-function renderTraceability(data){
-  const inv=data.inventory||[];
-  $('trace-total').textContent=inv.length;
-  const full=inv.filter(i=>i.supplier&&i.heat&&i.certificate&&i.location).length;
-  $('trace-full').textContent=full;
-  $('trace-incomplete').textContent=inv.length-full;
-  $('trace-missing-cert').textContent=inv.filter(i=>!i.certificate).length;
-  $('trace-list-body').innerHTML=inv.map(i=>{
-    const links=[i.supplier,i.heat,i.certificate,i.location];
-    const complete=links.every(Boolean);
-    return `<tr><td><strong>${esc(i.code)}</strong></td><td>${esc(i.description||'N/A')}</td><td>${naOr(i.supplier)}</td><td>${naOr(i.heat)}</td>
-      <td>${i.certificate?esc(i.certificate):'<span style="color:var(--danger)">Missing</span>'}</td><td>${badge(i.certificate?'ok':'danger',i.certificate?'Valid':'Missing')}</td>
-      <td>${naOr(i.location)}</td><td>${badge(complete?'ok':'warn',complete?'Traceable':'Incomplete chain')}</td></tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="8">No inventory records</td></tr>';
-}
 
 // ══════════════ SUPPLIER QUALITY ══════════════
-function renderSupplierQuality(data){
-  const rows=data.supplierQuality||[];
-  $('supq-list-body').innerHTML=rows.map(s=>`<tr class="clickable" onclick="openSupplierQualityDetail('${esc(s.supplier)}')">
-    <td><strong>${esc(s.supplier)}</strong></td><td>${badge(s.approvalStatus,genericLabel(s.approvalStatus))}</td><td>${s.rating!=null?s.rating+'/5':'N/A'}</td>
-    <td>${s.totalDeliveries!=null?s.acceptedDeliveries+'/'+s.totalDeliveries:'N/A'}</td><td>${s.rejectedDeliveries!=null?s.rejectedDeliveries:'N/A'}</td>
-    <td>${s.missingCertificates||0}</td><td>${s.openNcrs||0}</td><td>${esc(s.nextReview||'N/A')}</td>
-    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openSupplierQualityDetail('${esc(s.supplier)}')">View</button></td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="9">No supplier quality records yet</td></tr>';
-}
-function openSupplierQualityDetail(supplierName){
-  const data=getData();const s=(data.supplierQuality||[]).find(x=>x.supplier===supplierName);if(!s)return;
-  $('detailTitle').textContent=s.supplier+' — Supplier Quality';
-  $('detailSub').textContent='Frontend demonstration until backend permissions and audit logging exist.';
-  $('detailBody').innerHTML=`
-    <div class="mrow2"><div><b>Approval Status</b>: ${badge(s.approvalStatus,genericLabel(s.approvalStatus))}</div><div><b>Rating</b>: ${s.rating!=null?s.rating+'/5':'N/A'}</div></div>
-    <div class="mrow2"><div><b>Deliveries</b>: ${s.acceptedDeliveries||0} accepted / ${s.rejectedDeliveries||0} rejected of ${s.totalDeliveries||0}</div><div><b>Open NCRs</b>: ${s.openNcrs||0}</div></div>
-    <div class="mrow"><b>Repeated Defects</b>: ${esc(s.repeatedDefects||'None recorded')}</div>
-    <div class="mrow2"><div><b>Last Review</b>: ${esc(s.lastReview||'N/A')}</div><div><b>Next Review</b>: ${esc(s.nextReview||'N/A')}</div></div>
-    <div class="mbtns" style="justify-content:flex-start;flex-wrap:wrap;">
-      <button class="mbtn" onclick="promptSupplierNcr('${esc(s.supplier)}')">Create Supplier NCR</button>
-      <button class="mbtn" onclick="promptSupplierReview('${esc(s.supplier)}')">Add Review</button>
-      <button class="mbtn" onclick="promptSupplierStatus('${esc(s.supplier)}')">Update Approval Status</button>
-    </div>
-  `;
-  openModal('detailModal');
-}
-function promptSupplierNcr(supplier){
-  wPrompt('Describe the supplier quality issue:','',(desc)=>{
-    const res=WorkshopData.createNcr({title:'Supplier issue: '+supplier,projectNo:'',customer:'',supplier,description:desc,category:'supplier',severity:'major',detectedBy:'Aleksandar C.',responsiblePerson:'Aleksandar C.',dueDate:todayStr()});
-    if(res.error){notify(res.error);return;}
-    invalidateDataCache();notify('Supplier NCR created: '+res.ncr.no);closeModal('detailModal');
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
-function promptSupplierReview(supplier){
-  wPrompt('Review notes:','',(text)=>{
-    WorkshopData.addSupplierQualityReview(supplier,{author:'Aleksandar C.',text});
-    invalidateDataCache();notify('Review added.');closeModal('detailModal');
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
-function promptSupplierStatus(supplier){
-  wPrompt('New approval status (approved/conditionally-approved/under-review/suspended/not-approved):','approved',(status)=>{
-    WorkshopData.upsertSupplierQuality(supplier,{approvalStatus:status});
-    invalidateDataCache();notify('Approval status updated.');closeModal('detailModal');
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
 
 // ══════════════ CUSTOMER COMPLAINTS ══════════════
-function renderComplaints(data){
-  let rows=(data.qualityComplaints||[]).filter(c=>matchProject(c.projectNo)&&matchStatus(c.status)&&matchSearch(c.no,c.customer,c.description));
-  $('cmp-list-body').innerHTML=rows.map(c=>`<tr class="clickable" onclick="openComplaintDetail('${esc(c.no)}')">
-    <td><strong>${esc(c.no)}</strong></td><td>${esc(c.customer||'N/A')}</td><td>${esc(c.projectNo||'N/A')}</td><td>${badge(c.severity,genericLabel(c.severity))}</td>
-    <td>${esc(c.complaintDate||'N/A')}</td><td>${esc(c.responsiblePerson||'N/A')}</td><td>${badge(c.status,genericLabel(c.status))}</td>
-    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openComplaintDetail('${esc(c.no)}')">Open</button></td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="8">No customer complaints match these filters</td></tr>';
-}
-$('openNewComplaintBtn').addEventListener('click',()=>{
-  populateCustomerSelect($('cmp_customer'));populateProjectSelect($('cmp_project'),'—');fillSelect($('cmp_severity'),NCR_SEVERITIES.map(s=>[s,genericLabel(s)]));
-  ['cmp_item','cmp_description'].forEach(id=>$(id).value='');$('cmp_due').value='';$('cmp_responsible').value='Aleksandar C.';
-  clearFormErr('cmpFormErr');openModal('complaintModal');
-});
-function submitComplaint(){
-  const payload={customer:$('cmp_customer').value,projectNo:$('cmp_project').value||null,deliveredItem:$('cmp_item').value.trim(),
-    severity:$('cmp_severity').value,description:$('cmp_description').value.trim(),responsiblePerson:$('cmp_responsible').value.trim(),dueDate:$('cmp_due').value};
-  if(!payload.description){formErr('cmpFormErr','Description is required.');return;}
-  const rec=WorkshopData.createComplaint(payload);
-  invalidateDataCache();closeModal('complaintModal');notify('Complaint created: '+rec.no);
-  if(currentSection)loadSectionData(currentSection);
-}
-function openComplaintDetail(no){
-  const data=getData();const c=(data.qualityComplaints||[]).find(x=>x.no===no);if(!c)return;
-  $('detailTitle').textContent=c.no+' — Customer Complaint';
-  $('detailSub').textContent=c.customer+(c.projectNo?(' · '+c.projectNo):'');
-  $('detailBody').innerHTML=`
-    <div class="mrow"><b>Description</b>: ${esc(c.description||'N/A')}</div>
-    <div class="mrow2"><div><b>Severity</b>: ${badge(c.severity,genericLabel(c.severity))}</div><div><b>Status</b>: ${badge(c.status,genericLabel(c.status))}</div></div>
-    <div class="mrow2"><div><b>Responsible</b>: ${esc(c.responsiblePerson||'N/A')}</div><div><b>Due</b>: ${esc(c.dueDate||'N/A')}</div></div>
-    <div class="mrow"><b>Root Cause</b>: ${esc(c.rootCause||'Not recorded')}</div>
-    <div class="mrow"><b>NCR Link</b>: ${esc(c.ncrRef||'Not converted')}</div>
-    <div class="mbtns" style="justify-content:flex-start;">
-      ${!c.ncrRef?`<button class="mbtn primary" onclick="convertComplaint('${esc(c.no)}')">Convert to NCR</button>`:''}
-      <button class="mbtn" onclick="advanceComplaintStatus('${esc(c.no)}')">Advance Status</button>
-    </div>
-  `;
-  openModal('detailModal');
-}
-function convertComplaint(no){
-  const res=WorkshopData.convertComplaintToNcr(no);
-  if(res.error){notify(res.error);return;}
-  invalidateDataCache();notify('Converted to NCR: '+res.ncr.no);closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
-}
-function advanceComplaintStatus(no){
-  const order=COMPLAINT_STATUSES;
-  const data=getData();const c=(data.qualityComplaints||[]).find(x=>x.no===no);if(!c)return;
-  const idx=order.indexOf(c.status);const next=order[Math.min(idx+1,order.length-1)];
-  WorkshopData.updateComplaint(no,{status:next});
-  invalidateDataCache();notify('Complaint status: '+genericLabel(next));closeModal('detailModal');
-  if(currentSection)loadSectionData(currentSection);
-}
 
 // ══════════════ CERTIFICATES ══════════════
-function renderCertificates(data){
-  const inv=data.inventory||[];
-  $('cert-total').textContent=inv.length;
-  $('cert-valid').textContent=inv.filter(i=>i.certificate).length;
-  $('cert-missing').textContent=inv.filter(i=>!i.certificate).length;
-  $('certreg-list-body').innerHTML=inv.map(i=>`<tr>
-    <td><strong>${esc(i.code)}</strong></td><td>${esc(i.description||'N/A')}</td><td>${esc(i.certificateType||'EN 10204 3.1')}</td>
-    <td>${i.certificate?esc(i.certificate):'N/A'}</td><td>${badge(i.certificate?'valid':'missing',i.certificate?'Valid':'Missing')}</td>
-    <td>${!i.certificate?`<button class="fbtn" style="padding:4px 8px;" onclick="promptLinkCertificate('${esc(i.code)}')">Link Certificate</button>`:'—'}</td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="6">No store items</td></tr>';
-}
-function promptLinkCertificate(code){
-  wPrompt('Certificate number (e.g. MTC_H240516-S534.pdf):','',(certNo)=>{
-    const r=WorkshopData.linkMaterialCertificate(code,{certificateNumber:certNo,certificateType:'EN 10204 3.1',certificateStatus:'valid'});
-    if(r.error){notify(r.error);return;}
-    invalidateDataCache();notify('Certificate linked to '+code);
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
 
 // ══════════════ CALIBRATION STATUS ══════════════
-function renderCalibration(data){
-  const eq=data.equipment||[];
-  const measuring=eq.filter(e=>/measur|caliper|gauge|instrument/i.test(e.category||'')||e.calibrationDate);
-  const list=measuring.length?measuring:eq;
-  $('calib-source-note').textContent=eq.length===0?'Equipment calibration data not connected.':'Reading calibration data from the Equipment & Machines module (read-only reference — not duplicated here).';
-  $('calib-list-body').innerHTML=list.map(e=>{
-    const exp=safeDate(e.certificationExpiry);
-    const days=exp?daysBetween(new Date(),exp):null;
-    const status=days==null?'unknown':days<0?'overdue':days<=30?'expiring-soon':'valid';
-    const usable=status!=='overdue';
-    return `<tr><td><strong>${esc(e.name)}</strong></td><td>${esc(e.equipmentId||e.id)}</td><td>${badge(status,genericLabel(status))}</td>
-      <td>${esc(e.maintenanceDate||'N/A')}</td><td>${esc(e.certificationExpiry||'N/A')}</td><td>${badge(usable?'ok':'danger',usable?'Usable':'Blocked — recalibration required')}</td></tr>`;
-  }).join('')||'<tr class="emptyrow"><td colspan="6">Equipment calibration data not connected.</td></tr>';
-}
 
 // ══════════════ QUALITY DOSSIERS ══════════════
-function renderDossiers(data){
-  const dossiers=data.qualityDossiers||[];
-  const sel=$('dossierSelect');
-  fillSelect(sel,dossiers.map(d=>[d.projectNo,d.projectNo]));
-  if(!sel.value&&dossiers.length)sel.value=dossiers[0].projectNo;
-  sel.onchange=()=>renderDossierDetail(sel.value);
-  if(dossiers.length===0){$('dos-items-body').innerHTML='<tr class="emptyrow"><td colspan="4">No quality dossiers created yet</td></tr>';['dos-required','dos-available','dos-missing','dos-readiness'].forEach(id=>$(id).textContent='N/A');return;}
-  renderDossierDetail(sel.value||dossiers[0].projectNo);
-}
-function renderDossierDetail(projectNo){
-  const data=getData();const d=(data.qualityDossiers||[]).find(x=>x.projectNo===projectNo);
-  if(!d){$('dos-items-body').innerHTML='<tr class="emptyrow"><td colspan="4">Dossier not found</td></tr>';return;}
-  const items=d.items||[];
-  const required=items.filter(i=>i.required);
-  const available=required.filter(i=>['approved','available'].includes(i.status)).length;
-  const missing=required.filter(i=>i.status==='missing').length;
-  const readiness=computeDossierReadiness(d);
-  $('dos-required').textContent=required.length;
-  $('dos-available').textContent=available;
-  $('dos-missing').textContent=missing;
-  $('dos-readiness').textContent=readiness==null?'N/A':pctStr(readiness);
-  $('dos-items-body').innerHTML=items.map(i=>`<tr><td>${esc(i.name)}</td><td>${i.required?'Yes':'No'}</td><td>${badge(i.status,genericLabel(i.status))}</td><td>${esc(i.reference||'N/A')}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="4">No dossier items</td></tr>';
-}
 
 // ══════════════ FINAL RELEASE ══════════════
-function renderRelease(data){
-  const projects=data.projects||[];
-  populateProjectSelect($('releaseProjectSelect'));
-  const pSel=$('releaseProjectSelect'),jSel=$('releaseJobcardSelect');
-  pSel.onchange=()=>{populateJobcardSelect(jSel,pSel.value,tr('whole_project'));renderReleaseDetail();};
-  jSel.onchange=()=>renderReleaseDetail();
-  if(!jSel.options.length)populateJobcardSelect(jSel,pSel.value,tr('whole_project'));
-  renderReleaseDetail();
-  $('release-history-body').innerHTML=(data.qualityReleases||[]).map(r=>`<tr>
-    <td><strong>${esc(r.no)}</strong></td><td>${esc(r.projectNo)}</td><td>${badge(r.result,genericLabel(r.result))}</td><td>${esc(r.releasedBy||'N/A')}</td><td>${esc((r.releaseDate||'').slice(0,10))}</td>
-    <td>${r.result!=='pending'?`<button class="fbtn" style="padding:4px 8px;" onclick="promptReopenRelease('${esc(r.no)}')">Reopen</button>`:''}</td>
-  </tr>`).join('')||'<tr class="emptyrow"><td colspan="6">No final release records yet</td></tr>';
-}
-function renderReleaseDetail(){
-  const data=getData();
-  const projectNo=$('releaseProjectSelect').value;
-  const jobcardNo=$('releaseJobcardSelect').value||null;
-  if(!projectNo){$('release-checklist').innerHTML='<p class="attnempty">Select a project.</p>';$('release-form').innerHTML='';return;}
-  const {blockingReasons}=computeReleaseBlocking(data,projectNo,jobcardNo);
-  $('release-checklist').innerHTML=blockingReasons.length===0
-    ?`<div class="noticebar" style="background:rgba(74,212,138,.1);border-color:rgba(74,212,138,.4);color:var(--tint-ok);">✓ No blocking conditions found — ready for release.</div>`
-    :`<div class="holdbar"><strong>${blockingReasons.length} blocking condition(s):</strong></div><ul class="attnlist">${blockingReasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
-  $('release-form').innerHTML=`
-    <div class="formblock">
-    <div class="mrow2"><div><label for="rel_result">Result</label><select id="rel_result">
-      <option value="released" ${blockingReasons.length>0?'disabled':''}>Released</option>
-      <option value="released-conditions">Released with Conditions</option>
-      <option value="not-released">Not Released</option>
-    </select></div><div><label for="rel_by">Released By</label><input id="rel_by" type="text" value="Aleksandar C."></div></div>
-    <div class="mrow2"><div><label for="rel_conditions">Conditions (required for Released with Conditions)</label><input id="rel_conditions" type="text"></div><div><label for="rel_approval">Approval Reference</label><input id="rel_approval" type="text"></div></div>
-    <div class="mrow"><label for="rel_notes">Notes</label><textarea id="rel_notes"></textarea></div>
-    <div class="mformerr" id="releaseFormErr"></div>
-    <button class="fbtn primary" onclick="submitRelease('${esc(projectNo)}','${esc(jobcardNo||'')}')">Issue Release</button>
-    </div>
-  `;
-}
-function submitRelease(projectNo,jobcardNo){
-  const data=getData();
-  const {blockingReasons}=computeReleaseBlocking(data,projectNo,jobcardNo||null);
-  const payload={
-    projectNo,jobcard:jobcardNo||null,releaseType:jobcardNo?'Jobcard':'Project',releasedBy:$('rel_by').value.trim(),
-    result:$('rel_result').value,conditions:$('rel_conditions').value.trim(),approvalRef:$('rel_approval').value.trim(),
-    notes:$('rel_notes').value.trim(),blockingReasons,outstandingObservations:blockingReasons.join('; ')
-  };
-  const rec=WorkshopData.createFinalRelease(payload);
-  if(rec.error){formErr('releaseFormErr',rec.error);return;}
-  invalidateDataCache();notify('Final release issued: '+rec.no);
-  if(currentSection)loadSectionData(currentSection);
-}
-function promptReopenRelease(no){
-  wPrompt('Reason for reopening this release:','',(reason)=>{
-    const r=WorkshopData.reopenFinalRelease(no,reason);
-    if(r.error){notify(r.error);return;}
-    invalidateDataCache();notify('Release reopened.');
-    if(currentSection)loadSectionData(currentSection);
-  });
-}
 
 // ══════════════ QUALITY REPORTS ══════════════
-function renderQualityReports(data){
-  const insp=data.qualityInspections||[];
-  const statusG=groupBy(insp,i=>statusLabel(i.status));
-  $('qr-insp-body').innerHTML=Object.entries(statusG).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.length}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="2">No data</td></tr>';
-
-  const ncrs=data.qualityNcrs||[];
-  const ncrProj=groupBy(ncrs,n=>n.projectNo||'—');
-  $('qr-ncrproj-body').innerHTML=Object.entries(ncrProj).map(([p,l])=>`<tr><td>${esc(p)}</td><td>${l.length}</td><td>${l.filter(n=>n.severity==='critical').length}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="3">No data</td></tr>';
-
-  const ncrSupplier=groupBy(ncrs.filter(n=>n.supplier),n=>n.supplier);
-  $('qr-ncrsupplier-body').innerHTML=Object.entries(ncrSupplier).map(([s,l])=>`<tr><td>${esc(s)}</td><td>${l.length}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="2">No supplier-linked NCRs</td></tr>';
-
-  $('qr-rework-body').innerHTML=ncrs.filter(n=>n.reworkHours||n.costImpact).map(n=>`<tr><td>${esc(n.no)}</td><td>${esc(n.projectNo||'N/A')}</td><td>${n.reworkHours!=null?hrsStr(n.reworkHours):'N/A'}</td><td>${n.costImpact!=null?sekStr(n.costImpact):'N/A'}</td></tr>`).join('')||'<tr class="emptyrow"><td colspan="4">No rework cost/hours recorded</td></tr>';
-
-  $('qr-wpsexp-body').innerHTML=(data.qualityWelderQuals||[]).map(w=>{const st=welderQualStatusFor(data,w.welder,w.process);return `<tr><td>${esc(w.welder)}</td><td>${esc(w.qualNo)}</td><td>${esc(w.expiryDate)}</td><td>${badge(st,genericLabel(st))}</td></tr>`;}).join('')||'<tr class="emptyrow"><td colspan="4">No welder qualification records</td></tr>';
-
-  const inv=data.inventory||[];
-  const full=inv.filter(i=>i.supplier&&i.heat&&i.certificate&&i.location).length;
-  $('qr-traceability-body').innerHTML=barChartHtml([
-    {label:'Fully traceable',value:full,display:full,cls:'ok'},
-    {label:'Incomplete chain',value:inv.length-full,display:inv.length-full,cls:'warn'}
-  ]);
-}
 
 // ══════════════ NOTE MODAL (generic) ══════════════
 let noteTarget=null;
-function openNoteModal(collection,idOrNo){noteTarget={collection,idOrNo};$('note_text').value='';openModal('noteModal');}
 function submitNote(){
   if(!noteTarget)return;
   const text=$('note_text').value.trim();if(!text)return;
@@ -2410,11 +1269,34 @@ function loadConfig(){
 
 // ══════════════ CALCULATION HELPERS (business rules) ══════════════
 function activeHolds(data){return (data.qualityHolds||[]).filter(h=>h.status==='active');}
-function holdsForScope(data,scope,reference){return activeHolds(data).filter(h=>h.scope===scope&&h.reference===reference);}
-function isProjectOnHold(data,projectNo){
-  return activeHolds(data).some(h=>h.reference===projectNo||(h.scope==='jobcard'&&(data.jobcards||[]).some(j=>j.no===h.reference&&j.projectNo===projectNo)));
+
+// A hold stops a project or jobcard being completed or closed. Until now it could be counted on
+// the overview and released from a modal, but never simply listed - so nobody could answer "what
+// is being held right now, and why" without going looking. This is that list.
+function renderHolds(data){
+  const all=data.qualityHolds||[];
+  const holds=all.filter(h=>matchStatus(h.status)&&matchSearch(h.no,h.reference,h.reason,h.appliedBy));
+  const active=all.filter(h=>h.status==='active');
+  $('hold-active').textContent=active.length;
+  $('hold-projects').textContent=active.filter(h=>h.scope==='project').length;
+  $('hold-jobcards').textContent=active.filter(h=>h.scope==='jobcard').length;
+  $('hold-released').textContent=all.filter(h=>h.status!=='active').length;
+  $('holdsBody').innerHTML=holds
+    .slice()
+    .sort((a,b)=>(a.status===b.status?0:a.status==='active'?-1:1))
+    .map(h=>{
+      const live=h.status==='active';
+      return `<tr>
+        <td><strong>${esc(h.no)}</strong></td>
+        <td>${esc(genericLabel(h.scope))} ${esc(h.reference||'N/A')}</td>
+        <td>${esc(h.reason||'N/A')}</td>
+        <td>${badge(h.severity,genericLabel(h.severity))}</td>
+        <td>${esc((h.appliedDate||'').slice(0,10)||'N/A')}<br><small>${esc(h.appliedBy||'N/A')}</small></td>
+        <td>${badge(h.status,genericLabel(h.status))}${live?'':`<br><small>${esc((h.releaseDate||'').slice(0,10)||'N/A')}</small>`}</td>
+        <td>${live?`<button class="fbtn" style="padding:4px 8px;" onclick="openHoldReleaseModal('${esc(h.no)}')" data-i="release_hold">Release</button>`:''}</td>
+      </tr>`;
+    }).join('')||'<tr class="emptyrow"><td colspan="7" data-i="holds_none">No quality holds match these filters</td></tr>';
 }
-function isJobcardOnHold(data,jobcardNo){return activeHolds(data).some(h=>h.reference===jobcardNo);}
 function welderQualStatusFor(data,welderName,process){
   const q=(data.qualityWelderQuals||[]).find(x=>x.welder===welderName&&(!process||x.process===process));
   if(!q)return 'missing';
@@ -2462,13 +1344,6 @@ function computeReleaseBlocking(data,projectNo,jobcardNo){
     missing.forEach(i=>reasons.push(`Dossier item incomplete: ${i.name} (${i.status})`));
   }
   return {blockingReasons:[...new Set(reasons)]};
-}
-function computeDossierReadiness(dossier){
-  if(!dossier||!Array.isArray(dossier.items)||dossier.items.length===0)return null;
-  const required=dossier.items.filter(i=>i.required);
-  if(required.length===0)return null;
-  const ok=required.filter(i=>['approved','available'].includes(i.status)).length;
-  return ok/required.length*100;
 }
 
 // ── data-i translation helpers used broadly ──

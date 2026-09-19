@@ -146,9 +146,18 @@ records, pre-use checks, return-to-service... twelve tabs for each of twelve mac
 valid*. Everything else is a log nobody reads. The **gate** it provides (an operation cannot start
 on a machine that is out of service) is the valuable part and must survive any trimming.
 
-### Quality — 16 views, 9 record types
-2,488 lines. Inspections, NCRs, CAPAs, welds, NDT, ITPs, holds, complaints, dossiers, WPS, welder
-qualifications, supplier quality.
+### Quality — done: 4 views (was 16), 1,363 lines (was 2,488)
+**Pass 4.38 (19 September).** Thirteen views removed; a **Quality Holds** page added, because the
+hold was the most valuable thing in the module and was the one record with no page of its own —
+it could be counted on the overview and released from a modal, but never simply listed. The module
+is now Overview, Inspections, NCR and Quality Holds.
+
+The record types were left **in the data layer**, only unreachable from the UI. Nothing has been
+lost yet, so the carve-out below is still recoverable — but it must be honoured **before**
+`qualityWelds`, `qualityWps` and `qualityWelderQuals` are deleted from `workshop-data.js`, not
+after.
+
+The original reading, which still stands:
 
 **Read:** this is enterprise ISO machinery. **But I need to be careful here**: if Varmak is
 certified to **EN 1090** for structural steel — which is normal in Sweden — then weld records, WPS
@@ -161,7 +170,9 @@ tooling, ITPs, dossiers, supplier quality and complaints: nine record types down
 
 One exception, because it cannot be recovered later: record **who welded it and with what filler**
 as plain fields on the operation. If certification is pursued in two years that history exists;
-the subsystem can be built then, the facts cannot.
+the subsystem can be built then, the facts cannot. A jobcard operation carries `worker` and
+`machine` today; it needs `welder`, `fillerMaterial` and `consumableBatch`. **Not yet done** — and
+it is the gate on deleting the weld collections.
 
 The **hold gate** — an active hold blocks completion — is the most valuable thing in the module and
 survives any trimming.

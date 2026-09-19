@@ -112,6 +112,37 @@ an eight-step scale (9.5 / 11 / 12 / 13 / 15 / 17 / 21 / 26 px), 480 declaration
 tokens were already consistent bar two pages; `suppliers` carried a dead palette that the shared
 one shadowed, now removed.
 
+## 4c. The structural trim has started (19 September)
+
+The review in `REVIEW.md` proposed cutting screens that were not paying for themselves, and the
+agreed order was **Quality 9→3**, then **status filters as chips**, then **Reports**.
+
+**Quality is done (Pass 4.38).** Sixteen views became four — Overview, Inspections, NCR and a new
+**Quality Holds** page — and the file halved, 2,488 lines to 1,363. The hold register is the
+addition rather than a survivor: a hold is the one record in the system that physically stops work
+leaving the building, and until now it had no page, only a counter and a release dialog.
+
+Two things learned doing it, both worth repeating on the next module:
+
+- **Removing a view is four removals, not one.** The markup, the sidebar entry, the render
+  function and the `loadSectionData` branch. Miss the sidebar and you get thirteen orphaned
+  `<span>…</span></button>` fragments rendering as loose text down the nav — which is exactly what
+  happened, and what the first screenshot caught. **Look at the page; the tests will not see it.**
+- **Dead code hides behind dead code.** A single unreachability pass found 51 functions; removing
+  them and the modals they served made 8 more unreachable. The prune has to iterate until it
+  finds nothing, and the same is true of translation keys — 168 of 280 in the English table were
+  no longer referenced by anything.
+
+A regression suite came with it: `tests/quality.e2e.js` holds the hold gate to its promise — a
+critical failed inspection raises a hold naming the jobcard, the jobcard cannot be completed while
+it stands, and it clears only against a named authority and written evidence.
+
+**Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
+`qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
+`supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,
+so the carve-out in `REVIEW.md` — record **who welded it and with what filler** on the jobcard
+operation — is still recoverable. It must be done **before** those collections are deleted.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
