@@ -130,6 +130,91 @@ async function reportsWorkflow(page, reportId) {
   step('Reports/Documents: archive and linked document state survive reload');
 }
 
+// Six fixed reports replaced fifteen sections and sixty-one tabs. The point of a report is that
+// its figures come from records, so that is what these check: every KPI against the same count
+// taken from the data layer, and - the part that matters most for a prototype - that an empty
+// system reports nothing rather than a plausible-looking number.
+async function sixReports(page) {
+  const sections = await page.evaluate(() =>
+    [...document.querySelectorAll('.sideitem[data-section]')].map((b) => b.dataset.section));
+  assert.deepEqual(sections, ['won', 'late', 'hours', 'stock', 'bought', 'failed', 'saved'],
+    'the module is six reports and the saved list');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('[data-tab]').length), 0,
+    'a fixed report has no tabs to hunt through');
+
+  const num = (id) => page.evaluate((i) => {
+    const t = document.getElementById(i).textContent.trim();
+    return t === 'N/A' ? null : Number(t.replace(/[^\d.-]/g, ''));
+  }, id);
+
+  await page.click('[data-section="won"]');
+  const won = await page.evaluate(() => {
+    const est = WorkshopData.listEstimations().filter((e) => !e.archived);
+    return { accepted: est.filter((e) => e.status === 'accepted').length,
+             open: est.filter((e) => ['draft', 'sent'].includes(e.status)).length };
+  });
+  assert.equal(await num('won-count'), won.accepted);
+  assert.equal(await num('won-open'), won.open);
+  assert.equal((await page.locator('#won-list-body tr').count()), Math.max(won.accepted, 1));
+  step('Reports: what we won counts the quotations the customer actually accepted');
+
+  await page.click('[data-section="late"]');
+  const overdue = await page.evaluate(() => WorkshopData.getProjects().filter((p) => {
+    if (p.status === 'completed') return false;
+    const d = p.deadline || p.expectedCompletion;
+    return !!d && new Date(d).getTime() < Date.now();
+  }).length);
+  assert.equal(await num('late-projects'), overdue);
+  assert.equal(await page.locator('#late-proj-body tr').count(), Math.max(overdue, 1));
+  step('Reports: what is late counts the projects past their promised date');
+
+  await page.click('[data-section="bought"]');
+  const po = await page.evaluate(() => WorkshopData.getPurchaseOrders());
+  assert.equal(await num('buy-orders'), po.length);
+  assert.equal(await num('buy-value'), po.reduce((t, o) => t + (Number(o.value) || 0), 0));
+  assert.equal(await num('buy-suppliers'), new Set(po.map((o) => o.supplier).filter(Boolean)).size);
+  step('Reports: what we bought totals the purchase orders Suppliers raised');
+
+  await page.click('[data-section="failed"]');
+  const q = await page.evaluate(() => ({
+    failed: WorkshopData.listQualityInspections().filter((i) => i.result === 'failed').length,
+    open: WorkshopData.listQualityNcrs().filter((n) => !['closed', 'rejected'].includes(n.status)).length,
+    holds: WorkshopData.getActiveQualityHolds().length
+  }));
+  assert.equal(await num('fail-insp'), q.failed);
+  assert.equal(await num('fail-ncr'), q.open);
+  assert.equal(await num('fail-holds'), q.holds);
+  step('Reports: what failed inspection agrees with Quality, record for record');
+
+  await page.click('[data-section="hours"]');
+  const logged = await page.evaluate(() => (WorkshopData.get().hours || []).length);
+  if (logged === 0) {
+    assert.equal(await page.locator('#hrs-logged').textContent(), 'N/A',
+      'no hours logged must read N/A, never 0 - nobody worked zero hours');
+  }
+  step('Reports: hours nobody wrote down are reported as unknown, not as none');
+}
+
+async function reportsOnAnEmptySystem(page) {
+  await page.evaluate(() => WorkshopData.reset());
+  await page.reload({ waitUntil: 'load' });
+  for (const section of ['won', 'late', 'hours', 'stock', 'bought', 'failed']) {
+    await page.click(`[data-section="${section}"]`);
+    const shown = await page.evaluate(() => {
+      const el = document.querySelector('.section:not([style*="none"])');
+      return {
+        values: [...el.querySelectorAll('.kv')].map((e) => e.textContent.trim()),
+        tables: el.querySelectorAll('tbody').length,
+        empties: el.querySelectorAll('.emptyrow').length
+      };
+    });
+    assert.equal(shown.empties, shown.tables, `${section}: every table should say it is empty`);
+    const invented = shown.values.filter((v) => v !== 'N/A' && v !== '0');
+    assert.deepEqual(invented, [], `${section} shows ${invented.join(', ')} on an empty system`);
+  }
+  step('Reports: an empty system reports nothing, not a plausible number');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -140,6 +225,8 @@ async function main() {
     const reportId = await documentsWorkflow(page);
     await page.goto(`${harness.baseUrl}/reports-desktop.html`, { waitUntil: 'load' });
     await reportsWorkflow(page, reportId);
+    await sixReports(page);
+    await reportsOnAnEmptySystem(page);
     monitor.assertClean();
     console.log('\nDocuments/Reports browser E2E passed.');
   } finally {

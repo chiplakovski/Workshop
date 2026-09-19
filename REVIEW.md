@@ -201,15 +201,30 @@ held in the page and vanish on reload.
 genuinely useful new thing in the app; the rest dilutes it. Delete campaigns, content, case
 studies, segments. Move tenders into real storage or drop them.
 
-### Reports — 15 views, **55 tabs**
-2,939 lines. Plus a report builder and seven saved reports.
+### Reports — done: 6 reports (was 15 views, 61 tabs), 1,317 lines (was 2,939)
 
-**Read:** the clearest over-build in the system. Fifty-five tabs of reporting for a shop where the
-owner can see every job by walking across the floor.
+**Pass 4.40.** The six are **What We Won · What Is Late · Where The Hours Went · What Is Low In
+Stock · What We Bought · What Failed Inspection**, plus the Saved Reports list, which stays because
+it is a real, tested workflow and its records are created from Documents, not from the builder.
+The builder is gone.
 
-**Do: six fixed reports, no builder.** What did we earn this month · which jobs are late · where
-did the hours go · what is low in stock · what did we buy · what failed inspection. Print them.
-Delete the other forty-nine tabs.
+One name changed on purpose. The proposal said *what did we earn this month*; the system has no
+invoicing — `invoices` is empty in both the empty state and the demo — so there is no earned figure
+to report. The report counts **accepted quotations** and is called **What We Won**, and its lead
+line says in as many words that this is order intake, not invoiced revenue. Naming it *earned*
+would have been the first invented number in the app.
+
+Four defects fell out of the rebuild, none of them visible from a tab count:
+
+- **Two tabs never opened at all.** A KPI card and a tab panel shared an `id` in Store (Reserved)
+  and in Purchasing (Late), so `getElementById` handed the tab switcher the KPI and the panel stayed
+  hidden. Both had been dead since they were written.
+- **The module opened on "today".** The default range was `today`, so a shop whose last job was
+  yesterday opened Reports to a blank page. It opens on All Time now.
+- **Two field names were wrong** in the stock figures (`minimum`/`unitPrice` against the store's real
+  `minStock`/`avgCost`), so stock value read N/A and the below-minimum list was empty.
+- **A stale instruction.** Purchasing reports told the user to go to "the Purchasing module", deleted
+  back in Pass 4.06. Purchase orders come from Suppliers.
 
 ---
 

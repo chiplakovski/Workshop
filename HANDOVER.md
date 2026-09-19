@@ -166,6 +166,30 @@ The jobcard list had **no e2e coverage at all**, which is why nothing broke when
 was rewritten. It has some now: every chip's count is asserted against the rows that chip shows,
 and the exclusivity rule is asserted in both directions.
 
+
+**Reports became six reports (Pass 4.40).** Third and last on the agreed list. Fifteen sections and
+sixty-one tabs became six fixed reports plus the Saved Reports list: 2,939 lines to 1,317.
+
+The one deliberate change from the plan: the proposal called the first report *what did we earn this
+month*. The system has no invoicing — `invoices` is empty in both the empty state and the demo — so
+there is no earned figure to report. It counts accepted quotations, is called **What We Won**, and
+says on the page that this is order intake and nothing here has been billed or paid.
+
+Rebuilding it found four things a tab count would never show: two tabs that had **never opened**
+(a KPI and a panel sharing an `id`, so the tab switcher got the KPI), a default date range of
+**today** that made the whole module open blank, two **wrong field names** in the stock figures, and
+a message telling the user to go to the Purchasing module, deleted in Pass 4.06.
+
+Two lessons for the pruning tool itself, which now enforces both:
+
+- **A reference is a use.** The pruner only counted `name(`, so `projects.filter(isProjectOverdue)`
+  did not count and it proposed deleting a function the new code depends on. It counts any mention
+  now, which is the safe direction to be wrong in.
+- **Two functions with one name is a bug, not a prune decision.** Writing a new `renderHours`
+  alongside the old one left both in the file; in JS the later declaration wins, so the *old* one
+  ran and the new report was dead code that quietly threw. The pruner now refuses to run at all
+  when it finds duplicate declarations, rather than guessing which to keep.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,
