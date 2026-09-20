@@ -190,6 +190,34 @@ Two lessons for the pruning tool itself, which now enforces both:
   ran and the new report was dead code that quietly threw. The pruner now refuses to run at all
   when it finds duplicate declarations, rather than guessing which to keep.
 
+
+**The integrity sweep (Pass 4.41).** Every defect found in the three trimming passes was found by
+measuring, never by looking. None of them threw an error. None of them failed a test. All of them
+were plainly visible to anyone who checked the right thing — and nobody was checking. So the check
+is now a file: `tests/integrity.js`, run over all sixteen pages by `npm run test:integrity`.
+
+It asserts six things, and each one is there because it catches a bug that actually happened:
+
+| Check | The bug it would have caught |
+|---|---|
+| No two elements share an `id` | Reports: a KPI and a tab panel shared one, so two tabs never opened |
+| No two functions share a name | Reports: a new `renderHours` beside the old one; the old one ran |
+| No loose `<span>` in a nav | Quality: deleting buttons left thirteen labels as floating text |
+| No label rendering its own key | any translation written in one language and forgotten in another |
+| No page scrolls sideways | checked at the width the page is *for* — phone pages on a phone |
+| No figure on an empty system | the whole honesty rule, enforced rather than remembered |
+
+**A test that has never failed is not yet a test.** Each of the six was proved by putting its bug
+back into a real page, confirming the sweep named it, and reverting. Do the same for anything added
+to it.
+
+Two checks were written, failed honestly, and removed. A static scan for `$('id')` calls with no
+matching element flagged six working forms, because ids can be built by a helper
+(`fieldTextarea('brNotes', …)`) and never appear literally in the source. A scan for any label
+outside a control flagged twelve legitimate status boxes and user badges. **A check that cries wolf
+is worse than no check** — it trains you to skim the output, which is exactly how the real ones get
+missed.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,
@@ -279,7 +307,8 @@ the fetch. Check each source and drop the ones that forbid it.
 
 ## 9. Working notes
 
-- Tests: `npm test`, `npm run test:syntax`, `npm run test:browser`, `npm run test:e2e`.
+- Tests: `npm test`, `npm run test:syntax`, `npm run test:browser`, `npm run test:integrity`,
+  `npm run test:e2e`.
   The browser suites need `PLAYWRIGHT_CHROME_PATH` set to an installed Chromium. Never run
   `playwright install`.
 - Commit style: `Pass N.NN - <what changed, in plain words>`, then why it mattered.
