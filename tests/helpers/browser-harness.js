@@ -142,6 +142,33 @@ function monitorPage(page, baseUrl) {
 async function loadDemoData(page) {
   await page.evaluate(() => window.WorkshopData.loadDemoData());
   await page.reload({ waitUntil: 'load' });
+  await settle(page);
 }
 
-module.exports = { appPages, monitorPage, startBrowserHarness, loadDemoData };
+// The pages load their headings from a web font. Until it arrives they are laid out in the
+// fallback, and when it swaps in the toolbar buttons change width — enough, on Store, to wrap
+// the top bar onto a second row and push the board 38px down the page. A test that measured
+// where something was before that happened then aimed at where it used to be, and a drag test
+// landed one lane out. It looked like a flaky drag; it was a font arriving late.
+//
+// Anything that measures geometry waits for this first. It is cheap, and the alternative is a
+// suite nobody trusts.
+async function settle(page) {
+  await page.evaluate(async () => {
+    try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) { /* no font API */ }
+    // fonts.ready resolves as soon as nothing is pending, which is immediately true while the
+    // stylesheet itself is still in flight. So rather than trust one signal, wait for the page
+    // to stop moving: the same height twice in a row, or give up after a second and carry on.
+    const height = () => document.documentElement.scrollHeight + ':' + document.body.clientWidth +
+      ':' + Math.round((document.querySelector('.top,.topfull,header') || document.body).getBoundingClientRect().height);
+    let last = height();
+    for (let i = 0; i < 20; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const now = height();
+      if (now === last) return;
+      last = now;
+    }
+  });
+}
+
+module.exports = { appPages, monitorPage, startBrowserHarness, loadDemoData, settle };

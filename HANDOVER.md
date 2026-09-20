@@ -218,6 +218,40 @@ outside a control flagged twelve legitimate status boxes and user badges. **A ch
 is worse than no check** — it trains you to skim the output, which is exactly how the real ones get
 missed.
 
+
+**Hours on a phone became a fifteen-second job (Pass 4.42).** This is the screen the workshop
+actually touches every day, and it was a six-section form: project dropdown, item dropdown, typed
+hours, date, equipment, material, notes, then three chips, then Save. Twenty-three of its
+twenty-six controls were under 44px tall — a target you miss with a glove half off.
+
+It is three presses now. The jobcards that are **running right now** are offered as large cards at
+the top; pressing one fills in the project and its operation by driving the same two selects the
+long way round, so everything downstream sees exactly what it would have seen. Hours are buttons —
+½ 1 2 4 8 — with a −/+ pair stepping in halves, because workshops book time in halves and typing
+6.5 on a phone is the slowest thing on the screen. **Yesterday** is one press, being the correction
+people actually need. Underneath, the day reads back: the worker's own entries and their total,
+which is the only thing that makes a time sheet trustworthy to the person filling it in. Equipment,
+material and notes fold away behind **More detail**, which until now only turned blue.
+
+Three buttons on these two screens promised things they did not do: "More detail" and "Share to
+team feed" toggled their own colour and nothing else, and the photographs "Add pics" collected were
+never read by anything. Removed. Photographs of finished work are worth having and belong with the
+backend — a phone photo is 2–5MB against a ~5MB budget for the whole browser store, so it needs a
+size policy, a downscaler and somewhere to view them. The integrity sweep now fails any page
+carrying a button whose class nothing reads, so this cannot creep back.
+
+**And a flaky test turned out to be a real jolt.** The Store drag test had been failing most runs
+for a while. Not flake: the page's heading font arrives over the network, and when it swaps in the
+toolbar buttons change width just enough to wrap the top bar onto a second row — which pushes the
+whole board **38px down the page**, mid-drag. Aim at a lane, let go, land in the one above. The
+quick-action row takes its own line now, so the toolbar height never changes; eight consecutive
+runs green where it had been failing six from six. Two smaller things fell out of chasing it: a
+subgroup lane was a 22px drop strip (it is now the whole lane down to the next heading — darts,
+before), and `settle()` in the harness waits for the layout to stop moving before anything
+measures geometry.
+
+The lesson worth keeping: **"flaky" was a label, not a diagnosis.** The test was right every time.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,

@@ -96,6 +96,22 @@ async function orphanedNavLabels(page) {
     .map((el) => el.getAttribute('data-i')));
 }
 
+// Three buttons on the hours screens only ever toggled their own colour — "More detail",
+// "Share to team feed" — and the photographs a fourth collected were never read by anything.
+// A control whose `on` class nothing downstream reads is a promise the page cannot keep. Where
+// the class IS read back (the worker chips on a jobcard are a real multi-select) it is a control,
+// so the source is asked whether anything looks for it.
+function decorativeToggles(source) {
+  const found = [];
+  for (const match of source.matchAll(/onclick="this\.classList\.toggle\('([\w-]+)'\)\s*"/g)) {
+    const cls = match[1];
+    const readBack = new RegExp(`\\.${cls}\\b(?!['"])|classList\\.contains\\(['"]${cls}['"]\\)`);
+    const elsewhere = source.split(match[0]).join('');
+    if (!readBack.test(elsewhere)) found.push(cls);
+  }
+  return [...new Set(found)];
+}
+
 async function invented(page) {
   return page.evaluate((pattern) => {
     const honest = new RegExp(pattern, 'i');
@@ -115,6 +131,10 @@ async function checkPage(context, baseUrl, file, failures) {
   const fail = (what) => failures.push(`${file}: ${what}`);
   const source = readPage(file);
 
+  const pretending = decorativeToggles(source);
+  if (pretending.length) {
+    fail(`a button only toggles its own '${pretending.join("', '")}' class — nothing reads it, so it does nothing`);
+  }
   const shadowed = duplicateFunctionDeclarations(source);
   if (shadowed.length) {
     fail(`two declarations of ${shadowed.join(', ')} — in JS the later one wins, so the earlier is dead`);
@@ -122,12 +142,23 @@ async function checkPage(context, baseUrl, file, failures) {
   const page = await context.newPage();
   await page.setViewportSize(viewportFor(file));
   page.on('dialog', (dialog) => dialog.dismiss());
+  // Written after this sweep passed a page whose Save button had been deleted by a bad edit -
+  // the markup was clean, the ids were unique, and the script threw on load reaching for a
+  // button that was no longer there. A page that throws has not been checked, whatever else
+  // came back green.
+  const thrown = [];
+  page.on('pageerror', (error) => thrown.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !/ERR_CERT|favicon|net::/.test(message.text())) thrown.push(message.text());
+  });
   try {
     // Demo data first: this is the page as a person with a running workshop sees it.
     await page.goto(`${baseUrl}/${file}`, { waitUntil: 'load' });
     await page.evaluate(() => window.WorkshopData && window.WorkshopData.loadDemoData());
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(120);
+
+    if (thrown.length) fail(`throws on load: ${[...new Set(thrown)].slice(0, 3).join(' / ')}`);
 
     const dupes = await liveDuplicateIds(page);
     if (dupes.length) {
@@ -163,6 +194,7 @@ async function checkPage(context, baseUrl, file, failures) {
           await page.waitForTimeout(90);
         }
       }
+      if (thrown.length) fail(`throws while in use: ${[...new Set(thrown)].slice(0, 3).join(' / ')}`);
       const figures = await invented(page);
       if (figures.length) {
         fail(`${section || 'page'} shows a figure on an empty system: ${figures.slice(0, 5).join(', ')}`);

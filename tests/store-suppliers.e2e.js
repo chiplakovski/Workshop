@@ -183,12 +183,17 @@ async function receiveGoods(page, poNo) {
   assert.ok(board.lanes.includes('copper'), 'an empty subgroup must still be a lane you can drop into');
   assert.equal(board.tableHidden, true, 'the board is the overview; the table is the other tab');
 
+  // The drop target is measured AFTER the drag has begun, never before. The page's heading font
+  // arrives over the network, and when it swaps in the toolbar buttons change width enough to
+  // wrap the top bar onto a second row and move the whole board down the page. Aiming at where
+  // a lane was a moment ago then lands a lane out — which read for a long time as a flaky drag
+  // and was really a font arriving late. A person aims at where the lane is now; so does this.
   const dragCard = async (fromSel, toSel) => {
     const a = await page.locator(fromSel).boundingBox();
-    const b = await page.locator(toSel).boundingBox();
     await page.mouse.move(a.x + a.width / 2, a.y + 12);
     await page.mouse.down();
     await page.mouse.move(a.x + a.width / 2 + 20, a.y + 20, { steps: 4 });
+    const b = await page.locator(toSel).boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 });
     await page.mouse.up();
     await page.waitForTimeout(200);

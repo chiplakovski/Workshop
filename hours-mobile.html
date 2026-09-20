@@ -48,6 +48,49 @@
   label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;font-weight:500;}
   .fld{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:10px 12px;outline:none;transition:.15s;}
   .fld:focus{border-color:var(--spark);box-shadow:0 0 0 3px rgba(var(--c-accent-rgb),.16);}
+
+  /* Everything a hand presses is at least 48px. This screen is used standing up, in a workshop,
+     often with a glove half off; a 34px target is a target you miss. */
+  .fld,.chip,.addeq,.btn-primary,.btn-ghost{min-height:48px;}
+  .fld{font-size:15px;}
+
+  /* Jobs running now: the fast path. */
+  .jobpicks{display:grid;gap:8px;}
+  .jobpick{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:56px;
+    padding:10px 13px;background:var(--field);border:1px solid var(--field-line);color:var(--ice);
+    font-family:var(--font-body);text-align:left;cursor:pointer;transition:.15s;}
+  .jobpick:hover{border-color:var(--spark);}
+  .jobpick.on{border-color:var(--spark);background:rgba(var(--c-accent-rgb),.16);}
+  .jobpick b{font-size:14px;font-weight:600;}
+  .jobpick span{font-size:11.5px;color:var(--steel-400);}
+  .jobpick.on span{color:var(--steel-300);}
+  .jobnone{font-size:12.5px;color:var(--steel-400);padding:2px 1px;}
+
+  /* Hours: the common answers as buttons, the field for everything else. */
+  .quickhrs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:9px;}
+  .qh{min-height:48px;background:var(--field);border:1px solid var(--field-line);color:var(--ice);
+    font-family:var(--font-heading);font-weight:600;font-size:16px;cursor:pointer;transition:.15s;}
+  .qh:hover{border-color:var(--spark);}
+  .qh.on{background:rgba(var(--c-accent-rgb),.2);border-color:var(--spark);color:#fff;}
+  .hrsline,.dateline{display:flex;gap:7px;align-items:stretch;}
+  .hrsfld{text-align:center;font-family:var(--font-heading);font-size:19px;font-weight:600;}
+  .step{min-width:56px;min-height:48px;background:var(--field);border:1px solid var(--field-line);
+    color:var(--ice);font-size:22px;line-height:1;cursor:pointer;transition:.15s;}
+  .step.wide{min-width:0;flex:0 0 auto;padding:0 14px;font-size:13px;font-family:var(--font-body);}
+  .step:hover{border-color:var(--spark);}
+  .dateline .fld{flex:1;}
+
+  /* Logged today. Nothing here is styled as a figure the app computed - it is the worker's own
+     entries read back, which is the only thing that makes a time sheet trustworthy. */
+  .today{border-top:1px solid var(--field-line);padding-top:14px;margin-top:4px;}
+  .todayrow{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
+    border-bottom:1px solid rgba(var(--c-line-rgb),.14);font-size:13px;}
+  .todayrow:last-child{border-bottom:0;}
+  .todayrow b{font-family:var(--font-heading);font-weight:600;white-space:nowrap;}
+  .todayrow small{display:block;color:var(--steel-400);font-size:11px;margin-top:2px;}
+  .todaysum{display:flex;justify-content:space-between;padding:11px 2px 0;font-size:13px;
+    font-family:var(--font-heading);font-weight:700;color:var(--ice);}
+  .todaynone{font-size:12.5px;color:var(--steel-400);padding:4px 2px;}
   select.fld{appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="%238ea3c0" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>');background-repeat:no-repeat;background-position:right 10px center;padding-right:36px;}
   textarea.fld{resize:vertical;line-height:1.45;}
   .itemhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -93,7 +136,8 @@
   .grid-hd{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   textarea.fld{min-height:84px;}
   .actions{gap:7px;} .chip{flex:1;justify-content:center;padding:10px 8px;font-size:12px;}
-  .save{margin-top:100px;}
+  /* The gap used to push Save below three chips' worth of controls that are now folded away. */
+  .save{margin-top:22px;}
   
   /* compact collapsible language switcher */
   .langc{position:absolute;z-index:60;left:18px;bottom:16px;font-family:var(--font-body);}
@@ -142,6 +186,13 @@
     </div>
     <div class="card">
       
+    <!-- The jobs that are actually open, as things to press. A welder at the end of a shift has
+         one or two of these in mind; making them hunt for it in a dropdown of every project the
+         shop has ever had is the difference between hours getting logged and hours not. -->
+    <div class="row" id="todayRow">
+      <label data-i="todayjobs">Jobs running now</label>
+      <div class="jobpicks" id="jobPicks"></div>
+    </div>
     <div class="row">
       <label for="project" data-i="project">Select Project</label>
       <select class="fld" id="project"><option value="">—</option></select>
@@ -152,34 +203,63 @@
       </div>
       <select class="fld" id="item"><option value="">—</option></select>
     </div>
-    <div class="row grid-hd">
-      <div><label for="hours" data-i="hours">Enter Hours</label><input class="fld" id="hours" type="number" step="0.25" min="0" placeholder="0.00"></div>
-      <div><label for="date2" data-i="date">Date</label><input class="fld" id="date2" type="date"></div>
+
+    <!-- Workshops book time in halves. Typing 6.5 on a phone keyboard with a glove on is the
+         slowest part of the whole screen, so the common answers are buttons and the field is
+         there for everything else. -->
+    <div class="row">
+      <label for="hours" data-i="hours">Enter Hours</label>
+      <div class="quickhrs" id="quickHrs">
+        <button type="button" class="qh" data-h="0.5">½</button>
+        <button type="button" class="qh" data-h="1">1</button>
+        <button type="button" class="qh" data-h="2">2</button>
+        <button type="button" class="qh" data-h="4">4</button>
+        <button type="button" class="qh" data-h="8">8</button>
+      </div>
+      <div class="hrsline">
+        <button type="button" class="step" id="hrsDown" aria-label="−½">−</button>
+        <input class="fld hrsfld" id="hours" type="number" step="0.25" min="0" inputmode="decimal" placeholder="0.00">
+        <button type="button" class="step" id="hrsUp" aria-label="+½">+</button>
+      </div>
     </div>
     <div class="row">
-      <label for="equipList" data-i="intcost">Equipment used</label>
-      <div id="equipList"></div>
-      <button type="button" class="addeq" id="addEq"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addeq">Add equipment</span></button>
-    </div>
-    <div class="row">
-      <label for="matList" data-i="matlabel">Material used</label>
-      <div id="matList"></div>
-      <button type="button" class="addeq" id="addMat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addmat">Add material</span></button>
+      <label for="date2" data-i="date">Date</label>
+      <div class="dateline">
+        <input class="fld" id="date2" type="date">
+        <button type="button" class="step wide" id="dayBack" data-i="yesterday">Yesterday</button>
+      </div>
     </div>
 
-    <div class="row notes-row">
-      <label for="notes" data-i="notes">Notes</label>
-      <textarea class="fld" id="notes" data-i-ph="notesph" placeholder="What was done…"></textarea>
-    </div>
+    <!-- Everything below is the exception, not the rule, so it stays folded away until asked for.
+         The button used to only turn blue. -->
     <div class="row actions">
-      <button type="button" class="chip" id="picsChip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="0"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-8 8"/></svg><span data-i="addpics">Add pics</span></button>
-      <input type="file" id="picsInput" accept="image/*" multiple hidden>
-      <button type="button" class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="explain">More detail</span></button>
-      <button type="button" class="chip" onclick="this.classList.toggle('on')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i="teamtalk">Share to team feed</span></button>
+      <button type="button" class="chip" id="moreChip" aria-expanded="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="explain">More detail</span></button>
     </div>
+    <div id="moreWrap" hidden>
+      <div class="row">
+        <label for="equipList" data-i="intcost">Equipment used</label>
+        <div id="equipList"></div>
+        <button type="button" class="addeq" id="addEq"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addeq">Add equipment</span></button>
+      </div>
+      <div class="row">
+        <label for="matList" data-i="matlabel">Material used</label>
+        <div id="matList"></div>
+        <button type="button" class="addeq" id="addMat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i="addmat">Add material</span></button>
+      </div>
+      <div class="row notes-row">
+        <label for="notes" data-i="notes">Notes</label>
+        <textarea class="fld" id="notes" data-i-ph="notesph" placeholder="What was done…"></textarea>
+      </div>
+    </div>
+
     <div class="save">
       <button type="button" class="btn-primary" data-i="savebtn" id="saveEntry">Save entry</button>
       <button type="button" class="btn-ghost" data-i="savenew" id="saveNewEntry">Save &amp; new</button>
+    </div>
+
+    <div class="row today" id="todayPanel">
+      <label data-i="todaylog">Logged today</label>
+      <div id="todayList"></div>
     </div>
 
     </div>
@@ -206,19 +286,19 @@
   // implementation of "is this equipment currently held by this jobcard" in the app.
   const {resolveLogTimeEquipment}=JobcardEquipmentRules;
   const T={
-    sv:{noopenjobs:"Inget projekt har ett öppet jobbkort",eq_onjob:"På detta jobbkort",eq_attach:"Koppla från verkstaden",eq_attached:"Kopplad till jobbkortet: {list}",mat_logged:"{n} materialrad(er) noterade på {jc}",unit:"Enhet",back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",addpics:"Lägg till bilder",explain:"Mer info",teamtalk:"Dela i team-flödet",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
+    sv:{todayjobs:"Jobb som pågår nu",nojobsnow:"Inget arbetskort är öppet just nu",yesterday:"Igår",todaylog:"Rapporterat idag",todaytotal:"Totalt idag",nothinglogged:"Inget rapporterat för den här dagen än",noopenjobs:"Inget projekt har ett öppet jobbkort",eq_onjob:"På detta jobbkort",eq_attach:"Koppla från verkstaden",eq_attached:"Kopplad till jobbkortet: {list}",mat_logged:"{n} materialrad(er) noterade på {jc}",unit:"Enhet",back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",explain:"Mer info",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
       wholejobcard:"(helt jobbkort)",noitems:"Inga jobbkort hittades för detta projekt",noeqlinked:"Ingen utrustning kopplad till detta jobbkort ännu",
       err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
       eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
       eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
       eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad."},
-    en:{noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",addpics:"Add pics",explain:"More detail",teamtalk:"Share to team feed",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
+    en:{todayjobs:"Jobs running now",nojobsnow:"No jobcard is open right now",yesterday:"Yesterday",todaylog:"Logged today",todaytotal:"Total today",nothinglogged:"Nothing logged for this day yet",noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",explain:"More detail",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
       wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
       err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
       eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
       eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
       eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved."},
-    mk:{noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",addpics:"Dodaj sliki",explain:"Dodatno",teamtalk:"Objavi vo tim-feed",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
+    mk:{todayjobs:"Работи што течат сега",nojobsnow:"Ниедна работна картичка не е отворена сега",yesterday:"Вчера",todaylog:"Запишано денес",todaytotal:"Вкупно денес",nothinglogged:"Сè уште ништо не е запишано за овој ден",noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",explain:"Dodatno",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
       wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
       err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
       eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
@@ -277,8 +357,9 @@
     });
     updateEst();refreshEquipRows();
   }
-  proj.addEventListener('change',loadItems);
-  item.addEventListener('change',()=>{updateEst();refreshEquipRows();refreshMatOptions();});document.getElementById('hours').addEventListener('input',updateEst);
+  proj.addEventListener('change',()=>{loadItems();markPicked();});
+  item.addEventListener('change',()=>{updateEst();refreshEquipRows();refreshMatOptions();markPicked();});
+  document.getElementById('hours').addEventListener('input',()=>{updateEst();setHours(Number(document.getElementById('hours').value)||0);});
   function updateEst(){const chip=document.getElementById('estChip'),val=document.getElementById('estVal');const sel=item.options[item.selectedIndex];
     if(sel&&sel.dataset.est){chip.style.display='inline-flex';val.textContent=sel.dataset.est+' h';const h=parseFloat(document.getElementById('hours').value||0);chip.classList.toggle('warn',h>parseFloat(sel.dataset.est));}else chip.style.display='none';}
   // Equipment rows may only offer equipment already linked to the SELECTED item's Jobcard (never
@@ -362,7 +443,91 @@
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   document.getElementById('date2').valueAsDate=new Date();
+  document.getElementById('date2').addEventListener('change',renderToday);
+  // Yesterday is the correction a worker actually needs; every other date is the picker's job.
+  document.getElementById('dayBack').addEventListener('click',()=>{
+    const f=document.getElementById('date2');
+    const d=f.valueAsDate||new Date();d.setDate(d.getDate()-1);
+    f.valueAsDate=d;renderToday();
+  });
+  document.querySelectorAll('.qh').forEach(b=>b.addEventListener('click',()=>setHours(Number(b.dataset.h))));
+  document.getElementById('hrsUp').addEventListener('click',()=>nudgeHours(0.5));
+  document.getElementById('hrsDown').addEventListener('click',()=>nudgeHours(-0.5));
+  // The button that used only to turn blue now does the thing it is named for.
+  document.getElementById('moreChip').addEventListener('click',function(){
+    const wrap=document.getElementById('moreWrap');
+    const open=wrap.hidden;
+    wrap.hidden=!open;this.classList.toggle('on',open);this.setAttribute('aria-expanded',String(open));
+  });
+  renderJobPicks();renderToday();
   setLang("en");setInterval(tick,10000);addEqRow();addMatRow();
+  // Job titles and project numbers are typed by people and go into markup here, so they are
+  // escaped on the way in like everywhere else in the app.
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // ── The fast path ────────────────────────────────────────────────────────────────────────
+  // The jobcards that are actually running, offered as something to press. A jobcard on Quality
+  // Hold is deliberately still offered: work already done on it has to be recorded whatever the
+  // hold says, and the hold blocks completing the jobcard, not telling the truth about it.
+  function openJobcards(){
+    return (WorkshopData.listJobcards()||[])
+      .filter(j=>!j.archived&&['ready','in-progress','inspection'].includes(j.status))
+      .sort((a,b)=>(a.status===b.status?0:a.status==='in-progress'?-1:1));
+  }
+  function renderJobPicks(){
+    const t=T[current],host=document.getElementById('jobPicks');
+    const jobs=openJobcards();
+    if(!jobs.length){host.innerHTML=`<p class="jobnone">${esc(t.nojobsnow)}</p>`;return;}
+    host.innerHTML=jobs.map(j=>`<button type="button" class="jobpick" data-jc="${esc(j.no)}" data-pr="${esc(j.projectNo||'')}">
+      <b>${esc(j.title||j.no)}</b><span>${esc(j.no)}${j.projectNo?' · '+esc(j.projectNo):''}</span></button>`).join('');
+    host.querySelectorAll('.jobpick').forEach(btn=>btn.addEventListener('click',()=>pickJob(btn.dataset.pr,btn.dataset.jc)));
+    // Lit by the jobcard that is selected, never by its project - two jobcards on one project
+    // would otherwise both claim to be the one being booked against.
+    markPicked();
+  }
+  // Pressing a job sets the project and then the jobcard, going through the same two selects the
+  // long way round uses - so everything downstream (the estimate chip, equipment rows, the save
+  // itself) sees exactly what it would have seen if the worker had picked them by hand.
+  function pickJob(projectNo,jobcardNo){
+    proj.value=projectNo;loadItems();
+    const opt=[...item.options].find(o=>o.dataset&&o.dataset.jobcard===jobcardNo);
+    if(opt)item.value=opt.value;
+    if(item.selectedIndex<0&&item.options.length)item.selectedIndex=0;
+    updateEst();refreshEquipRows();markPicked();
+  }
+  function markPicked(){
+    const sel=item.options[item.selectedIndex];
+    const jc=sel&&sel.dataset?sel.dataset.jobcard:'';
+    document.querySelectorAll('.jobpick').forEach(b=>b.classList.toggle('on',b.dataset.jc===jc));
+  }
+
+  // ── Hours ────────────────────────────────────────────────────────────────────────────────
+  const hoursFld=()=>document.getElementById('hours');
+  function setHours(value){
+    const v=Math.max(0,Math.round(value*4)/4);
+    hoursFld().value=v?String(v):'';
+    document.querySelectorAll('.qh').forEach(b=>b.classList.toggle('on',Number(b.dataset.h)===v));
+  }
+  function nudgeHours(by){setHours((Number(hoursFld().value)||0)+by);}
+
+  // ── What this worker has already logged today ────────────────────────────────────────────
+  function todayEntries(){
+    const who=document.getElementById('whoName').textContent.trim();
+    const day=document.getElementById('date2').value;
+    return (WorkshopData.get().hours||[])
+      .filter(h=>h.date===day&&(h.worker===who||h.user===who));
+  }
+  function renderToday(){
+    const t=T[current],host=document.getElementById('todayList');
+    const rows=todayEntries();
+    if(!rows.length){host.innerHTML=`<p class="todaynone">${esc(t.nothinglogged)}</p>`;return;}
+    const total=rows.reduce((a,h)=>a+(Number(h.hours)||0),0);
+    host.innerHTML=rows.map(h=>`<div class="todayrow"><div>${esc(h.item||h.jobcard||h.projectNo||'—')}
+      <small>${esc(h.jobcard||'')}${h.projectNo?' · '+esc(h.projectNo):''}</small></div>
+      <b>${esc(String(h.hours))} h</b></div>`).join('')
+      +`<div class="todaysum"><span>${esc(t.todaytotal)}</span><span>${esc(String(Math.round(total*100)/100))} h</span></div>`;
+  }
+
   function collectHours(){
     const sel=item.options[item.selectedIndex];
     return {
@@ -488,14 +653,12 @@
     const extra=[attached.length?tpl(t.eq_attached,{list:attached.join(', ')}):'',
                  matCount?tpl(t.mat_logged,{n:matCount,jc:jc.no}):''].filter(Boolean);
     wAlert(t.savedok+(extra.length?'\n\n'+extra.join('\n'):''));
-    if(reset){document.getElementById('hours').value='';document.getElementById('notes').value='';}
+    if(reset){setHours(0);document.getElementById('notes').value='';}
+    renderJobPicks();renderToday();
     return true;
   }
   document.getElementById('saveEntry').addEventListener('click',()=>saveHours(false));document.getElementById('saveNewEntry').addEventListener('click',()=>saveHours(true));
   document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
-  const picsChip=document.getElementById('picsChip'),picsInput=document.getElementById('picsInput');
-  picsChip.addEventListener('click',()=>picsInput.click());
-  picsInput.addEventListener('change',()=>{picsChip.classList.toggle('on',picsInput.files.length>0);});
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 
@@ -505,5 +668,5 @@
   // Picks up a project created elsewhere, and refreshes the Item/equipment dropdowns for whichever
   // project is currently selected (loadItems()/populateEqSelect() already read WorkshopData live on
   // every call - the only gap was nothing triggering that refresh on an external change).
-  window.addEventListener('workshop:data',()=>{populateProjects();loadItems();});
+  window.addEventListener('workshop:data',()=>{populateProjects();loadItems();renderJobPicks();renderToday();});
 </script></body></html>
