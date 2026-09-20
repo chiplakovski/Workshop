@@ -122,8 +122,10 @@ places to get lost.
 **Do:**
 - ~~Filters become chips. Seven entries gone.~~ **Done, Pass 4.39** — and the duplicate raw-status
   dropdown it was fighting with now releases it, instead of both being set at once.
-- **A jobcard needs to print onto paper and go to the machine.** It does have print styles — good.
-  Make that a first-class button, not a browser afterthought.
+- ~~**A jobcard needs to print onto paper and go to the machine.** It does have print styles — good.
+  Make that a first-class button, not a browser afterthought.~~ **Already was** — a primary button,
+  and a complete traveller. What it lacked was somewhere to write: each operation now carries ruled
+  boxes for actual hours, the date done and initials (**Pass 4.43**).
 
 ### Hours — **the most important module, and the thinnest**
 550 lines desktop, 509 mobile. **Zero entries ever recorded.**

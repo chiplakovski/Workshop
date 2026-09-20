@@ -241,6 +241,58 @@ async function jobcardScopeChips(page) {
   step('Jobcards: clearing the filters clears the chip too');
 }
 
+// A jobcard on paper is not a report, it is a form. It goes to the machine, the work gets done,
+// and someone writes on it what it actually took, then signs. A sheet with nowhere to write comes
+// back exactly as it left, and the hours get reconstructed from memory at the end of the week —
+// which is how planned hours quietly become the only hours anybody has.
+async function theJobcardPrintsAsAForm(page) {
+  await page.evaluate(() => printJobcard(WorkshopData.listJobcards()[0].id));
+  await page.waitForTimeout(200);
+
+  const sheet = await page.locator('#sheet').innerText();
+  const jobcard = await page.evaluate(() => WorkshopData.listJobcards()[0]);
+  assert.ok(sheet.includes(jobcard.no), 'the sheet must name the jobcard it is');
+  assert.ok(sheet.includes('Varmak AB'), 'and who it came from');
+  for (const operation of jobcard.operations || []) {
+    assert.ok(sheet.includes(operation.desc), `the operation "${operation.desc}" must be on the paper`);
+  }
+  for (const material of jobcard.materials || []) {
+    assert.ok(sheet.includes(material.code), `material ${material.code} must be on the paper`);
+    if (material.heat) assert.ok(sheet.includes(material.heat), 'and the heat number it is traced by');
+  }
+  step('Jobcard on paper: the sheet carries the job, its operations and its material');
+
+  // Every operation gets its own ruled boxes, and they are left empty for a pen.
+  const pen = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#sheet .opstbl tbody tr')];
+    return {
+      rows: rows.length,
+      boxesPerRow: [...new Set(rows.map((r) => r.querySelectorAll('td.wr').length))],
+      anythingPrinted: rows.some((r) => [...r.querySelectorAll('td.wr')].some((c) => c.textContent.trim()))
+    };
+  });
+  assert.equal(pen.rows, (jobcard.operations || []).length);
+  assert.deepEqual(pen.boxesPerRow, [3], 'each operation needs actual hours, the date done, and initials');
+  assert.equal(pen.anythingPrinted, false, 'a column to write in must be printed empty');
+  step('Jobcard on paper: every operation has ruled boxes for hours, date and a signature');
+
+  // Nothing may go to the floor showing a stored code where a name belongs. Checked against the
+  // records themselves rather than by pattern: drawing numbers and item codes are full of
+  // hyphens and belong on the sheet exactly as they are stored. 'visual-weld' did print as
+  // itself for a while, because the status lookup stripped the hyphen and the type lookup did not.
+  const rawCodes = await page.evaluate(() => {
+    const j = WorkshopData.listJobcards()[0];
+    const printed = [...document.querySelectorAll('#sheet td')].map((c) => c.textContent.trim());
+    return (j.inspections || []).map((i) => i.type).filter((type) => printed.includes(type));
+  });
+  assert.deepEqual(rawCodes, [], `printed as a stored code instead of a name: ${rawCodes.join(', ')}`);
+  step('Jobcard on paper: a checkpoint prints its name, never its stored code');
+
+  const signoffs = await page.evaluate(() => document.querySelectorAll('#sheet .signbox').length);
+  assert.equal(signoffs, 4, 'worker, supervisor, inspector and the date it was finished');
+  step('Jobcard on paper: four lines to sign, so the sheet can come back as evidence');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -250,6 +302,7 @@ async function main() {
     await loadDemoData(page);
     const jobcard = await jobcardWorkflow(page);
     await jobcardScopeChips(page);
+    await theJobcardPrintsAsAForm(page);
     await page.goto(`${harness.baseUrl}/hours-desktop.html`, { waitUntil: 'load' });
     await hoursWorkflow(page, jobcard);
     await page.goto(`${harness.baseUrl}/equipment-machines-desktop.html`, { waitUntil: 'load' });

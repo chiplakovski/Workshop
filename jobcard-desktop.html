@@ -229,6 +229,12 @@
   .sheet h3{font-family:var(--font-heading);font-size:12px;color:var(--c-brand);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px;border-bottom:1px solid #cdd6e0;padding-bottom:5px;}
   .sheet table{width:100%;border-collapse:collapse;margin-bottom:10px;} .sheet th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6b7d;border-bottom:1.5px solid #cdd6e0;padding:6px 5px;}
   .sheet td{padding:7px 5px;border-bottom:1px solid #e6ebf1;vertical-align:top;}
+  /* Columns meant for a pen. Ruled, empty, and wide enough for a hand: the sheet leaves the
+     office as a form, not a printout, and comes back carrying what the job actually took. */
+  .sheet th.wr,.sheet td.wr{background:#f7f9fc;border-left:1px solid #cdd6e0;width:62px;}
+  .sheet td.wr{height:26px;}
+  .sheet th.wr{color:#2c3e52;}
+  .sheet .fillnote{font-size:9.5px;color:#5b6b7d;margin:-4px 0 0;font-style:italic;}
   .sheet .signrow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px;}
   .sheet .signbox{border-top:1px solid #333;padding-top:6px;font-size:11px;}
   .sheet .signbox b{display:block;margin-bottom:24px;}
@@ -445,7 +451,7 @@ en:{
   mc_breakdown_toast:"Breakdown reported — equipment is now Out of Service.",mc_responsibleperson:"Responsible person",
   pu_pending:"Pending",pu_passed:"Passed",pu_failed:"Failed",pu_flagged:"Flagged",pu_none:"No check recorded",
   q_type:"Inspection type",q_inspector:"Responsible inspector",q_requirement:"Required or optional",q_status:"Status",q_date:"Date",q_result:"Result",q_comments:"Comments",q_relatedop:"Related operation",q_reference:"Document / report reference",q_add:"Add inspection",q_edit:"Update inspection",q_empty:"No inspection checkpoints yet.",
-  it_dimensional:"Dimensional inspection",it_visualweld:"Visual weld inspection","it_ndt-required":"NDT required","it_material-cert":"Material certificate check","it_drawing-revision":"Drawing revision check",it_final:"Final inspection",it_customer:"Customer inspection","it_test-report":"Test report",
+  it_dimensional:"Dimensional inspection",it_materialcert:"Material certificate check",it_incomingmaterial:"Incoming material check",it_fitup:"Fit-up inspection",it_drawingrevision:"Drawing revision check",it_visualweld:"Visual weld inspection","it_ndt-required":"NDT required","it_material-cert":"Material certificate check","it_drawing-revision":"Drawing revision check",it_final:"Final inspection",it_customer:"Customer inspection","it_test-report":"Test report",
   req_required:"Required",req_optional:"Optional",
   is_pending:"Pending",is_passed:"Passed","is_passed-comment":"Passed with comment",is_rework:"Rework required",is_rejected:"Rejected",
   note_add:"Add note",note_type:"Type",note_text:"Note",note_empty:"No notes or problems recorded yet.",
@@ -463,7 +469,7 @@ en:{
   lockbanner:"This jobcard is {status} and read-only. Reopen it to make changes.",locked_msg:"Jobcard {no} is {status} and read-only.",
   transition_blocked:"Cannot move from \"{a}\" to \"{b}\" directly.",complete_issues_title:"This jobcard cannot be completed yet",complete_goback:"Go back",complete_override_btn:"Complete with manager override",
   matready_notchecked:"Not checked",matready_ready:"Ready",matready_partial:"Partial",matready_shortage:"Shortage",
-  pr_header_no:"Jobcard",pr_header_rev:"Rev",pr_customer:"Customer",pr_project:"Project",pr_drawing:"Drawing",pr_worktype:"Work type",pr_qty:"Quantity",pr_operations:"Operations & Work Instructions",pr_materials:"Materials",pr_workers:"Assigned Workers",pr_machines:"Machines",pr_inspections:"Quality & Inspection Checkpoints",pr_notes:"Notes",pr_signoff_worker:"Worker",pr_signoff_supervisor:"Supervisor",pr_signoff_inspector:"Inspector",pr_signoff_date:"Completion date",pr_close:"Close",pr_print:"Print",
+  pr_header_no:"Jobcard",pr_header_rev:"Rev",pr_customer:"Customer",pr_project:"Project",pr_drawing:"Drawing",pr_worktype:"Work type",pr_qty:"Quantity",pr_operations:"Operations & Work Instructions",pr_materials:"Materials",pr_workers:"Assigned Workers",pr_machines:"Machines",pr_inspections:"Quality & Inspection Checkpoints",pr_notes:"Notes",pr_actualhours:"Actual h",pr_donedate:"Date done",pr_initials:"Signed",pr_actualqty:"Actually used",pr_fillnote:"The shaded columns are filled in on the floor and brought back — actual hours, the date the operation was finished, and the initials of whoever did it.",pr_signoff_worker:"Worker",pr_signoff_supervisor:"Supervisor",pr_signoff_inspector:"Inspector",pr_signoff_date:"Completion date",pr_close:"Close",pr_print:"Print",
   empty_jclist:"No jobcards match these filters.",empty_select:"Select a jobcard from the list to see details.",
   chart_none:"No data yet."
 },
@@ -504,7 +510,7 @@ sv:{
   mc_breakdown_toast:"Haveri rapporterat — utrustningen är nu Ur drift.",mc_responsibleperson:"Ansvarig person",
   pu_pending:"Väntar",pu_passed:"Godkänd",pu_failed:"Underkänd",pu_flagged:"Flaggad",pu_none:"Ingen kontroll registrerad",
   q_type:"Besiktningstyp",q_inspector:"Ansvarig besiktningsman",q_requirement:"Obligatorisk eller valfri",q_status:"Status",q_date:"Datum",q_result:"Resultat",q_comments:"Kommentarer",q_relatedop:"Relaterat moment",q_reference:"Dokument- / rapportreferens",q_add:"Lägg till besiktning",q_edit:"Uppdatera besiktning",q_empty:"Inga besiktningspunkter ännu.",
-  it_dimensional:"Måttbesiktning",it_visualweld:"Visuell svetsbesiktning","it_ndt-required":"OFP krävs","it_material-cert":"Materialcertifikatkontroll","it_drawing-revision":"Ritningsrevisionskontroll",it_final:"Slutbesiktning",it_customer:"Kundbesiktning","it_test-report":"Testrapport",
+  it_dimensional:"Måttbesiktning",it_materialcert:"Kontroll av materialintyg",it_incomingmaterial:"Kontroll av inkommande material",it_fitup:"Passningskontroll",it_drawingrevision:"Kontroll av ritningsrevision",it_visualweld:"Visuell svetsbesiktning","it_ndt-required":"OFP krävs","it_material-cert":"Materialcertifikatkontroll","it_drawing-revision":"Ritningsrevisionskontroll",it_final:"Slutbesiktning",it_customer:"Kundbesiktning","it_test-report":"Testrapport",
   req_required:"Obligatorisk",req_optional:"Valfri",
   is_pending:"Väntar",is_passed:"Godkänd","is_passed-comment":"Godkänd med kommentar",is_rework:"Omarbete krävs",is_rejected:"Underkänd",
   note_add:"Lägg till anteckning",note_type:"Typ",note_text:"Anteckning",note_empty:"Inga anteckningar eller problem registrerade ännu.",
@@ -522,7 +528,7 @@ sv:{
   lockbanner:"Detta jobbkort är {status} och skrivskyddat. Återöppna det för att göra ändringar.",locked_msg:"Jobbkort {no} är {status} och skrivskyddat.",
   transition_blocked:"Kan inte flytta från \"{a}\" till \"{b}\" direkt.",complete_issues_title:"Detta jobbkort kan inte slutföras ännu",complete_goback:"Gå tillbaka",complete_override_btn:"Slutför med chefsöverstyrning",
   matready_notchecked:"Ej kontrollerat",matready_ready:"Redo",matready_partial:"Delvis",matready_shortage:"Brist",
-  pr_header_no:"Jobbkort",pr_header_rev:"Rev",pr_customer:"Kund",pr_project:"Projekt",pr_drawing:"Ritning",pr_worktype:"Arbetstyp",pr_qty:"Antal",pr_operations:"Moment & arbetsinstruktioner",pr_materials:"Material",pr_workers:"Tilldelad personal",pr_machines:"Maskiner",pr_inspections:"Kvalitets- och besiktningspunkter",pr_notes:"Anteckningar",pr_signoff_worker:"Personal",pr_signoff_supervisor:"Arbetsledare",pr_signoff_inspector:"Besiktningsman",pr_signoff_date:"Datum klart",pr_close:"Stäng",pr_print:"Skriv ut",
+  pr_header_no:"Jobbkort",pr_header_rev:"Rev",pr_customer:"Kund",pr_project:"Projekt",pr_drawing:"Ritning",pr_worktype:"Arbetstyp",pr_qty:"Antal",pr_operations:"Moment & arbetsinstruktioner",pr_materials:"Material",pr_workers:"Tilldelad personal",pr_machines:"Maskiner",pr_inspections:"Kvalitets- och besiktningspunkter",pr_notes:"Anteckningar",pr_actualhours:"Verklig tid",pr_donedate:"Datum klart",pr_initials:"Signatur",pr_actualqty:"Faktiskt uttag",pr_fillnote:"De skuggade kolumnerna fylls i i verkstaden och tas med tillbaka — verklig tid, datum då momentet blev klart, och signatur från den som gjorde det.",pr_signoff_worker:"Personal",pr_signoff_supervisor:"Arbetsledare",pr_signoff_inspector:"Besiktningsman",pr_signoff_date:"Datum klart",pr_close:"Stäng",pr_print:"Skriv ut",
   empty_jclist:"Inga jobbkort matchar dessa filter.",empty_select:"Välj ett jobbkort i listan för att se detaljer.",
   chart_none:"Ingen data ännu."
 },
@@ -563,7 +569,7 @@ mk:{
   mc_breakdown_toast:"Kvarot e prijaven — opremata sega e Von upotreba.",mc_responsibleperson:"Odgovorno lice",
   pu_pending:"Vo čekañe",pu_passed:"Poминато",pu_failed:"Ne pomina",pu_flagged:"Označeno",pu_none:"Nema zapišana proverka",
   q_type:"Tip na inspekcija",q_inspector:"Odgovoren inspektor",q_requirement:"Zadolžitelna ili opciona",q_status:"Status",q_date:"Datum",q_result:"Rezultat",q_comments:"Komentari",q_relatedop:"Poврзана operacija",q_reference:"Referenca na dokument / izveštaj",q_add:"Dodaj inspekcija",q_edit:"Ažuriraj inspekcija",q_empty:"Sè uште nema точки za inspekcija.",
-  it_dimensional:"Dimenzionalna inspekcija",it_visualweld:"Vizuelna inspekcija na zavar","it_ndt-required":"Se bara NDT","it_material-cert":"Proverka na certifikat za materijal","it_drawing-revision":"Proverka na revizija na crtež",it_final:"Zavrшна inspekcija",it_customer:"Inspekcija od klient","it_test-report":"Izveštaj od testiraње",
+  it_dimensional:"Dimenzionalna inspekcija",it_materialcert:"Proverka na materijalen sertifikat",it_incomingmaterial:"Proverka na vlezen materijal",it_fitup:"Proverka na sklop",it_drawingrevision:"Proverka na revizija na crtež",it_visualweld:"Vizuelna inspekcija na zavar","it_ndt-required":"Se bara NDT","it_material-cert":"Proverka na certifikat za materijal","it_drawing-revision":"Proverka na revizija na crtež",it_final:"Zavrшна inspekcija",it_customer:"Inspekcija od klient","it_test-report":"Izveštaj od testiraње",
   req_required:"Zadolžitelna",req_optional:"Opciona",
   is_pending:"Vo čekañe",is_passed:"Poминато","is_passed-comment":"Poминато so komentar",is_rework:"Se bara doработка",is_rejected:"Odbieno",
   note_add:"Dodaj beleška",note_type:"Tip",note_text:"Beleška",note_empty:"Sè uште nema zapišani beleški ili problemi.",
@@ -581,7 +587,7 @@ mk:{
   lockbanner:"Ovoj karton e {status} i e samo za čitanje. Povторно otvori go za да napraviš izmeni.",locked_msg:"Kartonot {no} e {status} i e samo za čitanje.",
   transition_blocked:"Ne može da se premine od \"{a}\" vo \"{b}\" direktno.",complete_issues_title:"Ovoj karton sè uште ne može da se završi",complete_goback:"Vrati se nazad",complete_override_btn:"Završi so upravuvačko overriding",
   matready_notchecked:"Neprovereno",matready_ready:"Podgotveno",matready_partial:"Delumno",matready_shortage:"Nedostig",
-  pr_header_no:"Raboten karton",pr_header_rev:"Rev",pr_customer:"Klient",pr_project:"Proekt",pr_drawing:"Crtež",pr_worktype:"Tip na rabota",pr_qty:"Količina",pr_operations:"Operacii i rabotni instrukcii",pr_materials:"Materijali",pr_workers:"Zadolženi rabotnici",pr_machines:"Mašini",pr_inspections:"Točki za kvalitet i inspekcija",pr_notes:"Beleški",pr_signoff_worker:"Rabotnik",pr_signoff_supervisor:"Nadzornik",pr_signoff_inspector:"Inspektor",pr_signoff_date:"Datum na zavrшuvañe",pr_close:"Zatvori",pr_print:"Pečati",
+  pr_header_no:"Raboten karton",pr_header_rev:"Rev",pr_customer:"Klient",pr_project:"Proekt",pr_drawing:"Crtež",pr_worktype:"Tip na rabota",pr_qty:"Količina",pr_operations:"Operacii i rabotni instrukcii",pr_materials:"Materijali",pr_workers:"Zadolženi rabotnici",pr_machines:"Mašini",pr_inspections:"Točki za kvalitet i inspekcija",pr_notes:"Beleški",pr_actualhours:"Vistinski časovi",pr_donedate:"Datum završeno",pr_initials:"Potpis",pr_actualqty:"Vistinski zemeno",pr_fillnote:"Zasenčenite koloni se popolnuvaat vo rabotilnicata i se vrakjaat — vistinski časovi, datum koga operacijata e završena, i potpis od onoj što ja napravil.",pr_signoff_worker:"Rabotnik",pr_signoff_supervisor:"Nadzornik",pr_signoff_inspector:"Inspektor",pr_signoff_date:"Datum na zavrшuvañe",pr_close:"Zatvori",pr_print:"Pečati",
   empty_jclist:"Nema kartoni koi odgovaraat na ovie filtri.",empty_select:"Izberi karton od listata za да vidiš detali.",
   chart_none:"Sè uште nema podatoci."
 }
@@ -1628,7 +1634,7 @@ function renderTabQuality(j){
   return `<div class="panel">
     <div class="phead"><h3>${esc(tt.tab_quality)}</h3>${!locked?`<button class="tbtn primary small" onclick="openInspForm(${j.id})">+ ${esc(tt.q_add)}</button>`:''}</div>
     ${insp.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.q_type)}</th><th>${esc(tt.q_inspector)}</th><th>${esc(tt.q_requirement)}</th><th>${esc(tt.q_status)}</th><th>${esc(tt.q_date)}</th><th>${esc(tt.q_comments)}</th><th>${esc(tt.th_actions)}</th></tr></thead><tbody>
-      ${insp.map(i=>`<tr><td><b>${esc(tt['it_'+i.type]||i.type)}</b></td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['req_'+i.requirement])}</td>
+      ${insp.map(i=>`<tr><td><b>${esc(tt['it_'+i.type.replace(/-/g,'')]||i.type)}</b></td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['req_'+i.requirement])}</td>
         <td><span class="tagpill ${i.status==='passed'||i.status==='passed-comment'?'g':(i.status==='rework'||i.status==='rejected'?'r':'n')}">${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</span></td>
         <td>${fmtDate(i.date)}</td><td>${esc(i.comments)||'—'}</td>
         <td>${!locked?`<button class="tbtn small" onclick="openInspForm(${j.id},${i.id})">${esc(tt.q_edit)}</button>`:''}</td>
@@ -1970,9 +1976,9 @@ function duplicateJc(id){
 function printJobcard(id){
   const tt=t();const j=getJC(id);if(!j)return;
   const cust=custById(j.customerId);
-  const opsRows=(j.operations||[]).map((o,i)=>`<tr><td>${i+1}</td><td><b>${esc(o.desc)}</b>${o.instructions?`<br><span style="color:#5b6b7d;">${esc(o.instructions)}</span>`:''}</td><td>${esc(o.worker)||'—'}</td><td>${esc(o.machine)||'—'}</td><td>${esc(o.plannedHours||0)}h</td><td>${esc(tt['ops_'+o.status.replace('-','')])}</td></tr>`).join('')||`<tr><td colspan="6">${esc(tt.op_empty)}</td></tr>`;
-  const matRows=(j.materials||[]).map(m=>`<tr><td>${esc(m.code)||'—'}</td><td>${esc(m.description)}</td><td>${esc(m.grade)||'—'}</td><td>${esc(m.dimension)||'—'}</td><td>${esc(m.required||0)} ${esc(m.unit)||''}</td><td>${esc(m.heat)||'—'}</td></tr>`).join('')||`<tr><td colspan="6">${esc(tt.mat_empty)}</td></tr>`;
-  const inspRows=(j.inspections||[]).map(i=>`<tr><td>${esc(tt['it_'+i.type]||i.type)}</td><td>${esc(tt['req_'+i.requirement])}</td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</td><td>${esc(i.comments)||'—'}</td></tr>`).join('')||`<tr><td colspan="5">${esc(tt.q_empty)}</td></tr>`;
+  const opsRows=(j.operations||[]).map((o,i)=>`<tr><td>${i+1}</td><td><b>${esc(o.desc)}</b>${o.instructions?`<br><span style="color:#5b6b7d;">${esc(o.instructions)}</span>`:''}</td><td>${esc(o.worker)||'—'}</td><td>${esc(o.machine)||'—'}</td><td>${esc(o.plannedHours||0)}h</td><td class="wr"></td><td class="wr"></td><td class="wr"></td></tr>`).join('')||`<tr><td colspan="8">${esc(tt.op_empty)}</td></tr>`;
+  const matRows=(j.materials||[]).map(m=>`<tr><td>${esc(m.code)||'—'}</td><td>${esc(m.description)}</td><td>${esc(m.grade)||'—'}</td><td>${esc(m.dimension)||'—'}</td><td>${esc(m.required||0)} ${esc(m.unit)||''}</td><td class="wr"></td><td>${esc(m.heat)||'—'}</td></tr>`).join('')||`<tr><td colspan="7">${esc(tt.mat_empty)}</td></tr>`;
+  const inspRows=(j.inspections||[]).map(i=>`<tr><td>${esc(tt['it_'+i.type.replace(/-/g,'')]||i.type)}</td><td>${esc(tt['req_'+i.requirement])}</td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</td><td>${esc(i.comments)||'—'}</td></tr>`).join('')||`<tr><td colspan="5">${esc(tt.q_empty)}</td></tr>`;
   $('sheet').innerHTML=`
     <div class="oh"><div><div class="co">Varmak AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</div></div>
       <div class="ot"><h2>${esc(tt.pr_header_no)} ${esc(j.no)}</h2><div class="om">${esc(tt.pr_header_rev)} ${esc(j.revision||0)} · ${esc(tt['st_'+j.status])}</div></div></div>
@@ -1985,8 +1991,9 @@ function printJobcard(id){
       <div><div class="lbl">${esc(tt.ji_plannedstart)} / ${esc(tt.ji_plannedcompletion)}</div>${fmtDate(j.plannedStart)} → ${fmtDate(j.plannedCompletion)}</div>
       <div><div class="lbl">${esc(tt.ji_deliverytarget)}</div>${fmtDate(j.deliveryTarget)}</div>
     </div>
-    <div class="psec"><h3>${esc(tt.pr_operations)}</h3><table><thead><tr><th>#</th><th>${esc(tt.op_desc)}</th><th>${esc(tt.op_worker)}</th><th>${esc(tt.op_machine)}</th><th>${esc(tt.op_plannedhours)}</th><th>${esc(tt.op_status)}</th></tr></thead><tbody>${opsRows}</tbody></table></div>
-    <div class="psec"><h3>${esc(tt.pr_materials)}</h3><table><thead><tr><th>${esc(tt.mat_code)}</th><th>${esc(tt.mat_desc)}</th><th>${esc(tt.mat_grade)}</th><th>${esc(tt.mat_dim)}</th><th>${esc(tt.mat_required)}</th><th>${esc(tt.mat_heat)}</th></tr></thead><tbody>${matRows}</tbody></table></div>
+    <div class="psec"><h3>${esc(tt.pr_operations)}</h3><table class="opstbl"><thead><tr><th>#</th><th>${esc(tt.op_desc)}</th><th>${esc(tt.op_worker)}</th><th>${esc(tt.op_machine)}</th><th>${esc(tt.op_plannedhours)}</th><th class="wr">${esc(tt.pr_actualhours)}</th><th class="wr">${esc(tt.pr_donedate)}</th><th class="wr">${esc(tt.pr_initials)}</th></tr></thead><tbody>${opsRows}</tbody></table>
+      <p class="fillnote">${esc(tt.pr_fillnote)}</p></div>
+    <div class="psec"><h3>${esc(tt.pr_materials)}</h3><table><thead><tr><th>${esc(tt.mat_code)}</th><th>${esc(tt.mat_desc)}</th><th>${esc(tt.mat_grade)}</th><th>${esc(tt.mat_dim)}</th><th>${esc(tt.mat_required)}</th><th class="wr">${esc(tt.pr_actualqty)}</th><th>${esc(tt.mat_heat)}</th></tr></thead><tbody>${matRows}</tbody></table></div>
     <div class="psec"><h3>${esc(tt.pr_workers)} / ${esc(tt.pr_machines)}</h3><p>${(j.workers||[]).map(esc).join(', ')||'—'}<br>${(j.machines||[]).map(m=>esc(m.name)).join(', ')||'—'}</p></div>
     <div class="psec"><h3>${esc(tt.pr_inspections)}</h3><table><thead><tr><th>${esc(tt.q_type)}</th><th>${esc(tt.q_requirement)}</th><th>${esc(tt.q_inspector)}</th><th>${esc(tt.q_status)}</th><th>${esc(tt.q_comments)}</th></tr></thead><tbody>${inspRows}</tbody></table></div>
     ${(j.notes||[]).length?`<div class="psec"><h3>${esc(tt.pr_notes)}</h3>${j.notes.map(n=>`<p>${fmtDate(n.date)} — <b>${esc(n.author)}</b>: ${esc(n.text)}</p>`).join('')}</div>`:''}

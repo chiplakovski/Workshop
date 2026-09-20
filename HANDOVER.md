@@ -252,6 +252,31 @@ measures geometry.
 
 The lesson worth keeping: **"flaky" was a label, not a diagnosis.** The test was right every time.
 
+
+**The printed jobcard became a form (Pass 4.43).** `REVIEW.md` said to make printing first-class.
+It already was — a primary button on the jobcard, and the sheet it produces carries the company
+header, customer, drawing, dates, operations with their work instructions, materials with heat
+numbers, inspection checkpoints, notes and four sign-off lines. That proposal was wrong: printing
+was already done, and done well. **Print it and look at it before proposing to fix it.**
+
+What the sheet did lack was **anywhere to write.** A jobcard on paper is not a report, it is a
+form: it goes to the machine, the work gets done, and someone writes down what it actually took.
+Each operation now has three ruled, shaded, empty boxes — actual hours, date done, initials — and
+each material line has one for the quantity actually taken. The printed *Status* column went to
+make room, which is right: it is a snapshot that is stale the moment it leaves the printer, and
+"date done" is the same question answered by somebody who knows.
+
+One real defect fell out of reading the paper: `visual-weld` printed as itself. The status lookup
+stripped the hyphen (`is_visualweld`) and the type lookup did not, so any hyphenated checkpoint
+type fell through to its stored code. Fixed, with the four labels that were missing entirely
+(`material-cert`, `incoming-material`, `fitup`, `drawing-revision`). The test for it asks the
+records what their codes are and checks none of them appear as printed text — **not** a pattern
+match for hyphens, because drawing numbers and item codes are full of hyphens and belong on the
+sheet exactly as stored. The first version of that check flagged `DWG-VD-014-A` and `Fit-up`.
+
+Checked in all three languages: a Swedish shop prints Swedish, and the new column headings and the
+fill-in note are translated with the rest.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,
