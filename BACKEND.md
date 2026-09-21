@@ -278,7 +278,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 70 mutations across the two files, all caught.
+breaking. 93 mutations across the three SQL files, all caught.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

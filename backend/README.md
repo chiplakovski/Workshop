@@ -10,7 +10,7 @@ Four things, each with a suite that attacks it:
 | `server.js` | the HTTP layer, which decides nothing at all |
 
 `mutation-check.js` then checks that the tests would notice if any of the three SQL files stopped
-refusing.
+refusing: **93 of 93 mutations caught**, verified in one clean run.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -46,8 +46,8 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 70 of them across the two files, a little over an hour — so it is a check
-to run when a rule changes, not on every save. One rule at a time:
+suite once per mutation — 93 of them across the three files, a couple of hours — so it is a check to
+run when a rule changes, not on every save. One rule, or one file, at a time:
 
 ```sh
 node backend/mutation-check.js "per-group item numbers"   # one rule
