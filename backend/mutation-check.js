@@ -18,8 +18,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const SCHEMA = path.join(__dirname, 'schema.sql');
-const base = fs.readFileSync(SCHEMA, 'utf8');
+// Two files, two suites. A mutation names the file it damages; the suite that is supposed to catch
+// it is the one that tests that file.
+const FILES = {
+  schema: { path: path.join(__dirname, 'schema.sql'), suite: 'test-schema.js', env: 'VARMAK_SCHEMA' },
+  auth: { path: path.join(__dirname, 'auth.sql'), suite: 'test-auth.js', env: 'VARMAK_AUTH' }
+};
+const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
+const base = source.schema;
 
 // The schema is read once, here, and every mutation is a copy of it. Editing schema.sql while this
 // is running therefore produces a result about a file that no longer exists: every mutation comes
@@ -28,7 +34,7 @@ const base = fs.readFileSync(SCHEMA, 'utf8');
 // them was actually failing on an unrelated assertion. So the file is checked again at the end and
 // the whole run is thrown away if it moved underneath us.
 function schemaHasChanged() {
-  return fs.readFileSync(SCHEMA, 'utf8') !== base;
+  return Object.entries(FILES).some(([key, f]) => fs.readFileSync(f.path, 'utf8') !== source[key]);
 }
 
 const MUTATIONS = [
@@ -112,9 +118,9 @@ const MUTATIONS = [
     to: "ref         text NOT NULL UNIQUE DEFAULT ('C-' || lpad(((SELECT count(*) FROM customer) + 1)::text, 3, '0')),"
   },
   {
-    what: 'a password may be stored as half of one',
-    from: 'CONSTRAINT password_is_whole CHECK ((password_hash IS NULL) = (password_salt IS NULL))',
-    to: 'CONSTRAINT password_is_whole CHECK (true)'
+    what: 'a password may be stored as itself',
+    from: "CHECK (password_hash IS NULL OR password_hash ~ '^\\$2[aby]\\$\\d{2}\\$')",
+    to: 'CHECK (true)'
   },
   {
     what: 'an item may have two preferred suppliers',
@@ -276,6 +282,205 @@ const MUTATIONS = [
     END IF;`,
     to: ''
   },
+  // ── auth.sql ──────────────────────────────────────────────────────────────────────────────
+  //
+  // The first two are the bugs that were really in the file. Both looked right when read.
+  {
+    // The one that matters most in the whole project: a broad table grant silently including a
+    // price column, with a narrower column grant written below it that adds nothing.
+    what: 'the workshop is granted the whole store table again, prices included',
+    file: 'auth',
+    from: `GRANT SELECT ON
+  project, jobcard, operation, equipment, equipment_assignment,`,
+    to: `GRANT SELECT ON
+  stock_item, equipment_event,
+  project, jobcard, operation, equipment, equipment_assignment,`
+  },
+  {
+    // The lockout that did nothing because the refusal rolled back the count of it.
+    what: 'sign_in raises on a bad secret instead of recording it',
+    file: 'auth',
+    from: `    PERFORM register_failure(person.id);
+    RETURN (NULL, 'that is not a login we recognise')::sign_in_result;`,
+    to: `    PERFORM register_failure(person.id);
+    RAISE EXCEPTION 'that is not a login we recognise' USING ERRCODE = 'invalid_password';`
+  },
+  {
+    what: 'the hashes are handed back to admin and office by the broad grant',
+    file: 'auth',
+    from: 'REVOKE ALL ON app_user FROM varmak_admin, varmak_office, varmak_workshop;',
+    to: ''
+  },
+  {
+    what: 'row security is enabled but not forced, so the owner is exempt',
+    file: 'auth',
+    from: "    EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);",
+    to: ''
+  },
+  {
+    what: 'row security is not switched on at all',
+    file: 'auth',
+    from: "    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);",
+    to: ''
+  },
+  {
+    what: 'the role is taken from what the session claims rather than from the row',
+    file: 'auth',
+    from: '  SELECT role INTO actual FROM app_user WHERE id = current_app_user() AND is_active;',
+    to: "  actual := coalesce(claimed, (SELECT role::text FROM app_user WHERE id = current_app_user()))::user_role;"
+  },
+  {
+    what: 'a switched-off account keeps working',
+    file: 'auth',
+    from: '  SELECT role INTO actual FROM app_user WHERE id = current_app_user() AND is_active;',
+    to: '  SELECT role INTO actual FROM app_user WHERE id = current_app_user();'
+  },
+  {
+    what: 'the lockout threshold is put out of reach',
+    file: 'auth',
+    from: '  IF attempts >= 5 THEN',
+    to: '  IF attempts >= 100000 THEN'
+  },
+  {
+    what: 'a locked login is checked after the secret instead of before',
+    file: 'auth',
+    from: `  IF person.locked_until IS NOT NULL AND person.locked_until > now() THEN`,
+    to: '  IF false THEN'
+  },
+  {
+    what: 'the PINs a stranger tries first are allowed',
+    file: 'auth',
+    from: '  IF pin_is_too_obvious(p_pin) THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a PIN may be any length',
+    file: 'auth',
+    from: "  IF p_pin !~ '^\\d{4,8}$' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a four-character password is accepted',
+    file: 'auth',
+    from: '  IF p_password IS NULL OR length(p_password) < 12 THEN',
+    to: '  IF p_password IS NULL OR length(p_password) < 4 THEN'
+  },
+  {
+    what: 'the shop tablet opens an admin session for an admin',
+    file: 'auth',
+    from: "  IF p_door = 'pin' AND person.role <> 'workshop' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'an unknown address is refused in different words from a wrong password',
+    file: 'auth',
+    from: `    PERFORM pg_sleep(0.1);
+    RETURN (NULL, 'that is not a login we recognise')::sign_in_result;`,
+    to: `    PERFORM pg_sleep(0.1);
+    RETURN (NULL, 'there is no account for that address')::sign_in_result;`
+  },
+  {
+    what: 'the shop tablet session lasts a month',
+    file: 'auth',
+    from: "CASE p_door WHEN 'pin' THEN end_of_shift() ELSE now() + interval '12 hours' END",
+    to: "now() + interval '30 days'"
+  },
+  {
+    what: 'a signed-out token still names its owner',
+    file: 'auth',
+    from: 'WHERE token = p_token AND ended_at IS NULL AND expires_at > now();',
+    to: 'WHERE token = p_token;'
+  },
+  {
+    what: 'the workshop may edit stock figures directly, with no movement written',
+    file: 'auth',
+    from: 'GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)',
+    to: `GRANT UPDATE (stock, reserved) ON stock_item TO varmak_workshop;
+CREATE POLICY floor_edits_stock ON stock_item FOR UPDATE USING (is_signed_in()) WITH CHECK (is_signed_in());
+GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)`
+  },
+  // There is deliberately no mutation for "the named roles are dropped from the issue_stock
+  // REVOKE, leaving only FROM PUBLIC". Once the early GRANT was removed, that revoke alone is
+  // enough — EXECUTE is granted to PUBLIC by default and to no role explicitly — so removing the
+  // named roles changes nothing any test can see, and the mutation sat here reporting MISSED
+  // forever. Naming the roles stays in auth.sql as the thing that holds if somebody adds a GRANT
+  // above it, which is exactly the mutation below.
+  {
+    // The exact hole that was in the file: an explicit GRANT early on, which REVOKE ... FROM PUBLIC
+    // later does not undo.
+    what: 'the raw issue function is granted to the roles a hundred lines earlier',
+    file: 'auth',
+    from: 'GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;',
+    to: `GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;
+GRANT EXECUTE ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+TO varmak_admin, varmak_office, varmak_workshop;`
+  },
+  {
+    what: 'issuing material does not need a session',
+    file: 'auth',
+    from: `  IF who IS NULL THEN
+    RAISE EXCEPTION 'sign in before taking material off the shelf' USING ERRCODE = 'insufficient_privilege';
+  END IF;`,
+    to: "  who := coalesce(who, 'unknown');"
+  },
+  {
+    what: 'hours may be booked in anybody name',
+    file: 'auth',
+    from: 'WITH CHECK (worker = current_app_name());',
+    to: 'WITH CHECK (true);'
+  },
+  {
+    what: "another welder may edit your hours",
+    file: 'auth',
+    from: `  USING (worker = current_app_name() OR may_see_money())
+  WITH CHECK (worker = current_app_name() OR may_see_money());`,
+    to: '  USING (true) WITH CHECK (true);'
+  },
+  {
+    what: 'the floor may release a quality hold',
+    file: 'auth',
+    from: 'CREATE POLICY only_the_office_holds ON quality_hold FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());',
+    to: `CREATE POLICY only_the_office_holds ON quality_hold FOR ALL USING (is_signed_in()) WITH CHECK (is_signed_in());
+GRANT UPDATE ON quality_hold TO varmak_workshop;`
+  },
+  {
+    what: 'everybody signed in may read the whole session table',
+    file: 'auth',
+    from: 'DROP POLICY signed_in_can_read ON app_session;',
+    to: ''
+  },
+  {
+    what: 'a welder may read every row of app_user',
+    file: 'auth',
+    from: 'USING (id = current_app_user() OR may_see_money());',
+    to: 'USING (is_signed_in());'
+  },
+  {
+    what: 'the office may create and promote people',
+    file: 'auth',
+    from: 'GRANT INSERT, UPDATE, DELETE ON app_user TO varmak_admin;',
+    to: 'GRANT INSERT, UPDATE, DELETE ON app_user TO varmak_admin, varmak_office;'
+  },
+  {
+    what: 'anybody may set their own PIN',
+    file: 'auth',
+    from: 'GRANT EXECUTE ON FUNCTION set_password(bigint, text), set_pin(bigint, text) TO varmak_admin;',
+    to: 'GRANT EXECUTE ON FUNCTION set_password(bigint, text), set_pin(bigint, text) TO PUBLIC;'
+  },
+  {
+    what: 'sign-ins are not written to the record',
+    file: 'auth',
+    from: `  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', person.id, 'signed in', person.email, p_door::text);`,
+    to: ''
+  },
+  {
+    what: 'the connection pool role can read the tables itself',
+    file: 'auth',
+    from: 'GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;',
+    to: `GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
+  },
   {
     what: 'changing the quantity sidesteps the repricing rule',
     from: `  IF OLD.locked AND (NEW.unit_price IS DISTINCT FROM OLD.unit_price
@@ -286,23 +491,38 @@ const MUTATIONS = [
 
 // A single mutation can be run on its own by passing part of its description, which is how you
 // check one rule without waiting for all of them.
+// Part of a description picks one rule; "file:auth" or "file:schema" picks everything in one file.
 const only = process.argv.slice(2).join(' ').toLowerCase();
-const SELECTED = only ? MUTATIONS.filter((m) => m.what.toLowerCase().includes(only)) : MUTATIONS;
+const SELECTED = !only ? MUTATIONS
+  : only.startsWith('file:')
+    ? MUTATIONS.filter((m) => (m.file || 'schema') === only.slice(5))
+    : MUTATIONS.filter((m) => m.what.toLowerCase().includes(only));
 
-function runSuiteAgainst(source, index) {
+function runSuiteAgainst(damaged, which, index) {
+  const target = FILES[which];
   const file = path.join(os.tmpdir(), `varmak-mutant-${index}.sql`);
-  fs.writeFileSync(file, source);
+  fs.writeFileSync(file, damaged);
   try {
-    execFileSync('node', [path.join(__dirname, 'test-schema.js')], {
-      env: { ...process.env, VARMAK_SCHEMA: file, VARMAK_TEST_DB: `varmak_mutant_${index}` },
+    execFileSync('node', [path.join(__dirname, target.suite)], {
+      env: {
+        ...process.env,
+        [target.env]: file,
+        VARMAK_TEST_DB: `varmak_mutant_${index}`
+      },
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe']
     });
     return { caught: false };
   } catch (error) {
+    // The reason the suite gave, which is only useful if it is the line that FAILED. An earlier
+    // version matched on "can read" among others and happily reported a passing `OK` line as the
+    // reason a mutation was caught — a report that reads as though it knows something it does not.
     const output = `${error.stdout || ''}${error.stderr || ''}`;
-    const line = output.split('\n').reverse().find((l) => /the database ACCEPTED|should have been|Expected|AssertionError|: refused|must/.test(l));
-    return { caught: true, by: (line || '').trim().slice(0, 120) };
+    const line = output.split('\n')
+      .filter((l) => !/^OK\s/.test(l.trim()))
+      .reverse()
+      .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these/.test(l));
+    return { caught: true, by: (line || '').trim().slice(0, 130) };
   } finally {
     fs.unlinkSync(file);
   }
@@ -316,13 +536,15 @@ function main() {
     return;
   }
   SELECTED.forEach((mutation, index) => {
-    if (!base.includes(mutation.from)) {
-      console.log(`?    ${mutation.what} — the rule this mutation edits is no longer in the schema`);
+    const which = mutation.file || 'schema';
+    const original = source[which];
+    if (!original.includes(mutation.from)) {
+      console.log(`?    ${mutation.what} — the rule this mutation edits is no longer in ${which}.sql`);
       missed.push(mutation.what);
       return;
     }
-    const damaged = base.replace(mutation.from, mutation.to);
-    const result = runSuiteAgainst(damaged, index);
+    const damaged = original.replace(mutation.from, mutation.to);
+    const result = runSuiteAgainst(damaged, which, index);
     if (result.caught) {
       console.log(`caught   ${mutation.what}`);
       if (result.by) console.log(`         └ ${result.by}`);

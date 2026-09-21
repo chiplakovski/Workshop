@@ -9,6 +9,7 @@
     "test:browser": "node tests/browser-smoke.js",
     "test:integrity": "node tests/integrity.js",
     "test:schema": "node backend/test-schema.js",
+    "test:auth": "node backend/test-auth.js",
     "test:mutations": "node backend/mutation-check.js",
     "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js"
   },

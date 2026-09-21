@@ -240,8 +240,20 @@ cannot touch anything else.
    estimate line.
 2. ~~**Numbering as sequences.**~~ **Done** — and the first test in the suite demonstrates the old
    row-counting handing two simultaneous sessions the same reference, so the reason stays visible.
-3. **Auth and the two roles**, with row-level security written alongside the tables. ← next
-4. **The API for the workflows in §4**, one at a time, tested.
+3. ~~**Auth and the two roles**, with row-level security written alongside the tables.~~ **Done** —
+   [`backend/auth.sql`](backend/auth.sql): two doors, three database roles, row-level security
+   forced on every table, and money granted column by column. Attacked as each real role by
+   [`backend/test-auth.js`](backend/test-auth.js). The sentence in §1b — that a welder cannot read
+   the customer's agreed price even by asking the API directly — is now a `GRANT` rather than a
+   promise, and it failed the first three times it was tested.
+4. **The API for the workflows in §4**, one at a time, tested. ← next
+
+   Two things step 3 deliberately left for it. **`login.html` still has no password field**, and
+   should not get one until there is an API to check it against: a password box that ignores what
+   you type is worse than none, because it looks like security. The page is at least honest today —
+   it says "Open local demo" and "authentication is not enabled". And **offline replay**: the three
+   append-only actions in §3 need a device-generated id the server can reject as a duplicate, which
+   belongs with the endpoint that receives it.
 5. **Point the frontend at it.** `workshop-data.js` is the only file that touches storage — 221
    operations behind one interface. The sixteen pages do not change.
 
@@ -273,6 +285,29 @@ and deleting a rack silently forgot where the steel on it was. **The mutation ch
 something the tests could not — that the test for "stock can never go below zero" passed with its
 own constraint deleted, because a different constraint was doing the refusing. A test standing on
 the wrong rule is not a test. All of it is written up in [`backend/README.md`](backend/README.md).
+
+### What step 3 caught
+
+`npm run test:auth` runs every check as a real Postgres role, because row security tested as the
+superuser proves nothing at all — the superuser bypasses it, so every policy passes whether or not
+it was ever written. The first check in the file is therefore that the test is not cheating.
+
+Three defects, each of which made the file's central promise untrue while the file read as though
+it held:
+
+- A table-wide `GRANT SELECT ON stock_item` sat a few lines above a careful column-by-column grant
+  for the same table. The broad grant wins and the narrow one adds nothing, so **a welder read the
+  plate cost on the first try**. The same line had handed over `equipment_event.cost`.
+- `sign_in` counted a failed attempt and then raised, and **the `RAISE` rolled back the count** — so
+  the lockout never engaged and a four-digit PIN had ten thousand free guesses.
+- `current_app_role()` read `app_user`, whose policy asks what role you are, so **every query a
+  welder ran died in infinite recursion**.
+
+And one about the tests, which is the one worth remembering: a check comparing
+`has_column_privilege(...)::text` to `'t'` can never be true, because casting a Postgres boolean to
+text gives `'true'`. The most important check in the suite passed while the workshop could read
+every price in the building. It surfaced only because a neighbouring check failed out loud. The
+details are in [`backend/README.md`](backend/README.md).
 
 Several decisions in this document were quietly contradicted by the first draft of the schema and
 have been corrected to match it rather than the other way round: the roles are `admin` and

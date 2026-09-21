@@ -200,15 +200,21 @@ async function sequencesNeverCollide() {
 
 function passwordsAreNeverHalfStored() {
   fixture();
-  refused('a hash with no salt', `INSERT INTO app_user (email, display_name, password_hash)
-    VALUES ('half@varmak.se', 'Half Stored', 'deadbeef');`, /password_is_whole/);
-  refused('a salt with no hash', `INSERT INTO app_user (email, display_name, password_salt)
-    VALUES ('half@varmak.se', 'Half Stored', 'abc123');`, /password_is_whole/);
+  // The column has to look like a bcrypt hash, so there is no way to put a password in it. This
+  // replaced a password_hash/password_salt pair whose constraint only checked that both were set
+  // together — which 'password' and 'salt' satisfy perfectly.
+  refused('a password stored as itself', `INSERT INTO app_user (email, display_name, password_hash)
+    VALUES ('plain@varmak.se', 'Plain Text', 'hunter2');`, /password_is_hashed/);
+  refused('something that merely looks hashed', `INSERT INTO app_user (email, display_name, password_hash)
+    VALUES ('md5@varmak.se', 'MD5 Era', '5f4dcc3b5aa765d61d8327deb882cf99');`, /password_is_hashed/);
+  refused('a bcrypt hash with no cost in it', `INSERT INTO app_user (email, display_name, password_hash)
+    VALUES ('odd@varmak.se', 'Malformed', '$2a$notacost$abcdefghijklmnopqrstuv');`, /password_is_hashed/);
   accepted('a user with no password yet', `INSERT INTO app_user (email, display_name)
     VALUES ('new@varmak.se', 'Not Yet Set');`);
-  accepted('a whole password', `INSERT INTO app_user (email, display_name, password_hash, password_salt, role)
-    VALUES ('admin@varmak.se', 'Workshop Admin', 'deadbeef', 'abc123', 'admin');`);
-  step('Users: a password is stored whole or not at all — never a hash with no salt');
+  accepted('a real bcrypt hash', `INSERT INTO app_user (email, display_name, password_hash, role)
+    VALUES ('admin@varmak.se', 'Workshop Admin',
+            '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');`);
+  step('Users: the password column can only hold a bcrypt hash, so a plain-text password cannot go in it');
 
   refused('an email with different capitals', `INSERT INTO app_user (email, display_name)
     VALUES ('Mixed@Varmak.se', 'Mixed Case');`, /email/);

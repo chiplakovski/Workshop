@@ -91,14 +91,18 @@ CREATE TABLE app_user (
   email         text NOT NULL UNIQUE CHECK (email = lower(btrim(email)) AND email <> ''),
   display_name  text NOT NULL CHECK (btrim(display_name) <> ''),
   role          user_role NOT NULL DEFAULT 'workshop',
-  -- The password is never stored, only what it hashes to, and the salt and parameters that
-  -- produced that hash. Verification happens in the API; the shape is fixed here so no caller
-  -- can decide to keep a password in plain text.
-  password_hash text,
-  password_salt text,
+  -- The password is never stored, only what it hashes to.
+  --
+  -- The first version of this table had password_hash beside a password_salt column, with a
+  -- constraint that the two were set together. That was wrong: bcrypt's output already carries its
+  -- algorithm, cost and salt, so a separate salt column is at best redundant and at worst a place
+  -- to put a salt that is not the one the hash was made with. What the constraint was reaching for
+  -- is written directly instead — the column has to LOOK like a bcrypt hash, which is what makes
+  -- storing a plain-text password impossible rather than merely discouraged.
+  password_hash text CONSTRAINT password_is_hashed
+                CHECK (password_hash IS NULL OR password_hash ~ '^\$2[aby]\$\d{2}\$'),
   is_active     boolean NOT NULL DEFAULT true,
-  created_at    timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT password_is_whole CHECK ((password_hash IS NULL) = (password_salt IS NULL))
+  created_at    timestamptz NOT NULL DEFAULT now()
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

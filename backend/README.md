@@ -1,10 +1,11 @@
 # The database
 
-Three files. `schema.sql` is the database, `test-schema.js` tries to break it, and
-`mutation-check.js` checks that the tests would notice if it stopped refusing.
+Five files. `schema.sql` is the database and `auth.sql` is who may see what; `test-schema.js` and
+`test-auth.js` try to break each of them, and `mutation-check.js` checks that the tests would
+notice if either stopped refusing.
 
-Where it stands: 110 refusals and 58 allowances pass, and all 42 mutations are caught — every rule
-in the schema has a test that fails without it.
+Where it stands: 111 refusals and 58 allowances on the schema, 53 refusals and 26 allowances on
+auth, and every mutation caught — every rule in either file has a test that fails without it.
 
 This is steps 1 and 2 of the order in [`BACKEND.md`](../BACKEND.md): the schema with its
 constraints and safety rules, and numbering as sequences. 31 tables, 103 checks, 13 triggers, and
@@ -23,6 +24,7 @@ initdb -D /var/lib/postgresql/varmak --auth=trust -U postgres
 pg_ctl -D /var/lib/postgresql/varmak -o "-k /tmp -p 5433 -c listen_addresses=" -l server.log start
 
 npm run test:schema        # builds a fresh database from schema.sql and attacks it
+npm run test:auth          # adds auth.sql and attacks it as each real role
 npm run test:mutations     # puts each rule's bug back and checks the tests catch it
 ```
 
@@ -31,7 +33,8 @@ suite once per mutation — 42 of them, about half an hour — so it is a check 
 changes, not on every save. One rule at a time:
 
 ```sh
-node backend/mutation-check.js "per-group item numbers"
+node backend/mutation-check.js "per-group item numbers"   # one rule
+node backend/mutation-check.js file:auth                  # everything in auth.sql
 ```
 
 **Do not edit `schema.sql` while `test:mutations` is running.** It reads the schema once at the
@@ -71,6 +74,49 @@ convenience. This is the floor nothing falls through.
 | A line that has gone to the customer cannot be repriced without a reason and a name | trigger; and the reason has to be a new one |
 | The activity log can be added to and nothing else | trigger refusing UPDATE and DELETE |
 
+## Who may see what
+
+Two doors, because they guard different things — email and password for the office and for a
+personal phone, a personal PIN on the shared tablet in the hall. A welder in gloves will not type a
+password forty times a day, and if you make them they share one login and the hours data becomes
+worthless. So a PIN opens a `workshop` session and nothing more, and that limit is a GRANT rather
+than an `if`, so it holds even if somebody works out the PIN.
+
+Three real Postgres roles — `varmak_admin`, `varmak_office`, `varmak_workshop` — plus `varmak_api`,
+which is what the connection pool logs in as. `varmak_api` can become any of the three and can read
+nothing itself, so a bug that forgets to pick a role ends with a session that cannot see a single
+row. That is the direction a mistake here has to fail.
+
+Three things carry the weight:
+
+- **GRANT, column by column, for money.** `SELECT avg_cost FROM stock_item` as a welder is refused
+  by the server. Not filtered, not blanked — refused. So is `SELECT *`, and so is reaching the
+  column sideways with `WHERE avg_cost > 10` or `ORDER BY avg_cost`. The cost is real and worth
+  saying: the workshop's queries have to name their columns.
+- **Row-level security, forced, on every table.** Forced so the owner is held to the same rules —
+  otherwise the one role that runs the migrations is the one role none of this applies to, and it
+  is the role most likely to be left connected in a console.
+- **The role comes from the row, never from the session.** A session claiming `admin` when its row
+  says `workshop` is refused and named in the refusal. Holding the office *database* role is not
+  enough either: the policies read the person.
+
+Ten functions may step around row security, and the test suite asserts that list by name so it
+cannot grow quietly. Four of them are the bootstrap — signing in has to write a session row before
+anybody is signed in. Two answer "who am I" and cannot be subject to a policy that needs the answer
+first. Two hash secrets. Two are the door material leaves by.
+
+Material is worth its own note. §1b says the workshop may issue material, which changes
+`stock_item`. Granting UPDATE on the quantity columns would also let a welder set the stock to
+anything with no movement written against it, and then the store's figures and the movements meant
+to explain them drift apart silently. So the workshop has no UPDATE on `stock_item` at all — it has
+`issue_material()`, which is the door. Note what that function does *not* take: who is doing it.
+That comes from the session, so the movement records the person who actually issued the steel
+rather than whichever name the caller passed.
+
+Nobody can read `password_hash` or `pin_hash`. Not office, not admin. Signing in compares inside
+the database and setting a new secret overwrites, so nothing has a reason to select them — and a
+hash that cannot be selected cannot leave the building in a spreadsheet.
+
 ## Why the tests look the way they do
 
 110 refusals, 58 allowances, 68 checks. Every case asserts the **wording** of the refusal, not only
@@ -104,6 +150,58 @@ was wrong:
 Deleting a location also turned out to quietly set the location of every offcut on it to null —
 physical steel whose place the record had forgotten. Found by asserting a refusal that did not
 happen, and now a `RESTRICT`.
+
+## What testing auth found
+
+Every one of these was in `auth.sql` after it was written and read through, and the file looked
+right each time:
+
+- **The headline promise simply failed.** `GRANT SELECT ON ... stock_item ... TO varmak_workshop`
+  sat a few lines above a careful column-by-column grant for the same table. A table-wide grant
+  includes every column and the narrower one adds nothing, so a welder read `avg_cost` = 14.50 out
+  of the store on the first try. The same mistake had handed over `equipment_event.cost`. This is
+  why the suite now asks the server's own privilege tables rather than trusting the file to be
+  right, and why it first checks that its list of money columns covers every numeric column in the
+  database whose name looks like money.
+- **The lockout did nothing whatsoever.** `sign_in` counted a failed attempt and then raised — and
+  the `RAISE` rolled back the row it had just written, so `failed_attempts` never moved and
+  `locked_until` was never set. A four-digit PIN with no working lockout is ten thousand free
+  guesses, which is to say it is not a credential. A function that has to record something cannot
+  also abort, so `sign_in` returns a refusal instead of raising. Caught on the sixth guess.
+- **Every query by a welder died with "stack depth limit exceeded".** `current_app_role()` reads
+  `app_user`; `app_user` has a policy; the policy asks what role you are. A function that reads one
+  row to answer "who am I" cannot be subject to a policy that needs the answer first.
+- **The broad grant handed both hash columns to admin and office.** Same shape as the first item,
+  found by asking the privilege tables for every role rather than just the one under suspicion.
+- **The office could sign a stock movement in anybody's name.** `issue_stock` takes the name to
+  record, and `REVOKE ALL ON FUNCTION ... FROM PUBLIC` does not remove a privilege granted
+  explicitly to a role — and an earlier line had granted it to all three. Being the one role that
+  also holds `UPDATE` on `stock_item`, the office could use it. Found by the mutation check
+  reporting a rule with no test behind it, then by the test it prompted.
+- **The same shape of mistake, three times.** A broad or early `GRANT`, and a narrower line further
+  down that reads as though it undoes it. It does not: a table-wide grant is not narrowed by a
+  column grant, and `FROM PUBLIC` is not narrowed to the roles. Both need an explicit `REVOKE`
+  naming what is being taken back. This is the thing to look for first in any future change to this
+  file — and the reason the suite asks the server's privilege tables rather than reading the SQL.
+
+And three about the tests rather than the code, kept because each one was a check that would have
+passed forever:
+
+- **Row security tested as the superuser proves nothing** — the superuser bypasses it, so every
+  policy passes whether or not it was ever written. The first check in `test-auth.js` now asserts
+  that the roles under test hold neither `SUPERUSER` nor `BYPASSRLS`, and that the list of functions
+  which may bypass is exactly the ten expected ones.
+- **A test comparing `has_column_privilege(...)::text` to `'t'` can never be true.** Casting a
+  Postgres boolean to text gives `'true'`; `'t'` is only how psql prints it. So the most important
+  check in the file — that the workshop holds no privilege on any price column — passed while the
+  workshop could read every price in the building. It was caught only because a neighbouring check
+  on the office role failed out loud.
+- **A row-level policy on SELECT or UPDATE filters rather than refuses.** The statement succeeds
+  having matched nothing. Three checks expected an error and would have passed just as happily if
+  the policy had let the change through and reported success; they now assert the unchanged value
+  and the empty answer, beside a non-empty one from somebody who may see it.
+
+## The mutation that reproduces the original bug
 
 The mutation for per-group item numbering is worth looking at, because it reproduces the original
 bug in its original form. Replace the one-statement `UPDATE … RETURNING` in `next_item_number()`
