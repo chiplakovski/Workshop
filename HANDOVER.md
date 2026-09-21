@@ -311,6 +311,47 @@ so the warning rendered as plain text. Third time this session I have used a cla
 page I worked on last (`tblwrap` and `empty3` on Quality were the others). **Check the page's own
 stylesheet before borrowing a class name.**
 
+
+**The app could lose everything, and the way out had no button (Pass 4.45).** Asked what stands
+between this and a working program, I went looking rather than guessing, and the first thing found
+was this: `backupData()`, `validateBackup()` and `importBackup()` have been in the data layer for a
+long time, written carefully, keeping a recovery copy before they overwrite — and **reachable from
+no page in the app**. Everything lives in one browser. Clear it, change device, or hand the tablet
+to somebody who clears it, and the workshop's history is gone with no warning and nothing to go
+back to.
+
+The front page now carries **Your data**: what is kept, how much of it, where it lives, and the two
+buttons. What stood there was **Team Talk** — a chat box that wrote into the page and nowhere else.
+Send a message, refresh, gone. Messages between people need a server, and an "Internal feed" that
+forgets is worse than no feed: it is the front page promising something the app cannot do. Team
+messaging is a backend feature and is written down as one.
+
+Two more defects fell out:
+
+- **`isEmpty()` could never return true.** It counted every known collection, but an empty system
+  still ships the classification scheme (item groups, warehouse locations) because that is the
+  app's and not the workshop's, and clearing is itself an event the audit trail records. A question
+  with no reachable answer. Nothing called it, so it had been wrong quietly.
+- **A count read "10projects"** — the gap was drawn by CSS, so the text itself had no space in it.
+  Wrong when selected, copied, or read aloud.
+
+The test is the whole round trip, because **a copy you cannot restore is not a copy**: save it,
+read the file back as plain JSON outside the app, wipe the system, restore, compare record for
+record, then reload and check it is still there. Plus a file that is not a backup, which must be
+refused by name and change nothing.
+
+**What is still between here and functional** — and none of it is frontend work:
+
+| Gap | Why it needs a server |
+|---|---|
+| One browser is one workshop | Aleksandar's PC and Marko's phone hold unrelated data. Nothing syncs, because there is nowhere to sync to. |
+| No login | "Marko K." is typed into the markup of `hours-mobile.html`. |
+| Numbering collides | Two browsers both create C-001, and neither knows. |
+| Photographs | A phone photo is 2–5MB against roughly 5MB for the whole browser store. |
+
+Backup/restore does not fix any of those. What it does is make the single scariest property of the
+current app — silent, total, unrecoverable loss — survivable, today, with no server at all.
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,

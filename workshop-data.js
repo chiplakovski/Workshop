@@ -1325,7 +1325,14 @@
     // Fill the system with the demonstration records, for showing it populated or for a test to
     // exercise a rule against. Never called on load: an empty system stays empty until asked.
     loadDemoData:()=>{state=normalize(demoState());save('Demonstration data loaded');return clone(state)},
-    isEmpty:()=>KNOWN_COLLECTION_KEYS.every(k=>!Array.isArray(state[k])||state[k].length===0),
+    // "Has this workshop entered anything yet?" — which is not the same as "is every collection
+    // empty". An empty system still ships the classification scheme (item groups, warehouse
+    // locations) because that is the app's, not the workshop's, and clearing the system is
+    // itself an event the audit trail records. Counting those three meant this could never
+    // return true, for anybody, ever — a question with no reachable answer.
+    isEmpty:()=>KNOWN_COLLECTION_KEYS
+      .filter(k=>k!=='activity')
+      .every(k=>!Array.isArray(state[k])||state[k].length===0),
     save:reason=>save(reason),
     backupData:()=>{
       const blob=new Blob([JSON.stringify(clone(state), null, 2)], {type:'application/json'});

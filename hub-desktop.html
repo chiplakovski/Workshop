@@ -87,6 +87,22 @@
   .msg .mav{flex:none;width:26px;height:26px;background:linear-gradient(135deg,var(--accent-2),var(--navy-800));display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;font-family:var(--font-heading);}
   .msg .mbody .mname{font-size:12px;font-weight:600;} .msg .mbody .mname span{color:var(--steel-400);font-weight:400;font-size:11px;margin-left:6px;}
   .msg .mbody .mtext{font-size:12px;color:var(--steel-300);line-height:1.5;margin-top:2px;}
+  /* Your data. The one panel on the front page that decides whether a workshop's history
+     survives a cleared browser, so it reads plainly and its two buttons are the same size. */
+  .ydbody{flex:1;padding:16px 18px;display:flex;flex-direction:column;gap:13px;position:relative;z-index:1;}
+  .ydwhere{font-size:12.5px;line-height:1.65;color:var(--steel-300);margin:0;}
+  .ydwarn{font-size:12px;line-height:1.6;color:var(--warn);margin:0;}
+  .ydcounts{display:flex;flex-wrap:wrap;gap:7px;}
+  .ydcount{display:inline-flex;align-items:baseline;gap:5px;padding:5px 9px;font-size:11.5px;
+    color:var(--steel-300);background:var(--field);border:1px solid var(--field-line);}
+  .ydcount b{font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ice);}
+  .ydnone{font-size:12px;color:var(--steel-400);}
+  .ydactions{gap:8px;}
+  .ydbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;
+    padding:0 10px;cursor:pointer;font-family:var(--font-body);font-size:12.5px;font-weight:500;white-space:nowrap;
+    background:var(--field);border:1px solid var(--field-line);color:var(--steel-300);transition:.15s;}
+  .ydbtn:hover{border-color:var(--spark);color:var(--ice);}
+  .ydbtn.primary{background:linear-gradient(180deg,var(--accent-2),var(--navy-brand));border:none;color:#fff;}
   .tt-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);}
   .tt-input input{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:13px;padding:10px 12px;outline:none;}
   .tt-input input:focus{border-color:var(--spark);}
@@ -267,16 +283,21 @@
       </div>
     </div>
 
-    <div class="teamtalk">
-      <div class="ttart"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 34h58a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H42l-16 14V76h-6a8 8 0 0 1-8-8V42a8 8 0 0 1 8-8z"/><path d="M34 50h30M34 62h20"/></svg></div>
+    <div class="teamtalk yourdata">
+      <div class="ttart"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M24 40c0-8 16-14 36-14s36 6 36 14-16 14-36 14-36-6-36-14z"/><path d="M24 40v40c0 8 16 14 36 14s36-6 36-14V40"/><path d="M24 60c0 8 16 14 36 14s36-6 36-14"/></svg></div>
       <div class="tt-head">
-        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <div><h3 data-i="m_team">Team Talk</h3><p data-i="c_team">Internal feed</p></div>
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--spark)" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></div>
+        <div><h3 data-i="m_data">Your data</h3><p data-i="c_data">Where the work is kept</p></div>
       </div>
-      <div class="tt-feed"><div class="msg" style="opacity:.6"><div class="mbody"><div class="mtext">No messages yet.</div></div></div></div>
-      <div class="tt-input">
-        <input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…" aria-label="Write to team…">
-        <button type="button" id="ttSend" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      <div class="ydbody">
+        <p class="ydwhere" data-i="yd_where">Everything this workshop has entered is kept in this browser, on this device. Nothing is sent anywhere, and nothing else holds a copy.</p>
+        <div class="ydcounts" id="ydCounts"></div>
+        <p class="ydwarn" data-i="yd_warn">Clearing this browser's data, or moving to another device, leaves nothing behind. Save a copy somewhere you trust.</p>
+      </div>
+      <div class="tt-input ydactions">
+        <button type="button" class="ydbtn primary" id="ydBackup"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span data-i="yd_save">Save a copy</span></button>
+        <button type="button" class="ydbtn" id="ydRestore"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 9l5-5 5 5M12 4v12"/></svg><span data-i="yd_restore">Restore a copy</span></button>
+        <input type="file" id="ydFile" accept="application/json,.json" hidden>
       </div>
     </div>
   </div>
@@ -312,6 +333,7 @@
   </button>
 </div>
 
+<script src="workshop-data.js"></script>
 <script src="workshop-ui.js"></script><script>
   const T={
     sv:{role:"Admin",logout:"Logga ut",
@@ -322,7 +344,7 @@
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
       m_reports:"Rapporter",c_reports:"Besiktning & test",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhåll",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
-      m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
+      m_data:"Dina uppgifter",c_data:"Var arbetet sparas",yd_where:"Allt den har verkstaden har matat in sparas i den har webblasaren, pa den har enheten. Inget skickas nagonstans, och ingen annan har en kopia.",yd_warn:"Om webblasarens data rensas, eller om du byter enhet, finns inget kvar. Spara en kopia pa ett stalle du litar pa.",yd_save:"Spara en kopia",yd_restore:"Aterstall en kopia",yd_empty:"Inget inmatat annu",yd_projects:"projekt",yd_jobcards:"jobbkort",yd_customers:"kunder",yd_estimations:"offerter",yd_inventory:"lagerartiklar",yd_hours:"tidposter",yd_inspections:"inspektioner",yd_documents:"dokument",yd_saved:"En kopia har sparats till dina nedladdningar. Forvara den nagon annanstans an pa den har enheten.",yd_confirm:"Att aterstalla ersatter allt som finns i den har webblasaren med innehallet i filen.\n\nDet som finns nu sparas som en aterstallningskopia, men appen visar den aterstallda datan harifran.",yd_restored:"Aterstallt. Verkstaden innehaller nu det som fanns i filen.",yd_unreadable:"Filen kunde inte lasas som en sparad kopia.",yd_failed:"Kopian kunde inte aterstallas.",yd_nodata:"Datalagret ar inte tillgangligt pa den har sidan.",locale:"sv-SE"},
     en:{role:"Admin",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
@@ -331,7 +353,7 @@
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
       m_reports:"Reports",c_reports:"Inspection & test",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
-      m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
+      m_data:"Your data",c_data:"Where the work is kept",yd_where:"Everything this workshop has entered is kept in this browser, on this device. Nothing is sent anywhere, and nothing else holds a copy.",yd_warn:"Clearing this browser data, or moving to another device, leaves nothing behind. Save a copy somewhere you trust.",yd_save:"Save a copy",yd_restore:"Restore a copy",yd_empty:"Nothing entered yet",yd_projects:"projects",yd_jobcards:"jobcards",yd_customers:"customers",yd_estimations:"quotations",yd_inventory:"stock items",yd_hours:"hours entries",yd_inspections:"inspections",yd_documents:"documents",yd_saved:"A copy has been saved to your downloads. Keep it somewhere that is not this device.",yd_confirm:"Restoring replaces everything currently in this browser with the contents of that file.\n\nWhat is here now is kept as a recovery copy, but the app will show the restored data from this point on.",yd_restored:"Restored. The workshop now holds what was in that file.",yd_unreadable:"That file could not be read as a saved copy.",yd_failed:"The copy could not be restored.",yd_nodata:"The data layer is not available on this page.",locale:"en-GB"},
     mk:{role:"Admin",logout:"Odjavi se",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
       m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
@@ -340,7 +362,7 @@
       m_suppliers:"Dobavuvači",c_suppliers:"Registar na dobavuvači",m_documents:"Dokumenti",c_documents:"Datoteki i šabloni",
       m_reports:"Izveštai",c_reports:"Inspekcija i test",m_equipment:"Oprema / Mašini",c_equipment:"Mašini i održuvanje",
       m_marketing:"Marketing",c_marketing:"Potencijalni klienti, kampanji i razvoj",m_quality:"Kvalitet",c_quality:"Inspekcii i defekti",
-      m_team:"Tim-feed",c_team:"Vnatrešen kanal",ttph:"Napiši do timot…",locale:"mk"}
+      m_data:"Tvoite podatoci",c_data:"Kade se cuva rabotata",yd_where:"Se sto ovaa rabotilnica vnela se cuva vo ovoj prelistuvac, na ovoj uredaj. Nisto ne se praka nikade, i nikoj drug nema kopija.",yd_warn:"Ako se iscistat podatocite na prelistuvacot, ili ako smenis uredaj, ne ostanuva nisto. Zacuvaj kopija na mesto na koe veruvas.",yd_save:"Zacuvaj kopija",yd_restore:"Vrati kopija",yd_empty:"Se uste nisto ne e vneseno",yd_projects:"proekti",yd_jobcards:"rabotni kartoni",yd_customers:"klienti",yd_estimations:"ponudi",yd_inventory:"magacinski artikli",yd_hours:"zapisi za casovi",yd_inspections:"inspekcii",yd_documents:"dokumenti",yd_saved:"Kopijata e zacuvana vo tvoite prevzemanja. Cuvaj ja nekade sto ne e ovoj uredaj.",yd_confirm:"Vrakanjeto go zamenuva se sto e sega vo ovoj prelistuvac so sodrzinata na taa datoteka.\n\nOna sto e tuka sega se cuva kako rezervna kopija, no aplikacijata od sega ke gi prikazuva vratenite podatoci.",yd_restored:"Vrateno. Rabotilnicata sega go sodrzi ona sto bese vo taa datoteka.",yd_unreadable:"Datotekata ne mozese da se procita kako zacuvana kopija.",yd_failed:"Kopijata ne mozese da se vrati.",yd_nodata:"Podatocniot sloj ne e dostapen na ovaa stranica.",locale:"mk"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -349,7 +371,7 @@
     document.documentElement.lang=code==="mk"?"mk-Latn":code;
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
     var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();
-    tick();}
+    tick();if(window.renderYourData)window.renderYourData();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
@@ -391,22 +413,72 @@
   document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
 
   (function(){
-    const ttInput=document.getElementById('ttInput'),ttSend=document.getElementById('ttSend'),ttFeed=document.querySelector('.tt-feed');
-    function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-    function send(){
-      const text=ttInput.value.trim();
-      if(!text)return;
-      const now=new Date(),hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0');
-      const msg=document.createElement('div');
-      msg.className='msg';
-      msg.innerHTML=`<div class="mav">AK</div><div class="mbody"><div class="mname">Aleksandar<span>${hh}:${mm}</span></div><div class="mtext"></div></div>`;
-      msg.querySelector('.mtext').textContent=text;
-      ttFeed.appendChild(msg);
-      ttFeed.scrollTop=ttFeed.scrollHeight;
-      ttInput.value='';
+    // ── Your data ────────────────────────────────────────────────────────────────────────
+    // Reads the real record counts and offers the two operations that decide whether a
+    // workshop's history survives a cleared browser. Both already existed in the data layer
+    // and had a button on no page in the app.
+    function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    const D=window.WorkshopData;
+    const ydCounts=document.getElementById('ydCounts');
+    const ydBackup=document.getElementById('ydBackup');
+    const ydRestore=document.getElementById('ydRestore');
+    const ydFile=document.getElementById('ydFile');
+
+    // Named in the workshop's words, not the data layer's. Only what has rows is shown: a
+    // list of zeroes tells nobody anything, and an empty system should read as empty.
+    const YD_SHOWN=[['projects','yd_projects'],['jobcards','yd_jobcards'],['customers','yd_customers'],
+      ['estimations','yd_estimations'],['inventory','yd_inventory'],['hours','yd_hours'],
+      ['qualityInspections','yd_inspections'],['documents','yd_documents']];
+
+    function ydLabel(key){const t=T[current]||T.en;return t[key]||key;}
+    window.renderYourData=function renderYourData(){
+      if(!D||!ydCounts)return;
+      const state=D.get();
+      const rows=YD_SHOWN
+        .map(([k,label])=>[label,Array.isArray(state[k])?state[k].length:0])
+        .filter(([,n])=>n>0);
+      const t=T[current]||T.en;
+      ydCounts.innerHTML=rows.length
+        ? rows.map(([label,n])=>`<span class="ydcount"><b>${n}</b> ${esc(ydLabel(label))}</span>`).join('')
+        : `<span class="ydnone">${esc(t.yd_empty||'Nothing entered yet')}</span>`;
     }
-    ttSend.addEventListener('click',send);
-    ttInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
+
+    if(ydBackup)ydBackup.addEventListener('click',()=>{
+      const t=T[current]||T.en;
+      if(!D){wAlert(t.yd_nodata);return;}
+      D.backupData();
+      wAlert(t.yd_saved);
+    });
+
+    // Restoring replaces everything, so it asks first and says exactly what it will do. The
+    // data layer keeps the current state as a recovery copy before it writes, which is worth
+    // saying out loud to somebody about to press it.
+    if(ydRestore)ydRestore.addEventListener('click',()=>ydFile&&ydFile.click());
+    if(ydFile)ydFile.addEventListener('change',()=>{
+      const t=T[current]||T.en;
+      const file=ydFile.files&&ydFile.files[0];
+      ydFile.value='';
+      if(!file||!D)return;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        let parsed=null;
+        try{parsed=JSON.parse(String(reader.result));}
+        catch(e){wAlert(t.yd_unreadable);return;}
+        const check=D.validateBackup(parsed);
+        if(!check.valid){wAlert(check.error);return;}
+        wConfirm(t.yd_confirm,()=>{
+          const res=D.importBackup(parsed);
+          if(res&&res.success===false){wAlert(res.error||t.yd_failed);return;}
+          renderYourData();
+          wAlert(t.yd_restored);
+        },{yes:t.yd_restore,danger:true});
+      };
+      reader.onerror=()=>wAlert(t.yd_unreadable);
+      reader.readAsText(file);
+    });
+
+    renderYourData();
+    window.addEventListener('workshop:data',renderYourData);
   })();
 </script>
 </body></html>
