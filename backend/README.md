@@ -201,6 +201,25 @@ passed forever:
   the policy had let the change through and reported success; they now assert the unchanged value
   and the empty answer, beside a non-empty one from somebody who may see it.
 
+## A bug can need two lines to be wrong at once
+
+The office-forging-a-movement hole took two lines: an explicit `GRANT EXECUTE ON FUNCTION
+issue_stock` early in the file, and a `REVOKE ... FROM PUBLIC` further down that did not name the
+roles. Either line alone is harmless — with no early grant, revoking from `PUBLIC` is enough,
+because `EXECUTE` goes to `PUBLIC` by default and to no role explicitly; with the roles named in the
+revoke, an early grant is cancelled.
+
+Which meant that mutating either line on its own changed nothing any test could observe, and both
+attempts reported `MISSED`. The rule looked untestable when it was only being asked about wrongly.
+So a mutation can now carry several `edits` applied together, and this one makes both — which is the
+only version of it that reproduces the bug that was actually there.
+
+The general lesson, since it cost two full runs: **a `MISSED` is a question, not a verdict.** It
+says the tests did not notice this edit. Sometimes that means a rule has no test behind it. Sometimes
+it means the edit was a no-op — a redundant constraint, a defensive line that something else already
+covers — and then the honest response is to say so in the schema and drop or rewrite the mutation,
+not to invent a test for a difference that does not exist.
+
 ## The mutation that reproduces the original bug
 
 The mutation for per-group item numbering is worth looking at, because it reproduces the original

@@ -33,8 +33,13 @@ const base = source.schema;
 // green run that means nothing, and it happened — a run reported all 42 caught while every one of
 // them was actually failing on an unrelated assertion. So the file is checked again at the end and
 // the whole run is thrown away if it moved underneath us.
-function schemaHasChanged() {
-  return Object.entries(FILES).some(([key, f]) => fs.readFileSync(f.path, 'utf8') !== source[key]);
+// Returns the files that moved, so the warning can name them. It said "schema.sql changed" for an
+// edit to auth.sql the first time this fired, which is a small thing that would send somebody
+// looking in the wrong place.
+function filesThatChanged() {
+  return Object.entries(FILES)
+    .filter(([key, f]) => fs.readFileSync(f.path, 'utf8') !== source[key])
+    .map(([key]) => path.basename(FILES[key].path));
 }
 
 const MUTATIONS = [
@@ -399,21 +404,27 @@ const MUTATIONS = [
 CREATE POLICY floor_edits_stock ON stock_item FOR UPDATE USING (is_signed_in()) WITH CHECK (is_signed_in());
 GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)`
   },
-  // There is deliberately no mutation for "the named roles are dropped from the issue_stock
-  // REVOKE, leaving only FROM PUBLIC". Once the early GRANT was removed, that revoke alone is
-  // enough — EXECUTE is granted to PUBLIC by default and to no role explicitly — so removing the
-  // named roles changes nothing any test can see, and the mutation sat here reporting MISSED
-  // forever. Naming the roles stays in auth.sql as the thing that holds if somebody adds a GRANT
-  // above it, which is exactly the mutation below.
   {
-    // The exact hole that was in the file: an explicit GRANT early on, which REVOKE ... FROM PUBLIC
-    // later does not undo.
-    what: 'the raw issue function is granted to the roles a hundred lines earlier',
+    // The hole that was really in the file, and it took two lines to make: an explicit GRANT of
+    // issue_stock early on, and a REVOKE further down that only named PUBLIC. Either line on its
+    // own is harmless — with no early GRANT, revoking from PUBLIC is enough, and with the roles
+    // named in the revoke, the early GRANT is cancelled. Which is why this has to be one mutation
+    // making both edits: tried separately, each reported MISSED and the rule looked untestable.
+    what: 'the raw issue function is granted early and revoked only from PUBLIC',
     file: 'auth',
-    from: 'GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;',
-    to: `GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;
+    edits: [
+      {
+        from: 'GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;',
+        to: `GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;
 GRANT EXECUTE ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
 TO varmak_admin, varmak_office, varmak_workshop;`
+      },
+      {
+        from: `REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;`,
+        to: 'REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text) FROM PUBLIC;'
+      }
+    ]
   },
   {
     what: 'issuing material does not need a session',
@@ -538,12 +549,18 @@ function main() {
   SELECTED.forEach((mutation, index) => {
     const which = mutation.file || 'schema';
     const original = source[which];
-    if (!original.includes(mutation.from)) {
+    // A mutation is one edit, or several applied together. Several matters: a hole can need two
+    // lines to be wrong at once, and then neither line alone changes anything a test can see — so
+    // a one-edit harness reports it as untested in both directions and the rule looks untestable
+    // when it is only being asked about wrongly.
+    const edits = mutation.edits || [{ from: mutation.from, to: mutation.to }];
+    const absent = edits.filter((e) => !original.includes(e.from));
+    if (absent.length) {
       console.log(`?    ${mutation.what} — the rule this mutation edits is no longer in ${which}.sql`);
       missed.push(mutation.what);
       return;
     }
-    const damaged = original.replace(mutation.from, mutation.to);
+    const damaged = edits.reduce((text, e) => text.replace(e.from, e.to), original);
     const result = runSuiteAgainst(damaged, which, index);
     if (result.caught) {
       console.log(`caught   ${mutation.what}`);
@@ -555,10 +572,11 @@ function main() {
   });
 
   console.log();
-  if (schemaHasChanged()) {
-    console.error('schema.sql changed while this was running, so every result above is about a file');
-    console.error('that no longer exists — those failures may be the edit rather than the mutation.');
-    console.error('Nothing above can be trusted. Run it again against the file as it now stands.');
+  const moved = filesThatChanged();
+  if (moved.length) {
+    console.error(`${moved.join(' and ')} changed while this was running, so every result above is about`);
+    console.error('a file that no longer exists — those failures may be the edit rather than the');
+    console.error('mutation. Nothing above can be trusted. Run it again as the files now stand.');
     process.exitCode = 1;
     return;
   }
