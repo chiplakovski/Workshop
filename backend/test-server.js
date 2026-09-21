@@ -86,7 +86,9 @@ function theServerDecidesNothing() {
   step('Thin: the server writes nothing itself and branches on nobody\'s role — every decision is the database\'s');
 
   // The allow-list is the difference between an API and a remote SQL console.
-  const { RPC } = require('./server');
+  const { RPC, READS } = require('./server');
+  assert.deepEqual(Object.keys(READS).sort(), ['money', 'snapshot'],
+    'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'book_hours', 'convert_lead', 'issue_material_offline',
     'receive_goods', 'record_operation', 'send_estimate'
@@ -157,6 +159,127 @@ async function aTokenIsRequiredAndMustBeReal(tokens, f) {
     step('Token: switching somebody off cuts the session they are already holding');
   }
   sql(`UPDATE app_user SET is_active = true WHERE email = 'petra@varmak.se';`);
+}
+
+// ── Reading the workshop back ─────────────────────────────────────────────────────────────
+
+// The snapshot is what step 5 needs: the database read back in the shape the pages already use. The
+// thing worth testing hardest about it is what a welder's copy does NOT contain — everything step 3
+// established about prices is worth nothing if the read endpoint hands them over.
+async function theSnapshotCarriesNoPriceForAWelder(tokens, f) {
+  const floor = await call('GET', '/read/snapshot', { token: tokens.floor });
+  assert.equal(floor.status, 200, JSON.stringify(floor.body));
+  attempts.allowed += 1;
+  const snapshot = floor.body;
+
+  assert.ok(Array.isArray(snapshot.jobcards) && snapshot.jobcards.length,
+    'a welder has to be able to see the work');
+  assert.ok(Array.isArray(snapshot.inventory) && snapshot.inventory.length);
+  step(`Snapshot: a welder reads the workshop back — ${snapshot.jobcards.length} jobcard(s), ${snapshot.inventory.length} item(s), ${snapshot.projects.length} project(s)`);
+
+  // Searched as text, across the whole document, rather than by checking the fields this test
+  // happens to think of. A price that arrives under a name nobody expected is exactly the failure
+  // that would slip through a field-by-field check.
+  const asText = JSON.stringify(snapshot);
+  const priced = ['avgCost', 'lastPrice', 'credit', 'quotedValue', 'purchasePrice', 'sellingPrice',
+    'unitPrice', 'total', 'price', 'cost', 'value'];
+  const leaked = priced.filter((key) => new RegExp(`"${key}"\\s*:`).test(asText));
+  assert.deepEqual(leaked, [],
+    `a welder's snapshot carries money under these keys: ${leaked.join(', ')}`);
+
+  // And the actual figures, by value: 14.50 is the plate cost, 412000 what the machine cost.
+  for (const figure of ['14.50', '412000', '250000']) {
+    assert.ok(!asText.includes(figure), `the figure ${figure} is in a welder's snapshot`);
+  }
+  step("Snapshot: not one money key and not one of the figures appears in a welder's copy");
+
+  turnedAway('a welder asking for the money separately',
+    await call('GET', '/read/money', { token: tokens.floor }), 403, /not yours to do/);
+
+  // Asked of the privilege directly as well, because the 403 above does not distinguish between
+  // "you may not call that function" and "you may not read the columns inside it". Both are true
+  // and both refuse, which is defence in depth — but it means handing the function to the floor
+  // would change nothing observable over HTTP, and then the GRANT would be untested.
+  const mayCall = value(`SELECT CASE WHEN has_function_privilege('varmak_workshop', 'workspace_money()', 'EXECUTE')
+                                     THEN 'yes' ELSE 'no' END;`);
+  assert.equal(mayCall, 'no', 'the workshop holds EXECUTE on the money call');
+  const officeMayCall = value(`SELECT CASE WHEN has_function_privilege('varmak_office', 'workspace_money()', 'EXECUTE')
+                                          THEN 'yes' ELSE 'no' END;`);
+  assert.equal(officeMayCall, 'yes', 'the office has to be able to call it, or this is a broken screen');
+  step('Snapshot: asking for the prices directly is refused, and the floor holds no privilege to call it either');
+}
+
+async function theOfficeGetsTheFiguresItNeeds(tokens, f) {
+  const office = await call('GET', '/read/snapshot', { token: tokens.office });
+  assert.equal(office.status, 200);
+  attempts.allowed += 1;
+  const money = await call('GET', '/read/money', { token: tokens.office });
+  assert.equal(money.status, 200, JSON.stringify(money.body));
+  attempts.allowed += 1;
+
+  const item = office.body.inventory.find((i) => i.code === 'S355-10');
+  assert.ok(item, 'the office should see the same items');
+  assert.ok(!('avgCost' in item), 'the plain snapshot carries no money for anybody, including the office');
+  assert.equal(money.body.inventory[item.id].avgCost, '14.50',
+    'and the office gets the cost from the second call, keyed by the same id');
+  step('Snapshot: the office reads the same snapshot and merges the figures from a second call, record by record');
+
+  // Every figure a string, never a JSON number. A JSON number parsed in a browser is a double, and
+  // money as a double is the mistake the schema rules out with numeric — reintroducing it on the
+  // wire would undo that for the sake of two characters.
+  const asNumbers = [];
+  for (const [collection, records] of Object.entries(money.body)) {
+    for (const [id, fields] of Object.entries(records)) {
+      for (const [field, figure] of Object.entries(fields)) {
+        if (figure !== null && typeof figure !== 'string') asNumbers.push(`${collection}.${id}.${field}`);
+      }
+    }
+  }
+  assert.deepEqual(asNumbers, [],
+    `these figures crossed the wire as JSON numbers, which a browser parses as doubles: ${asNumbers.join(', ')}`);
+  assert.equal(money.body.inventory[item.id].avgCost.length, 5, '14.50 must keep its scale, not arrive as 14.5');
+  step('Snapshot: every figure crosses as text and keeps its scale — money never becomes a double on the way');
+
+  // The split is what makes the rule enforceable. Stated as a check so nobody later "simplifies" it
+  // into one function that decides for itself.
+  const both = JSON.stringify(office.body);
+  assert.ok(!both.includes('14.50'),
+    'the plain snapshot has money in it, which means the split has stopped doing anything');
+  step('Snapshot: the plain snapshot is priceless for everybody — the money only ever arrives by the granted call');
+}
+
+async function theSnapshotIsTheShapeThePagesRead(tokens) {
+  const { body } = await call('GET', '/read/snapshot', { token: tokens.office });
+  for (const collection of ['customers', 'projects', 'jobcards', 'equipment', 'hours', 'inventory']) {
+    assert.ok(Array.isArray(body[collection]), `${collection} should be an array like the pages expect`);
+  }
+  const jobcard = body.jobcards[0];
+  // The names the pages actually read. Checked by name because the whole purpose of building the
+  // snapshot in SQL is that these match without the browser renaming anything.
+  for (const field of ['no', 'projectNo', 'title', 'status', 'archived', 'operations']) {
+    assert.ok(field in jobcard, `a jobcard needs ${field} — the phone screen filters on it`);
+  }
+  // Not merely an array — the steps really on it. An empty array satisfies "is an array" and is
+  // exactly what a snapshot that stopped nesting them would return, so the count is checked against
+  // the database rather than against nothing.
+  assert.ok(Array.isArray(jobcard.operations), 'operations arrive nested on the jobcard, as the pages read them');
+  const stepsInDb = value(`SELECT count(*) FROM operation o JOIN jobcard j ON j.id = o.jobcard_id
+                            WHERE j.ref = '${jobcard.no}';`);
+  assert.ok(Number(stepsInDb) > 0, 'the fixture should give this jobcard some operations to nest');
+  assert.equal(String(jobcard.operations.length), stepsInDb,
+    `the jobcard carries ${jobcard.operations.length} operations and the database has ${stepsInDb}`);
+  for (const field of ['id', 'desc', 'plannedHours', 'status']) {
+    assert.ok(field in jobcard.operations[0], `an operation needs ${field}`);
+  }
+  assert.ok(jobcard.operations[0].desc, 'an operation with no description is not a step anybody can pick');
+  assert.match(jobcard.no, /^JC-\d{4}-\d{4}$/);
+  assert.equal(jobcard.projectNo, body.projects.find((p) => p.id === jobcard.projectId).no,
+    'the jobcard names its project by the reference the page filters on');
+  step('Snapshot: it arrives in the shape the pages already read — nested operations, references, and the field names they use');
+
+  assert.ok(body.takenAt, 'a snapshot has to say when it was taken');
+  assert.equal(body.takenBy, 'Lars Holm', 'and who it was taken for');
+  step('Snapshot: it says when it was taken and whose view it is');
 }
 
 // ── The promises survive the journey ──────────────────────────────────────────────────────
@@ -275,8 +398,14 @@ function buildDatabase() {
   execFileSync('psql', ['-h', HOST, '-p', PORT, '-U', USER, '-d', 'postgres', '-qtAX',
     '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  for (const name of ['schema', 'auth', 'api']) {
-    execFileSync('psql', [...conn(DB), '-f', path.join(__dirname, `${name}.sql`)],
+  // The env override matters: mutation-check.js hands a damaged copy of one file through
+  // VARMAK_SCHEMA / VARMAK_AUTH / VARMAK_API / VARMAK_VIEWS. Without reading it this suite silently
+  // builds the real files and reports every mutation as uncaught — which it did, for all five
+  // views.sql mutations at once, and a run where everything is MISSED is the shape of a harness
+  // fault rather than a row of untested rules.
+  for (const name of ['schema', 'auth', 'api', 'views']) {
+    const file = process.env[`VARMAK_${name.toUpperCase()}`] || path.join(__dirname, `${name}.sql`);
+    execFileSync('psql', [...conn(DB), '-f', file],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   }
 }
@@ -326,6 +455,9 @@ async function main() {
     theServerDecidesNothing();
     const tokens = await theDoorOverHttp();
     await aTokenIsRequiredAndMustBeReal(tokens, f);
+    await theSnapshotCarriesNoPriceForAWelder(tokens, f);
+    await theOfficeGetsTheFiguresItNeeds(tokens, f);
+    await theSnapshotIsTheShapeThePagesRead(tokens);
     await theFloorCannotReachTheOfficeWorkflows(tokens, f);
     await theWorkflowsRunOverHttp(tokens, f);
     await replayOverHttpIsHarmless(tokens, f);

@@ -384,9 +384,16 @@ GRANT INSERT ON hours_entry, stock_movement, equipment_event, inspection, equipm
 TO varmak_workshop;
 GRANT UPDATE ON operation, jobcard, hours_entry, equipment_assignment TO varmak_workshop;
 
--- The customer is visible because a welder needs to know whose job is on the bench. The money is
--- not, and neither is anything commercial.
-GRANT SELECT (id, ref, name, city, country, status) ON customer TO varmak_workshop;
+-- The customer is visible because a welder needs to know whose job is on the bench: who they are,
+-- where they are, how to reach them if a drawing is wrong.
+--
+-- What is withheld is not just the credit limit. price_list, discount_agreement and
+-- payment_terms_days are pricing information even though none of them is a number in kronor — they
+-- say what this customer is charged — and billing_address and currency belong to invoicing rather
+-- than to the bench. §1b says the floor sees no prices; a price list is a price.
+GRANT SELECT (id, ref, name, org_no, vat_no, email, phone, city, country, status, website,
+              industry, customer_since, customer_type, is_preferred, notes, created_at)
+ON customer TO varmak_workshop;
 
 -- ── Money, column by column ───────────────────────────────────────────────────────────────
 --

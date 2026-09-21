@@ -23,7 +23,9 @@ const path = require('node:path');
 const FILES = {
   schema: { path: path.join(__dirname, 'schema.sql'), suite: 'test-schema.js', env: 'VARMAK_SCHEMA' },
   auth: { path: path.join(__dirname, 'auth.sql'), suite: 'test-auth.js', env: 'VARMAK_AUTH' },
-  api: { path: path.join(__dirname, 'api.sql'), suite: 'test-api.js', env: 'VARMAK_API' }
+  api: { path: path.join(__dirname, 'api.sql'), suite: 'test-api.js', env: 'VARMAK_API' },
+  // views.sql is exercised over HTTP, because what matters about it is what comes back on the wire.
+  views: { path: path.join(__dirname, 'views.sql'), suite: 'test-server.js', env: 'VARMAK_VIEWS' }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
 const base = source.schema;
@@ -414,6 +416,39 @@ const MUTATIONS = [
     from: `  disposition   text CHECK (disposition IS NULL OR
                   disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),`,
     to: '  disposition   text,'
+  },
+  // ── views.sql ─────────────────────────────────────────────────────────────────────────────
+  {
+    // The one that matters: the split between the priceless snapshot and the granted money call is
+    // the whole enforcement. Putting a price back into the plain snapshot is the failure.
+    what: 'the plain snapshot carries the plate cost again',
+    file: 'views',
+    from: "        'heat', i.heat_no, 'certificate', i.material_cert_ref, 'status', i.status,",
+    to: "        'heat', i.heat_no, 'certificate', i.material_cert_ref, 'status', i.status, 'avgCost', i.avg_cost,"
+  },
+  {
+    what: 'the money call is handed to the floor as well',
+    file: 'views',
+    from: 'GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;',
+    to: 'GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office, varmak_workshop;'
+  },
+  {
+    what: 'money crosses the wire as a JSON number again',
+    file: 'views',
+    from: "        jsonb_build_object('avgCost', i.avg_cost::text, 'lastPrice', i.last_price::text))",
+    to: "        jsonb_build_object('avgCost', i.avg_cost, 'lastPrice', i.last_price))"
+  },
+  {
+    what: 'operations stop arriving nested on their jobcard',
+    file: 'views',
+    from: "        'operations', operations_of(j.id)",
+    to: "        'operations', '[]'::jsonb"
+  },
+  {
+    what: 'a jobcard stops naming the project the page filters on',
+    file: 'views',
+    from: "        'projectNo', (SELECT p.ref FROM project p WHERE p.id = j.project_id),",
+    to: "        'projectNo', NULL,"
   },
   // ── auth.sql ──────────────────────────────────────────────────────────────────────────────
   //

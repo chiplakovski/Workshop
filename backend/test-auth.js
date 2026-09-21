@@ -201,6 +201,16 @@ const MONEY = [
   ['lead', 'estimated_value']
 ];
 
+// Columns that say what a customer is charged without being a number. A price list and a discount
+// agreement are pricing information; withholding the credit limit and handing over the discount
+// agreement would be keeping the rule to the letter and breaking it in substance. Not numeric, so
+// the money check below would never have looked at them.
+const COMMERCIAL_TERMS = [
+  ['customer', 'price_list'], ['customer', 'discount_agreement'],
+  ['customer', 'payment_terms_days'], ['customer', 'billing_address'],
+  ['supplier', 'payment_terms_days']
+];
+
 function noPriceColumnIsReachable() {
   // First: the list above is complete. A numeric column with a money-ish name that is not on it is
   // a price nobody remembered to protect.
@@ -232,6 +242,21 @@ function noPriceColumnIsReachable() {
   const reachable = MONEY.filter(([t, c]) => mayRead('varmak_workshop', t, c)).map((m) => m.join('.'));
   assert.deepEqual(reachable, [], `the workshop role can read these money columns: ${reachable.join(', ')}`);
   step('Money: and the workshop role holds no read privilege on a single one of them');
+
+  // And the terms, which are pricing without being numbers. Asked the same way, because the
+  // privilege is the enforcement either way.
+  const terms = COMMERCIAL_TERMS.filter(([t, c]) => mayRead('varmak_workshop', t, c)).map((m) => m.join('.'));
+  assert.deepEqual(terms, [],
+    `the workshop can read what a customer is charged: ${terms.join(', ')}`);
+  // Any text column that names a discount or a price list and is not on that list.
+  const unlistedTerms = sql(`SELECT table_name || '.' || column_name FROM information_schema.columns
+     WHERE table_schema = 'public' AND data_type <> 'numeric'
+       AND column_name ~ 'price_list|discount|payment_terms|billing'
+     ORDER BY 1;`).split('\n').map((l) => l.trim()).filter(Boolean)
+    .filter((c) => !COMMERCIAL_TERMS.some(([t, col]) => `${t}.${col}` === c));
+  assert.deepEqual(unlistedTerms, [],
+    `these say what somebody is charged and nothing in this suite protects them: ${unlistedTerms.join(', ')}`);
+  step(`Money: and the ${COMMERCIAL_TERMS.length} columns that say what a customer is charged without being a number`);
 
   // The office must still be able to do its job, or this is not a rule about roles.
   const blind = MONEY.filter(([t, c]) => !mayRead('varmak_office', t, c)).map((m) => m.join('.'));

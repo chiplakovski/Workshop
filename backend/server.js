@@ -46,6 +46,14 @@ const RPC = {
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id']
 };
 
+// Reads. Same idea as RPC and the same reason for the list: without it this is a remote SQL console.
+// Both are plain function calls — the snapshot is built in SQL because renaming a field in the
+// browser is sixteen edits, and renaming it here is one.
+const READS = {
+  snapshot: 'workspace_snapshot',
+  money: 'workspace_money'
+};
+
 const ROLE_FOR = { admin: 'varmak_admin', office: 'varmak_office', workshop: 'varmak_workshop' };
 
 function send(res, status, body) {
@@ -159,6 +167,22 @@ const routes = {
   }
 };
 
+async function handleRead(req, res, name) {
+  const fn = READS[name];
+  if (!fn) return send(res, 404, { refused: `nothing called ${name} to read` });
+  const token = bearer(req);
+  if (!token) return send(res, 401, { refused: 'sign in first' });
+
+  // No branch on the role here, and that is the point: a welder asking for the money is refused by
+  // the database, because EXECUTE on workspace_money() was never granted to them. The server does
+  // not know which of these two carries a price.
+  const result = await asSignedIn(token, async (client) => {
+    const { rows } = await client.query(`SELECT ${fn}() AS data`);
+    return { status: 200, body: rows[0].data };
+  });
+  return send(res, result.status, result.body);
+}
+
 async function handleRpc(req, res, name, body) {
   const parameters = RPC[name];
   if (!parameters) return send(res, 404, { refused: `no workflow called ${name}` });
@@ -185,6 +209,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname.startsWith('/rpc/')) {
       return await handleRpc(req, res, url.pathname.slice(5), body);
     }
+    if (req.method === 'GET' && url.pathname.startsWith('/read/')) {
+      return await handleRead(req, res, url.pathname.slice(6));
+    }
     return send(res, 404, { refused: 'no such endpoint' });
   } catch (error) {
     const refusal = refusalFrom(error);
@@ -200,4 +227,4 @@ if (require.main === module) {
   server.listen(PORT, () => console.log(`Varmak API on ${PORT}, database ${pool.options.database}`));
 }
 
-module.exports = { server, pool, RPC };
+module.exports = { server, pool, RPC, READS };

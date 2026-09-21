@@ -428,7 +428,14 @@ CREATE TABLE operation (
   logged_hours  numeric(8,2) NOT NULL DEFAULT 0 CHECK (logged_hours >= 0),
   status        operation_status NOT NULL DEFAULT 'pending',
   depends_on    bigint REFERENCES operation(id) ON DELETE SET NULL,
+  planned_start date,
+  actual_start  date,
   actual_completion date,
+  -- A step that has to be signed off before the next one may begin. Distinct from an inspection
+  -- record: this is the flag on the plan that says one is required here.
+  inspection_checkpoint boolean NOT NULL DEFAULT false,
+  notes         text,
+  CHECK (actual_completion IS NULL OR actual_start IS NULL OR actual_completion >= actual_start),
   UNIQUE (jobcard_id, seq),
   -- An operation cannot depend on itself. A longer cycle is caught by the trigger below.
   CHECK (depends_on IS DISTINCT FROM id)

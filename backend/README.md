@@ -7,6 +7,7 @@ Four things, each with a suite that attacks it:
 | `schema.sql` | the database — tables, constraints, the safety rules as triggers |
 | `auth.sql` | who may see what — two doors, three roles, row-level security |
 | `api.sql` | the workflows — several writes that must all succeed or all fail |
+| `views.sql` | reading it back, in the shape the pages already use |
 | `server.js` | the HTTP layer, which decides nothing at all |
 
 `mutation-check.js` then checks that the tests would notice if any of the three SQL files stopped
@@ -38,6 +39,8 @@ npm run test:auth          # roles and row-level security, as each real role
 npm run test:api           # the workflows, made to fail halfway
 npm run test:server        # over real HTTP, with real tokens
 npm run coverage           # how much of what the app holds the database can store
+
+sh backend/pg-up.sh        # start the throwaway server, or say it is already up
 npm run test:mutations     # puts each rule's bug back and checks the tests catch it
 
 npm run serve              # the API itself, on PORT (8787 by default)
@@ -174,6 +177,35 @@ Two things about that are easy to get wrong and are tested:
   of service is refused when it arrives, naming the machine and what is wrong with it. Offline delays
   the check; it does not skip it. This is the clearest argument for the rules living in the database:
   the tablet cannot be the thing that decides.
+
+## Reading it back
+
+`views.sql` is the first half of step 5. The pages read one object of named collections, so the
+snapshot **is** that object, built in SQL with the field names the pages already expect. Renaming
+happens there rather than in the browser because a rename in the browser is sixteen edits.
+
+Two functions, and the split is the design:
+
+| | |
+|---|---|
+| `workspace_snapshot()` | everything with no figure in kronor anywhere in it — granted to all three roles, so a welder makes the same call as the office |
+| `workspace_money()` | the money, keyed by record id, for the office to merge in — granted to admin and office only |
+
+The alternative was one function that checks the role and leaves the prices out for the floor. It was
+rejected because that puts the decision back in code, and worse: `CASE WHEN may_see_money() THEN
+avg_cost` still *mentions* the column, mentioning needs privilege on it, and the whole function would
+have been refused for a welder. Two functions and a `GRANT` mean the privilege system decides, the
+server forwards both without knowing which contains what, and **a welder's snapshot cannot carry a
+price because the SQL that builds it never names one.**
+
+The test searches a welder's snapshot as text for every money-ish key and for the actual figures,
+rather than checking the fields it happens to think of — a price arriving under a name nobody expected
+is exactly what a field-by-field check misses.
+
+Money crosses the wire as **text**. `jsonb_build_object` on a `numeric(12,2)` yields a JSON number,
+and a JSON number parsed in a browser is a double — which is the "money as floating point" mistake
+the schema rules out and would then have reintroduced on the wire. `14.50` arrives as `"14.50"` and
+keeps its scale.
 
 ## The HTTP layer decides nothing
 
