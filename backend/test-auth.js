@@ -183,7 +183,12 @@ const MONEY = [
   ['customer', 'credit_limit'], ['stock_item', 'avg_cost'], ['supplier_item', 'price'],
   ['purchase_order_line', 'unit_price'], ['opportunity', 'value'], ['tender', 'value'],
   ['estimate', 'total'], ['estimate', 'margin_pct'], ['estimate_line', 'unit_price'],
-  ['estimate_line', 'line_total'], ['equipment_event', 'cost']
+  ['estimate_line', 'line_total'], ['equipment_event', 'cost'],
+  // Added in step 5, when widening the schema gave two more tables a figure in kronor. Neither was
+  // noticed by hand — the check below flagged them both the minute the columns appeared, and one of
+  // them (equipment.purchase_price) was readable by every welder because equipment was still in a
+  // whole-table grant.
+  ['equipment', 'purchase_price'], ['stock_item', 'last_price']
 ];
 
 function noPriceColumnIsReachable() {
@@ -625,6 +630,36 @@ function whoIsLoggedInIsNotEverybodysBusiness() {
 // The goods-in book is not rubbed out. Found by the privilege check above: admin and office held
 // UPDATE and DELETE on stock_movement with no policy behind either, so the privilege did nothing
 // while looking as though it did something. Asked properly, it should not exist.
+// A safety gate reads a table the person pressing start may only read part of. Written because that
+// broke: equipment gained a purchase_price in step 5, equipment moved to a column grant to keep the
+// price off the floor, and the trigger's `SELECT *` was then refused for every welder — so instead of
+// a gate they got "permission denied for table equipment". The property that protects the price
+// breaks any query asking for more than it needs.
+function aGateCanStillReadWhatItNeeds() {
+  const machine = value(`INSERT INTO equipment (ref, name, category, status, purchase_price)
+    VALUES ('EQ-GATE', 'Gate Test MIG', 'welding', 'out-of-service', 412000) RETURNING id;`);
+  const project = value(`SELECT id FROM project LIMIT 1;`);
+  const jobcard = value(`INSERT INTO jobcard (project_id, title) VALUES (${project}, 'Gate test') RETURNING id;`);
+  const op = value(`INSERT INTO operation (jobcard_id, seq, description, equipment_id)
+    VALUES (${jobcard}, 1, 'Weld', ${machine}) RETURNING id;`);
+
+  const message = denied('a welder starting work on an out-of-service machine', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`, /cannot start/);
+  assert.ok(message.includes('Gate Test MIG') && message.includes('out-of-service'),
+    `the welder must be told what is wrong with the machine, not that they lack a privilege: ${message}`);
+  assert.ok(!/permission denied/.test(message),
+    `the gate could not read the machine at all: ${message}`);
+  step('Gates: a welder gets the gate\'s own refusal, not a privilege error, on a table they may only read part of');
+
+  sql(`UPDATE equipment SET status = 'available' WHERE id = ${machine};`);
+  allowed('the same welder once the machine is fit to run', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`);
+  // And the price was never readable throughout.
+  denied('the welder reading what that machine cost', 'varmak_workshop', PEOPLE.welder,
+    `SELECT purchase_price FROM equipment WHERE id = ${machine};`, /permission denied/);
+  step('Gates: the work starts, and the price of the machine was never readable to do it');
+}
+
 function theGoodsInBookIsNotRubbedOut() {
   const item = value(`SELECT id FROM stock_item LIMIT 1;`);
   sql(`INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, note)
@@ -693,6 +728,7 @@ function main() {
   theSessionCannotLieAboutWho();
   peopleAreMadeByAnAdmin();
   whoIsLoggedInIsNotEverybodysBusiness();
+  aGateCanStillReadWhatItNeeds();
   theGoodsInBookIsNotRubbedOut();
   historyRecordsWhoSignedIn();
 

@@ -71,6 +71,45 @@ const MUTATIONS = [
     to: "'operation % cannot start: %s certification expired on %'"
   },
   {
+    // The gate reading more than it needs from a table the caller may only read part of.
+    what: 'the equipment gate reads the whole machine row again',
+    // Lives in schema.sql, caught by the auth suite: the refusal only happens for a role that is
+    // granted the table column by column, and the schema tests run as the superuser.
+    suite: 'auth',
+    edits: [
+      {
+        from: `  machine_status equipment_status;
+  machine_name text;
+  machine_cert date;`,
+        to: '  machine equipment%ROWTYPE;'
+      },
+      {
+        from: `    SELECT status, name, certification_expiry
+      INTO machine_status, machine_name, machine_cert
+      FROM equipment WHERE id = NEW.equipment_id;`,
+        to: '    SELECT * INTO machine FROM equipment WHERE id = NEW.equipment_id;'
+      },
+      {
+        from: `    IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
+      RAISE EXCEPTION 'operation % cannot start: % is %',
+        NEW.description, machine_name, machine_status USING ERRCODE = 'check_violation';
+    END IF;
+    IF machine_cert IS NOT NULL AND machine_cert < current_date THEN
+      RAISE EXCEPTION 'operation % cannot start: the certification for % expired on %',
+        NEW.description, machine_name, machine_cert USING ERRCODE = 'check_violation';
+    END IF;`,
+        to: `    IF machine.status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
+      RAISE EXCEPTION 'operation % cannot start: % is %',
+        NEW.description, machine.name, machine.status USING ERRCODE = 'check_violation';
+    END IF;
+    IF machine.certification_expiry IS NOT NULL AND machine.certification_expiry < current_date THEN
+      RAISE EXCEPTION 'operation % cannot start: the certification for % expired on %',
+        NEW.description, machine.name, machine.certification_expiry USING ERRCODE = 'check_violation';
+    END IF;`
+      }
+    ]
+  },
+  {
     what: 'the equipment gate stops caring what state the machine is in',
     from: "IF machine.status IN ('out-of-service','under-maintenance','quarantined','retired') THEN",
     to: "IF machine.status IN ('retired') THEN"
@@ -680,8 +719,13 @@ const SELECTED = !only ? MUTATIONS
     ? MUTATIONS.filter((m) => (m.file || 'schema') === only.slice(5))
     : MUTATIONS.filter((m) => m.what.toLowerCase().includes(only));
 
-function runSuiteAgainst(damaged, which, index) {
-  const target = FILES[which];
+// `which` is the file being damaged; `suite` is the file that runs. Usually the same, but not
+// always: a rule can live in schema.sql and only be catchable by the auth suite, because catching it
+// needs a real role rather than the superuser the schema tests run as. That was true the first time
+// it came up — a safety trigger reading more of a table than the caller may read — and tying the
+// suite to the file reported the rule as untested when it was simply being asked in the wrong place.
+function runSuiteAgainst(damaged, which, index, suite) {
+  const target = { ...FILES[which], ...(suite ? { suite: FILES[suite].suite } : {}) };
   const file = path.join(os.tmpdir(), `varmak-mutant-${index}.sql`);
   fs.writeFileSync(file, damaged);
   try {
@@ -732,7 +776,7 @@ function main() {
       return;
     }
     const damaged = edits.reduce((text, e) => text.replace(e.from, e.to), original);
-    const result = runSuiteAgainst(damaged, which, index);
+    const result = runSuiteAgainst(damaged, which, index, mutation.suite);
     if (result.caught) {
       console.log(`caught   ${mutation.what}`);
       if (result.by) console.log(`         └ ${result.by}`);

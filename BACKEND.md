@@ -258,8 +258,30 @@ cannot touch anything else.
    `login.html` still has no password field. It can have one now that there is something to check it
    against, and that belongs with step 5 — the page is honest in the meantime: it says "Open local
    demo" and "authentication is not enabled".
-5. **Point the frontend at it.** ← next. `workshop-data.js` is the only file that touches storage —
-   221 operations behind one interface. The sixteen pages do not change.
+5. **Point the frontend at it.** ← in progress. `workshop-data.js` is the only file that touches
+   storage — 221 operations behind one interface.
+
+   **This step had a precondition nobody had checked.** It says the sixteen pages do not change,
+   which assumed the schema can hold what the app holds. It cannot: the schema was built from the
+   twenty-five-table plan in §2, which trimmed the *collections* but said nothing about the fields
+   inside them. Measured with [`backend/coverage.js`](backend/coverage.js), the database could store
+   **111 of the 345 fields the pages actually read — 32%.** Pointing the frontend at it in that state
+   would have left a few hundred fields blank on screen, which is not "the pages do not change".
+
+   So step 5 is two jobs, and the first one is widening the schema. `npm run coverage` is the
+   progress meter, and it ratchets: a pass that widens the schema cannot quietly narrow it elsewhere.
+
+   | | |
+   |---|---|
+   | Widening pass 1 — customer, equipment, stock_item | **32% → 42%** |
+   | Still to do | 152 fields need a column, 22 want a join rather than a column, 27 hold a list and want a child table |
+   | Not a gap | 52 more fields are carried by the demo data and read by no page at all |
+
+   The second job is the wiring itself, and one thing about it is already clear and worth writing
+   down: **a synchronous write cannot be validated by a remote server.** Reads can stay synchronous
+   against a snapshot loaded at page load, but every write has to become asynchronous or the screen
+   will show figures the server rejected. That does change the pages, and the plan's claim that it
+   would not was wrong.
 
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in

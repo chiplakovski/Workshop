@@ -121,6 +121,22 @@ CREATE TABLE customer (
   country     text,
   status      text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive','prospect')),
   credit_limit numeric(12,2) CHECK (credit_limit IS NULL OR credit_limit >= 0),
+  -- Everything below was added in step 5, from backend/coverage.js: these are fields the customer
+  -- screens already read and the first version of this table could not hold. The schema was built
+  -- from the twenty-five-table plan in BACKEND.md §2, which trimmed the collections but not the
+  -- fields inside them, so pointing the frontend at it would have left these blank.
+  website     text,
+  industry    text,
+  customer_since date,
+  payment_terms_days int CHECK (payment_terms_days IS NULL OR payment_terms_days >= 0),
+  currency    char(3) NOT NULL DEFAULT 'SEK' CHECK (currency = upper(currency)),
+  customer_type text CHECK (customer_type IS NULL OR customer_type IN ('direct','reseller','oem','public')),
+  is_preferred boolean NOT NULL DEFAULT false,
+  price_list  text,
+  delivery_terms text,
+  discount_agreement text,
+  billing_address text,
+  notes       text,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
@@ -279,7 +295,44 @@ CREATE TABLE equipment (
   category    text NOT NULL,
   status      equipment_status NOT NULL DEFAULT 'available',
   certification_expiry date,
-  created_at  timestamptz NOT NULL DEFAULT now()
+  -- What the machine is. A serial number and an asset number are how a machine is identified to an
+  -- insurer and to an auditor, and neither can be recovered later from a name.
+  manufacturer text,
+  model       text,
+  serial_no   text,
+  asset_no    text UNIQUE,
+  year_of_manufacture int CHECK (year_of_manufacture IS NULL OR year_of_manufacture BETWEEN 1900 AND 2100),
+  description text,
+  -- Where it is and whose it is. current_location is where it is now, home_location where it lives.
+  current_location text,
+  home_location text,
+  department  text,
+  responsible_person text,
+  operator    text,
+  -- How much it matters and what state it is in, which is what decides whether a breakdown stops
+  -- the shop or is dealt with next week.
+  condition   text CHECK (condition IS NULL OR condition IN ('new','good','fair','poor','unserviceable')),
+  criticality text CHECK (criticality IS NULL OR criticality IN ('low','medium','high','critical')),
+  safety_warnings text,
+  -- What it cost and what is still covered.
+  purchase_date date,
+  purchase_supplier text,
+  purchase_price numeric(12,2) CHECK (purchase_price IS NULL OR purchase_price >= 0),
+  warranty_expiry date,
+  -- Servicing. The meter is what interval-based maintenance is counted against, so it is a number
+  -- rather than a note.
+  operating_hours numeric(10,1) NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
+  service_interval_hours int CHECK (service_interval_hours IS NULL OR service_interval_hours > 0),
+  last_service_date date,
+  last_inspection_date date,
+  last_calibration_date date,
+  qr_code     text UNIQUE,
+  -- What it is on right now. Restricted rather than cascading: losing a project must not quietly
+  -- detach every machine that was working on it.
+  assigned_project_id bigint REFERENCES project(id) ON DELETE SET NULL,
+  notes       text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CHECK (warranty_expiry IS NULL OR purchase_date IS NULL OR warranty_expiry >= purchase_date)
 );
 
 -- A machine assigned to one jobcard cannot be assigned to another at the same time. Expressed as
@@ -423,6 +476,22 @@ CREATE TABLE stock_item (
   -- Weight is computed from the material reference and the dimensions, never typed in. Stored
   -- because it is read far more often than it changes; the API is the only thing that writes it.
   unit_weight numeric(12,3) CHECK (unit_weight IS NULL OR unit_weight >= 0),
+  -- How the store actually counts this item. A plate is bought by the sheet and issued by the
+  -- kilo, so the base unit and the size of one unit are both needed or every issue is a guess.
+  base_unit   text,
+  size_per_unit numeric(12,3) CHECK (size_per_unit IS NULL OR size_per_unit > 0),
+  weight_per_base numeric(12,3) CHECK (weight_per_base IS NULL OR weight_per_base >= 0),
+  -- What it is made of and what shape it is in. Grade and dimensions are what a welder matches a
+  -- drawing against, and the certificate is what an auditor asks for.
+  category    text,
+  grade       text,
+  dimensions  text,
+  material_cert_ref text,
+  status      text NOT NULL DEFAULT 'active' CHECK (status IN ('active','obsolete','blocked')),
+  -- Buying. reorder_quantity is how much to order when it drops below min_stock, which is not the
+  -- same number and was being conflated.
+  reorder_quantity numeric(12,3) CHECK (reorder_quantity IS NULL OR reorder_quantity > 0),
+  last_price  numeric(12,2) CHECK (last_price IS NULL OR last_price >= 0),
   created_at  timestamptz NOT NULL DEFAULT now(),
   -- More reserved than exists is not a state a store can be in.
   CONSTRAINT reserved_within_stock CHECK (reserved <= stock)
@@ -939,18 +1008,29 @@ CREATE TRIGGER project_status_flow_trg BEFORE UPDATE OF status ON project
 -- is the moment somebody walks up to the machine.
 CREATE FUNCTION operation_equipment_gate() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
-  machine equipment%ROWTYPE;
+  -- Three named columns rather than SELECT *. This trigger runs with the privileges of whoever is
+  -- pressing start, and the workshop is granted equipment column by column because the table holds
+  -- a purchase price — so SELECT * is refused for exactly the people this gate exists to protect.
+  -- It read `machine equipment%ROWTYPE` until the price column was added, at which point every
+  -- welder starting a job got "permission denied for table equipment" instead of a gate. The same
+  -- property that keeps a price away from the floor breaks any query that asks for more than it
+  -- needs, which is a reason to ask for less.
+  machine_status equipment_status;
+  machine_name text;
+  machine_cert date;
 BEGIN
   IF NEW.status = 'in-progress' AND NEW.status IS DISTINCT FROM OLD.status
      AND NEW.equipment_id IS NOT NULL THEN
-    SELECT * INTO machine FROM equipment WHERE id = NEW.equipment_id;
-    IF machine.status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
+    SELECT status, name, certification_expiry
+      INTO machine_status, machine_name, machine_cert
+      FROM equipment WHERE id = NEW.equipment_id;
+    IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
       RAISE EXCEPTION 'operation % cannot start: % is %',
-        NEW.description, machine.name, machine.status USING ERRCODE = 'check_violation';
+        NEW.description, machine_name, machine_status USING ERRCODE = 'check_violation';
     END IF;
-    IF machine.certification_expiry IS NOT NULL AND machine.certification_expiry < current_date THEN
+    IF machine_cert IS NOT NULL AND machine_cert < current_date THEN
       RAISE EXCEPTION 'operation % cannot start: the certification for % expired on %',
-        NEW.description, machine.name, machine.certification_expiry USING ERRCODE = 'check_violation';
+        NEW.description, machine_name, machine_cert USING ERRCODE = 'check_violation';
     END IF;
   END IF;
   RETURN NEW;

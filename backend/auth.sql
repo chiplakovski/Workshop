@@ -358,7 +358,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO varmak_office;
 -- otherwise. The test suite now asserts the privilege tables directly rather than trusting this
 -- list to be right.
 GRANT SELECT ON
-  project, jobcard, operation, equipment, equipment_assignment,
+  project, jobcard, operation, equipment_assignment,
   item_group, location, offcut, barcode, allowed_transition,
   quality_hold, inspection, ncr, hours_entry, stock_movement, document
 TO varmak_workshop;
@@ -384,8 +384,22 @@ GRANT SELECT (id, ref, name, city, country, status) ON customer TO varmak_worksh
 -- started returning a price column would be the failure this file exists to prevent.
 
 GRANT SELECT (id, code, description, unit, stock, reserved, min_stock, group_id, location_id,
-              heat_no, unit_weight, created_at)
+              heat_no, unit_weight, base_unit, size_per_unit, weight_per_base, category, grade,
+              dimensions, material_cert_ref, status, reorder_quantity, created_at)
 ON stock_item TO varmak_workshop;
+
+-- equipment was in the whole-table list above until it gained a purchase price in step 5, at which
+-- point a welder could read what every machine in the building cost. The privilege check in
+-- test-auth.js caught it the same minute the column was added, which is the third time that exact
+-- pattern has appeared in this file: a table in a broad grant quietly acquiring a column that does
+-- not belong in it. A table with money in it is granted column by column, always.
+GRANT SELECT (id, ref, name, category, status, certification_expiry, manufacturer, model, serial_no,
+              asset_no, year_of_manufacture, description, current_location, home_location,
+              department, responsible_person, operator, condition, criticality, safety_warnings,
+              warranty_expiry, operating_hours, service_interval_hours, last_service_date,
+              last_inspection_date, last_calibration_date, qr_code, assigned_project_id, notes,
+              created_at)
+ON equipment TO varmak_workshop;
 
 GRANT SELECT (id, equipment_id, kind, happened_on, performed_by, result, next_due_on, note, created_at)
 ON equipment_event TO varmak_workshop;

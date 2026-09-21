@@ -37,6 +37,7 @@ npm run test:schema        # constraints and triggers
 npm run test:auth          # roles and row-level security, as each real role
 npm run test:api           # the workflows, made to fail halfway
 npm run test:server        # over real HTTP, with real tokens
+npm run coverage           # how much of what the app holds the database can store
 npm run test:mutations     # puts each rule's bug back and checks the tests catch it
 
 npm run serve              # the API itself, on PORT (8787 by default)
@@ -189,6 +190,35 @@ Refusals are passed through in the words the database wrote them in. `cannot iss
 S355-10: only 120 in stock` is something a storeman can act on; a 500 with a generic message is not.
 Permission failures become 403, constraint and trigger refusals 422, and anything unrecognised is
 this layer's fault and says nothing about the inside of the database.
+
+## How much of the app the database can hold
+
+`node backend/coverage.js` compares every field on a record the sixteen pages read against the
+columns that exist, and says what fraction can be stored. It is not a test — it reports, and fails
+only if the number goes backwards, so a pass that widens the schema cannot quietly narrow it
+somewhere else.
+
+It exists because step 5 of BACKEND.md ("point the frontend at it; the sixteen pages do not change")
+turned out to rest on something nobody had checked. The schema was built from the twenty-five-table
+plan in §2, which trimmed the *collections* — it said nothing about the fields inside them. The first
+measurement: **111 of 345 fields the pages read could be stored. 32%.**
+
+The classification matters more than the total, and the judgements are written down in the file
+rather than inferred, because a rule that maps `no` to `no` and shrugs at `org` would overstate the
+coverage:
+
+| | |
+|---|---|
+| **stored** | there is a column for it |
+| **needs a column** | a page reads it and the database cannot hold it |
+| **a join** | it is a copy of something on another record — a name that can drift from the name it copied is worse than a join |
+| **a child table** | it holds a list, and a JSON array cannot have a foreign key or a constraint on its rows |
+| **unused** | the demo data carries it and no page reads it — width, not a gap |
+
+```sh
+npm run coverage             # the summary and the ratchet
+node backend/coverage.js customers   # one collection, field by field
+```
 
 ## Why the tests look the way they do
 

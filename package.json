@@ -12,6 +12,7 @@
     "test:auth": "node backend/test-auth.js",
     "test:api": "node backend/test-api.js",
     "test:server": "node backend/test-server.js",
+    "coverage": "node backend/coverage.js",
     "test:backend": "npm run test:schema && npm run test:auth && npm run test:api && npm run test:server",
     "serve": "node backend/server.js",
     "test:mutations": "node backend/mutation-check.js",
