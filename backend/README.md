@@ -4,8 +4,9 @@ Five files. `schema.sql` is the database and `auth.sql` is who may see what; `te
 `test-auth.js` try to break each of them, and `mutation-check.js` checks that the tests would
 notice if either stopped refusing.
 
-Where it stands: 111 refusals and 58 allowances on the schema, 53 refusals and 26 allowances on
-auth, and every mutation caught — every rule in either file has a test that fails without it.
+Where it stands: 111 refusals and 58 allowances on the schema, 54 refusals and 27 allowances on
+auth, and **70 of 70 mutations caught** — every rule in either file has a test that fails without
+it, verified in one clean run.
 
 This is steps 1 and 2 of the order in [`BACKEND.md`](../BACKEND.md): the schema with its
 constraints and safety rules, and numbering as sequences. 31 tables, 103 checks, 13 triggers, and
@@ -29,8 +30,8 @@ npm run test:mutations     # puts each rule's bug back and checks the tests catc
 ```
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 42 of them, about half an hour — so it is a check to run when a rule
-changes, not on every save. One rule at a time:
+suite once per mutation — 70 of them across the two files, a little over an hour — so it is a check
+to run when a rule changes, not on every save. One rule at a time:
 
 ```sh
 node backend/mutation-check.js "per-group item numbers"   # one rule
