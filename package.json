@@ -10,10 +10,17 @@
     "test:integrity": "node tests/integrity.js",
     "test:schema": "node backend/test-schema.js",
     "test:auth": "node backend/test-auth.js",
+    "test:api": "node backend/test-api.js",
+    "test:server": "node backend/test-server.js",
+    "test:backend": "npm run test:schema && npm run test:auth && npm run test:api && npm run test:server",
+    "serve": "node backend/server.js",
     "test:mutations": "node backend/mutation-check.js",
     "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
   }
 }

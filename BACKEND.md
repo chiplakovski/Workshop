@@ -246,16 +246,20 @@ cannot touch anything else.
    [`backend/test-auth.js`](backend/test-auth.js). The sentence in §1b — that a welder cannot read
    the customer's agreed price even by asking the API directly — is now a `GRANT` rather than a
    promise, and it failed the first three times it was tested.
-4. **The API for the workflows in §4**, one at a time, tested. ← next
+4. ~~**The API for the workflows in §4**, one at a time, tested.~~ **Done** —
+   [`backend/api.sql`](backend/api.sql) holds the seven workflows as database functions, and
+   [`backend/server.js`](backend/server.js) is the HTTP layer over them, which decides nothing at
+   all: no writes of its own, no branch on a role, and a test that reads the file and says so.
+   Offline replay is built — each of the three actions from §3 takes an event id from the device, and
+   flushing a queue twice changes nothing. Attacked by
+   [`backend/test-api.js`](backend/test-api.js) (each workflow made to fail on its last write) and
+   [`backend/test-server.js`](backend/test-server.js) (over real HTTP with real tokens).
 
-   Two things step 3 deliberately left for it. **`login.html` still has no password field**, and
-   should not get one until there is an API to check it against: a password box that ignores what
-   you type is worse than none, because it looks like security. The page is at least honest today —
-   it says "Open local demo" and "authentication is not enabled". And **offline replay**: the three
-   append-only actions in §3 need a device-generated id the server can reject as a duplicate, which
-   belongs with the endpoint that receives it.
-5. **Point the frontend at it.** `workshop-data.js` is the only file that touches storage — 221
-   operations behind one interface. The sixteen pages do not change.
+   `login.html` still has no password field. It can have one now that there is something to check it
+   against, and that belongs with step 5 — the page is honest in the meantime: it says "Open local
+   demo" and "authentication is not enabled".
+5. **Point the frontend at it.** ← next. `workshop-data.js` is the only file that touches storage —
+   221 operations behind one interface. The sixteen pages do not change.
 
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
@@ -285,6 +289,29 @@ and deleting a rack silently forgot where the steel on it was. **The mutation ch
 something the tests could not — that the test for "stock can never go below zero" passed with its
 own constraint deleted, because a different constraint was doing the refusing. A test standing on
 the wrong rule is not a test. All of it is written up in [`backend/README.md`](backend/README.md).
+
+### What step 4 caught
+
+Two of them were in `auth.sql` rather than in the new code, and neither had been noticed because
+step 3's tests asked what the **floor** could not do and took the office for granted:
+
+- **The office could not create an estimate, a supplier, a purchase order or a lead.** `auth.sql`
+  had write policies on a handful of tables and none at all on fourteen others, so every write the
+  office attempted matched no rows or was filtered away. A `GRANT` with no policy behind it fails
+  closed, so it was not dangerous — it was simply broken, in the quietest possible way. It came out
+  when the first workflow tried to lock an estimate row and was told there was no such estimate.
+  `test-auth.js` now asks the privilege tables directly: every write privilege any role holds must
+  have a policy that permits it.
+- **Admin and office held `UPDATE` and `DELETE` on `stock_movement`** with no policy behind either.
+  Asked properly, the answer was not to add a policy: a movement is the record explaining why a stock
+  figure changed, so it is append-only now. A miscount is corrected by an adjustment movement, which
+  is what a store does anyway — you do not rub out the goods-in book.
+
+And one about the cluster rather than the database: **roles survive dropping and rebuilding the
+database**, so `CREATE ROLE ... IF NOT EXISTS` means a role created with the wrong attributes once
+stays wrong forever. `varmak_api` was created without `LOGIN`, and creating it correctly afterwards
+changed nothing. The attributes are set unconditionally now, which is the only version of that which
+is safe to run twice.
 
 ### What step 3 caught
 

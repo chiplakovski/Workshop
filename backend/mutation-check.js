@@ -22,7 +22,8 @@ const path = require('node:path');
 // it is the one that tests that file.
 const FILES = {
   schema: { path: path.join(__dirname, 'schema.sql'), suite: 'test-schema.js', env: 'VARMAK_SCHEMA' },
-  auth: { path: path.join(__dirname, 'auth.sql'), suite: 'test-auth.js', env: 'VARMAK_AUTH' }
+  auth: { path: path.join(__dirname, 'auth.sql'), suite: 'test-auth.js', env: 'VARMAK_AUTH' },
+  api: { path: path.join(__dirname, 'api.sql'), suite: 'test-api.js', env: 'VARMAK_API' }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
 const base = source.schema;
@@ -491,6 +492,176 @@ GRANT UPDATE ON quality_hold TO varmak_workshop;`
     from: 'GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;',
     to: `GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
+  },
+  // ── api.sql ───────────────────────────────────────────────────────────────────────────────
+  {
+    what: 'sending a quotation does not lock its lines',
+    file: 'api',
+    from: '  UPDATE estimate_line SET locked = true WHERE estimate_id = p_estimate_id;',
+    to: ''
+  },
+  {
+    what: 'an estimate with no lines on it can be sent',
+    file: 'api',
+    from: '  IF lines = 0 THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a draft can be accepted before anybody has seen it',
+    file: 'api',
+    from: "  IF est.status <> 'sent' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'an expired quotation can still be accepted',
+    file: 'api',
+    from: '  IF est.valid_until IS NOT NULL AND est.valid_until < current_date THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'the quoted hours never reach the project plan',
+    file: 'api',
+    from: "    FROM estimate_line WHERE estimate_id = p_estimate_id AND kind = 'labour';",
+    to: '    FROM estimate_line WHERE false;'
+  },
+  {
+    what: 'accepting a second estimate drags a running project back to approved',
+    file: 'api',
+    from: "    IF proj.status = 'quotation' THEN",
+    to: '    IF true THEN'
+  },
+  {
+    what: 'more can be received than was ordered',
+    file: 'api',
+    from: '  IF p_quantity > outstanding THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a receipt puts nothing on the shelf',
+    file: 'api',
+    from: '    UPDATE stock_item SET stock = stock + p_quantity WHERE id = line.stock_item_id;',
+    to: ''
+  },
+  {
+    what: 'a receipt writes no movement to explain the stock rise',
+    file: 'api',
+    from: `    INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by, note)
+    VALUES (line.stock_item_id, 'receipt', p_quantity, NULL, who,
+            coalesce(p_note, 'Received against ' || order_row.ref))
+    RETURNING ref INTO movement_ref;`,
+    to: ''
+  },
+  {
+    what: 'a service line invents a stock movement anyway',
+    file: 'api',
+    from: '  IF line.stock_item_id IS NOT NULL THEN',
+    to: '  IF true THEN'
+  },
+  {
+    what: 'the order status is not derived from its lines',
+    file: 'api',
+    from: `      WHEN NOT EXISTS (SELECT 1 FROM purchase_order_line
+                        WHERE purchase_order_id = order_row.id AND received_quantity < quantity)
+        THEN 'received'`,
+    to: "      WHEN true THEN 'received'"
+  },
+  {
+    what: 'goods can be received against a cancelled order',
+    file: 'api',
+    from: "  IF order_row.status = 'cancelled' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a lead can be converted twice',
+    file: 'api',
+    from: "  IF the_lead.status = 'converted' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a lead marked lost can still be converted',
+    file: 'api',
+    from: "  IF the_lead.status = 'lost' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'what was known about the lead is not carried to the customer',
+    file: 'api',
+    from: '  VALUES (the_lead.company, p_org_no, p_vat_no, the_lead.email, the_lead.phone, the_lead.city, \'active\')',
+    to: "  VALUES (the_lead.company, p_org_no, p_vat_no, NULL, NULL, NULL, 'active')"
+  },
+  {
+    what: 'the opportunity does not follow the lead to the customer',
+    file: 'api',
+    from: '  UPDATE opportunity SET customer_id = made.id WHERE lead_id = p_lead_id AND customer_id IS NULL;',
+    to: ''
+  },
+  {
+    // The whole of offline replay.
+    what: 'the same queued action is done again every time it is replayed',
+    file: 'api',
+    from: `  INSERT INTO device_event (id, kind, user_id)
+  VALUES (p_event_id, p_kind, current_app_user())
+  ON CONFLICT (id) DO NOTHING;
+  IF FOUND THEN
+    RETURN NULL;
+  END IF;`,
+    to: '  RETURN NULL;'
+  },
+  {
+    what: 'a replay gets a fresh answer instead of the first one',
+    file: 'api',
+    from: "  SELECT coalesce(result, 'accepted') INTO earlier FROM device_event WHERE id = p_event_id;",
+    to: "  earlier := 'accepted';"
+  },
+  {
+    what: 'two flushes arriving together can both decide they are first',
+    file: 'api',
+    from: '  ON CONFLICT (id) DO NOTHING;',
+    to: `  ON CONFLICT (id) DO NOTHING;
+  PERFORM pg_sleep(0.2);`
+  },
+  {
+    what: 'hours can be booked in a name the caller passes',
+    file: 'api',
+    from: '  VALUES (p_jobcard_id, p_operation_id, who, p_hours, coalesce(p_worked_on, current_date), p_note)',
+    to: "  VALUES (p_jobcard_id, p_operation_id, coalesce(p_note, who), p_hours, coalesce(p_worked_on, current_date), p_note)"
+  },
+  {
+    // Row-level security refuses this anyway — worker must equal your own name, and a session with
+    // no identity has none. What the check adds is the message: somebody at a tablet that quietly
+    // lost its session needs to be told to sign in, not shown a policy name. Which is why the test
+    // for it asserts the wording; accepting any refusal made this mutation invisible.
+    what: 'nothing tells an unsigned session to sign in',
+    file: 'api',
+    from: `  IF who IS NULL THEN
+    RAISE EXCEPTION 'sign in before %', p_doing USING ERRCODE = 'insufficient_privilege';
+  END IF;`,
+    to: "  who := coalesce(who, 'unknown');"
+  },
+  {
+    // The order of two lines. already_done() records the event against current_app_user(), so
+    // claiming the id before checking the session means an unsigned request dies on a not-null
+    // violation instead of being told anything useful.
+    what: 'the event id is claimed before the session is checked',
+    file: 'api',
+    edits: [
+      {
+        from: `  who text := require_session('booking hours');
+  seen text := already_done(p_event_id, 'book_hours');`,
+        to: `  seen text := already_done(p_event_id, 'book_hours');
+  who text := require_session('booking hours');`
+      }
+    ]
+  },
+  {
+    what: 'the office workflows are handed to the floor as well',
+    file: 'api',
+    from: `GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
+  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text)
+TO varmak_admin, varmak_office;`,
+    to: `GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
+  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text)
+TO varmak_admin, varmak_office, varmak_workshop;`
   },
   {
     what: 'changing the quantity sidesteps the repricing rule',

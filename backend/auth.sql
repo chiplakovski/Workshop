@@ -311,10 +311,28 @@ BEGIN
     CREATE ROLE varmak_workshop NOLOGIN;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'varmak_api') THEN
-    CREATE ROLE varmak_api NOINHERIT;
+    -- LOGIN, because this is the one role that actually connects. NOINHERIT is the important half:
+    -- it holds membership of the three roles but none of their privileges until it explicitly
+    -- becomes one, so a connection that has not chosen a role can do nothing at all.
+    --
+    -- No password is set here. On this machine the server trusts a local socket; anywhere else the
+    -- password is set outside this file and kept out of the repository, which is why there is no
+    -- line here to forget to change.
+    CREATE ROLE varmak_api LOGIN NOINHERIT;
   END IF;
 END;
 $$;
+
+-- Roles live in the cluster, not in the database, so they survive dropping and rebuilding this one
+-- and the guards above skip them on the second run. That means a role created with the wrong
+-- attributes once stays wrong forever, which is exactly what happened: varmak_api was created
+-- without LOGIN, and creating it correctly afterwards changed nothing because it already existed.
+-- Setting the attributes unconditionally is the only version of this that is safe to run twice.
+ALTER ROLE varmak_api LOGIN NOINHERIT;
+ALTER ROLE varmak_admin NOLOGIN NOBYPASSRLS NOSUPERUSER;
+ALTER ROLE varmak_office NOLOGIN NOBYPASSRLS NOSUPERUSER;
+ALTER ROLE varmak_workshop NOLOGIN NOBYPASSRLS NOSUPERUSER;
+ALTER ROLE varmak_api NOBYPASSRLS NOSUPERUSER;
 
 GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;
 GRANT USAGE ON SCHEMA public TO varmak_admin, varmak_office, varmak_workshop, varmak_api;
@@ -404,6 +422,16 @@ GRANT SELECT, INSERT, UPDATE ON app_session TO varmak_admin, varmak_office, varm
 GRANT SELECT, INSERT ON activity_log TO varmak_admin, varmak_office, varmak_workshop;
 REVOKE UPDATE, DELETE ON activity_log FROM varmak_admin, varmak_office, varmak_workshop;
 
+-- A stock movement is append-only for the same reason, and it took a test to notice: admin and
+-- office held UPDATE and DELETE on it from the broad grant, with no policy behind either, so the
+-- privilege did nothing and looked as though it did something.
+--
+-- Asked properly, the answer is not "add a policy" — it is that a movement is the record explaining
+-- why a stock figure changed, and editing one leaves the store unable to explain itself. Getting a
+-- movement wrong is corrected by an adjustment movement, which is also what a real store does: you
+-- do not rub out the goods-in book, you write the correction underneath.
+REVOKE UPDATE, DELETE ON stock_movement FROM varmak_admin, varmak_office, varmak_workshop;
+
 GRANT EXECUTE ON FUNCTION current_app_user(), current_app_role(), current_app_name(),
   is_admin(), may_see_money(), is_signed_in()
 TO varmak_admin, varmak_office, varmak_workshop, varmak_api;
@@ -452,8 +480,37 @@ BEGIN
 END;
 $$;
 
--- Writing is not the same question as reading, so it is answered table by table rather than by a
--- loop. Anything not named here cannot be written by anyone but an admin.
+-- Writing is not the same question as reading, so it is answered table by table below.
+--
+-- First, though, the commercial and store tables, where the answer is the same for all of them: the
+-- office runs that side of the business and the floor has no business writing any of it. Written as
+-- a loop precisely because the rule is uniform — sixteen hand-copied policies is sixteen chances to
+-- leave one out, and leaving one out is invisible. It was: the first version of this file had no
+-- write policy on estimate, supplier, purchase_order, lead or eleven others, so the office could not
+-- create an estimate or even lock one for update. Nothing caught it, because the tests up to then
+-- had asked what the FLOOR could not do and taken the office for granted.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
+    'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
+    'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event'
+  ]
+  LOOP
+    EXECUTE format($p$CREATE POLICY the_office_runs_this ON %I FOR ALL
+                      USING (may_see_money()) WITH CHECK (may_see_money())$p$, t);
+  END LOOP;
+END;
+$$;
+
+-- The transition rulebook is reference data. Changing which status may follow which is a decision
+-- about how the workshop runs, not a day's work.
+CREATE POLICY admin_edits_the_rulebook ON allowed_transition FOR ALL
+  USING (is_admin()) WITH CHECK (is_admin());
+
+-- And now the tables where the two roles have different answers.
 
 CREATE POLICY admin_writes_anything ON customer FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 CREATE POLICY office_writes_customers ON customer FOR INSERT WITH CHECK (may_see_money());
@@ -526,9 +583,14 @@ BEGIN
 END;
 $$;
 
+-- Same reason as the roles above: set unconditionally, because the role may already exist from an
+-- earlier build of a different database in this cluster.
+ALTER ROLE varmak_engine NOLOGIN BYPASSRLS NOSUPERUSER;
+
 GRANT USAGE ON SCHEMA public TO varmak_engine;
-GRANT SELECT, INSERT, UPDATE ON app_user, app_session, activity_log, stock_item, stock_movement
-TO varmak_engine;
+GRANT SELECT, INSERT, UPDATE ON app_user, app_session, stock_item TO varmak_engine;
+-- Insert only on the two that are append-only, even for the role that may step around row security.
+GRANT SELECT, INSERT ON activity_log, stock_movement TO varmak_engine;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO varmak_engine;
 
 ALTER FUNCTION sign_in(text, text, session_door, text) OWNER TO varmak_engine;

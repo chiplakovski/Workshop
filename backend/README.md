@@ -1,12 +1,20 @@
 # The database
 
-Five files. `schema.sql` is the database and `auth.sql` is who may see what; `test-schema.js` and
-`test-auth.js` try to break each of them, and `mutation-check.js` checks that the tests would
-notice if either stopped refusing.
+Four things, each with a suite that attacks it:
 
-Where it stands: 111 refusals and 58 allowances on the schema, 54 refusals and 27 allowances on
-auth, and **70 of 70 mutations caught** — every rule in either file has a test that fails without
-it, verified in one clean run.
+| | |
+|---|---|
+| `schema.sql` | the database — tables, constraints, the safety rules as triggers |
+| `auth.sql` | who may see what — two doors, three roles, row-level security |
+| `api.sql` | the workflows — several writes that must all succeed or all fail |
+| `server.js` | the HTTP layer, which decides nothing at all |
+
+`mutation-check.js` then checks that the tests would notice if any of the three SQL files stopped
+refusing.
+
+Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
+with 112 allowances beside them — because a gate that refuses everything passes every refusal test
+and still stops the workshop working.
 
 This is steps 1 and 2 of the order in [`BACKEND.md`](../BACKEND.md): the schema with its
 constraints and safety rules, and numbering as sequences. 31 tables, 103 checks, 13 triggers, and
@@ -24,10 +32,18 @@ PostgreSQL 16. Nothing else — no npm packages, no ORM, no migration tool yet. 
 initdb -D /var/lib/postgresql/varmak --auth=trust -U postgres
 pg_ctl -D /var/lib/postgresql/varmak -o "-k /tmp -p 5433 -c listen_addresses=" -l server.log start
 
-npm run test:schema        # builds a fresh database from schema.sql and attacks it
-npm run test:auth          # adds auth.sql and attacks it as each real role
+npm run test:backend       # all four suites, each building its own database
+npm run test:schema        # constraints and triggers
+npm run test:auth          # roles and row-level security, as each real role
+npm run test:api           # the workflows, made to fail halfway
+npm run test:server        # over real HTTP, with real tokens
 npm run test:mutations     # puts each rule's bug back and checks the tests catch it
+
+npm run serve              # the API itself, on PORT (8787 by default)
 ```
+
+`pg` is the only runtime dependency. It was added for `server.js` and nothing else — hand-rolling
+the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
 suite once per mutation — 70 of them across the two files, a little over an hour — so it is a check
@@ -117,6 +133,62 @@ rather than whichever name the caller passed.
 Nobody can read `password_hash` or `pin_hash`. Not office, not admin. Signing in compares inside
 the database and setting a new secret overwrites, so nothing has a reason to select them — and a
 hash that cannot be selected cannot leave the building in a spreadsheet.
+
+## The workflows
+
+§4 of BACKEND.md divides the system in three and says what belongs where. `api.sql` is the middle
+one: **workflows that span several tables in one transaction.** Seven of them, and they are database
+functions rather than code in the server for the same reason the safety rules are triggers — a
+workflow written in the server holds right up until somebody adds a second caller.
+
+| | |
+|---|---|
+| `send_estimate` | locks every line and puts a date on the quote. Nothing else in the system set `locked`, which made the whole repricing rule unreachable |
+| `accept_estimate` | the estimate becomes accepted, a project comes into being or moves forward, and the quoted labour becomes the planned hours |
+| `receive_goods` | the line records what came, stock goes up, a movement explains why, and the order's status is derived from its lines |
+| `convert_lead` | the customer arrives carrying what was known about the lead, the lead is marked converted, and anything already quoted follows across |
+| `book_hours` · `record_operation` · `issue_material_offline` | the three the shop tablet may do with no signal |
+
+The thing worth testing about a multi-write workflow is not that it works — it is what it leaves
+behind when it doesn't. A receipt that puts stock on the shelf and then fails to write the movement
+has left the store unable to explain itself, and no amount of the happy path passing will say so. So
+each one is made to fail on its last write and the check is that every earlier write went with it,
+compared against a snapshot of every table that could have moved.
+
+### Offline
+
+§3 scoped offline to those three actions because they happen at the machine and cannot wait. The
+tablet queues them with an id it generates itself, and the point is that **it cannot know whether
+its first attempt arrived before the connection died** — so it flushes the queue blindly and the
+server has to make asking twice harmless. Each takes an event id; a replay gets the first answer back
+and changes nothing.
+
+Two things about that are easy to get wrong and are tested:
+
+- **A refusal must not burn the event id.** If a queued start is refused because the machine went out
+  of service, and the id has been consumed, then flushing the queue again reports "already done" and
+  the work is silently lost. It survives because the refusal rolls the whole transaction back,
+  including the claim.
+- **The gates still hold on replay.** An operation queued against a machine that has since gone out
+  of service is refused when it arrives, naming the machine and what is wrong with it. Offline delays
+  the check; it does not skip it. This is the clearest argument for the rules living in the database:
+  the tablet cannot be the thing that decides.
+
+## The HTTP layer decides nothing
+
+`server.js` turns a bearer token into a session and calls a function from a fixed list. That is all
+it does, and `test-server.js` asserts it by reading the file: no `INSERT`, `UPDATE` or `DELETE`, and
+no branch on anybody's role. A rule like that decays the moment it is only a comment.
+
+The session is set with `SET LOCAL ROLE` and `SET LOCAL app.user_id` inside the transaction, so
+neither can leak onto the next request that borrows the pooled connection. The role comes from the
+row the database returned, never from anything the client sent — and the sign-in response is a token
+and nothing else, so the client has nothing to make its own decisions with.
+
+Refusals are passed through in the words the database wrote them in. `cannot issue 500 KG of
+S355-10: only 120 in stock` is something a storeman can act on; a 500 with a generic message is not.
+Permission failures become 403, constraint and trigger refusals 422, and anything unrecognised is
+this layer's fault and says nothing about the inside of the database.
 
 ## Why the tests look the way they do
 

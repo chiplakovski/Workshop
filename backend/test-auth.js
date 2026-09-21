@@ -145,6 +145,34 @@ function theTestsAreNotCheating() {
   step('Harness: every table has row security enabled, and forced, so the owner is held to it too');
 }
 
+// A GRANT with no policy behind it is a privilege that does nothing. It fails closed, so it is not
+// dangerous — it is just broken, and broken in the quietest possible way: the role holds INSERT on
+// the table, every read of the SQL says it may write, and every write it attempts matches no rows
+// or is filtered away.
+//
+// This is written because exactly that happened. The first version of auth.sql had write policies
+// on a handful of tables and none at all on estimate, estimate_line, supplier, purchase_order, lead
+// and eleven others. The office could not create an estimate. Nothing noticed, because the auth
+// tests up to then asked what the floor could not do and took the office for granted, and it only
+// came out when a workflow in step 4 tried to lock an estimate row and was told no such estimate.
+function everyWritePrivilegeHasAPolicyBehindIt() {
+  const orphans = sql(`
+    SELECT g.grantee || ' ' || lower(g.privilege_type) || ' on ' || g.table_name
+      FROM information_schema.table_privileges g
+     WHERE g.table_schema = 'public'
+       AND g.grantee IN ('varmak_admin', 'varmak_office', 'varmak_workshop')
+       AND g.privilege_type IN ('INSERT', 'UPDATE', 'DELETE')
+       AND NOT EXISTS (
+         SELECT 1 FROM pg_policies p
+          WHERE p.schemaname = 'public' AND p.tablename = g.table_name
+            AND (p.cmd = 'ALL' OR p.cmd = g.privilege_type)
+       )
+     ORDER BY 1;`).split('\n').map((l) => l.trim()).filter(Boolean);
+  assert.deepEqual(orphans, [],
+    `these roles hold a write privilege that no policy permits, so the privilege silently does nothing:\n  ${orphans.join('\n  ')}`);
+  step(`Harness: every write privilege any role holds has a policy behind it — a GRANT with no policy is a quiet no-op`);
+}
+
 // ── The sentence this whole file exists for ───────────────────────────────────────────────
 
 // Every column in the database that holds money. Asked of the privilege tables rather than by
@@ -594,6 +622,30 @@ function whoIsLoggedInIsNotEverybodysBusiness() {
   step('Sessions: a welder sees their own sessions; who else is logged in and on what device is an admin matter');
 }
 
+// The goods-in book is not rubbed out. Found by the privilege check above: admin and office held
+// UPDATE and DELETE on stock_movement with no policy behind either, so the privilege did nothing
+// while looking as though it did something. Asked properly, it should not exist.
+function theGoodsInBookIsNotRubbedOut() {
+  const item = value(`SELECT id FROM stock_item LIMIT 1;`);
+  sql(`INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, note)
+       VALUES (${item}, 'receipt', 100, 'Lars Holm', 'Two bundles');`);
+  const ref = value(`SELECT ref FROM stock_movement ORDER BY id DESC LIMIT 1;`);
+
+  denied('an admin editing a movement', 'varmak_admin', PEOPLE.admin,
+    `UPDATE stock_movement SET quantity = 1 WHERE ref = '${ref}';`, /permission denied/);
+  denied('the office deleting a movement', 'varmak_office', PEOPLE.office,
+    `DELETE FROM stock_movement WHERE ref = '${ref}';`, /permission denied/);
+  denied('a welder editing one', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE stock_movement SET quantity = 1 WHERE ref = '${ref}';`, /permission denied/);
+  assert.equal(value(`SELECT quantity::text FROM stock_movement WHERE ref = '${ref}';`), '100.000');
+
+  // The correction is a second movement, which is what a store actually does.
+  allowed('correcting it with an adjustment instead', 'varmak_office', PEOPLE.office,
+    `INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, note)
+     VALUES (${item}, 'adjustment', 10, 'Lars Holm', 'Miscount on ${ref} — ten short');`);
+  step('Store: a stock movement cannot be edited or deleted by anyone — a miscount is corrected by an adjustment');
+}
+
 function historyRecordsWhoSignedIn() {
   const rows = sql(`SELECT actor || ' ' || detail FROM activity_log
     WHERE entity = 'app_user' AND action = 'signed in' ORDER BY id;`);
@@ -626,6 +678,7 @@ function main() {
   console.log(`Schema and auth built fresh into ${DB}.\n`);
 
   theTestsAreNotCheating();
+  everyWritePrivilegeHasAPolicyBehindIt();
   const f = makeWorkshop();
   noPriceColumnIsReachable();
   aWelderCannotReadAPrice(f);
@@ -640,6 +693,7 @@ function main() {
   theSessionCannotLieAboutWho();
   peopleAreMadeByAnAdmin();
   whoIsLoggedInIsNotEverybodysBusiness();
+  theGoodsInBookIsNotRubbedOut();
   historyRecordsWhoSignedIn();
 
   console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, `
