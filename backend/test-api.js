@@ -125,6 +125,21 @@ function anEstimate(f, { hours = 40, material = 500, project = null } = {}) {
   return est;
 }
 
+// The same check test-auth.js makes, repeated here over all three files. That suite builds only
+// schema.sql and auth.sql, so a function added in api.sql could step around row security with
+// nothing watching — which is a gap in a check, and the quietest kind there is.
+function theBypassListIsStillShort() {
+  const bypass = sql(`SELECT p.proname FROM pg_proc p JOIN pg_roles r ON r.oid = p.proowner
+    WHERE r.rolbypassrls AND NOT r.rolsuper AND p.pronamespace = 'public'::regnamespace ORDER BY 1;`)
+    .split('\n').map((l) => l.trim()).filter(Boolean);
+  assert.deepEqual(bypass.sort(), [
+    'current_app_name', 'current_app_role', 'issue_material', 'issue_stock',
+    'project_hours_roll_up', 'register_failure', 'session_identity',
+    'session_owner', 'set_password', 'set_pin', 'sign_in', 'sign_out'
+  ], `functions that step around row security, across all three files: ${bypass.join(', ')}`);
+  step(`Harness: ${bypass.length} functions may step around row security across all three files, and they are the expected ones`);
+}
+
 // ── Sending a quotation ───────────────────────────────────────────────────────────────────
 
 function sendingLocksThePrice(f) {
@@ -536,6 +551,7 @@ async function main() {
   console.log(`Schema, auth and api built fresh into ${DB}.\n`);
 
   const f = world();
+  theBypassListIsStillShort();
   sendingLocksThePrice(f);
   acceptingMakesTheProject(f);
   receivingExplainsItself(f);

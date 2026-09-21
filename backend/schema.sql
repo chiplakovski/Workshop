@@ -160,7 +160,42 @@ CREATE TABLE project (
   planned_hours numeric(10,2) NOT NULL DEFAULT 0 CHECK (planned_hours >= 0),
   progress      int NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
   deadline      date,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  -- Where the job came from and what it is. estimate_id is the quotation this became; the trail
+  -- back to the tender and the enquiry hangs off that.
+  description   text,
+  phase         text,
+  work_types    text,
+  po_number     text,
+  workshop      text,
+  responsible   text,
+  material_status text CHECK (material_status IS NULL OR
+                  material_status IN ('not-ordered','ordered','part-arrived','arrived','issued')),
+  notes         text,
+  -- Planned against actual. Four dates rather than two, because "when did it really start" is the
+  -- question every late job is argued about and it cannot be recovered from a status.
+  planned_start date,
+  actual_start  date,
+  planned_completion date,
+  expected_completion date,
+  actual_completion date,
+  closed_on     date,
+  -- Hours actually worked, maintained from the entries by trigger below — never typed, for the
+  -- same reason an operation's logged hours are not.
+  used_hours    numeric(10,2) NOT NULL DEFAULT 0 CHECK (used_hours >= 0),
+  quoted_value  numeric(12,2) CHECK (quoted_value IS NULL OR quoted_value >= 0),
+  -- Why it stopped, and why it was cancelled. A project on hold with no reason written down is a
+  -- project nobody can restart without asking three people.
+  hold_reason   text,
+  hold_comment  text,
+  expected_resume date,
+  cancel_reason text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  CHECK (actual_completion IS NULL OR actual_start IS NULL OR actual_completion >= actual_start),
+  -- A project cannot be on hold for no reason, or cancelled for none. Both statuses are decisions
+  -- somebody made, and the record has to say what the decision was.
+  CONSTRAINT held_project_says_why CHECK (status <> 'hold' OR btrim(coalesce(hold_reason,'')) <> ''),
+  CONSTRAINT cancelled_project_says_why
+    CHECK (status <> 'cancelled' OR btrim(coalesce(cancel_reason,'')) <> '')
 );
 
 CREATE TYPE jobcard_status AS ENUM
@@ -184,8 +219,27 @@ CREATE TABLE jobcard (
   -- built, but which material went into which job is a fact that cannot be recovered later.
   heat_no       text,
   material_cert_ref text,
+  -- Which customer, kept beside the project rather than only reached through it: a jobcard is what
+  -- the floor holds, and whose job it is is the first thing anybody asks about one.
+  customer_id   bigint REFERENCES customer(id) ON DELETE RESTRICT,
+  revision      text,
+  work_type     text,
+  location      text,
+  priority      text CHECK (priority IS NULL OR priority IN ('low','normal','high','urgent')),
+  responsible   text,
+  created_by    text,
+  notes         text,
+  -- Is the steel there yet. A job released to the floor without its material is the most common
+  -- reason work stops after it has started.
+  material_readiness text CHECK (material_readiness IS NULL OR
+                       material_readiness IN ('none','partial','ready')),
+  delivery_target date,
+  actual_start  date,
+  actual_completion date,
+  progress      int NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
   created_at    timestamptz NOT NULL DEFAULT now(),
-  CHECK (planned_completion IS NULL OR planned_start IS NULL OR planned_completion >= planned_start)
+  CHECK (planned_completion IS NULL OR planned_start IS NULL OR planned_completion >= planned_start),
+  CHECK (actual_completion IS NULL OR actual_start IS NULL OR actual_completion >= actual_start)
 );
 
 CREATE INDEX jobcard_project_idx ON jobcard(project_id);
@@ -1088,12 +1142,16 @@ CREATE FUNCTION hours_roll_up() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   target bigint;
 BEGIN
-  FOREACH target IN ARRAY (
+  -- coalesce to an empty array, not just for tidiness: array_agg over no rows is NULL, and FOREACH
+  -- over a NULL array raises "FOREACH expression must not be null". An hours entry that names no
+  -- operation at all — which is exactly what the phone screen books when a welder picks a job
+  -- rather than a step — leaves both sides NULL and took this whole trigger down with it.
+  FOREACH target IN ARRAY coalesce((
     SELECT array_agg(DISTINCT id) FROM unnest(ARRAY[
       CASE WHEN TG_OP <> 'INSERT' THEN OLD.operation_id END,
       CASE WHEN TG_OP <> 'DELETE' THEN NEW.operation_id END
     ]) AS id WHERE id IS NOT NULL
-  ) LOOP
+  ), ARRAY[]::bigint[]) LOOP
     UPDATE operation SET logged_hours = (
       SELECT COALESCE(SUM(hours), 0) FROM hours_entry WHERE operation_id = target
     ) WHERE id = target;
@@ -1105,7 +1163,36 @@ $$;
 CREATE TRIGGER hours_roll_up_trg AFTER INSERT OR UPDATE OR DELETE ON hours_entry
   FOR EACH ROW EXECUTE FUNCTION hours_roll_up();
 
--- 5. An hours entry names one job.
+-- 5. A project's used hours are the sum of the hours booked to its jobcards.
+--
+-- Same rule as the operation's logged hours and the estimate's total, and for the same reason: the
+-- figure a job is judged late or over by cannot be one somebody types. Both the project an entry
+-- left and the one it joined are recomputed, because an entry booked to the wrong jobcard and
+-- corrected is the ordinary case — the hours roll-up got that wrong the first time and it is not a
+-- mistake worth making twice.
+CREATE FUNCTION project_hours_roll_up() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  target bigint;
+BEGIN
+  FOREACH target IN ARRAY coalesce((
+    SELECT array_agg(DISTINCT p) FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN (SELECT project_id FROM jobcard WHERE id = OLD.jobcard_id) END,
+      CASE WHEN TG_OP <> 'DELETE' THEN (SELECT project_id FROM jobcard WHERE id = NEW.jobcard_id) END
+    ]) AS p WHERE p IS NOT NULL
+  ), ARRAY[]::bigint[]) LOOP
+    UPDATE project SET used_hours = (
+      SELECT COALESCE(SUM(h.hours), 0) FROM hours_entry h
+        JOIN jobcard j ON j.id = h.jobcard_id WHERE j.project_id = target
+    ) WHERE id = target;
+  END LOOP;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
+CREATE TRIGGER project_hours_roll_up_trg AFTER INSERT OR UPDATE OR DELETE ON hours_entry
+  FOR EACH ROW EXECUTE FUNCTION project_hours_roll_up();
+
+-- 6. An hours entry names one job.
 --
 -- The entry carries both the jobcard and the operation because both are asked for downstream.
 -- Nothing stopped the two disagreeing, and an entry that names one job and an operation belonging
@@ -1140,12 +1227,12 @@ CREATE FUNCTION estimate_total_roll_up() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   target bigint;
 BEGIN
-  FOREACH target IN ARRAY (
+  FOREACH target IN ARRAY coalesce((
     SELECT array_agg(DISTINCT id) FROM unnest(ARRAY[
       CASE WHEN TG_OP <> 'INSERT' THEN OLD.estimate_id END,
       CASE WHEN TG_OP <> 'DELETE' THEN NEW.estimate_id END
     ]) AS id WHERE id IS NOT NULL
-  ) LOOP
+  ), ARRAY[]::bigint[]) LOOP
     UPDATE estimate e SET total = round(
       COALESCE((SELECT SUM(line_total) FROM estimate_line WHERE estimate_id = target), 0)
       * (1 + e.margin_pct / 100), 2)
@@ -1172,7 +1259,7 @@ $$;
 CREATE TRIGGER estimate_margin_roll_up_trg BEFORE UPDATE OF margin_pct ON estimate
   FOR EACH ROW EXECUTE FUNCTION estimate_margin_roll_up();
 
--- 7. A locked estimate line cannot be repriced without a reason and a name.
+-- 8. A locked estimate line cannot be repriced without a reason and a name.
 --
 -- The reason must also be a *new* reason. Requiring only that the column is non-empty means a
 -- caller who leaves the previous justification sitting there can reprice as often as it likes, and
@@ -1199,7 +1286,7 @@ $$;
 CREATE TRIGGER estimate_line_reprice_gate_trg BEFORE UPDATE ON estimate_line
   FOR EACH ROW EXECUTE FUNCTION estimate_line_reprice_gate();
 
--- 8. Stock moves through one door.
+-- 9. Stock moves through one door.
 --
 -- Issuing more than exists is refused with a message that names the shortfall, rather than letting
 -- the CHECK fire with something nobody can act on. The CHECK stays as the floor beneath it: this

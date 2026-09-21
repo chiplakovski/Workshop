@@ -174,7 +174,7 @@ function main() {
 
   // The ratchet. These are the numbers as they stood when this was written; a pass that widens the
   // schema should move the first up and the second down, and neither may go the wrong way.
-  const BASELINE = { stored: 144, needsColumn: 152 };
+  const BASELINE = { stored: 175, needsColumn: 121 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

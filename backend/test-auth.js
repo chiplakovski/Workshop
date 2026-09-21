@@ -130,9 +130,13 @@ function theTestsAreNotCheating() {
     WHERE r.rolbypassrls AND NOT r.rolsuper AND p.pronamespace = 'public'::regnamespace ORDER BY 1;`)
     .split('\n').map((l) => l.trim()).filter(Boolean);
   assert.deepEqual(bypass.sort(), [
-    'current_app_name', 'current_app_role', 'issue_material', 'issue_stock', 'register_failure',
+    'current_app_name', 'current_app_role', 'issue_material', 'issue_stock',
+    'project_hours_roll_up', 'register_failure',
     'session_owner', 'set_password', 'set_pin', 'sign_in', 'sign_out'
   ], `the list of functions that step around row security must stay short and known — it is: ${bypass.join(', ')}`);
+  // This suite builds schema.sql and auth.sql only, so it cannot see anything api.sql adds. The
+  // same check runs in test-api.js over all three, or a function added there could step around row
+  // security with nothing watching.
   step(`Harness: the roles under test cannot bypass row security, and only ${bypass.length} named functions may`);
 
   const unprotected = sql(`SELECT tablename FROM pg_tables t WHERE schemaname = 'public'
@@ -188,7 +192,10 @@ const MONEY = [
   // noticed by hand — the check below flagged them both the minute the columns appeared, and one of
   // them (equipment.purchase_price) was readable by every welder because equipment was still in a
   // whole-table grant.
-  ['equipment', 'purchase_price'], ['stock_item', 'last_price']
+  ['equipment', 'purchase_price'], ['stock_item', 'last_price'],
+  // And project, in the next widening pass. Four tables have now gained a money column after being
+  // put in a whole-table grant; this check is the only thing that has noticed any of them.
+  ['project', 'quoted_value']
 ];
 
 function noPriceColumnIsReachable() {

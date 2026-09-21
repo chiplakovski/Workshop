@@ -357,11 +357,28 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO varmak_office;
 -- a welder could read avg_cost straight out of the store while auth.sql looked like it said
 -- otherwise. The test suite now asserts the privilege tables directly rather than trusting this
 -- list to be right.
+-- Whole tables, because none of these holds a figure in kronor — and that sentence has now been
+-- wrong four times. stock_item, equipment_event, equipment and project each sat in this list and
+-- each quietly acquired a money column later, at which point every welder could read it. The
+-- privilege check in test-auth.js caught all four, but the pattern is the point: a table in this
+-- list is one bet that it will never hold money, and that bet keeps losing.
+--
+-- So the rule to apply when adding to this list: if the table could ever carry a price, a cost, a
+-- value or a rate, it does not go here. It is granted column by column below, where adding a money
+-- column later is safe by default because new columns are not granted at all.
 GRANT SELECT ON
-  project, jobcard, operation, equipment_assignment,
+  jobcard, operation, equipment_assignment,
   item_group, location, offcut, barcode, allowed_transition,
   quality_hold, inspection, ncr, hours_entry, stock_movement, document
 TO varmak_workshop;
+
+-- project holds what the job was quoted at.
+GRANT SELECT (id, ref, name, customer_id, status, planned_hours, progress, deadline, description,
+              phase, work_types, po_number, workshop, responsible, material_status, notes,
+              planned_start, actual_start, planned_completion, expected_completion,
+              actual_completion, closed_on, used_hours, hold_reason, hold_comment, expected_resume,
+              cancel_reason, created_at)
+ON project TO varmak_workshop;
 
 GRANT INSERT ON hours_entry, stock_movement, equipment_event, inspection, equipment_assignment
 TO varmak_workshop;
@@ -602,7 +619,10 @@ $$;
 ALTER ROLE varmak_engine NOLOGIN BYPASSRLS NOSUPERUSER;
 
 GRANT USAGE ON SCHEMA public TO varmak_engine;
-GRANT SELECT, INSERT, UPDATE ON app_user, app_session, stock_item TO varmak_engine;
+GRANT SELECT, INSERT, UPDATE ON app_user, app_session, stock_item, project TO varmak_engine;
+-- Read-only, and only what the roll-up above walks: an hours entry names a jobcard, and the jobcard
+-- names the project whose figure is being recomputed.
+GRANT SELECT ON jobcard, hours_entry TO varmak_engine;
 -- Insert only on the two that are append-only, even for the role that may step around row security.
 GRANT SELECT, INSERT ON activity_log, stock_movement TO varmak_engine;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO varmak_engine;
@@ -612,6 +632,16 @@ ALTER FUNCTION session_owner(text) OWNER TO varmak_engine;
 ALTER FUNCTION sign_out(text) OWNER TO varmak_engine;
 ALTER FUNCTION register_failure(bigint) OWNER TO varmak_engine;
 ALTER FUNCTION current_app_role() OWNER TO varmak_engine;
+
+-- The project's used hours are recomputed whenever anybody books time, and the person booking it is
+-- usually a welder who has no business writing to project at all. The roll-up is the system keeping
+-- its own figure straight, not the welder editing a project, so it runs as the engine.
+--
+-- Narrow on purpose: it recomputes one sum from hours_entry and writes it to one column. A
+-- SECURITY DEFINER trigger that did anything broader would be a hole on every write to the table it
+-- hangs off.
+ALTER FUNCTION project_hours_roll_up() OWNER TO varmak_engine;
+ALTER FUNCTION project_hours_roll_up() SECURITY DEFINER;
 ALTER FUNCTION current_app_name() OWNER TO varmak_engine;
 ALTER FUNCTION set_password(bigint, text) OWNER TO varmak_engine;
 ALTER FUNCTION set_pin(bigint, text) OWNER TO varmak_engine;

@@ -483,10 +483,82 @@ function hoursRollUp() {
     'and leave the one they were moved from — otherwise the same three hours are billed twice');
   step('Hours: booked to the wrong operation and moved, the hours leave the first and arrive on the second');
 
+  // Hours booked to a jobcard without naming an operation, which is what the phone screen does when
+  // a welder picks a job rather than a step. Both sides of the roll-up are then null, and the
+  // trigger used to die on "FOREACH expression must not be null" — taking the whole booking with it.
+  accepted('booking hours against a job but no particular operation',
+    `INSERT INTO hours_entry (jobcard_id, worker, hours) VALUES (${f.jobcard}, 'Welder D', 3);`);
+  assert.equal(value(`SELECT logged_hours::text FROM operation WHERE id = ${f.op1};`), '2.00',
+    'hours booked to no operation must not land on one');
+  step('Hours: an entry that names a job but no operation books cleanly and lands on no operation');
+
   const honest = value(`SELECT (SELECT COALESCE(SUM(hours),0) FROM hours_entry WHERE operation_id = ${f.op1})
     = (SELECT logged_hours FROM operation WHERE id = ${f.op1});`);
   assert.equal(honest, 't', 'the running total and the entries must agree');
   step('Hours: the total and the entries agree when asked the long way round');
+}
+
+// The project's own figure, kept the same way the operation's is. A project is judged late or over
+// by this number, so it cannot be one somebody types.
+function theProjectKnowsItsOwnHours() {
+  const f = fixture();
+  const second = value(`INSERT INTO jobcard (project_id, title) VALUES (${f.project}, 'Second jobcard') RETURNING id;`);
+  const used = () => value(`SELECT used_hours FROM project WHERE id = ${f.project};`);
+  assert.equal(used(), '0.00', 'a project with no hours booked against it has used none');
+
+  const entry = value(`INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
+    VALUES (${f.jobcard}, ${f.op1}, 'Welder A', 6) RETURNING id;`);
+  assert.equal(used(), '6.00');
+  sql(`INSERT INTO hours_entry (jobcard_id, worker, hours) VALUES (${second}, 'Welder B', 4);`);
+  assert.equal(used(), '10.00', 'hours on any jobcard of the project count towards the project');
+  sql(`UPDATE hours_entry SET hours = 2 WHERE id = ${entry};`);
+  assert.equal(used(), '6.00');
+  sql(`DELETE FROM hours_entry WHERE id = ${entry};`);
+  assert.equal(used(), '4.00');
+  step("Hours: the project's used hours are the sum of everything booked to its jobcards");
+
+  // The case the operation roll-up got wrong the first time, asked of this one before it could.
+  const elsewhere = value(`INSERT INTO project (name, customer_id) VALUES ('Another job', ${f.customer}) RETURNING id;`);
+  const elsewhereJob = value(`INSERT INTO jobcard (project_id, title) VALUES (${elsewhere}, 'Its jobcard') RETURNING id;`);
+  const moved = value(`INSERT INTO hours_entry (jobcard_id, worker, hours)
+    VALUES (${second}, 'Welder C', 5) RETURNING id;`);
+  assert.equal(used(), '9.00');
+  sql(`UPDATE hours_entry SET jobcard_id = ${elsewhereJob} WHERE id = ${moved};`);
+  assert.equal(value(`SELECT used_hours FROM project WHERE id = ${elsewhere};`), '5.00');
+  assert.equal(used(), '4.00', 'the hours must leave the project they were moved away from');
+  step('Hours: an entry moved to another project takes its hours with it, off one figure and onto the other');
+}
+
+// A project stopped or cancelled has to say why, because both are decisions somebody made and the
+// record is the only place the reason survives.
+function stoppingAJobIsOnTheRecord() {
+  const f = fixture();
+  advance('project', f.project, 'approved', 'planned');
+  refused('putting a project on hold with no reason',
+    `UPDATE project SET status = 'hold' WHERE id = ${f.project};`, /held_project_says_why/);
+  refused('a reason of nothing but spaces',
+    `UPDATE project SET status = 'hold', hold_reason = '   ' WHERE id = ${f.project};`,
+    /held_project_says_why/);
+  accepted('putting it on hold with a reason',
+    `UPDATE project SET status = 'hold', hold_reason = 'Waiting on a drawing revision',
+     expected_resume = current_date + 14 WHERE id = ${f.project};`);
+  assert.equal(value(`SELECT status FROM project WHERE id = ${f.project};`), 'hold');
+  step('Records: a project on hold says why, and when it is expected back');
+
+  refused('cancelling with no reason',
+    `UPDATE project SET status = 'cancelled' WHERE id = ${f.project};`, /cancelled_project_says_why/);
+  accepted('cancelling with one',
+    `UPDATE project SET status = 'cancelled', cancel_reason = 'Customer withdrew' WHERE id = ${f.project};`);
+  step('Records: and a cancelled project says why it was cancelled');
+
+  const g = fixture();
+  refused('a job that finished before it started',
+    `UPDATE jobcard SET actual_start = '2026-06-01', actual_completion = '2026-05-01' WHERE id = ${g.jobcard};`,
+    /check/i);
+  refused('a project finished before it started',
+    `UPDATE project SET actual_start = '2026-06-01', actual_completion = '2026-05-01' WHERE id = ${g.project};`,
+    /check/i);
+  step('Records: neither a job nor a project can have finished before it started');
 }
 
 function hoursMustBePossible() {
@@ -965,7 +1037,13 @@ function theProjectTravelsInOrderToo() {
   }
   accepted('reopening a closed project, which the screen does offer',
     `UPDATE project SET status = 'production' WHERE id = ${f.project};`);
-  accepted('putting it on hold', `UPDATE project SET status = 'hold' WHERE id = ${f.project};`);
+  // A project on hold with no reason written down is one nobody can restart without asking three
+  // people, so the reason is a constraint rather than a habit.
+  refused('putting it on hold for no stated reason',
+    `UPDATE project SET status = 'hold' WHERE id = ${f.project};`, /held_project_says_why/);
+  accepted('putting it on hold with the reason',
+    `UPDATE project SET status = 'hold', hold_reason = 'Customer paused pending a drawing revision'
+     WHERE id = ${f.project};`);
   accepted('taking it off hold', `UPDATE project SET status = 'production' WHERE id = ${f.project};`);
   refused('cancelling a project that is already completed',
     `UPDATE project SET status = 'completed' WHERE id = ${f.project};
@@ -976,8 +1054,11 @@ function theProjectTravelsInOrderToo() {
   // row. Checked by adding the transition and watching the same move go through.
   sql(`INSERT INTO allowed_transition (entity, from_status, to_status)
        VALUES ('project', 'completed', 'cancelled');`);
-  accepted('the same move once the rulebook allows it',
-    `UPDATE project SET status = 'cancelled' WHERE id = ${f.project};`);
+  refused('cancelling it without saying why',
+    `UPDATE project SET status = 'cancelled' WHERE id = ${f.project};`, /cancelled_project_says_why/);
+  accepted('the same move once the rulebook allows it, with a reason',
+    `UPDATE project SET status = 'cancelled',
+     cancel_reason = 'Customer withdrew the order before release' WHERE id = ${f.project};`);
   sql(`DELETE FROM allowed_transition WHERE entity = 'project' AND from_status = 'completed' AND to_status = 'cancelled';`);
   step('Status: the sequence is a table, so changing the workflow is changing a row and not a deployment');
 
@@ -1083,6 +1164,8 @@ async function main() {
   dependencyGateStopsStart();
   dependencyCannotLoop();
   hoursRollUp();
+  theProjectKnowsItsOwnHours();
+  stoppingAJobIsOnTheRecord();
   hoursMustBePossible();
   stockNeverGoesNegative();
   issuingLeavesATrail();

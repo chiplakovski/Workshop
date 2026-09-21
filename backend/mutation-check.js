@@ -327,6 +327,49 @@ const MUTATIONS = [
     END IF;`,
     to: ''
   },
+  {
+    what: 'a project on hold need not say why',
+    from: "CONSTRAINT held_project_says_why CHECK (status <> 'hold' OR btrim(coalesce(hold_reason,'')) <> '')",
+    to: 'CONSTRAINT held_project_says_why CHECK (true)'
+  },
+  {
+    what: 'a cancelled project need not say why',
+    from: `CONSTRAINT cancelled_project_says_why
+    CHECK (status <> 'cancelled' OR btrim(coalesce(cancel_reason,'')) <> '')`,
+    to: 'CONSTRAINT cancelled_project_says_why CHECK (true)'
+  },
+  {
+    what: "the project's used hours stop following the entries",
+    from: `CREATE TRIGGER project_hours_roll_up_trg AFTER INSERT OR UPDATE OR DELETE ON hours_entry
+  FOR EACH ROW EXECUTE FUNCTION project_hours_roll_up();`,
+    to: ''
+  },
+  {
+    what: "the project's roll-up looks only at the row it was handed",
+    from: `  FOREACH target IN ARRAY coalesce((
+    SELECT array_agg(DISTINCT p) FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN (SELECT project_id FROM jobcard WHERE id = OLD.jobcard_id) END,
+      CASE WHEN TG_OP <> 'DELETE' THEN (SELECT project_id FROM jobcard WHERE id = NEW.jobcard_id) END
+    ]) AS p WHERE p IS NOT NULL
+  ), ARRAY[]::bigint[]) LOOP`,
+    to: '  FOREACH target IN ARRAY ARRAY[(SELECT project_id FROM jobcard WHERE id = COALESCE(NEW.jobcard_id, OLD.jobcard_id))] LOOP'
+  },
+  {
+    // Hours booked to a job but no particular operation, which is what the phone screen sends.
+    what: 'the hours roll-up dies on an entry that names no operation',
+    from: `  FOREACH target IN ARRAY coalesce((
+    SELECT array_agg(DISTINCT id) FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN OLD.operation_id END,
+      CASE WHEN TG_OP <> 'DELETE' THEN NEW.operation_id END
+    ]) AS id WHERE id IS NOT NULL
+  ), ARRAY[]::bigint[]) LOOP`,
+    to: `  FOREACH target IN ARRAY (
+    SELECT array_agg(DISTINCT id) FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN OLD.operation_id END,
+      CASE WHEN TG_OP <> 'DELETE' THEN NEW.operation_id END
+    ]) AS id WHERE id IS NOT NULL
+  ) LOOP`
+  },
   // ── auth.sql ──────────────────────────────────────────────────────────────────────────────
   //
   // The first two are the bugs that were really in the file. Both looked right when read.
