@@ -27,7 +27,7 @@
   // every module has something real to read; the content is what the workshop puts in.
   const emptyState=()=>({
     version:VERSION,
-    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0},
+    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0},
     customers:[],
     estimations:[],
     projects:[],
@@ -80,7 +80,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:0},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:0,hours:0},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -1432,7 +1432,12 @@
     listProjects:()=>clone(state.projects),
     getProjects:()=>clone(state.projects),
     findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
-    logHours(entry){const hours=Number(entry.hours);if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be greater than zero'};const record=Object.assign({id:`H-${Date.now()}`,date:now().slice(0,10),user:'Aleksandar C.'},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
+    logHours(entry){const hours=Number(entry.hours);if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be greater than zero'};
+      // An id built from the clock is unique only while no two entries land in the same millisecond.
+      // Eight rows entered from one returned sheet do exactly that, and were getting distinct ids
+      // only because each save happens to take a fraction of a millisecond - luck, not design.
+      // Counted like every other record here, so it is unique by construction.
+      const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:now().slice(0,10),user:'Aleksandar C.'},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
     upsertProject(payload){
       if(!payload||!payload.name)return{error:'A project name is required'};
       let p=state.projects.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));

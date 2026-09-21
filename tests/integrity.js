@@ -46,6 +46,39 @@ function duplicateFunctionDeclarations(source) {
   return [...counts.entries()].filter(([, n]) => n > 1).map(([name]) => name);
 }
 
+// The same failure as two functions sharing a name, in the translation tables: whichever copy
+// is written last silently wins, so a key defined twice is a label nobody can predict. Found
+// f_worker written three times per language on Jobcards - identical values, and therefore
+// harmless right up until somebody edits one of them.
+function shadowedTranslationKeys(source) {
+  const found = new Set();
+  for (const table of source.matchAll(/\n\s*(?:en|sv|mk):\{/g)) {
+    let depth = 1;
+    let i = table.index + table[0].length;
+    const start = i;
+    while (depth && i < source.length) {
+      const c = source[i];
+      if (c === '{') depth += 1;
+      else if (c === '}') depth -= 1;
+      else if (c === "'" || c === '"') {
+        const quote = c;
+        i += 1;
+        while (i < source.length && source[i] !== quote) {
+          if (source[i] === '\\') i += 1;
+          i += 1;
+        }
+      }
+      i += 1;
+    }
+    const seen = new Set();
+    for (const key of source.slice(start, i - 1).matchAll(/(?:^|,)\s*'?([A-Za-z_][\w]*)'?\s*:/gm)) {
+      if (seen.has(key[1])) found.add(key[1]);
+      seen.add(key[1]);
+    }
+  }
+  return [...found];
+}
+
 // ── Live checks: things only the rendered page can answer ──────────────────────────────────
 
 async function liveDuplicateIds(page) {
@@ -134,6 +167,10 @@ async function checkPage(context, baseUrl, file, failures) {
   const pretending = decorativeToggles(source);
   if (pretending.length) {
     fail(`a button only toggles its own '${pretending.join("', '")}' class — nothing reads it, so it does nothing`);
+  }
+  const shadowedKeys = shadowedTranslationKeys(source);
+  if (shadowedKeys.length) {
+    fail(`a translation key is written twice: ${shadowedKeys.join(', ')} — the later one silently wins`);
   }
   const shadowed = duplicateFunctionDeclarations(source);
   if (shadowed.length) {

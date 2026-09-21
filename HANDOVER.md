@@ -277,6 +277,40 @@ sheet exactly as stored. The first version of that check flagged `DWG-VD-014-A` 
 Checked in all three languages: a Swedish shop prints Swedish, and the new column headings and the
 fill-in note are translated with the rest.
 
+
+**The paper closes the loop (Pass 4.44).** The sheet goes to the machine and comes back filled in
+with a pen. Getting that back into the system meant opening each operation's edit form, changing
+one number among twelve fields, saving, and again — about **thirty interactions for a sheet of
+eight operations**. Nobody does that at five o'clock, and hours that never get entered turn every
+figure downstream into a guess.
+
+**Enter returned sheet** is the paper on screen: same order, same three columns, one save. It does
+not invent a second way to record an hour — each row goes through `logHours()` and
+`updateJobcardOperation()` exactly as the Hours module does, so the project totals, the reports and
+the worker's own day all see one kind of record.
+
+Two real defects fell out of building it:
+
+- **Eight hours records saved in one millisecond all got the same id.** `logHours()` built its id
+  from `Date.now()`, which is unique only for as long as no two entries land in the same
+  millisecond. It was getting away with it because each save takes a fraction of one — luck, not
+  design. Counted now, like every other record in the data layer. Proved by freezing the clock.
+- **`f_worker` was written three times per language** on Jobcards. Identical values, so harmless —
+  right up until somebody edits one of them and the later copy silently wins. The integrity sweep
+  now fails any page with a translation key written twice, which is the same failure as two
+  functions sharing a name.
+
+**A hold is explained before the form is filled, not after.** A jobcard on Quality Hold cannot have
+an operation closed, so the sheet says so at the top and offers no box to tick — but the hours
+columns stay, and the hours still go in. The work was done whatever the hold says about letting it
+leave the building. Telling somebody a rule after they have filled in a form is not enforcing a
+rule, it is wasting their time.
+
+One habit to watch: I reached for `.noticebar` on Jobcards, which is a class from a different page,
+so the warning rendered as plain text. Third time this session I have used a class from whichever
+page I worked on last (`tblwrap` and `empty3` on Quality were the others). **Check the page's own
+stylesheet before borrowing a class name.**
+
 **Left deliberately:** the removed record types (`qualityWelds`, `qualityCapas`, `qualityItps`,
 `qualityWps`, `qualityWelderQuals`, `qualityComplaints`, `qualityDossiers`, `qualityReleases`,
 `supplierQuality`) are still in the data layer, just unreachable from the UI. Nothing is lost yet,

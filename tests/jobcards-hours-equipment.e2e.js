@@ -293,6 +293,118 @@ async function theJobcardPrintsAsAForm(page) {
   step('Jobcard on paper: four lines to sign, so the sheet can come back as evidence');
 }
 
+// The sheet comes back from the machine filled in with a pen. Getting that into the system used
+// to mean opening each operation's edit form, changing one number among twelve fields, saving,
+// and again — about thirty interactions for eight operations. Nobody does that at five o'clock,
+// and hours that never get entered turn every figure downstream into a guess.
+//
+// What this holds to: one screen, one save, and the same records the Hours module writes. Not a
+// second way of recording an hour — the same way, driven from the paper.
+async function enteringTheReturnedSheet(page) {
+  const jobcard = await page.evaluate(() => {
+    const free = WorkshopData.listJobcards().find((j) => !WorkshopData.getJobcardQualityGate(j.no).blocked);
+    return free ? { id: free.id, no: free.no } : null;
+  });
+  assert.ok(jobcard, 'the demo needs one jobcard that is not on hold');
+
+  const before = await page.evaluate((no) => {
+    const j = WorkshopData.findJobcard(no);
+    return {
+      entries: (WorkshopData.get().hours || []).length,
+      logged: (j.operations || []).map((o) => ({ id: o.id, h: Number(o.loggedHours) || 0, status: o.status }))
+    };
+  }, jobcard.no);
+
+  await page.evaluate((id) => openReturnedSheet(id), jobcard.id);
+  const rows = await page.locator('#rsBody tr').count();
+  assert.equal(rows, before.logged.filter((o) => o.status !== 'skipped').length,
+    'the sheet on screen must have the same rows as the sheet on paper');
+
+  // Two rows of hours, and finish whichever one can still be finished.
+  const filled = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#rsBody tr')];
+    const hoursRows = rows.slice(0, 2);
+    hoursRows.forEach((r, i) => { r.querySelector('.rshrs').value = i === 0 ? '7.5' : '2.25'; });
+    const finishable = rows.find((r) => r.querySelector('.rsfin'));
+    let finishedOp = null;
+    if (finishable) {
+      finishable.querySelector('.rsfin').checked = true;
+      if (!Number(finishable.querySelector('.rshrs').value)) finishable.querySelector('.rshrs').value = '3';
+      finishedOp = Number(finishable.dataset.op);
+    }
+    return { finishedOp, ids: hoursRows.map((r) => Number(r.dataset.op)) };
+  });
+
+  await page.evaluate((id) => saveReturnedSheet(id), jobcard.id);
+  await page.waitForTimeout(250);
+
+  const after = await page.evaluate((no) => {
+    const j = WorkshopData.findJobcard(no);
+    const hours = WorkshopData.get().hours || [];
+    return {
+      entries: hours.length,
+      ids: hours.map((h) => h.id),
+      mine: hours.filter((h) => h.jobcard === no).map((h) => ({ hours: h.hours, op: h.operation, worker: h.worker })),
+      logged: (j.operations || []).map((o) => ({ id: o.id, h: Number(o.loggedHours) || 0, status: o.status })),
+      activity: (j.activity || [])[0] && (j.activity || [])[0].action
+    };
+  }, jobcard.no);
+
+  // One hours record per row with time on it, written the same way the Hours module writes them.
+  assert.ok(after.entries > before.entries, 'entering the sheet must create real hours records');
+  assert.equal(new Set(after.ids).size, after.ids.length,
+    'every hours record needs its own id — a whole sheet saves inside one millisecond');
+  assert.ok(after.mine.every((h) => h.worker), 'an hours record with nobody on it is not a time sheet');
+
+  // And the operation totals go up by exactly what was typed, never replaced by it.
+  filled.ids.forEach((opId, i) => {
+    const was = before.logged.find((o) => o.id === opId).h;
+    const now = after.logged.find((o) => o.id === opId).h;
+    const typed = i === 0 ? 7.5 : 2.25;
+    assert.ok(Math.abs(now - (was + typed)) < 0.001,
+      `operation ${opId}: ${was}h + ${typed}h should be ${was + typed}h, got ${now}h`);
+  });
+  step('Returned sheet: hours from the paper become the same records the Hours screen writes');
+
+  if (filled.finishedOp) {
+    const op = after.logged.find((o) => o.id === filled.finishedOp);
+    assert.equal(op.status, 'completed', 'a ticked operation must actually close');
+  }
+  assert.ok(/logged/i.test(after.activity || ''), 'the jobcard history must say the sheet was entered');
+  step('Returned sheet: a ticked operation closes, and the jobcard records that it happened');
+}
+
+// A hold stops work leaving the building. It does not stop the truth about what the work cost, so
+// the sheet still records the hours — and rather than let somebody tick boxes and then refuse
+// them, it says so before the form is filled in.
+async function theReturnedSheetRespectsAHold(page) {
+  const held = await page.evaluate(() => {
+    const j = WorkshopData.listJobcards().find((x) => WorkshopData.getJobcardQualityGate(x.no).blocked);
+    return j ? { id: j.id, no: j.no } : null;
+  });
+  if (!held) return;
+
+  await page.evaluate((id) => openReturnedSheet(id), held.id);
+  const shown = await page.evaluate(() => ({
+    explained: !!document.querySelector('#fcard .lockbanner'),
+    tickable: document.querySelectorAll('#rsBody .rsfin').length,
+    rows: document.querySelectorAll('#rsBody tr').length
+  }));
+  assert.ok(shown.explained, 'the sheet must say why nothing can be closed, before anything is filled in');
+  assert.equal(shown.tickable, 0, 'a held jobcard offers no box to tick');
+  assert.ok(shown.rows > 0, 'but the hours columns are still there — the work was done either way');
+
+  const before = await page.evaluate((no) =>
+    (WorkshopData.get().hours || []).filter((h) => h.jobcard === no).length, held.no);
+  await page.evaluate(() => { document.querySelector('#rsBody .rshrs').value = '4'; });
+  await page.evaluate((id) => saveReturnedSheet(id), held.id);
+  await page.waitForTimeout(250);
+  const now = await page.evaluate((no) =>
+    (WorkshopData.get().hours || []).filter((h) => h.jobcard === no).length, held.no);
+  assert.equal(now, before + 1, 'a hold must not swallow the hours that were actually worked');
+  step('Returned sheet: a Quality Hold is explained up front, and never costs the hours already worked');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -303,6 +415,8 @@ async function main() {
     const jobcard = await jobcardWorkflow(page);
     await jobcardScopeChips(page);
     await theJobcardPrintsAsAForm(page);
+    await enteringTheReturnedSheet(page);
+    await theReturnedSheetRespectsAHold(page);
     await page.goto(`${harness.baseUrl}/hours-desktop.html`, { waitUntil: 'load' });
     await hoursWorkflow(page, jobcard);
     await page.goto(`${harness.baseUrl}/equipment-machines-desktop.html`, { waitUntil: 'load' });
