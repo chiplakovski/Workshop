@@ -401,8 +401,9 @@ GRANT SELECT (id, ref, name, city, country, status) ON customer TO varmak_worksh
 -- started returning a price column would be the failure this file exists to prevent.
 
 GRANT SELECT (id, code, description, unit, stock, reserved, min_stock, group_id, location_id,
-              heat_no, unit_weight, base_unit, size_per_unit, weight_per_base, category, grade,
-              dimensions, material_cert_ref, status, reorder_quantity, created_at)
+              subgroup_id, sublocation_id, heat_no, unit_weight, base_unit, size_per_unit,
+              weight_per_base, category, grade, dimensions, material_cert_ref, status,
+              reorder_quantity, created_at)
 ON stock_item TO varmak_workshop;
 
 -- equipment was in the whole-table list above until it gained a purchase price in step 5, at which

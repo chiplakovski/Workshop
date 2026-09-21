@@ -370,6 +370,51 @@ const MUTATIONS = [
     ]) AS id WHERE id IS NOT NULL
   ) LOOP`
   },
+  {
+    what: 'an offcut can be on the rack and used up at the same time',
+    from: "CONSTRAINT consumed_offcut_says_when CHECK ((status = 'consumed') = (consumed_at IS NOT NULL))",
+    to: 'CONSTRAINT consumed_offcut_says_when CHECK (true)'
+  },
+  {
+    what: 'an offcut may be in any state at all',
+    from: `  status        text NOT NULL DEFAULT 'available'
+                CHECK (status IN ('available','reserved','consumed','scrapped')),`,
+    to: "  status        text NOT NULL DEFAULT 'available',"
+  },
+  {
+    what: 'a document may be in any state at all',
+    from: "  status      text NOT NULL DEFAULT 'current' CHECK (status IN ('draft','current','superseded','expired')),",
+    to: "  status      text NOT NULL DEFAULT 'current',"
+  },
+  {
+    what: 'an inspection can be passed on no particular day',
+    from: `  CONSTRAINT decided_inspection_has_a_date
+    CHECK (result = 'pending' OR actual_date IS NOT NULL),`,
+    to: '  CONSTRAINT decided_inspection_has_a_date CHECK (true),'
+  },
+  {
+    what: 'an inspection can re-inspect itself',
+    from: '  CHECK (reinspection_of IS DISTINCT FROM id),',
+    to: ''
+  },
+  {
+    what: 'a follow-up can be booked against somebody who asked not to be contacted',
+    from: `  CONSTRAINT do_not_contact_means_no_follow_up
+    CHECK (NOT do_not_contact OR next_follow_up_on IS NULL)`,
+    to: '  CONSTRAINT do_not_contact_means_no_follow_up CHECK (true)'
+  },
+  {
+    what: 'a lost enquiry need not record why',
+    from: `  CONSTRAINT lost_opportunity_says_why
+    CHECK (stage <> 'lost' OR btrim(coalesce(decision_reason,'')) <> '')`,
+    to: '  CONSTRAINT lost_opportunity_says_why CHECK (true)'
+  },
+  {
+    what: 'an NCR may be given a disposition that means nothing',
+    from: `  disposition   text CHECK (disposition IS NULL OR
+                  disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),`,
+    to: '  disposition   text,'
+  },
   // ── auth.sql ──────────────────────────────────────────────────────────────────────────────
   //
   // The first two are the bugs that were really in the file. Both looked right when read.

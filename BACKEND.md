@@ -273,9 +273,19 @@ cannot touch anything else.
 
    | | |
    |---|---|
-   | Widening pass 1 — customer, equipment, stock_item | **32% → 42%** |
-   | Still to do | 152 fields need a column, 22 want a join rather than a column, 27 hold a list and want a child table |
+   | Pass 1 — customer, equipment, stock_item | **32% → 42%** |
+   | Pass 2 — project, jobcard | **42% → 51%** |
+   | Pass 3 — stock_item, stock_movement, offcut, document | **51% → 54%** |
+   | Pass 4 — lead, opportunity, inspection, ncr | **54% → 61%** |
+   | Still to do | 86 fields need a column, 22 want a join rather than a column, 27 hold a list and want a child table |
    | Not a gap | 52 more fields are carried by the demo data and read by no page at all |
+
+   Widening is not only columns. Each pass has turned up rules the trimmed schema had no way to
+   state, and they are worth more than the fields: a project on hold has to say why, an offcut is
+   either on the rack or used up on a date and cannot say both, an inspection with a result has a
+   date it happened on, a re-inspection points back at the failure it repeats, a lost enquiry records
+   why it was lost, and somebody who has asked not to be contacted cannot have a follow-up booked
+   against them.
 
    The second job is the wiring itself, and one thing about it is already clear and worth writing
    down: **a synchronous write cannot be validated by a remote server.** Reads can stay synchronous

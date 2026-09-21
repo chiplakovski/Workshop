@@ -797,6 +797,20 @@ function offcutsAreRealThings() {
     /foreign key|still referenced/);
   step('Store: an offcut has a size, a place and where it came from — and a place cannot contain itself');
 
+  // The one thing an offcut register has to get right is whether the piece is still on the rack, so
+  // the status and the date it was used up have to agree.
+  refused('an offcut marked used up with no date',
+    `UPDATE offcut SET status = 'consumed' WHERE id = ${cut};`, /consumed_offcut_says_when/);
+  refused('an offcut dated as used up but still listed available',
+    `UPDATE offcut SET consumed_at = now() WHERE id = ${cut};`, /consumed_offcut_says_when/);
+  accepted('marking it used up properly',
+    `UPDATE offcut SET status = 'consumed', consumed_at = now() WHERE id = ${cut};`);
+  accepted('putting it back on the rack',
+    `UPDATE offcut SET status = 'available', consumed_at = NULL WHERE id = ${cut};`);
+  refused('a status that is not a state a piece of steel can be in',
+    `UPDATE offcut SET status = 'maybe' WHERE id = ${cut};`, /check/i);
+  step('Store: an offcut is either on the rack or used up on a date — it cannot say both');
+
   accepted('a barcode on the offcut', `INSERT INTO barcode (code, offcut_id) VALUES ('VK-OFF-0001', ${cut});`);
   accepted('a barcode on the item', `INSERT INTO barcode (code, stock_item_id) VALUES ('VK-ITM-0001', ${f.item});`);
   refused('the same barcode twice', `INSERT INTO barcode (code, stock_item_id) VALUES ('VK-ITM-0001', ${f.item});`,
@@ -923,6 +937,67 @@ function machineHistoryIsOneShape() {
 
 // ── Non-conformances ──────────────────────────────────────────────────────────────────────
 
+// An inspection recorded as passed or failed with no date it happened on is not evidence of
+// anything, and a re-inspection has to point at the one it is repeating or the history of a weld
+// that was rejected and re-run reads as two unrelated events.
+function anInspectionIsEvidenceOrItIsNothing() {
+  const f = fixture();
+  refused('an inspection passed on no particular day',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, result)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', 'passed');`, /decided_inspection_has_a_date/);
+  accepted('one still waiting to be done',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, planned_date)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', current_date + 3);`);
+  const failed = value(`INSERT INTO inspection (jobcard_id, operation_id, kind, drawing_no, method,
+      inspector, result, actual_date, status, findings)
+    VALUES (${f.jobcard}, ${f.op1}, 'welding', 'BR-4410-A', 'visual + PT', 'Inspector',
+            'failed', current_date, 'done', 'Porosity beyond level C') RETURNING id;`);
+  step('Quality: an inspection with a result has a date it happened on; one still to be done does not pretend to');
+
+  const again = value(`INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date,
+      status, reinspection_of, findings)
+    VALUES (${f.jobcard}, 'welding', 'Inspector', 'passed', current_date, 'done', ${failed},
+            'Ground out and re-run; PT accepted') RETURNING id;`);
+  refused('an inspection that re-inspects itself',
+    `UPDATE inspection SET reinspection_of = id WHERE id = ${again};`, /check/i);
+  const story = sql(`SELECT first.findings || ' → ' || second.findings
+    FROM inspection second JOIN inspection first ON first.id = second.reinspection_of
+   WHERE second.id = ${again};`);
+  assert.equal(story, 'Porosity beyond level C → Ground out and re-run; PT accepted',
+    'the rejected weld and its re-inspection must read as one story');
+  step('Quality: a re-inspection points back at the failure it repeats, and cannot point at itself');
+}
+
+// A lost enquiry with no reason recorded teaches the workshop nothing, and somebody who has asked
+// not to be contacted cannot have a follow-up booked against them.
+function thePipelineRemembersWhyAndRespectsNo() {
+  const f = fixture();
+  const theLead = value(`INSERT INTO lead (company, city, priority, estimated_value)
+    VALUES ('Nordic Fabrication AB', 'Helsingborg', 'high', 480000) RETURNING id;`);
+  accepted('booking a follow-up', `UPDATE lead SET next_follow_up_on = current_date + 7,
+    last_contact_on = current_date WHERE id = ${theLead};`);
+  refused('marking them do-not-contact while a follow-up stands',
+    `UPDATE lead SET do_not_contact = true WHERE id = ${theLead};`,
+    /do_not_contact_means_no_follow_up/);
+  accepted('clearing the follow-up and respecting it',
+    `UPDATE lead SET do_not_contact = true, next_follow_up_on = NULL WHERE id = ${theLead};`);
+  refused('booking a follow-up against somebody who asked not to be contacted',
+    `UPDATE lead SET next_follow_up_on = current_date + 7 WHERE id = ${theLead};`,
+    /do_not_contact_means_no_follow_up/);
+  step('Pipeline: somebody who has asked not to be contacted cannot have a follow-up booked against them');
+
+  const opp = value(`INSERT INTO opportunity (title, lead_id, value, probability, owner)
+    VALUES ('Frame work', ${theLead}, 320000, 40, 'Lars Holm') RETURNING id;`);
+  refused('losing an enquiry without recording why',
+    `UPDATE opportunity SET stage = 'lost' WHERE id = ${opp};`, /lost_opportunity_says_why/);
+  accepted('recording why it was lost',
+    `UPDATE opportunity SET stage = 'lost', competitor = 'Malmö Mekaniska',
+     decision_reason = 'Beaten on lead time by three weeks' WHERE id = ${opp};`);
+  const lesson = value(`SELECT decision_reason FROM opportunity WHERE id = ${opp};`);
+  assert.equal(lesson, 'Beaten on lead time by three weeks');
+  step('Pipeline: a lost enquiry records why it was lost, which is the one field worth having');
+}
+
 function ncrCannotCloseOnNothing() {
   const f = fixture();
   const n = value(`INSERT INTO ncr (title, project_id, jobcard_id, category, severity, description, responsible, due_on)
@@ -936,10 +1011,20 @@ function ncrCannotCloseOnNothing() {
   refused('closing it with a root cause but no action taken',
     `UPDATE ncr SET status = 'closed', root_cause = 'Damp filler wire', closed_on = current_date
      WHERE ref = '${n}';`, /closed_ncr_says_what_was_done/);
+  // Containment is what was done about it immediately — the parts quarantined, the machine stopped.
+  // Conflating that with the corrective action is how an NCR gets closed on the containment alone.
+  accepted('recording the containment and what happens to the parts',
+    `UPDATE ncr SET containment = 'Batch quarantined on the rack; welder stood down from the seam',
+     disposition = 'rework', component = 'Bracket BR-4410', material = 'S355J2 10mm'
+     WHERE ref = '${n}';`);
+  refused('a disposition that means nothing',
+    `UPDATE ncr SET disposition = 'probably fine' WHERE ref = '${n}';`, /check/i);
+  step('Quality: containment is recorded separately from the fix, and the parts get one of five real dispositions');
+
   accepted('closing it with what was found and what was done',
     `UPDATE ncr SET status = 'closed', root_cause = 'Damp filler wire from an opened spool',
      corrective_action = 'Spool scrapped; wire now stored in the heated cabinet and logged on issue',
-     closed_on = current_date WHERE ref = '${n}';`);
+     closure_approval = 'Quality Manager', closed_on = current_date WHERE ref = '${n}';`);
   step('Quality: a non-conformance closes only on what was found and what was done about it');
 }
 
@@ -965,6 +1050,23 @@ function documentsPointAtSomethingReal() {
     (entity, entity_id, kind, filename, storage_key, uploaded_by)
     VALUES ('project', ${f.project}, 'drawing', 'anon.pdf', 'project/1/anon.pdf', '  ');`, /uploaded_by/);
   step('Documents: a document names a table that exists, a file that is there, and who put it there');
+
+  // A certificate that has run out is the most common document problem in a workshop, so the date it
+  // runs out is a column rather than a line in the notes.
+  const cert = value(`INSERT INTO document
+    (entity, entity_id, kind, title, filename, storage_key, uploaded_by, expires_on, revision, status)
+    VALUES ('equipment', (SELECT id FROM equipment LIMIT 1), 'certificate', 'Crane inspection 2026',
+            'crane-2026.pdf', 'equipment/1/crane-2026.pdf', 'Workshop Admin',
+            current_date + 180, 'B', 'current') RETURNING id;`);
+  assert.equal(value(`SELECT (expires_on > current_date)::text FROM document WHERE id = ${cert};`), 'true');
+  refused('a document in a state a document cannot be in',
+    `UPDATE document SET status = 'lost' WHERE id = ${cert};`, /check/i);
+  accepted('marking it superseded when a new revision lands',
+    `UPDATE document SET status = 'superseded', updated_at = now() WHERE id = ${cert};`);
+  const expiring = value(`SELECT count(*) FROM document WHERE expires_on IS NOT NULL
+                           AND expires_on <= current_date + 365;`);
+  assert.equal(expiring, '1', 'the register has to be able to answer what runs out within the year');
+  step('Documents: a certificate carries the date it runs out, a revision and a state the register can ask about');
 }
 
 // ── The facts that cannot be back-filled ──────────────────────────────────────────────────
@@ -1182,6 +1284,8 @@ async function main() {
   thePipelineKeepsItsLinksBack();
   theEstimateTotalIsItsLines();
   machineHistoryIsOneShape();
+  anInspectionIsEvidenceOrItIsNothing();
+  thePipelineRemembersWhyAndRespectsNo();
   ncrCannotCloseOnNothing();
   documentsPointAtSomethingReal();
   theHistoryCertificationWouldNeed();

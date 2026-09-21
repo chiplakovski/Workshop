@@ -546,6 +546,11 @@ CREATE TABLE stock_item (
   -- same number and was being conflated.
   reorder_quantity numeric(12,3) CHECK (reorder_quantity IS NULL OR reorder_quantity > 0),
   last_price  numeric(12,2) CHECK (last_price IS NULL OR last_price >= 0),
+  -- The group and the shelf as the store writes them. group_id and location_id above are the real
+  -- links; these are the sub-level within each, which the tree in item_group and location already
+  -- models — so they are the id of the child, not a second copy of its name.
+  subgroup_id bigint REFERENCES item_group(id) ON DELETE RESTRICT,
+  sublocation_id bigint REFERENCES location(id) ON DELETE RESTRICT,
   created_at  timestamptz NOT NULL DEFAULT now(),
   -- More reserved than exists is not a state a store can be in.
   CONSTRAINT reserved_within_stock CHECK (reserved <= stock)
@@ -562,6 +567,12 @@ CREATE TABLE stock_movement (
   jobcard_id    bigint REFERENCES jobcard(id) ON DELETE SET NULL,
   moved_by      text NOT NULL CHECK (btrim(moved_by) <> ''),
   moved_at      timestamptz NOT NULL DEFAULT now(),
+  -- Where it came from and where it went. Free text rather than a location id on purpose: half the
+  -- movements in a workshop are to or from somewhere that is not a shelf — a supplier's lorry, a
+  -- subcontractor, a skip — and a foreign key to `location` cannot say any of those.
+  moved_from    text,
+  moved_to      text,
+  unit          text,
   note          text
 );
 
@@ -624,6 +635,21 @@ CREATE TABLE inspection (
   findings      text,
   planned_date  date,
   actual_date   date,
+  -- Which operation, and against which drawing. An inspection that does not name the drawing it was
+  -- measured against is not evidence of anything.
+  operation_id  bigint REFERENCES operation(id) ON DELETE SET NULL,
+  drawing_no    text,
+  method        text,
+  status        text NOT NULL DEFAULT 'requested'
+                CHECK (status IN ('requested','scheduled','done','cancelled')),
+  -- A re-inspection after a failure points back at the one it is repeating, so the history of a
+  -- weld that was rejected and re-run reads as one story.
+  reinspection_of bigint REFERENCES inspection(id) ON DELETE SET NULL,
+  notes         text,
+  CHECK (reinspection_of IS DISTINCT FROM id),
+  -- A decided inspection has a date it happened on; a pending one does not pretend to.
+  CONSTRAINT decided_inspection_has_a_date
+    CHECK (result = 'pending' OR actual_date IS NOT NULL),
   created_at    timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT inspection_names_something CHECK (jobcard_id IS NOT NULL OR project_id IS NOT NULL)
 );
@@ -722,13 +748,26 @@ CREATE TABLE offcut (
   location_id   bigint REFERENCES location(id) ON DELETE RESTRICT,
   length_mm     numeric(10,1) CHECK (length_mm IS NULL OR length_mm > 0),
   width_mm      numeric(10,1) CHECK (width_mm IS NULL OR width_mm > 0),
+  thickness_mm  numeric(10,1) CHECK (thickness_mm IS NULL OR thickness_mm > 0),
   quantity      numeric(12,3) NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  unit          text,
+  -- Its own code and description, because an offcut is looked for by what it is rather than by
+  -- which item it was cut from: somebody wants a piece of 10mm S355 about a metre long.
+  code          text,
+  description   text,
+  grade         text,
+  status        text NOT NULL DEFAULT 'available'
+                CHECK (status IN ('available','reserved','consumed','scrapped')),
   heat_no       text,
   from_jobcard_id bigint REFERENCES jobcard(id) ON DELETE SET NULL,
   consumed_at   timestamptz,
   created_at    timestamptz NOT NULL DEFAULT now(),
   -- An offcut with no size is not an offcut, it is a note.
-  CONSTRAINT offcut_has_a_size CHECK (length_mm IS NOT NULL OR width_mm IS NOT NULL)
+  CONSTRAINT offcut_has_a_size CHECK (length_mm IS NOT NULL OR width_mm IS NOT NULL),
+  -- A piece marked consumed with no date, or dated but still listed as available, is a rack that
+  -- says two things at once — and the one thing an offcut register has to get right is whether the
+  -- piece is still there.
+  CONSTRAINT consumed_offcut_says_when CHECK ((status = 'consumed') = (consumed_at IS NOT NULL))
 );
 
 CREATE INDEX offcut_available_idx ON offcut(stock_item_id) WHERE consumed_at IS NULL;
@@ -764,12 +803,35 @@ CREATE TABLE lead (
   phone       text,
   city        text,
   source      text,
+  country     text,
+  industry    text,
+  company_size text,
+  service_wanted text,
+  estimated_value numeric(12,2) CHECK (estimated_value IS NULL OR estimated_value >= 0),
+  priority    text CHECK (priority IS NULL OR priority IN ('low','normal','high')),
+  owner       text,
+  notes       text,
+  -- When somebody last spoke to them and when they are due to be spoken to again. A lead with no
+  -- next step is a lead nobody is working, which is the thing a pipeline exists to make visible.
+  last_contact_on date,
+  next_follow_up_on date,
+  -- How they may be contacted, and whether they have asked not to be. Do-not-contact is a legal
+  -- obligation in Sweden as everywhere else, so it is a column the system cannot forget rather than
+  -- a note somebody might not read.
+  contact_preference text CHECK (contact_preference IS NULL OR
+                       contact_preference IN ('email','phone','post','none')),
+  do_not_contact boolean NOT NULL DEFAULT false,
   status      lead_status NOT NULL DEFAULT 'new',
   -- Set when the lead becomes a customer. A converted lead that names nobody is a dead end in the
   -- record, so the two are tied together.
   customer_id bigint REFERENCES customer(id) ON DELETE SET NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT converted_lead_names_the_customer CHECK (status <> 'converted' OR customer_id IS NOT NULL)
+  CONSTRAINT converted_lead_names_the_customer CHECK (status <> 'converted' OR customer_id IS NOT NULL),
+  -- Somebody who has asked not to be contacted cannot have a follow-up booked. Written here rather
+  -- than left to whoever builds the screen, because the screen is not the only thing that will ever
+  -- write to this table and the obligation does not depend on which one did.
+  CONSTRAINT do_not_contact_means_no_follow_up
+    CHECK (NOT do_not_contact OR next_follow_up_on IS NULL)
 );
 
 CREATE TABLE prospect_finding (
@@ -797,9 +859,26 @@ CREATE TABLE opportunity (
   currency    char(3) NOT NULL DEFAULT 'SEK' CHECK (currency = upper(currency)),
   probability int CHECK (probability IS NULL OR probability BETWEEN 0 AND 100),
   expected_close date,
+  contact     text,
+  industry    text,
+  services    text,
+  scope       text,
+  owner       text,
+  expected_decision_on date,
+  required_delivery_on date,
+  competitor  text,
+  -- Why it was won or lost. The most useful field in the whole pipeline and the one most often left
+  -- empty, so the constraint below asks for it once the answer is known.
+  decision_reason text,
+  next_action text,
+  follow_up_on date,
   created_at  timestamptz NOT NULL DEFAULT now(),
   -- An opportunity belongs to somebody, whether they are a customer yet or not.
-  CONSTRAINT opportunity_names_somebody CHECK (customer_id IS NOT NULL OR lead_id IS NOT NULL)
+  CONSTRAINT opportunity_names_somebody CHECK (customer_id IS NOT NULL OR lead_id IS NOT NULL),
+  -- A lost enquiry with no reason recorded teaches the workshop nothing, and the reason cannot be
+  -- reconstructed six months later. Asked for at the moment it is known.
+  CONSTRAINT lost_opportunity_says_why
+    CHECK (stage <> 'lost' OR btrim(coalesce(decision_reason,'')) <> '')
 );
 
 CREATE TYPE tender_status AS ENUM ('open','submitted','won','lost','withdrawn');
@@ -918,6 +997,18 @@ CREATE TABLE ncr (
   responsible   text NOT NULL CHECK (btrim(responsible) <> ''),
   status        ncr_status NOT NULL DEFAULT 'open',
   due_on        date,
+  operation_id  bigint REFERENCES operation(id) ON DELETE SET NULL,
+  component     text,
+  material      text,
+  supplier_id   bigint REFERENCES supplier(id) ON DELETE SET NULL,
+  -- Containment is what was done about it immediately — the parts quarantined, the machine stopped —
+  -- as distinct from the corrective action that stops it happening again. Conflating the two is how
+  -- an NCR gets closed on the containment alone.
+  containment   text,
+  disposition   text CHECK (disposition IS NULL OR
+                  disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),
+  closure_approval text,
+  notes         text,
   root_cause    text,
   corrective_action text,
   closed_on     date,
@@ -956,8 +1047,19 @@ CREATE TABLE document (
   storage_key text NOT NULL UNIQUE CHECK (btrim(storage_key) <> ''),
   mime_type   text,
   size_bytes  bigint CHECK (size_bytes IS NULL OR size_bytes > 0),
+  -- What people call it, as distinct from the filename it happens to have been saved under.
+  title       text,
+  category    text,
+  revision    text,
+  author      text,
+  notes       text,
+  status      text NOT NULL DEFAULT 'current' CHECK (status IN ('draft','current','superseded','expired')),
+  -- A certificate that has run out is the single most common document problem in a workshop, so the
+  -- date is a column rather than something written in the notes.
+  expires_on  date,
   uploaded_by text NOT NULL CHECK (btrim(uploaded_by) <> ''),
-  uploaded_at timestamptz NOT NULL DEFAULT now()
+  uploaded_at timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX document_entity_idx ON document(entity, entity_id);

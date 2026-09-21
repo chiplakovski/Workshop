@@ -195,7 +195,10 @@ const MONEY = [
   ['equipment', 'purchase_price'], ['stock_item', 'last_price'],
   // And project, in the next widening pass. Four tables have now gained a money column after being
   // put in a whole-table grant; this check is the only thing that has noticed any of them.
-  ['project', 'quoted_value']
+  ['project', 'quoted_value'],
+  // lead is not granted to the workshop at all, so this one is already out of reach — but the list
+  // has to stay complete or the check that the list is complete stops meaning anything.
+  ['lead', 'estimated_value']
 ];
 
 function noPriceColumnIsReachable() {
@@ -445,8 +448,8 @@ function theFloorDoesTheWork(f) {
     `INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
      VALUES (${f.jobcard}, ${f.op}, 'Marko Ilic', 6.5);`);
   allowed('a welder recording an inspection', 'varmak_workshop', PEOPLE.welder,
-    `INSERT INTO inspection (jobcard_id, kind, inspector, result)
-     VALUES (${f.jobcard}, 'visual', 'Marko Ilic', 'passed');`);
+    `INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date, status)
+     VALUES (${f.jobcard}, 'visual', 'Marko Ilic', 'passed', current_date, 'done');`);
   allowed('a welder recording a pre-use check on a machine', 'varmak_workshop', PEOPLE.welder,
     `INSERT INTO equipment_event (equipment_id, kind, performed_by, result)
      SELECT id, 'pre-use-check', 'Marko Ilic', 'pass' FROM equipment LIMIT 1;`);
