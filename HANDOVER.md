@@ -340,6 +340,13 @@ read the file back as plain JSON outside the app, wipe the system, restore, comp
 record, then reload and check it is still there. Plus a file that is not a backup, which must be
 refused by name and change nothing.
 
+**One caveat about the demo link.** Saving a copy works when the app is opened normally — proved
+locally, and proved again inside the packaged single-file bundle. Inside the **published artifact**
+the platform warns on every publish that a page's download link does nothing for viewers, so the
+button there will most likely not produce a file. That is a property of the viewer, not of the app,
+and it does not apply wherever this actually gets deployed. It has not been verified by opening the
+published link, only taken from the platform's own warning.
+
 **What is still between here and functional** — and none of it is frontend work:
 
 | Gap | Why it needs a server |
