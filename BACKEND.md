@@ -232,15 +232,54 @@ cannot touch anything else.
 
 ## 5. Order of work
 
-1. **Schema and constraints**, with the safety rules as triggers from the start. Not "add
-   constraints later" — later never comes, and by then there is data that violates them.
-2. **Numbering as sequences.** Before two people ever use it.
-3. **Auth and the three roles**, with row-level security written alongside the tables.
+1. ~~**Schema and constraints**, with the safety rules as triggers from the start.~~ **Done** —
+   [`backend/schema.sql`](backend/schema.sql): 31 tables, 103 checks and 13 triggers, every one of
+   them attacked by [`backend/test-schema.js`](backend/test-schema.js). All six rules named in §1a
+   above are in the database, including the two this list originally skipped — status transitions
+   (as the `allowed_transition` table, seeded from the frontend's own map) and repricing a locked
+   estimate line.
+2. ~~**Numbering as sequences.**~~ **Done** — and the first test in the suite demonstrates the old
+   row-counting handing two simultaneous sessions the same reference, so the reason stays visible.
+3. **Auth and the two roles**, with row-level security written alongside the tables. ← next
 4. **The API for the workflows in §4**, one at a time, tested.
 5. **Point the frontend at it.** `workshop-data.js` is the only file that touches storage — 221
    operations behind one interface. The sixteen pages do not change.
+
+   One thing found while writing the schema that this step has to deal with: the status sequence
+   lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
+   `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared
+   data layer will happily write `draft → completed`, which the database now refuses. Either the map
+   moves into `workshop-data.js` beside the other rules, or every path that writes a status has to
+   go through the jobcard page. The first one. It is a small job now and a confusing bug later.
 6. **Backups verified by restoring one.**
 7. Only then: the AI sweep, the catalogue import, push notifications.
+
+### What steps 1 and 2 cost, and what they caught
+
+`npm run test:schema` asks the database to refuse 110 things and asserts the wording of every
+refusal, and to allow 58 more — because a gate that refuses everything passes every refusal test
+and still stops the workshop working.
+
+`npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
+sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
+breaking.
+
+The two checks caught different things, and the difference is the point. **The tests** found five
+real defects in the schema, three of which had already survived a careful reading of the file: the
+hold gates ran on `UPDATE` only so a jobcard created already completed walked past them; the hours
+roll-up left the same hours on two operations when an entry was corrected; nothing stopped an hours
+entry naming one jobcard and an operation from another; a refusal read `MIG 400s certification`;
+and deleting a rack silently forgot where the steel on it was. **The mutation check** found
+something the tests could not — that the test for "stock can never go below zero" passed with its
+own constraint deleted, because a different constraint was doing the refusing. A test standing on
+the wrong rule is not a test. All of it is written up in [`backend/README.md`](backend/README.md).
+
+Several decisions in this document were quietly contradicted by the first draft of the schema and
+have been corrected to match it rather than the other way round: the roles are `admin` and
+`workshop` with `office` present but unheld (§1b), the project statuses include `approved` (§2), and
+the operation now carries the **filler** beside the welder's name, and the jobcard the **heat number
+and certificate reference** (§2) — the facts that cannot be back-filled if certification is ever
+pursued. Their absence now fails a test rather than being noticed in two years.
 
 ---
 
