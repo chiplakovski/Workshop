@@ -73,15 +73,31 @@ const RPC = {
   convert_lead: ['lead_id', 'org_no', 'vat_no'],
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
-  issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id']
+  issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],
+
+  // People. Without these a workshop has no way to give anybody access at all, which is the state
+  // this system was in until now: adding somebody meant opening psql.
+  bootstrap_first_admin: ['email', 'display_name', 'password'],
+  add_person: ['email', 'display_name', 'role'],
+  set_person_pin: ['user_id', 'pin'],
+  set_person_password: ['user_id', 'password'],
+  set_person_role: ['user_id', 'role'],
+  set_person_active: ['user_id', 'active'],
+  change_my_password: ['current', 'new']
 };
+
+// The one call that works without a session, because at that moment there is nobody to sign in as.
+// It refuses the instant the system has anybody in it, which the database checks — this list only
+// decides whether the HTTP layer demands a token first.
+const WITHOUT_A_SESSION = new Set(['bootstrap_first_admin']);
 
 // Reads. Same idea as RPC and the same reason for the list: without it this is a remote SQL console.
 // Both are plain function calls — the snapshot is built in SQL because renaming a field in the
 // browser is sixteen edits, and renaming it here is one.
 const READS = {
   snapshot: 'workspace_snapshot',
-  money: 'workspace_money'
+  money: 'workspace_money',
+  people: 'people'
 };
 
 const ROLE_FOR = { admin: 'varmak_admin', office: 'varmak_office', workshop: 'varmak_workshop' };
@@ -216,11 +232,21 @@ async function handleRead(req, res, name) {
 async function handleRpc(req, res, name, body) {
   const parameters = RPC[name];
   if (!parameters) return send(res, 404, { refused: `no workflow called ${name}` });
-  const token = bearer(req);
-  if (!token) return send(res, 401, { refused: 'sign in first' });
-
   const args = parameters.map((key) => (body[key] === undefined ? null : body[key]));
   const placeholders = parameters.map((_, i) => `$${i + 1}`).join(', ');
+  const token = bearer(req);
+
+  if (WITHOUT_A_SESSION.has(name)) {
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query(`SELECT ${name}(${placeholders}) AS result`, args);
+      return send(res, 200, { result: rows[0].result });
+    } finally {
+      client.release();
+    }
+  }
+
+  if (!token) return send(res, 401, { refused: 'sign in first' });
 
   const result = await asSignedIn(token, async (client) => {
     const { rows } = await client.query(`SELECT ${name}(${placeholders}) AS result`, args);
@@ -276,4 +302,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, pool, RPC, READS };
+module.exports = { server, pool, RPC, READS, WITHOUT_A_SESSION };

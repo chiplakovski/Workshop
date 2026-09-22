@@ -77,13 +77,20 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
   SELECT display_name FROM app_user WHERE id = current_app_user() AND is_active;
 $$;
 
+-- coalesce, and it is not tidiness. current_app_role() is NULL when nobody is signed in, so
+-- `current_app_role() = 'admin'` is NULL rather than false — and `IF NOT is_admin() THEN RAISE` in
+-- plpgsql does nothing at all when the condition is NULL. Every authorisation guard written that
+-- way was therefore skipped entirely for exactly the case it exists to refuse: no session.
+--
+-- Row-level policies were never affected, because RLS treats NULL as "not true" — which is why this
+-- survived until a workflow with a plpgsql guard was written and a test called it with no session.
 CREATE FUNCTION is_admin() RETURNS boolean
-LANGUAGE sql STABLE AS $$ SELECT current_app_role() = 'admin'; $$;
+LANGUAGE sql STABLE AS $$ SELECT coalesce(current_app_role() = 'admin', false); $$;
 
 -- "Can see money" rather than "is office": the question asked at every price column, named for what
 -- it decides rather than for who happens to satisfy it today.
 CREATE FUNCTION may_see_money() RETURNS boolean
-LANGUAGE sql STABLE AS $$ SELECT current_app_role() IN ('admin', 'office'); $$;
+LANGUAGE sql STABLE AS $$ SELECT coalesce(current_app_role() IN ('admin', 'office'), false); $$;
 
 CREATE FUNCTION is_signed_in() RETURNS boolean
 LANGUAGE sql STABLE AS $$ SELECT current_app_role() IS NOT NULL; $$;

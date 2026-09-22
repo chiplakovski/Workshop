@@ -408,6 +408,190 @@ END;
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- People
+--
+-- Until this existed, adding somebody to the system meant opening psql. A workshop cannot start
+-- using a thing it has no way to give anybody access to, so these are the workflows behind an admin
+-- screen: make a person, give them a way in, take it away again.
+--
+-- The awkward one is the first admin. There is no admin to create them, and every rule below is
+-- written for a system that already has one. The answer is a function that works exactly once and
+-- refuses forever after — not a default password, not a hardcoded account, not a flag somebody has
+-- to remember to turn off. It checks whether the table is empty, which is a condition that becomes
+-- false the moment it succeeds and cannot become true again without deleting everybody.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION bootstrap_first_admin(p_email text, p_display_name text, p_password text)
+RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  made bigint;
+BEGIN
+  IF EXISTS (SELECT 1 FROM app_user) THEN
+    RAISE EXCEPTION 'this system already has people in it — an admin adds the next one'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  INSERT INTO app_user (email, display_name, role)
+  VALUES (lower(btrim(p_email)), btrim(p_display_name), 'admin')
+  RETURNING id INTO made;
+  PERFORM set_password(made, p_password);
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', made, 'first admin created', lower(btrim(p_email)), 'system had no people in it');
+  RETURN lower(btrim(p_email));
+END;
+$$;
+
+CREATE FUNCTION add_person(p_email text, p_display_name text, p_role user_role)
+RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  made bigint;
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'only an admin adds people' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  -- No secret here on purpose. A person is created with no way in at all, and an admin then gives
+  -- them one — which means there is never a moment where an account exists with a password somebody
+  -- chose for them and never changed.
+  INSERT INTO app_user (email, display_name, role)
+  VALUES (lower(btrim(p_email)), btrim(p_display_name), p_role)
+  RETURNING id INTO made;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', made, 'created', current_app_name(), p_role::text || ' ' || lower(btrim(p_email)));
+  RETURN made;
+END;
+$$;
+
+CREATE FUNCTION set_person_pin(p_user_id bigint, p_pin text) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'a PIN is set by an admin, in person' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  PERFORM set_pin(p_user_id, p_pin);
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', p_user_id, 'PIN set', current_app_name(), 'by an admin');
+END;
+$$;
+
+CREATE FUNCTION set_person_password(p_user_id bigint, p_password text) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'only an admin resets somebody else''s password' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  PERFORM set_password(p_user_id, p_password);
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', p_user_id, 'password reset', current_app_name(), 'by an admin');
+END;
+$$;
+
+-- Your own password, and you have to prove you know the current one. Without that, anybody who
+-- walks past an unlocked tablet owns the account from then on.
+CREATE FUNCTION change_my_password(p_current text, p_new text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  me bigint := current_app_user();
+  stored text;
+BEGIN
+  IF me IS NULL THEN
+    RAISE EXCEPTION 'sign in first' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  SELECT password_hash INTO stored FROM app_user WHERE id = me;
+  IF stored IS NULL OR crypt(p_current, stored) <> stored THEN
+    PERFORM pg_sleep(0.1);
+    RAISE EXCEPTION 'that is not your current password' USING ERRCODE = 'invalid_password';
+  END IF;
+  PERFORM set_password(me, p_new);
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', me, 'password changed', current_app_name(), 'by themselves');
+END;
+$$;
+
+CREATE FUNCTION set_person_active(p_user_id bigint, p_active boolean) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'only an admin switches somebody off' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  -- The invariant this protects is "the system always has at least one active admin", and locking
+  -- everybody out is easy to do by accident on a Friday afternoon and not recoverable without a
+  -- database console.
+  --
+  -- One line does it, which took writing the second to notice. A "that is the last admin" check
+  -- beside this one is unreachable: only an admin gets here, an admin is active, and if they are not
+  -- the person being switched off then another active admin exists by definition. The only path to
+  -- zero is switching yourself off, and that is what this refuses. A second check that can never
+  -- fire is worse than none, because the next person to read it assumes it is doing something.
+  IF NOT p_active AND p_user_id = current_app_user() THEN
+    RAISE EXCEPTION 'you cannot switch yourself off' USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE app_user SET is_active = p_active WHERE id = p_user_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'no such person' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  -- Switching somebody off ends the sessions they are holding, not just the next one they try to
+  -- start. A tablet already signed in as them is the thing being taken away.
+  IF NOT p_active THEN
+    UPDATE app_session SET ended_at = now() WHERE user_id = p_user_id AND ended_at IS NULL;
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', p_user_id, CASE WHEN p_active THEN 'switched on' ELSE 'switched off' END,
+          current_app_name(), 'by an admin');
+END;
+$$;
+
+CREATE FUNCTION set_person_role(p_user_id bigint, p_role user_role) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'only an admin changes what somebody may do' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  -- Same invariant, same single line, and the same reason the obvious second check is not here.
+  IF p_user_id = current_app_user() AND p_role <> 'admin' THEN
+    RAISE EXCEPTION 'you cannot take away your own admin' USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE app_user SET role = p_role WHERE id = p_user_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('app_user', p_user_id, 'role changed', current_app_name(), p_role::text);
+END;
+$$;
+
+-- The staff list for the admin screen. No hashes — those are not readable by anybody, which is
+-- checked in test-auth.js — and the row-level policy already narrows this to what the caller may
+-- see, so a welder calling it gets their own row and nothing else.
+CREATE FUNCTION people() RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+    'id', u.id::text, 'email', u.email, 'name', u.display_name, 'role', u.role,
+    'active', u.is_active, 'pinSet', u.pin_set_at IS NOT NULL,
+    'lockedUntil', u.locked_until, 'failedAttempts', u.failed_attempts,
+    'lastSeen', u.last_seen_at, 'created', u.created_at
+  ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;
+$$;
+
+ALTER FUNCTION bootstrap_first_admin(text, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION change_my_password(text, text) OWNER TO varmak_engine;
+
+REVOKE ALL ON FUNCTION bootstrap_first_admin(text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION add_person(text, text, user_role) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_person_pin(bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_person_password(bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION change_my_password(text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_person_active(bigint, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_person_role(bigint, user_role) FROM PUBLIC;
+REVOKE ALL ON FUNCTION people() FROM PUBLIC;
+
+-- The bootstrap is callable without a session, because there is nobody to sign in as yet. It is the
+-- only function in the system like that, and it refuses the moment the table has anybody in it.
+GRANT EXECUTE ON FUNCTION bootstrap_first_admin(text, text, text) TO varmak_api;
+GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigint, text),
+  set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role)
+TO varmak_admin;
+GRANT EXECUTE ON FUNCTION change_my_password(text, text), people()
+TO varmak_admin, varmak_office, varmak_workshop;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- What the HTTP layer needs to know about a token
 --
 -- The pool connects as varmak_api, which can read nothing at all — so it cannot look up who a token

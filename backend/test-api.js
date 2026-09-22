@@ -134,6 +134,10 @@ function theBypassListIsStillShort() {
     WHERE r.rolbypassrls AND NOT r.rolsuper AND p.pronamespace = 'public'::regnamespace ORDER BY 1;`)
     .split('\n').map((l) => l.trim()).filter(Boolean);
   assert.deepEqual(bypass.sort(), [
+    // Creating the first admin and changing your own password both have to read or write app_user
+    // for somebody the policies cannot yet see — the first because there is nobody at all, the
+    // second because it compares a password hash, which no role may read.
+    'bootstrap_first_admin', 'change_my_password',
     'current_app_name', 'current_app_role', 'issue_material', 'issue_stock',
     'project_hours_roll_up', 'register_failure', 'session_identity',
     'session_owner', 'set_password', 'set_pin', 'sign_in', 'sign_out'
@@ -530,6 +534,127 @@ function eachRoleReachesItsOwnWork(f, w) {
   step('Roles: a session that has not said who it is is told to sign in, by name, on all three');
 }
 
+// ── People ────────────────────────────────────────────────────────────────────────────────
+
+// Until these existed, adding somebody meant opening psql — so a workshop had no way to start using
+// the system at all. The awkward case is the first admin, because every rule is written for a system
+// that already has one.
+function theFirstAdminAndEveryoneAfter() {
+  sql(`SET client_min_messages = warning; TRUNCATE app_session, app_user RESTART IDENTITY CASCADE;`);
+
+  // Works once, on an empty system, with no session — there is nobody to sign in as.
+  const first = ok('creating the first admin on an empty system', null, null,
+    `SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+  assert.equal(first, 'anna@varmak.se');
+  const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
+  assert.equal(value(`SELECT role::text FROM app_user WHERE id = ${admin};`), 'admin');
+  assert.equal(value(`SELECT (password_hash IS NOT NULL)::text FROM app_user WHERE id = ${admin};`), 'true');
+
+  // And refuses forever after. Not a flag somebody has to remember to turn off — a condition that
+  // becomes false the moment it succeeds and cannot become true again without deleting everybody.
+  refused('a second use of the bootstrap', null, null,
+    `SELECT bootstrap_first_admin('someone@varmak.se', 'Someone Else', 'another long passphrase');`,
+    /already has people in it/);
+  assert.equal(value(`SELECT count(*) FROM app_user;`), '1');
+  step('People: the first admin is made once on an empty system, and that door shuts behind them');
+
+  // After that it is an admin's job, and a person arrives with no way in at all — so there is never
+  // a moment where an account exists with a password somebody else chose and nobody changed.
+  const welder = ok('the admin adding a welder', 'varmak_admin', admin,
+    `SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
+  assert.equal(value(`SELECT (password_hash IS NULL AND pin_hash IS NULL)::text FROM app_user WHERE id = ${welder};`),
+    'true', 'a new person should arrive with no way in until an admin gives them one');
+  // sign_in answers rather than raising — it has to record a failed attempt, and a function that
+  // raises rolls back what it just recorded — so the check is that no token came back.
+  assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('marko@varmak.se', '8472', 'pin')), 'none');`),
+    'none', 'somebody with no PIN set should not be able to sign in');
+  ok('the admin giving them a PIN', 'varmak_admin', admin, `SELECT set_person_pin(${welder}, '8472');`);
+  assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('marko@varmak.se', '8472', 'pin')), '') <> '';`), 't',
+    'once the admin sets the PIN they can sign in');
+  step('People: an admin adds a person with no way in, then gives them one — never the other way round');
+
+  refused('a welder adding somebody', 'varmak_workshop', welder,
+    `SELECT add_person('ghost@varmak.se', 'Ghost', 'admin');`, /permission denied/);
+
+  // The welder above is stopped by the GRANT, before the check inside the function is reached — so
+  // that check is untested by it, and removing it would change nothing observable. What it actually
+  // defends against is the server handing out the wrong Postgres role: a bug that picked
+  // varmak_admin for somebody whose row says workshop. Simulated exactly, because the two layers
+  // guard different mistakes and only one of them is the database's.
+  const throughTheWrongRole = refused('a welder driving the admin database role', 'varmak_admin', welder,
+    `SELECT add_person('ghost@varmak.se', 'Ghost', 'admin');`, /only an admin adds people/);
+  assert.ok(!/permission denied/.test(throughTheWrongRole),
+    'this case has to be refused by the function, not by the grant, or it is testing the wrong layer');
+  assert.equal(value(`SELECT count(*) FROM app_user WHERE email = 'ghost@varmak.se';`), '0');
+  refused('the same, setting a PIN', 'varmak_admin', welder,
+    `SELECT set_person_pin(${welder}, '9182');`, /by an admin/);
+  step('People: and a session handed the wrong database role is still refused by the function itself');
+  refused('a welder setting their own PIN through the workflow', 'varmak_workshop', welder,
+    `SELECT set_person_pin(${welder}, '9182');`, /permission denied|by an admin/);
+  refused('a welder resetting the admin password', 'varmak_workshop', welder,
+    `SELECT set_person_password(${admin}, 'a brand new passphrase');`, /permission denied|only an admin/);
+  step('People: the floor cannot add anybody, set a PIN, or reset a password — not even their own');
+
+  // Your own password, and you have to prove you know the current one. Without that, anybody who
+  // walks past an unlocked tablet owns the account from then on.
+  refused('changing your password without knowing the current one', 'varmak_admin', admin,
+    `SELECT change_my_password('not my password', 'a completely new passphrase');`,
+    /not your current password/);
+  ok('changing it with the current one', 'varmak_admin', admin,
+    `SELECT change_my_password('correct horse battery staple', 'a completely new passphrase');`);
+  assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('anna@varmak.se', 'a completely new passphrase', 'password')), '') <> '';`),
+    't', 'the new password should work');
+  assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('anna@varmak.se', 'correct horse battery staple', 'password')), 'none');`),
+    'none', 'the old password must stop working the moment it is changed');
+  step('People: you change your own password only by proving you know the current one');
+}
+
+// Two ways to lock every person out of the system, both easy to do by accident on a Friday
+// afternoon, and neither recoverable without a database console.
+function nobodyCanLockTheWorkshopOut() {
+  sql(`SET client_min_messages = warning; TRUNCATE app_session, app_user RESTART IDENTITY CASCADE;
+       SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+  const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
+  const welder = value(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
+    SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
+
+  refused('the only admin switching themselves off', 'varmak_admin', admin,
+    `SELECT set_person_active(${admin}, false);`, /cannot switch yourself off/);
+  refused('the only admin making themselves a welder', 'varmak_admin', admin,
+    `SELECT set_person_role(${admin}, 'workshop');`, /take away your own admin/);
+  assert.equal(value(`SELECT role::text FROM app_user WHERE id = ${admin};`), 'admin');
+  step('People: the last admin cannot switch themselves off or take away their own admin');
+
+  // With a second admin the same moves go through — the rule is about yourself, not about admins.
+  const second = value(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
+    SELECT add_person('lars@varmak.se', 'Lars Holm', 'admin');`);
+  ok('a second admin switching the first off', 'varmak_admin', second,
+    `SELECT set_person_active(${admin}, false);`);
+  assert.equal(value(`SELECT is_active::text FROM app_user WHERE id = ${admin};`), 'false');
+
+  // The invariant, asserted directly rather than through a message. This is what the two refusals
+  // above are for, and testing it this way is what showed that a third check written beside them —
+  // "that is the last admin" — could never fire: only an admin gets there, an admin is active, and
+  // if they are not the person being changed then another active admin exists by definition.
+  refused('the remaining admin switching themselves off', 'varmak_admin', second,
+    `SELECT set_person_active(${second}, false);`, /cannot switch yourself off/);
+  refused('the remaining admin demoting themselves', 'varmak_admin', second,
+    `SELECT set_person_role(${second}, 'office');`, /take away your own admin/);
+  assert.equal(value(`SELECT count(*) FROM app_user WHERE role = 'admin' AND is_active;`), '1',
+    'no sequence of allowed moves may leave the system with nobody who can administer it');
+  step('People: there is no sequence of moves that leaves the workshop with no admin at all');
+
+  // Switching somebody off takes away the tablet they are already holding, not just the next one
+  // they try to start.
+  sql(`SET ROLE varmak_admin; SET app.user_id = '${second}'; SELECT set_person_pin(${welder}, '8472');`);
+  const token = value(`SELECT token FROM sign_in('marko@varmak.se', '8472', 'pin');`);
+  assert.equal(value(`SELECT coalesce(session_owner('${token}')::text, 'nobody');`), welder);
+  ok('switching the welder off', 'varmak_admin', second, `SELECT set_person_active(${welder}, false);`);
+  assert.equal(value(`SELECT coalesce(session_owner('${token}')::text, 'nobody');`), 'nobody',
+    'the tablet they were already holding must stop working, not just the next sign-in');
+  step('People: switching somebody off ends the session they are holding, not only the next one');
+}
+
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
@@ -563,6 +688,8 @@ async function main() {
   theGatesStillHoldOnReplay(f, w);
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
+  theFirstAdminAndEveryoneAfter();
+  nobodyCanLockTheWorkshopOut();
 
   console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed.`);
 }

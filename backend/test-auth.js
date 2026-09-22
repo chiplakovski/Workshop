@@ -696,6 +696,31 @@ function aGateCanStillReadWhatItNeeds() {
   step('Gates: the work starts, and the price of the machine was never readable to do it');
 }
 
+// Never NULL, and the reason is sharper than tidiness: `IF NOT is_admin() THEN RAISE` in plpgsql
+// does nothing when the condition is NULL, so every guard written that way was skipped for exactly
+// the case it exists to refuse — no session at all. Row policies were never affected, because RLS
+// treats NULL as not-true, which is why it survived until a workflow with a plpgsql guard was
+// written and a test called it with nobody signed in.
+function theAnswersAreNeverNeither() {
+  for (const [role, userId, label] of [
+    [null, null, 'no session at all'],
+    ['varmak_workshop', null, 'a role with no identity'],
+    ['varmak_workshop', PEOPLE.welder, 'a welder'],
+    ['varmak_office', PEOPLE.office, 'the office'],
+    ['varmak_admin', PEOPLE.admin, 'an admin']
+  ]) {
+    const answers = as(role, userId,
+      `SELECT is_admin()::text || ' ' || may_see_money()::text || ' ' || is_signed_in()::text;`);
+    assert.equal(answers.ok, true, `${label}: asking who you are should never fail — ${answers.message}`);
+    assert.ok(/^(true|false) (true|false) (true|false)$/.test(answers.out),
+      `${label}: one of these answered neither true nor false — "${answers.out}"`);
+  }
+  // Specifically: no session must answer a flat no, not a NULL that a plpgsql guard reads as yes.
+  const nobody = as('varmak_workshop', null, `SELECT is_admin()::text;`);
+  assert.equal(nobody.out, 'false', 'with no session is_admin() must be false, never NULL');
+  step('Identity: is_admin, may_see_money and is_signed_in always answer true or false — never neither');
+}
+
 function theGoodsInBookIsNotRubbedOut() {
   const item = value(`SELECT id FROM stock_item LIMIT 1;`);
   sql(`INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, note)
@@ -765,6 +790,7 @@ function main() {
   theSessionCannotLieAboutWho();
   peopleAreMadeByAnAdmin();
   whoIsLoggedInIsNotEverybodysBusiness();
+  theAnswersAreNeverNeither();
   aGateCanStillReadWhatItNeeds();
   theGoodsInBookIsNotRubbedOut();
   historyRecordsWhoSignedIn();

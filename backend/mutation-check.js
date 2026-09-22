@@ -417,6 +417,68 @@ const MUTATIONS = [
                   disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),`,
     to: '  disposition   text,'
   },
+  {
+    // The one that made every plpgsql authorisation guard a no-op for an unauthenticated session.
+    what: 'is_admin answers NULL again when nobody is signed in',
+    file: 'auth',
+    from: "LANGUAGE sql STABLE AS $$ SELECT coalesce(current_app_role() = 'admin', false); $$;",
+    to: "LANGUAGE sql STABLE AS $$ SELECT current_app_role() = 'admin'; $$;"
+  },
+  {
+    what: 'may_see_money answers NULL again when nobody is signed in',
+    file: 'auth',
+    from: "LANGUAGE sql STABLE AS $$ SELECT coalesce(current_app_role() IN ('admin', 'office'), false); $$;",
+    to: "LANGUAGE sql STABLE AS $$ SELECT current_app_role() IN ('admin', 'office'); $$;"
+  },
+  {
+    what: 'the bootstrap works more than once',
+    file: 'api',
+    from: '  IF EXISTS (SELECT 1 FROM app_user) THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a new person arrives with a password somebody else chose',
+    file: 'api',
+    from: `  INSERT INTO app_user (email, display_name, role)
+  VALUES (lower(btrim(p_email)), btrim(p_display_name), p_role)
+  RETURNING id INTO made;`,
+    to: `  INSERT INTO app_user (email, display_name, role)
+  VALUES (lower(btrim(p_email)), btrim(p_display_name), p_role)
+  RETURNING id INTO made;
+  PERFORM set_password(made, 'welcome to varmak');`
+  },
+  {
+    what: 'anybody may add a person',
+    file: 'api',
+    from: `  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'only an admin adds people' USING ERRCODE = 'insufficient_privilege';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'your own password can be changed without knowing the current one',
+    file: 'api',
+    from: '  IF stored IS NULL OR crypt(p_current, stored) <> stored THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'the last admin can switch themselves off',
+    file: 'api',
+    from: '  IF NOT p_active AND p_user_id = current_app_user() THEN',
+    to: '  IF false THEN'
+  },
+  {
+    what: 'the last admin can take away their own admin',
+    file: 'api',
+    from: "  IF p_user_id = current_app_user() AND p_role <> 'admin' THEN",
+    to: '  IF false THEN'
+  },
+  {
+    what: 'switching somebody off leaves the tablet they are holding signed in',
+    file: 'api',
+    from: '    UPDATE app_session SET ended_at = now() WHERE user_id = p_user_id AND ended_at IS NULL;',
+    to: ''
+  },
   // ── views.sql ─────────────────────────────────────────────────────────────────────────────
   {
     // The one that matters: the split between the priceless snapshot and the granted money call is
