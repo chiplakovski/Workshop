@@ -309,6 +309,21 @@ cannot touch anything else.
    decides nothing), a real sign-in on `login.html` with both doors, and the server now serving the
    pages as well, so there is one origin and no CORS anywhere.
 
+   **The screen itself is wired.** `workshop-data.js` gained a server-backed mode: a page that has
+   signed in calls `adoptSnapshot()` and from that moment the module is a **reader** — and `save()`
+   refuses rather than quietly writing to browser storage. That refusal is the important half. A page
+   in backed mode that still called a mutator would put the record somewhere the server never sees and
+   the next reload wipes, which is the worst outcome available because it looks like it worked.
+
+   It is opt-in per page, and only the phone hours screen opts in. Nothing changes for the other
+   fifteen, which still run on browser storage exactly as before.
+
+   The collections a snapshot does not cover are left **empty**, never filled with demo data: a screen
+   showing three real jobs beside eleven invented ones is worse than one showing three real jobs and
+   nothing else, because nobody can tell which is which. For the same reason the screen refuses to
+   save when the entry carries equipment or material — those workflows do not exist yet, and booking
+   the hours while dropping the rest would be a save that looks complete.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared

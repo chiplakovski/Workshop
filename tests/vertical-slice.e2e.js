@@ -239,6 +239,64 @@ async function main() {
       'the tablet flushing its queue twice booked the hours twice');
     step('Hours: the tablet can flush its queue blindly — the same event id books once');
 
+    // ── The screen itself, pressed ───────────────────────────────────────────────────────────
+    //
+    // Everything above went through WorkshopApi from the console, which proves the path but not the
+    // page. This is the page: a welder presses a job, presses four hours, presses save — and the
+    // entry has to be in Postgres with nothing else touched.
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(), { timeout: 8000 });
+    step('Screen: on reload the page reads the workshop from the server rather than from this browser');
+
+    // The name on screen is the session's, not one kept in the browser. The server records the
+    // session's name whatever the page sends, so showing anything else would be showing a lie.
+    assert.equal((await page.locator('#whoName').innerText()).trim(), 'Marko Ilic');
+    step("Screen: the name on the screen is whoever the PIN belonged to");
+
+    const before = Number(value(`SELECT count(*) FROM hours_entry;`));
+    await page.locator('.jobpick').first().click();
+    const picked = await page.evaluate(() => ({
+      project: document.getElementById('project').value,
+      item: document.getElementById('item').value
+    }));
+    assert.ok(picked.project, 'pressing a job should fill the project in from the server data');
+    await page.locator('.qh[data-h="4"]').click();
+    assert.equal(await page.locator('#hours').inputValue(), '4');
+    await page.locator('#saveEntry').click();
+    // The save is a round trip now, so the confirmation is waited for rather than assumed. Dismissed
+    // if it appears, because the screen's own alert is not what this check is about.
+    await page.waitForSelector('.waskbtns button, .waskyes', { timeout: 8000 }).catch(() => {});
+    await page.evaluate(() => {
+      const ok = document.querySelector('.waskbtns button, .waskyes');
+      if (ok) ok.click();
+    });
+    // The database is asked, not the screen. Polled, because the save is now a round trip and the
+    // click returns before it lands.
+    let landed = null;
+    for (let attempt = 0; attempt < 20 && !landed; attempt += 1) {
+      const rows = Number(value(`SELECT count(*) FROM hours_entry;`));
+      if (rows > before) landed = sql(`SELECT worker || '|' || hours FROM hours_entry ORDER BY id DESC LIMIT 1;`);
+      else await new Promise((r) => setTimeout(r, 150));
+    }
+    assert.equal(landed, 'Marko Ilic|4.00',
+      'four hours pressed on the screen should be in Postgres under the session\'s name');
+    step('Screen: a welder presses a job, presses four hours, presses save — and it is in Postgres');
+
+    // And the screen shows it back, which is the only thing that makes a timesheet trustworthy to
+    // the person filling it in.
+    const today = await page.locator('#todayList').innerText();
+    assert.ok(/4 h|4h/.test(today), `the day should read back the entry just saved: ${today}`);
+    step('Screen: and the day reads it back, from the server, to the person who booked it');
+
+    // Nothing was written to browser storage. The whole point of the backed mode: one place for the
+    // record, and it is not this laptop.
+    const stored = await page.evaluate(() => {
+      try { return window.localStorage.getItem('varmak.workshop.frontend.v5'); } catch (e) { return null; }
+    });
+    assert.ok(!stored || !stored.includes('Marko Ilic'),
+      'the entry was also written into browser storage, which is a second copy nobody reconciles');
+    step('Screen: and nothing went into browser storage — the record is in one place');
+
     // ── What the welder cannot do ───────────────────────────────────────────────────────────
     const quoting = await page.evaluate(() => window.WorkshopApi.call('send_estimate', { estimate_id: 1 }));
     assert.equal(quoting.ok, false);

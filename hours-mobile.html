@@ -291,19 +291,19 @@
       err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
       eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
       eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
-      eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad."},
+      eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad.",server_partial:"Utrustning och material sparas ännu inte till servern. Ta bort de raderna och spara timmarna, eller notera dem på jobbkortet."},
     en:{todayjobs:"Jobs running now",nojobsnow:"No jobcard is open right now",yesterday:"Yesterday",todaylog:"Logged today",todaytotal:"Total today",nothinglogged:"Nothing logged for this day yet",noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",explain:"More detail",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
       wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
       err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
       eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
       eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
-      eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved."},
+      eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved.",server_partial:"Equipment and material are not saved to the server yet. Remove those rows and save the hours, or record them on the jobcard."},
     mk:{todayjobs:"Работи што течат сега",nojobsnow:"Ниедна работна картичка не е отворена сега",yesterday:"Вчера",todaylog:"Запишано денес",todaytotal:"Вкупно денес",nothinglogged:"Сè уште ништо не е запишано за овој ден",noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",explain:"Dodatno",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
       wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
       err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
       eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
       eq_missing:"Ovaa oprema nedostasuva ili ne e povrzana so ovoj karton — povrzi ja vo Mašini i oprema prvo.",
-      eq_blocked:"Blokirano od bezbednosnite pravila za oprema: {reasons}",savedok:"Zapisot e začuvan."}
+      eq_blocked:"Blokirano od bezbednosnite pravila za oprema: {reasons}",savedok:"Zapisot e začuvan.",server_partial:"Opremata i materijalot sè ušte ne se začuvuvaat na serverot. Otstrani gi tie redovi i začuvaj gi časovite, ili zapiši gi na rabotniot karton."}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -591,7 +591,7 @@
     jc.materials=mats;
     return use.length;
   }
-  function saveHours(reset){
+  async function saveHours(reset){
     const entry=collectHours();const hours=Number(entry.hours);
     if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){wAlert(T[current].err_select);return false;}
     const jc=(WorkshopData.listJobcards()||[]).find(j=>j.no===entry.jobcard);
@@ -628,6 +628,42 @@
       toLog.push({equipmentId:row.equipmentId,name:resolved.machine.name,hours:Number(row.hours)||hours});
     }
 
+    // ── Signed in: the entry goes to the database, not to this browser ───────────────────
+    //
+    // Only the hours are wired to the server so far. Equipment usage and material consumed are
+    // workflows that do not exist yet, and booking the hours while quietly dropping the rest is the
+    // one failure this project refuses — a screen that looks like it worked. So the save is held
+    // back and says what is missing, rather than half-succeeding.
+    if(WorkshopData.isServerBacked()){
+      const t=T[current];
+      if(toLog.length||(entry.materials||[]).length){wAlert(t.server_partial);return false;}
+      // An id generated here, so that a retry of THIS press is the same entry rather than a second
+      // one. What is still missing is keeping it across a failure — the offline queue, which is the
+      // next piece of work and is why the server takes the id at all.
+      const eventId=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID()
+        :('press-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+      const answer=await WorkshopApi.call('book_hours',{
+        jobcard_id:Number(jc.id),
+        operation_id:entry.operationId!=null?Number(entry.operationId):null,
+        hours:hours,
+        worked_on:entry.date,
+        note:entry.notes||null,
+        event_id:eventId
+      });
+      if(!answer.ok){
+        // The database's own wording. "operation Weld out cannot start: MIG 400 is out-of-service"
+        // is what the person needs to read, not a code.
+        wAlert(answer.refused);
+        return false;
+      }
+      const again=await WorkshopApi.snapshot();
+      if(again.data)WorkshopData.adoptSnapshot(again.data);
+      wAlert(t.savedok);
+      if(reset){setHours(0);document.getElementById('notes').value='';}
+      renderJobPicks();renderToday();
+      return true;
+    }
+
     for(const eqEntry of toLog){
       const usageRes=WorkshopData.logEquipmentUsage(eqEntry.equipmentId,{hours:eqEntry.hours,date:entry.date,worker:entry.worker,project:jc.projectNo,jobcard:jc.no,notes:entry.notes});
       if(usageRes&&usageRes.error){wAlert(equipBlockMessage(usageRes));return false;}
@@ -658,6 +694,30 @@
     return true;
   }
   document.getElementById('saveEntry').addEventListener('click',()=>saveHours(false));document.getElementById('saveNewEntry').addEventListener('click',()=>saveHours(true));
+
+  // ── Signed in? Then read the workshop from the server rather than from this browser ─────
+  //
+  // Nothing is assumed: the page asks, and if there is no session it stays exactly as it was, on
+  // browser storage, which is how the other fifteen pages still run.
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return;}
+    if(answer.failed){wAlert(answer.failed);return;}
+    WorkshopData.adoptSnapshot(answer.data);
+    // The name on screen is whoever the session belongs to — not a name kept in this browser. The
+    // server ignores any name sent with an entry and records the session's, so showing anything else
+    // here would be showing something untrue.
+    if(answer.data.takenBy){
+      const label=document.getElementById('whoName');
+      if(label)label.textContent=answer.data.takenBy;
+      const initials=document.querySelector('.who .av');
+      if(initials)initials.textContent=answer.data.takenBy.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    const out=document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(){await WorkshopApi.signOut();location.href='login.html';});
+    populateProjects();loadItems();renderJobPicks();renderToday();
+  })();
   document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}

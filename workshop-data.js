@@ -828,7 +828,42 @@
       try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason:'Updated in another tab',state:clone(state)}}));}catch(err){}
     });
   }
-  function save(reason){if(reason)state.activity.unshift({time:now(),reason});try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason,state:clone(state)}}))}catch(e){}return state}
+  // ── Reading from the server instead of from this browser ─────────────────────────────────
+  //
+  // A page that has signed in adopts a snapshot from the backend, and from that moment this module
+  // is a reader: the collections are whatever the server said, and writes do not belong here at all.
+  // They go through WorkshopApi, because a write has to be checked by the database and a synchronous
+  // function cannot wait for an answer from another machine.
+  //
+  // Opt-in per page, and only the wired pages opt in. Nothing changes for the fifteen pages still
+  // running on browser storage — which is all of them but the phone hours screen today.
+  let servedFrom=null;
+  // Which collections the snapshot actually covers. The rest are left EMPTY rather than filled with
+  // demo data: a screen showing three real jobs beside eleven invented ones is worse than a screen
+  // showing three real jobs and nothing else, because nobody can tell which is which.
+  const SERVED_COLLECTIONS=['customers','projects','jobcards','equipment','hours','inventory'];
+  function adoptSnapshot(data){
+    if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
+    const fresh=emptyState();
+    SERVED_COLLECTIONS.forEach(name=>{if(Array.isArray(data[name]))fresh[name]=data[name];});
+    state=fresh;
+    servedFrom=data.takenAt||new Date().toISOString();
+    try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason:'snapshot',state:clone(state)}}))}catch(e){}
+    return state;
+  }
+  function isServerBacked(){return servedFrom!==null}
+  function servedAt(){return servedFrom}
+  function servedCollections(){return SERVED_COLLECTIONS.slice()}
+
+  function save(reason){
+    // Refused rather than quietly written to browser storage. A page in server-backed mode that
+    // still called a mutator here would put the record in a place the server never sees and the next
+    // reload wipes — the worst possible outcome, because it looks like it worked.
+    if(servedFrom!==null){
+      throw new Error('this page is reading from the server: writes go through WorkshopApi, not browser storage'
+        +(reason?` (tried to save: ${reason})`:''));
+    }
+    if(reason)state.activity.unshift({time:now(),reason});try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason,state:clone(state)}}))}catch(e){}return state}
   function quantity(value){const parsed=Number(value);return Number.isFinite(parsed)&&parsed>0?parsed:null}
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}
   function inventory(code){return state.inventory.find(x=>x.code===code)}
@@ -1318,6 +1353,10 @@
     };
   }
   const api={
+    // Reading from the server. adoptSnapshot replaces everything with what the backend sent; after
+    // that this module is a reader and every mutator here refuses, because a write has to be checked
+    // by the database and these functions cannot wait for an answer from another machine.
+    adoptSnapshot,isServerBacked,servedAt,servedCollections,
     key:KEY,
     get:()=>clone(state),
     // Back to an empty system - the state a workshop opens on its first day.
