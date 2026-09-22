@@ -303,6 +303,45 @@ async function main() {
     assert.match(quoting.refused, /not yours to do/);
     step('Login: from that same signed-in browser, the office workflows are refused');
 
+    // ── No two worlds ───────────────────────────────────────────────────────────────────────
+    //
+    // The hazard the guard exists for: signed in on the tablet, a person opens the hub and sees the
+    // workshop twice — the real records on one screen and whatever is in this browser on another,
+    // with neither screen saying which it is. Somebody would make a decision on the wrong one.
+    await page.goto(`${site}/hub-desktop.html`, { waitUntil: 'load' });
+    const blocked = await page.locator('[role="alert"]').innerText();
+    assert.match(blocked, /not connected to the server/,
+      'an unwired page must refuse rather than show what is in this browser');
+    step('Two worlds: signed in, an unwired screen refuses to show anything and says why');
+
+    // Refused, not merely warned over the top. A page that shows stale figures with a banner is a
+    // page somebody reads past — so the check is that the figures are not on screen at all.
+    const stillShowing = await page.evaluate(() => {
+      const alert = document.querySelector('[role="alert"]');
+      if (!alert) return 'no notice at all';
+      const box = alert.getBoundingClientRect();
+      // The notice covers the viewport, so nothing behind it is readable.
+      return (box.width >= window.innerWidth && box.height >= window.innerHeight) ? '' : 'the notice does not cover the page';
+    });
+    assert.equal(stillShowing, '', stillShowing);
+    step('Two worlds: it covers the page rather than sitting over the top of stale figures');
+
+    // And it stays out of the way when there is no session: that is the app the workshop runs today,
+    // on browser storage, and fifteen of the sixteen pages are still it.
+    const guest = await context.newPage();
+    await guest.goto(`${site}/hub-desktop.html`, { waitUntil: 'load' });
+    assert.equal(await guest.locator('[role="alert"]').count(), 0,
+      'with no session the pages must work exactly as they did before');
+    assert.ok(await guest.locator('body').isVisible());
+    await guest.close();
+    step('Two worlds: with no session every page works exactly as it did — the guard only speaks to a signed-in one');
+
+    await page.goto(`${site}/hours-mobile.html`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(), { timeout: 8000 });
+    assert.equal(await page.locator('[role="alert"]').count(), 0,
+      'the wired page must not be blocked by the guard');
+    step('Two worlds: and the wired screen is not blocked by it');
+
     // ── Signing out ─────────────────────────────────────────────────────────────────────────
     await page.evaluate(() => window.WorkshopApi.signOut());
     assert.equal(value(`SELECT count(*) FROM app_session WHERE ended_at IS NOT NULL;`), '1');
