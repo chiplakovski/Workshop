@@ -293,6 +293,22 @@ cannot touch anything else.
    will show figures the server rejected. That does change the pages, and the plan's claim that it
    would not was wrong.
 
+   **The first slice is wired and works.** Rather than widen to ~95% and only then find out whether
+   the wiring model holds, one screen was taken end to end first — the phone hours screen, because it
+   is the one the workshop touches every day and because it exercises the whole stack at once.
+   [`tests/vertical-slice.e2e.js`](tests/vertical-slice.e2e.js) runs a real browser against the real
+   server against a real Postgres: a welder types a PIN on the shop tablet, picks a job, books six and
+   a half hours, and the test then walks round the back and asks the database whether the hours are
+   there. They are, under the name the PIN belonged to.
+
+   It also holds the §1b promise on the real path: **not one figure in kronor reaches the welder's
+   browser**, and asking the API directly for the prices is refused. That is the first evidence in
+   this project that any of the four layers work together, as opposed to each working alone.
+
+   What came with it: `workshop-api.js` (the browser's side — carries requests, holds the token,
+   decides nothing), a real sign-in on `login.html` with both doors, and the server now serving the
+   pages as well, so there is one origin and no CORS anywhere.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared

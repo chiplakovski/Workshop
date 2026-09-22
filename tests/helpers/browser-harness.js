@@ -113,20 +113,31 @@ async function startBrowserHarness() {
   }
 }
 
+// Every page now asks once, on load, whether there is a backend to talk to — and in these suites
+// there is not, because they serve the pages from a static server on purpose: this is the app in
+// browser-storage mode, which is how it is built and how the workshop runs it today. The probe coming
+// back 404 is the designed answer, not a fault, and the page handles it by staying local.
+//
+// Narrow on purpose. Only /api/ is forgiven, and only its 404: a missing script or a page reaching
+// for something that is not there is still a failure here, which is what this monitor is for.
+const PROBING_FOR_A_BACKEND = /\/api\//;
+
 function monitorPage(page, baseUrl) {
   const browserErrors = [];
   const badResponses = [];
   page.on('pageerror', (error) => browserErrors.push(`pageerror: ${error.message}`));
   page.on('console', (message) => {
-    if (message.type() === 'error') {
-      const source = message.location().url;
-      browserErrors.push(`console${source ? ` (${source})` : ''}: ${message.text()}`);
-    }
+    if (message.type() !== 'error') return;
+    // The browser logs a console error for any non-2xx fetch, including the backend probe above.
+    // The response handler below is what judges our own responses, so this one can ignore the pair.
+    if (/Failed to load resource/.test(message.text())) return;
+    const source = message.location().url;
+    browserErrors.push(`console${source ? ` (${source})` : ''}: ${message.text()}`);
   });
   page.on('response', (response) => {
-    if (response.url().startsWith(baseUrl) && response.status() >= 400) {
-      badResponses.push(`${response.status()} ${response.url()}`);
-    }
+    if (!response.url().startsWith(baseUrl) || response.status() < 400) return;
+    if (response.status() === 404 && PROBING_FOR_A_BACKEND.test(response.url())) return;
+    badResponses.push(`${response.status()} ${response.url()}`);
   });
   return {
     assertClean() {

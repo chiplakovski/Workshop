@@ -186,7 +186,17 @@ async function checkPage(context, baseUrl, file, failures) {
   const thrown = [];
   page.on('pageerror', (error) => thrown.push(error.message));
   page.on('console', (message) => {
-    if (message.type() === 'error' && !/ERR_CERT|favicon|net::/.test(message.text())) thrown.push(message.text());
+    if (message.type() !== 'error') return;
+    if (/ERR_CERT|favicon|net::/.test(message.text())) return;
+    // Every page asks once, on load, whether there is a backend. These suites serve the pages from a
+    // static server on purpose — this is the app in browser-storage mode — so the probe comes back
+    // 404 and the page handles it by staying local. That is the designed answer, not a throw.
+    //
+    // Forgiven only for /api/, and only for a failed fetch: a page reaching for a script that is not
+    // there still fails here, which is most of what this check is for.
+    const from = (message.location() && message.location().url) || '';
+    if (/Failed to load resource/.test(message.text()) && /\/api\//.test(from)) return;
+    thrown.push(message.text());
   });
   try {
     // Demo data first: this is the page as a person with a running workshop sees it.

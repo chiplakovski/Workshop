@@ -13,6 +13,7 @@
 // twice here, and one of them is asked twice at the same moment from two sessions.
 
 const assert = require('node:assert/strict');
+const { ensureUp } = require('./pg');
 const { execFileSync, execFile } = require('node:child_process');
 const path = require('node:path');
 
@@ -532,6 +533,7 @@ function eachRoleReachesItsOwnWork(f, w) {
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
+  ensureUp();
   try {
     execFileSync('psql', ['-h', HOST, '-p', PORT, '-U', USER, '-d', 'postgres', '-qtAX',
       '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],

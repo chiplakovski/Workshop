@@ -15,6 +15,7 @@
 // Built fresh from schema.sql + auth.sql on every run.
 
 const assert = require('node:assert/strict');
+const { ensureUp } = require('./pg');
 const { execFileSync, execFile } = require('node:child_process');
 const path = require('node:path');
 
@@ -729,6 +730,7 @@ function historyRecordsWhoSignedIn() {
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
+  ensureUp();
   try {
     execFileSync('psql', ['-h', HOST, '-p', PORT, '-U', USER, '-d', 'postgres', '-qtAX',
       '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],

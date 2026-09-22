@@ -121,6 +121,23 @@
     transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;}
   .signin:hover{transform:translateY(-2px);border-color:rgba(var(--spark-rgb),0.7);box-shadow:0 16px 50px rgba(var(--spark-rgb),0.4),inset 0 1px 0 var(--lift-18);}
   .signin .gwrap{width:26px;height:26px;border-radius:0;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
+  /* An element with an explicit `display` beats the browser's own [hidden] rule, so `hidden = true`
+     on .signin or .signin-form did nothing at all — the local-demo button stayed on screen beside
+     the real sign-in. Caught by the end-to-end test asserting it was gone. */
+  [hidden]{display:none !important;}
+  .signin-form{display:flex;flex-direction:column;gap:8px;max-width:340px;margin:0 auto;text-align:left;}
+  .doors{display:flex;gap:0;margin-bottom:10px;}
+  .door{flex:1;padding:11px 12px;font:inherit;font-size:12px;letter-spacing:0.05em;text-transform:uppercase;
+    background:var(--lift-06);color:var(--steel-400);border:1px solid var(--line);cursor:pointer;}
+  .door+.door{border-left:none;}
+  .door.on{background:var(--lift-12);color:var(--ink);border-color:rgba(var(--spark-rgb),0.55);}
+  .fl{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--steel-400);margin-top:6px;}
+  .fi{padding:12px 14px;font:inherit;font-size:15px;background:var(--lift-06);color:var(--ink);
+    border:1px solid var(--line);border-radius:0;}
+  .fi:focus{outline:none;border-color:rgba(var(--spark-rgb),0.7);background:var(--lift-12);}
+  .signerr{font-size:12.5px;line-height:1.45;color:#ffb4a8;background:rgba(220,70,50,0.12);
+    border:1px solid rgba(220,70,50,0.35);padding:10px 12px;margin-top:8px;}
+  .signin-form .signin{margin-top:14px;justify-content:center;}
   .hint{margin-top:22px;font-size:12px;color:var(--steel-400);letter-spacing:0.03em;display:flex;align-items:center;gap:8px;}
   .hint svg{opacity:0.7;}
 
@@ -183,14 +200,44 @@
     <h1 class="headline" data-i="headline">Precision starts<br>in the <em>workshop</em>.</h1>
     <p class="sub" data-i="sub">Local tools for jobs, service reports and inventory in one browser workspace.</p>
 
-    <button class="signin" onclick="location.href='hub-desktop.html'">
+    <!-- Two doors, because they guard different things. The office and a personal phone use email
+         and a password; the shared tablet in the hall uses a personal PIN, because a welder in
+         gloves will not type a password forty times a day and if you make them they share one
+         login and the hours data becomes worthless.
+
+         Both are hidden until the page has established there is a server to check them against. A
+         password box with nothing behind it is worse than none, because it looks like security. -->
+    <form class="signin-form" id="signInForm" hidden autocomplete="on">
+      <div class="doors" role="tablist">
+        <button type="button" class="door on" id="doorPassword" role="tab" aria-selected="true"
+                data-i="door_password">Office &amp; phone</button>
+        <button type="button" class="door" id="doorPin" role="tab" aria-selected="false"
+                data-i="door_pin">Shop tablet</button>
+      </div>
+
+      <label class="fl" for="signInEmail" data-i="lbl_email">Email</label>
+      <input class="fi" id="signInEmail" type="email" autocomplete="username"
+             inputmode="email" autocapitalize="off" spellcheck="false">
+
+      <label class="fl" for="signInSecret"><span id="secretLabel" data-i="lbl_password">Password</span></label>
+      <input class="fi" id="signInSecret" type="password" autocomplete="current-password">
+
+      <div class="signerr" id="signInError" role="alert" hidden></div>
+
+      <button class="signin" id="signInGo" type="submit">
+        <span class="gwrap"><span aria-hidden="true">◇</span></span>
+        <span data-i="btn_signin">Sign in</span>
+      </button>
+    </form>
+
+    <button class="signin" id="demoButton" onclick="location.href='hub-desktop.html'">
       <span class="gwrap">
         <span aria-hidden="true">◇</span>
       </span>
       <span data-i="btn">Open local demo</span>
     </button>
 
-    <div class="hint">
+    <div class="hint" id="demoHint">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <span data-i="hint">Local browser demo — authentication is not enabled</span>
     </div>
@@ -217,9 +264,16 @@
     <span class="cur" id="themeCur">Navy</span>
   </button>
 </div>
-<script src="workshop-ui.js"></script><script>
+<script src="workshop-ui.js"></script><script src="workshop-api.js"></script><script>
   const T = {
     sv:{
+      door_password:"Kontor &amp; telefon",
+      door_pin:"Verkstadstablett",
+      lbl_email:"E-post",
+      lbl_password:"Lösenord",
+      lbl_pin:"PIN",
+      btn_signin:"Logga in",
+      no_server:"Ingen anslutning till servern — endast lokalt läge",
       eyebrow:"Verkstadssystem",
       headline:'Precision börjar<br>i <em>verkstaden</em>.',
       sub:"Lokala verktyg för jobb, servicerapporter och lager i en webbläsare.",
@@ -228,6 +282,13 @@
       locale:"sv-SE"
     },
     en:{
+      door_password:"Office &amp; phone",
+      door_pin:"Shop tablet",
+      lbl_email:"Email",
+      lbl_password:"Password",
+      lbl_pin:"PIN",
+      btn_signin:"Sign in",
+      no_server:"No connection to the server — local mode only",
       eyebrow:"Workshop System",
       headline:'Precision starts<br>in the <em>workshop</em>.',
       sub:"Local tools for jobs, service reports and inventory in one browser workspace.",
@@ -236,6 +297,13 @@
       locale:"en-GB"
     },
     mk:{
+      door_password:"Канцеларија и телефон",
+      door_pin:"Таблет во хала",
+      lbl_email:"Е-пошта",
+      lbl_password:"Лозинка",
+      lbl_pin:"ПИН",
+      btn_signin:"Најави се",
+      no_server:"Нема врска со серверот — само локален режим",
       eyebrow:"Sistem za rabotilnica",
       headline:'Preciznosta počnuva<br>vo <em>rabotilnicata</em>.',
       sub:"Lokalni alatki za rabotni nalozi, servisni izveštai i inventar vo eden prelistuvač.",
@@ -316,6 +384,84 @@
     applyTheme(getTheme());
     var toggle=document.getElementById('themeToggle');
     if(toggle)toggle.addEventListener('click',function(){setTheme(THEMES[(indexOf(getTheme())+1)%THEMES.length].id);});
+  })();
+
+  // ── The two doors ────────────────────────────────────────────────────────────────────────
+  //
+  // The page opens not knowing whether there is a server. It asks, once, and shows whichever of the
+  // two things is true: a real sign-in, or the local demo it has always been. It never shows a
+  // password box it cannot check — that looks like security and is not.
+  (function(){
+    var form=document.getElementById('signInForm');
+    var demo=document.getElementById('demoButton');
+    var demoHint=document.getElementById('demoHint');
+    var email=document.getElementById('signInEmail');
+    var secret=document.getElementById('signInSecret');
+    var secretLabel=document.getElementById('secretLabel');
+    var err=document.getElementById('signInError');
+    var go=document.getElementById('signInGo');
+    var doorPassword=document.getElementById('doorPassword');
+    var doorPin=document.getElementById('doorPin');
+    var door='password';
+
+    function say(message){
+      err.textContent=message||'';
+      err.hidden=!message;
+    }
+
+    // A PIN is digits on a phone keyboard, and the shop tablet is the one place where getting the
+    // keyboard wrong costs real time.
+    function useDoor(next){
+      door=next;
+      var pin=(door==='pin');
+      doorPassword.classList.toggle('on',!pin);
+      doorPin.classList.toggle('on',pin);
+      doorPassword.setAttribute('aria-selected',String(!pin));
+      doorPin.setAttribute('aria-selected',String(pin));
+      secret.type=pin?'tel':'password';
+      secret.setAttribute('inputmode',pin?'numeric':'text');
+      secret.setAttribute('autocomplete',pin?'off':'current-password');
+      secret.setAttribute('maxlength',pin?'8':'200');
+      secretLabel.setAttribute('data-i',pin?'lbl_pin':'lbl_password');
+      secretLabel.textContent=(T[current]||T.en)[pin?'lbl_pin':'lbl_password'];
+      say('');
+      secret.value='';
+    }
+    doorPassword.addEventListener('click',function(){useDoor('password');});
+    doorPin.addEventListener('click',function(){useDoor('pin');});
+
+    form.addEventListener('submit',async function(event){
+      event.preventDefault();
+      say('');
+      if(!email.value.trim()||!secret.value){return;}
+      go.disabled=true;
+      try{
+        var result=await WorkshopApi.signIn(email.value.trim(),secret.value,door,
+          door==='pin'?'shop tablet':navigator.userAgent.slice(0,80));
+        if(result.ok){location.href=(door==='pin')?'hours-mobile.html':'hub-desktop.html';return;}
+        // The refusal is the database's own wording, shown as it was written. It says the same thing
+        // for a wrong secret as for an address nobody has, on purpose.
+        say(result.refused);
+        secret.value='';
+        secret.focus();
+      }finally{
+        go.disabled=false;
+      }
+    });
+
+    WorkshopApi.available().then(function(up){
+      if(!up){
+        // No server. The page stays what it has always honestly been.
+        var note=demoHint.querySelector('[data-i="hint"]');
+        if(note){note.setAttribute('data-i','no_server');note.textContent=(T[current]||T.en).no_server;}
+        return;
+      }
+      form.hidden=false;
+      demo.hidden=true;
+      demoHint.hidden=true;
+      useDoor('password');
+      email.focus();
+    });
   })();
 </script>
 </body>

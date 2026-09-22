@@ -16,6 +16,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { ensureUp } = require('./pg');
 const { execFileSync } = require('node:child_process');
 
 const HOST = process.env.PGHOST || '/tmp';
@@ -23,7 +24,8 @@ const PORT = process.env.PGPORT || '5433';
 const USER = process.env.PGUSER || 'postgres';
 const DB = process.env.VARMAK_TEST_DB || 'varmak_server_test';
 const HTTP_PORT = Number(process.env.VARMAK_HTTP_PORT || 8899);
-const BASE = `http://127.0.0.1:${HTTP_PORT}`;
+const BASE = `http://127.0.0.1:${HTTP_PORT}/api`;
+const SITE = `http://127.0.0.1:${HTTP_PORT}`;
 
 function conn(db) {
   return ['-h', HOST, '-p', PORT, '-U', USER, '-d', db, '-v', 'ON_ERROR_STOP=1', '-qtAX'];
@@ -159,6 +161,49 @@ async function aTokenIsRequiredAndMustBeReal(tokens, f) {
     step('Token: switching somebody off cuts the session they are already holding');
   }
   sql(`UPDATE app_user SET is_active = true WHERE email = 'petra@varmak.se';`);
+}
+
+// ── The pages come from the same place as the endpoints ───────────────────────────────────
+
+// One origin, so there is no CORS to get wrong. The risk moves to what else the static server will
+// hand out, which is why the list is extensions AND no directories — either alone would serve
+// backend/server.js, and a containment check alone would serve node_modules and .git.
+async function theSiteIsServedAndNothingElseIs() {
+  const page = await fetch(`${SITE}/login.html`);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get('content-type'), /text\/html/);
+  assert.ok((await page.text()).includes('Varmak'), 'the login page should be the login page');
+  attempts.allowed += 1;
+
+  const root = await fetch(`${SITE}/`);
+  assert.equal(root.status, 200, 'the root should be the login page');
+  attempts.allowed += 1;
+
+  const script = await fetch(`${SITE}/workshop-data.js`);
+  assert.equal(script.status, 200);
+  assert.match(script.headers.get('content-type'), /javascript/);
+  attempts.allowed += 1;
+  step('Site: the pages and their scripts are served from the same origin as the endpoints');
+
+  // Everything that must not come back. Each of these is a .js or would resolve cleanly, so the
+  // extension list on its own would have handed over three of them.
+  for (const target of [
+    '/backend/server.js', '/backend/schema.sql', '/backend/auth.sql',
+    '/node_modules/pg/package.json', '/package.json', '/.git/config',
+    '/../etc/passwd', '/..%2f..%2fetc%2fpasswd', '/%2e%2e%2fbackend%2fauth.sql'
+  ]) {
+    const attempt = await fetch(`${SITE}${target}`);
+    attempts.refused += 1;
+    assert.equal(attempt.status, 404, `${target} came back with ${attempt.status}`);
+    const text = await attempt.text();
+    assert.ok(!/CREATE TABLE|GRANT SELECT|require\(/.test(text), `${target} leaked its contents`);
+  }
+  step('Site: the SQL, the server source, node_modules, .git and every way up out of the directory are all refused');
+
+  const written = await fetch(`${SITE}/login.html`, { method: 'POST' });
+  assert.equal(written.status, 405, 'a page is not something to post to');
+  attempts.refused += 1;
+  step('Site: a page can be read and nothing else');
 }
 
 // ── Reading the workshop back ─────────────────────────────────────────────────────────────
@@ -395,6 +440,7 @@ async function aRefusalFromTheDatabaseReachesThePerson(tokens, f) {
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
+  ensureUp();
   execFileSync('psql', ['-h', HOST, '-p', PORT, '-U', USER, '-d', 'postgres', '-qtAX',
     '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -453,6 +499,7 @@ async function main() {
 
   try {
     theServerDecidesNothing();
+    await theSiteIsServedAndNothingElseIs();
     const tokens = await theDoorOverHttp();
     await aTokenIsRequiredAndMustBeReal(tokens, f);
     await theSnapshotCarriesNoPriceForAWelder(tokens, f);

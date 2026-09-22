@@ -21,9 +21,39 @@
 // with no token gets a connection that has become nobody and can read nothing.
 
 const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
 const { Pool } = require('pg');
 
 const PORT = Number(process.env.PORT || 8787);
+
+// The pages are served from here too, and the endpoints live under /api. One origin, which means no
+// CORS anywhere — not as a shortcut, but because a second origin is a whole class of problem (a
+// preflight for every write, a header list to keep in step, a token that has to survive a redirect)
+// bought in exchange for nothing this workshop needs. The app is sixteen files in one directory.
+const SITE = path.resolve(__dirname, '..');
+const SERVABLE = new Set(['.html', '.js', '.css', '.svg', '.png', '.ico', '.woff2', '.webmanifest']);
+const TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
+  '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json'
+};
+
+// Only files sitting directly in the site directory, and only these extensions. Both halves matter:
+// the extension list keeps backend/*.sql out, and refusing anything with a directory in it keeps
+// backend/server.js, node_modules and .git out — all of which are .js or would resolve happily.
+// A containment check alone would have served every one of them.
+function servableFile(pathname) {
+  const name = pathname === '/' ? 'login.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
+  if (name.includes('/') || name.includes('\\') || name.startsWith('.')) return null;
+  if (!SERVABLE.has(path.extname(name))) return null;
+  const resolved = path.join(SITE, name);
+  try {
+    return fs.statSync(resolved).isFile() ? resolved : null;
+  } catch {
+    return null;
+  }
+}
 
 const pool = new Pool({
   host: process.env.PGHOST || '/tmp',
@@ -202,15 +232,32 @@ async function handleRpc(req, res, name, body) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
-    const key = `${req.method} ${url.pathname}`;
+
+    // Anything not under /api is a page or its script.
+    if (!url.pathname.startsWith('/api/')) {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { refused: 'not allowed' });
+      const file = servableFile(url.pathname);
+      if (!file) return send(res, 404, { refused: 'no such page' });
+      const body = fs.readFileSync(file);
+      res.writeHead(200, {
+        'content-type': TYPES[path.extname(file)] || 'application/octet-stream',
+        'content-length': body.length,
+        // The pages are edited constantly in a prototype; a cached stale one wastes an afternoon.
+        'cache-control': 'no-cache'
+      });
+      return res.end(req.method === 'HEAD' ? undefined : body);
+    }
+
+    const route = url.pathname.slice(4);
+    const key = `${req.method} ${route}`;
     const body = req.method === 'POST' ? await readBody(req) : {};
 
     if (routes[key]) return await routes[key](req, res, body);
-    if (req.method === 'POST' && url.pathname.startsWith('/rpc/')) {
-      return await handleRpc(req, res, url.pathname.slice(5), body);
+    if (req.method === 'POST' && route.startsWith('/rpc/')) {
+      return await handleRpc(req, res, route.slice(5), body);
     }
-    if (req.method === 'GET' && url.pathname.startsWith('/read/')) {
-      return await handleRead(req, res, url.pathname.slice(6));
+    if (req.method === 'GET' && route.startsWith('/read/')) {
+      return await handleRead(req, res, route.slice(6));
     }
     return send(res, 404, { refused: 'no such endpoint' });
   } catch (error) {
@@ -224,7 +271,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (require.main === module) {
-  server.listen(PORT, () => console.log(`Varmak API on ${PORT}, database ${pool.options.database}`));
+  server.listen(PORT, () => {
+    console.log(`Varmak Workshop on http://localhost:${PORT} — database ${pool.options.database}`);
+  });
 }
 
 module.exports = { server, pool, RPC, READS };
