@@ -9,19 +9,24 @@ Four things, each with a suite that attacks it:
 | `api.sql` | the workflows — several writes that must all succeed or all fail |
 | `views.sql` | reading it back, in the shape the pages already use |
 | `server.js` | the HTTP layer, which decides nothing at all |
+| `backup.sh` | the backup, in the two pieces it actually takes |
 
-`mutation-check.js` then checks that the tests would notice if any of the three SQL files stopped
-refusing: **93 of 93 mutations caught**, verified in one clean run.
+`mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
+**128 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
 and still stops the workshop working.
 
-This is steps 1 and 2 of the order in [`BACKEND.md`](../BACKEND.md): the schema with its
-constraints and safety rules, and numbering as sequences. 31 tables, 103 checks, 13 triggers, and
-all six rules named in §1a of that document. Steps 3 to 7 — auth, the API, pointing
-the frontend at it, backups — are not built yet. The frontend still runs entirely on browser
-storage and does not talk to any of this.
+Steps 1 to 4 and 6 of the order in [`BACKEND.md`](../BACKEND.md) are built: the schema with its
+constraints and safety rules, numbering as sequences, the two doors and three roles, the workflows,
+and backups verified by restoring one. 31 tables, 103 checks, 13 triggers, and all six rules named
+in §1a of that document.
+
+Step 5 — pointing the frontend at it — is one screen in. `hours-mobile.html` reads and writes the
+database; the other fifteen pages still run on browser storage, and `workshop-guard.js` says so on
+screen rather than showing a signed-in person figures that came from nowhere. Step 7, a deployment
+that outlives a container, is not built.
 
 ## Running it
 
@@ -33,11 +38,12 @@ PostgreSQL 16. Nothing else — no npm packages, no ORM, no migration tool yet. 
 initdb -D /var/lib/postgresql/varmak --auth=trust -U postgres
 pg_ctl -D /var/lib/postgresql/varmak -o "-k /tmp -p 5433 -c listen_addresses=" -l server.log start
 
-npm run test:backend       # all four suites, each building its own database
+npm run test:backend       # all five suites, each building its own database
 npm run test:schema        # constraints and triggers
 npm run test:auth          # roles and row-level security, as each real role
 npm run test:api           # the workflows, made to fail halfway
 npm run test:server        # over real HTTP, with real tokens
+npm run test:restore       # takes a backup, restores it, and asks the copy to refuse
 npm run coverage           # how much of what the app holds the database can store
 
 sh backend/pg-up.sh        # start the throwaway server, or say it is already up
@@ -50,13 +56,22 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 93 of them across the three files, a couple of hours — so it is a check to
-run when a rule changes, not on every save. One rule, or one file, at a time:
+suite once per mutation — 128 of them, a couple of hours — so it is a check to run when a rule
+changes, not on every save. One rule, or one file, at a time:
 
 ```sh
 node backend/mutation-check.js "per-group item numbers"   # one rule
 node backend/mutation-check.js file:auth                  # everything in auth.sql
+node backend/mutation-check.js file:backup                # everything in backup.sh
 ```
+
+Running the whole of one file is worth doing after the file changes, not only after a rule changes.
+A mutation whose anchor text has been edited away cannot be applied at all, and the check reports it
+as `?` and counts it as untested — which is how the single most important mutation in the project
+was found to have gone stale: `project` and `equipment` were lifted out of the workshop's whole-table
+grant (each had acquired a money column), and the mutation that puts `stock_item` back into that
+list no longer matched the line it was quoting. A rule guarded by a mutation that can no longer be
+applied is a rule with no mutation at all.
 
 **Do not edit `schema.sql` while `test:mutations` is running.** It reads the schema once at the
 start and every mutation is a copy of that, so an edit part-way through makes the suite fail on the
@@ -251,6 +266,67 @@ coverage:
 npm run coverage             # the summary and the ratchet
 node backend/coverage.js customers   # one collection, field by field
 ```
+
+## Backups
+
+```sh
+sh backend/backup.sh [directory]     # default: ./backups
+npm run test:restore                 # take one, put it back, and check the copy still refuses
+```
+
+**A `pg_dump` of the database is not a backup of this system.** Measured rather than assumed: the
+dump carries **497 GRANT statements, 72 row-level policies and zero `CREATE ROLE`**, because roles
+live in the cluster and not in the database. Restore that file onto a clean server and every one of
+those 497 lines fails, because `varmak_workshop` does not exist there — leaving the data and none of
+the rules about who may read it. That is worse than having no backup, because you would trust it.
+
+So `backup.sh` writes two files, always, and prints the order they go back in:
+
+| | |
+|---|---|
+| `varmak-<stamp>.roles.sql` | the roles, from `pg_dumpall --roles-only --no-role-passwords` |
+| `varmak-<stamp>.dump` | the database, in the custom format |
+
+```sh
+psql -h HOST -U postgres -d postgres -f varmak-<stamp>.roles.sql   # FIRST
+createdb -h HOST -U postgres varmak
+pg_restore -h HOST -U postgres -d varmak varmak-<stamp>.dump
+```
+
+`--no-role-passwords` is deliberate: a backup that carries the API role's password hash is a backup
+that hands over the database to whoever finds the file, and the password is set once at deploy time
+anyway.
+
+### What the restore drill actually asks
+
+`pg_dump` exiting zero says a file was written, not that anything can be got back out of it. So
+`test-restore.js` populates a workshop, takes a backup the way the runbook says to, restores it into
+a fresh database, and asks the copy two different questions.
+
+**Did the records come back?** Compared table by table with `md5(string_agg(t::text, …))` of the
+contents — not a row count. A row count still matches after every price in the store has been
+silently rounded. All 33 tables, plus the figures checked for their scale and the rolled-up hours
+checked for still being rolled up.
+
+**Does the copy still refuse?** This is the half a restore drill usually skips, and the half that
+matters more. A dump that brings back the data and loses a trigger is worse than no backup at all,
+because nothing looks wrong until somebody ships work that was on hold. So the copy is asked for the
+hold gate, the append-only log, the stock floor, the status sequence and the locked price; then
+whether a welder can still be refused a price and anybody else's row; then whether the people can
+still sign in — a restored database nobody can get into is a working database and a locked building;
+and finally whether the next two hours of work go in and the roll-ups follow. Ten checks.
+
+`backup.sh` has its own mutations for the same reason everything else here does. The restore suite is
+the one suite that could be green while proving nothing: if the comparison stopped comparing, every
+line would still read `OK`. So the script's bugs are put back too — the roles half left out, the
+roles filtered out of the roles file, the password hashes left in, the restore order unstated, and a
+structure-only dump that restores cleanly and contains not one record. Five of them, all caught. Two
+more damage the SQL and run the restore suite instead of its own, which is what proves the copy is
+really being asked to refuse rather than merely being opened.
+
+One thing the drill cannot tell you, and the runbook should not pretend otherwise: it restores onto
+the same server it dumped from. Restoring onto a *different* machine is what the roles file exists
+for, and that step is only proven the first time somebody does it for real.
 
 ## Why the tests look the way they do
 

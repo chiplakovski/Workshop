@@ -69,7 +69,11 @@ read the customer's agreed price even by asking the API directly.
 ### 1c. Not losing anything
 
 - **Point-in-time backup**, and a restore tested once before go-live rather than discovered during
-  an incident.
+  an incident. The restore is tested on every run now, not once: [`backend/backup.sh`](backend/backup.sh)
+  takes it in the two pieces it needs and [`backend/test-restore.js`](backend/test-restore.js) puts
+  one back and asks the copy whether it still refuses. Point-in-time recovery itself is Supabase's
+  side of the line (§step 7) — what is proven here is that a dump plus its roles file reconstitutes
+  a workshop that still says no to the right things.
 - **Every change written to an audit log** — who, what, when, old value, new value — by trigger, so
   it cannot be forgotten. The application already logs activity into each record; this replaces the
   convention with a guarantee.
@@ -330,7 +334,32 @@ cannot touch anything else.
    data layer will happily write `draft → completed`, which the database now refuses. Either the map
    moves into `workshop-data.js` beside the other rules, or every path that writes a status has to
    go through the jobcard page. The first one. It is a small job now and a confusing bug later.
-6. **Backups verified by restoring one.**
+6. ~~**Backups verified by restoring one.**~~ **Done** — [`backend/backup.sh`](backend/backup.sh)
+   and [`backend/test-restore.js`](backend/test-restore.js).
+
+   This one turned on a measurement. A `pg_dump` of `varmak` carries **497 GRANT statements, 72
+   row-level policies and zero `CREATE ROLE`**, because roles live in the cluster and not in the
+   database. Restore that file alone onto a clean server and all 497 of those lines fail, because
+   `varmak_workshop` does not exist there — and you are left with the data and none of the rules
+   about who may read it. Half of this system is privileges rather than records, so a one-file
+   backup of it is worse than no backup: you would trust it. Hence two files, and a script that
+   prints which one goes back first.
+
+   Then the drill, because `pg_dump` exiting zero says a file was written and nothing more. A
+   populated workshop is backed up, restored into a fresh database, and the copy is compared table
+   by table on a **checksum of its contents** rather than a row count — a count still matches after
+   every price in the store has been quietly rounded. All 33 tables came back identical.
+
+   And the question a restore drill usually skips: **does the copy still refuse?** The hold gate, the
+   append-only log, the stock floor, the status sequence, the locked price; a welder still unable to
+   read a price or anybody else's row; the people still able to sign in — a restored database nobody
+   can get into is a working database and a locked building; and the next two hours of work going in
+   with the roll-ups following. Ten checks, and `backup.sh` carries five mutations of its own,
+   because the restore suite is the one suite that could be green while proving nothing.
+
+   What it cannot tell you, and the runbook says so out loud: it restores onto the same server it
+   dumped from. Restoring onto a different machine is what the roles file is for, and that is only
+   proven the first time somebody does it for real.
 7. Only then: the AI sweep, the catalogue import, push notifications.
 
 ### What steps 1 and 2 cost, and what they caught
@@ -341,7 +370,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 93 mutations across the three SQL files, all caught.
+breaking. 128 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

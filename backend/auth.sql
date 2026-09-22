@@ -357,18 +357,14 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO varmak_office;
 
 -- The workshop. Everything it is listed as being able to do in BACKEND.md §1b, and nothing else:
 -- book hours, start and pause operations, issue material, record an inspection result.
--- Whole tables, because none of these holds a figure in kronor. Any table that does is granted
--- column by column below instead, and must NOT appear in this list: a table-wide GRANT SELECT
--- includes every column, and a narrower column grant written afterwards adds nothing to it. That
--- is not a subtle point — stock_item and equipment_event were both in this list to begin with, and
--- a welder could read avg_cost straight out of the store while auth.sql looked like it said
--- otherwise. The test suite now asserts the privilege tables directly rather than trusting this
--- list to be right.
 -- Whole tables, because none of these holds a figure in kronor — and that sentence has now been
 -- wrong four times. stock_item, equipment_event, equipment and project each sat in this list and
--- each quietly acquired a money column later, at which point every welder could read it. The
--- privilege check in test-auth.js caught all four, but the pattern is the point: a table in this
--- list is one bet that it will never hold money, and that bet keeps losing.
+-- each quietly acquired a money column later, at which point every welder could read it. A
+-- table-wide GRANT SELECT includes every column, and a narrower column grant written afterwards
+-- adds nothing to it, so auth.sql looked like it said otherwise while a welder read avg_cost
+-- straight out of the store. The privilege check in test-auth.js asserts the privilege tables
+-- directly rather than trusting this list, and caught all four — but the pattern is the point: a
+-- table in this list is one bet that it will never hold money, and that bet keeps losing.
 --
 -- So the rule to apply when adding to this list: if the table could ever carry a price, a cost, a
 -- value or a rate, it does not go here. It is granted column by column below, where adding a money

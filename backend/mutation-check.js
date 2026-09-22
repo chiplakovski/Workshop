@@ -25,7 +25,14 @@ const FILES = {
   auth: { path: path.join(__dirname, 'auth.sql'), suite: 'test-auth.js', env: 'VARMAK_AUTH' },
   api: { path: path.join(__dirname, 'api.sql'), suite: 'test-api.js', env: 'VARMAK_API' },
   // views.sql is exercised over HTTP, because what matters about it is what comes back on the wire.
-  views: { path: path.join(__dirname, 'views.sql'), suite: 'test-server.js', env: 'VARMAK_VIEWS' }
+  views: { path: path.join(__dirname, 'views.sql'), suite: 'test-server.js', env: 'VARMAK_VIEWS' },
+  // Not everything that can be wrong is SQL. backup.sh is a file with rules in it too — which of the
+  // two dumps it takes, what it filters out of them, what it tells you to restore first — and the
+  // suite that can tell is the one that actually restores a backup.
+  backup: { path: path.join(__dirname, 'backup.sh'), suite: 'test-restore.js', env: 'VARMAK_BACKUP' },
+  // Named so a mutation can say `suite: 'restore'`, and so this run is thrown away if the restore
+  // suite itself is edited underneath it. Nothing damages it.
+  restore: { path: path.join(__dirname, 'test-restore.js'), suite: 'test-restore.js', env: 'VARMAK_RESTORE' }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
 const base = source.schema;
@@ -521,10 +528,10 @@ const MUTATIONS = [
     what: 'the workshop is granted the whole store table again, prices included',
     file: 'auth',
     from: `GRANT SELECT ON
-  project, jobcard, operation, equipment, equipment_assignment,`,
+  jobcard, operation, equipment_assignment,`,
     to: `GRANT SELECT ON
   stock_item, equipment_event,
-  project, jobcard, operation, equipment, equipment_assignment,`
+  jobcard, operation, equipment_assignment,`
   },
   {
     // The lockout that did nothing because the refusal rolled back the count of it.
@@ -892,6 +899,73 @@ TO varmak_admin, varmak_office, varmak_workshop;`
     from: `  IF OLD.locked AND (NEW.unit_price IS DISTINCT FROM OLD.unit_price
                      OR NEW.quantity IS DISTINCT FROM OLD.quantity) THEN`,
     to: '  IF OLD.locked AND NEW.unit_price IS DISTINCT FROM OLD.unit_price THEN'
+  },
+
+  // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
+  //
+  // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,
+  // restores it, and says it did. If the comparison stopped comparing, or the copy stopped being
+  // asked whether it still refuses, every line would still read OK. So the backup gets its bugs put
+  // back too, starting with the one anybody would make: thinking one dump is a backup.
+  {
+    what: 'the backup takes the data and leaves the roles behind',
+    file: 'backup',
+    edits: [
+      {
+        from: 'pg_dumpall -h "$HOST" -p "$PORT" -U "$USER" --roles-only --no-role-passwords \\\n  | grep -E \'varmak_|^--|^$\' > "$ROLES"',
+        to: ':'
+      },
+      { from: 'echo "Roles: $ROLES  ($(wc -l < "$ROLES" | tr -d \' \') lines)"', to: ':' }
+    ]
+  },
+  {
+    what: 'the roles file is written with the roles filtered out of it',
+    file: 'backup',
+    from: "  | grep -E 'varmak_|^--|^$' > \"$ROLES\"",
+    to: "  | grep -E '^--|^$' > \"$ROLES\""
+  },
+  {
+    // A backup that carries the API role's password hash is a backup that hands over the database
+    // to whoever finds the file — a tape in a drawer, a bucket somebody made public.
+    what: 'the password hashes are carried off the server in the backup',
+    file: 'backup',
+    from: 'pg_dumpall -h "$HOST" -p "$PORT" -U "$USER" --roles-only --no-role-passwords',
+    to: 'pg_dumpall -h "$HOST" -p "$PORT" -U "$USER" --roles-only'
+  },
+  {
+    what: 'the backup no longer says which of its two files goes back first',
+    file: 'backup',
+    from: 'echo "The roles file goes FIRST. Without it the data restores and every GRANT in it fails,"',
+    to: ':'
+  },
+  {
+    // The mutation that asks whether the comparison compares anything. A structure-only dump
+    // restores cleanly, opens cleanly, and has not one record in it.
+    what: 'only the structure is backed up, not the records',
+    file: 'backup',
+    from: 'pg_dump -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" --format=custom --file="$DATA"',
+    to: 'pg_dump -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" --schema-only --format=custom --file="$DATA"'
+  },
+  {
+    // And whether the copy is really asked to refuse. The same trigger removal the schema suite
+    // catches, put to the restored database instead: a dump that brings back the data and loses a
+    // trigger is worse than no backup, because nothing looks wrong until somebody ships held work.
+    what: 'a restored copy is not checked for the rules it should have brought with it',
+    suite: 'restore',
+    from: `CREATE TRIGGER jobcard_hold_gate_trg BEFORE INSERT OR UPDATE ON jobcard
+  FOR EACH ROW EXECUTE FUNCTION jobcard_hold_gate();`,
+    to: ''
+  },
+  {
+    // The other half of what a restore has to bring back, and the half the roles file exists for.
+    what: 'a restored copy is not checked for who may read the prices in it',
+    file: 'auth',
+    suite: 'restore',
+    from: `GRANT SELECT ON
+  jobcard, operation, equipment_assignment,`,
+    to: `GRANT SELECT ON
+  stock_item, equipment_event,
+  jobcard, operation, equipment_assignment,`
   }
 ];
 
@@ -911,7 +985,7 @@ const SELECTED = !only ? MUTATIONS
 // suite to the file reported the rule as untested when it was simply being asked in the wrong place.
 function runSuiteAgainst(damaged, which, index, suite) {
   const target = { ...FILES[which], ...(suite ? { suite: FILES[suite].suite } : {}) };
-  const file = path.join(os.tmpdir(), `varmak-mutant-${index}.sql`);
+  const file = path.join(os.tmpdir(), `varmak-mutant-${index}${path.extname(FILES[which].path)}`);
   fs.writeFileSync(file, damaged);
   try {
     execFileSync('node', [path.join(__dirname, target.suite)], {
@@ -932,7 +1006,7 @@ function runSuiteAgainst(damaged, which, index, suite) {
     const line = output.split('\n')
       .filter((l) => !/^OK\s/.test(l.trim()))
       .reverse()
-      .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these/.test(l));
+      .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these|did not come back|did not survive/.test(l));
     return { caught: true, by: (line || '').trim().slice(0, 130) };
   } finally {
     fs.unlinkSync(file);
@@ -986,7 +1060,7 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log(`All ${SELECTED.length} mutations were caught: every rule in the schema has a test that fails without it.`);
+  console.log(`All ${SELECTED.length} mutations were caught: every rule these mutations touch has a test that fails without it.`);
 }
 
 main();
