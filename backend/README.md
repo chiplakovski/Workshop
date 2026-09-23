@@ -12,7 +12,7 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**128 mutations**, across the four SQL files and the backup script.
+**132 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -56,7 +56,7 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 128 of them, a couple of hours — so it is a check to run when a rule
+suite once per mutation — 132 of them, a couple of hours — so it is a check to run when a rule
 changes, not on every save. One rule, or one file, at a time:
 
 ```sh
@@ -168,6 +168,22 @@ workflow written in the server holds right up until somebody adds a second calle
 | `convert_lead` | the customer arrives carrying what was known about the lead, the lead is marked converted, and anything already quoted follows across |
 | `book_hours` · `record_operation` · `issue_material_offline` | the three the shop tablet may do with no signal |
 
+And the people, which are what stop this system needing a database console to start:
+
+| | |
+|---|---|
+| `bootstrap_first_admin` | the first administrator, on an empty system, with no session — because there is nobody to sign in as yet. It refuses the instant the table has anybody in it, and that condition cannot become true again without deleting everybody |
+| `add_person` | somebody arrives with **no way in at all**. An admin gives them one afterwards, so there is never a moment where an account exists with a password somebody else chose and nobody changed |
+| `set_person_pin` · `set_person_password` | by an admin, in person. Setting either clears a lockout |
+| `set_person_role` · `set_person_active` | what somebody may do, and whether they may. Switching somebody off ends the session they are **already holding**, which is the thing a stateless token cannot do |
+| `change_my_password` | yours, and only by proving you know the current one |
+| `people()` (a read) | the list `admin.html` shows. Under row-level security a welder's copy of it is one row: their own |
+
+Two rules the list carries that are easy to state and easy to lose: it says whether somebody can
+**actually** get in — `password_set_at` and `pin_set_at`, never the hashes, which no role may read at
+all — and it says which row is the caller's, so the screen can leave out the two moves that lock the
+building from the inside.
+
 The thing worth testing about a multi-write workflow is not that it works — it is what it leaves
 behind when it doesn't. A receipt that puts stock on the shelf and then fails to write the movement
 has left the store unable to explain itself, and no amount of the happy path passing will say so. So
@@ -237,6 +253,29 @@ Refusals are passed through in the words the database wrote them in. `cannot iss
 S355-10: only 120 in stock` is something a storeman can act on; a 500 with a generic message is not.
 Permission failures become 403, constraint and trigger refusals 422, and anything unrecognised is
 this layer's fault and says nothing about the inside of the database.
+
+### Which means the error code a refusal is raised with decides whether anybody reads it
+
+42501 is flattened to "that is not yours to do", because Postgres writes its own privilege errors as
+`permission denied for table stock_item` and that names the inside of the database to whoever asked.
+Five codes carry their message through. **Everything else becomes "something went wrong at our end"** —
+so a refusal raised with a sixth code is not a refusal any more, it is a fault report about a fault
+that did not happen.
+
+Both halves of that were wrong in the people workflows, and both had passed two suites:
+
+- `bootstrap_first_admin` raised `insufficient_privilege`, so the first-run screen answered "that is
+  not yours to do" to the only person who could possibly be using it. That refusal is not about who
+  is asking — nobody is signed in and nobody can be — it is about the state the system is in.
+- `change_my_password` raised `invalid_password`, which is on neither list, so the one refusal in the
+  whole flow an ordinary person meets weekly — mistyping their own password — came back as a server
+  error. The SQL suite asserted the wording and never went through HTTP. The HTTP suite had no case
+  for it.
+
+Both now raise plainly, which is `P0001`, which carries. And the rule is asserted structurally rather
+than case by case: `test-server.js` reads every `USING ERRCODE` in `api.sql` and `auth.sql` and fails
+if any of them is a code the server would turn into a 500. Case-by-case would have caught these two
+and missed the next one, which will be in a function nobody thought to test over HTTP either.
 
 ## How much of the app the database can hold
 

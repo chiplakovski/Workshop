@@ -18,7 +18,8 @@
     "serve": "node backend/server.js",
     "test:mutations": "node backend/mutation-check.js",
     "test:slice": "node tests/vertical-slice.e2e.js",
-    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js"
+    "test:access": "node tests/access-screen.e2e.js",
+    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js && node tests/access-screen.e2e.js"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"

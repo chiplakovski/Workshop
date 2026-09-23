@@ -2,11 +2,18 @@
 
 Internal workshop system prototype for Varmak AB (Marieholm), built module by module.
 
-**This is a frontend prototype.** There is no backend, no database, no API and no real
-authentication. All application data lives in the browser's `localStorage` (see
-[`workshop-data.js`](workshop-data.js)) and is lost if browser data is cleared. Login and user
-roles are a visual demonstration only — no credentials are checked against any server, and no
-permission is actually enforced beyond the UI.
+**Two halves, and they are at different stages.** There is now a real backend — PostgreSQL with
+its safety rules as triggers, two sign-in doors, three database roles with row-level security
+forced on every table, the workflows as database functions, and a thin HTTP layer that decides
+nothing. It lives under [`backend/`](backend/) and has its own [README](backend/README.md).
+
+**The pages are mostly not on it yet.** Two of the sixteen read and write the database — the shop
+floor's hours screen and the access screen — and the other fourteen still run entirely on the
+browser's `localStorage` (see [`workshop-data.js`](workshop-data.js)), which is lost if browser
+data is cleared. A page that has not been wired refuses to show anything at all to a signed-in
+session and says why, rather than showing figures that are not the workshop's; see
+[`workshop-guard.js`](workshop-guard.js). Nothing changes for a browser with no session: the
+fourteen pages work exactly as they always have.
 
 ## Modules (current)
 
@@ -26,6 +33,7 @@ permission is actually enforced beyond the UI.
 | Equipment & Machines | `equipment-machines-desktop.html` |
 | Reports | `reports-desktop.html` |
 | Quality | `quality-desktop.html` |
+| Access | `admin.html` — **on the database.** Who may sign in, and through which door |
 
 Shared logic used across modules:
 - `workshop-data.js` — the shared browser-storage data layer (`window.WorkshopData`), including
@@ -44,8 +52,21 @@ Shared logic used across modules:
   so the Marketing findings queue can be driven before anything is wired to a model or a network.
 
 ## Access model
-- Worker logs in → Hours module only (demo only, not enforced by any backend)
-- Admin logs in → Hub → any module (demo only, not enforced by any backend)
+With no server, the sign-in on `login.html` is still what it always was: a way into the local demo,
+enforcing nothing.
+
+With the server up it is real, and enforced by the database rather than by the interface:
+
+- **Two doors.** The office signs in with an email and a password; the shop floor signs in with a
+  PIN on the shared tablet, and that session ends with the shift rather than in thirty days.
+- **Three Postgres roles.** Every request runs as the role the person's own row names, with
+  row-level security forced on every table and money granted column by column — so a welder cannot
+  read the customer's agreed price even by asking the API directly.
+- **`admin.html`** is where a workshop gives and takes away access: add somebody, set their PIN or
+  password, change what they may do, switch them off. It makes the first administrator too, on an
+  empty system, which is how the system is started without a database console.
+
+The details, and what each role may touch, are in [`backend/README.md`](backend/README.md).
 
 ## Data storage and migration
 **The application opens on an empty system.** No customers, no projects, no machines, no stock —
@@ -119,19 +140,25 @@ Open any `.html` file in a browser, or use the VS Code **Live Server** extension
 A test suite (Node's built-in test runner, no external dependencies) covers data migration,
 backup/import safety, and every pure business-rule module — Jobcards, Estimation, Projects,
 Quality, Equipment, Planning, estimate recall, the material reference and the findings queue.
-**681 unit tests, a 16-page browser smoke test and 94 end-to-end steps, all passing.** Requires
-Node.js 18+ on your PATH.
+**687 unit tests, a browser smoke test over all 17 pages, and 172 end-to-end steps, all passing** —
+37 of those steps drive a real browser against a real PostgreSQL: the welder's hours slice and the
+access screen. Requires Node.js 18+ on your PATH, and PostgreSQL 16 for the backend suites.
 
 ```
 npm test          # runs tests/*.test.js via node --test
 npm run test:syntax   # checks every .js file and every HTML page's inline scripts parse,
                        # and that every literal internal .html link resolves to a real file
-npm run test:browser  # opens all 16 HTML entry points in headless Chrome/Edge and exercises
+npm run test:browser  # opens every HTML entry point in headless Chrome/Edge and exercises
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Planning,
                       # Jobcards/Hours/Equipment, Store/Suppliers, Documents/Reports
-                      # and Marketing/Sales workflows
+                      # and Marketing/Sales workflows, then the two that go all the way
+                      # to Postgres: the hours slice and the access screen
+npm run test:backend  # the database, the roles, the workflows, real HTTP, and a restored backup
 ```
+
+The last two e2e runs and `test:backend` need PostgreSQL. They start a throwaway server themselves
+if one is not already up — see [`backend/README.md`](backend/README.md).
 
 The browser smoke test uses an installed Chrome, Edge or Chromium executable and does not download
 a separate browser. Set `PLAYWRIGHT_CHROME_PATH` when the browser is installed in a non-standard
@@ -139,10 +166,18 @@ location. External resources are stubbed during the run so the result does not d
 access.
 
 ## Status
-Frontend prototype. No production backend, database, secure file storage or real permission
-enforcement exists yet. The shared-data consolidation is done — every module now reads and writes
-one `WorkshopData` state and re-renders on the `workshop:data` event, rather than keeping its own
-copy. The remaining steps are a real backend/API/database and real authentication.
+The backend exists and is tested: schema and safety rules, sign-in and roles, the workflows, reading
+it back, and backups verified by restoring one. What is not done is step 5 of
+[`BACKEND.md`](BACKEND.md) — pointing the pages at it. Two of the sixteen are on it; the rest need
+their workflows written and their screens wired, and there is a measured gap in how much of what the
+pages collect the database can hold (`npm run coverage`).
+
+There is also no deployment: everything above runs on a local PostgreSQL started by the test
+suites. Secure file storage does not exist — photographs and attachments still have nowhere real to
+live.
+
+The shared-data consolidation is done — every module reads and writes one `WorkshopData` state and
+re-renders on the `workshop:data` event, rather than keeping its own copy.
 
 The design system — every colour, font, type size and component recipe across the three themes —
 is written out in [`THEMES.md`](THEMES.md).

@@ -609,6 +609,58 @@ function theFirstAdminAndEveryoneAfter() {
   step('People: you change your own password only by proving you know the current one');
 }
 
+// The list the access screen reads. It is the only way anybody sees who is in the system without a
+// database console, so what it says has to be true of the database rather than nearly true: above
+// all whether a person can actually get in, because add_person deliberately leaves them unable to
+// and a screen that cannot tell those apart tells an admin they have given access when they have
+// not.
+function theListSaysWhoCanActuallyGetIn() {
+  sql(`SET client_min_messages = warning; TRUNCATE app_session, app_user RESTART IDENTITY CASCADE;
+       SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+  const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
+  const welder = value(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
+    SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
+
+  const listFor = (role, who) => JSON.parse(ok('reading the people', role, who, `SELECT people();`));
+  const find = (list, email) => list.find((row) => row.email === email);
+
+  let list = listFor('varmak_admin', admin);
+  assert.equal(list.length, 2, 'an admin should see everybody');
+  assert.equal(find(list, 'anna@varmak.se').passwordSet, true);
+  assert.equal(find(list, 'anna@varmak.se').pinSet, false);
+  // The state add_person leaves somebody in, and the one the screen has to be able to show.
+  assert.equal(find(list, 'marko@varmak.se').passwordSet, false);
+  assert.equal(find(list, 'marko@varmak.se').pinSet, false);
+  assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('marko@varmak.se', '8472', 'pin')), 'none');`),
+    'none', 'the list says this person has no way in, and the door has to agree');
+
+  sql(`SET ROLE varmak_admin; SET app.user_id = '${admin}'; SELECT set_person_pin(${welder}, '8472');`);
+  list = listFor('varmak_admin', admin);
+  assert.equal(find(list, 'marko@varmak.se').pinSet, true, 'the list has to move when the PIN is set');
+  assert.equal(find(list, 'marko@varmak.se').passwordSet, false,
+    'a PIN is not a password — the two doors are separate and the list must not conflate them');
+  step('People: the list says whether somebody can actually get in, and which door they have');
+
+  // Exactly one row is the caller's, and it is theirs. The screen uses this to leave out the
+  // buttons that would lock the building from the inside — switching yourself off, demoting
+  // yourself. The database refuses both; not offering them is a different thing and both are wanted.
+  assert.deepEqual(list.filter((row) => row.isMe).map((row) => row.email), ['anna@varmak.se']);
+  const asWelder = listFor('varmak_workshop', welder);
+  assert.deepEqual(asWelder.map((row) => row.email), ['marko@varmak.se'],
+    'a welder sees themselves and nobody else — by row-level security, not by anything the server did');
+  assert.equal(asWelder[0].isMe, true);
+  step('People: exactly one row in the list is yours, and a welder\'s list is only that row');
+
+  // Not one hash, in either shape, for anybody. The columns are not granted, so a function that
+  // tried would fail rather than leak — this asserts the result, which is what leaves the building.
+  for (const [role, who] of [['varmak_admin', admin], ['varmak_office', admin], ['varmak_workshop', welder]]) {
+    const text = ok(`${role} reading the people`, role, who, `SELECT people()::text;`);
+    assert.ok(!/\$2[aby]\$/.test(text), `a bcrypt hash reached ${role} through the people list`);
+    assert.ok(!/hash/i.test(text), `the word hash reached ${role} through the people list`);
+  }
+  step('People: no hash of anything leaves through the list, for any role');
+}
+
 // Two ways to lock every person out of the system, both easy to do by accident on a Friday
 // afternoon, and neither recoverable without a database console.
 function nobodyCanLockTheWorkshopOut() {
@@ -689,6 +741,7 @@ async function main() {
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
   theFirstAdminAndEveryoneAfter();
+  theListSaysWhoCanActuallyGetIn();
   nobodyCanLockTheWorkshopOut();
 
   console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed.`);

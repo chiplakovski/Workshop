@@ -901,6 +901,45 @@ TO varmak_admin, varmak_office, varmak_workshop;`
     to: '  IF OLD.locked AND NEW.unit_price IS DISTINCT FROM OLD.unit_price THEN'
   },
 
+  {
+    // The list would say "no password" for everybody, which reads as a workshop nobody can get
+    // into and is the opposite of the truth — the worst kind of wrong for a screen whose whole job
+    // is telling an admin who has access.
+    what: 'setting a password does not record that one was set',
+    file: 'auth',
+    suite: 'api',
+    from: `     SET password_hash = crypt(p_password, gen_salt('bf', 10)), password_set_at = now(),`,
+    to: `     SET password_hash = crypt(p_password, gen_salt('bf', 10)),`
+  },
+  {
+    // Every row claiming to be you. The access screen hides the buttons that would lock the
+    // building from the inside on exactly this field, so a mistake here hides all of them.
+    what: 'every row in the people list claims to be the caller',
+    file: 'api',
+    from: "    'isMe', u.id = current_app_user(),",
+    to: "    'isMe', true,"
+  },
+
+  {
+    // Both of these were real, and both passed two suites: the SQL suite asserts the wording and
+    // never goes through HTTP, and the HTTP suite had no case for them. The screen is where it
+    // showed — a first-run form answering "that is not yours to do" to the only person who could
+    // possibly be using it.
+    what: 'the first-run refusal claims to be a privilege error again',
+    file: 'api',
+    suite: 'views',
+    from: `    RAISE EXCEPTION 'this system already has people in it — an admin adds the next one';`,
+    to: `    RAISE EXCEPTION 'this system already has people in it — an admin adds the next one'
+      USING ERRCODE = 'insufficient_privilege';`
+  },
+  {
+    what: 'a wrong current password comes back as a fault at our end again',
+    file: 'api',
+    suite: 'views',
+    from: `    RAISE EXCEPTION 'that is not your current password';`,
+    to: `    RAISE EXCEPTION 'that is not your current password' USING ERRCODE = 'invalid_password';`
+  },
+
   // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
   //
   // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,

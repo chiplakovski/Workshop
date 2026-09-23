@@ -142,6 +142,10 @@
   .hint svg{opacity:0.7;}
 
   /* ── language switcher (bottom-left) ── */
+  .accesslink{display:inline-block;margin-top:16px;color:var(--steel-400);font-size:12px;
+    letter-spacing:0.02em;text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px;}
+  .accesslink:hover{color:var(--ice);border-color:rgba(var(--steel-300-rgb),0.5);}
+  .accesslink[hidden]{display:none !important;}
   /* ── footer ── */
   .footer{position:relative;z-index:2;text-align:center;padding:22px;font-size:11px;color:var(--steel-400);letter-spacing:0.06em;border-top:1px solid var(--line);}
 
@@ -230,6 +234,12 @@
       </button>
     </form>
 
+    <!-- On a fresh install the database has nobody in it, and the form above is a door with no keys
+         cut for it yet. Without this link there is nothing on the page that leads to the screen that
+         makes the first administrator, and the system cannot be started at all without a psql
+         session — which is the thing the access screen exists to end. -->
+    <a class="accesslink" id="accessLink" href="admin.html" hidden data-i="access_link">First time here, or need to add somebody? Access</a>
+
     <button class="signin" id="demoButton" onclick="location.href='hub-desktop.html'">
       <span class="gwrap">
         <span aria-hidden="true">◇</span>
@@ -274,6 +284,7 @@
       lbl_pin:"PIN",
       btn_signin:"Logga in",
       no_server:"Ingen anslutning till servern — endast lokalt läge",
+      access_link:"Första gången, eller behöver lägga till någon? Behörighet",
       eyebrow:"Verkstadssystem",
       headline:'Precision börjar<br>i <em>verkstaden</em>.',
       sub:"Lokala verktyg för jobb, servicerapporter och lager i en webbläsare.",
@@ -289,6 +300,7 @@
       lbl_pin:"PIN",
       btn_signin:"Sign in",
       no_server:"No connection to the server — local mode only",
+      access_link:"First time here, or need to add somebody? Access",
       eyebrow:"Workshop System",
       headline:'Precision starts<br>in the <em>workshop</em>.',
       sub:"Local tools for jobs, service reports and inventory in one browser workspace.",
@@ -304,6 +316,7 @@
       lbl_pin:"ПИН",
       btn_signin:"Најави се",
       no_server:"Нема врска со серверот — само локален режим",
+      access_link:"Прв пат тука, или треба да додадете некого? Пристап",
       eyebrow:"Sistem za rabotilnica",
       headline:'Preciznosta počnuva<br>vo <em>rabotilnicata</em>.',
       sub:"Lokalni alatki za rabotni nalozi, servisni izveštai i inventar vo eden prelistuvač.",
@@ -459,6 +472,8 @@
       form.hidden=false;
       demo.hidden=true;
       demoHint.hidden=true;
+      var access=document.getElementById('accessLink');
+      if(access){access.hidden=false;}
       useDoor('password');
       email.focus();
     });

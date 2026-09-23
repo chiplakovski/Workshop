@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
+const os = require('node:os');
 const path = require('node:path');
 const { chromium } = require('playwright-core');
 
@@ -54,6 +55,20 @@ function createStaticServer() {
   });
 }
 
+// The versioned directory name changes with every Playwright release, so it is read rather than
+// written down: chromium-1194 today, something else after the next npm install.
+function glob(root, matches, tail) {
+  try {
+    return fs.readdirSync(root)
+      .filter((name) => matches.test(name))
+      .sort()
+      .reverse()
+      .map((name) => path.join(root, name, tail));
+  } catch {
+    return [];
+  }
+}
+
 function findBrowser() {
   const configured = process.env.PLAYWRIGHT_CHROME_PATH;
   const defaults = process.platform === 'win32'
@@ -64,7 +79,15 @@ function findBrowser() {
       ]
     : process.platform === 'darwin'
       ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
-      : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+      : [
+          '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
+          // The browser a Playwright install puts under its own directory rather than on the PATH.
+          // Without this the shared harness cannot find a browser that is plainly there, and every
+          // suite built on it fails with "set PLAYWRIGHT_CHROME_PATH" on a machine where nothing
+          // needs setting. The newer end-to-end suites already looked here; this is the same list.
+          ...glob('/opt/pw-browsers', /^chromium/, 'chrome-linux/chrome'),
+          ...glob(path.join(os.homedir(), '.cache/ms-playwright'), /^chromium/, 'chrome-linux/chrome')
+        ];
   const executable = [configured, ...defaults].filter(Boolean).find((candidate) => fs.existsSync(candidate));
   if (!executable) {
     throw new Error('No supported browser found. Set PLAYWRIGHT_CHROME_PATH to a Chrome/Edge/Chromium executable.');

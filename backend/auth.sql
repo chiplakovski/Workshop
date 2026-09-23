@@ -107,6 +107,12 @@ ALTER TABLE app_user
   ADD COLUMN pin_hash text CONSTRAINT pin_is_hashed
              CHECK (pin_hash IS NULL OR pin_hash ~ '^\$2[aby]\$\d{2}\$'),
   ADD COLUMN pin_set_at timestamptz,
+  -- Beside pin_set_at, and for the same reason. add_person deliberately creates somebody with no
+  -- way in at all, so the screen that adds people has to be able to say so — and a screen that
+  -- cannot tell "password set" from "no password yet" tells an admin they have given somebody
+  -- access when they have not. The hash stays unreadable to everybody; this column says only that
+  -- one exists, which is the part anybody needs.
+  ADD COLUMN password_set_at timestamptz,
   -- A four-digit PIN is ten thousand guesses. Without a lockout that is not a credential, it is a
   -- formality, and the lockout has to live where the checking lives or it can be skipped.
   ADD COLUMN failed_attempts int NOT NULL DEFAULT 0 CHECK (failed_attempts >= 0),
@@ -153,7 +159,7 @@ BEGIN
     RAISE EXCEPTION 'that password is on every list a guesser starts from' USING ERRCODE = 'check_violation';
   END IF;
   UPDATE app_user
-     SET password_hash = crypt(p_password, gen_salt('bf', 10)),
+     SET password_hash = crypt(p_password, gen_salt('bf', 10)), password_set_at = now(),
          failed_attempts = 0, locked_until = NULL
    WHERE id = p_user_id;
   IF NOT FOUND THEN
@@ -452,7 +458,7 @@ ON equipment_event TO varmak_workshop;
 -- overwrites. A hash that cannot be selected cannot be carried out of the building in a CSV.
 REVOKE ALL ON app_user FROM varmak_admin, varmak_office, varmak_workshop;
 GRANT SELECT (id, email, display_name, role, is_active, last_seen_at, pin_set_at,
-              failed_attempts, locked_until, created_at)
+              password_set_at, failed_attempts, locked_until, created_at)
 ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 
 -- Only an admin creates or changes people — no self-registration, and nobody promotes themselves.

@@ -100,6 +100,17 @@
     return { data: data };
   }
 
+  // One named list, rather than the whole workshop. snapshot() is what the sixteen pages use; this
+  // is for a screen that wants a single thing — the people, say — and the name has to be one of the
+  // few in the server's read list, because that list is the difference between an API and a remote
+  // SQL console.
+  async function read(name) {
+    const result = await request('GET', '/read/' + name);
+    if (result.status === 200) return { ok: true, data: result.body };
+    if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+    return { ok: false, refused: result.body.refused || 'that is not yours to read' };
+  }
+
   // A workflow. Returns what the database returned, or its refusal in its own words, because
   // "cannot issue 500 KG of S355-10: only 120 in stock" is what the person needs to read.
   async function call(name, args) {
@@ -115,6 +126,7 @@
     signIn: signIn,
     signOut: signOut,
     snapshot: snapshot,
+    read: read,
     call: call,
     base: BASE
   };

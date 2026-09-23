@@ -98,6 +98,35 @@ function theServerDecidesNothing() {
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 
+  // Every refusal the SQL raises by hand has to land somewhere the person can read, and the only
+  // thing deciding that is its error code. server.js turns 42501 into a flat "that is not yours to
+  // do", carries five codes through with their own words, and calls everything else a fault at our
+  // end — so a refusal raised with any sixth code comes back as "something went wrong at our end".
+  //
+  // That is not hypothetical. change_my_password raised invalid_password (28P01), which is not on
+  // the list, so the one refusal in the whole people flow an ordinary person meets weekly — typing
+  // their current password wrong — reached them as a server error. Two suites passed over it: the
+  // SQL one asserts the wording and never goes through HTTP, and the HTTP one had no case for it.
+  //
+  // So the rule is asserted structurally rather than case by case, because the next one will be a
+  // function nobody thought to test over HTTP either.
+  // Through the same env override the database is built from, not straight off disk. Reading the
+  // real api.sql here made this check blind to the very mutation that proves it works — which is the
+  // second time in this file a suite has quietly ignored the harness's file and reported a rule as
+  // untested when it was being asked about the wrong file.
+  const rules = ['api', 'auth'].flatMap((name) => {
+    const file = process.env[`VARMAK_${name.toUpperCase()}`] || path.join(__dirname, `${name}.sql`);
+    const text = fs.readFileSync(file, 'utf8');
+    return [...text.matchAll(/ERRCODE\s*=\s*'([a-z_0-9]+)'/g)].map((m) => ({ name: `${name}.sql`, code: m[1] }));
+  });
+  const readable = ['check_violation', 'unique_violation', 'foreign_key_violation',
+    'not_null_violation', 'raise_exception'];
+  const stray = rules.filter((r) => !readable.includes(r.code) && r.code !== 'insufficient_privilege');
+  assert.deepEqual(stray.map((r) => `${r.name}: ${r.code}`), [],
+    'a refusal raised with a code the server does not recognise comes back as "something went wrong '
+    + 'at our end" — raise it plainly instead, which is P0001, and its own words carry through');
+  step(`Thin: all ${rules.length} hand-raised refusals use a code that reaches the person as a refusal, not as a fault`);
+
   // The one that works without a token, and it has to stay the one. Anything else on this list
   // would be a hole in the front door.
   const { WITHOUT_A_SESSION } = require('./server');
@@ -445,6 +474,33 @@ async function aRefusalFromTheDatabaseReachesThePerson(tokens, f) {
   step('Refusals: nothing about the inside of the database or the server comes back with them');
 }
 
+// The one call that works without a token, and the one whose refusal is not about who is asking.
+//
+// server.js replaces the text of every 42501 with "that is not yours to do", because Postgres writes
+// its own privilege errors as "permission denied for table stock_item" and that names the inside of
+// the database to whoever asked. The bootstrap's refusal was raised as 42501 and therefore reached
+// the first-run screen as "that is not yours to do" — wrong, since nobody is signed in and nobody
+// can be, and useless to the person standing in front of it. The rule this asserts: a refusal
+// written to be read must not claim to be a privilege error.
+async function theFirstRunRefusalSaysWhatIsActuallyWrong() {
+  const second = await call('POST', '/rpc/bootstrap_first_admin',
+    { body: { email: 'someone@varmak.se', display_name: 'Someone Else', password: 'another long passphrase' } });
+  turnedAway('a second use of the bootstrap over HTTP', second, 422, /already has people in it/);
+  assert.ok(!/not yours to do/.test(String(second.body.refused)),
+    'this refusal is about the state of the system, not about who is asking, and has to say so');
+  step('First run: the bootstrap refusal reaches the screen in its own words, not as a privilege error');
+
+  // And the things that ARE about who is asking still say nothing more than that.
+  const byAWelder = await call('POST', '/rpc/add_person',
+    { token: (await call('POST', '/auth/sign-in',
+      { body: { email: 'marko@varmak.se', secret: '8472', door: 'pin' } })).body.token,
+      body: { email: 'ghost@varmak.se', display_name: 'Ghost', role: 'admin' } });
+  turnedAway('a welder adding somebody over HTTP', byAWelder, 403, /not yours to do/);
+  assert.ok(!/app_user|permission denied for/.test(JSON.stringify(byAWelder.body)),
+    'a privilege refusal must not name a table');
+  step('First run: and a refusal that IS about who is asking still names nothing inside the database');
+}
+
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
@@ -517,6 +573,7 @@ async function main() {
     await theWorkflowsRunOverHttp(tokens, f);
     await replayOverHttpIsHarmless(tokens, f);
     await aRefusalFromTheDatabaseReachesThePerson(tokens, f);
+    await theFirstRunRefusalSaysWhatIsActuallyWrong();
     console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, over real HTTP.`);
   } finally {
     await new Promise((resolve) => server.close(resolve));

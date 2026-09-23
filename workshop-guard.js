@@ -21,6 +21,13 @@
   const document = root.document;
   if (!document) return;
 
+  // The screens that read and write the database. A page not on this list shows the notice below to
+  // a signed-in session, and the list is what the notice offers as somewhere to go instead.
+  const WIRED = [
+    ['hours-mobile.html', 'The hours screen'],
+    ['admin.html', 'Access']
+  ];
+
   function notice(message, detail) {
     const wrap = document.createElement('div');
     wrap.setAttribute('role', 'alert');
@@ -39,15 +46,25 @@
     const small = document.createElement('p');
     small.style.cssText = 'margin:0 0 20px;color:#8b95a7;font-size:13.5px;';
     small.textContent = detail;
-    const back = document.createElement('a');
-    back.href = 'hours-mobile.html';
-    back.textContent = 'Back to the hours screen';
-    back.style.cssText = 'display:inline-block;padding:12px 20px;border:1px solid #3a4354;'
-      + 'color:#e8eaee;text-decoration:none;';
+    // Every wired screen, not one of them. The first version linked to the hours screen only, which
+    // was the whole list at the time — and the moment a second page was wired, a signed-in
+    // administrator reading this notice was sent to the welders' phone screen with no way to reach
+    // the one page that would have helped them.
+    const links = document.createElement('div');
+    links.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;';
+    for (const [href, label] of WIRED) {
+      if (document.location.pathname.endsWith(href)) continue;
+      const link = document.createElement('a');
+      link.href = href;
+      link.textContent = label;
+      link.style.cssText = 'display:inline-block;padding:12px 20px;border:1px solid #3a4354;'
+        + 'color:#e8eaee;text-decoration:none;';
+      links.appendChild(link);
+    }
     box.appendChild(title);
     box.appendChild(body);
     box.appendChild(small);
-    box.appendChild(back);
+    box.appendChild(links);
     wrap.appendChild(box);
     document.documentElement.appendChild(wrap);
   }

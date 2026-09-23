@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#04101f">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Varmak — Access</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,var(--bg-glow0) 0,var(--c-bg-b) 54%);color:var(--text);font:13px var(--font-body),Segoe UI,sans-serif;min-height:100vh}button,input,select{font:inherit}
+/* Shared Varmak theme — aligned with Hub, Customers, Store and Projects */
+:root{--bg:#04101f;--panel:#071a33;--panel2:#0a2447;--line:rgba(142,163,192,.16);--text:#e8f0fb;--muted:#8ea3c0;--blue:#4a90ff;--green:#4ad48a;--yellow:#ffb057;--red:#ff6b6b;--purple:#9d6cff;--field:rgba(255,255,255,.045);--field-line:rgba(185,198,218,.24);--c-accent-b-rgb:66,150,255;--c-accent-rgb:74,144,255;--c-accent2:#2c6bd6;--c-accent2-rgb:44,107,214;--c-avatar:#16385b;--c-avatar-line:#3e6288;--c-bg:#04101f;--c-bg-b:#061321;--c-brand:#013179;--c-brand-rgb:1,49,121;--c-fieldline-rgb:185,198,218;--c-focus:#8bc0ff;--c-line-rgb:142,163,192;--c-muted2:#b9c6da;--c-navhover-rgb:31,91,164;--c-navicon:#78a7d9;--c-panel:#071a33;--c-panel-rgb:7,26,51;--c-panel2:#0a2447;--c-panel2-rgb:10,36,71;--c-side1-rgb:6,26,49;--c-side2-rgb:4,19,38;--c-side3-rgb:7,26,48;--c-sline-rgb:32,59,81;--c-spanel2-rgb:14,38,59;--c-spanel3-rgb:8,26,42;--c-tint:#cfe0ff;--font-heading:'Sora',sans-serif;--font-body:'Inter',system-ui,sans-serif;--select-bg:#0a2447;--select-fg:#e8f0fb;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--steel-300:#b9c6da;--steel-400:#8ea3c0;--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="carbon"]{--bg:#020305;--panel:#06080c;--panel2:#0a0d13;--line:rgba(135,146,163,.16);--text:#f2f5fa;--muted:#a3adbd;--blue:#4f8cff;--green:#35c98a;--yellow:#f0a544;--red:#f4635f;--purple:#8f60f0;--field-line:rgba(170,180,196,.24);--c-accent-b-rgb:79,140,255;--c-accent-rgb:79,140,255;--c-accent2:#2f6ccc;--c-accent2-rgb:47,108,204;--c-avatar:#14202e;--c-avatar-line:#2a3444;--c-bg:#020305;--c-bg-b:#020305;--c-brand:#16326a;--c-brand-rgb:22,50,106;--c-fieldline-rgb:170,180,196;--c-focus:#86b3f0;--c-line-rgb:135,146,163;--c-muted2:#c6cedb;--c-navhover-rgb:26,52,102;--c-navicon:#8ba0b8;--c-panel:#06080c;--c-panel-rgb:6,8,12;--c-panel2:#0a0d13;--c-panel2-rgb:10,13,19;--c-side1-rgb:6,8,12;--c-side2-rgb:3,4,7;--c-side3-rgb:6,8,12;--c-sline-rgb:26,32,42;--c-spanel2-rgb:10,13,19;--c-spanel3-rgb:6,8,12;--c-tint:#dbe8ff;--font-heading:'Space Grotesk',sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif;--select-bg:#0f131b;--select-fg:#f2f5fa;--lift-008:rgba(255,255,255,.008);--lift-015:rgba(255,255,255,.015);--lift-02:rgba(255,255,255,.02);--lift-025:rgba(255,255,255,.025);--lift-03:rgba(255,255,255,.03);--lift-033:rgba(255,255,255,.033);--lift-035:rgba(255,255,255,.035);--lift-04:rgba(255,255,255,.04);--lift-045:rgba(255,255,255,.045);--lift-05:rgba(255,255,255,.05);--lift-06:rgba(255,255,255,.06);--lift-08:rgba(255,255,255,.08);--lift-10:rgba(255,255,255,.1);--lift-12:rgba(255,255,255,.12);--lift-16:rgba(255,255,255,.16);--lift-18:rgba(255,255,255,.18);--lift-28:rgba(255,255,255,.28);--shade-12:rgba(0,0,0,.12);--shade-16:rgba(0,0,0,.16);--shade-18:rgba(0,0,0,.18);--shade-35:rgba(0,0,0,.35);--shade-40:rgba(0,0,0,.4);--shade-45:rgba(0,0,0,.45);--shade-50:rgba(0,0,0,.5);--shade-55:rgba(0,0,0,.55);--shade-60:rgba(0,0,0,.6);--sunken:rgba(0,0,0,.14);--nav-on-bg:rgba(var(--c-navhover-rgb),.35);--on-accent:#fff;--on-danger:#fff;--tint-danger:#ffb3b3;--tint-warn:#ffd9a6;--tint-est:#ffd0b0;--tint-info:#89baff;--tint-ok:#6ee38c;--nav-on-icon:var(--c-navicon);--bg-glow0:rgba(var(--c-brand-rgb),0.5);--bg-glow1:rgba(var(--c-brand-rgb),0.5);--bg-glow2:rgba(var(--c-panel2-rgb),0.6);--nav-on-fg:var(--ice);--steel-300:#c6cedb;--steel-400:#a3adbd;--glow-core:rgba(var(--c-accent-rgb),0.16);}
+:root[data-theme="iris"]{--bg:#f1f3fb;--panel:#ffffff;--panel2:#e9edf9;--line:rgba(75,73,172,0.16);--text:#191d3d;--muted:#5f6889;--blue:#4b79e8;--green:#0f7a58;--yellow:#a35f0e;--red:#e0555b;--purple:#8b5cf6;--lift-008:rgba(255,255,255,.35);--lift-015:rgba(255,255,255,.45);--lift-02:rgba(255,255,255,.55);--lift-025:rgba(255,255,255,.62);--lift-03:rgba(255,255,255,.7);--lift-033:rgba(255,255,255,.74);--lift-035:rgba(255,255,255,.78);--lift-04:rgba(255,255,255,.86);--lift-045:rgba(255,255,255,.93);--lift-05:#ffffff;--lift-06:rgba(75,73,172,.05);--lift-08:rgba(75,73,172,.07);--lift-10:rgba(75,73,172,.09);--lift-12:rgba(75,73,172,.11);--lift-16:rgba(75,73,172,.14);--lift-18:rgba(75,73,172,.16);--lift-28:rgba(75,73,172,.24);--shade-12:rgba(75,73,172,.05);--shade-16:rgba(75,73,172,.07);--shade-18:rgba(75,73,172,.08);--shade-35:rgba(75,73,172,.10);--shade-40:rgba(75,73,172,.12);--shade-45:rgba(75,73,172,.13);--shade-50:rgba(75,73,172,.15);--shade-55:rgba(75,73,172,.17);--shade-60:rgba(75,73,172,.19);--sunken:#e9edf9;--nav-on-bg:#4b49ac;--on-accent:#2e2c86;--on-danger:#b23a40;--field:#ffffff;--field-line:rgba(75,73,172,0.24);--c-accent-b-rgb:125,160,250;--c-accent-rgb:75,73,172;--c-accent2:#7978e9;--c-accent2-rgb:121,120,233;--c-avatar:#e3e6f8;--c-avatar-line:#b9bce8;--c-bg:#f1f3fb;--c-bg-b:#e9edf9;--c-brand:#4b49ac;--c-brand-rgb:75,73,172;--c-fieldline-rgb:75,73,172;--c-focus:#4b49ac;--c-line-rgb:75,73,172;--c-muted2:#4e5573;--c-navhover-rgb:75,73,172;--c-navicon:#7978e9;--c-panel:#ffffff;--c-panel-rgb:255,255,255;--c-panel2:#e9edf9;--c-panel2-rgb:233,237,249;--c-side1-rgb:255,255,255;--c-side2-rgb:250,251,255;--c-side3-rgb:244,246,253;--c-sline-rgb:75,73,172;--c-spanel2-rgb:240,243,252;--c-spanel3-rgb:246,248,253;--c-tint:#3b39a0;--font-heading:'Public Sans',system-ui,sans-serif;--font-body:'Public Sans',system-ui,sans-serif;--select-bg:#ffffff;--select-fg:#191d3d;--tint-danger:#c0343b;--tint-warn:#7a4f10;--tint-est:#9a4f14;--tint-info:#3b39a0;--tint-ok:#0b6b4d;--nav-on-icon:#ffffff;--bg-glow0:rgba(152,189,255,0.18);--bg-glow1:rgba(152,189,255,0.18);--bg-glow2:rgba(121,120,233,0.09);--nav-on-fg:#ffffff;--steel-300:#4e5573;--steel-400:#5f6889;--glow-core:rgba(75,73,172,0.05);}
+body{background:radial-gradient(120% 70% at 82% 0%,var(--bg-glow1),transparent 55%),radial-gradient(80% 60% at 10% 100%,var(--bg-glow2),transparent 60%),linear-gradient(160deg,var(--c-bg),var(--c-panel) 60%,var(--c-bg));font-family:var(--font-body)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.25;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%);mask-image:radial-gradient(circle at 55% 4%,#000 25%,transparent 82%)}
+.shell{position:relative;z-index:1}
+.panel{background:var(--lift-035);border-color:var(--line);border-radius:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.control,.btn{background:var(--field);border-color:var(--field-line);border-radius:0}.control:focus{border-color:var(--blue)}
+.btn.primary{color:#fff;background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));border-color:var(--c-accent2);box-shadow:0 8px 22px rgba(var(--c-brand-rgb),.18)}
+.module-icon{background:rgba(var(--c-accent-rgb),.14);border-color:rgba(var(--c-accent-rgb),.35);color:var(--blue)}
+.supplier:hover,.supplier.on{background:rgba(var(--c-accent-rgb),.1)}.supplier.on{box-shadow:inset 3px 0 var(--blue)}
+.avatar,.logo{background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));border-color:rgba(var(--c-fieldline-rgb),.18)}
+.panel-title{color:var(--blue);letter-spacing:.09em}.chip{background:rgba(var(--c-accent-rgb),.12);color:var(--c-tint)}
+.actionbar button{background:var(--lift-03);border-color:var(--field-line)}.actionbar button:hover{background:rgba(var(--c-accent-rgb),.07);color:var(--text)}
+.field input,.field select,.field textarea{background:var(--field);border-color:var(--field-line)}
+.toast{background:var(--c-panel2);border-color:rgba(var(--c-accent-rgb),.5)}
+/* Motion and module shell */
+.ambient{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}.ambient-glow{position:absolute;left:56%;top:12%;width:620px;height:620px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(var(--c-accent-rgb),.17),transparent 63%);filter:blur(8px);animation:ambientPulse 6s ease-in-out infinite}.ember{position:absolute;bottom:-10px;border-radius:50%;background:var(--blue);box-shadow:0 0 7px 1px rgba(var(--c-accent-rgb),.8);animation:emberRise linear infinite;opacity:0}@keyframes ambientPulse{0%,100%{opacity:.65;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}@keyframes emberRise{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:.8}100%{transform:translateY(-105vh) translateX(var(--drift));opacity:0}}@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes softPop{0%{transform:scale(.96);opacity:0}100%{transform:scale(1);opacity:1}}
+.module-sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:205px;padding:18px 14px;background:linear-gradient(180deg,rgba(var(--c-side1-rgb),.99),rgba(var(--c-side2-rgb),.99));border-right:1px solid rgba(var(--c-accent-rgb),.22);display:flex;flex-direction:column;box-shadow:12px 0 34px var(--shade-16)}.ms-brand{display:flex;align-items:center;gap:10px;padding:2px 3px 20px}.ms-icon{width:31px;height:31px;display:grid;place-items:center;border:1px solid rgba(var(--c-line-rgb),.6);color:var(--blue);font-size:17px}.ms-brand h2{font:700 16px var(--font-heading);margin:0;letter-spacing:.04em}.ms-brand small{display:block;color:var(--muted);font-size:9.5px;margin-top:3px}.module-side-nav{display:grid;gap:5px}.module-side-nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:41px;padding:10px 11px;border:0;border-left:2px solid transparent;background:transparent;color:var(--c-muted2);font:500 11.5px var(--font-body);text-align:left;cursor:pointer;transition:background .18s,color .18s,transform .18s}.module-side-nav button:hover,.module-side-nav button.on{color:#fff;background:var(--nav-on-bg);border-left-color:var(--blue);transform:translateX(2px)}.module-side-nav i{width:17px;color:var(--c-navicon);font-style:normal;text-align:center;font-size:13px}.module-side-nav button:hover i,.module-side-nav button.on i{color:var(--nav-on-icon)}.ms-sidebox{margin-top:18px;padding:12px;border:1px solid var(--line);background:rgba(var(--c-side3-rgb),.72)}.ms-sidebox b{display:block;color:var(--c-tint);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.ms-sidebox p{color:var(--muted);font-size:11px;line-height:1.55;margin:0}.ms-user{margin-top:auto;padding:15px 4px 3px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px}.ms-avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--c-avatar);border:1px solid var(--c-avatar-line);font-size:11px}.ms-user small{display:block;color:var(--muted);font-size:9.5px;margin-top:2px}
+.shell{margin-left:205px;padding:18px 22px 22px;animation:panelIn .45s ease-out}.title h1,.name-line h2,.metric strong{font-family:var(--font-heading)}.top{height:56px;margin-bottom:5px}.panel{animation:panelIn .4s ease-out both;transition:border-color .18s,background .18s,box-shadow .18s}.detail>.panel:nth-child(1){animation-delay:.03s}.metrics .panel:nth-child(1){animation-delay:.06s}.metrics .panel:nth-child(2){animation-delay:.09s}.metrics .panel:nth-child(3){animation-delay:.12s}.metrics .panel:nth-child(4){animation-delay:.15s}.metrics .panel:nth-child(5){animation-delay:.18s}.metrics .panel:nth-child(6){animation-delay:.21s}.panel:hover{border-color:rgba(var(--c-accent-rgb),.28);box-shadow:0 12px 30px var(--shade-12)}.btn,.actionbar button,.supplier,.main-tabs button,.tabs-small button{transition:transform .16s,border-color .16s,background .16s,color .16s,box-shadow .16s}.btn:hover{transform:translateY(-1px)}.btn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(var(--c-accent2-rgb),.45)}.supplier:hover{transform:translateX(2px)}.actionbar button:hover{transform:translateY(-3px);box-shadow:0 10px 24px var(--shade-18)}.modal.show .modal-card{animation:softPop .2s ease-out}.spark{position:relative;overflow:hidden}.spark::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,var(--lift-16) 50%,transparent 80%);transform:translateX(-100%);animation:sparkSweep 4s ease-in-out infinite}@keyframes sparkSweep{0%,55%{transform:translateX(-100%)}85%,100%{transform:translateX(100%)}}
+@media(max-width:1100px){.module-sidebar{position:relative;width:100%;height:auto;padding:10px}.ms-brand{padding-bottom:10px}.module-side-nav{display:flex;overflow-x:auto}.module-side-nav button{flex:0 0 auto;width:auto}.ms-sidebox,.ms-user{display:none}.shell{margin-left:0;min-width:980px}.langc{left:auto;right:14px}}
+@media(prefers-reduced-motion:reduce){.ambient-glow,.ember,.spark::after{animation:none}.panel,.shell,.modal.show .modal-card{animation:none}.btn,.supplier,.actionbar button{transition:none}}
+.langc{position:fixed;z-index:50;left:14px;bottom:16px;font-family:var(--font-body);}
+.langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(var(--c-panel-rgb),.8);border:1px solid rgba(var(--c-line-rgb),0.16);color:var(--muted);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+.langtoggle:hover{color:var(--text);border-color:rgba(var(--c-fieldline-rgb),0.35);} .langtoggle .globe{width:14px;height:14px;color:var(--muted);} .langtoggle .cur{font-weight:600;letter-spacing:.08em;} .langtoggle .chev{width:12px;height:12px;color:var(--muted);transition:transform .18s;}
+.langc.open .langtoggle .chev{transform:rotate(180deg);}
+.langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:rgba(var(--c-panel-rgb),.96);border:1px solid rgba(var(--c-line-rgb),0.18);box-shadow:0 14px 34px var(--shade-45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+.langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+.langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--muted);font-family:var(--font-body);font-size:13px;padding:11px 14px;cursor:pointer;} .langmenu button:hover,.langmenu button.active{background:rgba(var(--c-accent-rgb),.12);color:var(--c-tint);}
+
+  :root[data-theme="carbon"] .ember{background:#dbe9ff;box-shadow:0 0 7px 2px rgba(79,140,255,.95),0 0 17px 5px rgba(79,140,255,.42);}
+
+  select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
+/* Access — the page's own layout. Everything above this line is the shared theme. */
+.top{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.module-icon{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(var(--c-accent-rgb),.35);background:rgba(var(--c-accent-rgb),.14);color:var(--blue);font-size:17px}
+.title h1{font-size:21px;margin:0;letter-spacing:-.01em}.title p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.top-actions{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.whoami{color:var(--muted);font-size:12px;text-align:right;line-height:1.45}.whoami b{color:var(--text);display:block;font-weight:600}
+.control,.btn{height:34px;border:1px solid var(--field-line);background:var(--field);color:var(--text);padding:0 12px;border-radius:0}
+.control{outline:none}.control:focus{border-color:var(--blue)}
+.btn{cursor:pointer;transition:transform .16s,border-color .16s,color .16s}.btn:hover{border-color:var(--blue);transform:translateY(-1px)}
+.btn.primary{color:#fff;background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));border-color:var(--c-accent2)}
+.btn.small{height:29px;padding:0 10px;font-size:11px}
+.btn.danger{color:var(--tint-danger);border-color:rgba(var(--c-accent-rgb),.2)}.btn.danger:hover{border-color:var(--red)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.stack{display:grid;gap:18px;max-width:1120px}
+.panel{padding:18px;animation:panelIn .4s ease-out both}
+.panel-title{color:var(--blue);text-transform:uppercase;font-weight:700;font-size:11px;letter-spacing:.09em;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.panel-title>span:first-child{min-width:0;overflow-wrap:anywhere}
+.lede{color:var(--steel-300);font-size:12px;line-height:1.6;margin:0 0 14px;max-width:70ch}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--muted);font-weight:500;text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 9px;border-bottom:1px solid rgba(var(--c-sline-rgb),.65);vertical-align:middle}
+tbody tr:hover{background:rgba(var(--c-accent-rgb),.06)}
+.person b{display:block}.person small{color:var(--muted);display:block;margin-top:2px}
+.rowactions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.chip{display:inline-block;padding:2px 6px;font-size:10px;background:rgba(var(--c-accent-rgb),.14);color:var(--tint-info);white-space:nowrap}
+.chip+.chip{margin-left:4px}
+.chip.ok{background:rgba(var(--c-ok-rgb,74,212,138),.14);color:var(--tint-ok)}
+.chip.warn{background:rgba(var(--c-warn-rgb,255,176,87),.18);color:var(--tint-warn)}
+.chip.bad{background:rgba(var(--c-danger-rgb,255,107,107),.16);color:var(--tint-danger)}
+.chip.off{background:rgba(var(--c-line-rgb),.2);color:var(--steel-300)}
+.me{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;align-items:end}
+.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.field input,.field select{width:100%;height:34px;background:var(--field);border:1px solid var(--field-line);color:var(--text);padding:0 10px}
+.field.wide{grid-column:1/-1}
+.said{margin:14px 0 0;padding:11px 13px;font-size:12px;line-height:1.55;border:1px solid var(--line);background:var(--lift-03);overflow-wrap:anywhere}
+.said.refused{border-color:rgba(255,107,107,.45);color:var(--tint-danger)}
+.said.done{border-color:rgba(74,212,138,.4);color:var(--tint-ok)}
+.said[hidden]{display:none !important}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.tablewrap{margin:0 -18px;overflow:auto}.tablewrap table{min-width:720px}
+.tablewrap th:first-child,.tablewrap td:first-child{padding-left:18px}
+.tablewrap th:last-child,.tablewrap td:last-child{padding-right:18px}
+[hidden]{display:none !important}
+.panel,.btn,.control{overflow-wrap:anywhere}
+@media(max-width:700px){.shell{padding:16px}.tablewrap table{min-width:640px}.top-actions{width:100%;margin-left:0}}
+select option,select optgroup{background:var(--select-bg);color:var(--select-fg)}
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
+</head>
+<body><a class="skip-link" href="#mainContent" data-i="skip">Skip to access content</a><div class="ambient" aria-hidden="true"><div class="ambient-glow"></div><div id="embers"></div></div>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◐</div><div><h2 data-i="sb_title">ACCESS</h2><small data-i="sb_subtitle">Who may sign in</small></div></div>
+<nav class="module-side-nav" id="moduleSideNav"><button class="on" onclick="goTo('peoplePanel')"><i>◇</i><span data-i="nav_people">People</span></button><button onclick="goTo('addPanel')"><i>＋</i><span data-i="nav_add">Add somebody</span></button><button onclick="goTo('mePanel')"><i>⌸</i><span data-i="nav_me">My password</span></button><button onclick="signOut()"><i>⏻</i><span data-i="nav_signout">Sign out</span></button></nav>
+<div class="ms-sidebox"><b data-i="sb_box_title">Two doors</b><p data-i="sb_box_body">The office signs in with an email and a password. The shop floor signs in with a PIN on the shared tablet, and that session ends with the shift.</p></div>
+<div class="ms-user"><div class="ms-avatar" id="sideInitials">—</div><div><strong id="sideName" data-i="sb_nobody">Not signed in</strong><small id="sideRole"></small></div></div></aside>
+<div class="shell">
+<header class="top"><a class="back-link" href="hub-desktop.html">←&nbsp; <span data-i="back_hub">Hub</span></a><div class="module-icon" aria-hidden="true">◐</div><div class="title"><h1 data-i="title">Access</h1><p data-i="subtitle">Who may sign in, and through which door</p></div><div class="top-actions"><div class="whoami" id="whoami" hidden></div><button class="btn" id="refreshBtn" onclick="load()" hidden data-i="btn_refresh">Refresh</button><button class="btn" id="signOutBtn" onclick="signOut()" hidden data-i="btn_signout">Sign out</button></div></header>
+<main class="stack" id="mainContent">
+
+<article class="panel" id="noServer" hidden><div class="panel-title"><span data-i="ns_title">No server</span></div><p class="lede" data-i="ns_body">This page talks to the workshop's database, and there is nothing answering. It is the one screen that cannot fall back to this browser's own storage: an account that exists only in one browser is not access to anything.</p></article>
+
+<article class="panel" id="signedOut" hidden><div class="panel-title"><span data-i="so_title">Sign in first</span></div><p class="lede" data-i="so_body">Who may sign in is kept in the database, so this screen needs you to be signed in before it will show you anything.</p><p><a class="btn" href="login.html" data-i="so_link">Go to sign in</a></p>
+<hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+<div class="panel-title"><span data-i="first_title">First run</span></div><p class="lede" data-i="first_body">If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good.</p>
+<form id="firstForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="firstEmail" data-i="f_email">Email</label><input id="firstEmail" type="email" autocomplete="username" spellcheck="false" required></div><div class="field"><label for="firstName" data-i="f_name">Name</label><input id="firstName" autocomplete="name" required></div><div class="field"><label for="firstPassword" data-i="f_password">Password</label><input id="firstPassword" type="password" autocomplete="new-password" required></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="first_btn">Create the first administrator</button></div></div></form>
+<p class="said" id="firstSaid" hidden></p></article>
+
+<article class="panel" id="peoplePanel" hidden><div class="panel-title"><span data-i="pp_title">People</span><span id="peopleCount" class="me"></span></div><p class="lede" id="peopleLede" data-i="pp_body">Everybody who can sign in, and how. A person with neither a password nor a PIN has no way in at all — which is how everybody starts.</p><div class="tablewrap"><table><thead><tr><th data-i="th_person">Person</th><th data-i="th_role">Role</th><th data-i="th_door">Way in</th><th data-i="th_status">Status</th><th data-i="th_lastseen">Last seen</th><th></th></tr></thead><tbody id="peopleRows"></tbody></table></div><p class="said" id="peopleSaid" hidden></p></article>
+
+<article class="panel" id="addPanel" hidden><div class="panel-title"><span data-i="ap_title">Add somebody</span></div><p class="lede" data-i="ap_body">A new person arrives with no way in. You set their PIN or their password afterwards, from the list above — so there is never a moment where an account exists with a password somebody else chose and nobody changed.</p>
+<form id="addForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="addEmail" data-i="f_email">Email</label><input id="addEmail" type="email" spellcheck="false" autocomplete="off" required></div><div class="field"><label for="addName" data-i="f_name">Name</label><input id="addName" autocomplete="off" required></div><div class="field"><label for="addRole" data-i="f_role">Role</label><select id="addRole"><option value="workshop" data-i="role_workshop">Workshop</option><option value="office" data-i="role_office">Office</option><option value="admin" data-i="role_admin">Administrator</option></select></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="ap_btn">Add</button></div></div></form>
+<p class="said" id="addSaid" hidden></p></article>
+
+<article class="panel" id="mePanel" hidden><div class="panel-title"><span data-i="mp_title">My password</span></div><p class="lede" data-i="mp_body">You change your own password by proving you know the current one. Without that, anybody who walks past an unlocked tablet owns the account from then on.</p>
+<form id="meForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="meCurrent" data-i="f_current">Current password</label><input id="meCurrent" type="password" autocomplete="current-password" required></div><div class="field"><label for="meNew" data-i="f_new">New password</label><input id="meNew" type="password" autocomplete="new-password" required></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="mp_btn">Change my password</button></div></div></form>
+<p class="said" id="meSaid" hidden></p></article>
+
+</main></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="panel modal-card" style="width:min(460px,calc(100vw - 24px));padding:20px"><h2 id="modalTitle" style="margin:0 0 6px;font-size:17px;font-family:var(--font-heading)"></h2><p class="lede" id="modalWho" style="margin-bottom:14px"></p><form id="modalForm"><div id="modalFields"></div><div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn" onclick="closeModal()" data-i="modal_cancel">Cancel</button><button class="btn primary" id="modalSave" data-i="modal_save">Save</button></div></form></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="langc" id="langc">
+  <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+<script>window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
+<script>
+'use strict';
+// Access — the one screen that exists because adding a person used to mean opening psql.
+//
+// It is server-only, deliberately. Every other page in this app has a browser-storage life it can
+// fall back to; this one has none, because an account that exists in one browser is not access to
+// anything. With no server it says so and stops.
+//
+// The page decides nothing. Every button here is one of the workflows in api.sql, and every refusal
+// shown is the database's own wording rather than something this file made up — "only an admin adds
+// people", "that PIN is one of the first a stranger would try", "that is not your current password".
+// The rules live in one place and this is not it.
+//
+// Two things it does do, and both are presentation rather than enforcement:
+//   1. It hides the actions an admin is not allowed to take on themselves — switching yourself off,
+//      taking away your own admin. The database refuses both. Not offering them is a different
+//      thing from refusing them, and a screen that offers a button which always fails is a screen
+//      that teaches people to ignore refusals.
+//   2. It says out loud when somebody has no way in at all, because add_person leaves them exactly
+//      there on purpose, and an admin who cannot see that will think the job is done.
+let LANG = 'en', people = [], me = null, pending = null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+const t = (k) => (T[LANG] && T[LANG][k] !== undefined ? T[LANG][k] : (T.en[k] !== undefined ? T.en[k] : k));
+
+const T = {
+  en: {
+    skip: 'Skip to access content',
+    sb_title: 'ACCESS', sb_subtitle: 'Who may sign in', sb_nobody: 'Not signed in',
+    nav_people: 'People', nav_add: 'Add somebody', nav_me: 'My password', nav_signout: 'Sign out',
+    sb_box_title: 'Two doors',
+    sb_box_body: 'The office signs in with an email and a password. The shop floor signs in with a PIN on the shared tablet, and that session ends with the shift.',
+    back_hub: 'Hub', title: 'Access', subtitle: 'Who may sign in, and through which door',
+    btn_refresh: 'Refresh', btn_signout: 'Sign out',
+    ns_title: 'No server',
+    ns_body: "This page talks to the workshop's database, and there is nothing answering. It is the one screen that cannot fall back to this browser's own storage: an account that exists only in one browser is not access to anything.",
+    so_title: 'Sign in first',
+    so_body: 'Who may sign in is kept in the database, so this screen needs you to be signed in before it will show you anything.',
+    so_link: 'Go to sign in',
+    first_title: 'First run',
+    first_body: 'If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good.',
+    first_btn: 'Create the first administrator',
+    first_done: 'Made. Sign in with that email and password.',
+    pp_title: 'People', pp_body: 'Everybody who can sign in, and how. A person with neither a password nor a PIN has no way in at all — which is how everybody starts.',
+    pp_body_own: 'Your own record. Only an administrator sees everybody.',
+    ap_title: 'Add somebody',
+    ap_body: 'A new person arrives with no way in. You set their PIN or their password afterwards, from the list above — so there is never a moment where an account exists with a password somebody else chose and nobody changed.',
+    ap_btn: 'Add', ap_done: 'Added. They have no way in yet — set a PIN or a password below.',
+    mp_title: 'My password',
+    mp_body: 'You change your own password by proving you know the current one. Without that, anybody who walks past an unlocked tablet owns the account from then on.',
+    mp_btn: 'Change my password', mp_done: 'Changed. The old one stopped working the moment it changed.',
+    th_person: 'Person', th_role: 'Role', th_door: 'Way in', th_status: 'Status', th_lastseen: 'Last seen',
+    f_email: 'Email', f_name: 'Name', f_role: 'Role', f_password: 'Password',
+    f_current: 'Current password', f_new: 'New password', f_pin: 'PIN',
+    role_workshop: 'Workshop', role_office: 'Office', role_admin: 'Administrator',
+    door_pin: 'PIN', door_password: 'Password', door_none: 'No way in yet',
+    st_active: 'Active', st_off: 'Switched off', st_locked: 'Locked until {time}',
+    st_attempts: '{n} failed', st_never: 'never',
+    you: 'You',
+    act_pin: 'Set PIN', act_password: 'Set password', act_role: 'Role', act_off: 'Switch off', act_on: 'Switch on',
+    modal_cancel: 'Cancel', modal_save: 'Save',
+    m_pin_title: 'Set a PIN', m_pin_body: 'Four to eight digits, and not one of the first a stranger would try. Setting it clears any lockout.',
+    m_password_title: 'Set a password', m_password_body: 'At least twelve characters. Length is what costs a guesser; a rule demanding a capital and a symbol produces the same password on every account in the building.',
+    m_role_title: 'Change role', m_role_body: 'What this person may do. The workshop books hours and issues material; the office runs quotations and orders; an administrator also adds people.',
+    confirm_off: 'Switch {name} off? The tablet they are holding right now stops working, not just the next sign-in.',
+    confirm_on: 'Switch {name} back on?',
+    done_generic: 'Done.', count: '{n} people', count_one: '1 person',
+    signed_out: 'Signed out.'
+  },
+  sv: {
+    skip: 'Hoppa till innehållet',
+    sb_title: 'BEHÖRIGHET', sb_subtitle: 'Vem får logga in', sb_nobody: 'Inte inloggad',
+    nav_people: 'Personer', nav_add: 'Lägg till någon', nav_me: 'Mitt lösenord', nav_signout: 'Logga ut',
+    sb_box_title: 'Två dörrar',
+    sb_box_body: 'Kontoret loggar in med e-post och lösenord. Verkstaden loggar in med en PIN-kod på den delade plattan, och den sessionen tar slut med skiftet.',
+    back_hub: 'Hub', title: 'Behörighet', subtitle: 'Vem får logga in, och genom vilken dörr',
+    btn_refresh: 'Uppdatera', btn_signout: 'Logga ut',
+    ns_title: 'Ingen server',
+    ns_body: 'Den här sidan pratar med verkstadens databas, och ingen svarar. Det är den enda skärmen som inte kan falla tillbaka på webbläsarens eget lager: ett konto som bara finns i en webbläsare är inte behörighet till någonting.',
+    so_title: 'Logga in först',
+    so_body: 'Vem som får logga in ligger i databasen, så den här skärmen behöver att du är inloggad innan den visar något.',
+    so_link: 'Till inloggningen',
+    first_title: 'Första gången',
+    first_body: 'Om verkstaden ännu inte har någon, skapa den första administratören här. Det fungerar en gång, på ett tomt system — därefter lägger en administratör till alla andra, och formuläret slutar fungera för gott.',
+    first_btn: 'Skapa den första administratören',
+    first_done: 'Klart. Logga in med den e-posten och lösenordet.',
+    pp_title: 'Personer', pp_body: 'Alla som kan logga in, och hur. Den som varken har lösenord eller PIN har ingen väg in alls — och så börjar alla.',
+    pp_body_own: 'Din egen post. Bara en administratör ser alla.',
+    ap_title: 'Lägg till någon',
+    ap_body: 'En ny person kommer in utan väg in. Du sätter PIN eller lösenord efteråt, från listan ovan — så det aldrig finns ett ögonblick där ett konto har ett lösenord som någon annan valt och ingen bytt.',
+    ap_btn: 'Lägg till', ap_done: 'Tillagd. Ingen väg in ännu — sätt en PIN eller ett lösenord nedan.',
+    mp_title: 'Mitt lösenord',
+    mp_body: 'Du byter ditt eget lösenord genom att visa att du kan det nuvarande. Utan det äger den som går förbi en olåst platta kontot därefter.',
+    mp_btn: 'Byt mitt lösenord', mp_done: 'Bytt. Det gamla slutade fungera i samma stund.',
+    th_person: 'Person', th_role: 'Roll', th_door: 'Väg in', th_status: 'Status', th_lastseen: 'Senast sedd',
+    f_email: 'E-post', f_name: 'Namn', f_role: 'Roll', f_password: 'Lösenord',
+    f_current: 'Nuvarande lösenord', f_new: 'Nytt lösenord', f_pin: 'PIN',
+    role_workshop: 'Verkstad', role_office: 'Kontor', role_admin: 'Administratör',
+    door_pin: 'PIN', door_password: 'Lösenord', door_none: 'Ingen väg in ännu',
+    st_active: 'Aktiv', st_off: 'Avstängd', st_locked: 'Låst till {time}',
+    st_attempts: '{n} misslyckade', st_never: 'aldrig',
+    you: 'Du',
+    act_pin: 'Sätt PIN', act_password: 'Sätt lösenord', act_role: 'Roll', act_off: 'Stäng av', act_on: 'Slå på',
+    modal_cancel: 'Avbryt', modal_save: 'Spara',
+    m_pin_title: 'Sätt en PIN', m_pin_body: 'Fyra till åtta siffror, och inte en av de första en främling provar. Att sätta den nollställer en eventuell låsning.',
+    m_password_title: 'Sätt ett lösenord', m_password_body: 'Minst tolv tecken. Längden är det som kostar en gissare; ett krav på versal och symbol ger samma lösenord på varje konto i huset.',
+    m_role_title: 'Byt roll', m_role_body: 'Vad den här personen får göra. Verkstaden bokar timmar och tar ut material; kontoret sköter offerter och order; en administratör lägger dessutom till personer.',
+    confirm_off: 'Stänga av {name}? Plattan de håller i just nu slutar fungera, inte bara nästa inloggning.',
+    confirm_on: 'Slå på {name} igen?',
+    done_generic: 'Klart.', count: '{n} personer', count_one: '1 person',
+    signed_out: 'Utloggad.'
+  },
+  mk: {
+    skip: 'Preskoči do sodržinata',
+    sb_title: 'PRISTAP', sb_subtitle: 'Koj smee da se najavi', sb_nobody: 'Ne ste najaveni',
+    nav_people: 'Lugje', nav_add: 'Dodaj nekogo', nav_me: 'Mojata lozinka', nav_signout: 'Odjava',
+    sb_box_title: 'Dve vrati',
+    sb_box_body: 'Kancelarijata se najavuva so e-pošta i lozinka. Rabotilnicata se najavuva so PIN na zaedničkiot tablet, i taa sesija završuva so smenata.',
+    back_hub: 'Hub', title: 'Pristap', subtitle: 'Koj smee da se najavi, i niz koja vrata',
+    btn_refresh: 'Osveži', btn_signout: 'Odjava',
+    ns_title: 'Nema server',
+    ns_body: 'Ovaa stranica zboruva so bazata na rabotilnicata, i nikoj ne odgovara. Toa e edinstveniot ekran što ne može da se potpre na memorijata na ovoj prelistuvač: smetka što postoi samo vo eden prelistuvač ne e pristap do ništo.',
+    so_title: 'Prvo najavete se',
+    so_body: 'Koj smee da se najavi se čuva vo bazata, pa ovoj ekran bara da bidete najaveni pred da vi pokaže bilo što.',
+    so_link: 'Kon najavata',
+    first_title: 'Prvo puštanje',
+    first_body: 'Ako rabotilnicata seušte nema nikogo, napravete go prviot administrator tuka. Raboti ednaš, na prazen sistem — potoa administrator gi dodava site drugi, i ovoj formular prestanuva da raboti zasekogaš.',
+    first_btn: 'Napravi go prviot administrator',
+    first_done: 'Gotovo. Najavete se so taa e-pošta i lozinka.',
+    pp_title: 'Lugje', pp_body: 'Site što možat da se najavat, i kako. Onoj što nema nitu lozinka nitu PIN nema nikakov vlez — i taka počnuvaat site.',
+    pp_body_own: 'Vašiot sopstven zapis. Samo administrator gi gleda site.',
+    ap_title: 'Dodaj nekogo',
+    ap_body: 'Nov čovek doagja bez vlez. PIN ili lozinka mu stavate potoa, od spisokot pogore — za da nema nitu mig vo koj smetkata ima lozinka što ja izbral nekoj drug i nikoj ne ja smenil.',
+    ap_btn: 'Dodaj', ap_done: 'Dodaden. Seušte nema vlez — stavete PIN ili lozinka podolu.',
+    mp_title: 'Mojata lozinka',
+    mp_body: 'Sopstvenata lozinka ja menuvate so toa što kje ja dokažete segašnata. Bez toa, koj kje pomine pokraj otklučen tablet ja zema smetkata zanavek.',
+    mp_btn: 'Smeni ja mojata lozinka', mp_done: 'Smeneta. Starata prestana da raboti vo istiot mig.',
+    th_person: 'Čovek', th_role: 'Uloga', th_door: 'Vlez', th_status: 'Status', th_lastseen: 'Posledno viden',
+    f_email: 'E-pošta', f_name: 'Ime', f_role: 'Uloga', f_password: 'Lozinka',
+    f_current: 'Segašna lozinka', f_new: 'Nova lozinka', f_pin: 'PIN',
+    role_workshop: 'Rabotilnica', role_office: 'Kancelarija', role_admin: 'Administrator',
+    door_pin: 'PIN', door_password: 'Lozinka', door_none: 'Seušte nema vlez',
+    st_active: 'Aktiven', st_off: 'Isklučen', st_locked: 'Zaklučen do {time}',
+    st_attempts: '{n} neuspešni', st_never: 'nikogaš',
+    you: 'Vie',
+    act_pin: 'Stavi PIN', act_password: 'Stavi lozinka', act_role: 'Uloga', act_off: 'Iskluči', act_on: 'Vkluči',
+    modal_cancel: 'Otkaži', modal_save: 'Zapiši',
+    m_pin_title: 'Stavete PIN', m_pin_body: 'Četiri do osum cifri, i ne edna od prvite što bi gi probal stranec. Stavanjeto go briše sekoe zaklučuvanje.',
+    m_password_title: 'Stavete lozinka', m_password_body: 'Najmalku dvanaeset znaci. Dolžinata e toa što go košta pogadjačot; pravilo za golema bukva i simbol dava ista lozinka na sekoja smetka vo zgradata.',
+    m_role_title: 'Smeni uloga', m_role_body: 'Što smee ovoj čovek. Rabotilnicata knigi časovi i zema materijal; kancelarijata vodi ponudi i narački; administrator pokraj toa dodava lugje.',
+    confirm_off: 'Da go isklučam {name}? Tabletot što go drži sega prestanuva da raboti, ne samo slednata najava.',
+    confirm_on: 'Da go vklučam {name} pak?',
+    done_generic: 'Gotovo.', count: '{n} lugje', count_one: '1 čovek',
+    signed_out: 'Odjaveni ste.'
+  }
+};
+
+// ── saying what happened ──────────────────────────────────────────────────────────────────
+// The database's wording, passed through untouched. It was written for the person who will read it.
+function say(id, message, kind) {
+  const el = $(id);
+  el.textContent = message;
+  el.className = 'said' + (kind ? ' ' + kind : '');
+  el.hidden = !message;
+}
+let toastTimer = null;
+function notify(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function show(id, on) { $(id).hidden = !on; }
+function goTo(id) {
+  const el = $(id);
+  if (el.hidden) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function initials(name) {
+  return String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0] || '').join('').toUpperCase() || '?';
+}
+function when(iso) {
+  if (!iso) return t('st_never');
+  const d = new Date(iso);
+  if (isNaN(d)) return t('st_never');
+  return new Intl.DateTimeFormat(LANG === 'mk' ? 'mk' : LANG === 'sv' ? 'sv-SE' : 'en-GB',
+    { dateStyle: 'short', timeStyle: 'short' }).format(d);
+}
+function atTime(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? '' : new Intl.DateTimeFormat('sv-SE', { timeStyle: 'short' }).format(d);
+}
+
+// ── the list ──────────────────────────────────────────────────────────────────────────────
+function doorChips(p) {
+  const chips = [];
+  if (p.passwordSet) chips.push(`<span class="chip ok">${esc(t('door_password'))}</span>`);
+  if (p.pinSet) chips.push(`<span class="chip ok">${esc(t('door_pin'))}</span>`);
+  // The state add_person leaves somebody in, said out loud. An admin who cannot see this thinks
+  // they have given somebody access when they have given them an account they cannot use.
+  if (!chips.length) chips.push(`<span class="chip warn">${esc(t('door_none'))}</span>`);
+  return chips.join('');
+}
+function statusChips(p) {
+  const chips = [];
+  chips.push(p.active
+    ? `<span class="chip ok">${esc(t('st_active'))}</span>`
+    : `<span class="chip off">${esc(t('st_off'))}</span>`);
+  if (p.lockedUntil && new Date(p.lockedUntil) > new Date()) {
+    chips.push(`<span class="chip bad">${esc(t('st_locked').replace('{time}', atTime(p.lockedUntil)))}</span>`);
+  } else if (p.failedAttempts > 0) {
+    chips.push(`<span class="chip warn">${esc(t('st_attempts').replace('{n}', p.failedAttempts))}</span>`);
+  }
+  return chips.join('');
+}
+function rowActions(p) {
+  if (!isAdmin()) return '';
+  const buttons = [
+    `<button class="btn small" onclick="openModal('pin','${esc(p.id)}')">${esc(t('act_pin'))}</button>`,
+    `<button class="btn small" onclick="openModal('password','${esc(p.id)}')">${esc(t('act_password'))}</button>`
+  ];
+  // Not offered on your own row. Both are refused by the database; a button that always fails is a
+  // button that teaches people refusals are noise.
+  if (!p.isMe) {
+    buttons.push(`<button class="btn small" onclick="openModal('role','${esc(p.id)}')">${esc(t('act_role'))}</button>`);
+    buttons.push(p.active
+      ? `<button class="btn small danger" onclick="toggleActive('${esc(p.id)}')">${esc(t('act_off'))}</button>`
+      : `<button class="btn small" onclick="toggleActive('${esc(p.id)}')">${esc(t('act_on'))}</button>`);
+  }
+  return `<div class="rowactions">${buttons.join('')}</div>`;
+}
+function isAdmin() { return !!(me && me.role === 'admin'); }
+function person(id) { return people.find((p) => p.id === String(id)) || null; }
+
+function renderPeople() {
+  $('peopleCount').textContent = people.length === 1 ? t('count_one') : t('count').replace('{n}', people.length);
+  $('peopleLede').textContent = isAdmin() ? t('pp_body') : t('pp_body_own');
+  $('peopleRows').innerHTML = people.map((p) => `<tr>
+    <td class="person"><b>${esc(p.name)}${p.isMe ? ` <span class="me">· ${esc(t('you'))}</span>` : ''}</b><small>${esc(p.email)}</small></td>
+    <td>${esc(t("role_" + p.role))}</td>
+    <td>${doorChips(p)}</td>
+    <td>${statusChips(p)}</td>
+    <td>${esc(when(p.lastSeen))}</td>
+    <td>${rowActions(p)}</td></tr>`).join('')
+    || `<tr><td colspan="6" class="empty">—</td></tr>`;
+
+  const who = me ? `<b>${esc(me.name)}</b>${esc(t("role_" + me.role))}` : '';
+  $('whoami').innerHTML = who;
+  $('whoami').hidden = !me;
+  $('sideInitials').textContent = me ? initials(me.name) : '—';
+  $('sideName').textContent = me ? me.name : t('sb_nobody');
+  $('sideRole').textContent = me ? t('role_' + me.role) : '';
+  show('addPanel', isAdmin());
+}
+
+// ── talking to the server ─────────────────────────────────────────────────────────────────
+async function load() {
+  const answer = await WorkshopApi.read('people');
+  if (answer.signedOut) return showSignedOut();
+  if (!answer.ok) return say('peopleSaid', answer.refused, 'refused');
+  people = answer.data || [];
+  me = people.find((p) => p.isMe) || null;
+  say('peopleSaid', '');
+  show('peoplePanel', true);
+  show('mePanel', true);
+  show('signedOut', false);
+  show('refreshBtn', true);
+  show('signOutBtn', true);
+  renderPeople();
+}
+
+// Every workflow goes through here: call it, say what the database said, and re-read the list
+// rather than guessing what changed. The list is the record; this page is a view of it.
+async function act(name, args, saidId) {
+  const answer = await WorkshopApi.call(name, args);
+  if (answer.signedOut) { showSignedOut(); return false; }
+  if (!answer.ok) { say(saidId, answer.refused, 'refused'); return false; }
+  await load();
+  return true;
+}
+
+function showSignedOut() {
+  me = null; people = [];
+  show('peoplePanel', false);
+  show('addPanel', false);
+  show('mePanel', false);
+  show('refreshBtn', false);
+  show('signOutBtn', false);
+  $('whoami').hidden = true;
+  $('sideInitials').textContent = '—';
+  $('sideName').textContent = t('sb_nobody');
+  $('sideRole').textContent = '';
+  show('signedOut', true);
+}
+
+async function signOut() {
+  await WorkshopApi.signOut();
+  showSignedOut();
+  notify(t('signed_out'));
+}
+
+// ── the one modal ─────────────────────────────────────────────────────────────────────────
+function openModal(kind, id) {
+  const p = person(id);
+  if (!p) return;
+  pending = { kind: kind, id: id };
+  $('modalTitle').textContent = t('m_' + kind + '_title');
+  $('modalWho').textContent = `${p.name} — ${t('m_' + kind + '_body')}`;
+  $('modalFields').innerHTML = kind === 'role'
+    ? `<div class="field"><label for="modalValue">${esc(t('f_role'))}</label><select id="modalValue">
+         <option value="workshop"${p.role === 'workshop' ? ' selected' : ''}>${esc(t('role_workshop'))}</option>
+         <option value="office"${p.role === 'office' ? ' selected' : ''}>${esc(t('role_office'))}</option>
+         <option value="admin"${p.role === 'admin' ? ' selected' : ''}>${esc(t('role_admin'))}</option>
+       </select></div>`
+    : `<div class="field"><label for="modalValue">${esc(t(kind === 'pin' ? 'f_pin' : 'f_password'))}</label>
+       <input id="modalValue" type="password" autocomplete="new-password"
+              ${kind === 'pin' ? 'inputmode="numeric" pattern="[0-9]*"' : ''} required></div>`;
+  $('modal').classList.add('show');
+  requestAnimationFrame(() => $('modalValue').focus());
+}
+function closeModal() { $('modal').classList.remove('show'); pending = null; }
+
+// ── wiring ────────────────────────────────────────────────────────────────────────────────
+$('modalForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!pending) return;
+  const value = $('modalValue').value;
+  const { kind, id } = pending;
+  const call = kind === 'pin' ? ['set_person_pin', { user_id: Number(id), pin: value }]
+    : kind === 'password' ? ['set_person_password', { user_id: Number(id), password: value }]
+    : ['set_person_role', { user_id: Number(id), role: value }];
+  closeModal();
+  if (await act(call[0], call[1], 'peopleSaid')) {
+    say('peopleSaid', t('done_generic'), 'done');
+    notify(t('done_generic'));
+  }
+});
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pending) closeModal(); });
+
+function toggleActive(id) {
+  const p = person(id);
+  if (!p) return;
+  const message = (p.active ? t('confirm_off') : t('confirm_on')).replace('{name}', p.name);
+  window.wConfirm(message, async () => {
+    if (await act('set_person_active', { user_id: Number(id), active: !p.active }, 'peopleSaid')) {
+      say('peopleSaid', t('done_generic'), 'done');
+    }
+  }, { danger: p.active });
+}
+
+$('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const args = {
+    email: $('addEmail').value.trim().toLowerCase(),
+    display_name: $('addName').value.trim(),
+    role: $('addRole').value
+  };
+  if (await act('add_person', args, 'addSaid')) {
+    $('addForm').reset();
+    say('addSaid', t('ap_done'), 'done');
+    notify(t('ap_done'));
+  }
+});
+
+$('meForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const answer = await WorkshopApi.call('change_my_password', {
+    current: $('meCurrent').value, new: $('meNew').value
+  });
+  if (answer.signedOut) return showSignedOut();
+  if (!answer.ok) return say('meSaid', answer.refused, 'refused');
+  $('meForm').reset();
+  say('meSaid', t('mp_done'), 'done');
+});
+
+// The first administrator. No session, because there is nobody to sign in as yet — the database
+// refuses this the instant the system has anybody in it, and that refusal is what is shown.
+$('firstForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const answer = await WorkshopApi.call('bootstrap_first_admin', {
+    email: $('firstEmail').value.trim().toLowerCase(),
+    display_name: $('firstName').value.trim(),
+    password: $('firstPassword').value
+  });
+  if (!answer.ok) return say('firstSaid', answer.refused, 'refused');
+  $('firstForm').reset();
+  say('firstSaid', t('first_done'), 'done');
+});
+
+function setLang(code) {
+  LANG = code;
+  document.documentElement.lang = code === 'mk' ? 'mk-Latn' : code;
+  document.querySelectorAll('.langmenu button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-lang') === code));
+  const cur = $('langcur');
+  if (cur) cur.textContent = code.toUpperCase();
+  document.querySelectorAll('[data-i]').forEach((el) => {
+    const k = el.getAttribute('data-i');
+    if (T[LANG][k] !== undefined) el.textContent = T[LANG][k];
+  });
+  try { localStorage.setItem('varmak.lang', code); } catch (err) { /* a private window still reads */ }
+  if (me || people.length) renderPeople();
+}
+document.querySelectorAll('.langmenu button').forEach((b) => b.addEventListener('click', () => {
+  setLang(b.getAttribute('data-lang'));
+  $('langc').classList.remove('open');
+}));
+(function () {
+  const lc = $('langc'), lt = $('langtoggle');
+  if (!lt) return;
+  lt.addEventListener('click', (e) => { e.stopPropagation(); lc.classList.toggle('open'); });
+  document.addEventListener('click', (e) => { if (!lc.contains(e.target)) lc.classList.remove('open'); });
+})();
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if (!reduceMotion) {
+  const box = $('embers');
+  for (let i = 0; i < 14; i++) {
+    const ember = document.createElement('span');
+    ember.className = 'ember';
+    ember.style.left = Math.random() * 100 + '%';
+    ember.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+    const duration = 7 + Math.random() * 9;
+    ember.style.animationDuration = duration + 's';
+    ember.style.animationDelay = (-Math.random() * duration) + 's';
+    const size = 1 + Math.random() * 2;
+    ember.style.width = size + 'px';
+    ember.style.height = size + 'px';
+    box.appendChild(ember);
+  }
+}
+
+(async function boot() {
+  let saved = null;
+  try { saved = localStorage.getItem('varmak.lang'); } catch (err) { saved = null; }
+  setLang(saved === 'sv' || saved === 'mk' ? saved : 'en');
+  // No fallback to browser storage, and that is the point of this screen rather than an omission.
+  if (!(await WorkshopApi.available())) return show('noServer', true);
+  if (!WorkshopApi.signedIn()) return showSignedOut();
+  await load();
+})();
+</script></body></html>

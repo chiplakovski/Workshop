@@ -428,8 +428,14 @@ DECLARE
   made bigint;
 BEGIN
   IF EXISTS (SELECT 1 FROM app_user) THEN
-    RAISE EXCEPTION 'this system already has people in it — an admin adds the next one'
-      USING ERRCODE = 'insufficient_privilege';
+    -- Not insufficient_privilege, and the difference is not pedantry. server.js replaces the text of
+    -- every 42501 with "that is not yours to do", because Postgres writes its own privilege errors
+    -- as "permission denied for table stock_item" and that names the inside of the database to
+    -- whoever asked. This refusal is not about who is asking — nobody is signed in, and nobody can
+    -- be — it is about the state the system is in, and it was written to be read. Raised as 42501 it
+    -- reached the first-run screen as "that is not yours to do", which is both wrong and useless to
+    -- the person standing in front of it. A plain RAISE carries its own words through.
+    RAISE EXCEPTION 'this system already has people in it — an admin adds the next one';
   END IF;
   INSERT INTO app_user (email, display_name, role)
   VALUES (lower(btrim(p_email)), btrim(p_display_name), 'admin')
@@ -500,7 +506,12 @@ BEGIN
   SELECT password_hash INTO stored FROM app_user WHERE id = me;
   IF stored IS NULL OR crypt(p_current, stored) <> stored THEN
     PERFORM pg_sleep(0.1);
-    RAISE EXCEPTION 'that is not your current password' USING ERRCODE = 'invalid_password';
+    -- Raised plainly, which makes it P0001, which is what server.js carries through with its words
+    -- intact. It was invalid_password (28P01) — a code the server does not recognise as a refusal at
+    -- all, so the one refusal in this whole flow that an ordinary person meets weekly came back as
+    -- "something went wrong at our end". That sends somebody looking for a server fault that is not
+    -- there, and leaves the person who mistyped their password with no idea what to do next.
+    RAISE EXCEPTION 'that is not your current password';
   END IF;
   PERFORM set_password(me, p_new);
   INSERT INTO activity_log (entity, entity_id, action, actor, detail)
@@ -565,6 +576,12 @@ LANGUAGE sql STABLE AS $$
   SELECT coalesce(jsonb_agg(jsonb_build_object(
     'id', u.id::text, 'email', u.email, 'name', u.display_name, 'role', u.role,
     'active', u.is_active, 'pinSet', u.pin_set_at IS NOT NULL,
+    'passwordSet', u.password_set_at IS NOT NULL,
+    -- Which of these rows is the caller. The screen needs it to know what it is allowed to offer:
+    -- an admin who could switch themselves off, or demote themselves, would be locking the building
+    -- from the inside. The database refuses both anyway — this is so the button is never there to
+    -- press, which is a different thing from a refusal and both are wanted.
+    'isMe', u.id = current_app_user(),
     'lockedUntil', u.locked_until, 'failedAttempts', u.failed_attempts,
     'lastSeen', u.last_seen_at, 'created', u.created_at
   ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;

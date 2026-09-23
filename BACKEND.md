@@ -319,8 +319,36 @@ cannot touch anything else.
    in backed mode that still called a mutator would put the record somewhere the server never sees and
    the next reload wipes, which is the worst outcome available because it looks like it worked.
 
-   It is opt-in per page, and only the phone hours screen opts in. Nothing changes for the other
-   fifteen, which still run on browser storage exactly as before.
+   It is opt-in per page. Two pages opt in — the phone hours screen and `admin.html`. Nothing
+   changes for the other fourteen, which still run on browser storage exactly as before.
+
+   **`admin.html` is the second, and it was not a choice of convenience.** Until it existed, giving
+   anybody access to this system meant opening psql — which is not a workshop using software, it is
+   a workshop telephoning whoever wrote it. It makes the first administrator on an empty system,
+   adds people, sets a PIN or a password, changes what somebody may do and switches them off, and
+   every one of those is a workflow in `api.sql` rather than anything the page decides. Fifteen
+   end-to-end checks drive it in a real browser against a real Postgres
+   (`tests/access-screen.e2e.js`).
+
+   Two of its checks are the reason it exists. `add_person` deliberately creates somebody who cannot
+   sign in, so the list has to **say** that rather than report "added" and let an admin walk away
+   having given nobody anything. And an admin is not offered the two moves that lock the building
+   from the inside — switching themselves off, taking away their own admin. The database refuses
+   both; not offering them is a separate promise and has its own check, because a button that always
+   fails teaches people that refusals are noise.
+
+   Writing the screen also found two refusals that never reached anybody, both of which had passed
+   two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`
+   replaces the text of every 42501 with "that is not yours to do" — because Postgres writes its own
+   privilege errors as "permission denied for table stock_item" and that names the inside of the
+   database. So the first-run form answered "that is not yours to do" to the only person who could
+   possibly be using it. Worse, `change_my_password` raised `invalid_password`, a code the server does
+   not recognise as a refusal at all, so the single refusal in this flow an ordinary person meets
+   weekly — mistyping their own password — came back as "something went wrong at our end". The SQL
+   suite asserted the wording and never went through HTTP; the HTTP suite had no case for either.
+   Both now raise plainly, and the rule is asserted structurally rather than case by case: every
+   hand-raised refusal in `api.sql` and `auth.sql` must use a code the server carries to the person,
+   because the next one will be in a function nobody thought to test over HTTP either.
 
    The collections a snapshot does not cover are left **empty**, never filled with demo data: a screen
    showing three real jobs beside eleven invented ones is worse than one showing three real jobs and
@@ -370,7 +398,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 128 mutations across the four SQL files and the backup script.
+breaking. 132 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the
