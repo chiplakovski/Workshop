@@ -284,7 +284,13 @@ body{overflow:hidden;min-height:0}
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="customer-record.js"></script>
+<!-- This screen reads and writes the database when there is a session, so the two-worlds guard lets
+     it through. Declared before the guard runs rather than after the snapshot arrives: the guard
+     fires on DOMContentLoaded and the snapshot is a fetch, so a page that waited would be blocked
+     for the moment it takes and then unblocked, which is worse than either. -->
+<script>window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
 function fmt(n){return Math.round(n||0).toLocaleString('sv-SE')+" kr";}
@@ -341,6 +347,8 @@ const T={
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
     nq_title:"New Quote",nq_desc:"Description",nq_value:"Value (SEK)",nq_save:"Add quote",
     ni_title:"New Invoice",ni_value:"Value (SEK)",ni_date:"Invoice date",ni_due:"Due date",ni_status:"Status",ni_reference:"Reference",ni_notes:"Notes",ni_save:"Add invoice",
+    srv_saved:"Saved.",srv_refused:"The database refused this:",
+    srv_not_built:"This does not exist on the server yet, so it is not being saved. The customer record and the contacts do; documents, quotes, invoices and notes still need their own workflow. Nothing was written.",
     locale:"en-GB"},
   sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
     sb_title:"KUNDER",sb_overview:"Kundöversikt",sb_quotes:"Kalkyler / Offerter",sb_notes_docs:"Anteckningar & dokument",
@@ -368,6 +376,8 @@ const T={
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
     nq_title:"Ny offert",nq_desc:"Beskrivning",nq_value:"Värde (SEK)",nq_save:"Lägg till offert",
     ni_title:"Ny faktura",ni_value:"Värde (SEK)",ni_date:"Fakturadatum",ni_due:"Förfallodatum",ni_status:"Status",ni_reference:"Referens",ni_notes:"Anteckningar",ni_save:"Lägg till faktura",
+    srv_saved:"Sparat.",srv_refused:"Databasen nekade detta:",
+    srv_not_built:"Det här finns inte på servern än, så det sparas inte. Kundposten och kontakterna gör det; dokument, offerter, fakturor och anteckningar behöver fortfarande sitt eget arbetsflöde. Ingenting skrevs.",
     locale:"sv-SE"},
   mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
     sb_title:"KLIENTI",sb_overview:"Pregled na klienti",sb_quotes:"Kalkulacii / Ponudi",sb_notes_docs:"Beleški i dokumenti",
@@ -395,6 +405,8 @@ const T={
     ud_title:"Otpremi dokument",ud_name:"Ime na fajl",ud_save:"Otpremi",
     nq_title:"Nova ponuda",nq_desc:"Opis",nq_value:"Vrednost (SEK)",nq_save:"Dodaj ponuda",
     ni_title:"Nova faktura",ni_value:"Vrednost (SEK)",ni_date:"Datum na faktura",ni_due:"Rok za plakjanje",ni_status:"Status",ni_reference:"Referenca",ni_notes:"Beleški",ni_save:"Dodaj faktura",
+    srv_saved:"Zapišano.",srv_refused:"Bazata go odbi ova:",
+    srv_not_built:"Ova seušte ne postoi na serverot, pa ne se zapišuva. Zapisot na klientot i kontaktite postojat; dokumentite, ponudite, fakturite i zabeleškite seušte imaat potreba od sopstven tok. Ništo ne beše zapišano.",
     locale:"mk"}
 };
 
@@ -857,5 +869,105 @@ window.addEventListener('workshop:data',()=>{hydrateSharedCustomers();renderAll(
 const box=$("embers");const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 if(!reduce){for(let i=0;i<16;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 (function(){var lc=$("langc"),lt=$("langtoggle");if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
+
+// ── On the database ───────────────────────────────────────────────────────────────────────────
+//
+// Everything above this line is the screen as it has always been, on browser storage. This is the
+// other world: when there is a session, the customers come from the database and go back to it.
+//
+// Written as a wrapper rather than as edits through the file, on purpose. The browser-storage path is
+// still how fourteen screens work and how this one works for anybody not signed in, and it is still
+// tested that way — so it stays exactly as it was and this decides, once, which of the two is in use.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  const words=k=>(T[LANG]&&T[LANG][k])||T.en[k]||k;
+  let saving=Promise.resolve();
+
+  // The whole list, rebuilt from the snapshot. Not merged: a merge is what hydrateSharedCustomers()
+  // does, and it exists to protect fields somebody is editing locally from an unrelated change. Here
+  // the database is the record and this browser holds nothing worth protecting.
+  function adopt(data){
+    CUSTOMERS.length=0;PROJECTS.length=0;
+    nextCustId=1;
+    (data.customers||[]).forEach(sc=>{CUSTOMERS.push(CustomerRecord.fromServer(sc,nextCustId++));});
+    (data.projects||[]).forEach(sp=>{
+      const c=CUSTOMERS.find(x=>String(x.sharedId)===String(sp.customerId));
+      if(c)PROJECTS.push({no:sp.no,name:sp.name,customerId:c.id,status:sp.status,
+        quotedValue:Number(sp.quotedValue||0),deadline:sp.deadline});
+    });
+    if(CUSTOMERS.length&&!CUSTOMERS.some(c=>c.id===selectedId))selectedId=CUSTOMERS[0].id;
+  }
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.failed){wAlert(answer.failed);return false;}
+    // In this order, and it matters. adoptSnapshot() dispatches workshop:data synchronously, and the
+    // listener at the bottom of this file renders — so with the two the other way round, the screen
+    // was asked to draw the new records before they had been translated into its shapes, and
+    // c.billing was still one block of text where the address card expects lines.
+    adopt(answer.data);
+    WorkshopData.adoptSnapshot(answer.data);
+    renderAll();
+    return true;
+  }
+
+  // Every refusal is the database's own words. "there is already a customer called Höganäs Mekaniska
+  // AB — it is C-007" is something the person can act on; anything this file invented would not be.
+  async function push(c){
+    const answer=await WorkshopApi.call('save_customer',CustomerRecord.toServer(c));
+    if(answer.signedOut){location.href='login.html';return;}
+    if(!answer.ok){await refresh();wAlert(words('srv_refused')+' '+answer.refused);return;}
+    const id=answer.result;
+    const contacts=await WorkshopApi.call('set_customer_contacts',
+      {customer_id:Number(id),contacts:CustomerRecord.contactsToServer(c)});
+    // A refused contact list is shown as such, and the customer record it was saved beside stays
+    // saved — the two are separate calls because they are separate shapes, and pretending otherwise
+    // would mean claiming a rollback that did not happen.
+    if(!contacts.ok){await refresh();wAlert(words('srv_refused')+' '+contacts.refused);return;}
+    await refresh();
+  }
+
+  // The screen calls this and carries on drawing, because a write to a server cannot be synchronous
+  // and the alternative is a screen that freezes. Queued rather than fired in parallel: two saves of
+  // the same customer arriving out of order would leave the second-oldest one winning.
+  // The merge that keeps this screen's local edits safe from an unrelated change in another tab. It
+  // reads WorkshopData and pushes raw shared records straight into CUSTOMERS, which is right for
+  // browser storage and wrong here twice over: the records are in the server's shapes, and there is
+  // nothing local to protect because the database is the record. adopt() above is its counterpart.
+  const hydrateLocally=hydrateSharedCustomers;
+  hydrateSharedCustomers=function(){if(onServer())return;return hydrateLocally();};
+
+  const saveLocally=syncCustomer;
+  syncCustomer=function(c){
+    if(!onServer())return saveLocally(c);
+    if(!c)return;
+    saving=saving.then(()=>push(c)).catch(e=>wAlert(String(e&&e.message||e)));
+  };
+
+  // Four things this screen does that the server has no workflow for yet. Refused out loud rather
+  // than written to browser storage, which is what WorkshopData.save() would now throw over anyway —
+  // and an uncaught throw is a screen that silently does nothing. The record that would be lost here
+  // is a document, a quote, an invoice or a note, and losing one quietly is worse than refusing it.
+  ['saveUpload','saveNewQuote','saveNewInvoice','saveAddNote'].forEach(name=>{
+    const original=window[name];
+    if(typeof original!=='function')return;
+    window[name]=function(){
+      if(!onServer())return original.apply(this,arguments);
+      closeModal();
+      wAlert(words('srv_not_built'));
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    // The header's "Log out" has no id on this page — it is `button.out`, which is what every other
+    // desktop screen calls it. Signed in, it has to actually end the session rather than navigate
+    // away from it and leave the token in this tab.
+    const out=document.querySelector('button.out');
+    if(out)out.addEventListener('click',async function(e){e.preventDefault();await WorkshopApi.signOut();location.href='login.html';});
+  })();
+})();
 </script>
 </body></html>

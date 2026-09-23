@@ -57,8 +57,13 @@ const SAME_THING = {
   // step 5 under a longer name. That mattered more than it sounds — the 86 in "86 fields need a
   // column" was the size of the remaining work, and a number that overstates the work is a number
   // that gets planned around. Every entry below was checked against the column list in schema.sql.
-  since: 'customer_since', terms: 'payment_terms_days', preferred: 'is_preferred',
-  billing: 'billing_address',
+  since: 'customer_since', terms: 'payment_terms_days', billing: 'billing_address',
+  // NOT is_preferred, which is what this said when it was first written here and was wrong: the
+  // customer screen's `preferred` sits under a label reading "Preferred Contact" and holds 'Email'.
+  // is_preferred is whether the workshop favours the customer, which nothing reads. Mapping one to
+  // the other claimed coverage for a field that had nowhere to go, in the same commit that was about
+  // a meter overstating the work. preferred_contact was added for it.
+  preferred: 'preferred_contact',
   start: 'planned_start', types: 'work_types', closedDate: 'closed_on',
   created: 'created_at', updated: 'updated_at', expiry: 'expires_on',
   group: 'group_id', subgroup: 'subgroup_id',

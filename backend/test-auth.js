@@ -265,6 +265,43 @@ function noPriceColumnIsReachable() {
   step('Money: the office can read all of them, which is the difference between a rule and a broken column');
 }
 
+// The people at the customer are readable by everybody and writable by the office, which is the
+// opposite way round from what the customer record itself does — so it is worth asking directly.
+function theFloorCanRingTheCustomerButNotRewriteThem(f) {
+  sql(`INSERT INTO customer_contact (customer_id, name, role, email, phone, is_primary)
+       VALUES (${f.customer}, 'Erik Lund', 'Purchasing', 'erik@fixture.se', '+46 70 111 22 33', true);`);
+
+  // A welder holding a drawing that is wrong needs a telephone number, and nothing on this table
+  // could ever be a price — which is the test for being in the whole-table grant.
+  assert.equal(allowed('a welder reading the customer contacts', 'varmak_workshop', PEOPLE.welder,
+    `SELECT name || ' ' || phone FROM customer_contact;`), 'Erik Lund +46 70 111 22 33');
+  assert.equal(allowed('a welder selecting everything from the contacts', 'varmak_workshop', PEOPLE.welder,
+    `SELECT count(*) FROM customer_contact;`), '1',
+    'SELECT * has to be safe here, or the grant is the wrong shape');
+
+  denied('a welder adding a contact', 'varmak_workshop', PEOPLE.welder,
+    `INSERT INTO customer_contact (customer_id, name, email) VALUES (${f.customer}, 'Ghost', 'g@x.se');`,
+    /permission denied|row-level security/);
+  denied('a welder changing a telephone number', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE customer_contact SET phone = '+46 70 000 00 00' WHERE customer_id = ${f.customer};`,
+    /permission denied|row-level security/);
+  denied('a welder deleting a contact', 'varmak_workshop', PEOPLE.welder,
+    `DELETE FROM customer_contact WHERE customer_id = ${f.customer};`,
+    /permission denied|row-level security/);
+  assert.equal(value(`SELECT phone FROM customer_contact WHERE customer_id = ${f.customer};`),
+    '+46 70 111 22 33', 'and none of those refusals may have changed anything');
+  step('Customers: the floor may ring the customer and may not rewrite who to ring');
+
+  // The office may, including removing somebody who has left — the one place it is granted DELETE,
+  // because a contact is not a record of something that happened.
+  allowed('the office correcting a telephone number', 'varmak_office', PEOPLE.office,
+    `UPDATE customer_contact SET phone = '+46 70 222 33 44' WHERE customer_id = ${f.customer};`);
+  allowed('the office removing somebody who has left', 'varmak_office', PEOPLE.office,
+    `DELETE FROM customer_contact WHERE customer_id = ${f.customer};`);
+  assert.equal(value(`SELECT count(*) FROM customer_contact;`), '0');
+  step('Customers: and the office may, including taking off somebody who has left the company');
+}
+
 function aWelderCannotReadAPrice(f) {
   denied('a welder reading the cost of a plate', 'varmak_workshop', PEOPLE.welder,
     `SELECT avg_cost FROM stock_item WHERE id = ${f.item};`, /permission denied|column .* does not exist/);
@@ -779,6 +816,7 @@ function main() {
   const f = makeWorkshop();
   noPriceColumnIsReachable();
   aWelderCannotReadAPrice(f);
+  theFloorCanRingTheCustomerButNotRewriteThem(f);
   secretsAreNeverStored();
   obviousSecretsAreRefused();
   theDoorsOpenAndSayNothingExtra();

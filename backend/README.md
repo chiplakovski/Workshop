@@ -12,7 +12,7 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**132 mutations**, across the four SQL files and the backup script.
+**139 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -56,7 +56,7 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 132 of them, a couple of hours — so it is a check to run when a rule
+suite once per mutation — 139 of them, a couple of hours — so it is a check to run when a rule
 changes, not on every save. One rule, or one file, at a time:
 
 ```sh
@@ -167,6 +167,13 @@ workflow written in the server holds right up until somebody adds a second calle
 | `receive_goods` | the line records what came, stock goes up, a movement explains why, and the order's status is derived from its lines |
 | `convert_lead` | the customer arrives carrying what was known about the lead, the lead is marked converted, and anything already quoted follows across |
 | `book_hours` · `record_operation` · `issue_material_offline` | the three the shop tablet may do with no signal |
+
+And the customer, which is the first record a workshop starting from nothing has to be able to make:
+
+| | |
+|---|---|
+| `save_customer` | one row, created or corrected. It **replaces** rather than patches, because the screen holds the whole record — so emptying a box empties the column, which is what makes a correction possible at all. It refuses a second customer with a name somebody already used, and says which reference it already is: a duplicate is made by somebody who searched, did not find it and typed it again, and from then on half the jobs are under one and half the other |
+| `set_customer_contacts` | the whole list at once, because that is how the screen holds it. At most one main contact, refused in a sentence rather than as the name of a unique index, and a contact nobody can reach is not a contact |
 
 And the people, which are what stop this system needing a database console to start:
 

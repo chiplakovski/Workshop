@@ -71,6 +71,15 @@ const RPC = {
   accept_estimate: ['estimate_id'],
   receive_goods: ['line_id', 'quantity', 'note'],
   convert_lead: ['lead_id', 'org_no', 'vat_no'],
+
+  // Customers. The order is the function's parameter order, which is what this list is for.
+  save_customer: ['id', 'name', 'status', 'city', 'country', 'org_no', 'vat_no', 'email', 'phone',
+    'website', 'industry', 'customer_since', 'customer_type', 'is_preferred', 'preferred_contact',
+    'notes',
+    'credit_limit', 'currency', 'payment_terms_days', 'price_list', 'delivery_terms',
+    'discount_agreement', 'billing_address'],
+  set_customer_contacts: ['customer_id', 'contacts'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],
@@ -232,7 +241,16 @@ async function handleRead(req, res, name) {
 async function handleRpc(req, res, name, body) {
   const parameters = RPC[name];
   if (!parameters) return send(res, 404, { refused: `no workflow called ${name}` });
-  const args = parameters.map((key) => (body[key] === undefined ? null : body[key]));
+  // A list or an object is serialised here rather than passed through, and that is transport rather
+  // than a decision: the only parameter type in this database that takes one is jsonb, and `pg`
+  // would otherwise send a JS array as a Postgres ARRAY literal — which jsonb cannot parse, so a
+  // perfectly well-formed contact list came back as "something went wrong at our end" instead of as
+  // whatever the function had to say about it.
+  const args = parameters.map((key) => {
+    const given = body[key];
+    if (given === undefined) return null;
+    return (given !== null && typeof given === 'object') ? JSON.stringify(given) : given;
+  });
   const placeholders = parameters.map((_, i) => `$${i + 1}`).join(', ');
   const token = bearer(req);
 

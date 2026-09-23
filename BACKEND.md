@@ -341,8 +341,8 @@ cannot touch anything else.
    in backed mode that still called a mutator would put the record somewhere the server never sees and
    the next reload wipes, which is the worst outcome available because it looks like it worked.
 
-   It is opt-in per page. Two pages opt in — the phone hours screen and `admin.html`. Nothing
-   changes for the other fourteen, which still run on browser storage exactly as before.
+   It is opt-in per page. Three pages opt in — the phone hours screen, `admin.html` and Customers.
+   Nothing changes for the rest, which still run on browser storage exactly as before.
 
    **`admin.html` is the second, and it was not a choice of convenience.** Until it existed, giving
    anybody access to this system meant opening psql — which is not a workshop using software, it is
@@ -358,6 +358,50 @@ cannot touch anything else.
    from the inside — switching themselves off, taking away their own admin. The database refuses
    both; not offering them is a separate promise and has its own check, because a button that always
    fails teaches people that refusals are noise.
+
+   **Customers is the third, and the first commercial screen.** `save_customer` and
+   `set_customer_contacts` are its workflows, and nine end-to-end checks drive the page in a real
+   browser (`tests/customers-server.e2e.js`). It needed no widening — the table was already wide
+   enough, which is what the corrected meter above made visible — but it did need a child table for
+   the contacts, so that a rule could finally be stated about them: one main contact per customer,
+   and a contact with neither an email nor a telephone number is not a contact.
+
+   What it settled is bigger than the screen. **The claim that the pages would not change is wrong
+   about shapes as well as about writes.** This screen has always held the payment terms as the words
+   "30 days", the billing address as an array of lines, and the customer type as "Company"; the
+   database holds a count of days, one block of text, and one of four words. Neither side is wrong —
+   a column called `payment_terms_days` should be a number and a line on a screen should read
+   "30 days" — so something has to translate. That something is
+   [`customer-record.js`](customer-record.js), with its own unit tests, and every screen after this
+   one will need the same.
+
+   And it produced a rule that will apply to all of them:
+
+   > **A page that shows a subset of a record must not save a subset of it.**
+
+   `save_customer` replaces the record, which is right for a screen holding the whole thing — and this
+   screen shows about two thirds of a customer. A page that sent back only what it displays would
+   clear the price list, the discount agreement, the VAT number and the customer type every time
+   somebody corrected a telephone number, and nothing on screen would say so. So the translation keeps
+   the server's record as it arrived and overlays only what the page actually edits. That is the last
+   check in the suite, and it is the one worth keeping.
+
+   Three smaller things it found, each of which had been quietly wrong:
+
+   * The snapshot handed the page `is_preferred` — whether the workshop favours the customer — for a
+     field the screen labels **Preferred Contact** and expects to hold "Email". Two different facts
+     one word apart. `preferred_contact` is now its own column, and `coverage.js` had been counting
+     that field as stored on the strength of the wrong one.
+   * A JavaScript list sent to a `jsonb` parameter arrived as a Postgres ARRAY literal, so a
+     perfectly good contact list came back as "something went wrong at our end". The server now
+     serialises it, which is transport rather than a decision.
+   * The page's own `workshop:data` listener re-ran the browser-storage merge while the screen was in
+     server mode, pushing the database's shapes into a screen expecting its own. Wiring a screen means
+     switching off the merge as well as switching on the writes.
+
+   Four things this screen does have no workflow yet — a document, a quote, an invoice, a note — and
+   in server mode it **says so and writes nothing**, rather than saving to a browser that the next
+   reload wipes. Same rule as the hours screen refusing an entry that carries material.
 
    Writing the screen also found two refusals that never reached anybody, both of which had passed
    two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`
@@ -420,7 +464,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 132 mutations across the four SQL files and the backup script.
+breaking. 139 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

@@ -637,6 +637,174 @@ GRANT EXECUTE ON FUNCTION session_identity(text) TO varmak_api;
 REVOKE ALL ON FUNCTION already_done(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION require_session(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_result(text, text) FROM PUBLIC;
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- Customers
+--
+-- The first record a workshop starting from nothing has to be able to make, and until now there was
+-- no way to make one except an INSERT. Two functions, because the customer and the people at the
+-- customer are two different shapes: one row, and a list.
+--
+-- save_customer REPLACES the record rather than patching it. That is a decision and it is the
+-- screen's shape: the customer page holds the whole record in the browser and hands all of it back,
+-- so a function that treated a missing field as "leave it alone" would be answering a question the
+-- caller never asks, while quietly making it impossible to clear a field. Passing NULL clears it,
+-- which is what the person did when they emptied the box.
+--
+-- The commercial half — the credit limit, the terms, the price list, the discount agreement, the
+-- billing address — is in the same function rather than a second one, because the policy on customer
+-- already says only may_see_money() may write the table at all. A welder does not reach this.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_customer(
+  p_id bigint,
+  p_name text,
+  p_status text DEFAULT 'active',
+  p_city text DEFAULT NULL,
+  p_country text DEFAULT NULL,
+  p_org_no text DEFAULT NULL,
+  p_vat_no text DEFAULT NULL,
+  p_email text DEFAULT NULL,
+  p_phone text DEFAULT NULL,
+  p_website text DEFAULT NULL,
+  p_industry text DEFAULT NULL,
+  p_customer_since date DEFAULT NULL,
+  p_customer_type text DEFAULT NULL,
+  p_is_preferred boolean DEFAULT false,
+  p_preferred_contact text DEFAULT NULL,
+  p_notes text DEFAULT NULL,
+  p_credit_limit numeric DEFAULT NULL,
+  p_currency text DEFAULT 'SEK',
+  p_payment_terms_days int DEFAULT NULL,
+  p_price_list text DEFAULT NULL,
+  p_delivery_terms text DEFAULT NULL,
+  p_discount_agreement text DEFAULT NULL,
+  p_billing_address text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  saved bigint;
+  existing text;
+BEGIN
+  PERFORM require_session('saving a customer');
+  -- Every defaulted parameter is coalesced, because a JSON null on the wire arrives as a SQL NULL
+  -- and overrides the DEFAULT rather than falling back to it. That has caught this project before.
+  p_status := coalesce(p_status, 'active');
+  p_currency := upper(coalesce(nullif(btrim(p_currency), ''), 'SEK'));
+  p_is_preferred := coalesce(p_is_preferred, false);
+
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'a customer needs a name';
+  END IF;
+
+  -- The name, not the reference. Two rows called Skåne Verkstad AB is two customers as far as every
+  -- report is concerned and one customer as far as anybody in the building is concerned, and the
+  -- second one is made by somebody who searched, did not find it, and typed it again.
+  SELECT ref INTO existing FROM customer
+   WHERE lower(btrim(name)) = lower(btrim(p_name))
+     AND (p_id IS NULL OR id <> p_id)
+   LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a customer called % — it is %', btrim(p_name), existing;
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO customer (name, status, city, country, org_no, vat_no, email, phone, website,
+                          industry, customer_since, customer_type, is_preferred, preferred_contact,
+                          notes, credit_limit, currency, payment_terms_days, price_list,
+                          delivery_terms, discount_agreement, billing_address)
+    VALUES (btrim(p_name), p_status, p_city, p_country, p_org_no, p_vat_no, p_email, p_phone,
+            p_website, p_industry, p_customer_since, p_customer_type, p_is_preferred,
+            p_preferred_contact, p_notes, p_credit_limit, p_currency, p_payment_terms_days,
+            p_price_list, p_delivery_terms, p_discount_agreement, p_billing_address)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('customer', saved, 'created', current_app_name(), btrim(p_name));
+  ELSE
+    UPDATE customer SET
+      name = btrim(p_name), status = p_status, city = p_city, country = p_country,
+      org_no = p_org_no, vat_no = p_vat_no, email = p_email, phone = p_phone, website = p_website,
+      industry = p_industry, customer_since = p_customer_since, customer_type = p_customer_type,
+      is_preferred = p_is_preferred, preferred_contact = p_preferred_contact, notes = p_notes,
+      credit_limit = p_credit_limit,
+      currency = p_currency, payment_terms_days = p_payment_terms_days, price_list = p_price_list,
+      delivery_terms = p_delivery_terms, discount_agreement = p_discount_agreement,
+      billing_address = p_billing_address
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    -- Row-level security filters rather than refuses, so an UPDATE nobody is allowed to make simply
+    -- changes nothing and reports success. NOT FOUND is the only thing that tells the difference.
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'no such customer, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('customer', saved, 'updated', current_app_name(), btrim(p_name));
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- The whole list at once, because that is how the screen holds it: it hands back the contacts as
+-- they now stand rather than telling anybody which one changed. Replacing them inside one
+-- transaction is therefore the honest translation, and it is atomic — a refused list leaves the old
+-- one exactly as it was rather than half of it.
+CREATE FUNCTION set_customer_contacts(p_customer_id bigint, p_contacts jsonb) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  row_in jsonb;
+  mains int := 0;
+  kept int := 0;
+  owner text;
+BEGIN
+  PERFORM require_session('saving contacts');
+  SELECT name INTO owner FROM customer WHERE id = p_customer_id;
+  IF owner IS NULL THEN
+    RAISE EXCEPTION 'no such customer, or it is not yours to change'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  p_contacts := coalesce(p_contacts, '[]'::jsonb);
+  IF jsonb_typeof(p_contacts) <> 'array' THEN
+    RAISE EXCEPTION 'the contacts have to arrive as a list';
+  END IF;
+
+  -- Counted before anything is written, so the refusal is a sentence rather than the name of a
+  -- unique index. The index behind it is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;
+    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+      RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
+        btrim(row_in->>'name');
+    END IF;
+    IF coalesce((row_in->>'primary')::boolean, false) THEN
+      mains := mains + 1;
+    END IF;
+  END LOOP;
+  IF mains > 1 THEN
+    RAISE EXCEPTION '% has one main contact, and this list has %', owner, mains;
+  END IF;
+
+  DELETE FROM customer_contact WHERE customer_id = p_customer_id;
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    INSERT INTO customer_contact (customer_id, name, role, email, phone, is_primary)
+    VALUES (p_customer_id, btrim(row_in->>'name'), nullif(btrim(coalesce(row_in->>'role', '')), ''),
+            nullif(btrim(coalesce(row_in->>'email', '')), ''),
+            nullif(btrim(coalesce(row_in->>'phone', '')), ''),
+            coalesce((row_in->>'primary')::boolean, false));
+    kept := kept + 1;
+  END LOOP;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('customer', p_customer_id, 'contacts changed', current_app_name(),
+          kept::text || ' contact' || CASE WHEN kept = 1 THEN '' ELSE 's' END);
+  RETURN kept;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION save_customer(bigint, text, text, text, text, text, text, text, text, text,
+  text, date, text, boolean, text, text, numeric, text, int, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_customer_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION send_estimate(bigint, int) FROM PUBLIC;
 REVOKE ALL ON FUNCTION accept_estimate(bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION receive_goods(bigint, numeric, text) FROM PUBLIC;
@@ -649,7 +817,10 @@ GRANT EXECUTE ON FUNCTION already_done(text, text), record_result(text, text), r
 TO varmak_admin, varmak_office, varmak_workshop;
 
 GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
-  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text)
+  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text),
+  save_customer(bigint, text, text, text, text, text, text, text, text, text, text, date, text,
+                boolean, text, text, numeric, text, int, text, text, text, text),
+  set_customer_contacts(bigint, jsonb)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),

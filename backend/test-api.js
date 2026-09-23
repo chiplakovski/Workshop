@@ -609,6 +609,139 @@ function theFirstAdminAndEveryoneAfter() {
   step('People: you change your own password only by proving you know the current one');
 }
 
+// The first record a workshop starting from nothing has to be able to make. Until save_customer
+// existed the only way to make one was an INSERT, which is a database console, which is the thing
+// this whole layer exists to stop being necessary.
+function aCustomerCanBeMadeAndCorrected() {
+  const f = world();
+  const office = PEOPLE.office;
+
+  const made = ok('the office creating a customer', 'varmak_office', office,
+    `SELECT save_customer(NULL, 'Höganäs Mekaniska AB', 'active', 'Höganäs', 'Sweden',
+      '556677-8899', 'SE556677889901', 'order@hoganas-mek.se', '+46 42 33 44 55',
+      'hoganas-mek.se', 'Food processing', '2026-02-01', 'direct', true, 'Email', 'Two shifts',
+      180000, 'SEK', 30, 'Standard 2026', 'Ex Works', '4% over 200k', 'Box 12, 263 21 Höganäs');`);
+  assert.match(made, /^\d+$/);
+  assert.match(value(`SELECT ref FROM customer WHERE id = ${made};`), /^C-\d{3}$/,
+    'a customer made this way still gets its reference from the sequence, not from the caller');
+  assert.equal(value(`SELECT payment_terms_days::text || '|' || price_list || '|' || credit_limit::text
+    FROM customer WHERE id = ${made};`), '30|Standard 2026|180000.00',
+    'the commercial half has to arrive with the rest of it, in one call');
+  // Two fields one letter apart in meaning, which were conflated once. preferred_contact is how the
+  // customer wants to be reached; is_preferred is whether the workshop favours them.
+  assert.equal(value(`SELECT preferred_contact || '|' || is_preferred::text FROM customer WHERE id = ${made};`),
+    'Email|true', 'the preferred contact method and the preferred-customer flag are different columns');
+  assert.equal(value(`SELECT count(*) FROM activity_log WHERE entity = 'customer' AND action = 'created';`), '1',
+    'making a customer is on the record, under the name of whoever did it');
+  assert.equal(value(`SELECT actor FROM activity_log WHERE entity = 'customer' ORDER BY id DESC LIMIT 1;`),
+    'Lars Holm', 'and the name comes from the session, not from the caller');
+  step('Customers: the office makes a customer from the screen, commercial half and all, and it is logged');
+
+  // The name, not the reference. A second Höganäs Mekaniska is made by somebody who searched, did
+  // not find it, and typed it again — and from then on half the jobs are under one and half the
+  // other, which no report can put back together.
+  const again = refused('a second customer with the same name', 'varmak_office', office,
+    `SELECT save_customer(NULL, 'Höganäs Mekaniska AB');`, /already a customer called/);
+  assert.match(again, /C-\d{3}/, 'the refusal has to say which customer it already is, or it is a dead end');
+  ok('the same name with different spacing and case is still the same customer', 'varmak_office', office,
+    `SELECT 1;`);
+  refused('the same name in a different case', 'varmak_office', office,
+    `SELECT save_customer(NULL, '  höganäs mekaniska ab ');`, /already a customer called/);
+  assert.equal(value(`SELECT count(*) FROM customer;`), '2',
+    'the fixture customer and the one new one — nothing else got in');
+  step('Customers: the same customer cannot be typed in twice, whatever the spacing or the case');
+
+  refused('a customer with no name', 'varmak_office', office,
+    `SELECT save_customer(NULL, '   ');`, /needs a name/);
+  refused('a customer in a state a customer cannot be in', 'varmak_office', office,
+    `SELECT save_customer(NULL, 'Nowhere AB', 'archived');`, /check|status/i);
+  refused('a credit limit below zero', 'varmak_office', office,
+    `SELECT save_customer(NULL, 'Nowhere AB', 'active', NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, false, NULL, NULL, -1);`, /credit_limit|check/i);
+  step('Customers: and the schema still has the last word on the name, the status and the figures');
+
+  // Correcting one. The screen hands back the whole record, so this replaces rather than patches —
+  // and emptying a box has to actually empty the column, or a correction is impossible to make.
+  ok('the office correcting the telephone number', 'varmak_office', office,
+    `SELECT save_customer(${made}, 'Höganäs Mekaniska AB', 'active', 'Höganäs', 'Sweden',
+      '556677-8899', 'SE556677889901', 'order@hoganas-mek.se', '+46 42 99 88 77',
+      'hoganas-mek.se', 'Food processing', '2026-02-01', 'direct', true, 'Email', NULL,
+      180000, 'SEK', 30, 'Standard 2026', 'Ex Works', '4% over 200k', 'Box 12, 263 21 Höganäs');`);
+  assert.equal(value(`SELECT phone FROM customer WHERE id = ${made};`), '+46 42 99 88 77');
+  assert.equal(value(`SELECT coalesce(notes, 'cleared') FROM customer WHERE id = ${made};`), 'cleared',
+    'a box the person emptied has to end up empty, or a correction cannot be made at all');
+  assert.equal(value(`SELECT count(*) FROM customer;`), '2', 'correcting one must not make another');
+  step('Customers: correcting one replaces the record, so emptying a box empties the column');
+
+  refused('correcting a customer that does not exist', 'varmak_office', office,
+    `SELECT save_customer(999999, 'Ghost AB');`, /no such customer/);
+  refused('a welder making a customer', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_customer(NULL, 'Floor Customer AB');`, /permission denied/);
+  refused('a welder correcting one', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_customer(${made}, 'Renamed By The Floor AB');`, /permission denied/);
+  assert.equal(value(`SELECT name FROM customer WHERE id = ${made};`), 'Höganäs Mekaniska AB');
+  step('Customers: the floor cannot make a customer or rename one');
+  return { customer: made, office: office };
+}
+
+// The contacts, which arrive as a list because that is how the screen holds them.
+function theContactListIsReplacedAtomically(w) {
+  const office = w.office;
+  const customer = w.customer;
+
+  assert.equal(ok('two contacts at once', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '[
+      {"name": "Erik Lund", "role": "Purchasing", "email": "erik@hoganas-mek.se", "primary": true},
+      {"name": "Sara Nyberg", "role": "Quality", "phone": "+46 70 444 55 66"}
+    ]'::jsonb);`), '2');
+  assert.equal(value(`SELECT name FROM customer_contact WHERE customer_id = ${customer} AND is_primary;`),
+    'Erik Lund');
+  step('Customers: the contact list goes in as a list, with one of them marked as the main one');
+
+  // Two main contacts is nobody to ring, and the refusal has to be a sentence — the unique index
+  // behind it says "customer_has_one_main_contact", which is not something to read out on the phone.
+  const two = refused('a list with two main contacts', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '[
+      {"name": "Erik Lund", "email": "erik@hoganas-mek.se", "primary": true},
+      {"name": "Tomas Ek", "email": "tomas@hoganas-mek.se", "primary": true}
+    ]'::jsonb);`, /one main contact, and this list has 2/);
+  assert.ok(!/index|constraint|duplicate key/.test(two),
+    `the refusal should be readable, not the name of an index: ${two}`);
+  assert.match(two, /Höganäs Mekaniska AB/, 'and it should say which customer');
+
+  // The important half: a refused list leaves the old one exactly as it was, not half of it. The
+  // function deletes before it inserts, so without the transaction this is how the contacts vanish.
+  assert.equal(value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${customer};`), '2',
+    'a refused list must leave the contacts that were there, not half of them and not none');
+  assert.equal(value(`SELECT string_agg(name, ',' ORDER BY name) FROM customer_contact
+    WHERE customer_id = ${customer};`), 'Erik Lund,Sara Nyberg');
+  step('Customers: a refused contact list leaves the old one exactly as it was — not half of it');
+
+  const unreachable = refused('a contact nobody can reach', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '[{"name": "Nils Berg", "role": "Accounts"}]'::jsonb);`,
+    /Nils Berg.*email or a telephone/);
+  assert.ok(!/check constraint/.test(unreachable), 'the person has to be named, not the constraint');
+  refused('a contact with no name', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '[{"email": "who@hoganas-mek.se"}]'::jsonb);`,
+    /a contact needs a name/);
+  refused('contacts that are not a list', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '{"name": "Erik"}'::jsonb);`, /arrive as a list/);
+  refused('contacts for a customer that does not exist', 'varmak_office', office,
+    `SELECT set_customer_contacts(999999, '[]'::jsonb);`, /no such customer/);
+  refused('a welder rewriting the contacts', 'varmak_workshop', PEOPLE.welder,
+    `SELECT set_customer_contacts(${customer}, '[]'::jsonb);`, /permission denied/);
+  assert.equal(value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${customer};`), '2');
+  step('Customers: every refusal names the person or the customer, and none of them changes anything');
+
+  // Clearing the list is a thing somebody does, and has to be allowed.
+  assert.equal(ok('emptying the list', 'varmak_office', office,
+    `SELECT set_customer_contacts(${customer}, '[]'::jsonb);`), '0');
+  assert.equal(value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${customer};`), '0');
+  assert.equal(value(`SELECT detail FROM activity_log WHERE action = 'contacts changed'
+    ORDER BY id DESC LIMIT 1;`), '0 contacts');
+  step('Customers: and the list can be emptied, which is on the record like everything else');
+}
+
 // The list the access screen reads. It is the only way anybody sees who is in the system without a
 // database console, so what it says has to be true of the database rather than nearly true: above
 // all whether a person can actually get in, because add_person deliberately leaves them unable to
@@ -740,6 +873,8 @@ async function main() {
   theGatesStillHoldOnReplay(f, w);
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
+  const c = aCustomerCanBeMadeAndCorrected();
+  theContactListIsReplacedAtomically(c);
   theFirstAdminAndEveryoneAfter();
   theListSaysWhoCanActuallyGetIn();
   nobodyCanLockTheWorkshopOut();

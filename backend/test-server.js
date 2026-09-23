@@ -94,7 +94,8 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'add_person', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
     'convert_lead', 'issue_material_offline', 'receive_goods', 'record_operation',
-    'send_estimate', 'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
+    'save_customer', 'send_estimate', 'set_customer_contacts', 'set_person_active',
+    'set_person_password', 'set_person_pin', 'set_person_role'
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 
@@ -330,6 +331,76 @@ async function theOfficeGetsTheFiguresItNeeds(tokens, f) {
   step('Snapshot: the plain snapshot is priceless for everybody — the money only ever arrives by the granted call');
 }
 
+// The customer screen over HTTP: the contacts everybody may read, the commercial half only the
+// office may, and a customer made through the endpoint rather than through psql.
+async function theCustomerScreenReadsAndWritesOverHttp(tokens, f) {
+  const floor = await call('GET', '/read/snapshot', { token: tokens.floor });
+  assert.equal(floor.status, 200);
+  attempts.allowed += 1;
+  const theirs = floor.body.customers.find((c) => c.name === 'Skåne Verkstad AB');
+  assert.ok(theirs, 'a welder sees the customer whose job is on the bench');
+  assert.ok(Array.isArray(theirs.contacts), 'and the people to ring, which is why that grant exists');
+  assert.equal(theirs.contacts.length, 1);
+  assert.equal(theirs.contacts[0].name, 'Erik Lund');
+  assert.equal(theirs.contacts[0].primary, true, 'the main one has to arrive marked as the main one');
+  // The page renders this under a label reading "Preferred Contact". It has to be the method, not a
+  // boolean — handing it is_preferred put the word true on that line, and both columns are set here
+  // so the wrong one cannot pass by being empty.
+  assert.equal(theirs.preferred, 'Email',
+    'preferred is how the customer wants to be contacted, not whether the workshop favours them');
+  // Nothing the customer is charged, in either shape. Asked of the record rather than of a column
+  // list, because the question is what reached the browser.
+  for (const withheld of ['priceList', 'discountAgreement', 'terms', 'billing', 'credit', 'deliveryTerms']) {
+    assert.ok(!(withheld in theirs), `${withheld} reached a welder's copy of the customer`);
+  }
+  step('Customers over HTTP: a welder gets the customer and the people to ring, and nothing it is charged');
+
+  const money = await call('GET', '/read/money', { token: tokens.office });
+  assert.equal(money.status, 200);
+  attempts.allowed += 1;
+  const commercial = money.body.customers[theirs.id];
+  assert.ok(commercial, 'the office gets the commercial half keyed by the same id');
+  assert.equal(commercial.credit, '250000.00', 'and the figure keeps its scale');
+  step('Customers over HTTP: and the office gets what it is charged from the granted call, by the same id');
+
+  // Made over HTTP, by the office, with a name nobody has used.
+  const created = await call('POST', '/rpc/save_customer', { token: tokens.office, body: {
+    name: 'Lomma Svets AB', status: 'active', city: 'Lomma', country: 'Sweden',
+    email: 'order@lomma-svets.se', preferred_contact: 'Phone',
+    credit_limit: 90000, payment_terms_days: 30, currency: 'SEK'
+  } });
+  const id = wentThrough('the office making a customer over HTTP', created);
+  assert.match(String(id), /^\d+$/);
+  assert.equal(sql(`SELECT ref FROM customer WHERE name = 'Lomma Svets AB';`).slice(0, 2), 'C-',
+    'the reference still comes from the database, not from the request');
+
+  const twice = await call('POST', '/rpc/save_customer',
+    { token: tokens.office, body: { name: 'Lomma Svets AB' } });
+  turnedAway('the same customer typed in twice over HTTP', twice, 422, /already a customer called/);
+  assert.match(twice.body.refused, /C-\d{3}/, 'and it says which one it already is');
+
+  const byTheFloor = await call('POST', '/rpc/save_customer',
+    { token: tokens.floor, body: { name: 'Floor Customer AB' } });
+  turnedAway('a welder making a customer over HTTP', byTheFloor, 403, /not yours to do/);
+  assert.equal(sql(`SELECT count(*) FROM customer WHERE name = 'Floor Customer AB';`), '0');
+  step('Customers over HTTP: the office makes one, the same name twice is refused by its reference, the floor cannot');
+
+  const contacts = await call('POST', '/rpc/set_customer_contacts', { token: tokens.office, body: {
+    customer_id: Number(id),
+    contacts: [{ name: 'Jonas Ek', role: 'Workshop manager', phone: '+46 40 12 34 56', primary: true }]
+  } });
+  assert.equal(wentThrough('the contacts going in over HTTP', contacts), 1);
+  const two = await call('POST', '/rpc/set_customer_contacts', { token: tokens.office, body: {
+    customer_id: Number(id),
+    contacts: [{ name: 'Jonas Ek', phone: '+46 40 12 34 56', primary: true },
+               { name: 'Eva Ohlsson', phone: '+46 40 65 43 21', primary: true }]
+  } });
+  turnedAway('two main contacts over HTTP', two, 422, /one main contact, and this list has 2/);
+  assert.equal(sql(`SELECT count(*) FROM customer_contact WHERE customer_id = ${id};`), '1',
+    'a refused list leaves the one that was there — the refusal has to roll the delete back too');
+  step('Customers over HTTP: a list arrives as a list, and a refused one leaves the old contacts alone');
+}
+
 async function theSnapshotIsTheShapeThePagesRead(tokens) {
   const { body } = await call('GET', '/read/snapshot', { token: tokens.office });
   for (const collection of ['customers', 'projects', 'jobcards', 'equipment', 'hours', 'inventory']) {
@@ -530,7 +601,16 @@ function world() {
        SELECT set_pin((SELECT id FROM app_user WHERE email = 'marko@varmak.se'), '8472');
        SELECT set_pin((SELECT id FROM app_user WHERE email = 'petra@varmak.se'), '5913');`);
 
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('Skåne Verkstad AB', 'Lund') RETURNING id;`);
+  // With its commercial half filled in, so the checks that a welder is not shown what a customer is
+  // charged are asking about real values rather than about columns that happen to be empty.
+  const customer = value(`INSERT INTO customer
+    (name, city, credit_limit, payment_terms_days, price_list, discount_agreement,
+     delivery_terms, billing_address)
+    VALUES ('Skåne Verkstad AB', 'Lund', 250000, 30, 'Standard 2026', '4% over 200k',
+            'Ex Works', 'Box 4, 222 22 Lund') RETURNING id;`);
+  sql(`UPDATE customer SET preferred_contact = 'Email', is_preferred = true WHERE id = ${customer};`);
+  sql(`INSERT INTO customer_contact (customer_id, name, role, phone, is_primary)
+       VALUES (${customer}, 'Erik Lund', 'Purchasing', '+46 70 111 22 33', true);`);
   const item = value(`INSERT INTO stock_item (code, description, unit, stock, avg_cost)
     VALUES ('S355-10', 'Plate S355J2 10mm', 'KG', 300, 14.50) RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status) VALUES ('Frame', ${customer}, 'production') RETURNING id;`);
@@ -569,6 +649,7 @@ async function main() {
     await theSnapshotCarriesNoPriceForAWelder(tokens, f);
     await theOfficeGetsTheFiguresItNeeds(tokens, f);
     await theSnapshotIsTheShapeThePagesRead(tokens);
+    await theCustomerScreenReadsAndWritesOverHttp(tokens, f);
     await theFloorCannotReachTheOfficeWorkflows(tokens, f);
     await theWorkflowsRunOverHttp(tokens, f);
     await replayOverHttpIsHarmless(tokens, f);

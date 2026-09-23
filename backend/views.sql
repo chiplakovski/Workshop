@@ -69,7 +69,20 @@ LANGUAGE sql STABLE AS $$
         'city', c.city, 'country', c.country, 'org', c.org_no, 'vat', c.vat_no,
         'email', c.email, 'phone', c.phone, 'website', c.website,
         'industry', c.industry, 'since', c.customer_since, 'type', c.customer_type,
-        'preferred', c.is_preferred, 'notes', c.notes
+        -- The contact method, not the is_preferred flag. The page's field is called `preferred` and
+        -- sits under a label reading "Preferred Contact"; handing it a boolean put the word true on
+        -- that line. Nothing reads a preferred-customer flag, so is_preferred is not in the snapshot
+        -- at all rather than under a name that invites the same mistake again.
+        'preferred', c.preferred_contact, 'notes', c.notes,
+        -- The people at the customer. Named columns rather than a row, because a welder is granted
+        -- this table column by column and SELECT * would be refused for them — the same trap the
+        -- equipment gate fell into. Nothing here is a price, so it is in the snapshot everybody
+        -- reads rather than in the money one.
+        'contacts', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'name', k.name, 'role', k.role, 'email', k.email, 'phone', k.phone,
+            'primary', k.is_primary
+          ) ORDER BY k.is_primary DESC, k.name)
+          FROM customer_contact k WHERE k.customer_id = c.id), '[]'::jsonb)
       ) ORDER BY c.ref) FROM customer c), '[]'::jsonb),
 
     'projects', coalesce((SELECT jsonb_agg(jsonb_build_object(
@@ -162,8 +175,21 @@ $$;
 CREATE FUNCTION workspace_money() RETURNS jsonb
 LANGUAGE sql STABLE AS $$
   SELECT jsonb_build_object(
-    'customers', coalesce((SELECT jsonb_object_agg(c.id::text,
-        jsonb_build_object('credit', c.credit_limit::text)) FROM customer c), '{}'::jsonb),
+    -- Not only the figures. §1b withholds more from the floor than numbers in kronor: the payment
+    -- terms, the price list and the discount agreement all say what this customer is charged, and
+    -- the billing address belongs to invoicing rather than to the bench. The delivery terms are here
+    -- for a plainer reason — the column is not granted to the floor, because Incoterms are not
+    -- something anybody needs at a bench. Either way the test is the grant: a column the workshop
+    -- cannot read cannot appear in the snapshot everybody reads, or a welder calling it would be
+    -- refused the whole thing rather than that one field.
+    'customers', coalesce((SELECT jsonb_object_agg(c.id::text, jsonb_build_object(
+        'credit', c.credit_limit::text, 'currency', c.currency,
+        -- A count of days rather than a figure in kronor, and cast anyway: "everything in this
+        -- payload is text" is a rule that can be checked in one line, and an exception to it is a
+        -- rule that has to be read carefully every time somebody adds a field.
+        'terms', c.payment_terms_days::text, 'priceList', c.price_list,
+        'deliveryTerms', c.delivery_terms, 'discountAgreement', c.discount_agreement,
+        'billing', c.billing_address)) FROM customer c), '{}'::jsonb),
     'projects', coalesce((SELECT jsonb_object_agg(p.id::text,
         jsonb_build_object('quotedValue', p.quoted_value::text)) FROM project p), '{}'::jsonb),
     'inventory', coalesce((SELECT jsonb_object_agg(i.id::text,

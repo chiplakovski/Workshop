@@ -87,7 +87,7 @@ function step(message) {
 // too. The list is checked against the database itself below, because a list like this going stale
 // means a test quietly reading what the last one left behind.
 const ALL_TABLES = [
-  'app_user', 'customer', 'project', 'jobcard', 'equipment', 'equipment_assignment',
+  'app_user', 'customer', 'customer_contact', 'project', 'jobcard', 'equipment', 'equipment_assignment',
   'equipment_event', 'operation', 'hours_entry', 'item_group', 'location', 'stock_item',
   'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_item', 'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
@@ -1070,6 +1070,44 @@ function documentsPointAtSomethingReal() {
   step('Documents: a certificate carries the date it runs out, a revision and a state the register can ask about');
 }
 
+// The people at a customer. Held as a list on the record for as long as this app has existed, which
+// is exactly how long it has been impossible to say anything true about them.
+function oneMainContactWhoCanBeReached() {
+  const f = fixture();
+  accepted('the main contact', `INSERT INTO customer_contact (customer_id, name, role, email, phone, is_primary)
+    VALUES (${f.customer}, 'Erik Lund', 'Purchasing', 'erik@fixture.se', '+46 70 111 22 33', true);`);
+  accepted('a second person who is not the main one', `INSERT INTO customer_contact
+    (customer_id, name, role, phone) VALUES (${f.customer}, 'Sara Nyberg', 'Quality', '+46 70 444 55 66');`);
+
+  // "Ring the main contact" is an instruction somebody follows at four in the afternoon with a
+  // drawing that is wrong. Two main contacts is nobody to ring.
+  refused('a second main contact for the same customer', `INSERT INTO customer_contact
+    (customer_id, name, email, is_primary) VALUES (${f.customer}, 'Tomas Ek', 'tomas@fixture.se', true);`,
+    /customer_has_one_main_contact|duplicate key/);
+  // But another customer's main contact is a different question, and has to go through.
+  const other = value(`INSERT INTO customer (name, city) VALUES ('Other Industri AB', 'Lund') RETURNING id;`);
+  accepted('the main contact at a different customer', `INSERT INTO customer_contact
+    (customer_id, name, email, is_primary) VALUES (${other}, 'Anna Falk', 'anna@other.se', true);`);
+
+  refused('a contact with no name', `INSERT INTO customer_contact (customer_id, name, email)
+    VALUES (${f.customer}, '   ', 'x@fixture.se');`, /name/);
+  refused('a contact nobody can reach', `INSERT INTO customer_contact (customer_id, name, role)
+    VALUES (${f.customer}, 'Nils Berg', 'Accounts');`, /contact_can_be_reached/);
+  refused('a contact whose email and telephone are both blank', `INSERT INTO customer_contact
+    (customer_id, name, email, phone) VALUES (${f.customer}, 'Nils Berg', '  ', '');`,
+    /contact_can_be_reached/);
+  step('Customers: one main contact per customer, and a contact nobody can reach is not a contact');
+
+  // And they go when the customer does, rather than becoming rows pointing at nothing. Asked of the
+  // other customer, because the fixture's has a job on it and a customer with work against it is
+  // not deletable at all — which is the rule nothing_is_orphaned_or_erased already asserts.
+  assert.equal(value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${other};`), '1');
+  sql(`DELETE FROM customer WHERE id = ${other};`);
+  assert.equal(value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${other};`), '0',
+    'a contact must not outlive the customer it belongs to');
+  step('Customers: contacts go with the customer rather than becoming rows pointing at nobody');
+}
+
 // ── The facts that cannot be back-filled ──────────────────────────────────────────────────
 
 // BACKEND.md decided against a certification subsystem and in the same breath decided to keep the
@@ -1291,6 +1329,7 @@ async function main() {
   ncrCannotCloseOnNothing();
   documentsPointAtSomethingReal();
   theHistoryCertificationWouldNeed();
+  oneMainContactWhoCanBeReached();
 
   console.log(`\n${checks} checks: ${attempts.refused} things the schema refused, `
     + `${attempts.allowed} it allowed, every refusal asserted on its wording.`);

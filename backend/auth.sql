@@ -378,7 +378,11 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO varmak_office;
 GRANT SELECT ON
   jobcard, operation, equipment_assignment,
   item_group, location, offcut, barcode, allowed_transition,
-  quality_hold, inspection, ncr, hours_entry, stock_movement, document
+  quality_hold, inspection, ncr, hours_entry, stock_movement, document,
+  -- A name, a role, an email and a telephone number. Nothing on this table could ever be a price,
+  -- which is the test the comment above sets for being in this list — and a welder holding a drawing
+  -- that is wrong needs to be able to ring somebody.
+  customer_contact
 TO varmak_workshop;
 
 -- project holds what the job was quoted at.
@@ -401,7 +405,8 @@ GRANT UPDATE ON operation, jobcard, hours_entry, equipment_assignment TO varmak_
 -- say what this customer is charged — and billing_address and currency belong to invoicing rather
 -- than to the bench. §1b says the floor sees no prices; a price list is a price.
 GRANT SELECT (id, ref, name, org_no, vat_no, email, phone, city, country, status, website,
-              industry, customer_since, customer_type, is_preferred, notes, created_at)
+              industry, customer_since, customer_type, is_preferred, preferred_contact, notes,
+              created_at)
 ON customer TO varmak_workshop;
 
 -- ── Money, column by column ───────────────────────────────────────────────────────────────
@@ -460,6 +465,14 @@ REVOKE ALL ON app_user FROM varmak_admin, varmak_office, varmak_workshop;
 GRANT SELECT (id, email, display_name, role, is_active, last_seen_at, pin_set_at,
               password_set_at, failed_attempts, locked_until, created_at)
 ON app_user TO varmak_admin, varmak_office, varmak_workshop;
+
+-- The one place the office may delete, and it is a considered exception to the rule above rather
+-- than an oversight. That rule is about the record of what happened: a quote that was sent and a job
+-- that was run cannot be removed, because removing one is not a correction, it is a different past.
+-- A contact at a customer is not that. Somebody who has left the company is not a record of
+-- anything, and taking their name off the list is exactly a correction — while leaving it there
+-- means somebody rings a number that has been reassigned and believes what they are told.
+GRANT DELETE ON customer_contact TO varmak_office;
 
 -- Only an admin creates or changes people — no self-registration, and nobody promotes themselves.
 GRANT INSERT, UPDATE, DELETE ON app_user TO varmak_admin;
@@ -544,7 +557,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
     'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
-    'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event'
+    'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event',
+    'customer_contact'
   ]
   LOOP
     EXECUTE format($p$CREATE POLICY the_office_runs_this ON %I FOR ALL

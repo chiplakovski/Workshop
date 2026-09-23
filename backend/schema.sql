@@ -132,6 +132,12 @@ CREATE TABLE customer (
   currency    char(3) NOT NULL DEFAULT 'SEK' CHECK (currency = upper(currency)),
   customer_type text CHECK (customer_type IS NULL OR customer_type IN ('direct','reseller','oem','public')),
   is_preferred boolean NOT NULL DEFAULT false,
+  -- How this customer wants to be contacted — 'Email', 'Phone', 'Post'. A different fact from
+  -- is_preferred above, and the two were conflated: the customer screen's field is called
+  -- `preferred` and means the contact method, the snapshot was handing it is_preferred, and the page
+  -- would have shown "true" where it says Preferred Contact. Two facts, two columns, and the names
+  -- are now far enough apart to stop happening again.
+  preferred_contact text,
   price_list  text,
   delivery_terms text,
   discount_agreement text,
@@ -139,6 +145,33 @@ CREATE TABLE customer (
   notes       text,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- The people at the customer, which the customer screen has always held as a list on the record and
+-- which therefore has never been able to have a rule about it. Two of them matter.
+--
+-- One main contact, not several. The screen marks the first in its array as primary, so a list with
+-- two of them is not something the page can even show — and "ring the main contact" is an instruction
+-- somebody follows at four in the afternoon when a drawing is wrong. The partial unique index is the
+-- guarantee; set_customer_contacts() refuses first so the person reads a sentence rather than the
+-- name of an index.
+CREATE TABLE customer_contact (
+  id          bigserial PRIMARY KEY,
+  customer_id bigint NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  role        text,
+  email       text,
+  phone       text,
+  is_primary  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX customer_has_one_main_contact
+  ON customer_contact (customer_id) WHERE is_primary;
+
+-- And a contact anybody is expected to reach has to be reachable. A row with a name and no way to
+-- get hold of them is a row that looks like a contact and is not one.
+ALTER TABLE customer_contact ADD CONSTRAINT contact_can_be_reached
+  CHECK (coalesce(btrim(email), '') <> '' OR coalesce(btrim(phone), '') <> '');
 
 -- One spelling per state. The frontend carries two names for one of them — `active` in the
 -- Estimations page's vocabulary, `production` from the estimate-conversion path, aliased to each

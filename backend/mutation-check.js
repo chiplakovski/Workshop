@@ -940,6 +940,81 @@ TO varmak_admin, varmak_office, varmak_workshop;`
     to: `    RAISE EXCEPTION 'that is not your current password' USING ERRCODE = 'invalid_password';`
   },
 
+  // ── Customers ─────────────────────────────────────────────────────────────────────────────
+  {
+    // Two rows called Skåne Verkstad AB is one customer to everybody in the building and two to
+    // every report, and from then on half the jobs are under one and half the other.
+    what: 'the same customer can be typed in twice',
+    file: 'api',
+    from: `  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a customer called % — it is %', btrim(p_name), existing;
+  END IF;`,
+    to: ''
+  },
+  {
+    // The refusal the person reads, rather than the guarantee behind it. Without the count, the
+    // unique index fires instead and the answer is "customer_has_one_main_contact" — which is not
+    // something to read out to whoever is trying to save the list.
+    what: 'two main contacts are left to the index to refuse',
+    file: 'api',
+    from: `  IF mains > 1 THEN
+    RAISE EXCEPTION '% has one main contact, and this list has %', owner, mains;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'an unreachable contact is left to the constraint to refuse',
+    file: 'api',
+    from: `    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+      RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
+        btrim(row_in->>'name');
+    END IF;`,
+    to: ''
+  },
+  // No mutation for "a refused contact list leaves the old one exactly as it was", and that is worth
+  // saying rather than leaving as a gap in this list. set_customer_contacts deletes the list and
+  // rebuilds it, so the obvious bug is a check that runs after the DELETE — but a refusal inside a
+  // plpgsql function rolls the whole statement back, the DELETE with it, and re-raising from an
+  // EXCEPTION block rolls back to the block as well. There is no edit to this file that makes the
+  // delete stick. The rule is held by the transaction rather than by anything written here, which is
+  // the same reason a refused offline replay does not burn its event id. The test stays, because it
+  // asserts a property somebody could break by moving this work into the server.
+  {
+    what: 'a customer may have two main contacts',
+    from: `CREATE UNIQUE INDEX customer_has_one_main_contact
+  ON customer_contact (customer_id) WHERE is_primary;`,
+    to: ''
+  },
+  {
+    what: 'a contact nobody can reach is allowed back in',
+    from: `ALTER TABLE customer_contact ADD CONSTRAINT contact_can_be_reached
+  CHECK (coalesce(btrim(email), '') <> '' OR coalesce(btrim(phone), '') <> '');`,
+    to: ''
+  },
+  {
+    // The bug this column exists because of: the page's label says Preferred Contact and the answer
+    // it was given was true.
+    what: 'the snapshot hands the preferred-customer flag back as the contact method',
+    file: 'views',
+    from: `        'preferred', c.preferred_contact, 'notes', c.notes,`,
+    to: `        'preferred', c.is_preferred, 'notes', c.notes,`
+  },
+  {
+    // Written as the whole tail of the grant rather than as a comment marker on one line, which was
+    // the first attempt: `document, --` comments out the rest of THAT line, and the rest of that line
+    // was already empty, so the grant came out identical and the mutation was reported as untested.
+    what: 'the floor can no longer read who to ring at the customer',
+    file: 'auth',
+    from: `  quality_hold, inspection, ncr, hours_entry, stock_movement, document,
+  -- A name, a role, an email and a telephone number. Nothing on this table could ever be a price,
+  -- which is the test the comment above sets for being in this list — and a welder holding a drawing
+  -- that is wrong needs to be able to ring somebody.
+  customer_contact
+TO varmak_workshop;`,
+    to: `  quality_hold, inspection, ncr, hours_entry, stock_movement, document
+TO varmak_workshop;`
+  },
+
   // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
   //
   // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,
