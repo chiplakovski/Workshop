@@ -281,8 +281,30 @@ cannot touch anything else.
    | Pass 2 — project, jobcard | **42% → 51%** |
    | Pass 3 — stock_item, stock_movement, offcut, document | **51% → 54%** |
    | Pass 4 — lead, opportunity, inspection, ncr | **54% → 61%** |
-   | Still to do | 86 fields need a column, 22 want a join rather than a column, 27 hold a list and want a child table |
+   | Pass 5 — no columns at all: the meter itself was wrong | **61% → 68%** |
+   | Still to do | 58 fields need a column, 23 want a join rather than a column, 31 hold a list and want a child table |
    | Not a gap | 52 more fields are carried by the demo data and read by no page at all |
+
+   Pass 5 is the one worth reading. Wiring the customers screen meant looking at the five customer
+   fields the meter said had no column — and all five had had one since pass 1, under a longer name:
+   `since`/`customer_since`, `terms`/`payment_terms_days`, `type`/`customer_type`,
+   `preferred`/`is_preferred`, `billing`/`billing_address`. The same was true of `created`/`created_at`
+   on three tables, the four store columns for groups and locations, and three lists whose child table
+   already existed and was already pointing the right way. Twenty-three fields, no schema change.
+
+   That is worth more than the seven points. **86** was the size of the remaining work in this
+   document, and a number that overstates the work is a number that gets planned around — it is why
+   this list said "widen the schema first, then wire". With the meter corrected, **customers, projects
+   and jobcards need no widening at all.** The remaining gap is concentrated rather than spread: 16 of
+   the 58 are on `equipment` and 9 on `lead`, and the rest are single fields on five other tables. So
+   the order changes: the screens whose tables are already wide get wired first, and widening becomes
+   a per-screen job rather than a phase.
+
+   Three fields were deliberately left as gaps rather than mapped, because mapping them would have
+   hidden real work: `inventory.certificate` holds a PDF's filename and wants the document table and
+   somewhere to put files, not a text column; `inventory.location` is a bin address ('A1-01-02') that
+   nothing holds; and `estimations.plannedHours` is a sum of the labour lines, which is a claim about
+   what the page does with it that nobody has checked yet.
 
    Widening is not only columns. Each pass has turned up rules the trimmed schema had no way to
    state, and they are worth more than the fields: a project on hold has to say why, an offcut is

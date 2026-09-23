@@ -50,21 +50,58 @@ const SAME_THING = {
   releaseDate: 'released_at', releaseReason: 'release_reason', company: 'company',
   equipmentId: 'ref', itemNo: 'code', qty: 'quantity', createdBy: 'inspector',
   customerId: 'customer_id', projectId: 'project_id', estimationId: 'estimate_id',
-  sellingPrice: 'total', validUntil: 'valid_until', appliedTo: 'jobcard_id'
+  sellingPrice: 'total', validUntil: 'valid_until', appliedTo: 'jobcard_id',
+
+  // Found while wiring the customers screen, and they were all measurement rather than schema: the
+  // report said five customer fields needed a column while every one of them had had a column since
+  // step 5 under a longer name. That mattered more than it sounds — the 86 in "86 fields need a
+  // column" was the size of the remaining work, and a number that overstates the work is a number
+  // that gets planned around. Every entry below was checked against the column list in schema.sql.
+  since: 'customer_since', terms: 'payment_terms_days', preferred: 'is_preferred',
+  billing: 'billing_address',
+  start: 'planned_start', types: 'work_types', closedDate: 'closed_on',
+  created: 'created_at', updated: 'updated_at', expiry: 'expires_on',
+  group: 'group_id', subgroup: 'subgroup_id',
+  locationGroup: 'location_id', locationSub: 'sublocation_id',
+  reorderQty: 'reorder_quantity', heat: 'heat_no',
+
+  // Two words that mean different columns depending on which record they are on, which a flat map
+  // cannot say: a customer's `type` is direct/reseller/oem/public, a document's is
+  // Certificate/Drawing/Report. Written per collection rather than picked between, because picking
+  // would mean reporting one of them wrongly for ever.
+  type: { customers: 'customer_type', documents: 'kind' },
+  name: { documents: 'title' }
 };
+
+// Deliberately NOT mapped, having looked at what they hold:
+//   inventory.certificate  — 'MTC_H240516-S534.pdf', a file, not a reference. material_cert_ref is
+//                            a reference; the file belongs in the document table and a store with
+//                            somewhere to put it. Calling it stored would hide that.
+//   inventory.location     — 'A1-01-02', a bin address, and a different thing from locationGroup
+//                            ('warehouse') and locationSub ('wh1-shelves'). No column holds it.
+//   estimations.plannedHours — a sum of the labour lines rather than a field. Left as a gap because
+//                            deciding it is derived needs the page's use of it read, not assumed.
 
 // Fields that are a copy of something on another record. These do not want a column — a copy of a
 // name that can drift from the name it copied is worse than a join.
 const A_JOIN = new Set([
   'customer', 'projectNo', 'supplier', 'project', 'jobcard', 'customerNo', 'supplierNo',
-  'linkedEstimateNo', 'linkedProjectNo', 'relatedRef', 'reference', 'record', 'module'
+  'linkedEstimateNo', 'linkedProjectNo', 'relatedRef', 'reference', 'record', 'module',
+  // A project does not hold the estimate it came from — the estimate holds project_id, set by
+  // accept_estimate. Reading it the other way round is a lookup, and a second copy of the link is
+  // a second thing that can be wrong.
+  'estimationId'
 ]);
 
 // Fields holding a list. These want a child table, not a column, for the reason every other list in
 // this schema already has one: a JSON array cannot have a foreign key or a constraint on its rows.
 const A_CHILD_TABLE = new Set([
   'workers', 'machines', 'bom', 'contacts', 'items', 'documents', 'subgroups', 'activity',
-  'operations', 'materials', 'attachments', 'lines', 'events', 'history', 'checks', 'readings'
+  'operations', 'materials', 'attachments', 'lines', 'events', 'history', 'checks', 'readings',
+  // Lists whose child table already exists and is already pointing the right way: jobcard.project_id,
+  // hours_entry.jobcard_id, inspection.jobcard_id. They were counted as missing columns, which is
+  // the one thing they must never become — a list in a column cannot have a foreign key.
+  'jobcards', 'hours', 'inspections'
 ]);
 
 function dbColumns() {
@@ -104,9 +141,18 @@ function pageSource() {
     .map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
 }
 
-function classify(field, columns, pages) {
+// The column this field is the same thing as, if any — per collection where the word is ambiguous.
+function sameThing(field, collection) {
+  const entry = SAME_THING[field];
+  if (entry === undefined) return undefined;
+  return typeof entry === 'string' ? entry : entry[collection];
+}
+
+function classify(field, columns, pages, collection) {
   const snake = field.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
-  if (columns.includes(field) || columns.includes(SAME_THING[field]) || columns.includes(snake)) {
+  const named = sameThing(field, collection);
+  if (columns.includes(field) || (named !== undefined && columns.includes(named))
+      || columns.includes(snake)) {
     return 'stored';
   }
   if (A_JOIN.has(field)) return 'join';
@@ -133,7 +179,7 @@ function main() {
     const counts = { stored: 0, join: 0, 'child table': 0, 'needs a column': 0, unused: 0 };
     const missing = [];
     for (const field of Object.keys(record)) {
-      const verdict = classify(field, columns[table] || [], pages);
+      const verdict = classify(field, columns[table] || [], pages, collection);
       counts[verdict] += 1;
       tally[verdict] += 1;
       if (verdict === 'needs a column') missing.push(field);
@@ -174,7 +220,7 @@ function main() {
 
   // The ratchet. These are the numbers as they stood when this was written; a pass that widens the
   // schema should move the first up and the second down, and neither may go the wrong way.
-  const BASELINE = { stored: 210, needsColumn: 86 };
+  const BASELINE = { stored: 233, needsColumn: 58 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

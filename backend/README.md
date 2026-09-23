@@ -287,7 +287,16 @@ somewhere else.
 It exists because step 5 of BACKEND.md ("point the frontend at it; the sixteen pages do not change")
 turned out to rest on something nobody had checked. The schema was built from the twenty-five-table
 plan in §2, which trimmed the *collections* — it said nothing about the fields inside them. The first
-measurement: **111 of 345 fields the pages read could be stored. 32%.**
+measurement: **111 of 345 fields the pages read could be stored. 32%.** Today it is **233, or 68%.**
+
+Seven of those points came from correcting the meter rather than the schema. Five customer fields it
+reported as having no column had had one since the first pass under a longer name — `since` is
+`customer_since`, `terms` is `payment_terms_days` — and the same was true of `created`/`created_at` on
+three tables, the four store columns for groups and locations, and three lists whose child table
+already existed. Twenty-three fields, no schema change. It matters because **58, not 86, is the real
+remaining work**, and because customers, projects and jobcards turn out to need no widening at all —
+which changes what gets wired first. A progress meter that overstates the work is a meter that gets
+planned around.
 
 The classification matters more than the total, and the judgements are written down in the file
 rather than inferred, because a rule that maps `no` to `no` and shrugs at `org` would overstate the
