@@ -12,7 +12,8 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**154 mutations**, across the four SQL files and the backup script.
+**172 mutations**, across the four SQL files, the backup script, the three front-end files the
+offline queue lives in, and the server that connects to a hosted database.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -453,6 +454,44 @@ really being asked to refuse rather than merely being opened.
 One thing the drill cannot tell you, and the runbook should not pretend otherwise: it restores onto
 the same server it dumped from. Restoring onto a *different* machine is what the roles file exists
 for, and that step is only proven the first time somebody does it for real.
+
+## Installing onto a hosted database
+
+```sh
+DATABASE_URL='postgresql://postgres:…@db.xxxx.supabase.co:5432/postgres' \
+  VARMAK_API_PASSWORD="$(openssl rand -base64 32)" sh backend/install.sh
+npm run test:deploy                  # the same install against a Postgres shaped like a hosted one
+```
+
+[`DEPLOY.md`](../DEPLOY.md) is the runbook. What belongs here is why there is a suite for it at all:
+**every other suite in this directory runs as a superuser, over a unix socket, with trust
+authentication**, and a hosted database is none of those three. That difference was four separate
+install failures, every one of them invisible from this machine:
+
+| Refused | Because |
+|---|---|
+| `ALTER ROLE ... NOSUPERUSER` | Naming the SUPERUSER attribute at all needs to be one, even when the statement changes nothing. Asserted now instead of set. |
+| `gen_random_bytes does not exist` | `pgcrypto` installs into its own schema on a managed database, and `app_session.token`'s default is parsed as the table is created. |
+| `must be able to SET ROLE varmak_engine` | A `CREATEROLE` role gets ADMIN OPTION on roles it creates and not the right to *become* one — which every `ALTER FUNCTION ... OWNER TO` needs. |
+| `permission denied for schema public` | On PostgreSQL 15 and later the incoming owner of a function needs `CREATE` there and does not have it. |
+
+The second one has a quieter half that matters more than the install failure: `crypt()` is resolved
+when a function body *runs*, so an install that finished cleanly could still be a system where nobody
+can sign in. Three search paths are set from where the extension actually is — the install session's,
+the database's, and the connecting role's — and `varmak_engine`'s `USAGE` on that schema is **checked**
+rather than attempted, because the GRANT comes back as a `WARNING` nobody reads.
+
+And one outside the database: a connection string with `?sslmode=require` on the end — which is how
+anybody gets one from a dashboard — makes node-postgres derive its own TLS settings and replace the
+ones passed to it, certificate authority included. The parameter is stripped before use. TLS to the
+database is always on and always verified; there is no setting for it.
+
+`test-deploy.js` builds that shape — TLS only, scram over TCP, a non-superuser owner, `pgcrypto` in
+`extensions` — installs into it, then drives the stack end to end: the first administrator, a welder
+with a PIN, a customer, a project, a jobcard, hours booked and read back, the same entry sent twice to
+show it arrives once. The last check is the one worth the most: **on that install, can a welder read a
+price?** If the server had connected as the owner, or `varmak_api` had come out with `BYPASSRLS`, every
+other check passes and that one does not.
 
 ## Why the tests look the way they do
 

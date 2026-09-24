@@ -30,6 +30,43 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- And then: where did it actually go?
+--
+-- A managed Postgres — Supabase among them — installs extensions into a schema of their own rather
+-- than into `public`, and then two different things break. The first breaks the install, three tables
+-- below: `app_session.token` has `DEFAULT encode(gen_random_bytes(32), 'hex')`, a column default is
+-- parsed while the table is being created, and the install stops dead on "function
+-- gen_random_bytes(integer) does not exist". The second breaks later and much more quietly: every PIN
+-- and every password in this system is hashed by `crypt()` inside a function body, which is resolved
+-- when it runs rather than when it was written — so a deployment that installed perfectly can still
+-- be one where nobody can sign in, discovered by a workshop on the morning it meant to start.
+--
+-- Three paths therefore have to be right, and they are set in three places: this session's, for the
+-- rest of this file; the database's, for every session opened afterwards; and the connecting role's,
+-- further down, which is the one the server's own sessions get.
+DO $$
+DECLARE
+  home text := (SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                 WHERE e.extname = 'pgcrypto');
+BEGIN
+  IF home IS NULL THEN
+    RAISE EXCEPTION 'pgcrypto is not installed in this database, and every password in this system needs it';
+  END IF;
+  IF home = 'public' THEN
+    RETURN;
+  END IF;
+  PERFORM set_config('search_path', format('public, %I', home), false);
+  BEGIN
+    EXECUTE format('ALTER DATABASE %I SET search_path = public, %I', current_database(), home);
+  EXCEPTION WHEN insufficient_privilege THEN
+    -- Not fatal: the role-level path below is what the server's sessions use. Said out loud, because
+    -- it means a psql session opened by hand will not find crypt() and that is confusing on its own.
+    RAISE NOTICE 'not the owner of this database, so its search_path is unchanged — the role''s is still set';
+  END;
+  RAISE NOTICE 'pgcrypto is in schema %, so the search_path includes it', home;
+END;
+$$;
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Who the database thinks is asking
 --
@@ -342,13 +379,67 @@ $$;
 -- without LOGIN, and creating it correctly afterwards changed nothing because it already existed.
 -- Setting the attributes unconditionally is the only version of this that is safe to run twice.
 ALTER ROLE varmak_api LOGIN NOINHERIT;
-ALTER ROLE varmak_admin NOLOGIN NOBYPASSRLS NOSUPERUSER;
-ALTER ROLE varmak_office NOLOGIN NOBYPASSRLS NOSUPERUSER;
-ALTER ROLE varmak_workshop NOLOGIN NOBYPASSRLS NOSUPERUSER;
-ALTER ROLE varmak_api NOBYPASSRLS NOSUPERUSER;
+ALTER ROLE varmak_admin NOLOGIN NOBYPASSRLS;
+ALTER ROLE varmak_office NOLOGIN NOBYPASSRLS;
+ALTER ROLE varmak_workshop NOLOGIN NOBYPASSRLS;
+ALTER ROLE varmak_api NOBYPASSRLS;
+
+-- NOSUPERUSER was on those four lines and cannot be. Postgres refuses any mention of the SUPERUSER
+-- attribute from a role that is not a superuser itself — even when the mention changes nothing — and
+-- on a managed database the most privileged role you are given is never a superuser. So the install
+-- stopped here, four lines into the roles, on every hosted Postgres there is.
+--
+-- The intent was worth keeping, so it is asserted rather than set: a superuser among these roles would
+-- sit outside every policy in this file, and the system would look exactly as it does when it works.
+-- Asserting it is also strictly better than setting it, because it catches the case where somebody
+-- granted it by hand afterwards.
+DO $$
+DECLARE
+  wrong text := (SELECT string_agg(rolname, ', ' ORDER BY rolname) FROM pg_roles
+                  WHERE rolname IN ('varmak_admin', 'varmak_office', 'varmak_workshop', 'varmak_api')
+                    AND rolsuper);
+BEGIN
+  IF wrong IS NOT NULL THEN
+    RAISE EXCEPTION '% is a superuser, which puts it outside every row-level policy in this file', wrong;
+  END IF;
+END;
+$$;
 
 GRANT varmak_admin, varmak_office, varmak_workshop TO varmak_api;
 GRANT USAGE ON SCHEMA public TO varmak_admin, varmak_office, varmak_workshop, varmak_api;
+
+-- Where pgcrypto actually is, which on a managed database is not where this file assumes.
+--
+-- Every PIN and every password in this system is hashed by crypt() and gen_salt(), and both come from
+-- pgcrypto. On a machine where this was developed the extension goes into `public` and is found
+-- without anybody thinking about it. A hosted Postgres — Supabase among them — installs its
+-- extensions into a schema of their own, and then the connecting role's search_path cannot see those
+-- two functions: `sign_in` raises "function crypt(text, text) does not exist" and NOBODY CAN GET IN.
+--
+-- That failure arrives at the first sign-in on a new deployment, which is the worst possible place to
+-- find it — the install said nothing, every table is there, and the only symptom is a workshop locked
+-- out of its own system on the morning it was meant to start using it.
+--
+-- So the path is set here from where this database actually put the extension, rather than assumed.
+-- Only varmak_api needs it: a role's settings are applied when it logs in, and SET LOCAL ROLE does
+-- not re-apply them, so the one role that connects is the one that carries the path for the three it
+-- becomes. The functions that hash are SECURITY DEFINER but do not set a path of their own, so they
+-- run with the session's — which is this one.
+DO $$
+DECLARE
+  home text := (SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                 WHERE e.extname = 'pgcrypto');
+BEGIN
+  IF home IS NULL THEN
+    RAISE EXCEPTION 'pgcrypto is not installed in this database, and every password in this system needs it';
+  END IF;
+  IF home <> 'public' THEN
+    EXECUTE format('ALTER ROLE varmak_api SET search_path = public, %I', home);
+    EXECUTE format('GRANT USAGE ON SCHEMA %I TO varmak_api', home);
+    RAISE NOTICE 'pgcrypto is in schema %, so varmak_api searches there too', home;
+  END IF;
+END;
+$$;
 
 -- Sequences are needed by anyone who may insert; without this an insert fails on the id.
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO varmak_admin, varmak_office, varmak_workshop;
@@ -653,9 +744,70 @@ $$;
 
 -- Same reason as the roles above: set unconditionally, because the role may already exist from an
 -- earlier build of a different database in this cluster.
-ALTER ROLE varmak_engine NOLOGIN BYPASSRLS NOSUPERUSER;
+ALTER ROLE varmak_engine NOLOGIN BYPASSRLS;
+
+-- Whoever is installing has to be able to SET ROLE to this one, or every `ALTER FUNCTION ... OWNER TO
+-- varmak_engine` below is refused — and those lines are what make the four functions allowed to step
+-- around row security belong to a role that may. A superuser can always become any role. A CREATEROLE
+-- role, which is the most a managed database gives you, gets ADMIN OPTION on the roles it creates and
+-- **not** the right to become one, so the install stopped dead at the first of those ALTERs.
+--
+-- Two things about the shape of this are the result of finding out the hard way. `pg_has_role(...,
+-- 'MEMBER')` answers true on the strength of that admin option alone, so a guard written with it skips
+-- the grant that is needed — which is exactly what happened here, and the error message was identical
+-- to having no guard at all. And it is a plain GRANT rather than PostgreSQL 16's `WITH SET TRUE`,
+-- because the hosted databases this installs onto are still on 15 where that is a parse error; the
+-- plain form adds a membership that carries SET on both versions.
+DO $$
+BEGIN
+  IF NOT (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) THEN
+    EXECUTE format('GRANT varmak_engine TO %I', current_user);
+  END IF;
+END;
+$$;
+-- NOSUPERUSER omitted here for the reason given at the other four: naming the attribute at all needs
+-- to be a superuser. This one is checked below instead, where it matters more than the others — this
+-- is the role that owns the functions allowed to step around row security.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'varmak_engine' AND rolsuper) THEN
+    RAISE EXCEPTION 'varmak_engine is a superuser: it owns the functions that bypass row security, '
+      'and as a superuser it would bypass everything else as well';
+  END IF;
+END;
+$$;
 
 GRANT USAGE ON SCHEMA public TO varmak_engine;
+-- And on whichever schema pgcrypto is in, for the same reason varmak_api was given it above. This one
+-- is not about a search_path: a SECURITY DEFINER function runs as its owner, so the body of sign_in
+-- resolves crypt() with this role's privileges, and USAGE on the schema is what lets it.
+DO $$
+DECLARE
+  home text := (SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                 WHERE e.extname = 'pgcrypto');
+BEGIN
+  IF home IS NULL OR home = 'public' THEN
+    RETURN;
+  END IF;
+  -- Attempted, then checked. On a managed database the extension schema often belongs to a role you
+  -- are not, so this GRANT can come back as "no privileges were granted" — a WARNING, which an install
+  -- scrolls straight past, and then nobody can sign in. Checking turns that into a refusal here, with
+  -- the one line somebody has to run. Nothing in this file matters more: crypt() resolves as this role.
+  BEGIN
+    EXECUTE format('GRANT USAGE ON SCHEMA %I TO varmak_engine', home);
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+  IF NOT has_schema_privilege('varmak_engine', home, 'USAGE') THEN
+    -- quote_ident and a plain %, because RAISE does not take format()'s %I: written that way, the line
+    -- somebody is meant to copy out of this message came out as `GRANT USAGE ON SCHEMA extensionsI`.
+    -- A refusal whose instruction does not work is worse than no instruction.
+    RAISE EXCEPTION 'varmak_engine cannot use schema %, where pgcrypto lives, so no password in this '
+      'system can be hashed or checked. Ask whoever owns that schema to run: GRANT USAGE ON SCHEMA % '
+      'TO varmak_engine;', home, quote_ident(home);
+  END IF;
+END;
+$$;
 GRANT SELECT, INSERT, UPDATE ON app_user, app_session, stock_item, project TO varmak_engine;
 -- Read-only, and only what the roll-up above walks: an hours entry names a jobcard, and the jobcard
 -- names the project whose figure is being recomputed.
@@ -663,6 +815,19 @@ GRANT SELECT ON jobcard, hours_entry TO varmak_engine;
 -- Insert only on the two that are append-only, even for the role that may step around row security.
 GRANT SELECT, INSERT ON activity_log, stock_movement TO varmak_engine;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO varmak_engine;
+
+-- CREATE on the schema, for the length of the ownership changes and no longer.
+--
+-- Postgres requires the incoming owner to hold CREATE on the schema a function lives in. On this
+-- machine the install runs as a superuser and the question never comes up; on PostgreSQL 15 and later
+-- `public` no longer grants CREATE to everybody, so on a hosted database every ALTER below was refused
+-- with "permission denied for schema public" — after the tables, the policies and the grants had all
+-- gone in, which is the worst place for an install to stop.
+--
+-- Granted and then taken away again, in the same transaction, because nothing this role does afterwards
+-- creates anything: varmak_engine cannot log in, and the only code that runs as it is the handful of
+-- functions listed here. A standing CREATE would be a privilege that serves nobody.
+GRANT CREATE ON SCHEMA public TO varmak_engine;
 
 ALTER FUNCTION sign_in(text, text, session_door, text) OWNER TO varmak_engine;
 ALTER FUNCTION session_owner(text) OWNER TO varmak_engine;
@@ -713,6 +878,10 @@ $$;
 
 ALTER FUNCTION issue_material(bigint, numeric, bigint, text) OWNER TO varmak_engine;
 ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text) OWNER TO varmak_engine;
+
+-- And taken back, as promised above. api.sql grants it again for its own ownership changes and takes
+-- it away the same way, so the privilege exists only while it is being used.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 -- Named roles as well as PUBLIC. REVOKE ... FROM PUBLIC does not remove a privilege granted
 -- explicitly to a role, and an earlier version of this file granted EXECUTE on issue_stock to all
 -- three roles a hundred lines above. The revoke below looked like it closed that and did not: the

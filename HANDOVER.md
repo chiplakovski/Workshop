@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** `6bbaceb` — Pass 4.34.
+**HEAD:** see §4d, which is where this document actually ends. Everything above it is the state of a
+prototype with no backend; §4d is where it stands now.
 **Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
-**Green:** 681 unit tests · 16-page browser smoke · 94 end-to-end steps.
 
 ---
 
@@ -365,6 +365,59 @@ current app — silent, total, unrecoverable loss — survivable, today, with no
 so the carve-out in `REVIEW.md` — record **who welded it and with what filler** on the jobcard
 operation — is still recoverable. It must be done **before** those collections are deleted.
 
+## 4d. Where it stands — 24 September 2026
+
+**This is no longer a prototype with no backend.** There is a PostgreSQL database with its safety
+rules as triggers, row-level security forced on every table, money granted column by column, the
+workflows as database functions, and a thin HTTP layer that decides nothing. Sections 1 to 3 above
+describe the browser-storage app, which is still how ten of the sixteen pages run; read
+[`BACKEND.md`](BACKEND.md) for the other half and [`DEPLOY.md`](DEPLOY.md) for how to put it into
+service.
+
+**Green as of this entry:**
+
+| | |
+|---|---|
+| Schema | 137 refusals, 81 allowances |
+| Auth | 65 refusals, asked as real database roles |
+| Workflows | 77 refusals over the API |
+| Over real HTTP | 37 refusals |
+| Backup and restore | 10 checks, a real dump restored and compared by checksum |
+| Hosted install | 13 checks, over verified TLS as a non-superuser |
+| Unit tests | 728 |
+| End-to-end | 215 steps in a real browser, twelve suites |
+| Mutations | 172 |
+| Schema width | 67% of the fields the pages use can be stored |
+
+**What can be done on the database today**, without a database console: record a customer, put a
+project on the board with jobcards on it, book hours against them from the shop tablet — including
+with no signal, which is kept on the tablet and sent when the line comes back — put steel on the
+shelf, take it off for a job, count it, and give somebody access or take it away.
+
+**What still cannot:** estimating (the schema holds a title, a total and a date; the screen holds
+nested work items, options, terms, revisions and a priced bill of materials), Quality, Equipment, the
+sales pipeline, Documents, Planning, Reports and Suppliers. Those screens refuse to show a signed-in
+session anything, and say why, rather than showing figures that are not the workshop's.
+
+**The order the remaining work was agreed in**, and where it got to:
+
+1. ~~No two worlds — a wired page cannot write to browser storage~~ **done**
+2. ~~An access screen, so adding a person does not mean opening psql~~ **done**
+3. ~~Backups verified by restoring one~~ **done**
+4. Wire the remaining screens — **six of sixteen are wired**, ten to go
+5. Schema width — **67%**, concentrated on `equipment` (16 fields) and `lead` (9)
+6. ~~An offline queue that survives a failure~~ **done for booking hours**; starting a step and
+   issuing material have the database half and not the screen half
+7. ~~Deploy: a hosted database, a real password, HTTPS~~ **done** — `DEPLOY.md`, and never yet run
+   against the real Supabase project, which is said in its first paragraph
+
+**Two things about this session's working method that are worth keeping.** A MISSED mutation is a
+question, not a verdict: three times it meant the edit was a no-op because a second guard was doing
+the refusing, and the honest answer was to ask the question where the rule is actually stated. And
+three mutations were found **stale** — the rule each damaged had been rewritten and the anchor still
+quoted the old wording, so the harness reported "no longer in schema.sql" instead of testing
+anything. Check the anchors after any pass that edits a rule.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
@@ -403,8 +456,9 @@ operation — is still recoverable. It must be done **before** those collections
 
 **Step 1 — finish the prototype.** §6 items 1–4. None need a backend.
 
-**Step 2 — the backend.** A database and a small API. This is the real project; the AI is the
-cheap half. Auth, backups, hosting, someone to fix it at 11pm.
+**Step 2 — the backend.** ~~A database and a small API.~~ **Done, and further than this line
+imagined**: see §4d. Auth, backups and hosting are built and tested; "someone to fix it at 11pm" is
+still nobody, and that is a real answer that needs giving before this carries the company's work.
 
 **Step 3 — the real sweep.** Managed Agents *scheduled deployments* run the agent nightly on
 Anthropic's side — no scheduler of your own. `web_search` / `web_fetch` take `allowed_domains`, so

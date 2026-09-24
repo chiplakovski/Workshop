@@ -639,7 +639,62 @@ cannot touch anything else.
    What it cannot tell you, and the runbook says so out loud: it restores onto the same server it
    dumped from. Restoring onto a different machine is what the roles file is for, and that is only
    proven the first time somebody does it for real.
-7. Only then: the AI sweep, the catalogue import, push notifications.
+7. ~~**Put it into service** — a hosted database, a real password, HTTPS in front.~~ **Done, and it
+   found four things that were broken.** [`DEPLOY.md`](DEPLOY.md) is the runbook,
+   [`backend/install.sh`](backend/install.sh) does the install, [`deploy/`](deploy/) holds the Caddy
+   configuration, the systemd unit and the environment file, and
+   [`backend/test-deploy.js`](backend/test-deploy.js) is the only part of this worth trusting.
+
+   Every other suite in this project runs against the Postgres on this machine: a unix socket, trust
+   authentication, and a **superuser**. A hosted database is none of those three, and the difference was
+   not cosmetic — it was four separate install failures, none of which were visible from here:
+
+   * `ALTER ROLE ... NOSUPERUSER` is refused from a role that is not a superuser itself, **even when it
+     changes nothing**. The install stopped four lines into the roles on every hosted Postgres there is.
+     The intent is now asserted rather than set, which is also strictly better: it catches a superuser
+     granted by hand afterwards.
+   * `pgcrypto` goes into a schema of its own on a managed database, and two different things break.
+     `app_session.token` has `DEFAULT encode(gen_random_bytes(32), 'hex')` — a column default is parsed
+     as the table is created — so the install died three tables in. The quieter half: `crypt()` is
+     resolved when a function body runs, so an install that *finished* could still be a system nobody
+     can sign in to, discovered by the workshop on the morning it meant to start. Three search paths
+     are now set from where the extension actually is: the install session's, the database's, and the
+     connecting role's.
+   * A `CREATEROLE` role that creates another role gets ADMIN OPTION and **not** the right to become
+     it, so every `ALTER FUNCTION ... OWNER TO varmak_engine` was refused — and those lines are what
+     make the four functions allowed to step around row security belong to a role that may. Worth
+     knowing: `pg_has_role(..., 'MEMBER')` answers *true* on the strength of that admin option, so a
+     guard written with it skips the grant that is needed and the error is identical to having no guard.
+   * On PostgreSQL 15 and later `public` no longer grants `CREATE` to everybody, and the incoming owner
+     of a function needs it. Granted around the ownership changes and taken back in the same
+     transaction, because nothing `varmak_engine` does afterwards creates anything.
+
+   And one in the client rather than the database, which would have been the hardest to see: pasting a
+   connection string with `?sslmode=require` on the end — which is how anybody gets one — makes
+   node-postgres derive its own TLS settings and **replace** the ones the server passes, certificate
+   authority and all. The parameter is now stripped before use. TLS to the database is not
+   configurable: always on, always verified.
+
+   So the suite builds a second Postgres with the hosted shape — TLS only, scram authentication over
+   TCP, a non-superuser owner, `pgcrypto` in `extensions` — runs `install.sh` against it exactly as a
+   deployment would, and then drives the whole stack through it: the first administrator, a welder with
+   a PIN, a customer, a project, a jobcard, hours booked and read back out of Postgres, and the same
+   entry sent twice to show it arrives once. The last check is the one worth the most: **on that hosted
+   install, can a welder read a price?** If the install had connected as the owner, or `varmak_api` had
+   come out with `BYPASSRLS`, every other check would pass and that one would not.
+
+   Two refusals were added to the server itself, because both of these deployments look like they work.
+   It will not start with a database over a network and no password, and it will not start connected as
+   the owning role — as the owner, every `GRANT` and every policy in `auth.sql` applies to nobody.
+
+   The pages also gained the headers a page needs once it is on the open internet: a content-security
+   policy naming the only two foreign origins they use, `nosniff`, and HSTS **only** when the request
+   arrived over TLS — sending it over plain HTTP tells a browser to refuse the one address that works.
+
+   What this still cannot tell anybody: it has not been run against a real Supabase project. The shape
+   is faithful and the four failures above were real, but the first run against the actual thing is the
+   only one that counts, and `DEPLOY.md` says so in its first paragraph rather than at the end.
+8. Only then: the AI sweep, the catalogue import, push notifications.
 
 ### What steps 1 and 2 cost, and what they caught
 
@@ -649,7 +704,13 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 154 mutations across the four SQL files and the backup script.
+breaking. **172 mutations** — across the four SQL files, the backup script, and now the three
+front-end files the shop tablet's offline queue lives in and the server that connects to a hosted
+database. Three of them were found to be **stale** while this count was being updated: the rule each
+one damaged had been rewritten and the anchor still quoted the old wording, so the harness had been
+reporting "the rule this mutation edits is no longer in schema.sql" rather than testing anything. A
+stale mutation is a rule nobody is testing while the report says otherwise, so the anchors are now
+checked as a matter of course.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

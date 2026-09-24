@@ -587,6 +587,11 @@ LANGUAGE sql STABLE AS $$
   ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;
 $$;
 
+-- The same grant-and-revoke as auth.sql does around its ownership changes, and for the same reason:
+-- Postgres requires the incoming owner to hold CREATE on the schema, and on PostgreSQL 15 and later
+-- `public` does not grant that to everybody. See the long note there.
+GRANT CREATE ON SCHEMA public TO varmak_engine;
+
 ALTER FUNCTION bootstrap_first_admin(text, text, text) OWNER TO varmak_engine;
 ALTER FUNCTION change_my_password(text, text) OWNER TO varmak_engine;
 
@@ -863,6 +868,9 @@ $$;
 -- lets them insert the movement while the caller's own role holds no INSERT on that table directly.
 ALTER FUNCTION receive_stock(bigint, numeric, numeric, text, text, text, text, text, text) OWNER TO varmak_engine;
 ALTER FUNCTION record_stocktake(bigint, numeric, text) OWNER TO varmak_engine;
+
+-- The last ownership change in the system, so the privilege goes back now.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Work: the project, the jobcards on it, and the steps on those

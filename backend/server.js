@@ -26,6 +26,10 @@ const path = require('node:path');
 const { Pool } = require('pg');
 
 const PORT = Number(process.env.PORT || 8787);
+// Every interface by default, because the usual case is a container whose port is published. Behind a
+// reverse proxy on the same machine set HOST=127.0.0.1, so the only way in is through the proxy that
+// terminates TLS — otherwise the plain-HTTP port is reachable from the network as well.
+const HOST = process.env.HOST || '0.0.0.0';
 
 // The pages are served from here too, and the endpoints live under /api. One origin, which means no
 // CORS anywhere — not as a shortcut, but because a second origin is a whole class of problem (a
@@ -55,13 +59,75 @@ function servableFile(pathname) {
   }
 }
 
-const pool = new Pool({
-  host: process.env.PGHOST || '/tmp',
-  port: Number(process.env.PGPORT || 5433),
-  user: process.env.VARMAK_API_USER || 'varmak_api',
-  database: process.env.PGDATABASE || 'varmak',
-  max: Number(process.env.PGPOOL || 8)
-});
+// Where the database is, and how much of it may be trusted on the way there.
+//
+// Two shapes, because the two places this runs are genuinely different. On a development machine it
+// is a unix socket in /tmp with trust authentication and no password to leak. On a hosted database —
+// Supabase, or anything else — it is a TCP connection across a network somebody else owns, and then
+// two things become non-negotiable: a password, and TLS that is actually verified.
+//
+// DATABASE_URL is the whole connection in one string because that is what a hosted database hands
+// you. It must name varmak_api as the user: the pool's role is what holds the system's privileges
+// apart, and connecting as the database owner would make every GRANT in auth.sql decoration.
+function databaseSettings() {
+  const url = process.env.DATABASE_URL;
+  const max = Number(process.env.PGPOOL || 8);
+  if (!url) {
+    return {
+      host: process.env.PGHOST || '/tmp',
+      port: Number(process.env.PGPORT || 5433),
+      user: process.env.VARMAK_API_USER || 'varmak_api',
+      password: process.env.PGPASSWORD || undefined,
+      database: process.env.PGDATABASE || 'varmak',
+      ssl: process.env.PGSSLROOTCERT ? { ca: fs.readFileSync(process.env.PGSSLROOTCERT, 'utf8') } : undefined,
+      max
+    };
+  }
+  // Verified, not merely encrypted. `sslmode=require` in a connection string means "encrypt" and
+  // nothing about who is on the other end — so anyone who can answer for that hostname reads every
+  // row and every session token. PGSSLROOTCERT is the project's CA certificate, downloaded from the
+  // database's own dashboard; without it the system's trust store is used, which is correct when the
+  // certificate is from a public CA and fails loudly rather than quietly when it is not.
+  const ssl = { rejectUnauthorized: true };
+  if (process.env.PGSSLROOTCERT) ssl.ca = fs.readFileSync(process.env.PGSSLROOTCERT, 'utf8');
+  // `sslmode` is taken out of the string on purpose, and this is not tidiness. node-postgres parses
+  // that parameter and the settings it derives REPLACE the ones passed here — certificate authority
+  // and all — so a connection string copied from a database's own dashboard, which is exactly how
+  // anybody gets one, quietly undoes the verification set up two lines above. TLS here is not
+  // configurable: it is always on and always verified, and the string does not get a vote.
+  const parsed = new URL(url);
+  parsed.searchParams.delete('sslmode');
+  parsed.searchParams.delete('ssl');
+  return { connectionString: parsed.toString(), ssl, max };
+}
+
+// The two ways to deploy this and be wrong about it, refused at startup rather than found later.
+//
+// Neither is hypothetical. A TCP connection with no password is a database anyone who can reach the
+// host can open; a connection as the owning role is one where every GRANT and every policy in
+// auth.sql applies to nobody, because the owner is not subject to them — and the system would look
+// exactly as it does when it is working, right up until a welder reads a price.
+function refuseToStartIf(settings) {
+  const url = settings.connectionString ? new URL(settings.connectionString) : null;
+  const host = url ? url.hostname : settings.host;
+  const user = url ? decodeURIComponent(url.username || '') : settings.user;
+  const password = url ? url.password : settings.password;
+  const local = !url && String(host || '').startsWith('/');
+  if (!local && !password) {
+    return `the database is at ${host} over the network and no password is set. `
+      + 'Set DATABASE_URL (or PGPASSWORD) — a database reachable without one is a database anyone '
+      + 'who can reach that host can open.';
+  }
+  if (user && user !== 'varmak_api' && !process.env.VARMAK_ALLOW_ANY_DB_USER) {
+    return `connecting as ${user} rather than varmak_api. The pool's role is what holds this system's `
+      + 'privileges apart: as the owner, every GRANT and every policy in auth.sql applies to nobody '
+      + 'and nothing would look wrong until somebody read a price they should not see.';
+  }
+  return null;
+}
+
+const settings = databaseSettings();
+const pool = new Pool(settings);
 
 // The only functions reachable over HTTP, and the order their arguments go in. An allow-list rather
 // than "call whatever they name": without it this is a remote SQL console, and the roles would be
@@ -293,6 +359,46 @@ async function handleRpc(req, res, name, body) {
   return send(res, result.status, result.body);
 }
 
+// The headers a page needs once it is on the open internet rather than on a laptop.
+//
+// The content-security-policy is the one that earns its place: it says which origins this app may
+// load anything from, so an injected <script src> has nowhere to load from even if something does get
+// injected. It has to allow inline scripts and inline styles, because these pages are written that
+// way — sixteen self-contained files — and a policy that broke every page would be turned off within
+// a day. Blocking foreign origins is most of the value and costs nothing here.
+//
+// The typefaces are the one exception, and they are named rather than allowed in general: the pages
+// ask fonts.googleapis.com for them, which is also a request that will never arrive in a steel hall
+// with no internet. Self-hosting them is a separate, better job.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'none'"
+].join('; ');
+
+function pageSafety(req) {
+  const headers = {
+    'content-security-policy': CSP,
+    // The pages are typed in three languages and hold the workshop's prices; a browser guessing the
+    // type of a response it was handed is a way to have one of them run as something else.
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'no-referrer',
+    'x-frame-options': 'DENY'
+  };
+  // Only when the request actually arrived over TLS, which behind a reverse proxy is what this header
+  // says. Sending it over plain HTTP would tell a browser to refuse the only address that works,
+  // which on a development machine means locking yourself out of your own laptop.
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  if (proto === 'https') headers['strict-transport-security'] = 'max-age=31536000';
+  return headers;
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -303,12 +409,12 @@ const server = http.createServer(async (req, res) => {
       const file = servableFile(url.pathname);
       if (!file) return send(res, 404, { refused: 'no such page' });
       const body = fs.readFileSync(file);
-      res.writeHead(200, {
+      res.writeHead(200, Object.assign({
         'content-type': TYPES[path.extname(file)] || 'application/octet-stream',
         'content-length': body.length,
         // The pages are edited constantly in a prototype; a cached stale one wastes an afternoon.
         'cache-control': 'no-cache'
-      });
+      }, pageSafety(req)));
       return res.end(req.method === 'HEAD' ? undefined : body);
     }
 
@@ -335,9 +441,17 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (require.main === module) {
-  server.listen(PORT, () => {
-    console.log(`Varmak Workshop on http://localhost:${PORT} — database ${pool.options.database}`);
+  const wrong = refuseToStartIf(settings);
+  if (wrong) {
+    console.error(`Refusing to start: ${wrong}`);
+    process.exit(1);
+  }
+  server.listen(PORT, HOST, () => {
+    const where = settings.connectionString
+      ? new URL(settings.connectionString).hostname
+      : `${settings.host}/${settings.database}`;
+    console.log(`Varmak Workshop on http://${HOST}:${PORT} — database ${where}`);
   });
 }
 
-module.exports = { server, pool, RPC, READS, WITHOUT_A_SESSION };
+module.exports = { server, pool, RPC, READS, WITHOUT_A_SESSION, databaseSettings, refuseToStartIf };

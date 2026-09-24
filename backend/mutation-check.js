@@ -59,6 +59,28 @@ const FILES = {
   queueunit: {
     path: path.join(__dirname, '..', 'tests', 'workshop-queue.test.js'),
     suite: path.join('..', 'tests', 'workshop-queue.test.js'), env: 'VARMAK_QUEUE_TEST'
+  },
+
+  // Whether this system can be installed onto a hosted database at all. Four rules in auth.sql exist
+  // only for that case and are invisible from this machine, so they are damaged against the suite that
+  // installs into a Postgres shaped like a hosted one.
+  deploy: {
+    path: path.join(__dirname, 'auth.sql'),
+    suite: 'test-deploy.js', env: 'VARMAK_AUTH'
+  },
+  // And the two refusals in the server that keep a wrong deployment from starting. This one needs its
+  // mutant written into backend/ rather than into the temporary directory: it is a Node module that
+  // requires `pg`, and from /tmp there is no node_modules to resolve it in. The name is distinctive and
+  // the run unlinks it, so an interruption leaves a stray file rather than a damaged server.js.
+  serverjs: {
+    path: path.join(__dirname, 'server.js'),
+    suite: 'test-deploy.js', env: 'VARMAK_SERVER', mutantDir: __dirname
+  },
+  // api.sql against the same suite: it holds the last of the ownership changes, and therefore the
+  // revoke that actually decides whether varmak_engine keeps CREATE on public afterwards.
+  deployapi: {
+    path: path.join(__dirname, 'api.sql'),
+    suite: 'test-deploy.js', env: 'VARMAK_API'
   }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
@@ -87,12 +109,12 @@ const MUTATIONS = [
   },
   {
     what: 'the hours roll-up looks only at the row it was handed',
-    from: `  FOREACH target IN ARRAY (
+    from: `  FOREACH target IN ARRAY coalesce((
     SELECT array_agg(DISTINCT id) FROM unnest(ARRAY[
       CASE WHEN TG_OP <> 'INSERT' THEN OLD.operation_id END,
       CASE WHEN TG_OP <> 'DELETE' THEN NEW.operation_id END
     ]) AS id WHERE id IS NOT NULL
-  ) LOOP`,
+  ), ARRAY[]::bigint[]) LOOP`,
     to: '  FOREACH target IN ARRAY ARRAY[COALESCE(NEW.operation_id, OLD.operation_id)] LOOP'
   },
   {
@@ -147,8 +169,8 @@ const MUTATIONS = [
   },
   {
     what: 'the equipment gate stops caring what state the machine is in',
-    from: "IF machine.status IN ('out-of-service','under-maintenance','quarantined','retired') THEN",
-    to: "IF machine.status IN ('retired') THEN"
+    from: "IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN",
+    to: "IF machine_status IN ('retired') THEN"
   },
   {
     what: 'an operation may start before what it depends on is finished',
@@ -914,11 +936,15 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
   {
     what: 'the office workflows are handed to the floor as well',
     file: 'api',
-    from: `GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
-  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text)
+    // Anchored on the line that decides who the list is granted to, rather than on the list. Every
+    // screen wired to the database adds its workflow to that list, so an anchor quoting it goes stale
+    // the next time one is — which is exactly what had happened here, and a stale mutation is a rule
+    // nobody is testing while the report says the opposite. The first attempt at re-anchoring added a
+    // function to the list instead, which was a no-op: `book_hours` is already granted to the office
+    // further down. The rule is the TO, so that is what this damages. It appears once in the file.
+    from: `  record_stocktake(bigint, numeric, text)
 TO varmak_admin, varmak_office;`,
-    to: `GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
-  receive_goods(bigint, numeric, text), convert_lead(bigint, text, text)
+    to: `  record_stocktake(bigint, numeric, text)
 TO varmak_admin, varmak_office, varmak_workshop;`
   },
   {
@@ -1310,6 +1336,93 @@ TO varmak_workshop;`
       await flushQueue();`,
     to: `      const queued={id:WorkshopQueue.newId()};
       await WorkshopApi.call('book_hours',Object.assign({},args,{event_id:queued.id}));`
+  },
+
+  // ── Installing onto a hosted database ─────────────────────────────────────────────────────
+  //
+  // Four rules that exist only for a database this machine is not, damaged against the suite that
+  // installs into one shaped like it. Every one of these is a bug that really was here and really
+  // stopped the install dead — they are kept so the suite that caught them cannot stop catching them.
+  {
+    what: 'NOSUPERUSER goes back on the role attributes, which only a superuser may say',
+    file: 'deploy',
+    from: 'ALTER ROLE varmak_admin NOLOGIN NOBYPASSRLS;',
+    to: 'ALTER ROLE varmak_admin NOLOGIN NOBYPASSRLS NOSUPERUSER;'
+  },
+  {
+    what: 'nothing puts pgcrypto\'s own schema on the search path',
+    file: 'deploy',
+    from: '  PERFORM set_config(\'search_path\', format(\'public, %I\', home), false);',
+    to: ''
+  },
+  {
+    what: 'the incoming owner of a function is not given CREATE on the schema',
+    file: 'deploy',
+    from: 'GRANT CREATE ON SCHEMA public TO varmak_engine;\n\nALTER FUNCTION sign_in(text, text, session_door, text) OWNER TO varmak_engine;',
+    to: 'ALTER FUNCTION sign_in(text, text, session_door, text) OWNER TO varmak_engine;'
+  },
+  {
+    // Damaged in api.sql rather than in auth.sql, and the reason is worth keeping: both files grant
+    // CREATE and both take it back, so removing auth.sql's revoke changes nothing that can be seen —
+    // api.sql's, being the last, decides what the role is left holding. Belt and braces again, and
+    // again it means the mutation has to be asked where the answer actually comes from.
+    what: 'the CREATE on public granted for the ownership changes is never given back',
+    file: 'deployapi',
+    from: `
+-- The last ownership change in the system, so the privilege goes back now.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;`,
+    to: ''
+  },
+  {
+    what: 'whoever installs cannot become varmak_engine, so it owns none of the functions',
+    file: 'deploy',
+    from: `DO $$
+BEGIN
+  IF NOT (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) THEN
+    EXECUTE format('GRANT varmak_engine TO %I', current_user);
+  END IF;
+END;
+$$;`,
+    to: ''
+  },
+  {
+    what: 'varmak_engine is left without USAGE on the schema pgcrypto is in, unchecked',
+    file: 'deploy',
+    from: `  IF NOT has_schema_privilege('varmak_engine', home, 'USAGE') THEN`,
+    to: '  IF false THEN'
+  },
+  {
+    // Two deployments that look exactly like a working one.
+    what: 'a database over the network with no password is allowed to start',
+    file: 'serverjs',
+    from: `  if (!local && !password) {
+    return \`the database is at \${host} over the network and no password is set. \`
+      + 'Set DATABASE_URL (or PGPASSWORD) — a database reachable without one is a database anyone '
+      + 'who can reach that host can open.';
+  }`,
+    to: ''
+  },
+  {
+    what: 'connecting as the database owner is allowed, so every policy applies to nobody',
+    file: 'serverjs',
+    from: `  if (user && user !== 'varmak_api' && !process.env.VARMAK_ALLOW_ANY_DB_USER) {`,
+    to: '  if (false) {'
+  },
+  {
+    // The subtlest of the lot: the connection is still encrypted, so nothing looks wrong.
+    what: 'sslmode from the connection string is left in, replacing the certificate check',
+    file: 'serverjs',
+    from: `  const parsed = new URL(url);
+  parsed.searchParams.delete('sslmode');
+  parsed.searchParams.delete('ssl');
+  return { connectionString: parsed.toString(), ssl, max };`,
+    to: '  return { connectionString: url, ssl, max };'
+  },
+  {
+    what: 'HSTS is sent over plain HTTP as well, telling a browser to refuse the address that works',
+    file: 'serverjs',
+    from: "  if (proto === 'https') headers['strict-transport-security'] = 'max-age=31536000';",
+    to: "  headers['strict-transport-security'] = 'max-age=31536000';"
   }
 ];
 
@@ -1329,7 +1442,8 @@ const SELECTED = !only ? MUTATIONS
 // suite to the file reported the rule as untested when it was simply being asked in the wrong place.
 function runSuiteAgainst(damaged, which, index, suite) {
   const target = { ...FILES[which], ...(suite ? { suite: FILES[suite].suite } : {}) };
-  const file = path.join(os.tmpdir(), `varmak-mutant-${index}${path.extname(FILES[which].path)}`);
+  const file = path.join(FILES[which].mutantDir || os.tmpdir(),
+    `varmak-mutant-${index}${path.extname(FILES[which].path)}`);
   fs.writeFileSync(file, damaged);
   try {
     execFileSync('node', [path.join(__dirname, target.suite)], {
@@ -1350,7 +1464,7 @@ function runSuiteAgainst(damaged, which, index, suite) {
     const line = output.split('\n')
       .filter((l) => !/^OK\s/.test(l.trim()))
       .reverse()
-      .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these|did not come back|did not survive/.test(l));
+      .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these|did not come back|did not survive|has to |ERROR:|AssertionError/.test(l));
     return { caught: true, by: (line || '').trim().slice(0, 130) };
   } finally {
     fs.unlinkSync(file);

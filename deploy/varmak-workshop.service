@@ -1,0 +1,43 @@
+# The workshop server as a service, so it comes back after a reboot without anybody deciding to.
+#
+#   cp deploy/varmak-workshop.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now varmak-workshop
+#
+# The environment file is where the database password lives. It is NOT in this repository and must not
+# be: root-owned, mode 600, and readable by nothing else on the machine.
+#
+#   install -m 600 -o root -g root deploy/varmak.env.example /etc/varmak/workshop.env
+#   $EDITOR /etc/varmak/workshop.env
+
+[Unit]
+Description=Varmak Workshop
+Documentation=https://github.com/chiplakovski/Workshop
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=varmak
+Group=varmak
+WorkingDirectory=/opt/varmak-workshop
+EnvironmentFile=/etc/varmak/workshop.env
+ExecStart=/usr/bin/node backend/server.js
+Restart=on-failure
+RestartSec=5
+
+# The server reads four SQL files, serves the pages out of its own directory and talks to one database.
+# It has no business writing anywhere on this machine, so it is not allowed to.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/varmak-workshop
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryDenyWriteExecute=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

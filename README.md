@@ -2,6 +2,12 @@
 
 Internal workshop system prototype for Varmak AB (Marieholm), built module by module.
 
+**To put this into service on a real database, follow [`DEPLOY.md`](DEPLOY.md).** Sixteen steps:
+Supabase for the database, a small machine for the Node server, Caddy for HTTPS, and the first
+administrator made from a screen rather than from psql. `npm run test:deploy` runs the whole install
+against a Postgres deliberately shaped like a hosted one and then asks whether a welder can still read
+a price on the result.
+
 **Two halves, and they are at different stages.** There is now a real backend — PostgreSQL with
 its safety rules as triggers, two sign-in doors, three database roles with row-level security
 forced on every table, the workflows as database functions, and a thin HTTP layer that decides
@@ -172,7 +178,8 @@ npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Plannin
                       # Postgres: the hours slice, the access screen, Customers, Jobcards,
                       # making a project, the store, and the offline queue with the
                       # connection actually cut
-npm run test:backend  # the database, the roles, the workflows, real HTTP, and a restored backup
+npm run test:backend  # the database, the roles, the workflows, real HTTP, a restored backup,
+                      # and the install onto a hosted-shaped Postgres over verified TLS
 ```
 
 The last two e2e runs and `test:backend` need PostgreSQL. They start a throwaway server themselves

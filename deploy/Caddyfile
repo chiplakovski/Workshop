@@ -1,0 +1,40 @@
+# HTTPS in front of the workshop, and the only piece of this that has to face the internet.
+#
+# Caddy rather than nginx for one reason: it gets and renews the certificate by itself, from
+# Let's Encrypt, with no cron job and nothing to forget in fourteen months. A workshop of four people
+# does not need a TLS configuration it has to maintain, and an expired certificate on the morning of a
+# delivery is a real cost.
+#
+# Replace the name below with the one that points at this machine, put this file at
+# /etc/caddy/Caddyfile, and: systemctl reload caddy
+#
+# Everything else here exists because the app is behind a proxy rather than in front of one:
+#
+#   * X-Forwarded-Proto is what tells the Node server the request arrived over TLS, which is what it
+#     waits for before sending Strict-Transport-Security. Without this header the app is correct and
+#     silent; with it, browsers stop trying plain HTTP at all.
+#   * The Node server should be bound to 127.0.0.1 (HOST=127.0.0.1 in its environment), so the only
+#     way in is through this file. Otherwise the plain-HTTP port is on the network as well, and the
+#     certificate above is decoration.
+
+workshop.example.se {
+	encode gzip
+
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# The app sends its own content policy and HSTS; these are the two a proxy is better placed to
+	# add, because they are about the connection rather than about the page.
+	header {
+		-Server
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	log {
+		output file /var/log/caddy/workshop.log
+		# The bearer token travels in a header and is never logged by Caddy, but query strings can
+		# carry anything somebody types into an address bar, so they stay out of the log.
+		format console
+	}
+}
