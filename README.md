@@ -13,14 +13,14 @@ its safety rules as triggers, two sign-in doors, three database roles with row-l
 forced on every table, the workflows as database functions, and a thin HTTP layer that decides
 nothing. It lives under [`backend/`](backend/) and has its own [README](backend/README.md).
 
-**Six pages read and write the database** — the shop floor's hours screen, the access screen,
-Customers, Jobcards, Store, and the project half of Project / Estimator. Together they are the chain a
+**Eight pages read and write the database** — both hubs, the shop floor's hours screen, the access
+screen, Customers, Jobcards, Store, and the project half of Project / Estimator. Together they are the chain a
 workshop needs to start: record a customer, put work on the board, book hours against it, take steel
 off the shelf for it. The rest still run entirely on the browser's `localStorage` (see [`workshop-data.js`](workshop-data.js)), which is lost if browser
 data is cleared. A page that has not been wired refuses to show anything at all to a signed-in
 session and says why, rather than showing figures that are not the workshop's; see
-[`workshop-guard.js`](workshop-guard.js). Nothing changes for a browser with no session: the
-fourteen pages work exactly as they always have.
+[`workshop-guard.js`](workshop-guard.js). Nothing changes for a browser with no session: all sixteen
+pages work exactly as they always have.
 
 **The shop tablet keeps what it cannot send.** A steel building eats wifi, and the screen used most
 is the one used furthest from the router — so booking hours no longer needs a connection. The entry

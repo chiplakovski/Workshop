@@ -85,7 +85,7 @@
       <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Marieholm</div></div>
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
     </div>
-    <div class="who" data-help-slot><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
+    <div class="who" data-help-slot><div class="badge"><span class="av" id="whoAv">AK</span><span id="whoName">Aleksandar</span><span class="role" id="whoRole" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
 
     <div class="tiles">
       <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
@@ -173,6 +173,11 @@
 
 </div>
 
+<script>/* Wired: the badge is the session's own, and the way out ends the session. Declared before the
+   guard, which is loaded here for the first time — this page had no data layer at all, which is why a
+   welder signing in on their own phone read somebody else's name and the word Admin. */
+window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
 <script src="workshop-ui.js"></script><script>
   function combineModuleTiles(){
     [['m_projects','m_hours','Projects and hours'],['m_estim','m_planning','Estimations and planning']].forEach(([firstKey,secondKey,label])=>{
@@ -185,7 +190,7 @@
   }
   combineModuleTiles();
   const T={
-    sv:{role:"Admin",logout:"Logga ut",
+    sv:{role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",role:"Admin",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
       m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
@@ -193,8 +198,8 @@
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
       m_reports:"Rapporter",c_reports:"Analys & insikter",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhål",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
-      m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Skriv till teamet…",locale:"sv-SE"},
-    en:{role:"Admin",logout:"Log out",
+      m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Inte kopplat an — inget skickas",locale:"sv-SE"},
+    en:{role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",role:"Admin",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
@@ -202,8 +207,8 @@
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
       m_reports:"Reports",c_reports:"Analytics & insights",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
-      m_team:"Team Talk",c_team:"Internal feed",ttph:"Write to team…",locale:"en-GB"},
-    mk:{role:"Admin",logout:"Odjavi se",
+      m_team:"Team Talk",c_team:"Internal feed",ttph:"Not connected yet — nothing is sent",locale:"en-GB"},
+    mk:{role_admin:"Admin",role_office:"Kancelarija",role_workshop:"Rabotilnica",role:"Admin",logout:"Odjavi se",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
       m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
       m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_planning:"Planiranje",c_planning:"Raspored i kapacitet",
@@ -211,7 +216,7 @@
       m_suppliers:"Dobavuvači",c_suppliers:"Registar na dobavuvači",m_documents:"Dokumenti",c_documents:"Datoteki i šabloni",
       m_reports:"Izveštai",c_reports:"Inspekcija i test",m_equipment:"Oprema / Mašini",c_equipment:"Mašini i održuvanje",
       m_marketing:"Marketing",c_marketing:"Potencijalni klienti, kampanji i razvoj",m_quality:"Kvalitet",c_quality:"Inspekcii i defekti",
-      m_team:"Tim-feed",c_team:"Vnatrešen kanal",ttph:"Napiši do timot…",locale:"mk"}
+      m_team:"Tim-feed",c_team:"Vnatrešen kanal",ttph:"Sè ušte ne e povrzano — ne se ispraḱa ništo",locale:"mk"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -219,7 +224,9 @@
     document.querySelectorAll('[data-i-ph]').forEach(el=>{const v=t[el.getAttribute('data-i-ph')];el.placeholder=v;el.setAttribute('aria-label',v);});
     document.documentElement.lang=code==="mk"?"mk-Latn":code;
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
-    var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();tick();}
+    var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();tick();
+    // After the data-i sweep: #whoRole carries one, and the session's answer has to win.
+    if(window.paintSession)window.paintSession();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   setLang("en");setInterval(tick,10000);
@@ -228,7 +235,35 @@
   (function(){var lc=document.getElementById('langc'),lt=document.getElementById('langtoggle');if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
   document.querySelectorAll('.tile[role="link"]').forEach(tile=>tile.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();tile.click();}}));
 
-  document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
+  document.getElementById('logoutBtn').addEventListener('click',async()=>{
+    // Actually ends the session. Navigating away left the token in this tab, so the next person to
+    // pick the phone up was signed in as the last one.
+    if(window.WorkshopApi&&WorkshopApi.signedIn())await WorkshopApi.signOut();
+    location.href='login.html';
+  });
+
+  // ── Whose phone this is ─────────────────────────────────────────────────────────────────
+  let sessionName=null,sessionRole=null;
+  window.paintSession=function paintSession(){
+    if(!sessionName)return;
+    const t=T[current]||T.en;
+    const name=document.getElementById('whoName');
+    if(name)name.textContent=sessionName;
+    const av=document.getElementById('whoAv');
+    if(av)av.textContent=sessionName.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const role=document.getElementById('whoRole');
+    if(role&&sessionRole)role.textContent=t['role_'+sessionRole]||sessionRole;
+  };
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return;}
+    if(!answer.data)return;   // no connection: the tiles still work, the badge stays as it was
+    sessionName=answer.data.takenBy||null;
+    sessionRole=answer.data.takenRole||null;
+    paintSession();
+  })();
 
   (function(){
     const ttInput=document.getElementById('ttInput'),ttSend=document.getElementById('ttSend'),ttFeed=document.querySelector('.tt-feed');
@@ -246,6 +281,14 @@
     }
     ttSend.addEventListener('click',send);
     ttInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
+
+    // And the truth about it: this feed is this browser's, for this page load. A message typed here
+    // reaches nobody — there is no table for it and no workflow that carries it — and it is gone on the
+    // next reload. A box that accepts what somebody types and drops it is exactly the kind of screen
+    // this project refuses, so it says so instead of pretending. The panel stays because deciding
+    // whether the workshop wants a message feed at all is not this pass's decision to take.
+    ttInput.disabled=true;
+    ttSend.disabled=true;
   })();
 </script>
 </body></html>

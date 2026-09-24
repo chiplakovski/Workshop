@@ -69,6 +69,11 @@ LANGUAGE sql STABLE AS $$
     -- welder's work in the second welder's name. A display name cannot be that key — two Markos, or
     -- one Marko whose name is corrected in Access, and the queue is orphaned or, worse, adopted.
     'takenById', current_app_user()::text,
+    -- And what they may do, because two screens were showing a name beside the word "Admin" written
+    -- into the page. A welder signing in on their own phone read "Aleksandar · Admin" on the hub, which
+    -- is not a cosmetic problem: the badge is the only thing on that screen that says whose session
+    -- this is, and it was saying somebody else's. The role comes from the session like the name does.
+    'takenRole', current_app_role()::text,
 
     'customers', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', c.id::text, 'no', c.ref, 'name', c.name, 'status', c.status,

@@ -308,7 +308,11 @@ async function main() {
     // The hazard the guard exists for: signed in on the tablet, a person opens the hub and sees the
     // workshop twice — the real records on one screen and whatever is in this browser on another,
     // with neither screen saying which it is. Somebody would make a decision on the wrong one.
-    await page.goto(`${site}/hub-desktop.html`, { waitUntil: 'load' });
+    // Quality rather than the hub, which used to be the example here: the hub is wired now, and it had
+    // to be — login.html sends anybody with a password to it, so the first thing this system did for a
+    // welder on their own phone was refuse. The example moved to a screen that genuinely has no
+    // workflows yet, which is what the check is about.
+    await page.goto(`${site}/quality-desktop.html`, { waitUntil: 'load' });
     const blocked = await page.locator('[role="alert"]').innerText();
     assert.match(blocked, /not connected to the server/,
       'an unwired page must refuse rather than show what is in this browser');
@@ -329,7 +333,7 @@ async function main() {
     // And it stays out of the way when there is no session: that is the app the workshop runs today,
     // on browser storage, and fifteen of the sixteen pages are still it.
     const guest = await context.newPage();
-    await guest.goto(`${site}/hub-desktop.html`, { waitUntil: 'load' });
+    await guest.goto(`${site}/quality-desktop.html`, { waitUntil: 'load' });
     assert.equal(await guest.locator('[role="alert"]').count(), 0,
       'with no session the pages must work exactly as they did before');
     assert.ok(await guest.locator('body').isVisible());

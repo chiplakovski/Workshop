@@ -199,7 +199,7 @@
     <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm<br>info@varmak.se</div></div>
     <div class="topright">
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-      <div class="who" data-help-slot><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
+      <div class="who" data-help-slot><div class="badge"><span class="av" id="whoAv">AK</span><span id="whoName">Aleksandar</span><span class="role" id="whoRole" data-i="role">Admin</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
     </div>
   </div>
 </div>
@@ -333,10 +333,14 @@
   </button>
 </div>
 
+<script>/* This page is wired to the server: it shows the workshop's own record counts and the session's
+   own name. Declared rather than detected, because a wrong guess here would put a signed-in person in
+   front of whatever is left in this browser with nothing on screen saying which it is. */
+window.WORKSHOP_SERVER_READY=true;</script>
 <script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
 <script src="workshop-ui.js"></script><script>
   const T={
-    sv:{role:"Admin",logout:"Logga ut",
+    sv:{role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",yd_where_server:"Allt den har verkstaden matar in ligger i verkstadens databas, inte i den har webblasaren. Alla som loggar in ser samma uppgifter.",yd_warn_server:"Sakerhetskopior tas av den som skoter databasen, med backend/backup.sh. Att rensa den har webblasaren tar inte bort nagot.",yd_unreachable:"Verkstaden kunde inte lasas just nu, sa inga antal visas har.",role:"Admin",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
       m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
@@ -345,7 +349,7 @@
       m_reports:"Rapporter",c_reports:"Besiktning & test",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhåll",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       m_data:"Dina uppgifter",c_data:"Var arbetet sparas",yd_where:"Allt den har verkstaden har matat in sparas i den har webblasaren, pa den har enheten. Inget skickas nagonstans, och ingen annan har en kopia.",yd_warn:"Om webblasarens data rensas, eller om du byter enhet, finns inget kvar. Spara en kopia pa ett stalle du litar pa.",yd_save:"Spara en kopia",yd_restore:"Aterstall en kopia",yd_empty:"Inget inmatat annu",yd_projects:"projekt",yd_jobcards:"jobbkort",yd_customers:"kunder",yd_estimations:"offerter",yd_inventory:"lagerartiklar",yd_hours:"tidposter",yd_inspections:"inspektioner",yd_documents:"dokument",yd_saved:"En kopia har sparats till dina nedladdningar. Forvara den nagon annanstans an pa den har enheten.",yd_confirm:"Att aterstalla ersatter allt som finns i den har webblasaren med innehallet i filen.\n\nDet som finns nu sparas som en aterstallningskopia, men appen visar den aterstallda datan harifran.",yd_restored:"Aterstallt. Verkstaden innehaller nu det som fanns i filen.",yd_unreadable:"Filen kunde inte lasas som en sparad kopia.",yd_failed:"Kopian kunde inte aterstallas.",yd_nodata:"Datalagret ar inte tillgangligt pa den har sidan.",locale:"sv-SE"},
-    en:{role:"Admin",logout:"Log out",
+    en:{role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",yd_where_server:"Everything this workshop enters is in the workshop database, not in this browser. Everyone who signs in sees the same records.",yd_warn_server:"Backups are taken by whoever looks after the database, with backend/backup.sh. Clearing this browser removes nothing.",yd_unreachable:"The workshop could not be read just now, so no counts are shown here.",role:"Admin",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
@@ -354,7 +358,7 @@
       m_reports:"Reports",c_reports:"Inspection & test",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       m_data:"Your data",c_data:"Where the work is kept",yd_where:"Everything this workshop has entered is kept in this browser, on this device. Nothing is sent anywhere, and nothing else holds a copy.",yd_warn:"Clearing this browser data, or moving to another device, leaves nothing behind. Save a copy somewhere you trust.",yd_save:"Save a copy",yd_restore:"Restore a copy",yd_empty:"Nothing entered yet",yd_projects:"projects",yd_jobcards:"jobcards",yd_customers:"customers",yd_estimations:"quotations",yd_inventory:"stock items",yd_hours:"hours entries",yd_inspections:"inspections",yd_documents:"documents",yd_saved:"A copy has been saved to your downloads. Keep it somewhere that is not this device.",yd_confirm:"Restoring replaces everything currently in this browser with the contents of that file.\n\nWhat is here now is kept as a recovery copy, but the app will show the restored data from this point on.",yd_restored:"Restored. The workshop now holds what was in that file.",yd_unreadable:"That file could not be read as a saved copy.",yd_failed:"The copy could not be restored.",yd_nodata:"The data layer is not available on this page.",locale:"en-GB"},
-    mk:{role:"Admin",logout:"Odjavi se",
+    mk:{role_admin:"Admin",role_office:"Kancelarija",role_workshop:"Rabotilnica",yd_where_server:"Se sto vnesuva ovaa rabotilnica e vo bazata na rabotilnicata, ne vo ovoj prelistuvac. Site sto se najavuvaat gledaat isti podatoci.",yd_warn_server:"Rezervnite kopii gi pravi onoj sto ja vodi bazata, so backend/backup.sh. Cistenjeto na ovoj prelistuvac ne brise nisto.",yd_unreachable:"Rabotilnicata ne mozese da se procita sega, pa ne se prikazuvaat broevi tuka.",role:"Admin",logout:"Odjavi se",
       m_projects:"Proekti",c_projects:"Raboti i stavki",m_customers:"Klienti",c_customers:"Kontakti i smetki",
       m_estim:"Proekt / Procenka",c_estim:"Raboti, cena i tek",m_jobcard:"Rabotna karta",c_jobcard:"Rabotni nalozi",
       m_hours:"Časovi",c_hours:"Zapiši vreme i materijal",m_planning:"Planiranje",c_planning:"Raspored i kapacitet",
@@ -371,7 +375,11 @@
     document.documentElement.lang=code==="mk"?"mk-Latn":code;
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
     var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();
-    tick();if(window.renderYourData)window.renderYourData();}
+    tick();if(window.renderYourData)window.renderYourData();
+    // After the data-i sweep, because #whoRole carries one and the session's answer has to win: a
+    // dictionary entry reading "Admin" overwriting a welder's badge is the bug this whole block exists
+    // to stop, and it would come back on every language switch.
+    if(window.paintSession)window.paintSession();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
@@ -410,7 +418,12 @@
   rVol.addEventListener('input',()=>{rAudio.volume=parseFloat(rVol.value);});
   document.querySelectorAll('.tile[role="link"]').forEach(tile=>tile.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();tile.click();}}));
 
-  document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
+  document.getElementById('logoutBtn').addEventListener('click',async()=>{
+    // With a session, actually end it. Navigating away used to leave the token in this tab's storage,
+    // so the next person to open the app was signed in as the last one.
+    if(window.WorkshopApi&&WorkshopApi.signedIn())await WorkshopApi.signOut();
+    location.href='login.html';
+  });
 
   (function(){
     // ── Your data ────────────────────────────────────────────────────────────────────────
@@ -479,6 +492,65 @@
 
     renderYourData();
     window.addEventListener('workshop:data',renderYourData);
+  })();
+
+  // ── Signed in? Then this hub is the workshop's, not this browser's ──────────────────────
+  //
+  // Until now the front door refused a signed-in session altogether: the guard covered the page,
+  // because an unwired hub showing this browser's record counts beside a real workshop's is the
+  // two-worlds failure in the one place everybody starts. And a welder signing in on their own phone
+  // was sent here by login.html, so the first thing the system did for them was refuse.
+  //
+  // What the hub holds is a count per collection and a name, so wiring it is reading rather than
+  // writing — with one exception, and the exception is the interesting part. "Your data" offers to save
+  // and restore a copy of this browser's storage, and on the server neither of those means anything:
+  // the workshop's records are not in this browser, and what backs them up is backup.sh run by whoever
+  // administers the database. Left as they were, the buttons would have written a file called a backup
+  // that contained nothing, or replaced browser storage nobody reads. So they go, and the panel says
+  // where the work actually is.
+  let sessionName=null,sessionRole=null;
+  window.paintSession=function paintSession(){
+    if(!sessionName)return;
+    const t=T[current]||T.en;
+    const name=document.getElementById('whoName');
+    if(name)name.textContent=sessionName;
+    const av=document.getElementById('whoAv');
+    if(av)av.textContent=sessionName.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const role=document.getElementById('whoRole');
+    if(role&&sessionRole)role.textContent=t['role_'+sessionRole]||sessionRole;
+  };
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return;}
+    if(answer.offline||answer.failed){
+      // The same rule as the hours screen: with a session and no snapshot this page does NOT fall back
+      // to browser storage. It says what it could not read and shows no counts at all, because a count
+      // from this browser presented as the workshop's is the one thing worse than no count.
+      const t=T[current]||T.en;
+      const where=document.querySelector('.ydwhere');
+      if(where)where.textContent=answer.failed||t.yd_unreachable;
+      const counts=document.getElementById('ydCounts');
+      if(counts)counts.innerHTML='';
+      const warn=document.querySelector('.ydwarn');
+      if(warn)warn.remove();
+      document.querySelectorAll('.ydactions').forEach(el=>el.remove());
+      return;
+    }
+    WorkshopData.adoptSnapshot(answer.data);
+    sessionName=answer.data.takenBy||null;
+    sessionRole=answer.data.takenRole||null;
+    paintSession();
+    const t=T[current]||T.en;
+    const where=document.querySelector('.ydwhere');
+    if(where){where.setAttribute('data-i','yd_where_server');where.textContent=t.yd_where_server;}
+    const warn=document.querySelector('.ydwarn');
+    if(warn){warn.setAttribute('data-i','yd_warn_server');warn.textContent=t.yd_warn_server;}
+    // Removed rather than disabled. A greyed-out button on the front door is a question nobody can
+    // answer; the sentence above it now says where the work is and who backs it up.
+    document.querySelectorAll('.ydactions').forEach(el=>el.remove());
+    renderYourData();
   })();
 </script>
 </body></html>

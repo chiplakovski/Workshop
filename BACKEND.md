@@ -607,6 +607,40 @@ cannot touch anything else.
    from before it was wired, so the navigation raced the sign-out — the browser cancels a fetch on
    navigation, which made ending the session a coin toss.
 
+      **The front door, which was the one screen that refused everybody.** `login.html` sends anybody
+   with a password to `hub-desktop.html`, and that page was not wired — so the guard covered it and the
+   first thing this system did for a welder signing in on their own phone was tell them the screen
+   could not be shown. Wiring it is reading rather than writing: a count per collection, and a name.
+
+   The phone hub was the same problem and worse. It loaded **no data layer at all**, so nothing guarded
+   it and nothing could correct it, and it showed a name and the word **Admin** written into the page
+   in all three languages. A welder read "Aleksandar · Admin" on the only line of that screen that says
+   whose session it is. The snapshot now carries `takenRole` beside `takenBy` and `takenById`, all three
+   answered by the database from the session, and both hubs paint the badge from them — after the
+   language sweep, because `#whoRole` carries a `data-i` and a dictionary entry reading "Admin" would
+   put itself back over a welder's role on every language switch.
+
+   Two things on the desktop hub had to change rather than be carried across:
+
+   * **"Save a copy" and "Restore a copy" are gone in server mode.** They are operations on this
+     browser's storage. On the server they would write a file called a backup that held nothing, or
+     replace storage nobody reads — so the panel now says where the work actually is and that
+     `backup.sh`, run by whoever looks after the database, is what backs it up.
+   * **A collection the snapshot does not carry reads as nothing**, not as whatever is left in this
+     browser. Quotations and inspections are in that list today, and the check asserts they are absent
+     rather than zero.
+
+   And one thing on the phone hub that was not about the server at all. "Team Talk" accepted a typed
+   message, appended it to the page under a hardcoded name, and dropped it on the next reload — a chat
+   that sends nothing to anybody. By this project's own first rule that is worse than no box, so the
+   input says it is not connected and is disabled. Whether the workshop wants a message feed at all is
+   a decision for them, not for the pass that found it.
+
+   The `vertical-slice.e2e.js` example of an unwired page moved to Quality, which genuinely has no
+   workflows yet. Nine end-to-end checks drive both hubs as two different people
+   (`tests/hub-server.e2e.js`), and the last one asks whether a welder's front door carries a figure in
+   kronor anywhere.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared
