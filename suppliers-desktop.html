@@ -65,7 +65,7 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">▱</div><div><h2 data-i="sb_title">SUPPLIERS</h2><small data-i="sb_subtitle">Vendor management</small></div></div><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-side="overview" onclick="sideNavigate('overview')"><i>◇</i><span data-i="nav_overview">Supplier Overview</span></button><button data-side="contacts" onclick="sideNavigate('contacts')"><i>◎</i><span data-i="nav_contacts">Contacts</span></button><button data-side="items" onclick="sideNavigate('items')"><i>▦</i><span data-i="nav_items">Items & Prices</span></button><button data-side="purchase orders" onclick="sideNavigate('purchase orders')"><i>▤</i><span data-i="nav_po">Purchase Orders</span></button><button data-side="deliveries" onclick="sideNavigate('deliveries')"><i>⇥</i><span data-i="nav_deliveries">Deliveries</span></button><button data-side="performance" onclick="sideNavigate('performance')"><i>☆</i><span data-i="nav_performance">Performance</span></button><button data-side="quality / NCR" onclick="sideNavigate('quality / NCR')"><i>!</i><span data-i="nav_ncr">Quality / NCR</span></button><button data-side="documents" onclick="sideNavigate('documents')"><i>▣</i><span data-i="nav_documents">Documents</span></button><button onclick="openModal('supplier')"><i>＋</i><span data-i="nav_new">New Supplier</span></button></nav><div class="ms-sidebox"><b data-i="sb_box_title">Shared supplier record</b><p data-i="sb_box_body">Prices, lead times, certificates and performance feed purchasing, store, planning and estimates.</p></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_user_role">Supplier manager</small></div></div></aside>
 <div class="shell">
 <header class="top"><a class="back-link" href="hub-desktop.html">←&nbsp; <span data-i="back_hub">Hub</span></a><div class="module-icon" aria-hidden="true">▱</div><div class="title"><h1 data-i="title">Suppliers</h1><p data-i="subtitle">Vendor directory & management</p></div><div class="top-actions"><label for="globalSearch" data-i="search_all_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search all suppliers</label><input class="control search" id="globalSearch" name="globalSupplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><label for="filter" data-i="filter_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Filter suppliers</label><select class="control" id="filter"><option value="all" data-i="filter_all">All suppliers</option><option value="active" data-i="status_active">Active</option><option value="preferred" data-i="status_preferred">Preferred</option><option value="inactive" data-i="status_inactive">Inactive</option></select><button class="btn primary" onclick="openModal('supplier')" data-i="btn_new_supplier">＋ New Supplier</button></div></header>
-<main class="layout" id="mainContent"><aside class="panel pad supplier-panel"><div class="panel-title"><span data-i="supplier_list">Supplier list</span><span id="total">Total: 0</span></div><div class="list-search"><label for="listSearch" data-i="list_search_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search supplier list</label><input class="control" id="listSearch" name="supplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><button class="btn" aria-label="Search supplier list">⌕</button></div><div class="tabs-small"><button class="on" data-filter="all" data-i="f_all">All</button><button data-filter="active" data-i="status_active">Active</button><button data-filter="preferred" data-i="status_preferred">Preferred</button><button data-filter="inactive" data-i="status_inactive">Inactive</button></div><div class="supplier-list" id="supplierList"></div><div class="pager"><span id="showing"></span><span>‹ &nbsp; <b>1</b> &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 8 &nbsp; ›</span></div></aside>
+<main class="layout" id="mainContent"><aside class="panel pad supplier-panel"><div class="panel-title"><span data-i="supplier_list">Supplier list</span><span id="total">Total: 0</span></div><div class="list-search"><label for="listSearch" data-i="list_search_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search supplier list</label><input class="control" id="listSearch" name="supplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><button class="btn" aria-label="Search supplier list">⌕</button></div><div class="tabs-small"><button class="on" data-filter="all" data-i="f_all">All</button><button data-filter="active" data-i="status_active">Active</button><button data-filter="preferred" data-i="status_preferred">Preferred</button><button data-filter="inactive" data-i="status_inactive">Inactive</button></div><div class="supplier-list" id="supplierList"></div><div class="pager"><span id="showing"></span></div></aside>
 <section class="detail"><article class="panel profile" id="profile"></article><div class="metrics" id="metrics"></div><div class="content-grid"><article class="panel table-panel"><div class="panel-title"><span data-i="recent_po">Recent purchase orders</span></div><div id="poTable"></div></article><article class="panel table-panel"><div class="panel-title"><span data-i="top_items">Top supplied items</span><button class="btn" onclick="switchTab('items')" data-i="viewall">View all</button></div><div id="itemsTable"></div></article></div><div class="bottom-grid"><article class="panel info"><div class="panel-title" data-i="supplier_info">Supplier information</div><div id="supplierInfo"></div></article><article class="panel notes"><div class="panel-title"><span data-i="notes_title">Notes</span><button class="btn" onclick="openModal('note')" data-i="add_note">＋ Add note</button></div><div id="notes"></div></article></div></section>
 <aside class="right"><article class="panel contacts"><div class="panel-title"><span data-i="contacts_title">Contact persons</span><button class="btn" onclick="openModal('contact')" data-i="add_contact">＋ Add contact</button></div><div id="contacts"></div></article><article class="panel performance"><div class="panel-title"><span><span data-i="performance_title">Performance</span> <small data-i="performance_sub">(last 12 months)</small></span><button class="btn" onclick="switchTab('performance')" data-i="details_btn">Details</button></div><div id="performance"></div></article><article class="panel documents"><div class="panel-title"><span data-i="documents_title">Documents</span><button class="btn" onclick="openModal('doc')" data-i="upload_btn">Upload</button></div><div id="documents"></div></article><article class="panel activity"><div class="panel-title" data-i="activity_title">Recent activity</div><div id="activity"></div></article></aside></main>
 <footer class="actionbar"><button onclick="openModal('po')"><span class="action-icon" aria-hidden="true">▤</span><span data-i="act_new_po">New Purchase Order</span></button><button onclick="switchTab('items')"><span class="action-icon" aria-hidden="true">◇</span><span data-i="act_pricelist">View Price List</span></button><button onclick="switchTab('performance')"><span class="action-icon" aria-hidden="true">☆</span><span data-i="act_evaluation">Supplier Evaluation</span></button><button onclick="importSupplierItems()"><span class="action-icon" aria-hidden="true">⇧</span><span data-i="act_import">Import Items</span></button><button onclick="switchTab('notes')"><span class="action-icon" aria-hidden="true">▣</span><span data-i="act_commlog">Communication Log</span></button><button class="danger" onclick="confirmToggleSupplier()"><span class="action-icon" aria-hidden="true">♲</span><span id="toggleLabel" data-i="act_deactivate">Deactivate Supplier</span></button></footer></div><input id="supplierItemImport" type="file" accept=".csv,text/csv" hidden onchange="handleSupplierItemImport(this)">
@@ -77,7 +77,6 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
 const suppliers=[/* empty: hydrated from the shared supplier register */];
-const ncrDemo=[/* empty: quality findings come from the Quality module */];
 let selected=0,currentFilter='all',activeTab='overview',LANG='en';const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])), fmt=n=>new Intl.NumberFormat('sv-SE',{style:'currency',currency:'SEK',maximumFractionDigits:0}).format(n);
 // The "New Purchase Order" action (Pass 3.5) already creates a real WorkshopData purchase order,
 // but this page's own "Recent purchase orders" panel only ever read the static per-supplier demo
@@ -119,10 +118,14 @@ const T={
     th_po_no:"PO Number",th_date:"Date",th_items:"Items",th_total_sek:"Total (SEK)",th_status:"Status",th_expected:"Expected",
     th_ncr:"NCR",th_issue:"Issue",th_action:"Action",th_item:"Item",th_category:"Category",th_totalqty:"Total Qty",th_totalspend:"Total Spend (SEK)",
     empty_records:"No records yet.",empty_items:"No items yet.",
+    empty_contacts:"No contact persons recorded yet.",empty_documents:"No documents against this supplier yet.",
+    empty_activity:"Nothing has been bought from this supplier yet.",empty_notes:"No notes yet.",
+    metric_needs_deliveries:"Needs delivery records — not kept yet",
+    metric_needs_invoices:"Needs invoices — not kept yet",
+    perf_nothing_to_read:"Rating a supplier needs the deliveries and invoices this system does not keep yet, so there is nothing to score. It is not saying the supplier scores nothing.",
     info_type:"Supplier Type",info_country:"Country",info_established:"Established",info_delivery:"Delivery Terms",info_minorder:"Minimum Order Value",by_label:"By",
     contacts_title:"Contact persons",add_contact:"＋ Add contact",primary_chip:"Primary",
     performance_title:"Performance",performance_sub:"(last 12 months)",details_btn:"Details",
-    perf_invoice:"Invoice Accuracy",perf_response:"Response Time",perf_response_value:"1.2 days",perf_overall:"Overall Score",
     documents_title:"Documents",upload_btn:"Upload",activity_title:"Recent activity",
     act_new_po:"New Purchase Order",act_pricelist:"View Price List",act_evaluation:"Supplier Evaluation",act_import:"Import Items",act_commlog:"Communication Log",act_deactivate:"Deactivate Supplier",act_activate:"Activate Supplier",
     modal_cancel:"Cancel",modal_save_supplier:"Save Supplier Record",
@@ -152,10 +155,14 @@ const T={
     th_po_no:"Ordernummer",th_date:"Datum",th_items:"Artiklar",th_total_sek:"Totalt (SEK)",th_status:"Status",th_expected:"Förväntad",
     th_ncr:"NCR",th_issue:"Problem",th_action:"Åtgärd",th_item:"Artikel",th_category:"Kategori",th_totalqty:"Totalt antal",th_totalspend:"Total kostnad (SEK)",
     empty_records:"Inga poster ännu.",empty_items:"Inga artiklar ännu.",
+    empty_contacts:"Inga kontaktpersoner registrerade ännu.",empty_documents:"Inga dokument för denna leverantör ännu.",
+    empty_activity:"Inget har köpts från denna leverantör ännu.",empty_notes:"Inga anteckningar ännu.",
+    metric_needs_deliveries:"Kräver leveransposter — förs inte ännu",
+    metric_needs_invoices:"Kräver fakturor — förs inte ännu",
+    perf_nothing_to_read:"Att betygsätta en leverantör kräver de leveranser och fakturor systemet ännu inte för, så det finns inget att betygsätta. Det betyder inte att leverantören får noll.",
     info_type:"Leverantörstyp",info_country:"Land",info_established:"Etablerad",info_delivery:"Leveransvillkor",info_minorder:"Minsta ordervärde",by_label:"Av",
     contacts_title:"Kontaktpersoner",add_contact:"＋ Lägg till kontakt",primary_chip:"Primär",
     performance_title:"Prestanda",performance_sub:"(senaste 12 månaderna)",details_btn:"Detaljer",
-    perf_invoice:"Fakturanoggrannhet",perf_response:"Svarstid",perf_response_value:"1,2 dagar",perf_overall:"Totalt betyg",
     documents_title:"Dokument",upload_btn:"Ladda upp",activity_title:"Senaste aktivitet",
     act_new_po:"Ny inköpsorder",act_pricelist:"Visa prislista",act_evaluation:"Leverantörsutvärdering",act_import:"Importera artiklar",act_commlog:"Kommunikationslogg",act_deactivate:"Inaktivera leverantör",act_activate:"Aktivera leverantör",
     modal_cancel:"Avbryt",modal_save_supplier:"Spara leverantörspost",
@@ -185,10 +192,14 @@ const T={
     th_po_no:"Broj na naračka",th_date:"Datum",th_items:"Artikli",th_total_sek:"Vkupno (SEK)",th_status:"Status",th_expected:"Očekuvano",
     th_ncr:"NCR",th_issue:"Problem",th_action:"Akcija",th_item:"Artikal",th_category:"Kategorija",th_totalqty:"Vkupna količina",th_totalspend:"Vkupna potrošuvačka (SEK)",
     empty_records:"Sè ušte nema zapisi.",empty_items:"Sè ušte nema artikli.",
+    empty_contacts:"Sè ušte nema zapišani kontakt-lica.",empty_documents:"Sè ušte nema dokumenti za ovoj snabduvač.",
+    empty_activity:"Sè ušte ništo ne e kupeno od ovoj snabduvač.",empty_notes:"Sè ušte nema beleški.",
+    metric_needs_deliveries:"Bara zapisi za dostavi — sè ušte ne se vodat",
+    metric_needs_invoices:"Bara fakturi — sè ušte ne se vodat",
+    perf_nothing_to_read:"Ocenuvanjeto na snabduvač bara dostavite i fakturite što ovoj sistem sè ušte ne ih vodi, pa nema što da se oceni. Ne znači deka snabduvačot ima nula.",
     info_type:"Tip na dobavuvač",info_country:"Država",info_established:"Osnovan",info_delivery:"Uslovi za isporaka",info_minorder:"Minimalna vrednost na naračka",by_label:"Od",
     contacts_title:"Kontakt lica",add_contact:"＋ Dodaj kontakt",primary_chip:"Primaren",
     performance_title:"Performansi",performance_sub:"(poslednite 12 meseci)",details_btn:"Detali",
-    perf_invoice:"Točnost na fakturi",perf_response:"Vreme na odgovor",perf_response_value:"1,2 denovi",perf_overall:"Vkupna ocenka",
     documents_title:"Dokumenti",upload_btn:"Otpremi",activity_title:"Posledna aktivnost",
     act_new_po:"Nova naračka",act_pricelist:"Vidi cenovnik",act_evaluation:"Ocenka na dobavuvač",act_import:"Uvoz na artikli",act_commlog:"Dnevnik na komunikacija",act_deactivate:"Deaktiviraj dobavuvač",act_activate:"Aktiviraj dobavuvač",
     modal_cancel:"Otkaži",modal_save_supplier:"Začuvaj zapis za dobavuvač",
@@ -215,28 +226,125 @@ function hydrateSharedSuppliers(){
   shared.forEach(ss=>{
     if(suppliers.some(s=>s.name===ss.name))return;
     const id='SUP-'+String(suppliers.length+1).padStart(4,'0');
-    suppliers.push({id,sharedId:ss.id,name:ss.name,category:ss.category||'General',status:ss.status||'active',rating:ss.rating||4,address:ss.address,email:ss.email,phone:ss.phone,website:ss.website,vat:ss.vat,currency:ss.currency||'SEK',type:ss.type||'Company',country:ss.country||'Sweden',established:ss.established,payment:ss.payment||'30 days',delivery:ss.delivery||'DAP',minimum:ss.minimum,notes:ss.notes||[],contacts:ss.contacts||[],performance:ss.performance,docs:ss.docs||[],spendYtd:ss.spendYtd,spendYtdChange:ss.spendYtdChange,openPOs:ss.openPOs,openPOsValue:ss.openPOsValue,overdueDeliveries:ss.overdueDeliveries,overdueDeliveriesValue:ss.overdueDeliveriesValue,purchaseOrders:ss.purchaseOrders||[],items:ss.items||[]});
+    // Nothing is defaulted here except the status and the currency, and both of those are the
+    // workshop's own facts rather than claims about the merchant: a supplier in the register is active
+    // until somebody says otherwise, and this workshop's books are in kronor. The seven that used to be
+    // filled in — a category of "General", a rating of four stars out of five, a type of "Company", a
+    // country of Sweden, payment terms of 30 days and delivery terms of DAP — are assertions about
+    // somebody else's company, and a default on READ is not a form default: it cannot be corrected,
+    // because nobody knows it is there.
+    suppliers.push({id,sharedId:ss.id,sharedNo:ss.no,name:ss.name,category:ss.category,
+      status:ss.status||'active',rating:ss.rating,address:ss.address,email:ss.email,phone:ss.phone,
+      website:ss.website,vat:ss.vat,currency:ss.currency||'SEK',type:ss.type,country:ss.country,
+      established:ss.established,payment:ss.payment,delivery:ss.delivery,minimum:ss.minimum,
+      notes:ss.notes||[],contacts:ss.contacts||[],docs:ss.docs||[],
+      purchaseOrders:ss.purchaseOrders||[],items:ss.items||[]});
   });
 }
 hydrateSharedSuppliers();
 function syncSupplier(s){
   if(!window.WorkshopData||!s)return;
-  const rec=WorkshopData.upsertSupplier({id:s.sharedId,name:s.name,category:s.category,status:s.status,rating:s.rating,address:s.address,email:s.email,phone:s.phone,website:s.website,vat:s.vat,currency:s.currency,type:s.type,country:s.country,established:s.established,payment:s.payment,delivery:s.delivery,minimum:s.minimum,notes:s.notes,contacts:s.contacts,performance:s.performance,docs:s.docs,spendYtd:s.spendYtd,spendYtdChange:s.spendYtdChange,openPOs:s.openPOs,openPOsValue:s.openPOsValue,overdueDeliveries:s.overdueDeliveries,overdueDeliveriesValue:s.overdueDeliveriesValue,purchaseOrders:s.purchaseOrders,items:s.items});
+  // The six figures this used to carry — a performance object, spend against last year, a count of
+  // open orders and their value, and overdue deliveries and theirs — are not saved any more. Every one
+  // of them is an answer computed from records elsewhere (the purchase orders this workshop raised,
+  // and the deliveries and invoices it does not keep yet), and a stored answer is one that has to be
+  // kept in step with the rows it came from. The panels read them live instead.
+  const rec=WorkshopData.upsertSupplier({id:s.sharedId,name:s.name,category:s.category,status:s.status,
+    rating:s.rating,address:s.address,email:s.email,phone:s.phone,website:s.website,vat:s.vat,
+    currency:s.currency,type:s.type,country:s.country,established:s.established,payment:s.payment,
+    delivery:s.delivery,minimum:s.minimum,notes:s.notes,contacts:s.contacts,docs:s.docs,
+    purchaseOrders:s.purchaseOrders,items:s.items});
   if(rec){s.sharedId=rec.id;s.sharedNo=rec.no;}
 }
 function initials(n){return n.split(/\s+/).map(x=>x[0]).slice(0,2).join('')}
 function filtered(){const q=$('listSearch').value.toLowerCase();return suppliers.filter(s=>(currentFilter==='all'||s.status===currentFilter)&&(s.name+' '+s.category).toLowerCase().includes(q))}
-function renderList(){const t=T[LANG];const rows=filtered();$('total').textContent=t.total_label+': '+suppliers.length;$('showing').textContent=t.showing.replace('{n}',rows.length).replace('{m}',suppliers.length);$('supplierList').innerHTML=rows.map(s=>{const i=suppliers.indexOf(s),cls=s.status==='inactive'?'bad':s.status==='preferred'?'':'good';return `<button type="button" class="supplier ${i===selected?'on':''}" onclick="selectSupplier(${i})" aria-pressed="${i===selected}"><span class="avatar" aria-hidden="true">${esc(initials(s.name))}</span><span><b>${esc(s.name)}</b><small>${esc(s.category)}</small></span><span class="supplier-side"><i class="chip ${cls}">${esc(t['status_'+s.status]||s.status)}</i><span class="stars" aria-label="${s.rating} out of 5 stars">${'★'.repeat(Math.round(s.rating))}</span></span></button>`}).join('')||`<div class="empty">${t.empty_search}</div>`}
-function enrich(s){s.address??='Industrial Road 12, Malmö, Sweden';s.email??='orders@'+s.name.toLowerCase().replace(/[^a-z]/g,'')+'.se';s.phone??='+46 40 555 01 20';s.website??='www.'+s.name.toLowerCase().replace(/[^a-z]/g,'')+'.se';s.vat??='SE556700000001';s.type??='Company';s.established??='2016';s.minimum??='2,500 '+s.currency;s.notes??=[['2026-08-12','Annual supplier review completed.','Aleksandar C.']];s.contacts??=[[initials(s.name),'Order Desk','Sales & Orders',s.email,s.phone]];s.performance??={delivery:88,quality:90,invoice:94,response:75,score:'4.3 / 5'};s.docs??=[['PDF','Supplier agreement.pdf','2026-01-05'],['XLS','Current price list.xlsx','2026-06-01']];s.spendYtd??='0 '+s.currency;s.spendYtdChange??='—';s.openPOs??=0;s.openPOsValue??='0 '+s.currency;s.overdueDeliveries??=0;s.overdueDeliveriesValue??='0 '+s.currency;s.purchaseOrders??=[];s.items??=[];return s}
+function renderList(){const t=T[LANG];const rows=filtered();$('total').textContent=t.total_label+': '+suppliers.length;$('showing').textContent=t.showing.replace('{n}',rows.length).replace('{m}',suppliers.length);$('supplierList').innerHTML=rows.map(s=>{const i=suppliers.indexOf(s),cls=s.status==='inactive'?'bad':s.status==='preferred'?'':'good';return `<button type="button" class="supplier ${i===selected?'on':''}" onclick="selectSupplier(${i})" aria-pressed="${i===selected}"><span class="avatar" aria-hidden="true">${esc(initials(s.name))}</span><span><b>${esc(s.name)}</b><small>${esc(s.category)}</small></span><span class="supplier-side"><i class="chip ${cls}">${esc(t['status_'+s.status]||s.status)}</i>${s.rating?`<span class="stars" aria-label="${s.rating} out of 5 stars">${'★'.repeat(Math.round(s.rating))}</span>`:''}</span></button>`}).join('')||`<div class="empty">${t.empty_search}</div>`}
+// What a supplier record needs to be renderable, and nothing more.
+//
+// This function used to fill in an address on Industrial Road in Malmö, a VAT number of
+// SE556700000001, a telephone number, an order-desk contact, two documents called "Supplier
+// agreement.pdf" and "Current price list.xlsx", a note reading "Annual supplier review completed",
+// and a performance score of 4.3 out of 5 with four percentages behind it. For any supplier whose
+// record did not already have them — which is every supplier somebody types in, because the New
+// Supplier form asks for four fields.
+//
+// So a workshop that added "Stål & Metall AB" was shown an address it had never entered, a VAT
+// number belonging to nobody, a review that never happened and a supplier rating this system has no
+// way to calculate. Presented as the record, in the same type as the name. That is the one failure
+// this project treats as unacceptable, and it was on a screen.
+//
+// Absent is now absent. The lists become empty lists, which the panels already render as their own
+// empty state, and the scalar fields stay undefined so `shown()` prints a dash rather than a
+// plausible sentence.
+function enrich(s){
+  s.notes??=[];s.contacts??=[];s.docs??=[];s.purchaseOrders??=[];s.items??=[];
+  return s;
+}
+// A field somebody has not filled in, on a screen. Not 'N/A' — that reads as an answer — and never a
+// guess. The dash is what every other register in this app prints for a blank.
+function shown(v){return (v===undefined||v===null||v==='')?'—':v}
 function selectSupplier(i){selected=i;render()}
 function switchTab(tab){activeTab=tab;const t=T[LANG];const label=tabLabel(tab).split(' ').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');notify(label+' '+t.toast_view_selected_suffix);const s=suppliers[selected];renderProfile(s);renderTables(s)}
 function sideNavigate(tab){document.querySelectorAll('[data-side]').forEach(b=>b.classList.toggle('on',b.dataset.side===tab));switchTab(tab);document.querySelector('.detail').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}
 function tabLabel(key){const t=T[LANG];const map={overview:t.tab_overview,contacts:t.tab_contacts,items:t.tab_items,'purchase orders':t.tab_po,deliveries:t.tab_deliveries,invoices:t.tab_invoices,performance:t.tab_performance,'quality / NCR':t.tab_ncr,documents:t.tab_documents,notes:t.tab_notes};return map[key]||key}
-function renderProfile(s){const t=T[LANG];$('profile').innerHTML=`<div class="profile-actions"><button class="btn" onclick="openModal('supplier',true)">${t.edit_supplier}</button><button class="btn">${t.more_btn}</button></div><div class="profile-top"><div class="logo">${esc(initials(s.name))}</div><div><div class="name-line"><h2>${esc(s.name)}</h2><span class="active">● ${s.status==='inactive'?t.status_inactive:t.status_activesupplier_label}</span>${s.status==='preferred'?`<span class="chip">${t.status_preferred}</span>`:''}</div><div class="identity"><span>⌖ ${esc(s.address)}</span><span>✉ ${esc(s.email)}</span><span>◷ ${esc(s.phone)}</span><span>◎ ${esc(s.website)}</span></div></div><div class="codes"><span>${t.code_supplier}</span><b>${esc(s.id)}</b><span>${t.code_vat}</span><b>${esc(s.vat)}</b><span>${t.code_currency}</span><b>${esc(s.currency)}</b></div></div><div class="main-tabs">${['overview','contacts','items','purchase orders','deliveries','invoices','performance','quality / NCR','documents','notes'].map(tb=>`<button class="${activeTab===tb?'on':''}" onclick="switchTab('${tb}')">${esc(tabLabel(tb))}</button>`).join('')}</div>`}
-function renderMetrics(s){const t=T[LANG];const ms=[[t.metric_delivery,s.performance.delivery+'%',t.metric_target_delivery],[t.metric_quality,(s.performance.quality/20).toFixed(1)+' / 5',t.metric_target_quality],[t.metric_spend,s.spendYtd,t.metric_vslastyear+s.spendYtdChange],[t.metric_openpos,String(s.openPOs),t.metric_value_prefix+s.openPOsValue],[t.metric_overdue,String(s.overdueDeliveries),t.metric_value_prefix+s.overdueDeliveriesValue],[t.metric_payment,s.payment,t.metric_frominvoice]];$('metrics').innerHTML=ms.map((m,i)=>`<article class="panel metric"><label>${esc(m[0])}</label><strong class="${i===5?'metric-value--compact':''}" style="${i===4?'color:var(--red)':''}">${esc(m[1])}</strong><small>${esc(m[2])}</small>${i<3?'<div class="spark"></div>':''}</article>`).join('')}
-function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR';const po=isNcr?ncrDemo:supplierOrderRows(s);const head=isNcr?[t.th_ncr,t.th_date,t.th_issue,t.th_status,t.th_action]:[t.th_po_no,t.th_date,t.th_items,t.th_total_sek,t.th_status,t.th_expected];$('poTable').innerHTML=po.length?'<table><thead><tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+po.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i===3?'num':''}">${i===4?`<span class="status ${String(x).includes('Part')?'part':x==='Cancelled'?'cancel':''}">${esc(x)}</span>`:esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_records}</div>`;const items=s.items||[];$('itemsTable').innerHTML=items.length?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_category)+'</th><th class="num">'+esc(t.th_totalqty)+'</th><th class="num">'+esc(t.th_totalspend)+'</th></tr></thead><tbody>'+items.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_items}</div>`}
-function renderSide(s){const t=T[LANG];$('contacts').innerHTML=s.contacts.map((c,i)=>`<div class="contact"><span class="avatar" aria-hidden="true">${esc(c[0])}</span><span><b>${esc(c[1])}${i===0?` <i class="chip">${esc(t.primary_chip)}</i>`:''}</b><small>${esc(c[2])}</small><small>${esc(c[3])}<br>${esc(c[4])}</small></span><button type="button" class="btn mailto-btn" data-email="${esc(c[3])}" aria-label="Email ${esc(c[1])}">✉</button></div>`).join('');$('contacts').querySelectorAll('.mailto-btn').forEach(btn=>btn.addEventListener('click',()=>{location.href='mailto:'+btn.dataset.email}));const p=s.performance;$('performance').innerHTML=[[t.metric_delivery,p.delivery+'%',p.delivery],[t.metric_quality,(p.quality/20).toFixed(1)+' / 5',p.quality],[t.perf_invoice,p.invoice+'%',p.invoice],[t.perf_response,t.perf_response_value,p.response],[t.perf_overall,p.score,90]].map((r,i)=>`<div class="bar-row" ${i===4?'style="color:var(--green)"':''}><span>${esc(r[0])}</span><b>${esc(r[1])}</b><span class="bar" aria-hidden="true"><i style="width:${r[2]}%;${i===4?'background:var(--green)':''}"></i></span></div>`).join('');$('documents').innerHTML=supplierDocRows(s).map(d=>`<div class="doc"><b style="color:${d[0]==='PDF'?'var(--red)':'var(--green)'}">${esc(d[0])}</b><span>${esc(d[1])}</span><span>${esc(d[2])}</span></div>`).join('');$('activity').innerHTML=[['2026-08-20','PO-2026-024 updated','Aleksandar C.'],['2026-08-18','Delivery received (DEL-0038)','David H.'],['2026-08-15','New PO created','Aleksandar C.']].map(a=>`<div class="activity-row"><span>${esc(a[0])}</span><span>${esc(a[1])}</span><span>${esc(a[2])}</span></div>`).join('')}
-function renderBottom(s){const t=T[LANG];$('supplierInfo').innerHTML=[[t.info_type,s.type],[t.info_country,s.country],[t.info_established,s.established],[t.metric_payment,s.payment],[t.info_delivery,s.delivery],[t.info_minorder,s.minimum]].map(r=>`<div class="info-row"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('');$('notes').innerHTML=s.notes.map(n=>`<div class="note"><time>${esc(n[0])}</time>${esc(n[1])}<br><small>${esc(t.by_label)} ${esc(n[2])}</small></div>`).join('')}
+function renderProfile(s){const t=T[LANG];$('profile').innerHTML=`<div class="profile-actions"><button class="btn" onclick="openModal('supplier',true)">${t.edit_supplier}</button><button class="btn">${t.more_btn}</button></div><div class="profile-top"><div class="logo">${esc(initials(s.name))}</div><div><div class="name-line"><h2>${esc(s.name)}</h2><span class="active">● ${s.status==='inactive'?t.status_inactive:t.status_activesupplier_label}</span>${s.status==='preferred'?`<span class="chip">${t.status_preferred}</span>`:''}</div><div class="identity"><span>⌖ ${esc(shown(s.address))}</span><span>✉ ${esc(shown(s.email))}</span><span>◷ ${esc(shown(s.phone))}</span><span>◎ ${esc(shown(s.website))}</span></div></div><div class="codes"><span>${t.code_supplier}</span><b>${esc(shown(s.sharedNo||s.id))}</b><span>${t.code_vat}</span><b>${esc(shown(s.vat))}</b><span>${t.code_currency}</span><b>${esc(shown(s.currency))}</b></div></div><div class="main-tabs">${['overview','contacts','items','purchase orders','deliveries','invoices','performance','quality / NCR','documents','notes'].map(tb=>`<button class="${activeTab===tb?'on':''}" onclick="switchTab('${tb}')">${esc(tabLabel(tb))}</button>`).join('')}</div>`}
+// Six cards, and three of them had no records anywhere in this system to stand on.
+//
+// On-time delivery and quality came out of `performance`, which nothing has ever computed — the figures
+// were written into enrich() above. Spend against last year needs invoices, and overdue deliveries need
+// deliveries; neither exists in the schema or in this app. A card reading "88%" under the words "On-time
+// delivery", with a target of 90% beside it, is a judgement about a real merchant that nobody made.
+//
+// So the three that can be answered are answered — open orders and their value from the purchase orders
+// this workshop actually raised, and the payment terms off the record — and the three that cannot say
+// what they are waiting for. When deliveries and invoices reach the schema they fill in by themselves.
+function renderMetrics(s){
+  const t=T[LANG];
+  const orders=(window.WorkshopData?WorkshopData.getPurchaseOrders():[]).filter(p=>p.supplier===s.name);
+  const open=orders.filter(p=>!/received|cancelled/i.test(String(p.status||'')));
+  const openValue=open.reduce((sum,p)=>sum+Number(p.value||0),0);
+  const ms=[
+    [t.metric_delivery,'—',t.metric_needs_deliveries],
+    [t.metric_quality,'—',t.metric_needs_deliveries],
+    [t.metric_spend,'—',t.metric_needs_invoices],
+    [t.metric_openpos,String(open.length),t.metric_value_prefix+fmt(openValue)],
+    [t.metric_overdue,'—',t.metric_needs_deliveries],
+    [t.metric_payment,shown(s.payment),t.metric_frominvoice]
+  ];
+  $('metrics').innerHTML=ms.map((m,i)=>`<article class="panel metric"><label>${esc(m[0])}</label><strong class="${i===5?'metric-value--compact':''}">${esc(m[1])}</strong><small>${esc(m[2])}</small></article>`).join('');
+}
+// The quality findings against a merchant, which is the tab a supplier complaint is actually made
+// from. It read `ncrDemo` — an empty array with a comment saying the findings come from the Quality
+// module — so the panel said "No records yet" whatever had been raised. An NCR names its supplier, and
+// now that the register is on the database it names one this page can match.
+function supplierNcrRows(s){
+  const all=(window.WorkshopData&&WorkshopData.listQualityNcrs)?WorkshopData.listQualityNcrs():[];
+  return all.filter(n=>n.supplier===s.name)
+    .map(n=>[n.no,shown(n.detectionDate||n.dueDate),n.title||'',n.status||'',shown(n.disposition)]);
+}
+function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR';const po=isNcr?supplierNcrRows(s):supplierOrderRows(s);const head=isNcr?[t.th_ncr,t.th_date,t.th_issue,t.th_status,t.th_action]:[t.th_po_no,t.th_date,t.th_items,t.th_total_sek,t.th_status,t.th_expected];$('poTable').innerHTML=po.length?'<table><thead><tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+po.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i===3?'num':''}">${i===4?`<span class="status ${String(x).includes('Part')?'part':x==='Cancelled'?'cancel':''}">${esc(x)}</span>`:esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_records}</div>`;const items=s.items||[];$('itemsTable').innerHTML=items.length?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_category)+'</th><th class="num">'+esc(t.th_totalqty)+'</th><th class="num">'+esc(t.th_totalspend)+'</th></tr></thead><tbody>'+items.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_items}</div>`}
+function renderSide(s){
+  const t=T[LANG];
+  $('contacts').innerHTML=s.contacts.map((c,i)=>`<div class="contact"><span class="avatar" aria-hidden="true">${esc(c[0])}</span><span><b>${esc(c[1])}${i===0?` <i class="chip">${esc(t.primary_chip)}</i>`:''}</b><small>${esc(c[2])}</small><small>${esc(shown(c[3]))}<br>${esc(shown(c[4]))}</small></span>${c[3]?`<button type="button" class="btn mailto-btn" data-email="${esc(c[3])}" aria-label="Email ${esc(c[1])}">✉</button>`:''}</div>`).join('')||`<div class="empty">${esc(t.empty_contacts)}</div>`;
+  $('contacts').querySelectorAll('.mailto-btn').forEach(btn=>btn.addEventListener('click',()=>{location.href='mailto:'+btn.dataset.email}));
+
+  // Five bars, all of them invented. Delivery and quality percentages, invoice accuracy, a response
+  // time of "1.2 days" written into the dictionary in three languages, and an overall score of
+  // 4.3 / 5 — for every supplier, identically, because the numbers were constants. Rating a merchant
+  // needs the deliveries and the invoices this system does not keep, so the panel now says that
+  // instead of drawing five bars at a length nobody measured.
+  $('performance').innerHTML=`<div class="empty">${esc(t.perf_nothing_to_read)}</div>`;
+
+  $('documents').innerHTML=supplierDocRows(s).map(d=>`<div class="doc"><b style="color:${d[0]==='PDF'?'var(--red)':'var(--green)'}">${esc(d[0])}</b><span>${esc(d[1])}</span><span>${esc(d[2])}</span></div>`).join('')||`<div class="empty">${esc(t.empty_documents)}</div>`;
+
+  // The activity panel held three rows written into the page: a purchase order updated, a delivery
+  // received against DEL-0038, and a new order — dated August 2026, on every supplier, whoever they
+  // were and whether or not anything had ever been bought from them. It reads what actually happened
+  // instead: the orders this workshop raised against this merchant, newest first.
+  const orders=(window.WorkshopData?WorkshopData.getPurchaseOrders():[]).filter(p=>p.supplier===s.name);
+  $('activity').innerHTML=orders.slice(0,8).map(p=>`<div class="activity-row"><span>${esc(shown(p.date))}</span><span>${esc(p.no)} ${esc(shown(p.status))}</span><span>${esc(shown(p.buyer))}</span></div>`).join('')||`<div class="empty">${esc(t.empty_activity)}</div>`;
+}
+function renderBottom(s){const t=T[LANG];$('supplierInfo').innerHTML=[[t.info_type,s.type],[t.info_country,s.country],[t.info_established,s.established],[t.metric_payment,s.payment],[t.info_delivery,s.delivery],[t.info_minorder,s.minimum]].map(r=>`<div class="info-row"><span>${esc(r[0])}</span><b>${esc(shown(r[1]))}</b></div>`).join('');$('notes').innerHTML=s.notes.map(n=>`<div class="note"><time>${esc(n[0])}</time>${esc(n[1])}<br><small>${esc(t.by_label)} ${esc(n[2])}</small></div>`).join('')||`<div class="empty">${esc(t.empty_notes)}</div>`}
 function render(){const t=T[LANG];
   // No suppliers yet is a state, not a fault: the profile panels have nothing to describe, so the
   // page says so and offers the one action that changes it.
@@ -297,7 +405,11 @@ $('modalForm').onsubmit=e=>{
     Object.assign(s,fd);
     syncSupplier(s);
   }else{
-    const created=enrich({id:'SUP-'+String(suppliers.length+1).padStart(4,'0'),rating:4,currency:'SEK',payment:'30 days',delivery:'DAP',...fd});
+    // The currency only. A rating of four stars out of five, payment terms of 30 days and delivery
+    // terms of DAP were being written onto every supplier this form created — three commitments with a
+    // real merchant, made up at the moment somebody typed a name. The form asks for four fields and
+    // those four are what the record holds; the rest is filled in by whoever knows it.
+    const created=enrich({id:'SUP-'+String(suppliers.length+1).padStart(4,'0'),currency:'SEK',...fd});
     suppliers.unshift(created);
     selected=0;
     syncSupplier(created);

@@ -32,6 +32,56 @@ async function createSupplier(page) {
   step('Suppliers: create persists and hydrates after reload');
 }
 
+// A supplier entered with the four fields the form asks for, and nothing else about them known.
+//
+// This page used to fill the rest in. Not as placeholders — as the record: an address on Industrial
+// Road in Malmö, a VAT number of SE556700000001, a telephone number, an order-desk contact, two
+// documents called "Supplier agreement.pdf" and "Current price list.xlsx", a note saying an annual
+// supplier review had been completed, a performance panel scoring them 4.3 out of 5 on four invented
+// percentages, four stars beside their name in the list, and three activity rows about a delivery
+// against DEL-0038. Every one of them was a statement about somebody else's company that nobody had
+// made, printed in the same type as the name.
+//
+// So this check reads the whole screen and asserts none of it is there. It is written as a list of
+// strings rather than a structural check on purpose: the failure was not a broken panel, it was
+// plausible content, and the only thing that distinguishes plausible content from a record is knowing
+// what was never entered.
+async function nothingIsInventedAboutASupplier(page) {
+  await page.locator('#listSearch').fill(SUPPLIER);
+  const found = await page.evaluate((name) => {
+    const at = suppliers.findIndex((s) => s.name === name);
+    if (at < 0) return false;
+    selectSupplier(at);
+    return true;
+  }, SUPPLIER);
+  assert.ok(found, `${SUPPLIER} should be in the list to be looked at`);
+  const shown = await page.locator('#mainContent').innerText();
+
+  const invented = [
+    'Industrial Road', 'SE556700000001', '+46 40 555 01 20',
+    'Order Desk', 'Supplier agreement.pdf', 'Current price list.xlsx',
+    'Annual supplier review', '4.3 / 5', 'DEL-0038', '1.2 days', '★'
+  ].filter((text) => shown.includes(text));
+  assert.deepEqual(invented, [],
+    `the supplier screen states these about a supplier nobody entered them for: ${invented.join(', ')}`);
+
+  // And the three metric cards that need records this system does not keep say which records, rather
+  // than printing a percentage. "88%" under "On-time delivery" is a judgement about a real merchant.
+  const metrics = await page.locator('#metrics').innerText();
+  assert.match(metrics, /not kept yet/, `the metrics that cannot be answered must say so: ${metrics}`);
+  assert.equal(/\d+%/.test(metrics), false, `a percentage reached the metrics: ${metrics}`);
+  const performance = await page.locator('#performance').innerText();
+  assert.match(performance, /does not keep yet/, performance);
+  assert.match(performance, /not saying the supplier scores nothing/,
+    'and say plainly that it is not scoring them zero');
+
+  // What it does know, it shows: the four fields that were actually typed in.
+  assert.ok(shown.includes(SUPPLIER) && shown.includes('Stainless steel') && shown.includes('Sweden'),
+    'what somebody did enter has to be on the screen');
+  assert.ok(shown.includes('—'), 'and what they did not is a dash');
+  step('Suppliers: nothing is stated about a supplier that nobody entered — and the blanks read as blank');
+}
+
 async function createInventoryAndReorder(page) {
   await page.evaluate(() => openNewItemForm());
   await page.locator('#newCode').fill(ITEM_CODE);
@@ -506,6 +556,7 @@ async function main() {
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await loadDemoData(page);
     await createSupplier(page);
+    await nothingIsInventedAboutASupplier(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
