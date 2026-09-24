@@ -466,6 +466,10 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script>/* Wired to the server: every report is read from the workshop's own records. Declared rather
+   than detected, because a report is a number somebody acts on, and a number read out of this browser
+   while the workshop's records are on a server is the worst kind of wrong. */
+window.WORKSHOP_SERVER_READY=true;</script>
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
 <script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
@@ -483,6 +487,9 @@ let activeFilters={customer:'',project:'',status:''};
 // TRANSLATIONS
 const i18n={
   en:{
+    srv_not_on_db:'These records are not on the workshop database yet, so this report has nothing to read. It is not saying the answer is none — it is saying nobody can answer it here yet.',
+    srv_not_built:'Saved reports are not on the server yet, so nothing was saved. The six reports themselves read the workshop live.',
+    srv_offline:'The workshop could not be read. Try again when there is a connection.',
     saved_reports:'Saved Reports',back_hub:'Hub',role:'Admin',reports_title:'Reports & Analytics',reports_sub:'Data analysis and decision support',
     filters:'Filters:',today:'Today',this_week:'This Week',this_month:'This Month',this_quarter:'This Quarter',this_year:'This Year',
     all_time:'All Time',export:'Export',print:'Print',refresh:'Refresh Calculations',clear_filters:'Clear Filters',save_view:'Save View',
@@ -521,6 +528,9 @@ const i18n={
     no_purchasing:'Purchase orders could not be read',none_failed:'No inspection failed',none_ncr:'No non-conformance report is open'
   },
   sv:{
+    srv_not_on_db:'Dessa uppgifter finns inte i verkstadens databas än, så den här rapporten har ingenting att läsa. Den säger inte att svaret är noll — den säger att ingen kan svara här än.',
+    srv_not_built:'Sparade rapporter finns inte på servern än, så ingenting sparades. De sex rapporterna läser verkstaden direkt.',
+    srv_offline:'Verkstaden kunde inte läsas. Försök igen när det finns anslutning.',
     saved_reports:'Sparade Rapporter',back_hub:'Hub',role:'Admin',reports_title:'Rapporter & Analys',reports_sub:'Dataanalys och beslutsstöd',
     filters:'Filter:',today:'Idag',this_week:'Denna Vecka',this_month:'Denna Månad',this_quarter:'Detta Kvartal',this_year:'Detta År',
     all_time:'All Tid',export:'Exportera',print:'Skriv ut',refresh:'Uppdatera beräkningar',clear_filters:'Rensa filter',save_view:'Spara vy',
@@ -560,6 +570,9 @@ const i18n={
     none_failed:'Ingen inspektion underkändes',none_ncr:'Ingen avvikelserapport är öppen'
   },
   mk:{
+    srv_not_on_db:'Овие записи сè уште не се во базата на работилницата, па овој извештај нема што да прочита. Не значи дека одговорот е ништо — значи дека тука сè уште никој не може да одговори.',
+    srv_not_built:'Зачуваните извештаи сè уште не постојат на серверот, па ништо не беше зачувано. Шесте извештаи ја читаат работилницата директно.',
+    srv_offline:'Работилницата не можеше да се прочита. Обиди се повторно кога има врска.',
     saved_reports:'Зачувани извештаји',back_hub:'Центар',role:'Администратор',reports_title:'Извештаји & Анализа',
     reports_sub:'Анализа на податоци и поддршка на одлуки',filters:'Филтри:',today:'Денес',this_week:'Оваа Недела',this_month:'Овој Месец',
     this_quarter:'Овој Квартал',this_year:'Оваа Година',all_time:'Сите Времиња',export:'Извези',print:'Печати',refresh:'Освежи Пресметки',
@@ -972,7 +985,13 @@ function renderHours(data,range){
   $('hrs-workers').textContent=workers.size;
   $('hrs-entries').textContent=entries.length;
 
-  const loggedFor=no=>entries.filter(h=>h.projectNo===no).reduce((t,h)=>t+(num(h.hours)||0),0);
+  // `project`, not `projectNo`. An hours record has held `project` since logHours() was written, and
+  // the snapshot carries the same name — so this read a field nobody has ever written, and the whole
+  // "Hours by project" table showed every project with nothing logged against it while the hours sat
+  // in the record two lines away. Found by wiring this page to the database and checking one figure by
+  // hand against psql, which is the only way a bug like this is ever found.
+  const projectOf=h=>h.project||h.projectNo||'';
+  const loggedFor=no=>entries.filter(h=>projectOf(h)===no).reduce((t,h)=>t+(num(h.hours)||0),0);
   if(!projects.length)emptyRow('hrs-project-body',4,'none_projects');
   else $('hrs-project-body').innerHTML=projects.map(p=>{
     const lg=loggedFor(p.no),pl=num(p.plannedHours)||0;
@@ -986,7 +1005,7 @@ function renderHours(data,range){
   const byWorker=groupBy(entries,h=>h.user||'N/A');
   const rows=Object.entries(byWorker).map(([w,list])=>({
     w,hours:list.reduce((t,h)=>t+(num(h.hours)||0),0),
-    projects:new Set(list.map(h=>h.projectNo).filter(Boolean)).size,entries:list.length
+    projects:new Set(list.map(projectOf).filter(Boolean)).size,entries:list.length
   })).sort((a,b)=>b.hours-a.hours);
   if(!rows.length)emptyRow('hrs-worker-body',4,'none_hours');
   else $('hrs-worker-body').innerHTML=rows.map(r=>`<tr>
@@ -1312,6 +1331,103 @@ function loadConfig(){
       emberBox.appendChild(e);
     }
   }
+})();
+
+// ── Reports on the database ───────────────────────────────────────────────────────────────
+//
+// Six questions, each answered from records. Wiring them is reading: getData() already goes through
+// WorkshopData.get(), so adopting a snapshot makes every figure on these pages the workshop's own.
+//
+// Three of the six can be answered today and three cannot, and **that difference is shown rather than
+// left to be inferred.** Late work, where the hours went and what is low in stock read projects,
+// jobcards, hours and inventory, all of which the snapshot carries. What we won reads quotations, what
+// we bought reads purchase orders, and what failed inspection reads inspections — none of which are on
+// the database yet. Left alone, those three would print "No quotations were accepted" to an office that
+// has accepted several, which is a report lying with a straight face. So each section asks
+// `WorkshopData.servedCollections()` whether its records are there at all, and says so when they are
+// not. When estimates or purchase orders reach the schema the note disappears by itself, because the
+// answer comes from the snapshot rather than from a list kept here.
+//
+// The two writes are a different kind of thing from every other screen's. A saved report definition is
+// workshop data with no table, so it refuses. The last-used language, section and filter are not
+// workshop data at all — they are this browser's convenience — so they are kept in localStorage under
+// their own key rather than pushed at a database that has no column for them and should not have one.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  const CONFIG_KEY='varmak.reports.config';
+  // Which collection each report stands on. The names are the snapshot's own.
+  const NEEDS={won:'estimations',late:'projects',hours:'hours',stock:'inventory',
+    bought:'purchaseOrders',failed:'qualityInspections'};
+
+  function served(name){
+    if(!onServer())return true;
+    const list=(WorkshopData.servedCollections&&WorkshopData.servedCollections())||[];
+    return list.indexOf(name)!==-1;
+  }
+
+  // The note goes at the top of the section, where the lead paragraph is, and replaces it: a lead
+  // reading "what this report shows" above a table that cannot show it is the confusing half.
+  function noteOn(section){
+    const box=document.getElementById('section-'+section);
+    if(!box)return;
+    const already=box.querySelector('.srvnote');
+    if(already)already.remove();
+    if(served(NEEDS[section]))return;
+    const note=document.createElement('p');
+    note.className='rlead srvnote';
+    note.style.color='var(--tint-warn)';
+    note.textContent=tr('srv_not_on_db');
+    const lead=box.querySelector('.rlead');
+    if(lead)lead.replaceWith(note);else box.prepend(note);
+  }
+
+  function noteEverywhere(){Object.keys(NEEDS).forEach(noteOn);}
+
+  const SENT={
+    // This browser's own last-used view. Not the database's business: a filter one person left on is
+    // not a fact about the workshop, and two people should not fight over it.
+    updateReportConfig(patch){
+      let held={};
+      try{held=JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}')||{};}catch(e){held={};}
+      const merged=Object.assign({},held,patch||{});
+      try{localStorage.setItem(CONFIG_KEY,JSON.stringify(merged));}catch(e){/* private window */}
+      return merged;
+    },
+    getReportConfig(){
+      try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}')||{};}catch(e){return {};}
+    }
+  };
+  // A saved report is a definition the whole office should share, and there is no table for it. It
+  // refuses rather than writing to a browser the next reload wipes.
+  const NOT_BUILT=['saveReport','archiveSavedReport'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:tr('srv_not_built')};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return;}
+    if(answer.offline||answer.failed){wAlert(answer.failed||tr('srv_offline'));return;}
+    WorkshopData.adoptSnapshot(answer.data);
+    invalidateDataCache();
+    noteEverywhere();
+    loadSectionData(currentSection);
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){
+      e.preventDefault();await WorkshopApi.signOut();location.href='login.html';
+    });
+    // The notes are worded in whichever language is on screen, so they are redrawn with it.
+    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setTimeout(noteEverywhere,0)));
+  })();
 })();
 </script>
 </body></html>

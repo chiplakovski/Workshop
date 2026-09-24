@@ -28,7 +28,8 @@
     "test:offline": "node tests/offline-queue.e2e.js",
     "test:hub": "node tests/hub-server.e2e.js",
     "test:planning": "node tests/planning-server.e2e.js",
-    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js && node tests/access-screen.e2e.js && node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js && node tests/store-server.e2e.js && node tests/offline-queue.e2e.js && node tests/hub-server.e2e.js && node tests/planning-server.e2e.js"
+    "test:reports": "node tests/reports-server.e2e.js",
+    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js && node tests/access-screen.e2e.js && node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js && node tests/store-server.e2e.js && node tests/offline-queue.e2e.js && node tests/hub-server.e2e.js && node tests/planning-server.e2e.js && node tests/reports-server.e2e.js"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"

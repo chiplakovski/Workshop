@@ -672,6 +672,37 @@ cannot touch anything else.
    can hold different figures — worth knowing, and not worth inventing a column for until somebody says
    what the number is.
 
+      **Reports, where three of the six can be answered and three cannot — and the screen now says
+   which.** Wiring the reading was nothing: `getData()` already goes through `WorkshopData.get()`, so a
+   snapshot makes every figure the workshop's own. The interesting half is the other three. Late work,
+   where the hours went and what is low in stock stand on projects, jobcards, hours and inventory, all
+   of which the snapshot carries. What we won stands on quotations, what we bought on purchase orders,
+   and what failed inspection on inspections — none of which are on the database yet, and left alone
+   those three would print **"No quotations were accepted"** to an office that has accepted several.
+   That is a report lying with a straight face.
+
+   So each section asks `WorkshopData.servedCollections()` whether its records are there at all, and
+   where they are not it says so in place of its lead paragraph: *these records are not on the workshop
+   database yet, so this report has nothing to read — it is not saying the answer is none.* When
+   estimates or purchase orders reach the schema the note disappears by itself, because the answer comes
+   from the snapshot rather than from a list maintained here. The test asserts both halves: the three
+   that cannot answer carry the note, and the three that can **do not**.
+
+   The two writes are a different kind of thing from every other screen's, and they go different ways.
+   A saved report definition is workshop data with no table, so it refuses. The last-used language,
+   section and filter are not workshop data at all — they are one browser's convenience — so they are
+   kept in `localStorage` under their own key rather than pushed at a database that has no column for
+   them and should not have one. Left alone they would have thrown on every click, because a wired page
+   calling a mutator is exactly what the no-two-worlds guard refuses.
+
+   **And it found a figure that has been wrong for as long as the page has existed.** "Hours by project"
+   filtered the entries on `h.projectNo`, and an hours record has only ever held `h.project` —
+   `logHours()` writes that name and the snapshot carries the same one. So the column showed every
+   project with nothing logged against it while the hours sat in the record two lines away, and the
+   per-worker "projects touched" count was always zero. It was found by checking one figure by hand
+   against psql while wiring this screen, which is the only way a bug of that shape is ever found: it
+   throws nothing, it fails no test, and the number it prints is plausible.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared
