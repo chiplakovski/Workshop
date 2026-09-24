@@ -703,6 +703,25 @@ cannot touch anything else.
    against psql while wiring this screen, which is the only way a bug of that shape is ever found: it
    throws nothing, it fails no test, and the number it prints is plausible.
 
+      **The desk half of the hours screen**, which books the same entries against the same jobcards as
+   the phone one and had been left behind — so an office signing in to enter a week of paper timesheets
+   was shown a screen that refused to load. Same server branch as the phone: an entry carrying
+   equipment usage or material is held back and says what is missing rather than booking the hours and
+   dropping the rest.
+
+   One difference, and it is a decision rather than an omission: **no offline queue here.** The queue
+   exists because a steel hall eats wifi and the welder is furthest from the router. At a desk, an
+   entry that cannot be sent says so on the spot with the form still holding it, which is better than a
+   banner about work being held on a machine nobody carries anywhere — and the suite asserts exactly
+   that: the refusal is plain, nothing is booked, nothing is queued, and the form still has the entry
+   in it.
+
+   It also has the same badge problem the phone hub had, and it matters more here: this screen reads
+   the worker off its own `#whoName` label, which said "Marko K." in the page source. The server takes
+   the worker from the session and ignores what it is sent, so that label was only ever cosmetic — but
+   an office entering everybody's timesheets under a name the database quietly replaces is a screen
+   nobody can trust. It is the session's name now, painted from the snapshot.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared
