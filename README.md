@@ -7,9 +7,10 @@ its safety rules as triggers, two sign-in doors, three database roles with row-l
 forced on every table, the workflows as database functions, and a thin HTTP layer that decides
 nothing. It lives under [`backend/`](backend/) and has its own [README](backend/README.md).
 
-**The pages are mostly not on it yet.** Five of them read and write the database — the shop floor's
-hours screen, the access screen, Customers, Jobcards, and the project half of Project / Estimator —
-and the rest still run entirely on the browser's `localStorage` (see [`workshop-data.js`](workshop-data.js)), which is lost if browser
+**Six pages read and write the database** — the shop floor's hours screen, the access screen,
+Customers, Jobcards, Store, and the project half of Project / Estimator. Together they are the chain a
+workshop needs to start: record a customer, put work on the board, book hours against it, take steel
+off the shelf for it. The rest still run entirely on the browser's `localStorage` (see [`workshop-data.js`](workshop-data.js)), which is lost if browser
 data is cleared. A page that has not been wired refuses to show anything at all to a signed-in
 session and says why, rather than showing figures that are not the workshop's; see
 [`workshop-guard.js`](workshop-guard.js). Nothing changes for a browser with no session: the
@@ -25,7 +26,7 @@ fourteen pages work exactly as they always have.
 | Suppliers | `suppliers-desktop.html` |
 | Project / Estimator | `estimations-desktop.html` — the **project** half is on the database; estimating is not, and says so |
 | Planning | `planning-desktop.html` |
-| Store | `store-desktop.html` |
+| Store | `store-desktop.html` — **on the database** when there is a session |
 | Hours | `hours-desktop.html`, `hours-mobile.html` |
 | Jobcards | `jobcard-desktop.html` — **on the database** when there is a session |
 | Documents | `documents-desktop.html` |
@@ -140,9 +141,9 @@ Open any `.html` file in a browser, or use the VS Code **Live Server** extension
 A test suite (Node's built-in test runner, no external dependencies) covers data migration,
 backup/import safety, and every pure business-rule module — Jobcards, Estimation, Projects,
 Quality, Equipment, Planning, estimate recall, the material reference and the findings queue.
-**713 unit tests, a browser smoke test over all 17 pages, and 194 end-to-end steps, all passing** —
-59 of those steps drive a real browser against a real PostgreSQL: the welder's hours slice, the
-access screen, Customers, Jobcards and making a project. Requires Node.js 18+ on your PATH, and
+**719 unit tests, a browser smoke test over all 17 pages, and 202 end-to-end steps, all passing** —
+67 of those steps drive a real browser against a real PostgreSQL: the welder's hours slice, the access
+screen, Customers, Jobcards, making a project, and the store. Requires Node.js 18+ on your PATH, and
 PostgreSQL 16 for the backend suites.
 
 ```
@@ -153,9 +154,9 @@ npm run test:browser  # opens every HTML entry point in headless Chrome/Edge and
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Planning,
                       # Jobcards/Hours/Equipment, Store/Suppliers, Documents/Reports
-                      # and Marketing/Sales workflows, then the five that go all the way to
-                      # Postgres: the hours slice, the access screen, Customers, Jobcards
-                      # and making a project
+                      # and Marketing/Sales workflows, then the six that go all the way to
+                      # Postgres: the hours slice, the access screen, Customers, Jobcards,
+                      # making a project, and the store
 npm run test:backend  # the database, the roles, the workflows, real HTTP, and a restored backup
 ```
 
@@ -170,18 +171,18 @@ access.
 ## Status
 The backend exists and is tested: schema and safety rules, sign-in and roles, the workflows, reading
 it back, and backups verified by restoring one. What is not done is step 5 of
-[`BACKEND.md`](BACKEND.md) — pointing the pages at it. Five of the seventeen are on it; the rest need
+[`BACKEND.md`](BACKEND.md) — pointing the pages at it. Six of the seventeen are on it; the rest need
 their workflows written and their screens wired, and there is a measured gap in how much of what the
-pages collect the database can hold (`npm run coverage` — 65% today, and the remainder is concentrated
-on Equipment, Quality and the sales pipeline rather than spread).
+pages collect the database can hold (`npm run coverage` — 67% today, and the remainder is concentrated
+on Equipment, Quality, estimating and the sales pipeline rather than spread).
 
 One thing wiring Customers settled, which is worth knowing before the next screen: the claim in
 `BACKEND.md` that the pages would not change was wrong about shapes as well as about writes. The
 screen has always held payment terms as the words "30 days" and the billing address as an array of
 lines; the database holds a count of days and one block of text. The translation lives in
-[`customer-record.js`](customer-record.js), [`jobcard-record.js`](jobcard-record.js) and
-[`project-record.js`](project-record.js), each with its own unit tests, and each remaining screen will
-need one.
+[`customer-record.js`](customer-record.js), [`jobcard-record.js`](jobcard-record.js),
+[`project-record.js`](project-record.js) and [`stock-record.js`](stock-record.js), each with its own
+unit tests, and each remaining screen will need one.
 
 Twice now the schema turned out to hold words nobody uses — a jobcard priority of `normal` where the
 dropdown offers `medium`, a material state of `ready` where the screen says `available`. The rule that

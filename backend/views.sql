@@ -160,11 +160,38 @@ LANGUAGE sql STABLE AS $$
         'minStock', i.min_stock, 'reorderQty', i.reorder_quantity,
         'category', i.category, 'grade', i.grade, 'dimensions', i.dimensions,
         'heat', i.heat_no, 'certificate', i.material_cert_ref, 'status', i.status,
+        -- The bin the steel is in, which the storeman reads off the label. Distinct from the two
+        -- below it: those are the warehouse and the rack.
+        'location', i.bin_code,
         'group', (SELECT g.name FROM item_group g WHERE g.id = i.group_id),
         'subgroup', (SELECT g.name FROM item_group g WHERE g.id = i.subgroup_id),
         'locationGroup', (SELECT l.name FROM location l WHERE l.id = i.location_id),
-        'locationSub', (SELECT l.name FROM location l WHERE l.id = i.sublocation_id)
-      ) ORDER BY i.code) FROM stock_item i), '[]'::jsonb)
+        'locationSub', (SELECT l.name FROM location l WHERE l.id = i.sublocation_id),
+        -- And the ids behind those four names. The names are what the screen shows; the ids are what a
+        -- save has to send back, and without them correcting an item's description would move it out of
+        -- its group — a name is not something save_stock_item can accept for a foreign key.
+        'groupId', i.group_id::text, 'subgroupId', i.subgroup_id::text,
+        'locationId', i.location_id::text, 'sublocationId', i.sublocation_id::text
+      ) ORDER BY i.code) FROM stock_item i), '[]'::jsonb),
+
+    -- The movements, which are the whole reason the store's figures can be trusted: every change to a
+    -- shelf has a line here saying who moved what, when and where to. The store screen has a panel for
+    -- them and it was empty, because the snapshot did not carry them — so the one screen whose job is
+    -- explaining a figure could not.
+    --
+    -- The last two hundred, newest first. A workshop's movement log grows without limit and the panel
+    -- shows a page of it; sending all of it would make every snapshot slower for every screen.
+    'movements', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', m.id::text, 'ref', m.ref, 'time', m.moved_at, 'action', m.kind,
+        'code', (SELECT s.code FROM stock_item s WHERE s.id = m.stock_item_id),
+        'qty', m.quantity, 'unit', m.unit, 'from', m.moved_from, 'to', m.moved_to,
+        'user', m.moved_by, 'note', m.note,
+        'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = m.jobcard_id),
+        'projectNo', (SELECT p.ref FROM project p
+                      JOIN jobcard j ON j.project_id = p.id WHERE j.id = m.jobcard_id)
+      ) ORDER BY m.id DESC) FROM (
+        SELECT * FROM stock_movement ORDER BY id DESC LIMIT 200
+      ) m), '[]'::jsonb)
   );
 $$;
 

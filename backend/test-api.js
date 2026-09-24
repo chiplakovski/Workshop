@@ -139,7 +139,13 @@ function theBypassListIsStillShort() {
     // second because it compares a password hash, which no role may read.
     'bootstrap_first_admin', 'change_my_password',
     'current_app_name', 'current_app_role', 'issue_material', 'issue_stock',
-    'project_hours_roll_up', 'register_failure', 'session_identity',
+    'project_hours_roll_up',
+    // Steel arriving and a shelf being counted, for the same reason issuing is here: both write a
+    // stock movement, and the name on it is the session's rather than anything the caller passed. The
+    // caller's own role holds no INSERT on stock_movement directly, which is what stops a movement
+    // being signed in somebody else's name.
+    'receive_stock', 'record_stocktake',
+    'register_failure', 'session_identity',
     'session_owner', 'set_password', 'set_pin', 'sign_in', 'sign_out'
   ], `functions that step around row security, across all three files: ${bypass.join(', ')}`);
   step(`Harness: ${bypass.length} functions may step around row security across all three files, and they are the expected ones`);
@@ -607,6 +613,110 @@ function theFirstAdminAndEveryoneAfter() {
   assert.equal(value(`SELECT coalesce((SELECT token FROM sign_in('anna@varmak.se', 'correct horse battery staple', 'password')), 'none');`),
     'none', 'the old password must stop working the moment it is changed');
   step('People: you change your own password only by proving you know the current one');
+}
+
+// The store. Material could leave the shelf before these — issue_material_offline is what the shop
+// tablet calls — but nothing could put an item on the shelf, or record steel arriving. So a workshop
+// could issue material it had no way of telling the system it had.
+function theStoreCanBeStockedAndCounted() {
+  const f = world();
+  const office = PEOPLE.office;
+
+  const item = ok('the office adding a store item', 'varmak_office', office,
+    `SELECT save_stock_item(NULL, 's355-12', 'Plate S355J2 12mm', 'KG', NULL, NULL, NULL, NULL,
+      'A1-01-02', 'Mild Steel Plate', 'S355J2', '12 × 1500 × 3000 mm', 'kg', 1, 1, 141.3,
+      500, 1000, NULL, NULL, NULL, NULL);`);
+  assert.equal(value(`SELECT code FROM stock_item WHERE id = ${item};`), 'S355-12',
+    'the code is what the label says, and labels are upper case');
+  assert.equal(value(`SELECT bin_code FROM stock_item WHERE id = ${item};`), 'A1-01-02');
+  // The one column the store screen must never be able to type into.
+  assert.equal(value(`SELECT stock::text FROM stock_item WHERE id = ${item};`), '0.000',
+    'a new item has nothing on the shelf until something arrives with a movement behind it');
+  assert.equal(value(`SELECT count(*) FROM information_schema.parameters
+     WHERE specific_schema = 'public' AND specific_name LIKE 'save_stock_item%'
+       AND parameter_name = 'p_stock';`), '0',
+    'save_stock_item must not take a stock figure — a figure with no movement behind it is a shelf '
+    + 'that disagrees with the record of why');
+  step('Store: an item goes on the books with no stock on it, because stock arrives through a movement');
+
+  refused('an item with no code', 'varmak_office', office,
+    `SELECT save_stock_item(NULL, '  ', 'Something', 'KG');`, /needs a code/);
+  refused('an item with no description', 'varmak_office', office,
+    `SELECT save_stock_item(NULL, 'X-1', '   ', 'KG');`, /needs a description/);
+  refused('an item with no unit', 'varmak_office', office,
+    `SELECT save_stock_item(NULL, 'X-1', 'Something', '  ');`, /needs a unit/);
+  const twice = refused('a second item with the same code', 'varmak_office', office,
+    `SELECT save_stock_item(NULL, 'S355-12', 'Plate, again', 'KG');`, /already an item coded S355-12/);
+  assert.match(twice, /Plate S355J2 12mm/, 'and it says which item that code already belongs to');
+  refused('a welder adding a store item', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_stock_item(NULL, 'FLOOR-1', 'Floor item', 'EA');`, /permission denied/);
+  step('Store: an item needs a code, a description and a unit, and the code is not free for a second item');
+
+  // ── Steel arriving ──────────────────────────────────────────────────────────────────────
+  const first = ok('fifty kilos at 14.00', 'varmak_office', office,
+    `SELECT receive_stock(${item}, 50, 14.00, 'Nordic Steel', 'DN-4471', 'H240516', 'MTC_H240516.pdf');`);
+  assert.match(value(`SELECT ref FROM stock_movement WHERE id = ${first};`), /^MV-\d{4}-\d{5}$/);
+  assert.equal(value(`SELECT stock::text || '|' || avg_cost::text || '|' || last_price::text
+    FROM stock_item WHERE id = ${item};`), '50.000|14.00|14.00');
+  assert.equal(value(`SELECT heat_no || '|' || material_cert_ref FROM stock_item WHERE id = ${item};`),
+    'H240516|MTC_H240516.pdf', 'the heat and the certificate come in with the delivery');
+  assert.equal(value(`SELECT moved_by FROM stock_movement WHERE id = ${first};`), 'Lars Holm',
+    'the name on the movement is the session\'s, and there is no parameter that could say otherwise');
+  assert.equal(value(`SELECT count(*) FROM information_schema.parameters
+     WHERE specific_schema = 'public' AND specific_name LIKE 'receive_stock%'
+       AND parameter_name IN ('p_by', 'p_user', 'p_moved_by');`), '0',
+    'a receipt signed in a name the caller passed is not a record of who put the steel on the shelf');
+  step('Store: steel arrives, the shelf goes up, and the movement is signed by whoever was signed in');
+
+  // The weighted average, which is the difference between a store that can cost a job and one that can
+  // only tell you what the last load cost. Fifty at 14.00 plus fifty at 16.00 is a hundred at 15.00.
+  ok('fifty more at 16.00', 'varmak_office', office,
+    `SELECT receive_stock(${item}, 50, 16.00, 'Nordic Steel', 'DN-4492');`);
+  assert.equal(value(`SELECT stock::text || '|' || avg_cost::text || '|' || last_price::text
+    FROM stock_item WHERE id = ${item};`), '100.000|15.00|16.00',
+    'the average is weighted by what was on the shelf, not replaced by what arrived last');
+  // And a delivery with no price on it must not drag the average to nothing.
+  ok('twenty more with no price on the note', 'varmak_office', office,
+    `SELECT receive_stock(${item}, 20);`);
+  assert.equal(value(`SELECT stock::text || '|' || avg_cost::text FROM stock_item WHERE id = ${item};`),
+    '120.000|15.00', 'a receipt with no price leaves the average exactly where it was');
+  refused('a receipt for nothing', 'varmak_office', office,
+    `SELECT receive_stock(${item}, 0, 14.00);`, /more than nothing/);
+  refused('a receipt against an item that does not exist', 'varmak_office', office,
+    `SELECT receive_stock(999999, 10, 14.00);`, /no such store item/);
+  step('Store: the average cost is weighted by the shelf, and a note with no price on it changes neither');
+
+  // ── Counting it ─────────────────────────────────────────────────────────────────────────
+  const count = ok('counting 118 where the book says 120', 'varmak_office', office,
+    `SELECT record_stocktake(${item}, 118, 'Two lengths cut and not booked');`);
+  assert.equal(value(`SELECT stock::text FROM stock_item WHERE id = ${item};`), '118.000');
+  assert.equal(value(`SELECT kind::text || '|' || quantity::text FROM stock_movement WHERE id = ${count};`),
+    'adjustment|2.000', 'the difference is the movement, and it says which way');
+  assert.match(value(`SELECT note FROM stock_movement WHERE id = ${count};`),
+    /counted 118, was 120/);
+  // Counted and found right: nothing to correct, and a movement of nothing would be noise in the one
+  // place a storeman goes to find out why a figure changed.
+  assert.equal(ok('counting it again and finding it right', 'varmak_office', office,
+    `SELECT coalesce(record_stocktake(${item}, 118)::text, 'no movement');`), 'no movement');
+  assert.equal(value(`SELECT count(*) FROM stock_movement WHERE stock_item_id = ${item}
+    AND kind = 'adjustment';`), '1');
+  refused('a count below nothing', 'varmak_office', office,
+    `SELECT record_stocktake(${item}, -1);`, /less than nothing/);
+  step('Store: a count corrects the shelf through a movement, and finding it right writes nothing');
+
+  // And the floor can still take it off the shelf, which is what the whole store is for.
+  // A job to issue against, made through the workflows added beside these — which is also the first
+  // time in this suite that the store and the work are asked to fit together.
+  const project = ok('a project for the steel to go to', 'varmak_office', office,
+    `SELECT save_project(NULL, 'Store frame', ${f.customer}, 'quotation');`);
+  const jobcard = ok('and a job on it', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, ${project}, 'Store weldment');`);
+  ok('a welder taking twelve kilos for a job', 'varmak_workshop', PEOPLE.welder,
+    `SELECT issue_material_offline(${item}, 12, ${jobcard}, 'Frame plates', 'store-0001');`);
+  assert.equal(value(`SELECT stock::text FROM stock_item WHERE id = ${item};`), '106.000');
+  assert.equal(value(`SELECT moved_by FROM stock_movement WHERE stock_item_id = ${item}
+    AND kind = 'issue' ORDER BY id DESC LIMIT 1;`), 'Marko Ilic');
+  step('Store: and the floor takes material off the shelf in its own name, against a job');
 }
 
 // Getting work onto the bench. Until save_project and save_jobcard existed, the only way a job
@@ -1086,6 +1196,7 @@ async function main() {
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
   const work = workReachesTheFloor();
+  theStoreCanBeStockedAndCounted();
   theStepsRememberTheWorkDoneOnThem(work);
   const c = aCustomerCanBeMadeAndCorrected();
   theContactListIsReplacedAtomically(c);

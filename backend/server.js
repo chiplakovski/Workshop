@@ -91,6 +91,15 @@ const RPC = {
     'notes', 'progress', 'inspection_required'],
   set_jobcard_operations: ['jobcard_id', 'operations'],
 
+  // The store. save_stock_item has no stock parameter on purpose — steel arrives through a movement.
+  save_stock_item: ['id', 'code', 'description', 'unit', 'group_id', 'subgroup_id', 'location_id',
+    'sublocation_id', 'bin_code', 'category', 'grade', 'dimensions', 'base_unit', 'size_per_unit',
+    'weight_per_base', 'unit_weight', 'min_stock', 'reorder_quantity', 'heat_no',
+    'material_cert_ref', 'avg_cost', 'last_price'],
+  receive_stock: ['item_id', 'quantity', 'unit_price', 'supplier', 'delivery_note', 'heat_no',
+    'material_cert_ref', 'bin_code', 'note'],
+  record_stocktake: ['item_id', 'counted', 'note'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],

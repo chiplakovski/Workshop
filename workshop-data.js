@@ -841,7 +841,7 @@
   // Which collections the snapshot actually covers. The rest are left EMPTY rather than filled with
   // demo data: a screen showing three real jobs beside eleven invented ones is worse than a screen
   // showing three real jobs and nothing else, because nobody can tell which is which.
-  const SERVED_COLLECTIONS=['customers','projects','jobcards','equipment','hours','inventory'];
+  const SERVED_COLLECTIONS = ['customers','projects','jobcards','equipment','hours','inventory','movements'];
   function adoptSnapshot(data){
     if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
     const fresh=emptyState();

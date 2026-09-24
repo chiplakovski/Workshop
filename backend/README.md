@@ -12,7 +12,7 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**149 mutations**, across the four SQL files and the backup script.
+**154 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -56,7 +56,7 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 149 of them, a couple of hours — so it is a check to run when a rule
+suite once per mutation — 154 of them, a couple of hours — so it is a check to run when a rule
 changes, not on every save. One rule, or one file, at a time:
 
 ```sh
@@ -167,6 +167,19 @@ workflow written in the server holds right up until somebody adds a second calle
 | `receive_goods` | the line records what came, stock goes up, a movement explains why, and the order's status is derived from its lines |
 | `convert_lead` | the customer arrives carrying what was known about the lead, the lead is marked converted, and anything already quoted follows across |
 | `book_hours` · `record_operation` · `issue_material_offline` | the three the shop tablet may do with no signal |
+
+And the store, without which a workshop could issue material it had no way of telling the system it
+had — `issue_material_offline` existed and nothing could put an item on the shelf:
+
+| | |
+|---|---|
+| `save_stock_item` | one item. **`stock` is not a parameter and must never become one**: a figure typed into that column is a figure with no movement behind it, and the shelf then disagrees with the record of why it changed. The code is not free for a second item, and the refusal says which item already holds it |
+| `receive_stock` | steel arriving from a delivery note rather than against an order — which is how a small workshop buys most of what it uses. The average cost is **recomputed, weighted by the shelf**: fifty kilos at 14.00 plus fifty at 16.00 is a hundred at 15.00, not a hundred at 16.00. A note with no price on it leaves the average exactly where it was |
+| `record_stocktake` | the counted figure becomes the stock and the difference becomes a movement that says so. Counted and found right writes **nothing**, because a movement of nothing is noise in the one place a storeman goes to find out why a figure changed |
+
+`receive_stock` and `record_stocktake` are owned by `varmak_engine`, like `issue_material`, for the same
+reason: they write a stock movement and the name on it is the session's. The caller's own role holds no
+`INSERT` on `stock_movement` at all, which is what stops a movement being signed in somebody else's name.
 
 And the work itself, without which nothing could reach the shop floor except by accepting a
 quotation — so a workshop that took an order over the telephone had no way to record it at all:

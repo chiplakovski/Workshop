@@ -4,7 +4,7 @@
   "private": true,
   "description": "Varmak Workshop App — static HTML/CSS/JS frontend on browser storage, with the PostgreSQL schema and its safety rules under backend/. No build step.",
   "scripts": {
-    "test": "node --test tests/estimation-rules.test.js tests/jobcard-rules.test.js tests/project-rules.test.js tests/quality-gates.test.js tests/equipment-gates.test.js tests/jobcard-equipment-rules.test.js tests/estimate-memory.test.js tests/material-reference.test.js tests/planning-rules.test.js tests/prospect-rules.test.js tests/workshop-data.test.js tests/customer-record.test.js tests/jobcard-record.test.js tests/project-record.test.js",
+    "test": "node --test tests/estimation-rules.test.js tests/jobcard-rules.test.js tests/project-rules.test.js tests/quality-gates.test.js tests/equipment-gates.test.js tests/jobcard-equipment-rules.test.js tests/estimate-memory.test.js tests/material-reference.test.js tests/planning-rules.test.js tests/prospect-rules.test.js tests/workshop-data.test.js tests/customer-record.test.js tests/jobcard-record.test.js tests/project-record.test.js tests/stock-record.test.js",
     "test:syntax": "node tests/syntax-check.js",
     "test:browser": "node tests/browser-smoke.js",
     "test:integrity": "node tests/integrity.js",
@@ -19,10 +19,11 @@
     "test:mutations": "node backend/mutation-check.js",
     "test:slice": "node tests/vertical-slice.e2e.js",
     "test:access": "node tests/access-screen.e2e.js",
-    "test:customers": "node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js",
-    "test:jobcards": "node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js",
-    "test:projects": "node tests/projects-server.e2e.js",
-    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js && node tests/access-screen.e2e.js && node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js"
+    "test:customers": "node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js && node tests/store-server.e2e.js",
+    "test:jobcards": "node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js && node tests/store-server.e2e.js",
+    "test:projects": "node tests/projects-server.e2e.js && node tests/store-server.e2e.js",
+    "test:store": "node tests/store-server.e2e.js",
+    "test:e2e": "node tests/customers-estimations.e2e.js && node tests/projects-planning.e2e.js && node tests/jobcards-hours-equipment.e2e.js && node tests/store-suppliers.e2e.js && node tests/documents-reports.e2e.js && node tests/marketing-sales.e2e.js && node tests/quality.e2e.js && node tests/hours-mobile.e2e.js && node tests/backup-restore.e2e.js && node tests/vertical-slice.e2e.js && node tests/access-screen.e2e.js && node tests/customers-server.e2e.js && node tests/jobcards-server.e2e.js && node tests/projects-server.e2e.js && node tests/store-server.e2e.js"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"

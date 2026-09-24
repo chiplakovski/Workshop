@@ -1097,6 +1097,54 @@ TO varmak_workshop;`
     to: ''
   },
 
+  // ── The store ─────────────────────────────────────────────────────────────────────────────
+  {
+    // The difference between a store that can cost a job and one that can only say what the last load
+    // cost. Fifty kilos at 14.00 plus fifty at 16.00 is a hundred at 15.00, and every job costed after
+    // this mutation would be costed at the most recent invoice price instead.
+    what: 'the average cost is replaced by the last price paid instead of weighted',
+    file: 'api',
+    from: `    avg_cost = CASE
+      WHEN p_unit_price IS NULL THEN item.avg_cost
+      WHEN coalesce(item.avg_cost, 0) = 0 OR item.stock <= 0 THEN p_unit_price
+      ELSE round(((item.stock * item.avg_cost) + (p_quantity * p_unit_price))
+                 / (item.stock + p_quantity), 2)
+    END,`,
+    to: `    avg_cost = coalesce(p_unit_price, item.avg_cost),`
+  },
+  {
+    // A delivery note with no price on it, dragging the average to nothing.
+    what: 'a receipt with no price on it sets the average cost to nothing',
+    file: 'api',
+    from: `      WHEN p_unit_price IS NULL THEN item.avg_cost`,
+    to: `      WHEN p_unit_price IS NULL THEN 0`
+  },
+  {
+    what: 'a count that finds the shelf right still writes a movement',
+    file: 'api',
+    from: `  IF difference = 0 THEN
+    -- Counted and found right. Nothing to correct, and a movement of nothing would be noise in the
+    -- one place a storeman goes to find out why a figure changed.
+    RETURN NULL;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'the same item code can be used twice in the store',
+    file: 'api',
+    from: `  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already an item coded % — it is %', upper(btrim(p_code)), existing;
+  END IF;`,
+    to: ''
+  },
+  {
+    // The panel whose whole job is explaining why a figure changed, going quiet.
+    what: 'the snapshot stops carrying the stock movements',
+    file: 'views',
+    from: `    'movements', coalesce((SELECT jsonb_agg(jsonb_build_object(`,
+    to: `    'movements', coalesce((SELECT NULL::jsonb FROM (SELECT jsonb_build_object(`
+  },
+
   // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
   //
   // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,

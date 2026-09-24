@@ -257,7 +257,12 @@ body{overflow:hidden}
 <div class="modal" id="infoModal"><div class="modalcard"><div class="phead"><h3 id="infoTitle">Item</h3><button class="btn" onclick="closeItemInfo()">×</button></div><div class="formbody" id="infoBody"></div></div></div>
 <div class="modal" id="newItemModal"><div class="modalcard"><div class="phead"><h3 id="itemFormTitle" data-i="newItemTitle">Create inventory item</h3><button class="btn" onclick="closeNewItemForm()">×</button></div><div class="formbody"><div class="fields"><div class="field full catrow"><label for="catFamily" data-i="thCatalogue">Catalogue</label><div class="catpick"><select id="catFamily" onchange="renderCatalogue()"></select><input id="catSearch" oninput="renderCatalogue()" data-i-ph="catSearchPh" placeholder="search the catalogue..."><select id="catProduct" size="1" onchange="previewCatalogue()"></select><button class="btn" onclick="useCatalogueProduct()"><span data-i="btnUseProduct">Use</span></button></div><div class="cathint" id="catHint"></div></div><div class="field"><label for="newGroup" data-i="thGroup">Group</label><select id="newGroup" required onchange="fillSubgroupSelect('newGroup','newSubgroup','newItemNo')"></select></div><div class="field"><label for="newSubgroup" data-i="thSubgroup">Subgroup</label><select id="newSubgroup"></select></div><div class="field"><label for="newItemNo" data-i="thItemNo">Item number</label><input id="newItemNo" readonly tabindex="-1"></div><div class="field wide"><label for="newDescription" data-i="thDesc">Description</label><input id="newDescription" required></div><div class="field"><label for="newCode" data-i="newCodeOptional">Supplier / drawing code</label><input id="newCode" data-i-ph="newCodePlaceholder" placeholder="leave blank to use the item number"></div><div class="field"><label for="newUnit" data-i="thUnit">Unit</label><input id="newUnit" value="EA" required></div><div class="field"><label for="newWarehouse" data-i="thWarehouse">Warehouse</label><select id="newWarehouse" onchange="fillSublocationSelect('newWarehouse','newSublocation')"></select></div><div class="field"><label for="newSublocation" data-i="thSublocation">Sublocation</label><select id="newSublocation"></select></div><div class="field"><label for="newLocation" data-i="thBin">Bin</label><input id="newLocation" list="binList" required data-i-ph="binPlaceholder" placeholder="e.g. A1-01-02 — the shelf or slot"><datalist id="binList"></datalist></div><div class="field"><label for="newGrade" data-i="newGrade">Grade</label><input id="newGrade" oninput="suggestWeight()" data-i-ph="gradePlaceholder" placeholder="e.g. S235JR, AISI 304"></div><div class="field wide"><label for="newDimensions" data-i="newDimensions">Dimensions</label><input id="newDimensions" oninput="suggestWeight()" data-i-ph="dimPlaceholder" placeholder="e.g. DN100 SCH40, or 40 × 40 × 2.0 mm"></div><div class="field"><label for="newShape" data-i="thShape">Section</label><select id="newShape" onchange="suggestWeight()"></select></div><div class="field"><label for="newBaseUnit" data-i="thBaseUnit">Measured in</label><select id="newBaseUnit" onchange="renderMeasurePreview()"><option value="pcs">pcs</option><option value="m">m</option><option value="m2">m²</option><option value="m3">m³</option><option value="kg">kg</option></select></div><div class="field"><label for="newSizePerUnit" data-i="thSizePerUnit">Per stock unit</label><input id="newSizePerUnit" type="number" min="0" step="0.001" value="1" oninput="renderMeasurePreview()"></div><div class="field"><label for="newWeightPerBase" data-i="thWeightPerBase">kg per measure</label><input id="newWeightPerBase" type="number" min="0" step="0.001" value="0" oninput="renderMeasurePreview()"></div><div class="field full"><div class="measurebox" id="measurePreview"></div></div><div class="field"><label for="newStock" data-i="thStock">Stock</label><input id="newStock" type="number" min="0" value="0" oninput="renderMeasurePreview()"></div><div class="field"><label for="newMinStock" data-i="thMin">Min</label><input id="newMinStock" type="number" min="0" value="0"></div><div class="field"><label for="newReorderQty" data-i="thReorder">Reorder</label><input id="newReorderQty" type="number" min="0" value="0"></div><div class="field"><label for="newAvgCost" data-i="thAvgCost">Avg cost</label><input id="newAvgCost" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newLastPrice" data-i="thLastPrice">Last price</label><input id="newLastPrice" type="number" min="0" step="0.01" value="0"></div><div class="field"><label for="newSupplier" data-i="thSupplier">Supplier</label><input id="newSupplier"></div><div class="field"><label for="newHeat" data-i="thHeatLot">Heat / Lot</label><input id="newHeat"></div></div><div class="actions"><button class="btn" onclick="closeNewItemForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveInventoryItem()"><span id="itemFormSave" data-i="btnCreateItem">Create item</span></button></div></div></div></div>
 <div class="modal" id="certificateModal"><div class="modalcard"><div class="phead"><h3 data-i="certificateTitle">Attach material certificate</h3><button class="btn" onclick="closeCertificateForm()">×</button></div><div class="formbody"><div class="fields"><div class="field wide"><label for="certificateItem" data-i="lblMaterial">Material</label><select id="certificateItem"></select></div><div class="field"><label for="certificateType" data-i="certificateType">Certificate type</label><input id="certificateType" value="EN 10204 3.1"></div><div class="field wide"><label for="certificateFile" data-i="certificateFile">Certificate file</label><input id="certificateFile" type="file" accept=".pdf,.xml,.txt,.csv,image/*" required></div></div><p class="sub" data-i="certificateStorageNote">The file is stored in Documents and linked to this Store item.</p><div class="actions"><button class="btn" onclick="closeCertificateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="attachCertificate()"><span data-i="btnAttachCert">Attach certificate</span></button></div></div></div></div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="material-reference.js"></script><script src="workshop-forms.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="stock-record.js"></script>
+<!-- The items, the receipts, the issues and the counts read and write the database when there is a
+     session, so the guard lets this page through. The groups, the locations and the offcuts have no
+     workflow yet and say so. -->
+<script>window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-guard.js"></script><script src="material-reference.js"></script><script src="workshop-forms.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const STOCK=[];
@@ -334,6 +339,21 @@ Object.assign(T.mk,{grpStock:'Залиха',grpFlow:'Движење',lblReorderQ
 Object.assign(T.en,{newItemTitle:'Create inventory item',newGrade:'Grade',newDimensions:'Dimensions',btnCreateItem:'Create item',notifyItemCreated:'Inventory item created: {code}',certificateTitle:'Attach material certificate',certificateType:'Certificate type',certificateFile:'Certificate file',certificateStorageNote:'The file is stored in Documents and linked to this Store item.',notifySelectCertificate:'Select a certificate file',notifyCertificateAttached:'Certificate attached to {code} and saved in Documents',notifyReportDownloaded:'Inventory report downloaded: {name}'});
 Object.assign(T.sv,{newItemTitle:'Skapa lagerartikel',newGrade:'Kvalitet',newDimensions:'Dimensioner',btnCreateItem:'Skapa artikel',notifyItemCreated:'Lagerartikel skapad: {code}',certificateTitle:'Bifoga materialcertifikat',certificateType:'Certifikattyp',certificateFile:'Certifikatfil',certificateStorageNote:'Filen lagras i Dokument och länkas till denna lagerartikel.',notifySelectCertificate:'Välj en certifikatfil',notifyCertificateAttached:'Certifikatet bifogades till {code} och sparades i Dokument',notifyReportDownloaded:'Lagerrapport hämtad: {name}'});
 Object.assign(T.mk,{newItemTitle:'Креирај артикл во залиха',newGrade:'Квалитет',newDimensions:'Димензии',btnCreateItem:'Креирај артикл',notifyItemCreated:'Креиран е артикл: {code}',certificateTitle:'Прикачи сертификат за материјал',certificateType:'Тип на сертификат',certificateFile:'Датотека со сертификат',certificateStorageNote:'Датотеката се чува во Документи и се поврзува со овој артикл.',notifySelectCertificate:'Избери датотека со сертификат',notifyCertificateAttached:'Сертификатот е прикачен на {code} и зачуван во Документи',notifyReportDownloaded:'Извештајот за залиха е преземен: {name}'});
+// The wording the server-backed half of this screen needs. Added here rather than in the dictionary
+// above for the same reason the item-form keys were: that literal is one line and already unreadable.
+Object.assign(T.en,{
+  srv_gone:'That item is no longer on screen — the store has been refreshed.',
+  srv_no_job:'Pick a jobcard: the database books material against a job, not against a project.',
+  srv_not_built:'This does not exist on the server yet, so it is not being saved. Items, receipts, issues and counts do; the item groups, the warehouse locations, the offcut rack and the certificates still need their own workflow. Nothing was written.'});
+Object.assign(T.sv,{
+  srv_gone:'Den artikeln finns inte längre på skärmen — lagret har uppdaterats.',
+  srv_no_job:'Välj ett jobbkort: databasen bokför material mot ett jobb, inte mot ett projekt.',
+  srv_not_built:'Det här finns inte på servern än, så det sparas inte. Artiklar, mottagningar, uttag och inventeringar gör det; artikelgrupperna, lagerplatserna, resthyllan och certifikaten behöver fortfarande sitt eget arbetsflöde. Ingenting skrevs.'});
+Object.assign(T.mk,{
+  srv_gone:'Тој артикл го нема повеќе на екранот — залихата е освежена.',
+  srv_no_job:'Избери работен налог: базата го книжи материјалот на налог, не на проект.',
+  srv_not_built:'Ова сеуште не постои на серверот, па не се запишува. Артиклите, приемите, издавањата и пописите постојат; групите артикли, магацинските локации, полицата со остатоци и сертификатите сеуште имаат потреба од сопствен тек. Ништо не беше запишано.'});
+
 function item(code){return STOCK.find(x=>x[0]===code)}
 function closeOperation(){$('operationModal').classList.remove('show')}
 function startCount(){$('countRows').innerHTML='';$('countCode').focus();notify(currentT.notifyCountStarted.replace('{scope}',$('countScope').value))}
@@ -1212,5 +1232,116 @@ showView(location.hash.slice(1)||'inventory');
   // existing action handler that calls refresh() after its own local mutation), so no separate
   // hydrate call is needed here - refresh() alone covers it.
   window.addEventListener('workshop:data',()=>refresh());
+
+  // ── On the database ─────────────────────────────────────────────────────────────────────────
+  //
+  // Wired the same way as the jobcard screen: the WorkshopData methods this page writes the store
+  // through are replaced with versions that send the same intent to the server, so the page's own
+  // logic runs unchanged and every write site is covered at once.
+  //
+  // What is wired is the store itself — an item, steel arriving, steel leaving, a count. What is not
+  // is the item groups, the warehouse locations, the offcut rack and the documents: those have tables
+  // but no workflows, so they refuse out loud. The groups and locations being unavailable is why an
+  // item's group is read-only here for now: the dropdowns are filled from collections the server does
+  // not serve, and StockRecord sends the ids that came in rather than the names on screen.
+  (function(){
+    const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+    const words=k=>(currentT&&currentT[k])||(T&&T.en&&T.en[k])||k;
+    let sending=Promise.resolve();
+
+    const byCode=code=>(WorkshopData.get().inventory||[])
+      .find(x=>String(x.code).toUpperCase()===String(code||'').toUpperCase())||null;
+
+    async function reload(){
+      const answer=await WorkshopApi.snapshot();
+      if(answer.signedOut){location.href='login.html';return false;}
+      if(answer.failed){notify(answer.failed);return false;}
+      WorkshopData.adoptSnapshot(answer.data);
+      refresh();
+      return true;
+    }
+
+    function queue(name,args){
+      sending=sending.then(async ()=>{
+        const body=(typeof args==='function')?args():args;
+        const answer=await WorkshopApi.call(name,body);
+        if(answer.signedOut){location.href='login.html';return;}
+        if(!answer.ok){await reload();notify(answer.refused);return;}
+        await reload();
+      }).catch(e=>notify(String(e&&e.message||e)));
+    }
+
+    const SENT={
+      createInventoryItem(payload){
+        queue('save_stock_item',StockRecord.toServer(payload));
+        // The page reads itemNo and description off the answer to show what it made. There is nothing
+        // to read yet, so it is given back what it typed rather than an id the database has not issued.
+        return {pending:true,code:payload.code,itemNo:payload.code,description:payload.description};
+      },
+      updateInventoryItem(code,payload){
+        const item=byCode(code)||byCode(payload&&payload.code);
+        if(!item)return {error:words('srv_gone')};
+        queue('save_stock_item',StockRecord.toServer(
+          Object.assign({},StockRecord.fromServer(item),payload,{id:item.id})));
+        return {pending:true,itemNo:item.code,description:(payload&&payload.description)||item.description};
+      },
+      // Steel arriving. The name on the movement is the session's, so nothing here passes one.
+      receive(entry){
+        const item=byCode(entry&&entry.code);
+        if(!item)return {error:words('srv_gone')};
+        queue('receive_stock',{item_id:Number(item.id),quantity:Number(entry.qty),
+          unit_price:entry.lastPrice===''||entry.lastPrice===undefined?null:Number(entry.lastPrice),
+          supplier:entry.supplier||null,delivery_note:entry.deliveryNote||null,
+          heat_no:entry.heat||null,material_cert_ref:entry.certificate||null,
+          bin_code:entry.location||null,note:entry.note||null});
+        return {pending:true,item:StockRecord.fromServer(item)};
+      },
+      issue(entry){
+        const item=byCode(entry&&entry.code);
+        if(!item)return {error:words('srv_gone')};
+        const jobs=WorkshopData.get().jobcards||[];
+        const job=jobs.find(j=>j.no===entry.jobcard)||
+          jobs.find(j=>j.projectNo===entry.projectNo)||null;
+        if(!job)return {error:words('srv_no_job')};
+        queue('issue_material_offline',{item_id:Number(item.id),quantity:Number(entry.qty),
+          jobcard_id:Number(job.id),note:entry.destination||null,
+          // The id the tablet generates so a flush that arrives twice books once. Generated here for
+          // the same reason: a storeman pressing the button twice on a slow connection is the same
+          // problem as a queue replaying.
+          event_id:'store-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)});
+        // The page multiplies the quantity by the item's average cost to show what left the shelf.
+        return {pending:true,item:StockRecord.fromServer(item),project:{no:job.projectNo||job.no}};
+      },
+      recordCount(entry){
+        const item=byCode(entry&&entry.code);
+        if(!item)return {error:words('srv_gone')};
+        queue('record_stocktake',{item_id:Number(item.id),counted:Number(entry.counted),
+          note:entry.scope?('scope: '+entry.scope):null});
+        return {pending:true,item:StockRecord.fromServer(item)};
+      }
+    };
+
+    const NOT_BUILT=['deleteInventoryItem','upsertItemGroup','deleteItemGroup','setItemGroup',
+      'upsertSubgroup','deleteSubgroup','upsertLocationGroup','deleteLocationGroup',
+      'upsertSublocation','deleteSublocation','addOffcut','upsertDocument','linkBarcode'];
+
+    const original={};
+    Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+      if(typeof WorkshopData[name]!=='function')return;
+      original[name]=WorkshopData[name].bind(WorkshopData);
+      WorkshopData[name]=function(){
+        if(!onServer())return original[name].apply(null,arguments);
+        if(SENT[name])return SENT[name].apply(null,arguments);
+        return {error:words('srv_not_built')};
+      };
+    });
+
+    (async function(){
+      if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+      if(!(await reload()))return;
+      const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+      if(out)out.addEventListener('click',async function(e){e.preventDefault();await WorkshopApi.signOut();location.href='login.html';});
+    })();
+  })();
 })();
 </script></body></html>

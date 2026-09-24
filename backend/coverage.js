@@ -70,6 +70,17 @@ const SAME_THING = {
   group: 'group_id', subgroup: 'subgroup_id',
   locationGroup: 'location_id', locationSub: 'sublocation_id',
   reorderQty: 'reorder_quantity', heat: 'heat_no',
+  // The bin, as opposed to the warehouse and the rack above it.
+  location: 'bin_code',
+  // The movement log. Every one of these is a rename rather than a gap: the store screen asks when,
+  // what happened, who did it and where it went; the table says moved_at, kind, moved_by, moved_from
+  // and moved_to. The one that is genuinely a lookup is the item's code, which lives on stock_item.
+  time: 'moved_at', action: 'kind', user: 'moved_by', from: 'moved_from', to: 'moved_to',
+  // The material certificate. The store screen holds a filename ('MTC_H240516-S534.pdf') and the
+  // column holds a reference — which is what a filename is, to whoever has to find the certificate.
+  // Left unmapped at first on the grounds that the file belongs in the document table, which is true
+  // and is also a reason to store nothing today rather than the reference the workshop actually uses.
+  certificate: 'material_cert_ref',
 
   // Two words that mean different columns depending on which record they are on, which a flat map
   // cannot say: a customer's `type` is direct/reseller/oem/public, a document's is
@@ -80,11 +91,6 @@ const SAME_THING = {
 };
 
 // Deliberately NOT mapped, having looked at what they hold:
-//   inventory.certificate  — 'MTC_H240516-S534.pdf', a file, not a reference. material_cert_ref is
-//                            a reference; the file belongs in the document table and a store with
-//                            somewhere to put it. Calling it stored would hide that.
-//   inventory.location     — 'A1-01-02', a bin address, and a different thing from locationGroup
-//                            ('warehouse') and locationSub ('wh1-shelves'). No column holds it.
 //   estimations.plannedHours — a sum of the labour lines rather than a field. Left as a gap because
 //                            deciding it is derived needs the page's use of it read, not assumed.
 
@@ -96,7 +102,10 @@ const A_JOIN = new Set([
   // A project does not hold the estimate it came from — the estimate holds project_id, set by
   // accept_estimate. Reading it the other way round is a lookup, and a second copy of the link is
   // a second thing that can be wrong.
-  'estimationId'
+  'estimationId',
+  // A movement names its item by code, which is a column on stock_item. A copy of it on the movement
+  // is a copy that can disagree with the item it points at.
+  'code'
 ]);
 
 // Fields holding a list. These want a child table, not a column, for the reason every other list in
@@ -235,7 +244,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 235, needsColumn: 70 };
+  const BASELINE = { stored: 242, needsColumn: 62 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

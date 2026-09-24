@@ -351,9 +351,9 @@ cannot touch anything else.
    in backed mode that still called a mutator would put the record somewhere the server never sees and
    the next reload wipes, which is the worst outcome available because it looks like it worked.
 
-   It is opt-in per page. Five opt in — the phone hours screen, `admin.html`, Customers, Jobcards and
-   the **project half** of Project / Estimator. Nothing changes for the rest, which still run on browser
-   storage exactly as before.
+   It is opt-in per page. Six opt in — the phone hours screen, `admin.html`, Customers, Jobcards, Store,
+   and the **project half** of Project / Estimator. Nothing changes for the rest, which still run on
+   browser storage exactly as before.
 
    **`admin.html` is the second, and it was not a choice of convenience.** Until it existed, giving
    anybody access to this system meant opening psql — which is not a workshop using software, it is
@@ -491,6 +491,29 @@ cannot touch anything else.
    both would mean every query had to know the aliases. So `save_project` translates on the way in,
    exactly as `schema.sql` said it would, and the test asserts that both words arrive as one.
 
+      **The store, which completes the chain a workshop needs to start.** With Customers, Projects,
+   Jobcards, hours and now the store all on the database, a workshop can record a customer, put work on
+   the board, book the hours against it and take the steel off the shelf for it — without a database
+   console at any point. `issue_material_offline` had existed since step 4, so material could already
+   leave the shelf; what was missing was any way to put an item on it. So a workshop could issue
+   material it had no way of telling the system it had.
+
+   Three workflows, and one of them holds a number worth protecting. `receive_stock` recomputes the
+   average cost **weighted by what is already on the shelf** — fifty kilos at 14.00 plus fifty at 16.00
+   is a hundred at 15.00, not a hundred at 16.00 — which is the difference between a store that can cost
+   a job and one that can only say what the last load cost. A delivery note with no price on it leaves
+   the average where it was rather than dragging it to zero. Both have mutations.
+
+   `record_stocktake` writes **nothing** when the count matches, because a movement of nothing is noise
+   in the one place a storeman goes to find out why a figure changed. And `save_stock_item` takes no
+   stock figure at all: steel arrives through a receipt, leaves through an issue and is corrected
+   through a count, each of which writes the movement that explains it. A figure typed into that column
+   is a shelf that disagrees with the record of why.
+
+   The snapshot also gained the **movement log**, which it had never carried — so the one panel in the
+   app whose job is explaining why a figure changed was empty. The last two hundred, newest first,
+   because a workshop's log grows without limit and every screen pays for the snapshot.
+
       Writing the screen also found two refusals that never reached anybody, both of which had passed
    two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`
    replaces the text of every 42501 with "that is not yours to do" — because Postgres writes its own
@@ -552,7 +575,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 149 mutations across the four SQL files and the backup script.
+breaking. 154 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

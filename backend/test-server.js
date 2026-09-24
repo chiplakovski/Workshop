@@ -93,10 +93,10 @@ function theServerDecidesNothing() {
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'add_person', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
-    'convert_lead', 'issue_material_offline', 'receive_goods', 'record_operation',
-    'save_customer', 'save_jobcard', 'save_project', 'send_estimate', 'set_customer_contacts',
-    'set_jobcard_operations', 'set_person_active', 'set_person_password', 'set_person_pin',
-    'set_person_role'
+    'convert_lead', 'issue_material_offline', 'receive_goods', 'receive_stock',
+    'record_operation', 'record_stocktake', 'save_customer', 'save_jobcard', 'save_project',
+    'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
+    'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 
@@ -622,6 +622,7 @@ async function workReachesTheFloorOverHttp(tokens, f) {
   assert.equal(sql(`SELECT count(*) FROM hours_entry WHERE operation_id = ${weldOut};`), '1',
     'the hours are still there and still know which step they were booked on');
   step('Work over HTTP: a step somebody has worked on cannot be taken off the plan, and the refusal says why');
+
 }
 
 // The one call that works without a token, and the one whose refusal is not about who is asking.
@@ -649,6 +650,27 @@ async function theFirstRunRefusalSaysWhatIsActuallyWrong() {
   assert.ok(!/app_user|permission denied for/.test(JSON.stringify(byAWelder.body)),
     'a privilege refusal must not name a table');
   step('First run: and a refusal that IS about who is asking still names nothing inside the database');
+}
+
+
+// The store's movement log, which is the whole reason its figures can be trusted: every change to a
+// shelf has a line saying who moved what, when and where to. The store screen has a panel for it and it
+// was empty, because the snapshot did not carry them — so the one screen whose job is explaining a
+// figure could not. Asked late, because it needs something to have moved first.
+async function theMovementLogReachesTheScreen(tokens) {
+  const withMovements = await call('GET', '/read/snapshot', { token: tokens.office });
+  assert.equal(withMovements.status, 200);
+  attempts.allowed += 1;
+  assert.ok(Array.isArray(withMovements.body.movements), 'the snapshot has to carry the movements');
+  // The receipt this suite booked earlier, through receive_goods against a purchase-order line. An
+  // issue would do as well; what matters is that a movement carries the item's code, the person and
+  // the time, because those are the three things a storeman asks of the panel.
+  const moved = withMovements.body.movements.find((m) => m.action === 'receipt');
+  assert.ok(moved, `a movement should be in the log: ${JSON.stringify(withMovements.body.movements)}`);
+  assert.equal(moved.code, 'S355-10', 'named by the item\'s own code, looked up rather than copied');
+  assert.ok(moved.user, 'and by whoever moved it');
+  assert.ok(moved.time, 'and when');
+  step('Store over HTTP: the movement log is in the snapshot, so a screen can say why a figure changed');
 }
 
 // ── The run ───────────────────────────────────────────────────────────────────────────────
@@ -734,6 +756,7 @@ async function main() {
     await theWorkflowsRunOverHttp(tokens, f);
     await replayOverHttpIsHarmless(tokens, f);
     await aRefusalFromTheDatabaseReachesThePerson(tokens, f);
+    await theMovementLogReachesTheScreen(tokens);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
     console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, over real HTTP.`);
   } finally {

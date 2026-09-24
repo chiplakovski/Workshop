@@ -606,6 +606,11 @@ CREATE TABLE stock_item (
   grade       text,
   dimensions  text,
   material_cert_ref text,
+  -- The bin the steel is actually in — 'A1-01-02'. A different thing from location_id (the warehouse)
+  -- and sublocation_id (the rack): those say which building and which shelf unit, this says which
+  -- pigeonhole, and the store screen has always shown all three. It had no column, so the one the
+  -- storeman reads off the label was the one that could not be stored.
+  bin_code    text,
   status      text NOT NULL DEFAULT 'active' CHECK (status IN ('active','obsolete','blocked')),
   -- Buying. reorder_quantity is how much to order when it drops below min_stock, which is not the
   -- same number and was being conflated.

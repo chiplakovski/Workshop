@@ -638,6 +638,233 @@ REVOKE ALL ON FUNCTION already_done(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION require_session(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_result(text, text) FROM PUBLIC;
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The store
+--
+-- Material could leave the shelf before these — issue_material_offline is what the shop tablet calls —
+-- but nothing could put an item on the shelf in the first place, or record steel arriving. So a
+-- workshop could issue material it had no way of telling the system it had.
+--
+-- receive_stock is not receive_goods. That one takes a purchase-order line and derives the order's
+-- status from what has arrived against it. This one is the storeman entering steel from a delivery note
+-- with no order behind it, which is how a small workshop buys most of what it uses.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_stock_item(
+  p_id bigint,
+  p_code text,
+  p_description text,
+  p_unit text,
+  p_group_id bigint DEFAULT NULL,
+  p_subgroup_id bigint DEFAULT NULL,
+  p_location_id bigint DEFAULT NULL,
+  p_sublocation_id bigint DEFAULT NULL,
+  p_bin_code text DEFAULT NULL,
+  p_category text DEFAULT NULL,
+  p_grade text DEFAULT NULL,
+  p_dimensions text DEFAULT NULL,
+  p_base_unit text DEFAULT NULL,
+  p_size_per_unit numeric DEFAULT NULL,
+  p_weight_per_base numeric DEFAULT NULL,
+  p_unit_weight numeric DEFAULT NULL,
+  p_min_stock numeric DEFAULT 0,
+  p_reorder_quantity numeric DEFAULT NULL,
+  p_heat_no text DEFAULT NULL,
+  p_material_cert_ref text DEFAULT NULL,
+  p_avg_cost numeric DEFAULT NULL,
+  p_last_price numeric DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  saved bigint;
+  existing text;
+  who text;
+BEGIN
+  PERFORM require_session('saving a store item');
+  who := current_app_name();
+  p_min_stock := coalesce(p_min_stock, 0);
+
+  IF coalesce(btrim(p_code), '') = '' THEN
+    RAISE EXCEPTION 'a store item needs a code — it is what the label says';
+  END IF;
+  IF coalesce(btrim(p_description), '') = '' THEN
+    RAISE EXCEPTION 'a store item needs a description';
+  END IF;
+  IF coalesce(btrim(p_unit), '') = '' THEN
+    RAISE EXCEPTION 'a store item needs a unit — a number with no unit is not a quantity';
+  END IF;
+
+  -- Two rows with one code is two items to the system and one item to whoever is holding the label.
+  SELECT description INTO existing FROM stock_item
+   WHERE upper(btrim(code)) = upper(btrim(p_code)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already an item coded % — it is %', upper(btrim(p_code)), existing;
+  END IF;
+
+  -- `stock` is not a parameter, and that is the whole point of the store. A figure typed straight into
+  -- the stock column is a figure with no movement behind it, and the shelf then disagrees with the
+  -- record of why. Steel arrives through receive_stock, leaves through issue_material, and is corrected
+  -- through record_stocktake — each of which writes the movement that explains itself.
+  IF p_id IS NULL THEN
+    INSERT INTO stock_item (code, description, unit, group_id, subgroup_id, location_id,
+                            sublocation_id, bin_code, category, grade, dimensions, base_unit,
+                            size_per_unit, weight_per_base, unit_weight, min_stock, reorder_quantity,
+                            heat_no, material_cert_ref, avg_cost, last_price)
+    VALUES (upper(btrim(p_code)), btrim(p_description), btrim(p_unit), p_group_id, p_subgroup_id,
+            p_location_id, p_sublocation_id, p_bin_code, p_category, p_grade, p_dimensions,
+            p_base_unit, p_size_per_unit, p_weight_per_base, p_unit_weight, p_min_stock,
+            p_reorder_quantity, p_heat_no, p_material_cert_ref, p_avg_cost, p_last_price)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('stock_item', saved, 'created', who, upper(btrim(p_code)) || ' ' || btrim(p_description));
+  ELSE
+    UPDATE stock_item SET
+      code = upper(btrim(p_code)), description = btrim(p_description), unit = btrim(p_unit),
+      group_id = p_group_id, subgroup_id = p_subgroup_id, location_id = p_location_id,
+      sublocation_id = p_sublocation_id, bin_code = p_bin_code, category = p_category,
+      grade = p_grade, dimensions = p_dimensions, base_unit = p_base_unit,
+      size_per_unit = p_size_per_unit, weight_per_base = p_weight_per_base,
+      unit_weight = p_unit_weight, min_stock = p_min_stock, reorder_quantity = p_reorder_quantity,
+      heat_no = p_heat_no, material_cert_ref = p_material_cert_ref,
+      avg_cost = p_avg_cost, last_price = p_last_price
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such store item, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('stock_item', saved, 'updated', who, upper(btrim(p_code)));
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- Steel arriving, from a delivery note rather than against an order.
+--
+-- The average cost is recomputed rather than overwritten, which is the difference between a store that
+-- can cost a job and one that can only tell you what the last load cost. Weighted by what was on the
+-- shelf and what arrived: fifty kilos at 14.00 plus fifty at 16.00 is a hundred at 15.00, not a hundred
+-- at 16.00.
+CREATE FUNCTION receive_stock(
+  p_item_id bigint,
+  p_quantity numeric,
+  p_unit_price numeric DEFAULT NULL,
+  p_supplier text DEFAULT NULL,
+  p_delivery_note text DEFAULT NULL,
+  p_heat_no text DEFAULT NULL,
+  p_material_cert_ref text DEFAULT NULL,
+  p_bin_code text DEFAULT NULL,
+  p_note text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  item stock_item%ROWTYPE;
+  movement_id bigint;
+  who text;
+BEGIN
+  -- The session, read here rather than through require_session(), because this function is owned by
+  -- varmak_engine and that role holds no EXECUTE on the helper the three app roles do. Same shape as
+  -- issue_material, which is the other engine-owned door onto the store.
+  SELECT display_name INTO who FROM app_user WHERE id = current_app_user() AND is_active;
+  IF who IS NULL THEN
+    RAISE EXCEPTION 'sign in before entering stock' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_quantity IS NULL OR p_quantity <= 0 THEN
+    RAISE EXCEPTION 'a receipt must be for more than nothing';
+  END IF;
+  -- Locked for the same reason issue_stock locks: two deliveries of the same item entered at the same
+  -- moment must not each recompute the average cost from the figure the other started with.
+  SELECT * INTO item FROM stock_item WHERE id = p_item_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'no such store item' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  UPDATE stock_item SET
+    stock = stock + p_quantity,
+    -- Weighted average, and only when a price came with the delivery. A receipt with no price on it
+    -- must not drag the average to zero.
+    avg_cost = CASE
+      WHEN p_unit_price IS NULL THEN item.avg_cost
+      WHEN coalesce(item.avg_cost, 0) = 0 OR item.stock <= 0 THEN p_unit_price
+      ELSE round(((item.stock * item.avg_cost) + (p_quantity * p_unit_price))
+                 / (item.stock + p_quantity), 2)
+    END,
+    last_price = coalesce(p_unit_price, item.last_price),
+    heat_no = coalesce(nullif(btrim(coalesce(p_heat_no, '')), ''), item.heat_no),
+    material_cert_ref = coalesce(nullif(btrim(coalesce(p_material_cert_ref, '')), ''),
+                                 item.material_cert_ref),
+    bin_code = coalesce(nullif(btrim(coalesce(p_bin_code, '')), ''), item.bin_code)
+   WHERE id = p_item_id;
+
+  -- The name on the movement is the session's, never the caller's. Same rule as issuing: a record of
+  -- who put the steel on the shelf that anybody could sign is not a record.
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, moved_from, moved_to, unit, note)
+  VALUES (p_item_id, 'receipt', p_quantity, who,
+          nullif(btrim(coalesce(p_supplier, '')), ''),
+          coalesce(nullif(btrim(coalesce(p_bin_code, '')), ''), item.bin_code),
+          item.unit,
+          nullif(btrim(concat_ws(' · ', nullif(btrim(coalesce(p_delivery_note, '')), ''),
+                                 nullif(btrim(coalesce(p_note, '')), ''))), ''))
+  RETURNING id INTO movement_id;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('stock_item', p_item_id, 'received', who,
+          trim_scale(p_quantity) || ' ' || item.unit || ' of ' || item.code);
+  RETURN movement_id;
+END;
+$$;
+
+-- A stocktake. The counted figure becomes the stock, and the difference becomes a movement that says
+-- so — because a shelf corrected without a record is a shelf nobody can reconcile afterwards.
+CREATE FUNCTION record_stocktake(p_item_id bigint, p_counted numeric, p_note text DEFAULT NULL)
+RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  item stock_item%ROWTYPE;
+  movement_id bigint;
+  difference numeric;
+  who text;
+BEGIN
+  SELECT display_name INTO who FROM app_user WHERE id = current_app_user() AND is_active;
+  IF who IS NULL THEN
+    RAISE EXCEPTION 'sign in before recording a count' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_counted IS NULL OR p_counted < 0 THEN
+    RAISE EXCEPTION 'a count cannot be less than nothing';
+  END IF;
+  SELECT * INTO item FROM stock_item WHERE id = p_item_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'no such store item' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  difference := p_counted - item.stock;
+  IF difference = 0 THEN
+    -- Counted and found right. Nothing to correct, and a movement of nothing would be noise in the
+    -- one place a storeman goes to find out why a figure changed.
+    RETURN NULL;
+  END IF;
+
+  UPDATE stock_item SET stock = p_counted WHERE id = p_item_id;
+
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, unit, note)
+  VALUES (p_item_id, 'adjustment', abs(difference), who, item.unit,
+          concat_ws(' · ', 'counted ' || trim_scale(p_counted) || ', was ' || trim_scale(item.stock),
+                    nullif(btrim(coalesce(p_note, '')), '')))
+  RETURNING id INTO movement_id;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('stock_item', p_item_id, 'counted', who,
+          item.code || ': ' || trim_scale(item.stock) || ' → ' || trim_scale(p_counted));
+  RETURN movement_id;
+END;
+$$;
+
+-- Owned by the engine for the same reason issue_material is: they write a stock movement, and the name
+-- on it has to be the session's rather than anything the caller could pass. SECURITY DEFINER is what
+-- lets them insert the movement while the caller's own role holds no INSERT on that table directly.
+ALTER FUNCTION receive_stock(bigint, numeric, numeric, text, text, text, text, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION record_stocktake(bigint, numeric, text) OWNER TO varmak_engine;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Work: the project, the jobcards on it, and the steps on those
 --
 -- Nothing could get onto the shop floor before these. accept_estimate makes a project out of a
@@ -1117,6 +1344,10 @@ REVOKE ALL ON FUNCTION save_project(bigint, text, bigint, text, numeric, int, da
 REVOKE ALL ON FUNCTION save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
                 text, text, text, text, text, text, text, text, int, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_jobcard_operations(bigint, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_stock_item(bigint, text, text, text, bigint, bigint, bigint, bigint, text, text, text,
+                  text, text, numeric, numeric, numeric, numeric, numeric, text, text, numeric, numeric) FROM PUBLIC;
+REVOKE ALL ON FUNCTION receive_stock(bigint, numeric, numeric, text, text, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_stocktake(bigint, numeric, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_customer_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION send_estimate(bigint, int) FROM PUBLIC;
 REVOKE ALL ON FUNCTION accept_estimate(bigint) FROM PUBLIC;
@@ -1138,7 +1369,11 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
                 text, text, text, date, date, date, date, text, text, date, text, numeric),
   save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
                 text, text, text, text, text, text, text, text, int, boolean),
-  set_jobcard_operations(bigint, jsonb)
+  set_jobcard_operations(bigint, jsonb),
+  save_stock_item(bigint, text, text, text, bigint, bigint, bigint, bigint, text, text, text,
+                  text, text, numeric, numeric, numeric, numeric, numeric, text, text, numeric, numeric),
+  receive_stock(bigint, numeric, numeric, text, text, text, text, text, text),
+  record_stocktake(bigint, numeric, text)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
