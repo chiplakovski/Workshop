@@ -666,6 +666,23 @@ function workReachesTheFloor() {
     'Waiting for the customer to approve the drawings');
   step('Work: the status rulebook and the hold-needs-a-reason rule still hold through the workflow');
 
+  // The frontend's two names for one state. schema.sql fixed the canonical spelling and said the API
+  // translates on the way in; without that, every screen that says 'active' would be refused and the
+  // one that says 'production' would not, for the same project in the same state.
+  const aliased = ok('a project started as "draft", which is the retired name for quotation',
+    'varmak_office', office, `SELECT save_project(NULL, 'Aliased frame', ${customer}, 'draft');`);
+  assert.equal(value(`SELECT status::text FROM project WHERE id = ${aliased};`), 'quotation');
+  ok('the same project moved to "active", which is what the estimating screen calls production',
+    'varmak_office', office,
+    `SELECT save_project(${aliased}, 'Aliased frame', ${customer}, 'approved');`);
+  ok('and on to planned', 'varmak_office', office,
+    `SELECT save_project(${aliased}, 'Aliased frame', ${customer}, 'planned');`);
+  ok('and to active', 'varmak_office', office,
+    `SELECT save_project(${aliased}, 'Aliased frame', ${customer}, 'active');`);
+  assert.equal(value(`SELECT status::text FROM project WHERE id = ${aliased};`), 'production',
+    'one spelling in the database, whichever of the frontend\'s two words arrived');
+  step('Work: the frontend\'s two names for one state are translated on the way in, not stored');
+
   // used_hours is maintained by the hours entries and is not a parameter. A screen that could set it
   // could make a project claim work nobody did, and the roll-up would then disagree with the hours.
   const args = value(`SELECT count(*) FROM information_schema.parameters

@@ -351,8 +351,9 @@ cannot touch anything else.
    in backed mode that still called a mutator would put the record somewhere the server never sees and
    the next reload wipes, which is the worst outcome available because it looks like it worked.
 
-   It is opt-in per page. Four pages opt in — the phone hours screen, `admin.html`, Customers and
-   Jobcards. Nothing changes for the rest, which still run on browser storage exactly as before.
+   It is opt-in per page. Five opt in — the phone hours screen, `admin.html`, Customers, Jobcards and
+   the **project half** of Project / Estimator. Nothing changes for the rest, which still run on browser
+   storage exactly as before.
 
    **`admin.html` is the second, and it was not a choice of convenience.** Until it existed, giving
    anybody access to this system meant opening psql — which is not a workshop using software, it is
@@ -460,6 +461,35 @@ cannot touch anything else.
    story. Both now hold the screen's words, by the rule from `material_readiness`: one spelling per
    state, and when the two disagree the screen wins, because those are the words somebody picks from a
    dropdown.
+
+      **Projects, which was the hole that actually blocked using this for real.** `save_project` existed
+   and no wired screen called it — so a workshop could record a customer and then get no further,
+   because nothing on a screen could create the project that the jobcards and the hours hang off. The
+   project half of Project / Estimator is now wired: it makes the project, and the items typed on the
+   form become jobcards on it, each taking its customer from the project rather than from the form.
+
+   **Half of that screen is wired and half of it refuses, on purpose.** An estimate there carries work
+   items in nested groups, options, terms, exclusions, an overhead and a contingency percentage, a
+   discount, a revision history with snapshots, and a priced bill of materials. The `estimate` table
+   holds a title, a customer, a status, a currency, a margin, a total and a validity date. That gap is
+   real work on the schema rather than a mapping, so the estimating writes say so and write nothing —
+   and the end-to-end test asserts that the project half keeps working after the estimating half has
+   refused, because a half-wired screen has to prove that one half going quiet does not take the other
+   down with it.
+
+   One thing about creating a project with items on it is worth keeping. The page's own flow is: save
+   the project, read the id off the answer, then create one jobcard per item against it. With a server
+   there is no id to read yet. So the jobcard calls pass **a function instead of arguments**, and it
+   runs when its turn in the queue comes — by which time the project has been saved and its id is
+   known. The alternatives were inventing an id or making the page wait, and both are worse.
+
+   And a decision that goes the opposite way from the jobcard priority. The frontend has **two** names
+   for one project state — `active` in the estimating screen's vocabulary and `production` from the
+   estimate-conversion path, aliased to each other in `project-rules.js` — plus `draft` as a retired
+   alias of `quotation`. Where the screen had one word and the schema had invented another, the screen
+   won. Here the screen cannot be followed, because it disagrees with itself: a database that accepted
+   both would mean every query had to know the aliases. So `save_project` translates on the way in,
+   exactly as `schema.sql` said it would, and the test asserts that both words arrive as one.
 
       Writing the screen also found two refusals that never reached anybody, both of which had passed
    two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`

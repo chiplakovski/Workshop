@@ -98,6 +98,10 @@ LANGUAGE sql STABLE AS $$
         'actualCompletion', p.actual_completion, 'closedDate', p.closed_on,
         'responsible', p.responsible, 'materialStatus', p.material_status,
         'poNumber', p.po_number, 'workshop', p.workshop, 'description', p.description,
+        -- The kinds of work on the project. The estimating screen holds them as a list and writes them
+        -- as one field; it was missing from here entirely, so a project made on that screen came back
+        -- without the one thing that said whether it was fabrication or service.
+        'workTypes', p.work_types,
         'holdReason', p.hold_reason, 'holdComment', p.hold_comment,
         'expectedResume', p.expected_resume, 'cancelReason', p.cancel_reason,
         'notes', p.notes

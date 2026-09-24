@@ -585,7 +585,11 @@
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="project-record.js"></script><script src="jobcard-record.js"></script>
+<!-- The project half of this screen reads and writes the database, so the guard lets it through. The
+     estimating half has no workflow yet and says so rather than saving nowhere. -->
+<script>window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-guard.js"></script>
 <script src="project-rules.js"></script>
 <script src="estimation-rules.js"></script>
 <script src="estimate-memory.js"></script>
@@ -652,7 +656,11 @@ function hydrateSharedCustomers(){
       Object.keys(CUSTOMERS).find(id=>sc.org&&sc.org!=='—'&&CUSTOMERS[id].org===sc.org)||
       Object.keys(CUSTOMERS).find(id=>CUSTOMERS[id].name===sc.name)||String(++nextLocalId);
     const current=CUSTOMERS[key]||{},primary=(sc.contacts||[]).find(c=>c.primary)||(sc.contacts||[])[0];
-    CUSTOMERS[key]={...current,sharedId:sc.id,name:sc.name,city:sc.city||'—',address:(sc.billing||[]).join(', ')||current.address||'—',
+    // The billing address is a list of lines on a browser-storage record and one block of text on the
+    // server's. Read through both: `.join` on a string is not a function, and this page runs against
+    // either world.
+    const billing=Array.isArray(sc.billing)?sc.billing:String(sc.billing||'').split(/\r?\n/).filter(Boolean);
+    CUSTOMERS[key]={...current,sharedId:sc.id,name:sc.name,city:sc.city||'—',address:billing.join(', ')||current.address||'—',
       contact:primary?primary.name:'—',email:sc.email||'—',phone:sc.phone||'—',org:sc.org||'—',status:sc.status||'active'};
   });
 }
@@ -670,8 +678,11 @@ function hydrateProjects(){
   PROJECTS={};
   if(!window.WorkshopData||!WorkshopData.getProjects)return;
   WorkshopData.getProjects().filter(p=>!p.archived).forEach(p=>{
-    PROJECTS[p.no]={no:p.no,name:p.name,type:(p.types&&p.types[0])||'—',status:p.status,
-      customerId:p.customerId,customer:p.customer,quotedValue:Number(p.quotedValue)||0};
+    PROJECTS[p.no]={id:p.id,no:p.no,name:p.name,
+      // The kinds of work: a list on the browser-storage record, one field on the server's. Read
+      // through both, because this screen runs against either.
+      type:(p.types&&p.types[0])||(p.workTypes?String(p.workTypes).split(',')[0].trim():'')||'—',
+      status:p.status,customerId:p.customerId,customer:p.customer,quotedValue:Number(p.quotedValue)||0};
   });
 }
 // The items a project actually contains, in the project's own order. This is the list an estimate
@@ -870,6 +881,9 @@ bias_all_locked:"Every item with a duration is locked, so there is nothing to sc
     ne_blank:"Blank estimate",ne_tpl_fab:"Standard fabrication template",ne_tpl_repair:"Repair / service template",ne_tpl_install:"Installation template",
     ne_template_note:"Template starting values are for demonstration only and must be reviewed before this estimation is sent.",
     act_archive:"Archive",
+    srv_refused:"The database refused this:",
+    srv_no_project:"That project is not on the server yet, so there is nothing to hang this item on.",
+    srv_not_built:"Estimating does not exist on the server yet, so nothing is being saved. Projects and their items do — an estimate carries work items, options, terms, a revision history and a priced bill of materials, and the database has columns for none of that yet. Nothing was written.",
     locale:"en-GB"},
   sv:{from_store:'Från lager',store_none:'— inte från lager —',store_available:'{n} {unit} tillgängligt',a_approve:"Markera godkänd",a_plan:"Planera projekt",a_start:"Starta arbetet",pipe_label:"Arbetsflöde",pipe_current:"Nuvarande steg",pipe_next:"Klicka för att gå vidare",pipe_done:"Passerat",pipe_off:"Utanför offertkedjan — projektet är {s}.",approve_title:"Markera godkänd",approve_body:"Kunden har accepterat offerten. Offertvärdet låses som avtalat pris.",approve_po:"Kundens inköpsorder / referens (valfritt)",approve_date:"Godkännandedatum",approve_save:"Markera godkänd",plan_title:"Planera projekt",plan_body:"Godkänt arbete går in i planeringen. Båda datumen krävs för att projektet ska visas rätt i Planering.",plan_start:"Planerad start",plan_deadline:"Deadline",plan_save:"Planera",plan_err_dates:"Både planerad start och deadline krävs.",plan_err_order:"Deadline kan inte ligga före planerad start.",start_title:"Starta arbetet",start_body:"Markerar projektet som pågående. Detta sätter verkligt startdatum och projektet börjar samla timmar.",start_date:"Verkligt startdatum",start_save:"Starta arbetet",a_edit:"Redigera",a_createjc:"Skapa jobbkort",a_adddoc:"Lägg till dokument",a_createpo:"Skapa inköp",a_addnote:"Lägg till anteckning",a_more:"Mer",a_duplicate:"Duplicera projekt",a_hold:"Pausa projekt",a_resume:"Återuppta projekt",a_complete:"Slutför projekt",a_close:"Stäng projekt",a_cancel:"Avbryt projekt",a_reopen:"Återöppna projekt",st_quotation:"Offert",st_approved:"Godkänt",st_planned:"Planerat",st_active:"Aktivt",st_hold:"Pausat",st_completed:"Klart",st_closed:"Stängt",st_cancelled:"Avbrutet",hold_title:"Pausa projekt",hold_reason:"Anledning",hold_comment:"Kommentar",hold_expected:"Förväntat återupptagningsdatum (valfritt)",hold_save:"Pausa",resume_title:"Återuppta projekt",resume_tostatus:"Återuppta till status",resume_save:"Återuppta",complete_title:"Slutför projekt",complete_ok:"Alla kontroller godkända. Markera projektet som KLART?",complete_issues_title:"Projektet kan inte slutföras utan granskning",complete_goback:"Gå tillbaka",complete_override:"Chefsöverstyrning",complete_override_reason:"Anledning till överstyrning (krävs)",complete_confirm:"Markera klart",close_title:"Stäng projekt",close_ok:"Alla kontroller godkända. Stäng projektet?",close_issues_title:"Projektet kan inte stängas",close_confirm:"Stäng projekt",cancel_title:"Avbryt projekt",cancel_reason:"Anledning till avbrott",cancel_save:"Avbryt projekt",reopen_title:"Återöppna stängt projekt",reopen_reason:"Anledning (krävs)",reopen_tostatus:"Återöppna till status",reopen_save:"Återöppna",cancel_generic:"Avbryt",close_generic:"Stäng",err_row_changed:"Detta ändrades eller togs bort någon annanstans medan du hade det öppet. Försök igen.",iss_open_jc:"{n} post(er) ej klara",iss_po_undelivered:"{n} inköpsorder ej levererade",iss_report_missing:"Inga rapporter har skapats för detta projekt",iss_jc_not_complete:"{n} post(er) ej KLARA",iss_po_unresolved:"{n} inköpsorder fortfarande olösta",iss_report_unapproved:"{n} rapport(er) ej godkända/signerade",st_hold_material:"Väntar på material",st_hold_customer:"Väntar på kund",st_hold_drawing:"Väntar på ritning",st_hold_approval:"Väntar på godkännande",st_hold_breakdown:"Maskinhaveri",st_hold_external:"Extern försening",st_hold_other:"Annat",role:"Admin",logout:"Logga ut",back_hub:"Nav",etitle:"Kalkyler",esub:"Offerter & kostnad",
     searchph:"Sök projekt, kunder…",ei_record:"Postreferens",newest:"Ny kalkyl",
@@ -959,6 +973,9 @@ bias_all_locked:"Varje post med en tid är låst, så det finns inget att skala.
     ne_blank:"Tomt kalkylunderlag",ne_tpl_fab:"Standardmall för tillverkning",ne_tpl_repair:"Mall för reparation/service",ne_tpl_install:"Mall för installation",
     ne_template_note:"Mallens startvärden är endast för demonstration och måste granskas innan kalkylen skickas.",
     act_archive:"Arkivera",
+    srv_refused:"Databasen nekade detta:",
+    srv_no_project:"Det projektet finns inte på servern än, så det finns inget att hänga den här posten på.",
+    srv_not_built:"Kalkylering finns inte på servern än, så ingenting sparas. Projekt och deras poster gör det — en kalkyl bär arbetsposter, tillval, villkor, en revisionshistorik och en prissatt materiallista, och databasen har kolumner för inget av det än. Ingenting skrevs.",
     locale:"sv-SE"},
   mk:{from_store:'Од магацин',store_none:'— не е од магацин —',store_available:'{n} {unit} достапно',a_approve:"Označi kako odobreno",a_plan:"Planiraj proekt",a_start:"Započni rabota",pipe_label:"Tek na rabota",pipe_current:"Tekovna faza",pipe_next:"Klikni za sledna faza",pipe_done:"Pominato",pipe_off:"Nadvor od ponudbeniot tek — proektot e {s}.",approve_title:"Označi kako odobreno",approve_body:"Klientot ja prifati ponudata. Ponudenata vrednost se zaklučuva kako dogovorena cena.",approve_po:"Nabavna narudžba / referenca na klient (opcionalno)",approve_date:"Datum na odobruvanje",approve_save:"Označi kako odobreno",plan_title:"Planiraj proekt",plan_body:"Odobrenata rabota vleguva vo planot. Dvata datumi se zadolžitelni za proektot da se prikaže pravilno vo Planiranje.",plan_start:"Planiran početok",plan_deadline:"Rok",plan_save:"Planiraj",plan_err_dates:"I planiraniot početok i rokot se zadolžitelni.",plan_err_order:"Rokot ne može da bide pred planiraniot početok.",start_title:"Započni rabota",start_body:"Go označuva proektot kako tekoven. Go postavuva realniot datum na početok i proektot počnuva da sobira časovi.",start_date:"Realen datum na početok",start_save:"Započni rabota",a_edit:"Uredi",a_createjc:"Kreiraj rabotna karta",a_adddoc:"Dodaj dokument",a_createpo:"Kreiraj nabavka",a_addnote:"Dodaj beleška",a_more:"Povekje",a_duplicate:"Dupliciraj proekt",a_hold:"Pauziraj proekt",a_resume:"Prodolži proekt",a_complete:"Završi proekt",a_close:"Zatvori proekt",a_cancel:"Otkaži proekt",a_reopen:"Reotvori proekt",st_quotation:"Ponuda",st_approved:"Odobreno",st_planned:"Planirano",st_active:"Aktivno",st_hold:"Pauzirano",st_completed:"Završeno",st_closed:"Zatvoreno",st_cancelled:"Otkažano",hold_title:"Pauziraj proekt",hold_reason:"Pričina",hold_comment:"Komentar",hold_expected:"Očekuvan datum na prodolžuvanje (opcionalno)",hold_save:"Pauziraj",resume_title:"Prodolži proekt",resume_tostatus:"Prodolži do status",resume_save:"Prodolži",complete_title:"Završi proekt",complete_ok:"Site proverki se pomineti. Označi go proektot kako ZAVRŠEN?",complete_issues_title:"Proektot ne može da se završi bez proverka",complete_goback:"Vrati se",complete_override:"Menadžerska nadmoć",complete_override_reason:"Pričina za nadmoć (zadolžitelno)",complete_confirm:"Označi završeno",close_title:"Zatvori proekt",close_ok:"Site proverki se pomineti. Zatvori go proektot?",close_issues_title:"Proektot ne može da se zatvori",close_confirm:"Zatvori proekt",cancel_title:"Otkaži proekt",cancel_reason:"Pričina za otkažuvanje",cancel_save:"Otkaži proekt",reopen_title:"Reotvori zatvoren proekt",reopen_reason:"Pričina (zadolžitelno)",reopen_tostatus:"Reotvori do status",reopen_save:"Reotvori",cancel_generic:"Otkaži",close_generic:"Zatvori",err_row_changed:"Ova be izmeneto ili otstraneto na drugo mesto dodeka go imavte otvoreno. Probajte povtorno.",iss_open_jc:"{n} stavka/i sè ušte ne se završeni",iss_po_undelivered:"{n} nabavni narudžbi ne se isporačani",iss_report_missing:"Nema kreirano izveštai za ovoj proekt",iss_jc_not_complete:"{n} stavka/i ne se ZAVRŠENI",iss_po_unresolved:"{n} nabavni narudžbi sè ušte nerešeni",iss_report_unapproved:"{n} izveštaj/i ne se odobreni/potpišani",st_hold_material:"Čeka materijal",st_hold_customer:"Čeka klient",st_hold_drawing:"Čeka crtež",st_hold_approval:"Čeka odobruvanje",st_hold_breakdown:"Kvar na mašina",st_hold_external:"Nadvorešno docnenje",st_hold_other:"Drugo",role:"Admin",logout:"Odjavi se",back_hub:"Меni",etitle:"Kalkulacii",esub:"Ponudi i troшoci",
     searchph:"Prebaraj proekti, klienti…",ei_record:"Referenca na zapis",newest:"Nova kalkulacija",
@@ -1048,6 +1065,9 @@ bias_all_locked:"Sekoja stavka so traenje e zaklučena, pa nema što da se skali
     ne_blank:"Prazna kalkulacija",ne_tpl_fab:"Standarden šablon za izработка",ne_tpl_repair:"Šablon za popravka/servis",ne_tpl_install:"Šablon za instalacija",
     ne_template_note:"Početните vrednosti od šablonot se samo za demonstracija i mora da bidat proverени pred da se isprati ovaa kalkulacija.",
     act_archive:"Arhiviraj",
+    srv_refused:"Bazata go odbi ova:",
+    srv_no_project:"Toj proekt seušte go nema na serverot, pa nema na što da se prikači ovaa pozicija.",
+    srv_not_built:"Kalkulaciite seušte ne postojat na serverot, pa ništo ne se zapišuva. Proektite i nivnite pozicii postojat — edna kalkulacija nosi rabotni pozicii, opcii, uslovi, istorija na revizii i cenovna lista na materijali, a bazata seušte nema koloni za ništo od toa. Ništo ne bese zapišano.",
     locale:"mk"}
 };
 
@@ -2795,6 +2815,96 @@ function applyBias(id,factor){
 }
 // Durations are typed in half days, so a scaled one is rounded to the same step and never to zero.
 function scaleDays(days,factor){return Math.max(0.5,Math.round(days*factor*2)/2);}
+
+// ── On the database ───────────────────────────────────────────────────────────────────────────
+//
+// Half of this screen, and the half is the point. This module is "Project / Estimator": it is where
+// projects are made, and until now nothing that reads the database could make one — save_project
+// existed and no wired screen called it, so a workshop could record a customer and then get no
+// further. That half is wired here.
+//
+// The estimating half is not, and cannot be yet. An estimate on this screen carries work items in
+// nested groups, options, terms, exclusions, an overhead and contingency percentage, a discount, a
+// revision history with snapshots, and a priced bill of materials. The estimate table holds a title, a
+// customer, a status, a currency, a margin, a total and a validity date. That gap is real work on the
+// schema, not a mapping, so the estimating writes refuse out loud instead of writing to a browser the
+// next reload wipes — which is what WorkshopData.save() would now throw over anyway.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  const words=k=>(T[LANG]&&T[LANG][k])||T.en[k]||k;
+  let sending=Promise.resolve();
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.failed){wAlert(answer.failed);return false;}
+    WorkshopData.adoptSnapshot(answer.data);
+    hydrateSharedCustomers();hydrateProjects();
+    renderAll();
+    return true;
+  }
+
+  // `args` may be a function, and that is what makes creating a project with items on it possible.
+  // The page's own flow is: save the project, read the id off the answer, then create one jobcard per
+  // item against it. With a server there is no id to read yet — so the jobcard calls pass a function
+  // instead of arguments, and it runs when its turn in the queue comes, by which time the project has
+  // been saved and its id is known. Inventing an id, or making the page wait, were the alternatives.
+  function queue(name,args,got){
+    sending=sending.then(async ()=>{
+      const body=(typeof args==='function')?args():args;
+      const answer=await WorkshopApi.call(name,body);
+      if(answer.signedOut){location.href='login.html';return;}
+      if(!answer.ok){await refresh();wAlert(words('srv_refused')+' '+answer.refused);return;}
+      if(got)got(answer.result);
+      await refresh();
+    }).catch(e=>wAlert(String(e&&e.message||e)));
+  }
+
+  // The last project this screen saved, for exactly the case above.
+  let lastProject=null;
+
+  const SENT={
+    upsertProject(payload){
+      queue('save_project',ProjectRecord.toServer(payload),id=>{lastProject=id;});
+      // No id to hand back — the database has not been asked yet. The refresh puts the project on
+      // screen a moment later, and the items that follow find it through lastProject.
+      return {pending:true};
+    },
+    // The items on a project are jobcards, which is what this screen creates them as. The customer is
+    // not sent: save_jobcard takes it from the project.
+    upsertJobcard(payload){
+      queue('save_jobcard',()=>{
+        const project=PROJECTS[payload.projectNo]||null;
+        const id=payload.projectId||(project&&project.id)||lastProject;
+        if(!id)throw new Error(words('srv_no_project'));
+        return JobcardRecord.toServer(Object.assign({},payload,{projectId:id}));
+      });
+      return {pending:true};
+    }
+  };
+
+  // The estimating half, and the two other collections this screen writes. Each returns the shape the
+  // page already checks, so the refusal shows where the page already shows refusals.
+  const NOT_BUILT=['upsertEstimation','updateEstimation','deleteEstimation','upsertDocument'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:words('srv_not_built')};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){e.preventDefault();await WorkshopApi.signOut();location.href='login.html';});
+  })();
+})();
 
 </script>
 </body></html>

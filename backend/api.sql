@@ -685,6 +685,19 @@ DECLARE
 BEGIN
   PERFORM require_session('saving a project');
   p_status := coalesce(p_status, 'quotation');
+  -- The frontend carries two names for one state — 'active' in the estimating screen's vocabulary and
+  -- 'production' from the estimate-conversion path, aliased to each other in project-rules.js — and
+  -- 'draft' as a retired alias of 'quotation'. schema.sql fixed one canonical spelling and said the API
+  -- would translate on the way in; this is that. It is the opposite decision from the jobcard priority,
+  -- and for a reason: there the screen had one word and the schema had invented another, so the screen
+  -- won. Here the screen has two words for the same state, so it cannot be followed — a database that
+  -- accepted both would mean every query had to know the aliases.
+  p_status := CASE lower(btrim(p_status))
+                WHEN 'active' THEN 'production'
+                WHEN 'in production' THEN 'production'
+                WHEN 'draft' THEN 'quotation'
+                ELSE lower(btrim(p_status))
+              END;
   p_planned_hours := coalesce(p_planned_hours, 0);
   p_progress := coalesce(p_progress, 0);
   who := current_app_name();

@@ -173,7 +173,7 @@ quotation — so a workshop that took an order over the telephone had no way to 
 
 | | |
 |---|---|
-| `save_project` | one project, created or corrected. `used_hours` is **not** a parameter and must never become one: it is a running total the hours entries maintain, and a screen that could set it could make a project claim work nobody did |
+| `save_project` | one project, created or corrected. `used_hours` is **not** a parameter and must never become one: it is a running total the hours entries maintain, and a screen that could set it could make a project claim work nobody did. It also translates the frontend's two names for one state — `active` and `draft` — into the one spelling the enum holds, which is what `schema.sql` said the API would do |
 | `save_jobcard` | one jobcard on a project. There is **no customer parameter** — it is taken from the project, because a jobcard carrying a different customer from its project makes every report disagree with itself and nobody would put the two columns side by side to notice |
 | `set_jobcard_operations` | the steps, matched on the id the snapshot handed out rather than rebuilt. It refuses to take off a step somebody has booked hours on, or has started, and names it |
 
