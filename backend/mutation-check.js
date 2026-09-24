@@ -148,16 +148,17 @@ const MUTATIONS = [
         to: '    SELECT * INTO machine FROM equipment WHERE id = NEW.equipment_id;'
       },
       {
-        from: `    IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
-      RAISE EXCEPTION 'operation % cannot start: % is %',
+        from: `      RAISE EXCEPTION 'operation % cannot start: % is %',
         NEW.description, machine_name, machine_status USING ERRCODE = 'check_violation';
     END IF;
     IF machine_cert IS NOT NULL AND machine_cert < current_date THEN
       RAISE EXCEPTION 'operation % cannot start: the certification for % expired on %',
         NEW.description, machine_name, machine_cert USING ERRCODE = 'check_violation';
     END IF;`,
-        to: `    IF machine.status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
-      RAISE EXCEPTION 'operation % cannot start: % is %',
+        // The three reads, put back as reads of the whole row. The status list itself is left alone and
+        // anchored elsewhere — quoting it here made this mutation go stale the moment the vocabulary
+        // changed, and this edit is about the row, not about which states block.
+        to: `      RAISE EXCEPTION 'operation % cannot start: % is %',
         NEW.description, machine.name, machine.status USING ERRCODE = 'check_violation';
     END IF;
     IF machine.certification_expiry IS NOT NULL AND machine.certification_expiry < current_date THEN
@@ -169,8 +170,9 @@ const MUTATIONS = [
   },
   {
     what: 'the equipment gate stops caring what state the machine is in',
-    from: "IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN",
-    to: "IF machine_status IN ('retired') THEN"
+    from: `IF machine_status IN ('Out of Service', 'Under Maintenance', 'Maintenance Due',
+                          'Inspection Required', 'Quarantined', 'Retired') THEN`,
+    to: "IF machine_status IN ('Retired') THEN"
   },
   {
     what: 'an operation may start before what it depends on is finished',
@@ -1307,7 +1309,7 @@ TO varmak_workshop;`
     what: 'a breakdown leaves the machine in service',
     file: 'api',
     from: `  IF p_kind = 'breakdown' THEN
-    UPDATE equipment SET status = 'out-of-service' WHERE id = p_equipment_id;
+    UPDATE equipment SET status = 'Out of Service' WHERE id = p_equipment_id;
   END IF;`,
     to: ''
   },

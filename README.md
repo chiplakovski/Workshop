@@ -13,8 +13,8 @@ its safety rules as triggers, two sign-in doors, three database roles with row-l
 forced on every table, the workflows as database functions, and a thin HTTP layer that decides
 nothing. It lives under [`backend/`](backend/) and has its own [README](backend/README.md).
 
-**Eleven pages read and write the database** — both hubs, both hours screens, the access screen,
-Customers, Jobcards, Store, Planning, Reports, and the project half of Project / Estimator. Together they are the chain a
+**Twelve pages read and write the database** — both hubs, both hours screens, the access screen,
+Customers, Jobcards, Store, Planning, Reports, Equipment, and the project half of Project / Estimator. Together they are the chain a
 workshop needs to start: record a customer, put work on the board, book hours against it, take steel
 off the shelf for it. The rest still run entirely on the browser's `localStorage` (see [`workshop-data.js`](workshop-data.js)), which is lost if browser
 data is cleared. A page that has not been wired refuses to show anything at all to a signed-in
@@ -60,6 +60,10 @@ Shared logic used across modules:
   reach the server" from "the server would not give it to you".
 - `workshop-queue.js` — work booked with no connection, kept until it arrives. Stored under its
   owner's id, flushed oldest first, and never sent with a new id.
+- `customer-record.js` · `jobcard-record.js` · `project-record.js` · `stock-record.js` ·
+  `equipment-record.js` — the translation between what a screen holds and what a column holds, one per
+  record type, each with its own unit tests. They exist because a page that shows a subset of a record
+  must not save a subset of it.
 - `workshop-forms.js` — shared form helpers.
 - `workshop-ui.js` / `workshop-ui.css` — the shared UI layer: one type scale, delayed tooltips, the
   per-module Help panel, and `wConfirm`/`wAlert`/`wPrompt`. The last of those matter: a sandboxed

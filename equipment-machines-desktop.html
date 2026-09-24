@@ -541,7 +541,13 @@
               </div>
               <div class="field">
                 <label for="eqCondition" data-i="fieldEqCondition">Condition</label>
-                <input id="eqCondition" name="condition" />
+                <select id="eqCondition" name="condition">
+                  <option value="New">New</option>
+                  <option value="Good" selected>Good</option>
+                  <option value="Fair">Fair</option>
+                  <option value="Poor">Poor</option>
+                  <option value="Unserviceable">Unserviceable</option>
+                </select>
               </div>
               <div class="field">
                 <label for="eqCriticality" data-i="fieldEqCriticality">Criticality</label>
@@ -752,7 +758,13 @@
     </div>
   </div>
 
-  <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
+  <script src="quality-gates.js"></script><script src="equipment-gates.js"></script>
+  <script src="equipment-record.js"></script>
+  <script>/* Wired to the server: the register is the workshop's, and every safety gate in the app reads
+     it. Declared rather than detected — a gate reading a machine out of this browser while the workshop's
+     machines are on a server is the one screen where being wrong is a safety matter. */
+  window.WORKSHOP_SERVER_READY=true;</script>
+  <script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
   <script src="workshop-forms.js"></script>
   <script src="workshop-ui.js"></script><script>
     (function () {
@@ -791,6 +803,11 @@
           fieldReservedBy: 'Reserved by', fieldOperator: 'Operator / worker', fieldAssignedBy: 'Assigned by',
           fieldReturnLocation: 'Return location', fieldReturnedBy: 'Returned by', fieldNoteOptional: 'Note (optional)',
           cancelActionBtn: 'Cancel', optionNone: 'None',
+          srvRefused: 'The database refused this:',
+          srvOffline: 'The workshop could not be read. Try again when there is a connection.',
+          srvNoMachine: 'That machine is no longer here — refresh and try again.',
+          srvNoJobcard: 'Pick a real, open jobcard: a machine goes to a job, and the job is what the record is against.',
+          srvNotBuilt: 'That is not on the server yet, so nothing was saved. A reservation is a claim on a machine for later and the database holds where machines are, not where somebody intends them to be; machine usage hours would move the meter that servicing is counted against, which is a workflow of its own.',
           validationSelectProject: 'Select a real, active project.', validationSelectJobcardOptional: 'Select a real, active Jobcard, or leave blank for a project-only reservation.',
           validationSelectJobcard: 'Select a real, active Jobcard.', validationReservedByRequired: 'Enter who is reserving this equipment.',
           validationWorkerRequired: 'Enter the operator/worker.', validationAssignedByRequired: 'Enter who is assigning this equipment.',
@@ -856,6 +873,11 @@
           fieldReservedBy: 'Reserverad av', fieldOperator: 'Operatör / arbetare', fieldAssignedBy: 'Tilldelad av',
           fieldReturnLocation: 'Returplats', fieldReturnedBy: 'Återlämnad av', fieldNoteOptional: 'Anteckning (valfritt)',
           cancelActionBtn: 'Avbryt', optionNone: 'Ingen',
+          srvRefused: 'Databasen nekade detta:',
+          srvOffline: 'Verkstaden kunde inte läsas. Försök igen när det finns anslutning.',
+          srvNoMachine: 'Den maskinen finns inte längre här — uppdatera och försök igen.',
+          srvNoJobcard: 'Välj ett verkligt, öppet jobbkort: en maskin går till ett jobb, och jobbet är vad noteringen gäller.',
+          srvNotBuilt: 'Det finns inte på servern än, så ingenting sparades. En reservation är ett krav på en maskin för senare och databasen håller var maskiner är, inte var någon tänker att de ska vara; maskintimmar skulle flytta mätaren som service räknas mot, vilket är ett eget arbetsflöde.',
           validationSelectProject: 'Välj ett verkligt, aktivt projekt.', validationSelectJobcardOptional: 'Välj ett verkligt, aktivt jobbkort, eller lämna tomt för en projektreservation.',
           validationSelectJobcard: 'Välj ett verkligt, aktivt jobbkort.', validationReservedByRequired: 'Ange vem som reserverar denna utrustning.',
           validationWorkerRequired: 'Ange operatör/arbetare.', validationAssignedByRequired: 'Ange vem som tilldelar denna utrustning.',
@@ -921,6 +943,11 @@
           fieldReservedBy: 'Резервирано од', fieldOperator: 'Оператор / работник', fieldAssignedBy: 'Доделено од',
           fieldReturnLocation: 'Локација на враќање', fieldReturnedBy: 'Вратено од', fieldNoteOptional: 'Белешка (опционално)',
           cancelActionBtn: 'Откажи', optionNone: 'Нема',
+          srvRefused: 'Базата го одби ова:',
+          srvOffline: 'Работилницата не можеше да се прочита. Обиди се повторно кога има врска.',
+          srvNoMachine: 'Таа машина веќе не е тука — освежи и обиди се повторно.',
+          srvNoJobcard: 'Избери реална, отворена работна картичка: машината оди на работа, и работата е тоа на што се однесува записот.',
+          srvNotBuilt: 'Тоа сè уште не постои на серверот, па ништо не беше зачувано. Резервацијата е барање за машина за подоцна, а базата држи каде се машините, не каде некој планира да бидат; часовите на машината би го помериле бројачот по кој се смета сервисот, што е работен тек за себе.',
           validationSelectProject: 'Изберете реален, активен проект.', validationSelectJobcardOptional: 'Изберете реална, активна работна картичка, или оставете празно за резервација само за проект.',
           validationSelectJobcard: 'Изберете реална, активна работна картичка.', validationReservedByRequired: 'Внесете кој ја резервира оваа опрема.',
           validationWorkerRequired: 'Внесете оператор/работник.', validationAssignedByRequired: 'Внесете кој ја доделува оваа опрема.',
@@ -2276,6 +2303,138 @@
       // valid user state and must stay empty. ensureDemoEquipment() remains available for an
       // explicit user action (e.g. a future "load demo data" control) but is not called here.
       init();
+
+      // ── The register on the database ────────────────────────────────────────────────────
+      //
+      // This screen was the strangest gap in the system: every safety gate in the app reads the
+      // equipment register — the jobcard screen refuses to attach a machine that may not be run, the
+      // database refuses to start an operation on one that is out of service — and nothing could put a
+      // machine in the register, mark it serviced, or sign a check before use. The gates were real and
+      // had nothing to read.
+      //
+      // Reading is the whole of the easy half: getEquipment() goes through WorkshopData, so a snapshot
+      // makes the list, the dashboard and the safety panel the workshop's own. Its records come through
+      // EquipmentRecord.fromServer so the screen and the gates see their own names, and `_server` rides
+      // along for the overlay rule — this form shows about two thirds of a machine and save_equipment
+      // replaces the record.
+      //
+      // Four writes, and the fourth is the one worth reading about:
+      //
+      //   * creating a machine — save_equipment
+      //   * taking one to a bench and bringing it back — assign_equipment / return_equipment, which the
+      //     jobcard screen also calls and which used to throw there, because that screen wires neither
+      //     and the browser-storage original refuses to write once a snapshot has been adopted
+      //   * reserving one — a future claim, which has no table. It says so and writes nothing.
+      //   * the three dates the form types in. save_equipment deliberately refuses to take the date a
+      //     machine was last serviced, inspected or calibrated, because a form that can type one in is a
+      //     form that can claim a service nobody performed. But the office typing them is not lying —
+      //     registering a press that has been here six years, "last serviced in June" is a fact they
+      //     know. What they mean is that there WAS a service, in June. So that is what is recorded: an
+      //     event of that kind on that date, noted as having come from the register rather than from an
+      //     engineer's report, through the only door that can set the date.
+      (function(){
+        const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+        const words=k=>getLanguageText(k);
+        let sending=Promise.resolve();
+
+        function adopt(data){
+          const shaped=Object.assign({},data,{
+            equipment:(data.equipment||[]).map(EquipmentRecord.fromServer)
+          });
+          WorkshopData.adoptSnapshot(shaped);
+        }
+
+        async function refresh(){
+          const answer=await WorkshopApi.snapshot();
+          if(answer.signedOut){location.href='login.html';return false;}
+          if(answer.offline||answer.failed){wAlert(answer.failed||words('srvOffline'));return false;}
+          adopt(answer.data);
+          renderAll();
+          const current=currentEquipmentData();
+          if(current){renderSafetyPanel(current);renderDetailTabs();}
+          return true;
+        }
+
+        // In order, one at a time: registering a machine and then recording the service it was last
+        // given are two calls about one press, and the second needs the first to have happened.
+        function queue(name,args){
+          sending=sending.then(async ()=>{
+            const body=(typeof args==='function')?args():args;
+            const answer=await WorkshopApi.call(name,body);
+            if(answer.signedOut){location.href='login.html';return;}
+            if(!answer.ok){await refresh();wAlert(words('srvRefused')+' '+answer.refused);return;}
+            await refresh();
+          }).catch(e=>wAlert(String(e&&e.message||e)));
+        }
+
+        // Case-insensitively, because save_equipment upper-cases the reference — it is what is written on
+        // the machine, and labels are upper case. Typed as 'eq-0100' and stored as 'EQ-0100', an exact
+        // comparison found nothing, so the service date that follows the machine had nowhere to attach and
+        // the whole second call was lost with a message about a machine that was right there.
+        const byRef=ref=>(WorkshopData.getEquipment()||[])
+          .find(e=>String(e.equipmentId).toUpperCase()===String(ref).toUpperCase())||null;
+        const jobcardIdOf=no=>{
+          const j=(WorkshopData.listJobcards()||[]).find(x=>String(x.no)===String(no));
+          return j?Number(j.id):null;
+        };
+
+        const SENT={
+          createEquipment(payload){
+            queue('save_equipment',EquipmentRecord.toServer(payload));
+            // And the dates, as the events they are. Queued behind the machine itself, and looked up by
+            // reference when their turn comes — there is no id to read yet.
+            EquipmentRecord.datesAsEvents(payload).forEach(event=>{
+              queue('record_equipment_event',()=>{
+                const machine=byRef(payload.equipmentId);
+                if(!machine)throw new Error(words('srvNoMachine'));
+                return Object.assign({equipment_id:Number(machine.id)},event);
+              });
+            });
+            return {pending:true};
+          },
+          assignEquipment(ref,details){
+            const machine=byRef(ref);
+            if(!machine)return {error:words('srvNoMachine')};
+            const jobcard=jobcardIdOf(details&&details.jobcard);
+            if(!jobcard)return {error:words('srvNoJobcard')};
+            queue('assign_equipment',{equipment_id:Number(machine.id),jobcard_id:jobcard});
+            return {pending:true};
+          },
+          returnEquipment(ref,details){
+            const machine=byRef(ref);
+            if(!machine)return {error:words('srvNoMachine')};
+            queue('return_equipment',{equipment_id:Number(machine.id),
+              note:(details&&details.note)||null});
+            return {pending:true};
+          }
+        };
+
+        // A reservation is a claim on a machine for later, and there is no table for it — the assignment
+        // table holds where a machine IS, not where somebody intends it to be. Logging usage hours is
+        // the other one: it would move the meter that interval-based maintenance is counted against, and
+        // that is a workflow of its own rather than a mapping.
+        const NOT_BUILT=['reserveEquipment','logEquipmentUsage','recordEquipmentPreUseCheck'];
+
+        const original={};
+        Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+          if(typeof WorkshopData[name]!=='function')return;
+          original[name]=WorkshopData[name].bind(WorkshopData);
+          WorkshopData[name]=function(){
+            if(!onServer())return original[name].apply(null,arguments);
+            if(SENT[name])return SENT[name].apply(null,arguments);
+            return {error:words('srvNotBuilt')};
+          };
+        });
+
+        (async function(){
+          if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+          if(!(await refresh()))return;
+          const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+          if(out)out.addEventListener('click',async function(e){
+            e.preventDefault();await WorkshopApi.signOut();location.href='login.html';
+          });
+        })();
+      })();
     })();
   </script>
 </body>

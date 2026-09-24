@@ -892,7 +892,7 @@ CREATE FUNCTION save_equipment(
   p_ref text,
   p_name text,
   p_category text,
-  p_status equipment_status DEFAULT 'available',
+  p_status equipment_status DEFAULT 'Available',
   p_manufacturer text DEFAULT NULL,
   p_model text DEFAULT NULL,
   p_serial_no text DEFAULT NULL,
@@ -1036,7 +1036,7 @@ BEGIN
   -- point: the record of the breakdown and the machine being stopped are the same event, and a shop
   -- where they are two actions is a shop where one of them gets missed.
   IF p_kind = 'breakdown' THEN
-    UPDATE equipment SET status = 'out-of-service' WHERE id = p_equipment_id;
+    UPDATE equipment SET status = 'Out of Service' WHERE id = p_equipment_id;
   END IF;
 END;
 $$;
@@ -1105,9 +1105,121 @@ BEGIN
 END;
 $$;
 
+-- A machine taken to a bench, and brought back.
+--
+-- One row per period a machine spends on a jobcard, and a partial unique index that refuses the second
+-- live one — so "which jobcard is the plasma cutter on" has exactly one answer and the database is what
+-- makes that true, not the screen that happens to ask.
+--
+-- Nothing here changes the machine's status, and that is deliberate. A machine on a bench is still
+-- available in the sense the safety gates mean: `available` versus `out-of-service` is about whether it
+-- may be run at all, and overwriting it with something about where it is would make the gate read the
+-- wrong question. Where it is, is the assignment — which the snapshot carries as `assignedJobcard`.
+CREATE FUNCTION assign_equipment(
+  p_equipment_id bigint,
+  p_jobcard_id bigint,
+  p_event_id text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('assigning a machine');
+  seen text := already_done(p_event_id, 'assign_equipment');
+  machine text;
+  card text;
+  held text;
+  made bigint;
+BEGIN
+  IF seen IS NOT NULL THEN
+    RETURN seen;
+  END IF;
+
+  SELECT name INTO machine FROM equipment WHERE id = p_equipment_id;
+  IF machine IS NULL THEN
+    RAISE EXCEPTION 'no such machine' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  SELECT ref INTO card FROM jobcard WHERE id = p_jobcard_id;
+  IF card IS NULL THEN
+    RAISE EXCEPTION 'no such jobcard' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  -- Named before the index refuses it, because "duplicate key value violates unique constraint
+  -- equipment_one_live_assignment" tells a welder nothing and the answer they need is which jobcard has
+  -- it. The index is still what makes this true under two requests arriving together.
+  SELECT j.ref INTO held FROM equipment_assignment a JOIN jobcard j ON j.id = a.jobcard_id
+   WHERE a.equipment_id = p_equipment_id AND a.released_at IS NULL LIMIT 1;
+  IF held IS NOT NULL THEN
+    IF held = card THEN
+      -- Already where it is being sent. Not an error: two people pressing the same button is not a
+      -- mistake, and a refusal here would read as one.
+      PERFORM record_result(p_event_id, card);
+      RETURN card;
+    END IF;
+    RAISE EXCEPTION '% is on % — return it from there first', machine, held
+      USING ERRCODE = 'unique_violation';
+  END IF;
+
+  INSERT INTO equipment_assignment (equipment_id, jobcard_id) VALUES (p_equipment_id, p_jobcard_id)
+  RETURNING id INTO made;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('equipment', p_equipment_id, 'assigned', who, machine || ' to ' || card);
+
+  PERFORM record_result(p_event_id, card);
+  RETURN card;
+END;
+$$;
+
+CREATE FUNCTION return_equipment(
+  p_equipment_id bigint,
+  p_note text DEFAULT NULL,
+  p_event_id text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('returning a machine');
+  seen text := already_done(p_event_id, 'return_equipment');
+  machine text;
+  card text;
+BEGIN
+  IF seen IS NOT NULL THEN
+    RETURN seen;
+  END IF;
+
+  SELECT e.name, j.ref INTO machine, card
+    FROM equipment e
+    LEFT JOIN equipment_assignment a ON a.equipment_id = e.id AND a.released_at IS NULL
+    LEFT JOIN jobcard j ON j.id = a.jobcard_id
+   WHERE e.id = p_equipment_id;
+  IF machine IS NULL THEN
+    RAISE EXCEPTION 'no such machine' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF card IS NULL THEN
+    -- Nothing to return it from. Said plainly rather than refused, for the same reason as above: this is
+    -- the state somebody pressing the button twice arrives at.
+    PERFORM record_result(p_event_id, 'already returned');
+    RETURN 'already returned';
+  END IF;
+
+  UPDATE equipment_assignment SET released_at = now()
+   WHERE equipment_id = p_equipment_id AND released_at IS NULL;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('equipment', p_equipment_id, 'returned', who,
+          machine || ' from ' || card || coalesce(' — ' || p_note, ''));
+
+  PERFORM record_result(p_event_id, card);
+  RETURN card;
+END;
+$$;
+
 ALTER FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date)
   OWNER TO varmak_engine;
 REVOKE ALL ON FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION assign_equipment(bigint, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION return_equipment(bigint, text, text) FROM PUBLIC;
+-- Taking a machine to a bench and bringing it back is floor work: the welder who needs the plasma
+-- cutter is the one who fetches it, and a shop where that needs the office is a shop where the
+-- assignment record stops matching where the machines actually are.
+GRANT EXECUTE ON FUNCTION assign_equipment(bigint, bigint, text), return_equipment(bigint, text, text)
+TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date)
 TO varmak_admin, varmak_office, varmak_workshop;
 

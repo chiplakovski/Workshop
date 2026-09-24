@@ -358,7 +358,10 @@ function holdNamesExactlyOneThing() {
 
 function equipmentGateStopsStart() {
   const f = fixture();
-  for (const state of ['out-of-service', 'under-maintenance', 'quarantined', 'retired']) {
+  // All six the screen's gate blocks on, not four of them. The database used to be the more permissive
+  // of the two, which meant the rule the screen enforced was not the system's rule.
+  for (const state of ['Out of Service', 'Under Maintenance', 'Maintenance Due',
+                       'Inspection Required', 'Quarantined', 'Retired']) {
     sql(`UPDATE equipment SET status = '${state}' WHERE id = ${f.equipment};
          UPDATE operation SET equipment_id = ${f.equipment}, status = 'pending' WHERE id = ${f.op1};`);
     const message = refused(`starting work on a ${state} machine`,
@@ -366,9 +369,9 @@ function equipmentGateStopsStart() {
     assert.ok(message.includes(state), `the refusal must say what is wrong with the machine — said: ${message}`);
     assert.ok(message.includes('Fixture MIG 400'), 'the refusal must name the machine');
   }
-  step('Equipment: work cannot start on a machine that is out of service, under maintenance, quarantined or retired');
+  step('Equipment: work cannot start on any of the six states the screen\'s own gate blocks on');
 
-  sql(`UPDATE equipment SET status = 'available' WHERE id = ${f.equipment};`);
+  sql(`UPDATE equipment SET status = 'Available' WHERE id = ${f.equipment};`);
   accepted('starting on an available machine', `UPDATE operation SET status = 'in-progress' WHERE id = ${f.op1};`);
   step('Equipment: and it starts normally on a machine that is fit to run');
 }
@@ -394,7 +397,7 @@ function expiredCertificationStopsStart() {
 
 function failedPreUseCheckStopsStart() {
   const f = fixture();
-  sql(`UPDATE equipment SET status = 'available', certification_expiry = NULL WHERE id = ${f.equipment};
+  sql(`UPDATE equipment SET status = 'Available', certification_expiry = NULL WHERE id = ${f.equipment};
        UPDATE operation SET equipment_id = ${f.equipment}, status = 'pending' WHERE id = ${f.op1};`);
   const failed = value(`INSERT INTO equipment_event (equipment_id, kind, performed_by, result, note)
     VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'fail', 'gas leak at the torch')

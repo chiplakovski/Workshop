@@ -296,7 +296,8 @@ cannot touch anything else.
    | Pass 4 — lead, opportunity, inspection, ncr | **54% → 61%** |
    | Pass 5 — no columns at all: the meter itself was wrong | **61% → 68%** |
    | Pass 6 — the meter was wrong the other way too | **68% → 65%** |
-   | Still to do | 70 fields need a column, 23 want a join rather than a column, 31 hold a list and want a child table |
+   | Pass 7 — the meter did not know the equipment table's own names | **67% → 70%** |
+   | Still to do | 45 fields need a column, 26 want a join rather than a column, 38 hold a list and want a child table |
    | Not a gap | 38 more fields are carried by the demo data and read by no page at all |
 
    Pass 5 is the one worth reading. Wiring the customers screen meant looking at the five customer
@@ -322,6 +323,17 @@ cannot touch anything else.
    ratchet refused the run until the baseline moved, which is the only honest reason to move one: the
    number got worse because the measurement got better. A meter that overstates the work gets planned
    around; one that understates it hides work. Both had happened.
+
+   Pass 7 is the third correction and the same shape as the fifth: the meter said sixteen fields on
+   `equipment` had no column and called it the largest remaining gap. Nine had had one since the equipment
+   pass, under the longer names an insurer or an auditor uses — `serial_no`, `asset_no`,
+   `operating_hours`, `service_interval_hours` and the three "last done" dates among them. Six more are
+   lists of dated events against a machine and `equipment_event` already has a kind for each, so six
+   columns would have been six lists in six columns — the shape this schema exists not to have. The last
+   three were a join (`assignedJobcard` is the live row in `equipment_assignment`), a derivation
+   (`lastActivity` is the newest event) and a child table (`preUseChecks`). **Equipment needed no
+   widening at all**, and the remaining gap is now 45 fields spread over quality, the sales pipeline,
+   estimating and purchasing.
 
    Three fields were deliberately left as gaps rather than mapped, because mapping them would have
    hidden real work: `inventory.certificate` holds a PDF's filename and wants the document table and
@@ -721,6 +733,72 @@ cannot touch anything else.
    the worker from the session and ignores what it is sent, so that label was only ever cosmetic — but
    an office entering everybody's timesheets under a name the database quietly replaces is a screen
    nobody can trust. It is the session's name now, painted from the snapshot.
+
+      **The machines, which is where the gates finally got something to read — and where the most
+   serious thing in this whole step was found.** Every safety gate in the app reads the equipment
+   register: the jobcard screen refuses to attach a machine that may not be run, the shop-floor hours
+   screen refuses to book time against one, and the database refuses to start an operation on a machine
+   that is out of service or whose certificate has expired. Nothing could put a machine in the register.
+
+   **The vocabulary was worse than a mismatch — it was a live safety failure.** `equipment-gates.js`
+   holds its status list with spaces (`'out of service'`), the equipment screen compares
+   `item.status === 'Out of Service'` exactly in seven places, and the enum held `'out-of-service'`. The
+   gate **fails closed on a status it does not recognise**, which is the right default and meant that a
+   hyphenated status arriving from the snapshot was read as unsafe. `'in-use'` was the bad case: a machine
+   on a bench is perfectly runnable, and the gate had no way to know it. That was live — `equipment` has
+   been in the snapshot since step 5 and the jobcard screen is wired — so **attaching any machine to a
+   jobcard on that screen was refused by a gate that could not read the status of any machine in the
+   workshop.** Nothing threw. The gate did exactly what it says it does.
+
+   So the rule from `material_readiness` was applied a third time, and this time it was not a preference:
+   the enum holds the words the screen offers, `'Inspection Required'` was added because the screen has it
+   and the enum did not, and the same happened one level down to `condition` and `criticality`, whose
+   lower-case checks refused every value their dropdowns could send. The condition field was a free-text
+   box against a five-value check — it is a dropdown of those five now, because free text there gives you
+   'Fair', 'fair', 'OK' and 'good-ish' in the same column.
+
+   The database's gate also blocked four of the six states the screen's gate blocks on, which means the
+   rule the screen enforced was not the system's rule: a machine whose service interval had passed could
+   be started by anything that did not go through that screen. It blocks all six now.
+
+   What the pre-use check genuinely needed was four columns — `equipment_event.jobcard_id`, `.resolved`,
+   `.resolves_event_id` and `equipment.pre_use_check_required` — and with them the rule
+   `equipment-gates.js` has enforced in the browser since it was written is enforced in the database as
+   well. `equipment-gates.js` looked for a passed check for the same day and the same jobcard, and the
+   answer was always "there isn't one".
+
+   Four workflows, split by who they belong to: `save_equipment` (the office's register),
+   `record_equipment_event` (a service is the office's, a check before use is the welder's),
+   `assign_equipment` and `return_equipment` (floor work — the welder who needs the plasma cutter is the
+   one who fetches it). The last two also fixed a bug on an already-wired screen: `jobcard-desktop.html`
+   calls `assignEquipment` and `returnEquipment`, wires neither, and the browser-storage original throws
+   once a snapshot has been adopted.
+
+   Three decisions in them worth keeping:
+
+   * **`save_equipment` takes none of the three dates a machine is judged by.** A form that can type in
+     a service date is a form that can claim a service nobody performed. But the office typing one is not
+     lying — registering a press that has been here six years, "last serviced in June" is a fact they
+     know, and what they mean is that there *was* a service in June. So that is what
+     `equipment-record.js` records: an event of that kind on that date, noted as having come from the
+     register rather than from an engineer's report, through the only door that can move the date.
+   * **A breakdown takes the machine out of service by itself.** The record of the breakdown and the
+     machine being stopped are one event; a shop where they are two actions is a shop where one gets
+     missed.
+   * **Nothing about assignment touches the machine's status.** Where a machine is, and whether it may be
+     run, are different questions — and the gates read the second. A status answering "on a bench" is how
+     the `'in-use'` failure above happened in the first place.
+
+   The two columns nobody should hold directly — `equipment.status` and `last_service_date` — are written
+   by one function owned by `varmak_engine`, granted four columns of that table rather than the table. A
+   mutation widened that grant to the whole table and **nothing noticed**, so `test-api.js` now writes
+   down what the bypass role may write, table by table and column by column, for somebody to read when it
+   changes.
+
+   And one more of the `.join` family, found the same way as the customers screen's billing address: the
+   equipment screen renders `item.safetyWarnings[0]` and calls `.join` on it, and the column is one text
+   field — so the first machine from the database to reach the screen that shows what is dangerous about
+   it threw `item.safetyWarnings.join is not a function`.
 
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in

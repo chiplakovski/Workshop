@@ -392,15 +392,34 @@ $$;
 -- Equipment
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 
+-- The words the screen uses, and they look like screen labels because they are.
+--
+-- This is the rule from `material_readiness` and the jobcard priority applied a third time: one spelling
+-- per state, and when the schema and the screen disagree the screen wins, because those are the words
+-- somebody picks from a dropdown. Here it was not a preference. The equipment screen compares
+-- `item.status === 'Out of Service'` exactly, in seven places, and equipment-gates.js holds its
+-- vocabulary as 'out of service' — with spaces — and **fails closed on a status it does not recognise**.
+-- So a hyphenated 'out-of-service' arriving from the snapshot was not merely ugly: it was unrecognised,
+-- which the gate treats as unsafe. 'in-use' was worse, because a machine on a bench is perfectly
+-- runnable and the gate had no way to know it.
+--
+-- That was live. `equipment` has been in the snapshot since step 5 and the jobcard screen is wired, so
+-- attaching any machine to a jobcard there was refused by a gate that could not read the status of any
+-- machine in the workshop. Nothing threw; the gate did exactly what it says it does.
+--
+-- 'Inspection Required' is new here as well: the screen offers it, the gate blocks on it, and the enum
+-- did not have it at all, so the one state a workshop uses for "fine, but it must be looked at first"
+-- could not be recorded.
 CREATE TYPE equipment_status AS ENUM
-  ('available','in-use','maintenance-due','under-maintenance','out-of-service','quarantined','retired');
+  ('Available', 'In Use', 'Maintenance Due', 'Under Maintenance', 'Inspection Required',
+   'Out of Service', 'Quarantined', 'Retired');
 
 CREATE TABLE equipment (
   id          bigserial PRIMARY KEY,
   ref         text NOT NULL UNIQUE,
   name        text NOT NULL CHECK (btrim(name) <> ''),
   category    text NOT NULL,
-  status      equipment_status NOT NULL DEFAULT 'available',
+  status      equipment_status NOT NULL DEFAULT 'Available',
   certification_expiry date,
   -- What the machine is. A serial number and an asset number are how a machine is identified to an
   -- insurer and to an auditor, and neither can be recovered later from a name.
@@ -418,8 +437,12 @@ CREATE TABLE equipment (
   operator    text,
   -- How much it matters and what state it is in, which is what decides whether a breakdown stops
   -- the shop or is dealt with next week.
-  condition   text CHECK (condition IS NULL OR condition IN ('new','good','fair','poor','unserviceable')),
-  criticality text CHECK (criticality IS NULL OR criticality IN ('low','medium','high','critical')),
+  -- The same rule as the status above, two columns further down: these are the words the register
+  -- offers, and the register is where somebody picks them. The criticality dropdown has offered
+  -- 'Low'/'Medium'/'High'/'Critical' since it was written, so a lower-case check refused every value the
+  -- screen could send — which is how the first machine saved from that form was turned away.
+  condition   text CHECK (condition IS NULL OR condition IN ('New', 'Good', 'Fair', 'Poor', 'Unserviceable')),
+  criticality text CHECK (criticality IS NULL OR criticality IN ('Low', 'Medium', 'High', 'Critical')),
   safety_warnings text,
   -- What it cost and what is still covered.
   purchase_date date,
@@ -1293,7 +1316,12 @@ BEGIN
     SELECT status, name, certification_expiry
       INTO machine_status, machine_name, machine_cert
       FROM equipment WHERE id = NEW.equipment_id;
-    IF machine_status IN ('out-of-service','under-maintenance','quarantined','retired') THEN
+    -- The same six equipment-gates.js blocks on, rather than four of them. The database was the more
+    -- permissive of the two, which means the rule the screen enforced was not the system's rule: a
+    -- machine whose service interval has passed could be started by anything that did not go through
+    -- that screen.
+    IF machine_status IN ('Out of Service', 'Under Maintenance', 'Maintenance Due',
+                          'Inspection Required', 'Quarantined', 'Retired') THEN
       RAISE EXCEPTION 'operation % cannot start: % is %',
         NEW.description, machine_name, machine_status USING ERRCODE = 'check_violation';
     END IF;

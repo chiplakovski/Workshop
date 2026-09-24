@@ -111,7 +111,7 @@ function makeWorkshop() {
   // written as `INSERT INTO equipment_event ... SELECT id ... FROM equipment LIMIT 1`, which selects no
   // rows, inserts nothing, and is reported as allowed. Two checks in this file were passing that way.
   const equipment = value(`INSERT INTO equipment (ref, name, category, status)
-    VALUES ('EQ-0001', 'MIG 400', 'welding', 'available') RETURNING id;`);
+    VALUES ('EQ-0001', 'MIG 400', 'welding', 'Available') RETURNING id;`);
   const estimate = value(`INSERT INTO estimate (title, customer_id) VALUES ('Conveyor frame', ${customer}) RETURNING id;`);
   sql(`INSERT INTO estimate_line (estimate_id, kind, description, quantity, unit_price)
        VALUES (${estimate}, 'material', 'Plate', 500, 22.00);`);
@@ -793,7 +793,7 @@ function whoIsLoggedInIsNotEverybodysBusiness() {
 // breaks any query asking for more than it needs.
 function aGateCanStillReadWhatItNeeds() {
   const machine = value(`INSERT INTO equipment (ref, name, category, status, purchase_price)
-    VALUES ('EQ-GATE', 'Gate Test MIG', 'welding', 'out-of-service', 412000) RETURNING id;`);
+    VALUES ('EQ-GATE', 'Gate Test MIG', 'welding', 'Out of Service', 412000) RETURNING id;`);
   const project = value(`SELECT id FROM project LIMIT 1;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, title) VALUES (${project}, 'Gate test') RETURNING id;`);
   const op = value(`INSERT INTO operation (jobcard_id, seq, description, equipment_id)
@@ -801,13 +801,13 @@ function aGateCanStillReadWhatItNeeds() {
 
   const message = denied('a welder starting work on an out-of-service machine', 'varmak_workshop', PEOPLE.welder,
     `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`, /cannot start/);
-  assert.ok(message.includes('Gate Test MIG') && message.includes('out-of-service'),
+  assert.ok(message.includes('Gate Test MIG') && message.includes('Out of Service'),
     `the welder must be told what is wrong with the machine, not that they lack a privilege: ${message}`);
   assert.ok(!/permission denied/.test(message),
     `the gate could not read the machine at all: ${message}`);
   step('Gates: a welder gets the gate\'s own refusal, not a privilege error, on a table they may only read part of');
 
-  sql(`UPDATE equipment SET status = 'available' WHERE id = ${machine};`);
+  sql(`UPDATE equipment SET status = 'Available' WHERE id = ${machine};`);
   allowed('the same welder once the machine is fit to run', 'varmak_workshop', PEOPLE.welder,
     `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`);
   // And the price was never readable throughout.

@@ -454,18 +454,18 @@ function askingTwiceIsHarmless(f) {
 // it." That sentence is this test.
 function theGatesStillHoldOnReplay(f, w) {
   sql(`UPDATE operation SET equipment_id = ${f.machine}, status = 'pending' WHERE id = ${w.op};
-       UPDATE equipment SET status = 'out-of-service' WHERE id = ${f.machine};`);
+       UPDATE equipment SET status = 'Out of Service' WHERE id = ${f.machine};`);
   const message = refused('a start queued offline against a machine that has since gone out of service',
     'varmak_workshop', PEOPLE.welder,
     `SELECT record_operation(${w.op}, 'in-progress', 'tablet-1-0010');`, /cannot start/);
-  assert.ok(message.includes('out-of-service') && message.includes('MIG 400'),
+  assert.ok(message.includes('Out of Service') && message.includes('MIG 400'),
     `the person has to be told what is wrong with the machine: ${message}`);
   assert.equal(value(`SELECT status FROM operation WHERE id = ${w.op};`), 'pending');
   step('Offline: a start queued against a machine that has gone out of service is refused when it replays');
 
   // And the refused attempt must not have consumed its event id — otherwise flushing the queue
   // again would report the failure as already done and the work would be silently lost.
-  sql(`UPDATE equipment SET status = 'available' WHERE id = ${f.machine};`);
+  sql(`UPDATE equipment SET status = 'Available' WHERE id = ${f.machine};`);
   const second = ok('the same queued start, once the machine is back in service', 'varmak_workshop', PEOPLE.welder,
     `SELECT record_operation(${w.op}, 'in-progress', 'tablet-1-0010');`);
   assert.equal(second, 'in-progress',
@@ -677,9 +677,9 @@ function theRegisterOfMachinesAndWhatHappensToThem() {
   const welder = PEOPLE.welder;
 
   const machine = ok('the office putting a machine in the register', 'varmak_office', office,
-    `SELECT save_equipment(NULL, 'eq-0100', 'Plasma 120', 'cutting', 'available', 'Hypertherm',
+    `SELECT save_equipment(NULL, 'eq-0100', 'Plasma 120', 'cutting', 'Available', 'Hypertherm',
       'Powermax 120', 'SN-99812', 'A-0100', 2022, 'Handheld plasma cutter',
-      'Bay 2', 'Bay 2', 'Fabrication', 'Anna Berg', 'Marko Ilic', 'good', 'high',
+      'Bay 2', 'Bay 2', 'Fabrication', 'Anna Berg', 'Marko Ilic', 'Good', 'High',
       'Eye protection and gloves', current_date + 200, current_date - 400, 'Nordic Machines',
       84000, current_date + 100, 120.5, 500, 'QR-0100', true, 'Bought with the press');`);
   assert.equal(value(`SELECT ref FROM equipment WHERE id = ${machine};`), 'EQ-0100',
@@ -742,7 +742,7 @@ function theRegisterOfMachinesAndWhatHappensToThem() {
   ok('a breakdown', 'varmak_office', office,
     `SELECT record_equipment_event(${machine}, 'breakdown', 'observations', current_date, NULL, NULL,
       'Torch head cracked');`);
-  assert.equal(value(`SELECT status::text FROM equipment WHERE id = ${machine};`), 'out-of-service',
+  assert.equal(value(`SELECT status::text FROM equipment WHERE id = ${machine};`), 'Out of Service',
     'recording a breakdown and the machine being stopped are one event, not two actions');
   step('Machines: a breakdown takes the machine out of service without anybody remembering to');
 
@@ -754,7 +754,7 @@ function theRegisterOfMachinesAndWhatHappensToThem() {
   step('Machines: an event cannot be dated in the future, nor recorded against nothing');
 
   // ── The check a welder signs, which is the whole reason the gate exists ──────────────────
-  sql(`UPDATE equipment SET status = 'available' WHERE id = ${f.machine};`);
+  sql(`UPDATE equipment SET status = 'Available' WHERE id = ${f.machine};`);
   const failedCheck = ok('a welder signing a check that failed', 'varmak_workshop', welder,
     `SELECT record_equipment_event(${f.machine}, 'pre-use-check', 'fail', current_date, NULL, NULL,
       'Gas leak at the torch', NULL, NULL, 'chk-1');`);
@@ -784,6 +784,49 @@ function theRegisterOfMachinesAndWhatHappensToThem() {
   ok('and now the work starts', 'varmak_office', office,
     `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`);
   step('Machines: the welder answers their own failed check and the work starts — one call, not two');
+
+  // ── Where the machine is ────────────────────────────────────────────────────────────────
+  const second = value(`INSERT INTO jobcard (project_id, title)
+    VALUES (${project}, 'Second job') RETURNING id;`);
+  assert.equal(ok('a welder taking the machine to a bench', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, ${jobcard}, 'asg-1');`),
+    value(`SELECT ref FROM jobcard WHERE id = ${jobcard};`),
+    'it answers with the jobcard it went to, which is what the screen shows');
+  assert.equal(value(`SELECT count(*) FROM equipment_assignment
+    WHERE equipment_id = ${f.machine} AND released_at IS NULL;`), '1');
+  // Pressed twice is not a mistake.
+  ok('the same assignment sent twice', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, ${jobcard}, 'asg-1');`);
+  ok('and asked again without the event id, to the same jobcard', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, ${jobcard});`);
+  assert.equal(value(`SELECT count(*) FROM equipment_assignment WHERE equipment_id = ${f.machine};`), '1',
+    'one assignment, whichever way it was asked');
+
+  const taken = refused('sending it to a second jobcard while it is out', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, ${second});`, /return it from there first/);
+  assert.match(taken, new RegExp(value(`SELECT ref FROM jobcard WHERE id = ${jobcard};`)),
+    'and the refusal says which jobcard has it, which "duplicate key value" never would');
+  refused('assigning a machine that does not exist', 'varmak_workshop', welder,
+    `SELECT assign_equipment(999999, ${jobcard});`, /no such machine/);
+  refused('assigning it to a jobcard that does not exist', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, 999999);`, /no such jobcard/);
+  step('Machines: a machine goes to one bench at a time, and the refusal says which bench has it');
+
+  ok('the welder bringing it back', 'varmak_workshop', welder,
+    `SELECT return_equipment(${f.machine}, 'Finished with it', 'ret-1');`);
+  assert.equal(value(`SELECT count(*) FROM equipment_assignment
+    WHERE equipment_id = ${f.machine} AND released_at IS NULL;`), '0');
+  assert.equal(value(`SELECT count(*) FROM equipment_assignment WHERE equipment_id = ${f.machine};`), '1',
+    'the period it spent on that jobcard is kept, not deleted');
+  assert.equal(ok('returning it again', 'varmak_workshop', welder,
+    `SELECT return_equipment(${f.machine});`), 'already returned',
+    'pressing it twice says so rather than refusing');
+  ok('and now it can go somewhere else', 'varmak_workshop', welder,
+    `SELECT assign_equipment(${f.machine}, ${second});`);
+  // The machine's status is deliberately untouched by any of this.
+  assert.equal(value(`SELECT status::text FROM equipment WHERE id = ${f.machine};`), 'Available',
+    'where a machine is and whether it may be run are different questions, and the gates read the second');
+  step('Machines: it comes back, the period it was out is kept, and its status was never the answer to "where is it"');
 }
 
 function theStoreCanBeStockedAndCounted() {

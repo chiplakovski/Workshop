@@ -168,6 +168,8 @@ const RPC = {
     'pre_use_check_required', 'notes'],
   record_equipment_event: ['equipment_id', 'kind', 'result', 'happened_on', 'next_due_on', 'cost',
     'note', 'jobcard_id', 'resolves_event_id', 'event_id'],
+  assign_equipment: ['equipment_id', 'jobcard_id', 'event_id'],
+  return_equipment: ['equipment_id', 'note', 'event_id'],
 
   save_stock_item: ['id', 'code', 'description', 'unit', 'group_id', 'subgroup_id', 'location_id',
     'sublocation_id', 'bin_code', 'category', 'grade', 'dimensions', 'base_unit', 'size_per_unit',

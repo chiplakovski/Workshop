@@ -92,9 +92,11 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
-    'accept_estimate', 'add_person', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
+    'accept_estimate', 'add_person', 'assign_equipment', 'book_hours', 'bootstrap_first_admin',
+    'change_my_password',
     'convert_lead', 'issue_material_offline', 'receive_goods', 'receive_stock',
-    'record_equipment_event', 'record_operation', 'record_stocktake', 'save_customer',
+    'record_equipment_event', 'record_operation', 'record_stocktake', 'return_equipment',
+    'save_customer',
     'save_equipment', 'save_jobcard', 'save_project',
     'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
     'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
@@ -536,7 +538,7 @@ async function aRefusalFromTheDatabaseReachesThePerson(tokens, f) {
   const gate = await call('POST', '/rpc/record_operation',
     { token: tokens.floor, body: { operation_id: f.blockedOp, status: 'in-progress' } });
   turnedAway('starting work on an out-of-service machine', gate, 422, /cannot start/);
-  assert.ok(gate.body.refused.includes('out-of-service'));
+  assert.ok(gate.body.refused.includes('Out of Service'));
   step('Refusals: the safety gates speak through the API in their own words');
 
   const broken = await call('POST', '/rpc/book_hours',
@@ -719,7 +721,7 @@ function world() {
   const jobcard = value(`INSERT INTO jobcard (project_id, title) VALUES (${project}, 'Weldment') RETURNING id;`);
   const op = value(`INSERT INTO operation (jobcard_id, seq, description) VALUES (${jobcard}, 1, 'Weld out') RETURNING id;`);
   const machine = value(`INSERT INTO equipment (ref, name, category, status)
-    VALUES ('EQ-009', 'MIG 400', 'welding', 'out-of-service') RETURNING id;`);
+    VALUES ('EQ-009', 'MIG 400', 'welding', 'Out of Service') RETURNING id;`);
   const blockedOp = value(`INSERT INTO operation (jobcard_id, seq, description, equipment_id)
     VALUES (${jobcard}, 2, 'Grind', ${machine}) RETURNING id;`);
   const estimate = value(`INSERT INTO estimate (title, customer_id) VALUES ('Conveyor frame', ${customer}) RETURNING id;`);
