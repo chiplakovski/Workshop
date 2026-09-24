@@ -242,6 +242,15 @@ its first attempt arrived before the connection died** — so it flushes the que
 server has to make asking twice harmless. Each takes an event id; a replay gets the first answer back
 and changes nothing.
 
+**Both halves exist for booking hours; the other two actions have the database half only.**
+[`workshop-queue.js`](../workshop-queue.js) is the tablet's side, wired into the phone hours screen:
+the entry is written to `localStorage` before anything is sent, the screen says what is being held,
+and it goes by itself when the line comes back. `localStorage` rather than memory because the failure
+that loses work is the tablet being locked or the page reloaded, not a slow network. The queue is
+stored under its owner's id — `takenById` in the snapshot, which the server answers from the session
+— because the server takes the name for a booking from the session, so flushing one welder's queue
+under the next one's session would book the first welder's hours in the second welder's name.
+
 Two things about that are easy to get wrong and are tested:
 
 - **A refusal must not burn the event id.** If a queued start is refused because the machine went out
@@ -252,6 +261,19 @@ Two things about that are easy to get wrong and are tested:
   of service is refused when it arrives, naming the machine and what is wrong with it. Offline delays
   the check; it does not skip it. This is the clearest argument for the rules living in the database:
   the tablet cannot be the thing that decides.
+- **A refusal is shown, not retried.** Retrying cannot help and retrying forever would hide it, so a
+  refused entry moves to a list with the database's own words on it and the person decides. A lost
+  connection is the opposite — the entry stays, in order — and so is an expired session, or a shift
+  that outlasts its token would have every booking in it thrown onto the refused list.
+- **A tablet that cannot read the workshop does not book onto what is left in the browser.** Signed in
+  with no snapshot, the hours screen says so and refuses. Adopting a snapshot never writes to browser
+  storage, so whatever was in it before is still there — and hours logged onto those records go where
+  the office never looks.
+
+Thirteen end-to-end checks drive this with the connection cut
+([`../tests/offline-queue.e2e.js`](../tests/offline-queue.e2e.js)) and eight mutations put each rule's
+bug back. Those are the first mutations here against front-end files: the damaged copy is served to the
+browser when it asks for the file, so nothing is written into the site directory.
 
 ## Reading it back
 

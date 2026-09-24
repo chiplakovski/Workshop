@@ -91,6 +91,32 @@
   .todaysum{display:flex;justify-content:space-between;padding:11px 2px 0;font-size:13px;
     font-family:var(--font-heading);font-weight:700;color:var(--ice);}
   .todaynone{font-size:12.5px;color:var(--steel-400);padding:4px 2px;}
+  /* Work that has not reached the server yet. Warm rather than red: nothing is lost and nothing is
+     wrong — it is held, and the person needs to know that without being alarmed by it. */
+  .unsent{margin:0 0 12px;padding:11px 13px;background:rgba(var(--c-est-rgb),.10);
+    border:1px solid rgba(var(--c-est-rgb),.38);display:flex;flex-direction:column;gap:9px;}
+  /* An author rule beats the browser's own [hidden]{display:none}, so a class that sets display makes
+     the hidden attribute do nothing at all. Found by a test asserting the banner was not on screen. */
+  .unsent[hidden],.ubtns[hidden]{display:none;}
+  .unsent.bad{background:rgba(255,107,107,.10);border-color:rgba(255,107,107,.42);}
+  .unsent .uline{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--tint-est);
+    line-height:1.4;}
+  .unsent.bad .uline{color:var(--tint-danger);}
+  .unsent .udot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--tint-est);
+    box-shadow:0 0 8px 1px rgba(var(--c-est-rgb),.8);}
+  .unsent.bad .udot{background:var(--tint-danger);box-shadow:0 0 8px 1px rgba(255,107,107,.8);}
+  .unsent .uheld{font-size:11.5px;color:var(--steel-300);line-height:1.5;}
+  .unsent .uheld div{padding:2px 0;}
+  .urow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+    padding:8px 0;border-top:1px solid rgba(var(--c-line-rgb),.16);font-size:11.5px;
+    color:var(--steel-300);line-height:1.45;}
+  .urow .uwords{flex:1;}
+  .urow .uwords b{display:block;color:var(--ice);font-family:var(--font-heading);font-weight:600;
+    font-size:12px;margin-bottom:2px;}
+  .ubtns{display:flex;gap:6px;flex:0 0 auto;}
+  .ubtn{padding:6px 9px;background:var(--field);border:1px solid var(--field-line);
+    color:var(--steel-300);font-size:11px;cursor:pointer;font-family:var(--font-body);}
+  .ubtn:hover{border-color:var(--spark);color:var(--ice);}
   select.fld{appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="%238ea3c0" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>');background-repeat:no-repeat;background-position:right 10px center;padding-right:36px;}
   textarea.fld{resize:vertical;line-height:1.45;}
   .itemhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -185,7 +211,20 @@
       <div class="who"><div class="badge"><span class="av">MK</span><span id="whoName">Marko K.</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
     </div>
     <div class="card">
-      
+
+    <!-- Work booked with no connection, and it is the first thing on the screen on purpose. A welder
+         who books three entries into a dead signal and is told nothing has no way to tell this from
+         work that arrived - and will either book it all again or assume it is lost. The count, what
+         is being held, and anything the database turned away, all in one place. -->
+    <div class="unsent" id="unsentPanel" hidden>
+      <div class="uline"><span class="udot"></span><span id="unsentSaid"></span></div>
+      <div class="uheld" id="unsentHeld"></div>
+      <div id="unsentRefused"></div>
+      <div class="ubtns" id="unsentActions" hidden>
+        <button type="button" class="ubtn" id="sendNow" data-i="q_send">Send now</button>
+      </div>
+    </div>
+
     <!-- The jobs that are actually open, as things to press. A welder at the end of a shift has
          one or two of these in mind; making them hunt for it in a dropdown of every project the
          shop has ever had is the difference between hours getting logged and hours not. -->
@@ -283,31 +322,80 @@
    Declared rather than detected, because a wrong guess would show the workshop's real figures
    on a screen that cannot write them back. */
 window.WORKSHOP_SERVER_READY=true;</script>
-<script src="workshop-data.js"></script><script src="workshop-guard.js"></script><script src="workshop-api.js"></script><script src="workshop-forms.js"></script><script src="workshop-ui.js"></script><script>
+<script src="workshop-data.js"></script><script src="workshop-guard.js"></script><script src="workshop-api.js"></script><script src="workshop-queue.js"></script><script src="workshop-forms.js"></script><script src="workshop-ui.js"></script><script>
   // Project/Item/Equipment are real, live WorkshopData records — never a page-local fake list — and
   // equipment usage is gated the same way jobcard-desktop.html's own Log Time modal gates it (see
   // saveHours() below), reusing that page's resolveLogTimeEquipment() helper so there is exactly one
   // implementation of "is this equipment currently held by this jobcard" in the app.
   const {resolveLogTimeEquipment}=JobcardEquipmentRules;
+
+  // ── The three things this screen knows about unsent work ────────────────────────────────
+  //
+  // Declared here rather than beside the queue code below, because setLang() runs while the page is
+  // still loading and draws the banner: `let` hoists without initialising, so reading one of these
+  // from up here threw before it was declared and took the whole page down on load.
+  // `me` is the id of whoever this session belongs to, read from the snapshot (the server answers it
+  // from the session, so it cannot be spoofed by this page) and kept beside the token for exactly as
+  // long. It is the key the queue is stored under, because the server takes the name for a booking
+  // from the session: work queued by one welder and flushed under the next one's session would be
+  // booked in the wrong name, which is worse than not being booked at all.
+  let me=null;
+  // Somebody else's unsent work is on this tablet. Then this person's entries must not join that
+  // queue - adding to it would make their entry part of a batch that will be sent under the other
+  // person's session, and the queue is stored under one owner at a time on purpose.
+  let heldForSomebodyElse=false;
+  // Signed in, but the workshop could not be read. The list on screen is then not the workshop's,
+  // and nothing may be booked against it - see the boot block at the bottom of this file.
+  let couldNotRead=false;
   const T={
     sv:{todayjobs:"Jobb som pågår nu",nojobsnow:"Inget arbetskort är öppet just nu",yesterday:"Igår",todaylog:"Rapporterat idag",todaytotal:"Totalt idag",nothinglogged:"Inget rapporterat för den här dagen än",noopenjobs:"Inget projekt har ett öppet jobbkort",eq_onjob:"På detta jobbkort",eq_attach:"Koppla från verkstaden",eq_attached:"Kopplad till jobbkortet: {list}",mat_logged:"{n} materialrad(er) noterade på {jc}",unit:"Enhet",back_hub:"Nav",modtitle:"Timmar",modsub:"Registrera tid & material",logout:"Logga ut",project:"Välj projekt",item:"Välj artikel",est:"Est.",hours:"Ange timmar",date:"Datum",notes:"Anteckningar",notesph:"Vad gjordes…",intcost:"Utrustning",hrs:"Tim",addeq:"Lägg till utrustning",eqph:"— välj —",matlabel:"Material",addmat:"Lägg till material",matph:"Materialnamn…",qty:"Antal",explain:"Mer info",savebtn:"Spara post",savenew:"Spara & ny",locale:"sv-SE",
       wholejobcard:"(helt jobbkort)",noitems:"Inga jobbkort hittades för detta projekt",noeqlinked:"Ingen utrustning kopplad till detta jobbkort ännu",
       err_select:"Välj projekt och post, ange sedan timmar större än noll.",err_jobcard_missing:"Detta jobbkort finns inte längre — uppdatera och försök igen.",
       eq_unassigned:"Utrustningen är inte tilldelad detta jobbkort",eq_assignedelsewhere:"Tilldelad annat jobbkort: {jc}. Återlämna eller omtilldela utrustningen först",
       eq_missing:"Denna utrustning saknas, är tvetydig eller inte kopplad till detta jobbkort — koppla den under Maskiner & Utrustning först.",
-      eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad.",server_partial:"Utrustning och material sparas ännu inte till servern. Ta bort de raderna och spara timmarna, eller notera dem på jobbkortet."},
+      eq_blocked:"Blockerad av säkerhetsregler för utrustning: {reasons}",savedok:"Tidpost sparad.",server_partial:"Utrustning och material sparas ännu inte till servern. Ta bort de raderna och spara timmarna, eller notera dem på jobbkortet.",
+      q_send:"Skicka nu",q_retry:"Försök igen",q_discard:"Ta bort",
+      q_waiting:"{n} post(er) sparade på denna surfplatta, ännu inte skickade. De går fram av sig själva så snart det finns anslutning.",
+      q_saved_offline:"Ingen anslutning. Posten är sparad på denna surfplatta och skickas av sig själv. Registrera den inte igen.",
+      q_refused_head:"Inte godkända — dessa behöver dig:",
+      q_discard_sure:"Ta bort {what} utan att skicka? Timmarna försvinner och måste rapporteras igen.",
+      q_blocked:"Denna surfplatta håller ännu oskickat arbete från en tidigare inloggning. Det går fram när den personen loggar in här igen.",
+      q_blocked_save:"Ingen anslutning, och denna surfplatta håller redan någon annans oskickade arbete — därför kan inte denna post också sparas här. Försök igen när det finns täckning.",
+      q_noread:"Verkstaden kunde inte läsas, så det finns ingen jobblista att rapportera mot. Försök igen när det finns anslutning.",
+      q_nohold:"Ingen anslutning, och denna surfplatta kan inte avgöra vems post detta är — därför kan den inte sparas här. Försök igen när det finns täckning.",
+      q_out_with_unsent:"{n} post(er) är ännu inte skickade. De ligger kvar på denna surfplatta och går fram när du loggar in här igen. Logga ut ändå?"},
     en:{todayjobs:"Jobs running now",nojobsnow:"No jobcard is open right now",yesterday:"Yesterday",todaylog:"Logged today",todaytotal:"Total today",nothinglogged:"Nothing logged for this day yet",noopenjobs:"No project has an open jobcard",eq_onjob:"On this jobcard",eq_attach:"Attach from the workshop",eq_attached:"Attached to this jobcard: {list}",mat_logged:"{n} material line(s) recorded on {jc}",unit:"Unit",back_hub:"Hub",modtitle:"Hours",modsub:"Log time & materials",logout:"Log out",project:"Select Project",item:"Select Item",est:"Est.",hours:"Enter Hours",date:"Date",notes:"Notes",notesph:"What was done…",intcost:"Equipment used",hrs:"Hrs",addeq:"Add equipment",eqph:"— select —",matlabel:"Material used",addmat:"Add material",matph:"Material name…",qty:"Qty",explain:"More detail",savebtn:"Save entry",savenew:"Save & new",locale:"en-GB",
       wholejobcard:"(whole jobcard)",noitems:"No jobcards found for this project",noeqlinked:"No equipment linked to this jobcard yet",
       err_select:"Select a project and item, then enter hours greater than zero.",err_jobcard_missing:"This jobcard no longer exists — refresh and try again.",
       eq_unassigned:"Equipment is not assigned to this Jobcard",eq_assignedelsewhere:"Assigned elsewhere: {jc}. Return or reassign equipment first",
       eq_missing:"This equipment is missing, ambiguous or not linked to this Jobcard — link it in Machines & Equipment first.",
-      eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved.",server_partial:"Equipment and material are not saved to the server yet. Remove those rows and save the hours, or record them on the jobcard."},
+      eq_blocked:"Blocked by equipment safety rules: {reasons}",savedok:"Hours entry saved.",server_partial:"Equipment and material are not saved to the server yet. Remove those rows and save the hours, or record them on the jobcard.",
+      q_send:"Send now",q_retry:"Try again",q_discard:"Remove",
+      q_waiting:"{n} entr(y/ies) saved on this tablet, not sent yet. They go through by themselves as soon as there is a connection.",
+      q_saved_offline:"No connection. The entry is saved on this tablet and will be sent by itself. Do not enter it again.",
+      q_refused_head:"Not accepted — these need you:",
+      q_discard_sure:"Remove {what} without sending it? The hours are gone and will have to be logged again.",
+      q_blocked:"This tablet is still holding unsent work from an earlier sign-in. It goes through when that person signs in here again.",
+      q_blocked_save:"No connection, and this tablet is already holding somebody else\u2019s unsent work — so this entry cannot be held here as well. Try again when there is a signal.",
+      q_noread:"The workshop could not be read, so there is no jobcard list to log against. Try again when there is a connection.",
+      q_nohold:"No connection, and this tablet cannot tell whose entry this is — so it cannot be held here. Try again when there is a signal.",
+      q_out_with_unsent:"{n} entr(y/ies) have not been sent yet. They stay on this tablet and go through when you sign in here again. Log out anyway?"},
     mk:{todayjobs:"Работи што течат сега",nojobsnow:"Ниедна работна картичка не е отворена сега",yesterday:"Вчера",todaylog:"Запишано денес",todaytotal:"Вкупно денес",nothinglogged:"Сè уште ништо не е запишано за овој ден",noopenjobs:"Nitu eden proekt nema otvoren raboten karton",eq_onjob:"Na ovoj raboten karton",eq_attach:"Povrzi od rabotilnicata",eq_attached:"Povrzano so kartonot: {list}",mat_logged:"{n} redovi materijal zapišani na {jc}",unit:"Edinica",back_hub:"Meni",modtitle:"Časovi",modsub:"Zapiši vreme i materijal",logout:"Odjavi se",project:"Izberi proekt",item:"Izberi stavka",est:"Proc.",hours:"Vnesi časovi",date:"Datum",notes:"Beleški",notesph:"Što e napraveno…",intcost:"Oprema",hrs:"Časa",addeq:"Dodaj oprema",eqph:"— izberi —",matlabel:"Materijal",addmat:"Dodaj materijal",matph:"Ime na materijal…",qty:"Količina",explain:"Dodatno",savebtn:"Začuvaj",savenew:"Začuvaj i nova",locale:"mk",
       wholejobcard:"(cel karton)",noitems:"Ne se najdeni kartoni za ovoj proekt",noeqlinked:"Sè ušte nema dodadeno oprema na ovoj karton",
       err_select:"Izberi proekt i stavka, pa vnesi časovi pogolemi od nula.",err_jobcard_missing:"Ovoj karton ne postoi poveke — osveži i probaj pak.",
       eq_unassigned:"Opremata ne e zadolžena za ovoj karton",eq_assignedelsewhere:"Zadolžena na drug karton: {jc}. Vrati ja ili preraspredeli ja opremata prvo",
       eq_missing:"Ovaa oprema nedostasuva ili ne e povrzana so ovoj karton — povrzi ja vo Mašini i oprema prvo.",
-      eq_blocked:"Blokirano od bezbednosnite pravila za oprema: {reasons}",savedok:"Zapisot e začuvan.",server_partial:"Opremata i materijalot sè ušte ne se začuvuvaat na serverot. Otstrani gi tie redovi i začuvaj gi časovite, ili zapiši gi na rabotniot karton."}
+      eq_blocked:"Blokirano od bezbednosnite pravila za oprema: {reasons}",savedok:"Zapisot e začuvan.",server_partial:"Opremata i materijalot sè ušte ne se začuvuvaat na serverot. Otstrani gi tie redovi i začuvaj gi časovite, ili zapiši gi na rabotniot karton.",
+      q_send:"Isprati sega",q_retry:"Probaj povtorno",q_discard:"Otstrani",
+      q_waiting:"{n} zapis(i) se začuvani na ovoj tablet, sè ušte ne se isprateni. Ḱe pominat sami štom ima vrska.",
+      q_saved_offline:"Nema vrska. Zapisot e začuvan na ovoj tablet i ḱe bide ispraten sam. Ne vnesuvaj go povtorno.",
+      q_refused_head:"Ne se prifateni — ovie te čekaat:",
+      q_discard_sure:"Da se otstrani {what} bez da bide ispraten? Časovite se izgubeni i ḱe treba povtorno da se zapišat.",
+      q_blocked:"Ovoj tablet sè ušte drži neispratena rabota od prethodna najava. Ḱe pomine koga toj čovek povtorno ḱe se najavi tuka.",
+      q_blocked_save:"Nema vrska, a ovoj tablet veḱe drži neispratena rabota od nekoj drug — pa ovoj zapis ne može da se drži i tuka. Probaj povtorno koga ima signal.",
+      q_noread:"Rabotilnicata ne možeše da se pročita, pa nema lista na rabotni kartoni za zapisuvanje. Probaj povtorno koga ima vrska.",
+      q_nohold:"Nema vrska, a ovoj tablet ne može da utvrdi čij e ovoj zapis — pa ne može da se drži tuka. Probaj povtorno koga ima signal.",
+      q_out_with_unsent:"{n} zapis(i) sè ušte ne se isprateni. Ostanuvaat na ovoj tablet i ḱe pominat koga povtorno ḱe se najaviš tuka. Da se odjaviš sepak?"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -315,7 +403,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
     document.querySelectorAll('[data-i-ph]').forEach(el=>el.placeholder=t[el.getAttribute('data-i-ph')]);
     document.documentElement.lang=code==="mk"?"mk-Latn":code;var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
-    refreshEqLang();tick();}
+    refreshEqLang();tick();renderUnsent();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   const proj=document.getElementById('project'),item=document.getElementById('item');
   // Named (not inline at load only) so it can be re-run on workshop:data - a project created
@@ -595,6 +683,100 @@ window.WORKSHOP_SERVER_READY=true;</script>
     jc.materials=mats;
     return use.length;
   }
+  // ── Work that has not reached the server yet ──────────────────────────────────────────
+  //
+  // workshop-queue.js holds the entries and knows nothing about this screen; everything here is the
+  // screen's half: whose queue it is, when it is emptied, and what the person is told.
+  //
+
+  // What the queue sends through. Two answers are translated on the way back:
+  //
+  //   * a session that has expired is not a refusal of the work. The entry stays, in order, exactly
+  //     as it would for a dead signal - so a shift that outlasts its token keeps its bookings instead
+  //     of having them thrown into the refused list where nobody can act on them.
+  //   * everything else is passed through as the API answered it, refusal wording and all.
+  async function sendQueued(name,args){
+    const answer=await WorkshopApi.call(name,args);
+    if(answer.signedOut)return{offline:true};
+    return answer;
+  }
+
+  function renderUnsent(){
+    const t=T[current],panel=document.getElementById('unsentPanel');
+    if(!panel||!window.WorkshopQueue)return;
+    const waiting=WorkshopQueue.waiting(),refused=WorkshopQueue.refused();
+    const said=document.getElementById('unsentSaid'),held=document.getElementById('unsentHeld'),
+          list=document.getElementById('unsentRefused'),actions=document.getElementById('unsentActions');
+    if(!waiting.length&&!refused.length&&!couldNotRead){panel.hidden=true;return;}
+    panel.hidden=false;
+    panel.classList.toggle('bad',!!refused.length||couldNotRead);
+    said.textContent=couldNotRead?t.q_noread
+      :heldForSomebodyElse?t.q_blocked
+      :waiting.length?tpl(t.q_waiting,{n:waiting.length}):t.q_refused_head;
+    // What is being held, named. A count alone leaves the welder wondering which press it was.
+    held.innerHTML='';
+    waiting.forEach(e=>{const row=document.createElement('div');row.textContent=e.label;held.appendChild(row);});
+    list.innerHTML='';
+    if(refused.length){
+      const head=document.createElement('div');head.className='urow';head.style.borderTop='0';
+      head.innerHTML='<div class="uwords">'+esc(t.q_refused_head)+'</div>';
+      list.appendChild(head);
+    }
+    refused.forEach(e=>{
+      const row=document.createElement('div');row.className='urow';
+      const words=document.createElement('div');words.className='uwords';
+      const name=document.createElement('b');name.textContent=e.label;
+      words.appendChild(name);
+      // The database's own wording, not a code and not a rewrite of it: "operation Weld out cannot
+      // start: MIG 400 is out-of-service" is the sentence that tells a welder what to do next.
+      words.appendChild(document.createTextNode(e.refusedWith||''));
+      const btns=document.createElement('div');btns.className='ubtns';
+      const again=document.createElement('button');again.type='button';again.className='ubtn';
+      again.textContent=t.q_retry;
+      again.addEventListener('click',async()=>{WorkshopQueue.retry(e.id);renderUnsent();await flushQueue();});
+      const drop=document.createElement('button');drop.type='button';drop.className='ubtn';
+      drop.textContent=t.q_discard;
+      drop.addEventListener('click',()=>{
+        // Asked before it goes, because this is the one button on the screen that loses work.
+        wConfirm(tpl(t.q_discard_sure,{what:e.label}),()=>{WorkshopQueue.discard(e.id);renderUnsent();});
+      });
+      btns.appendChild(again);btns.appendChild(drop);
+      row.appendChild(words);row.appendChild(btns);
+      list.appendChild(row);
+    });
+    actions.hidden=!waiting.length||heldForSomebodyElse;
+  }
+
+  // Empty the queue, oldest first, and tell the screen the truth afterwards.
+  //
+  // Called on load, when the browser says the connection is back, after a press that could not be
+  // sent, and from the Send now button. It is safe to call at any of those moments and safe to call
+  // twice: every queued workflow takes the id the device generated, and a replay of the same id is
+  // answered with the first result rather than done again.
+  let flushing=false;
+  async function flushQueue(){
+    if(!window.WorkshopQueue||!window.WorkshopApi||!WorkshopApi.signedIn())return null;
+    if(!me||heldForSomebodyElse||flushing)return null;
+    // Not re-entrant: the online event and a press can land together, and two flushes racing would
+    // send the same entry twice - harmless at the database, but the second answer would arrive after
+    // the first had already taken the entry off the queue.
+    flushing=true;
+    let result=null;
+    try{
+      result=await WorkshopQueue.flush(me,sendQueued);
+    }finally{
+      flushing=false;
+    }
+    if(result&&result.sent){
+      // The hours are now the server's, so the screen has to be the server's too - otherwise "Logged
+      // today" keeps showing the workshop as it was before the queue went through.
+      const again=await WorkshopApi.snapshot();
+      if(again.data){WorkshopData.adoptSnapshot(again.data);couldNotRead=false;renderJobPicks();renderToday();}
+    }
+    renderUnsent();
+    return result;
+  }
+
   async function saveHours(reset){
     const entry=collectHours();const hours=Number(entry.hours);
     if(!entry.project||!entry.jobcard||!Number.isFinite(hours)||hours<=0){wAlert(T[current].err_select);return false;}
@@ -641,31 +823,74 @@ window.WORKSHOP_SERVER_READY=true;</script>
     if(WorkshopData.isServerBacked()){
       const t=T[current];
       if(toLog.length||(entry.materials||[]).length){wAlert(t.server_partial);return false;}
-      // An id generated here, so that a retry of THIS press is the same entry rather than a second
-      // one. What is still missing is keeping it across a failure — the offline queue, which is the
-      // next piece of work and is why the server takes the id at all.
-      const eventId=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID()
-        :('press-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-      const answer=await WorkshopApi.call('book_hours',{
+      const args={
         jobcard_id:Number(jc.id),
         operation_id:entry.operationId!=null?Number(entry.operationId):null,
         hours:hours,
         worked_on:entry.date,
-        note:entry.notes||null,
-        event_id:eventId
-      });
-      if(!answer.ok){
-        // The database's own wording. "operation Weld out cannot start: MIG 400 is out-of-service"
-        // is what the person needs to read, not a code.
-        wAlert(answer.refused);
+        note:entry.notes||null
+      };
+      // What the queue shows for this entry while it is held. Readable at a glance and in no language:
+      // a welder scanning the banner is looking for "did my 2.5 hours on JC-0007 go".
+      const label=hours+' h · '+jc.no+(entry.item?' · '+entry.item:'');
+
+      // Two reasons not to queue this entry, and both end the same way: send it straight to the
+      // server, which works while there is a connection and is refused out loud when there is not.
+      //
+      //   * somebody else's unsent work is on this tablet. Their queue is not this person's to add
+      //     to - holding both under one owner would send one person's hours in the other's name,
+      //     because the owner is what decides whose session flushes it.
+      //   * the snapshot did not say who this session belongs to, so there is no owner to store a
+      //     queue under. That means a server older than this page rather than anything a welder did.
+      if(heldForSomebodyElse||!me){
+        const straight=await WorkshopApi.call('book_hours',
+          Object.assign({},args,{event_id:WorkshopQueue.newId()}));
+        if(straight.offline){wAlert(me?t.q_blocked_save:t.q_nohold);return false;}
+        if(!straight.ok){wAlert(straight.refused);return false;}
+        const fresh=await WorkshopApi.snapshot();
+        if(fresh.data)WorkshopData.adoptSnapshot(fresh.data);
+        wAlert(t.savedok);
+        if(reset){setHours(0);document.getElementById('notes').value='';}
+        renderJobPicks();renderToday();renderUnsent();
+        return true;
+      }
+
+      // Written down before anything is sent, and that order is the whole point. The id the server
+      // takes is generated once, here, and kept with the entry: if the tablet is locked, killed or
+      // reloaded between the press and the answer, the same entry is sent again with the same id and
+      // the database answers rather than books it twice.
+      const queued=WorkshopQueue.add(me,'book_hours',args,label);
+      await flushQueue();
+      const turnedAway=WorkshopQueue.refused().find(e=>e.id===queued.id);
+      if(turnedAway){
+        // Refused while the person is standing in front of the form. They are being shown the
+        // database's words now, so the entry is taken out of the list rather than left there to ask
+        // them the same question a second time - the list is for entries refused with nobody watching.
+        WorkshopQueue.discard(queued.id);
+        renderUnsent();
+        wAlert(turnedAway.refusedWith);
         return false;
       }
-      const again=await WorkshopApi.snapshot();
-      if(again.data)WorkshopData.adoptSnapshot(again.data);
+      if(WorkshopQueue.waiting().some(e=>e.id===queued.id)){
+        // Not sent, not lost. Said plainly, and with "do not enter it again" in it, because the
+        // second entry a welder makes out of doubt is the failure this whole file exists to avoid.
+        wAlert(t.q_saved_offline);
+        if(reset){setHours(0);document.getElementById('notes').value='';}
+        renderUnsent();
+        return true;
+      }
       wAlert(t.savedok);
       if(reset){setHours(0);document.getElementById('notes').value='';}
       renderJobPicks();renderToday();
       return true;
+    }
+
+    // Signed in, but the workshop could not be read. Nothing is booked against a job list that is
+    // not the workshop's: the records still on screen came from this browser's own storage, and
+    // logging hours onto them would put the entry in the one place the office will never look.
+    if(window.WorkshopApi&&WorkshopApi.signedIn()){
+      wAlert(T[current].q_noread);
+      return false;
     }
 
     for(const eqEntry of toLog){
@@ -703,26 +928,109 @@ window.WORKSHOP_SERVER_READY=true;</script>
   //
   // Nothing is assumed: the page asks, and if there is no session it stays exactly as it was, on
   // browser storage, which is how the other fifteen pages still run.
-  (async function(){
-    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
-    const answer=await WorkshopApi.snapshot();
-    if(answer.signedOut){location.href='login.html';return;}
-    if(answer.failed){wAlert(answer.failed);return;}
-    WorkshopData.adoptSnapshot(answer.data);
+
+  // Whose queue this is. Read from the snapshot when there is one and kept beside the token, so a
+  // reload with no signal still knows whose unsent work it is holding - and a tablet holding somebody
+  // else's says so instead of sending it under this session.
+  function claimQueue(){
+    if(!window.WorkshopQueue||!window.WorkshopApi)return;
+    me=WorkshopApi.userId();
+    if(!me)return;
+    heldForSomebodyElse=!!WorkshopQueue.claim(me).blocked;
+  }
+
+  // The workshop as the server just described it, taken on. One function rather than a block inside
+  // the boot, because the same thing has to happen when the line comes back - and when it was a
+  // block, everything in it was skipped on a load with no connection: the name on screen, the
+  // dropdowns, and the Log out button's own handler, which is how a tablet came back from a dead
+  // signal with a Log out that did nothing.
+  function adoptWorkshop(data){
+    WorkshopData.adoptSnapshot(data);
+    couldNotRead=false;
     // The name on screen is whoever the session belongs to — not a name kept in this browser. The
     // server ignores any name sent with an entry and records the session's, so showing anything else
     // here would be showing something untrue.
-    if(answer.data.takenBy){
+    if(data.takenBy){
       const label=document.getElementById('whoName');
-      if(label)label.textContent=answer.data.takenBy;
+      if(label)label.textContent=data.takenBy;
       const initials=document.querySelector('.who .av');
-      if(initials)initials.textContent=answer.data.takenBy.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      if(initials)initials.textContent=data.takenBy.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
     }
+    // Now that the snapshot has said who this is, the queue has an owner and can be emptied.
+    claimQueue();
+    populateProjects();loadItems();renderJobPicks();renderToday();renderUnsent();
+  }
+
+  // Try the line again: read the workshop if that failed, then empty the queue. Behind both the
+  // browser's `online` event and the Send now button, because they are the same wish.
+  //
+  // `online` is a hint rather than a promise - it says the network interface came up, not that the
+  // office is reachable - so this only tries, and the queue's own rules decide what survives.
+  async function tryAgainNow(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(couldNotRead){
+      const again=await WorkshopApi.snapshot();
+      if(again.signedOut){location.href='login.html';return;}
+      if(again.data)adoptWorkshop(again.data);
+    }
+    await flushQueue();
+    renderUnsent();
+  }
+
+  // Leaving. One last attempt at the queue, then said out loud: walking away from a tablet believing
+  // the hours are in is the whole problem the queue exists for. And then allowed, because refusing to
+  // sign out would only strand the next welder at the same tablet - the entries stay under this
+  // person's id and go through when they sign in here again.
+  async function signOutHere(){
+    if(window.WorkshopQueue&&WorkshopQueue.owned(me)&&WorkshopQueue.count()){
+      const after=await flushQueue();
+      if(after&&after.left){
+        wConfirm(tpl(T[current].q_out_with_unsent,{n:after.left}),async function(){
+          await WorkshopApi.signOut();location.href='login.html';
+        });
+        return;
+      }
+    }
+    await WorkshopApi.signOut();location.href='login.html';
+  }
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    // All of this before the snapshot, and none of it depending on one: a tablet that comes up with
+    // no connection still has to show what it is holding, still has to notice the line coming back,
+    // and still has to be able to sign out.
+    claimQueue();
+    renderUnsent();
+    window.addEventListener('online',tryAgainNow);
+    const send=document.getElementById('sendNow');
+    if(send)send.addEventListener('click',tryAgainNow);
     const out=document.getElementById('logoutBtn');
-    if(out)out.addEventListener('click',async function(){await WorkshopApi.signOut();location.href='login.html';});
-    populateProjects();loadItems();renderJobPicks();renderToday();
+    if(out)out.addEventListener('click',signOutHere);
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return;}
+    if(answer.offline){
+      // No connection on load, and this is the fork that matters: the page does NOT fall back to
+      // this browser's own storage. The records still in it are demonstration data or somebody
+      // else's shift, and hours logged onto them would go into the one place the office never looks.
+      // So the screen says the workshop could not be read, saveHours() refuses, and the queue keeps
+      // whatever was already in it - which is what tryAgainNow() sends the moment the line is back.
+      couldNotRead=true;
+      renderUnsent();
+      return;
+    }
+    if(answer.failed){wAlert(answer.failed);return;}
+    adoptWorkshop(answer.data);
+    await flushQueue();
   })();
-  document.getElementById('logoutBtn').addEventListener('click',()=>{location.href='login.html';});
+  // Only when this page is running on browser storage. With a session the boot block above attaches
+  // its own handler, which ends the session on the server and says what is still unsent before
+  // leaving - and both firing meant this one navigated away while that one was mid-request. The
+  // browser cancels a fetch on navigation, so the sign-out was a coin toss and the warning about
+  // unsent work never got the chance to appear.
+  document.getElementById('logoutBtn').addEventListener('click',()=>{
+    if(window.WorkshopApi&&WorkshopApi.signedIn())return;
+    location.href='login.html';
+  });
   const box=document.getElementById('embers');const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(!reduce){for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const dur=7+Math.random()*9;e.style.animationDuration=dur+'s';e.style.animationDelay=(-Math.random()*dur)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';box.appendChild(e);}}
 

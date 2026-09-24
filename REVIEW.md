@@ -285,14 +285,30 @@ Group → subgroup → warehouse → sublocation → bin, for one building. A sh
 
 ## What is missing, and matters more than any of the above
 
-1. **Offline.** No service worker anywhere. A steel building eats wifi, and the module used most is
-   the one used furthest from the router.
+1. **Offline.** ~~No service worker anywhere.~~ **Partly done.** Booking hours now survives a dead
+   signal: the entry is written to the tablet with the id the server will take, the screen says it is
+   held, and it is sent by itself when the line comes back — `workshop-queue.js`, wired into
+   hours-mobile. Starting or finishing a step and taking material off the shelf have the database
+   half (`record_operation_offline`, `issue_material_offline`) and not yet the screen half. There is
+   still no service worker, so the page itself must be loaded while there is a connection.
 2. **Paper.** Only four of sixteen pages can print. A jobcard goes to the machine on paper; a
    material certificate gets filed on paper; an invoice gets posted.
 3. **Two prices for one item.** You cannot compare what two suppliers charge.
 4. **Photographs.** A fabricator photographs the weld, the defect, the delivered job. There is
    nowhere to put a picture.
 5. **A phone that works.** Only Hours and Hub have mobile pages. Everything else assumes a desk.
+6. **Macedonian is written in two scripts, and nobody has decided which.** Measured over every
+   page's `mk:{}` table: **1,526 strings in Latin script, 419 in Cyrillic.** It is not scattered
+   noise — Quality (115 of 116) and Reports (151 of 153) are written almost entirely in Cyrillic,
+   while Customers, Suppliers, the two Hubs and Hours-desktop have not a single Cyrillic character.
+   Estimations, Jobcards, Marketing, Hours-mobile and Login are mixed, and Login is nearly half and
+   half — so the screen a person signs in on changes script as they read down it.
+
+   Both are correct Macedonian, so nothing is unreadable and no test can see it; this is a decision,
+   not a bug, and it is yours. Say which script and it is a mechanical pass — Macedonian romanisation
+   is a letter-for-letter map, and the transliteration in the Latin pages is already consistent
+   (`š ž č ḱ`) apart from a handful of `kj` for `ḱ`. Until then new strings follow whichever script
+   dominates the page they are added to, which is how Hours-mobile's queue messages came out Latin.
 
 ---
 

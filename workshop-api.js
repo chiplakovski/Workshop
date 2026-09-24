@@ -16,31 +16,74 @@
   // is the next person signed in as the last one. The server expires a tablet session at the end of
   // the shift anyway; this is the same rule at the other end.
   const TOKEN_KEY = 'varmak.session.token';
+  // Who the token belongs to, kept beside it and for exactly as long. The offline queue is stored
+  // under its owner's id and must never be flushed under somebody else's session, so a page that
+  // comes back from a reload with no connection still has to be able to say whose work it is holding.
+  // The same lifetime as the token is the whole point: when the token goes, so does this, and the
+  // next person cannot inherit the answer to "who am I".
+  const USER_KEY = 'varmak.session.user';
 
   function readToken() {
     try { return root.sessionStorage.getItem(TOKEN_KEY) || null; } catch (e) { return null; }
   }
+  function rememberUser(id) {
+    try {
+      if (id) root.sessionStorage.setItem(USER_KEY, String(id));
+      else root.sessionStorage.removeItem(USER_KEY);
+    } catch (e) { /* as above: signing in still works, it just does not survive a reload */ }
+  }
+  function userId() {
+    try { return root.sessionStorage.getItem(USER_KEY) || null; } catch (e) { return null; }
+  }
   function writeToken(value) {
     try {
       if (value) root.sessionStorage.setItem(TOKEN_KEY, value);
-      else root.sessionStorage.removeItem(TOKEN_KEY);
+      else { root.sessionStorage.removeItem(TOKEN_KEY); rememberUser(null); }
     } catch (e) { /* a private window with storage blocked still signs in, just not across reloads */ }
   }
 
   async function request(method, path, body) {
     const token = readToken();
-    const response = await fetch(BASE + path, {
-      method,
-      headers: Object.assign(
-        { 'content-type': 'application/json' },
-        token ? { authorization: 'Bearer ' + token } : {}
-      ),
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
+    let response;
+    try {
+      response = await fetch(BASE + path, {
+        method,
+        headers: Object.assign(
+          { 'content-type': 'application/json' },
+          token ? { authorization: 'Bearer ' + token } : {}
+        ),
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+    } catch (e) {
+      // No connection. An answer rather than an exception, because the shop tablet loses the signal
+      // as a matter of routine and every caller here would otherwise have to wrap its own fetch —
+      // and the one that did not would throw out of a click handler, leaving the person looking at a
+      // button that did nothing and said nothing.
+      return { status: 0, body: {}, unreachable: true };
+    }
     let parsed = null;
-    const text = await response.text();
+    let text = '';
+    try {
+      text = await response.text();
+    } catch (e) {
+      // The headers arrived and the body did not. The request may well have been carried out, so
+      // this is the unreachable case too: safe to send again, because every offline workflow takes
+      // the id from the device and a replay of the same id is answered rather than repeated.
+      return { status: 0, body: {}, unreachable: true };
+    }
     if (text) { try { parsed = JSON.parse(text); } catch (e) { parsed = { refused: text }; } }
     return { status: response.status, body: parsed || {} };
+  }
+
+  // Not reachable, as opposed to refused.
+  //
+  // The difference decides what happens to a queued entry: unreachable is tried again, unchanged and
+  // in order, while a refusal is shown to the person because trying again cannot help. So a 5xx
+  // counts as unreachable — a dropped database connection, a restart mid-deploy, a proxy with
+  // nothing behind it. None of those are the welder's to fix, all of them are safe to send again
+  // (the id makes a replay harmless), and none of them have any wording worth showing.
+  function unreachable(result) {
+    return !!result.unreachable || result.status >= 500;
   }
 
   // Is there a server at all? Answered once and remembered, because every page asks on load and a
@@ -63,6 +106,9 @@
       writeToken(result.body.token);
       return { ok: true };
     }
+    // An unreachable server is not a wrong password, and saying so matters: a welder told "that is
+    // not a login we recognise" will try their PIN again, then a different one, then stop trusting it.
+    if (unreachable(result)) return { ok: false, offline: true, refused: 'no connection to the workshop' };
     // The refusal is the database's wording, passed through. "that is not a login we recognise" is
     // deliberately the same answer for a wrong secret and an unknown address.
     return { ok: false, refused: result.body.refused || 'that is not a login we recognise' };
@@ -78,10 +124,17 @@
   // working, not an error to report.
   async function snapshot() {
     const main = await request('GET', '/read/snapshot');
+    // Offline is its own answer here too, so a page can tell "we cannot reach the server" from "the
+    // server would not give it to you" — and, above all, so that losing the signal does not sign
+    // anybody out or throw on load while there is unsent work in the queue.
+    if (unreachable(main)) return { offline: true, failed: 'no connection to the workshop' };
     if (main.status === 401) return { signedOut: true };
     if (main.status !== 200) return { failed: main.body.refused || 'could not read the workshop' };
 
     const data = main.body;
+    // The snapshot is where this page learns who it is signed in as, and the only place: the server
+    // answers it from the session rather than being told, which is what makes it worth writing down.
+    if (data.takenById) rememberUser(data.takenById);
     const money = await request('GET', '/read/money');
     if (money.status === 200) {
       // Merged record by record, by the id the snapshot carries. The figures arrive as strings and
@@ -107,6 +160,7 @@
   async function read(name) {
     const result = await request('GET', '/read/' + name);
     if (result.status === 200) return { ok: true, data: result.body };
+    if (unreachable(result)) return { ok: false, offline: true, refused: 'no connection to the workshop' };
     if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
     return { ok: false, refused: result.body.refused || 'that is not yours to read' };
   }
@@ -116,6 +170,7 @@
   async function call(name, args) {
     const result = await request('POST', '/rpc/' + name, args || {});
     if (result.status === 200) return { ok: true, result: result.body.result };
+    if (unreachable(result)) return { ok: false, offline: true, refused: 'no connection to the workshop' };
     if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
     return { ok: false, refused: result.body.refused || 'that did not go through' };
   }
@@ -128,6 +183,7 @@
     snapshot: snapshot,
     read: read,
     call: call,
+    userId: userId,
     base: BASE
   };
 })(typeof window !== 'undefined' ? window : globalThis);

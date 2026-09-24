@@ -63,6 +63,12 @@ LANGUAGE sql STABLE AS $$
     -- whether anything moved while it was away.
     'takenAt', now(),
     'takenBy', current_app_name(),
+    -- Who, as an id rather than a name. The shop tablet's offline queue is stored under its owner and
+    -- only ever flushed by them, because the server takes the name for a booking from the session:
+    -- a queue left behind by one welder and flushed under the next one's session would book the first
+    -- welder's work in the second welder's name. A display name cannot be that key — two Markos, or
+    -- one Marko whose name is corrected in Access, and the queue is orphaned or, worse, adopted.
+    'takenById', current_app_user()::text,
 
     'customers', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', c.id::text, 'no', c.ref, 'name', c.name, 'status', c.status,

@@ -16,6 +16,15 @@ session and says why, rather than showing figures that are not the workshop's; s
 [`workshop-guard.js`](workshop-guard.js). Nothing changes for a browser with no session: the
 fourteen pages work exactly as they always have.
 
+**The shop tablet keeps what it cannot send.** A steel building eats wifi, and the screen used most
+is the one used furthest from the router — so booking hours no longer needs a connection. The entry
+is written to the tablet with the id the server will be given, the screen says what is being held and
+what has not gone through, and it is sent by itself when the line comes back. Asking twice is harmless
+because the id is generated once; see [`workshop-queue.js`](workshop-queue.js). The page itself still
+has to be loaded while there is a connection: a tablet that comes up with no signal can send what it
+is holding, and says plainly that it cannot read the workshop rather than showing the job list from
+this browser's own leftovers.
+
 ## Modules (current)
 
 | Module | File(s) |
@@ -40,6 +49,11 @@ Shared logic used across modules:
 - `workshop-data.js` — the shared browser-storage data layer (`window.WorkshopData`), including
   the customers/estimations/projects/inventory/jobcards/equipment/quality records, the v3→v4
   migration and backup/import safeguards described below.
+- `workshop-api.js` — the browser's side of the backend: carries requests, holds the session token,
+  decides nothing. A dead connection is answered rather than thrown, so a page can tell "we cannot
+  reach the server" from "the server would not give it to you".
+- `workshop-queue.js` — work booked with no connection, kept until it arrives. Stored under its
+  owner's id, flushed oldest first, and never sent with a new id.
 - `workshop-forms.js` — shared form helpers.
 - `workshop-ui.js` / `workshop-ui.css` — the shared UI layer: one type scale, delayed tooltips, the
   per-module Help panel, and `wConfirm`/`wAlert`/`wPrompt`. The last of those matter: a sandboxed
@@ -154,9 +168,10 @@ npm run test:browser  # opens every HTML entry point in headless Chrome/Edge and
                       # safe tabs/views/filters/language controls while checking browser errors
 npm run test:e2e      # runs persisted Customers/Estimations, Estimating/Planning,
                       # Jobcards/Hours/Equipment, Store/Suppliers, Documents/Reports
-                      # and Marketing/Sales workflows, then the six that go all the way to
+                      # and Marketing/Sales workflows, then the seven that go all the way to
                       # Postgres: the hours slice, the access screen, Customers, Jobcards,
-                      # making a project, and the store
+                      # making a project, the store, and the offline queue with the
+                      # connection actually cut
 npm run test:backend  # the database, the roles, the workflows, real HTTP, and a restored backup
 ```
 

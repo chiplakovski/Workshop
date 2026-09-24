@@ -183,11 +183,18 @@ that everything works offline.
 **Offline for writing, not for reading everything.** Three actions must survive no signal, because
 they happen at the machine and cannot wait:
 
-| Action | Why it must queue |
-|---|---|
-| Book hours against an operation | happens at the machine, several times a shift |
-| Start / pause / finish an operation | the timestamp is the point; recording it later is a guess |
-| Issue material to a jobcard | the steel leaves the shelf whether or not there is signal |
+| Action | Why it must queue | State |
+|---|---|---|
+| Book hours against an operation | happens at the machine, several times a shift | **done, both halves** |
+| Start / pause / finish an operation | the timestamp is the point; recording it later is a guess | database half only |
+| Issue material to a jobcard | the steel leaves the shelf whether or not there is signal | database half only |
+
+"Both halves" is the distinction that matters here. All three have had their database half since step
+4 — each takes an id the device generates, and a replay of the same id is answered rather than
+repeated. Booking hours now has the other half as well: [`workshop-queue.js`](workshop-queue.js),
+wired into the phone hours screen, which writes the entry down before sending it and sends it by
+itself when the line comes back. The other two are the same wiring against the same kind of
+workflow, and the screens for them are not built yet.
 
 All three are **append-only**. That is what makes this tractable: they add a row, they do not edit
 one, so two devices offline at once cannot conflict. Queue them locally with a device-generated id,
@@ -202,6 +209,11 @@ showing something that might be wrong.
 machine was out of service, the server refuses it and the person is told. Offline delays the
 check; it does not skip it. This is exactly why the rules have to be in the database: the tablet
 cannot be the thing that decides.
+
+**There is still no service worker.** The page itself has to be loaded while there is a connection.
+A tablet that comes up with no signal can send what it is holding, and it says out loud that it
+cannot read the workshop — what it does not do is show the job list from memory, because it has
+none. That is the remaining piece of this section.
 
 ### Practical points
 
@@ -255,7 +267,8 @@ cannot touch anything else.
    [`backend/server.js`](backend/server.js) is the HTTP layer over them, which decides nothing at
    all: no writes of its own, no branch on a role, and a test that reads the file and says so.
    Offline replay is built — each of the three actions from §3 takes an event id from the device, and
-   flushing a queue twice changes nothing. Attacked by
+   flushing a queue twice changes nothing. The device that generates those ids came later, in step 5
+   below: the database half alone is a promise nothing kept. Attacked by
    [`backend/test-api.js`](backend/test-api.js) (each workflow made to fail on its last write) and
    [`backend/test-server.js`](backend/test-server.js) (over real HTTP with real tokens).
 
@@ -532,6 +545,67 @@ cannot touch anything else.
    nothing else, because nobody can tell which is which. For the same reason the screen refuses to
    save when the entry carries equipment or material — those workflows do not exist yet, and booking
    the hours while dropping the rest would be a save that looks complete.
+
+      **The tablet keeps what it cannot send.** The database half of this had existed since step 4 and
+   nothing used it: every offline workflow took an id from the device, and no device generated one that
+   outlived the press. So a welder in the part of the hall where the signal dies pressed Save, was told
+   "something went wrong at our end", and had nothing — which is the failure the whole §3 section
+   exists to prevent, sitting in the one screen that meets it daily.
+
+   [`workshop-queue.js`](workshop-queue.js) is the other half, and the whole of it is one sentence:
+   **the id is generated once, written down before anything is sent, and never generated again.**
+   Everything else follows from that. `localStorage` rather than memory, because the failure that loses
+   work is not a slow network — it is the tablet being locked, the browser being killed, or the page
+   being reloaded with an entry unsent. One at a time and oldest first, because two entries against the
+   same step sent together arrive in whichever order the network chose, and "started" landing after
+   "finished" is a jobcard that reads wrongly for ever.
+
+   Three decisions in it were not obvious:
+
+   * **The queue belongs to a person, not to a device.** The server takes the name for a booking from
+     the session, never from the request — so a queue left behind by one welder and flushed under the
+     next one's session would book the first welder's hours in the second welder's name. On a shared
+     tablet that is a real Tuesday. Each queue is therefore stored under its owner's id, taken from the
+     snapshot (`takenById`, which the server answers from the session), and only ever flushed by them.
+     A tablet holding somebody else's unsent work says so and does not offer to send it, and the next
+     welder's own bookings go straight to the server rather than joining a queue that is not theirs.
+   * **A refusal is not a failure.** If the database says no — the machine is out of service, the step
+     has been moved to another jobcard — retrying cannot help and retrying forever would hide it. The
+     entry moves to a list the person is shown, with the database's own words, and they decide: send it
+     again or remove it. A lost connection is the opposite: the entry stays, in order, and the next
+     flush tries again. A 5xx counts as a lost connection, because none of those are a welder's to fix
+     and all of them are safe to send again.
+   * **A session that has expired is not a refusal either.** A shift that outlasts its token would
+     otherwise have every booking in it thrown onto the refused list, where nobody can act on them.
+
+   Two things had to change underneath it. `workshop-api.js` now **answers** a dead connection instead
+   of throwing — a fetch that rejects used to come out of a click handler, leaving the person looking
+   at a button that did nothing and said nothing — and a mistyped password no longer reads the same as
+   an unreachable server. And the page no longer falls back to browser storage when it cannot read the
+   workshop: with a session and no snapshot it says so and refuses to book, because the records still
+   in this browser are demonstration data and hours logged onto them go where the office never looks.
+   That was the last hiding place of the two-worlds failure, and the end-to-end test baits it — it
+   fills browser storage with the demonstration workshop first, so the dropdowns offer real-looking
+   jobs and the refusal is the only thing in the way.
+
+   Thirteen end-to-end checks drive it with the connection actually cut
+   ([`tests/offline-queue.e2e.js`](tests/offline-queue.e2e.js)), and eight mutations put each rule's
+   bug back. The one worth reading is "a retry makes a new id instead of sending the one it was given":
+   with it, the suite books two days' hours for one press. Those mutations are also the first this
+   project has run against front-end files — the damaged copy is served to the browser when it asks for
+   the file, so nothing is ever written into the site directory.
+
+   One of the eight went unnoticed at first, and the reason is worth keeping: removing the queue's own
+   "this is not your queue" guard changed nothing the screen could see, because the screen refuses to
+   flush a queue it does not own before the module is ever asked. Two guards where one would do is
+   right; it just means the inner one can only be checked where it is stated, so that mutation is asked
+   of the unit tests instead.
+
+   Two smaller things it found, both of which would have bitten somebody: an author CSS rule that sets
+   `display` silently beats the browser's own `[hidden]`, so the banner could not be hidden at all
+   until `.unsent[hidden]` was written down; and the hours screen had **two** Log out handlers, one
+   from before it was wired, so the navigation raced the sign-out — the browser cancels a fetch on
+   navigation, which made ending the session a coin toss.
 
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in

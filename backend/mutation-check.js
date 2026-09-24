@@ -32,7 +32,34 @@ const FILES = {
   backup: { path: path.join(__dirname, 'backup.sh'), suite: 'test-restore.js', env: 'VARMAK_BACKUP' },
   // Named so a mutation can say `suite: 'restore'`, and so this run is thrown away if the restore
   // suite itself is edited underneath it. Nothing damages it.
-  restore: { path: path.join(__dirname, 'test-restore.js'), suite: 'test-restore.js', env: 'VARMAK_RESTORE' }
+  restore: { path: path.join(__dirname, 'test-restore.js'), suite: 'test-restore.js', env: 'VARMAK_RESTORE' },
+
+  // The shop tablet's half of the offline queue is not SQL either, and the rules in it are as easy to
+  // get wrong: which id goes with a retry, whose queue may be flushed, whether a dead signal counts as
+  // a refusal. The suite that can tell is the one that drives the screen with the connection cut, and
+  // it takes the damaged copy the same way — named in an env var — except that the substitution happens
+  // when the browser asks for the file rather than at a psql -f. Nothing is written into the site
+  // directory, so an interrupted run cannot leave a damaged page behind for the next person to find.
+  queue: {
+    path: path.join(__dirname, '..', 'workshop-queue.js'),
+    suite: path.join('..', 'tests', 'offline-queue.e2e.js'), env: 'VARMAK_QUEUE'
+  },
+  apiclient: {
+    path: path.join(__dirname, '..', 'workshop-api.js'),
+    suite: path.join('..', 'tests', 'offline-queue.e2e.js'), env: 'VARMAK_API_CLIENT'
+  },
+  hourspage: {
+    path: path.join(__dirname, '..', 'hours-mobile.html'),
+    suite: path.join('..', 'tests', 'offline-queue.e2e.js'), env: 'VARMAK_HOURS_PAGE'
+  },
+  // Named so a queue mutation can say `suite: 'queueunit'`: two of the module's promises are made to
+  // the module rather than to the screen — one person's queue is never flushed under another's session
+  // — and the screen refuses that case before the module is ever asked. Two guards is right, and it
+  // means the inner one can only be checked where it is stated.
+  queueunit: {
+    path: path.join(__dirname, '..', 'tests', 'workshop-queue.test.js'),
+    suite: path.join('..', 'tests', 'workshop-queue.test.js'), env: 'VARMAK_QUEUE_TEST'
+  }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
 const base = source.schema;
@@ -1210,6 +1237,79 @@ TO varmak_workshop;`
     to: `GRANT SELECT ON
   stock_item, equipment_event,
   jobcard, operation, equipment_assignment,`
+  },
+
+  // ── The shop tablet, with the connection cut ──────────────────────────────────────────────
+  //
+  // Not SQL, and the rules in it are as easy to get wrong: which id goes with a retry, whose queue may
+  // be flushed, whether a dead signal is a refusal. Caught by the suite that drives the screen with
+  // the connection cut, because none of it is visible to a suite that calls the functions directly.
+  {
+    // The rule the whole queue is built on: the id is generated once and never again. A retry with a
+    // fresh id is a second entry for the same press, which is the failure nobody can see by looking.
+    what: 'a retry makes a new id instead of sending the one it was given',
+    file: 'queue',
+    from: 'const answer = await send(entry.call, Object.assign({}, entry.args, { event_id: entry.id }));',
+    to: 'const answer = await send(entry.call, Object.assign({}, entry.args, { event_id: newId() }));'
+  },
+  {
+    what: 'a dead signal is treated as a refusal, so the entry leaves the queue',
+    file: 'queue',
+    from: '      if (answer && answer.offline) {',
+    to: '      if (false && answer && answer.offline) {'
+  },
+  {
+    what: 'the queue is flushed under whichever session happens to be signed in',
+    file: 'queue',
+    // Asked of the unit tests, not the screen: hours-mobile refuses to flush a queue it does not own
+    // before the module is reached, so with the screen driving it this edit changes nothing anybody
+    // can see. That is two guards where one would do, and the inner one is stated here.
+    suite: 'queueunit',
+    from: `    if (String(state.owner || '') !== String(owner || '')) {
+      return { sent: 0, refused: 0, left: state.waiting.length, notYours: true };
+    }`,
+    to: ''
+  },
+  {
+    what: 'claiming a queue adopts the work left in it by whoever had the tablet before',
+    file: 'queue',
+    from: '    if (state.waiting.length || state.refused.length) {',
+    to: '    if (false) {'
+  },
+  {
+    what: 'an entry is held in memory rather than written down before anything is sent',
+    file: 'queue',
+    from: `    write(next);
+    return entry;`,
+    to: '    return entry;'
+  },
+  {
+    // Before this, a lost connection threw out of the click handler and the welder was left looking
+    // at a button that did nothing and said nothing.
+    what: 'a lost connection throws out of the API client instead of being answered',
+    file: 'apiclient',
+    from: `    if (unreachable(result)) return { ok: false, offline: true, refused: 'no connection to the workshop' };
+    if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+    return { ok: false, refused: result.body.refused || 'that did not go through' };`,
+    to: `    if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+    return { ok: false, refused: result.body.refused || 'that did not go through' };`
+  },
+  {
+    what: 'a tablet that cannot read the workshop books onto this browser\'s own records instead',
+    file: 'hourspage',
+    from: `    if(window.WorkshopApi&&WorkshopApi.signedIn()){
+      wAlert(T[current].q_noread);
+      return false;
+    }`,
+    to: ''
+  },
+  {
+    what: 'the press is sent before it is written down, so a failure mid-send loses it',
+    file: 'hourspage',
+    from: `      const queued=WorkshopQueue.add(me,'book_hours',args,label);
+      await flushQueue();`,
+    to: `      const queued={id:WorkshopQueue.newId()};
+      await WorkshopApi.call('book_hours',Object.assign({},args,{event_id:queued.id}));`
   }
 ];
 

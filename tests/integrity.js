@@ -50,9 +50,12 @@ function duplicateFunctionDeclarations(source) {
 // is written last silently wins, so a key defined twice is a label nobody can predict. Found
 // f_worker written three times per language on Jobcards - identical values, and therefore
 // harmless right up until somebody edits one of them.
-function shadowedTranslationKeys(source) {
-  const found = new Set();
-  for (const table of source.matchAll(/\n\s*(?:en|sv|mk):\{/g)) {
+// Each en:{...}/sv:{...}/mk:{...} table in a page, as { lang, body }. Brace-counting rather than a
+// regex, and it skips over quoted text, because a translation of "Hold {reason}" contains braces and
+// a naive scan stops at the first one.
+function translationTables(source) {
+  const tables = [];
+  for (const table of source.matchAll(/\n\s*(en|sv|mk):\{/g)) {
     let depth = 1;
     let i = table.index + table[0].length;
     const start = i;
@@ -70,14 +73,23 @@ function shadowedTranslationKeys(source) {
       }
       i += 1;
     }
+    tables.push({ lang: table[1], body: source.slice(start, i - 1) });
+  }
+  return tables;
+}
+
+function shadowedTranslationKeys(source) {
+  const found = new Set();
+  for (const { body } of translationTables(source)) {
     const seen = new Set();
-    for (const key of source.slice(start, i - 1).matchAll(/(?:^|,)\s*'?([A-Za-z_][\w]*)'?\s*:/gm)) {
+    for (const key of body.matchAll(/(?:^|,)\s*'?([A-Za-z_][\w]*)'?\s*:/gm)) {
       if (seen.has(key[1])) found.add(key[1]);
       seen.add(key[1]);
     }
   }
   return [...found];
 }
+
 
 // ── Live checks: things only the rendered page can answer ──────────────────────────────────
 
