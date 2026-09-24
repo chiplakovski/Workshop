@@ -264,8 +264,14 @@ CREATE TABLE jobcard (
   notes         text,
   -- Is the steel there yet. A job released to the floor without its material is the most common
   -- reason work stops after it has started.
+  -- The four words the jobcard screen actually uses, rather than the three this column was invented
+  -- with. BACKEND.md's rule is one spelling per state, and when the two disagree the screen wins:
+  -- 'not-checked', 'shortage', 'partial' and 'available' are what somebody picks from a dropdown and
+  -- what the whole page is written around. 'none'/'partial'/'ready' came from the table plan and were
+  -- never anybody's words — and translating between them would have had to fold 'shortage' and
+  -- 'partial' onto one value, losing the difference between "some is missing" and "some is here".
   material_readiness text CHECK (material_readiness IS NULL OR
-                       material_readiness IN ('none','partial','ready')),
+                       material_readiness IN ('not-checked','shortage','partial','available')),
   delivery_target date,
   actual_start  date,
   actual_completion date,
@@ -469,7 +475,12 @@ CREATE TABLE operation (
   inspection_checkpoint boolean NOT NULL DEFAULT false,
   notes         text,
   CHECK (actual_completion IS NULL OR actual_start IS NULL OR actual_completion >= actual_start),
-  UNIQUE (jobcard_id, seq),
+  -- Deferrable, and that is the whole reason it is named. Re-ordering the steps on a jobcard means
+  -- writing seq 1 where seq 2 was while 1 is still 1, and an immediately-checked unique index refuses
+  -- the halfway state even though the finished list is fine. Deferred, it is checked once at the end
+  -- of the transaction — the rule is identical, the intermediate collision is not. The alternative was
+  -- renumbering through negative numbers, which CHECK (seq > 0) refuses and rightly.
+  CONSTRAINT operation_one_step_per_place UNIQUE (jobcard_id, seq) DEFERRABLE INITIALLY IMMEDIATE,
   -- An operation cannot depend on itself. A longer cycle is caught by the trigger below.
   CHECK (depends_on IS DISTINCT FROM id)
 );
@@ -1273,6 +1284,33 @@ CREATE TRIGGER operation_dependency_insert_trg BEFORE INSERT ON operation
   FOR EACH ROW EXECUTE FUNCTION operation_dependency_gate();
 CREATE TRIGGER operation_dependency_update_trg BEFORE UPDATE ON operation
   FOR EACH ROW EXECUTE FUNCTION operation_dependency_gate();
+
+-- A step somebody has worked on is a record of what happened, not a line on a plan.
+--
+-- hours_entry.operation_id is ON DELETE SET NULL, which is right — hours must outlive a step being
+-- reorganised — but it means deleting a step succeeds silently and leaves every hour ever booked on
+-- it pointing at nothing. What is lost is the answer to "how long did the weld-out actually take",
+-- which is the only number that makes the next estimate better than a guess, and nothing would show
+-- on any screen. So the delete is refused instead, here rather than only in the workflow that edits
+-- the list, because the office holds DELETE on this table and could otherwise do it in one statement.
+CREATE FUNCTION operation_keeps_the_work_done_on_it() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.logged_hours > 0 THEN
+    RAISE EXCEPTION 'step % (%) has % hours booked on it and cannot be removed',
+      OLD.seq, OLD.description, OLD.logged_hours
+      USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF OLD.status <> 'pending' THEN
+    RAISE EXCEPTION 'step % (%) is % and cannot be removed', OLD.seq, OLD.description, OLD.status
+      USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER operation_keeps_the_work_done_on_it_trg BEFORE DELETE ON operation
+  FOR EACH ROW EXECUTE FUNCTION operation_keeps_the_work_done_on_it();
 
 -- 4. Logged hours are the sum of the entries, maintained here so the two can never disagree.
 --

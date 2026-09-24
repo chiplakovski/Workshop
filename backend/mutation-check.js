@@ -1015,6 +1015,65 @@ TO varmak_workshop;`,
 TO varmak_workshop;`
   },
 
+  // ── Work: projects, jobcards and the steps on them ────────────────────────────────────────
+  {
+    // A jobcard carrying a different customer from its project makes every report disagree with
+    // itself, and nobody would put the two columns side by side to notice.
+    what: 'a jobcard is written without taking its customer from the project',
+    file: 'api',
+    from: `  SELECT customer_id, name INTO owner, project_name FROM project WHERE id = p_project_id;`,
+    to: `  SELECT NULL::bigint, name INTO owner, project_name FROM project WHERE id = p_project_id;`
+  },
+  {
+    // The refusal that protects hours already booked, at the layer the person reads.
+    what: 'the step list stops checking for hours before it deletes',
+    file: 'api',
+    from: `    IF doomed.logged_hours > 0 THEN
+      RAISE EXCEPTION 'step % (%) has % hours booked on it and cannot be taken off the jobcard',
+        doomed.seq, doomed.description, doomed.logged_hours;
+    END IF;`,
+    to: ''
+  },
+  {
+    // And at the layer that is the guarantee. The workflow's own check is the readable version; this
+    // is what stops a plain DELETE doing it, which the office holds the privilege for.
+    what: 'a step with hours booked on it can be deleted outright',
+    from: `CREATE TRIGGER operation_keeps_the_work_done_on_it_trg BEFORE DELETE ON operation
+  FOR EACH ROW EXECUTE FUNCTION operation_keeps_the_work_done_on_it();`,
+    to: ''
+  },
+  {
+    what: 'a step that has been started can be deleted outright',
+    from: `  IF OLD.status <> 'pending' THEN
+    RAISE EXCEPTION 'step % (%) is % and cannot be removed', OLD.seq, OLD.description, OLD.status
+      USING ERRCODE = 'foreign_key_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    // Re-ordering a list of steps writes seq 1 where seq 2 was while 1 is still 1. Checked
+    // statement by statement, that halfway state is refused and the whole re-order is impossible.
+    what: 'the one-step-per-place rule is checked before the list is finished',
+    from: `  CONSTRAINT operation_one_step_per_place UNIQUE (jobcard_id, seq) DEFERRABLE INITIALLY IMMEDIATE,`,
+    to: `  CONSTRAINT operation_one_step_per_place UNIQUE (jobcard_id, seq),`,
+    suite: 'api'
+  },
+  {
+    what: 'the step list forgets to defer the check while it renumbers',
+    file: 'api',
+    from: `  SET CONSTRAINTS operation_one_step_per_place DEFERRED;`,
+    to: ''
+  },
+  {
+    what: 'a project can be started for a customer that does not exist',
+    file: 'api',
+    from: `  IF NOT EXISTS (SELECT 1 FROM customer WHERE id = p_customer_id) THEN
+    RAISE EXCEPTION 'no such customer, or it is not yours to read'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;`,
+    to: ''
+  },
+
   // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
   //
   // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,

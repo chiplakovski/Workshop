@@ -12,7 +12,7 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**139 mutations**, across the four SQL files and the backup script.
+**146 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -56,7 +56,7 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 139 of them, a couple of hours — so it is a check to run when a rule
+suite once per mutation — 146 of them, a couple of hours — so it is a check to run when a rule
 changes, not on every save. One rule, or one file, at a time:
 
 ```sh
@@ -167,6 +167,30 @@ workflow written in the server holds right up until somebody adds a second calle
 | `receive_goods` | the line records what came, stock goes up, a movement explains why, and the order's status is derived from its lines |
 | `convert_lead` | the customer arrives carrying what was known about the lead, the lead is marked converted, and anything already quoted follows across |
 | `book_hours` · `record_operation` · `issue_material_offline` | the three the shop tablet may do with no signal |
+
+And the work itself, without which nothing could reach the shop floor except by accepting a
+quotation — so a workshop that took an order over the telephone had no way to record it at all:
+
+| | |
+|---|---|
+| `save_project` | one project, created or corrected. `used_hours` is **not** a parameter and must never become one: it is a running total the hours entries maintain, and a screen that could set it could make a project claim work nobody did |
+| `save_jobcard` | one jobcard on a project. There is **no customer parameter** — it is taken from the project, because a jobcard carrying a different customer from its project makes every report disagree with itself and nobody would put the two columns side by side to notice |
+| `set_jobcard_operations` | the steps, matched on the id the snapshot handed out rather than rebuilt. It refuses to take off a step somebody has booked hours on, or has started, and names it |
+
+The steps are the one list in this system that cannot be replaced wholesale, and the reason is worth
+reading. `hours_entry.operation_id` is `ON DELETE SET NULL` — which is right, because hours must
+outlive a step being reorganised — but it means deleting a step **succeeds silently** and leaves every
+hour ever booked on it pointing at nothing. What the workshop loses is the answer to "how long did the
+weld-out actually take", which is the only number that makes the next estimate better than a guess,
+and nothing would appear on any screen. So there are two layers: the workflow names every step it is
+about to lose and refuses first, and a `BEFORE DELETE` trigger refuses it whoever asks and however
+they ask — because the office holds `DELETE` on that table and could otherwise do it in one statement.
+
+Re-ordering those steps is why `UNIQUE (jobcard_id, seq)` is **deferrable**: writing seq 1 where seq 2
+was, while 1 is still 1, is a halfway state an immediately-checked index refuses even though the
+finished list is fine. Deferred, it is checked once at the end of the transaction. The rule is
+identical; only the moment it is asked changes. The alternative tried first was renumbering through
+negative numbers, which `CHECK (seq > 0)` refuses, and rightly.
 
 And the customer, which is the first record a workshop starting from nothing has to be able to make:
 

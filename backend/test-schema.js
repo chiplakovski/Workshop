@@ -679,8 +679,12 @@ function nothingIsOrphanedOrErased() {
     /foreign key|still referenced/);
   sql(`INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
        VALUES (${f.jobcard}, ${f.op1}, 'Welder', 4);`);
+  // Two rules refuse this now and either is a correct answer: hours_entry.jobcard_id is RESTRICT, and
+  // the cascade to the jobcard's steps hits the trigger that will not let a step with hours on it go.
+  // The second one says more — it names the step and the hours — which is why the wording is allowed
+  // to be either rather than pinned to the foreign key it used to be.
   refused('deleting a jobcard that has hours booked to it', `DELETE FROM jobcard WHERE id = ${f.jobcard};`,
-    /foreign key|still referenced/);
+    /foreign key|still referenced|hours booked on it/);
   step('Records: losing a customer, a project or a jobcard never silently takes the work with it');
 
   refused('a jobcard for no project', `INSERT INTO jobcard (project_id, title) VALUES (999999, 'Nowhere');`,
@@ -1070,6 +1074,65 @@ function documentsPointAtSomethingReal() {
   step('Documents: a certificate carries the date it runs out, a revision and a state the register can ask about');
 }
 
+// A step on a jobcard, and the work booked against it.
+function aStepRemembersTheWorkDoneOnIt() {
+  const f = fixture();
+  sql(`INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
+       VALUES (${f.jobcard}, ${f.op1}, 'Marko Ilic', 6.5);`);
+  assert.equal(value(`SELECT logged_hours::text FROM operation WHERE id = ${f.op1};`), '6.50');
+
+  // Asked as a plain DELETE rather than through the workflow, because the workflow's own check is the
+  // readable version and this is the guarantee. hours_entry.operation_id is ON DELETE SET NULL, so
+  // without the trigger this succeeds, the hours stay, and they stop knowing which step they were for
+  // — with nothing on any screen to say it happened.
+  const gone = refused('deleting a step somebody has booked hours on',
+    `DELETE FROM operation WHERE id = ${f.op1};`, /hours booked on it and cannot be removed/);
+  assert.match(gone, /6.50/, 'the refusal says how many hours are at stake');
+  assert.equal(value(`SELECT count(*) FROM operation WHERE id = ${f.op1};`), '1');
+  assert.equal(value(`SELECT count(*) FROM hours_entry WHERE operation_id = ${f.op1};`), '1');
+
+  // And one that has been started, which is a record of what happened even before an hour is booked.
+  // A step of its own rather than the fixture's second one: that one depends on the first, and the
+  // dependency gate refuses to start it — which would have been this test failing on an unrelated
+  // rule and reading as though this one did not work.
+  const started = value(`INSERT INTO operation (jobcard_id, seq, description, planned_hours)
+    VALUES (${f.jobcard}, 8, 'Dress and paint', 4) RETURNING id;`);
+  sql(`UPDATE operation SET status = 'in-progress' WHERE id = ${started};`);
+  refused('deleting a step that has been started',
+    `DELETE FROM operation WHERE id = ${started};`, /is in-progress and cannot be removed/);
+
+  // A step nobody has touched goes, because that is most of what editing a plan is.
+  const spare = value(`INSERT INTO operation (jobcard_id, seq, description, planned_hours)
+    VALUES (${f.jobcard}, 9, 'Spare step', 2) RETURNING id;`);
+  accepted('deleting a step nobody has touched', `DELETE FROM operation WHERE id = ${spare};`);
+  step('Work: a step with hours booked on it, or one that has been started, cannot be deleted at all');
+
+  // Two steps cannot claim the same place — checked at the end of the transaction rather than
+  // statement by statement, so re-ordering a list is possible without the halfway state being refused.
+  refused('two steps in the same place on one jobcard',
+    `INSERT INTO operation (jobcard_id, seq, description) VALUES (${f.jobcard}, 1, 'Also first');`,
+    /operation_one_step_per_place|duplicate key/);
+  accepted('swapping two steps round inside one transaction', `BEGIN;
+    SET CONSTRAINTS operation_one_step_per_place DEFERRED;
+    UPDATE operation SET seq = 1 WHERE id = ${f.op2};
+    UPDATE operation SET seq = 2 WHERE id = ${f.op1};
+    COMMIT;`);
+  assert.equal(value(`SELECT seq FROM operation WHERE id = ${f.op2};`), '1');
+  step('Work: two steps cannot share a place, and swapping two round is still one transaction');
+
+  // One spelling per state, and the spelling is the screen's. These four words are what somebody picks
+  // from the dropdown on the jobcard page; the three this column was invented with were nobody's, and
+  // folding 'shortage' onto 'partial' to translate between them would have lost the difference between
+  // "some is missing" and "some is here".
+  for (const word of ['not-checked', 'shortage', 'partial', 'available']) {
+    accepted(`material readiness "${word}"`,
+      `UPDATE jobcard SET material_readiness = '${word}' WHERE id = ${f.jobcard};`);
+  }
+  refused('material readiness in a word nothing uses',
+    `UPDATE jobcard SET material_readiness = 'ready' WHERE id = ${f.jobcard};`, /material_readiness|check/i);
+  step('Work: the material state uses the four words the jobcard screen uses, and no others');
+}
+
 // The people at a customer. Held as a list on the record for as long as this app has existed, which
 // is exactly how long it has been impossible to say anything true about them.
 function oneMainContactWhoCanBeReached() {
@@ -1330,6 +1393,7 @@ async function main() {
   documentsPointAtSomethingReal();
   theHistoryCertificationWouldNeed();
   oneMainContactWhoCanBeReached();
+  aStepRemembersTheWorkDoneOnIt();
 
   console.log(`\n${checks} checks: ${attempts.refused} things the schema refused, `
     + `${attempts.allowed} it allowed, every refusal asserted on its wording.`);

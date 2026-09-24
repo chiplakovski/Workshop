@@ -638,6 +638,297 @@ REVOKE ALL ON FUNCTION already_done(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION require_session(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_result(text, text) FROM PUBLIC;
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- Work: the project, the jobcards on it, and the steps on those
+--
+-- Nothing could get onto the shop floor before these. accept_estimate makes a project out of a
+-- quotation that was won, which is the path the estimating screen takes — but a workshop also puts
+-- work on the bench that never had a quotation, and there was no way to do that except an INSERT.
+--
+-- Three functions, and the third is the shape that needed thinking about: a jobcard's steps are a
+-- list, like the customer's contacts, but unlike contacts they have hours booked against them. So it
+-- cannot be delete-and-rebuild — that would detach every hour ever booked from the step it was booked
+-- on, silently, because hours_entry.operation_id is ON DELETE SET NULL. It matches on the id the
+-- snapshot handed out instead, and refuses to remove a step somebody has already worked on.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_project(
+  p_id bigint,
+  p_name text,
+  p_customer_id bigint,
+  p_status text DEFAULT 'quotation',
+  p_planned_hours numeric DEFAULT 0,
+  p_progress int DEFAULT 0,
+  p_deadline date DEFAULT NULL,
+  p_description text DEFAULT NULL,
+  p_phase text DEFAULT NULL,
+  p_work_types text DEFAULT NULL,
+  p_po_number text DEFAULT NULL,
+  p_workshop text DEFAULT NULL,
+  p_responsible text DEFAULT NULL,
+  p_material_status text DEFAULT NULL,
+  p_notes text DEFAULT NULL,
+  p_planned_start date DEFAULT NULL,
+  p_planned_completion date DEFAULT NULL,
+  p_expected_completion date DEFAULT NULL,
+  p_deliver_on date DEFAULT NULL,
+  p_hold_reason text DEFAULT NULL,
+  p_hold_comment text DEFAULT NULL,
+  p_expected_resume date DEFAULT NULL,
+  p_cancel_reason text DEFAULT NULL,
+  p_quoted_value numeric DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  saved bigint;
+  was project_status;
+  who text;
+BEGIN
+  PERFORM require_session('saving a project');
+  p_status := coalesce(p_status, 'quotation');
+  p_planned_hours := coalesce(p_planned_hours, 0);
+  p_progress := coalesce(p_progress, 0);
+  who := current_app_name();
+
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'a project needs a name';
+  END IF;
+  IF p_customer_id IS NULL THEN
+    RAISE EXCEPTION 'a project belongs to a customer — say which one';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM customer WHERE id = p_customer_id) THEN
+    RAISE EXCEPTION 'no such customer, or it is not yours to read'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  -- used_hours is not a parameter and must never become one. It is a running total the hours entries
+  -- maintain by trigger, and a screen that could set it could make a project claim work nobody did.
+  IF p_id IS NULL THEN
+    INSERT INTO project (name, customer_id, status, planned_hours, progress, deadline, description,
+                         phase, work_types, po_number, workshop, responsible, material_status, notes,
+                         planned_start, planned_completion, expected_completion, actual_completion,
+                         hold_reason, hold_comment, expected_resume, cancel_reason, quoted_value)
+    VALUES (btrim(p_name), p_customer_id, p_status::project_status, p_planned_hours, p_progress,
+            p_deadline, p_description, p_phase, p_work_types, p_po_number, p_workshop, p_responsible,
+            p_material_status, p_notes, p_planned_start, p_planned_completion, p_expected_completion,
+            p_deliver_on, p_hold_reason, p_hold_comment, p_expected_resume, p_cancel_reason,
+            p_quoted_value)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('project', saved, 'created', who, btrim(p_name));
+  ELSE
+    SELECT status INTO was FROM project WHERE id = p_id;
+    IF was IS NULL THEN
+      RAISE EXCEPTION 'no such project, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    -- The status is assigned like any other field and the transition trigger has the last word on
+    -- whether this one was allowed. Checking it here as well would be a second copy of the rulebook,
+    -- and the rulebook is a table precisely so there is only one.
+    UPDATE project SET
+      name = btrim(p_name), customer_id = p_customer_id, status = p_status::project_status,
+      planned_hours = p_planned_hours, progress = p_progress, deadline = p_deadline,
+      description = p_description, phase = p_phase, work_types = p_work_types,
+      po_number = p_po_number, workshop = p_workshop, responsible = p_responsible,
+      material_status = p_material_status, notes = p_notes, planned_start = p_planned_start,
+      planned_completion = p_planned_completion, expected_completion = p_expected_completion,
+      actual_completion = p_deliver_on, hold_reason = p_hold_reason, hold_comment = p_hold_comment,
+      expected_resume = p_expected_resume, cancel_reason = p_cancel_reason,
+      quoted_value = p_quoted_value
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('project', saved, CASE WHEN was::text = p_status THEN 'updated' ELSE p_status END,
+            who, btrim(p_name));
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+CREATE FUNCTION save_jobcard(
+  p_id bigint,
+  p_project_id bigint,
+  p_title text,
+  p_status text DEFAULT 'draft',
+  p_item text DEFAULT NULL,
+  p_quantity int DEFAULT 1,
+  p_drawing_no text DEFAULT NULL,
+  p_revision int DEFAULT 0,
+  p_planned_hours numeric DEFAULT 0,
+  p_planned_start date DEFAULT NULL,
+  p_planned_completion date DEFAULT NULL,
+  p_delivery_target date DEFAULT NULL,
+  p_work_type text DEFAULT NULL,
+  p_location text DEFAULT NULL,
+  p_priority text DEFAULT NULL,
+  p_responsible text DEFAULT NULL,
+  p_material_readiness text DEFAULT NULL,
+  p_heat_no text DEFAULT NULL,
+  p_material_cert_ref text DEFAULT NULL,
+  p_notes text DEFAULT NULL,
+  p_progress int DEFAULT 0
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  saved bigint;
+  owner bigint;
+  project_name text;
+  who text;
+BEGIN
+  PERFORM require_session('saving a jobcard');
+  p_status := coalesce(p_status, 'draft');
+  p_quantity := coalesce(p_quantity, 1);
+  p_revision := coalesce(p_revision, 0);
+  p_planned_hours := coalesce(p_planned_hours, 0);
+  p_progress := coalesce(p_progress, 0);
+  who := current_app_name();
+
+  IF coalesce(btrim(p_title), '') = '' THEN
+    RAISE EXCEPTION 'a jobcard needs a title — it is what the person at the bench reads first';
+  END IF;
+  IF p_project_id IS NULL THEN
+    RAISE EXCEPTION 'a jobcard belongs to a project — say which one';
+  END IF;
+  -- The customer comes from the project, and there is no parameter for it. A jobcard carrying a
+  -- different customer from its project is a record that makes every report disagree with itself, and
+  -- nobody would ever look at the two columns side by side to notice.
+  SELECT customer_id, name INTO owner, project_name FROM project WHERE id = p_project_id;
+  IF owner IS NULL THEN
+    RAISE EXCEPTION 'no such project, or it is not yours to read'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO jobcard (project_id, customer_id, title, status, item, quantity, drawing_no,
+                         revision, planned_hours, planned_start, planned_completion, delivery_target,
+                         work_type, location, priority, responsible, material_readiness, heat_no,
+                         material_cert_ref, notes, progress, created_by)
+    VALUES (p_project_id, owner, btrim(p_title), p_status::jobcard_status, p_item, p_quantity,
+            p_drawing_no, p_revision, p_planned_hours, p_planned_start, p_planned_completion,
+            p_delivery_target, p_work_type, p_location, p_priority, p_responsible,
+            p_material_readiness, p_heat_no, p_material_cert_ref, p_notes, p_progress, who)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('jobcard', saved, 'created', who, project_name || ' — ' || btrim(p_title));
+  ELSE
+    UPDATE jobcard SET
+      project_id = p_project_id, customer_id = owner, title = btrim(p_title),
+      status = p_status::jobcard_status, item = p_item, quantity = p_quantity,
+      drawing_no = p_drawing_no, revision = p_revision, planned_hours = p_planned_hours,
+      planned_start = p_planned_start, planned_completion = p_planned_completion,
+      delivery_target = p_delivery_target, work_type = p_work_type, location = p_location,
+      priority = p_priority, responsible = p_responsible, material_readiness = p_material_readiness,
+      heat_no = p_heat_no, material_cert_ref = p_material_cert_ref, notes = p_notes,
+      progress = p_progress
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such jobcard, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('jobcard', saved, 'updated', who, btrim(p_title));
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- The steps on a jobcard. Matched on the id the snapshot handed out rather than rebuilt, for one
+-- reason: hours are booked against a step, and hours_entry.operation_id is ON DELETE SET NULL — so
+-- deleting and reinserting the list would leave every hour ever booked pointing at nothing, with no
+-- error and nothing on screen to say it had happened. What the workshop would lose is the answer to
+-- "how long did the weld-out actually take", which is the only number that makes the next estimate
+-- better than a guess.
+CREATE FUNCTION set_jobcard_operations(p_jobcard_id bigint, p_operations jsonb) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  row_in jsonb;
+  at int := 0;
+  keeping bigint[] := ARRAY[]::bigint[];
+  doomed record;
+  title text;
+BEGIN
+  PERFORM require_session('saving the steps on a jobcard');
+  SELECT j.title INTO title FROM jobcard j WHERE j.id = p_jobcard_id;
+  IF title IS NULL THEN
+    RAISE EXCEPTION 'no such jobcard, or it is not yours to change'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  p_operations := coalesce(p_operations, '[]'::jsonb);
+  IF jsonb_typeof(p_operations) <> 'array' THEN
+    RAISE EXCEPTION 'the steps have to arrive as a list';
+  END IF;
+
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_operations) LOOP
+    IF coalesce(btrim(row_in->>'desc'), '') = '' THEN
+      RAISE EXCEPTION 'every step needs a description — step % has none', at + 1;
+    END IF;
+    IF (row_in->>'id') IS NOT NULL AND (row_in->>'id') <> '' THEN
+      keeping := keeping || (row_in->>'id')::bigint;
+    END IF;
+    at := at + 1;
+  END LOOP;
+
+  -- Refused before anything is written, and named. A step somebody has booked hours on, or has
+  -- started, is a record of what happened rather than a line on a plan.
+  FOR doomed IN
+    SELECT o.seq, o.description, o.logged_hours, o.status FROM operation o
+     WHERE o.jobcard_id = p_jobcard_id AND NOT (o.id = ANY (keeping))
+     ORDER BY o.seq
+  LOOP
+    IF doomed.logged_hours > 0 THEN
+      RAISE EXCEPTION 'step % (%) has % hours booked on it and cannot be taken off the jobcard',
+        doomed.seq, doomed.description, doomed.logged_hours;
+    END IF;
+    IF doomed.status <> 'pending' THEN
+      RAISE EXCEPTION 'step % (%) is % and cannot be taken off the jobcard',
+        doomed.seq, doomed.description, doomed.status;
+    END IF;
+  END LOOP;
+
+  DELETE FROM operation o WHERE o.jobcard_id = p_jobcard_id AND NOT (o.id = ANY (keeping));
+
+  -- Checked at the end of this transaction rather than statement by statement, because writing seq 1
+  -- where seq 2 was while 1 is still 1 collides halfway through a re-order that is perfectly fine by
+  -- the time it finishes. The constraint is not relaxed — it is checked once, on the finished list.
+  SET CONSTRAINTS operation_one_step_per_place DEFERRED;
+
+  at := 0;
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_operations) LOOP
+    at := at + 1;
+    IF (row_in->>'id') IS NOT NULL AND (row_in->>'id') <> '' THEN
+      -- The sequence is the position in the list the screen sent, so it cannot arrive with a gap or
+      -- with two steps claiming to be the third. The caller does not get to choose it.
+      UPDATE operation SET
+        description = btrim(row_in->>'desc'),
+        instructions = nullif(btrim(coalesce(row_in->>'instructions', '')), ''),
+        planned_hours = coalesce((row_in->>'plannedHours')::numeric, 0),
+        planned_start = (row_in->>'plannedStart')::date,
+        inspection_checkpoint = coalesce((row_in->>'inspectionCheckpoint')::boolean, false),
+        notes = nullif(btrim(coalesce(row_in->>'notes', '')), ''),
+        seq = at
+       WHERE id = (row_in->>'id')::bigint AND jobcard_id = p_jobcard_id;
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'step % is not on this jobcard', row_in->>'id';
+      END IF;
+    ELSE
+      INSERT INTO operation (jobcard_id, seq, description, instructions, planned_hours,
+                             planned_start, inspection_checkpoint, notes)
+      VALUES (p_jobcard_id, at, btrim(row_in->>'desc'),
+              nullif(btrim(coalesce(row_in->>'instructions', '')), ''),
+              coalesce((row_in->>'plannedHours')::numeric, 0),
+              (row_in->>'plannedStart')::date,
+              coalesce((row_in->>'inspectionCheckpoint')::boolean, false),
+              nullif(btrim(coalesce(row_in->>'notes', '')), ''));
+    END IF;
+  END LOOP;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('jobcard', p_jobcard_id, 'steps changed', current_app_name(),
+          at::text || ' step' || CASE WHEN at = 1 THEN '' ELSE 's' END);
+  RETURN at;
+END;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Customers
 --
 -- The first record a workshop starting from nothing has to be able to make, and until now there was
@@ -804,6 +1095,11 @@ $$;
 
 REVOKE ALL ON FUNCTION save_customer(bigint, text, text, text, text, text, text, text, text, text,
   text, date, text, boolean, text, text, numeric, text, int, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_project(bigint, text, bigint, text, numeric, int, date, text, text, text, text, text,
+                text, text, text, date, date, date, date, text, text, date, text, numeric) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
+                text, text, text, text, text, text, text, text, int) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_jobcard_operations(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_customer_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION send_estimate(bigint, int) FROM PUBLIC;
 REVOKE ALL ON FUNCTION accept_estimate(bigint) FROM PUBLIC;
@@ -820,7 +1116,12 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   receive_goods(bigint, numeric, text), convert_lead(bigint, text, text),
   save_customer(bigint, text, text, text, text, text, text, text, text, text, text, date, text,
                 boolean, text, text, numeric, text, int, text, text, text, text),
-  set_customer_contacts(bigint, jsonb)
+  set_customer_contacts(bigint, jsonb),
+  save_project(bigint, text, bigint, text, numeric, int, date, text, text, text, text, text,
+                text, text, text, date, date, date, date, text, text, date, text, numeric),
+  save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
+                text, text, text, text, text, text, text, text, int),
+  set_jobcard_operations(bigint, jsonb)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),

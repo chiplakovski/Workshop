@@ -94,8 +94,9 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'add_person', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
     'convert_lead', 'issue_material_offline', 'receive_goods', 'record_operation',
-    'save_customer', 'send_estimate', 'set_customer_contacts', 'set_person_active',
-    'set_person_password', 'set_person_pin', 'set_person_role'
+    'save_customer', 'save_jobcard', 'save_project', 'send_estimate', 'set_customer_contacts',
+    'set_jobcard_operations', 'set_person_active', 'set_person_password', 'set_person_pin',
+    'set_person_role'
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 
@@ -545,6 +546,72 @@ async function aRefusalFromTheDatabaseReachesThePerson(tokens, f) {
   step('Refusals: nothing about the inside of the database or the server comes back with them');
 }
 
+// Getting work onto the bench over HTTP, which is the path the estimating and jobcard screens will
+// take. The interesting half is the last check: the step list is the only workflow in this system
+// whose refusal protects a record of work already done.
+async function workReachesTheFloorOverHttp(tokens, f) {
+  const project = wentThrough('the office starting a project over HTTP',
+    await call('POST', '/rpc/save_project', { token: tokens.office, body: {
+      name: 'Hopper frame', customer_id: Number(f.customer), status: 'quotation',
+      planned_hours: 32, responsible: 'Lars Holm', quoted_value: 180000
+    } }));
+  assert.match(String(project), /^\d+$/);
+  assert.match(sql(`SELECT ref FROM project WHERE id = ${project};`), /^P-\d{4}-\d{3}$/);
+
+  const jobcard = wentThrough('a jobcard on it over HTTP',
+    await call('POST', '/rpc/save_jobcard', { token: tokens.office, body: {
+      project_id: Number(project), title: 'Hopper weldment', quantity: 1, planned_hours: 18,
+      priority: 'high', responsible: 'Marko Ilic'
+    } }));
+  assert.equal(sql(`SELECT (j.customer_id = p.customer_id)::text FROM jobcard j
+    JOIN project p ON p.id = j.project_id WHERE j.id = ${jobcard};`), 'true',
+    'the customer came from the project, and there is no parameter that could have said otherwise');
+
+  const steps = wentThrough('the steps over HTTP',
+    await call('POST', '/rpc/set_jobcard_operations', { token: tokens.office, body: {
+      jobcard_id: Number(jobcard),
+      operations: [{ desc: 'Cut and prepare', plannedHours: 6 },
+                   { desc: 'Weld out', plannedHours: 12, inspectionCheckpoint: true }]
+    } }));
+  assert.equal(steps, 2);
+  assert.equal(sql(`SELECT string_agg(seq::text || '=' || description, ', ' ORDER BY seq)
+    FROM operation WHERE jobcard_id = ${jobcard};`), '1=Cut and prepare, 2=Weld out');
+  step('Work over HTTP: a project, a jobcard on it and its steps all go in through the endpoint');
+
+  const byTheFloor = await call('POST', '/rpc/save_project',
+    { token: tokens.floor, body: { name: 'Floor project', customer_id: Number(f.customer) } });
+  turnedAway('a welder starting a project over HTTP', byTheFloor, 403, /not yours to do/);
+  const cardByTheFloor = await call('POST', '/rpc/save_jobcard',
+    { token: tokens.floor, body: { project_id: Number(project), title: 'Floor weldment' } });
+  turnedAway('a welder writing a jobcard over HTTP', cardByTheFloor, 403, /not yours to do/);
+  assert.equal(sql(`SELECT count(*) FROM project WHERE name = 'Floor project';`), '0');
+  step('Work over HTTP: and the floor is refused both, by the database rather than by the server');
+
+  // Book an hour against the second step through the floor's own workflow, then try to take that step
+  // off the plan. The refusal has to name the step and the hours, over the wire, as a refusal — not
+  // as a fault at our end.
+  sql(`UPDATE jobcard SET status = 'released' WHERE id = ${jobcard};
+       UPDATE jobcard SET status = 'ready' WHERE id = ${jobcard};
+       UPDATE jobcard SET status = 'in-progress' WHERE id = ${jobcard};`);
+  const weldOut = sql(`SELECT id FROM operation WHERE jobcard_id = ${jobcard} AND seq = 2;`);
+  wentThrough('a welder booking hours on the weld-out over HTTP',
+    await call('POST', '/rpc/book_hours', { token: tokens.floor, body: {
+      jobcard_id: Number(jobcard), operation_id: Number(weldOut), hours: 3.5, note: 'Root pass'
+    } }));
+  const cutOnly = sql(`SELECT id FROM operation WHERE jobcard_id = ${jobcard} AND seq = 1;`);
+  const removed = await call('POST', '/rpc/set_jobcard_operations', { token: tokens.office, body: {
+    jobcard_id: Number(jobcard),
+    operations: [{ id: cutOnly, desc: 'Cut and prepare', plannedHours: 6 }]
+  } });
+  turnedAway('taking off a step with hours booked on it, over HTTP', removed, 422,
+    /3.50 hours booked on it and cannot be taken off/);
+  assert.match(removed.body.refused, /Weld out/, 'and it names the step rather than its number alone');
+  assert.equal(sql(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '2');
+  assert.equal(sql(`SELECT count(*) FROM hours_entry WHERE operation_id = ${weldOut};`), '1',
+    'the hours are still there and still know which step they were booked on');
+  step('Work over HTTP: a step somebody has worked on cannot be taken off the plan, and the refusal says why');
+}
+
 // The one call that works without a token, and the one whose refusal is not about who is asking.
 //
 // server.js replaces the text of every 42501 with "that is not yours to do", because Postgres writes
@@ -650,6 +717,7 @@ async function main() {
     await theOfficeGetsTheFiguresItNeeds(tokens, f);
     await theSnapshotIsTheShapeThePagesRead(tokens);
     await theCustomerScreenReadsAndWritesOverHttp(tokens, f);
+    await workReachesTheFloorOverHttp(tokens, f);
     await theFloorCannotReachTheOfficeWorkflows(tokens, f);
     await theWorkflowsRunOverHttp(tokens, f);
     await replayOverHttpIsHarmless(tokens, f);

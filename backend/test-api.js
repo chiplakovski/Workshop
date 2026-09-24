@@ -609,6 +609,201 @@ function theFirstAdminAndEveryoneAfter() {
   step('People: you change your own password only by proving you know the current one');
 }
 
+// Getting work onto the bench. Until save_project and save_jobcard existed, the only way a job
+// reached the floor was accept_estimate — so a workshop that took an order over the telephone had no
+// way to record it at all, and the hours screen had nothing to book against.
+function workReachesTheFloor() {
+  const f = world();
+  const office = PEOPLE.office;
+  const customer = value(`SELECT id FROM customer WHERE name = 'Skåne Verkstad AB';`);
+
+  const project = ok('the office starting a project', 'varmak_office', office,
+    `SELECT save_project(NULL, 'Conveyor frame', ${customer}, 'quotation', 40, 0,
+      current_date + 60, 'Two frames and a hopper', 'planning', 'Fabrication', 'PO-77',
+      'Marieholm', 'Aleksandar C.', 'not-ordered', NULL, current_date + 7, current_date + 50,
+      NULL, NULL, NULL, NULL, NULL, NULL, 420000);`);
+  assert.match(value(`SELECT ref FROM project WHERE id = ${project};`), /^P-\d{4}-\d{3}$/,
+    'the reference comes from the dated sequence, not from the caller');
+  assert.equal(value(`SELECT planned_hours::text || '|' || quoted_value::text || '|' || status::text
+    FROM project WHERE id = ${project};`), '40.00|420000.00|quotation');
+  assert.equal(value(`SELECT actor FROM activity_log WHERE entity = 'project' ORDER BY id DESC LIMIT 1;`),
+    'Lars Holm', 'and the name is the session\'s');
+  step('Work: the office starts a project from the screen and it is in the database, numbered');
+
+  refused('a project with no name', 'varmak_office', office,
+    `SELECT save_project(NULL, '  ', ${customer});`, /needs a name/);
+  refused('a project belonging to nobody', 'varmak_office', office,
+    `SELECT save_project(NULL, 'Orphan frame', NULL);`, /belongs to a customer/);
+  refused('a project for a customer that does not exist', 'varmak_office', office,
+    `SELECT save_project(NULL, 'Ghost frame', 999999);`, /no such customer/);
+  refused('a welder starting a project', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_project(NULL, 'Floor project', ${customer});`, /permission denied/);
+  step('Work: a project needs a name and a customer that exists, and the floor cannot start one');
+
+  // The status rulebook still has the last word, and it is a table rather than a copy of the rules
+  // inside this function — so a transition nobody allowed is refused with the transition named.
+  const jump = refused('a project going straight from quotation to completed', 'varmak_office', office,
+    `SELECT save_project(${project}, 'Conveyor frame', ${customer}, 'completed');`,
+    /cannot go from quotation to completed/);
+  assert.equal(value(`SELECT status::text FROM project WHERE id = ${project};`), 'quotation');
+  assert.ok(!/allowed_transition/.test(jump), 'the refusal names the transition, not the table');
+  ok('the same project moving one allowed step', 'varmak_office', office,
+    `SELECT save_project(${project}, 'Conveyor frame', ${customer}, 'approved');`);
+  assert.equal(value(`SELECT status::text FROM project WHERE id = ${project};`), 'approved');
+  // A hold has to say why, and that is the schema's rule rather than this function's. Asked from
+  // 'planned', because a hold from 'approved' is refused by the rulebook first and would have tested
+  // the transition twice instead of testing the reason — which is what it did.
+  ok('the project reaching planned', 'varmak_office', office,
+    `SELECT save_project(${project}, 'Conveyor frame', ${customer}, 'planned');`);
+  refused('putting it on hold without saying why', 'varmak_office', office,
+    `SELECT save_project(${project}, 'Conveyor frame', ${customer}, 'hold');`,
+    /held_project_says_why|hold_reason/);
+  ok('putting it on hold with a reason', 'varmak_office', office,
+    `SELECT save_project(${project}, 'Conveyor frame', ${customer}, 'hold', 40, 0, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      'Waiting for the customer to approve the drawings', 'Rev B expected Friday');`);
+  assert.equal(value(`SELECT hold_reason FROM project WHERE id = ${project};`),
+    'Waiting for the customer to approve the drawings');
+  step('Work: the status rulebook and the hold-needs-a-reason rule still hold through the workflow');
+
+  // used_hours is maintained by the hours entries and is not a parameter. A screen that could set it
+  // could make a project claim work nobody did, and the roll-up would then disagree with the hours.
+  const args = value(`SELECT count(*) FROM information_schema.parameters
+     WHERE specific_schema = 'public' AND parameter_name = 'p_used_hours';`);
+  assert.equal(args, '0', 'no workflow may take used_hours as a parameter — it is a roll-up');
+  step('Work: no workflow can set a project\'s used hours — that total belongs to the hours entries');
+
+  const jobcard = ok('a jobcard on the project', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, ${project}, 'Frame weldment', 'draft', 'Frame', 2, 'BR-4410-A', 1,
+      24, current_date + 10, current_date + 20, current_date + 25, 'fabrication', 'workshop',
+      'high', 'Marko Ilic', 'partial', 'H240516', 'MTC-1', 'Two off', 0);`);
+  assert.match(value(`SELECT ref FROM jobcard WHERE id = ${jobcard};`), /^JC-\d{4}-\d{4}$/);
+  // The customer is taken from the project and there is no parameter for it. A jobcard carrying a
+  // different customer from its project makes every report disagree with itself, and nobody would
+  // ever put the two columns side by side to notice.
+  assert.equal(value(`SELECT (j.customer_id = p.customer_id)::text FROM jobcard j
+    JOIN project p ON p.id = j.project_id WHERE j.id = ${jobcard};`), 'true');
+  assert.equal(value(`SELECT count(*) FROM information_schema.parameters
+     WHERE specific_schema = 'public' AND specific_name LIKE 'save_jobcard%'
+       AND parameter_name = 'p_customer_id';`), '0',
+    'save_jobcard must not take a customer — it belongs to the project');
+  assert.equal(value(`SELECT created_by FROM jobcard WHERE id = ${jobcard};`), 'Lars Holm');
+  step('Work: a jobcard hangs off the project and takes its customer from it, never from the caller');
+
+  refused('a jobcard with no title', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, ${project}, '   ');`, /needs a title/);
+  refused('a jobcard belonging to no project', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, NULL, 'Loose weldment');`, /belongs to a project/);
+  refused('a jobcard on a project that does not exist', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, 999999, 'Ghost weldment');`, /no such project/);
+  refused('a welder writing a jobcard through the workflow', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_jobcard(NULL, ${project}, 'Floor weldment');`, /permission denied/);
+  // The schema's own vocabularies still apply through the workflow, which is the point of having
+  // them as constraints rather than as a list in the page's JavaScript.
+  refused('a jobcard whose material is in a state there is no word for', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, ${project}, 'Frame', 'draft', NULL, 1, NULL, 0, 0, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, 'ordered');`, /material_readiness|check/i);
+  refused('a jobcard with a priority nobody uses', 'varmak_office', office,
+    `SELECT save_jobcard(NULL, ${project}, 'Frame', 'draft', NULL, 1, NULL, 0, 0, NULL, NULL, NULL,
+      NULL, NULL, 'whenever');`, /priority|check/i);
+  step('Work: a jobcard needs a title and a project that exists, and the floor cannot write one');
+  return { project, jobcard, customer, office };
+}
+
+// The steps, which are a list like the contacts and are not replaceable like one.
+function theStepsRememberTheWorkDoneOnThem(w) {
+  const office = w.office;
+  const jobcard = w.jobcard;
+
+  assert.equal(ok('three steps at once', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[
+      {"desc": "Cut and prepare", "plannedHours": 8},
+      {"desc": "Weld out", "plannedHours": 16, "inspectionCheckpoint": true},
+      {"desc": "Dress and paint", "plannedHours": 6}
+    ]'::jsonb);`), '3');
+  assert.equal(value(`SELECT string_agg(seq::text || '=' || description, ', ' ORDER BY seq)
+    FROM operation WHERE jobcard_id = ${jobcard};`),
+    '1=Cut and prepare, 2=Weld out, 3=Dress and paint');
+  assert.equal(value(`SELECT inspection_checkpoint::text FROM operation
+    WHERE jobcard_id = ${jobcard} AND seq = 2;`), 'true');
+  step('Work: the steps go in as a list and are numbered by their place in it');
+
+  refused('a step with no description', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[{"plannedHours": 4}]'::jsonb);`,
+    /step 1 has none/);
+  refused('steps that are not a list', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '{"desc": "Weld"}'::jsonb);`, /arrive as a list/);
+  refused('steps for a jobcard that does not exist', 'varmak_office', office,
+    `SELECT set_jobcard_operations(999999, '[]'::jsonb);`, /no such jobcard/);
+  assert.equal(value(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '3',
+    'and none of those refusals changed the list');
+  step('Work: a refused list of steps leaves the jobcard exactly as it was');
+
+  // Re-ordering. The ids come back from the snapshot and go back with the list, so a step that moved
+  // is the same step — and UNIQUE (jobcard_id, seq) means the renumbering cannot be done in place.
+  const ids = sql(`SELECT id FROM operation WHERE jobcard_id = ${jobcard} ORDER BY seq;`).split('\n');
+  assert.equal(ok('the same three steps in a different order', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[
+      {"id": "${ids[1]}", "desc": "Weld out", "plannedHours": 16},
+      {"id": "${ids[0]}", "desc": "Cut and prepare", "plannedHours": 8},
+      {"id": "${ids[2]}", "desc": "Dress and paint", "plannedHours": 6}
+    ]'::jsonb);`), '3');
+  assert.equal(value(`SELECT string_agg(seq::text || '=' || id::text, ', ' ORDER BY seq)
+    FROM operation WHERE jobcard_id = ${jobcard};`),
+    `1=${ids[1]}, 2=${ids[0]}, 3=${ids[2]}`,
+    'the steps are the same rows in a new order, not three new rows');
+  assert.equal(value(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '3');
+  step('Work: re-ordering the steps moves the same rows rather than replacing them');
+
+  // The rule this function exists for. Book hours on a step, then try to take it off the jobcard.
+  // Through the states the rulebook allows, one at a time, because the rulebook is what says which
+  // order they come in: draft → released → ready → in-progress.
+  sql(`UPDATE jobcard SET status = 'released' WHERE id = ${jobcard};
+       UPDATE jobcard SET status = 'ready' WHERE id = ${jobcard};
+       UPDATE jobcard SET status = 'in-progress' WHERE id = ${jobcard};`);
+  ok('a welder booking hours on the weld-out', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${jobcard}, ${ids[1]}, 6.5, current_date, 'Root pass', 'ops-0001');`);
+  assert.equal(value(`SELECT logged_hours::text FROM operation WHERE id = ${ids[1]};`), '6.50');
+
+  const gone = refused('taking off a step somebody has worked on', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[
+      {"id": "${ids[0]}", "desc": "Cut and prepare", "plannedHours": 8},
+      {"id": "${ids[2]}", "desc": "Dress and paint", "plannedHours": 6}
+    ]'::jsonb);`, /6.50 hours booked on it and cannot be taken off/);
+  assert.match(gone, /Weld out/, 'the refusal has to name the step, not its number alone');
+  assert.equal(value(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '3');
+  // The reason it matters: hours_entry.operation_id is ON DELETE SET NULL, so the delete would have
+  // gone through silently and the hours would still be there — pointing at nothing.
+  assert.equal(value(`SELECT count(*) FROM hours_entry WHERE operation_id = ${ids[1]};`), '1');
+  step('Work: a step with hours booked on it cannot be taken off — those hours would lose the step');
+
+  // A step can have been started without an hour booked against it yet — somebody pressed start on
+  // the tablet an hour ago. Taking that off the plan says the work was never planned, while the
+  // machine has been running. Set here directly, because starting it through the workflow would also
+  // book hours and this is the case where there are none.
+  sql(`UPDATE operation SET status = 'in-progress' WHERE id = ${ids[2]};`);
+  const started = refused('taking off a step that has been started', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[
+      {"id": "${ids[1]}", "desc": "Weld out", "plannedHours": 16},
+      {"id": "${ids[0]}", "desc": "Cut and prepare", "plannedHours": 8}
+    ]'::jsonb);`, /is in-progress and cannot be taken off/);
+  assert.match(started, /Dress and paint/, 'and it names the step');
+  assert.equal(value(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '3');
+  sql(`UPDATE operation SET status = 'pending' WHERE id = ${ids[2]};`);
+  step('Work: nor can one that has been started, even with no hours booked on it yet');
+
+  // But a step nobody has touched can go, which is most of what editing a plan is.
+  assert.equal(ok('taking off a step nobody has touched', 'varmak_office', office,
+    `SELECT set_jobcard_operations(${jobcard}, '[
+      {"id": "${ids[1]}", "desc": "Weld out", "plannedHours": 16},
+      {"id": "${ids[0]}", "desc": "Cut and prepare", "plannedHours": 8}
+    ]'::jsonb);`), '2');
+  assert.equal(value(`SELECT count(*) FROM operation WHERE jobcard_id = ${jobcard};`), '2');
+  assert.equal(value(`SELECT logged_hours::text FROM operation WHERE id = ${ids[1]};`), '6.50',
+    'and the hours on the step that stayed are still on it');
+  step('Work: a step nobody has touched comes off, and the hours on the others are untouched');
+}
+
 // The first record a workshop starting from nothing has to be able to make. Until save_customer
 // existed the only way to make one was an INSERT, which is a database console, which is the thing
 // this whole layer exists to stop being necessary.
@@ -873,6 +1068,8 @@ async function main() {
   theGatesStillHoldOnReplay(f, w);
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
+  const work = workReachesTheFloor();
+  theStepsRememberTheWorkDoneOnThem(work);
   const c = aCustomerCanBeMadeAndCorrected();
   theContactListIsReplacedAtomically(c);
   theFirstAdminAndEveryoneAfter();

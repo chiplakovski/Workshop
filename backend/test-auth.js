@@ -302,6 +302,30 @@ function theFloorCanRingTheCustomerButNotRewriteThem(f) {
   step('Customers: and the office may, including taking off somebody who has left the company');
 }
 
+// Editing a plan is the office's job, and the floor's job is working to it.
+function theFloorWorksToThePlanAndDoesNotEditIt(f) {
+  denied('a welder taking a step off a jobcard', 'varmak_workshop', PEOPLE.welder,
+    `DELETE FROM operation WHERE id = ${f.op};`, /permission denied|row-level security/);
+  denied('a welder adding a step to a jobcard', 'varmak_workshop', PEOPLE.welder,
+    `INSERT INTO operation (jobcard_id, seq, description) VALUES (${f.jobcard}, 7, 'Extra step');`,
+    /permission denied|row-level security/);
+  // They may move one along, which is the whole of what the tablet does.
+  allowed('a welder starting the first step', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${f.op};`);
+  step('Work: the floor moves a step along and cannot add one or take one off');
+
+  // The office may take one off, and the trigger still refuses the ones that are a record of work.
+  sql(`INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
+       VALUES (${f.jobcard}, ${f.op}, 'Marko Ilic', 2);`);
+  denied('the office taking off a step with hours booked on it', 'varmak_office', PEOPLE.office,
+    `DELETE FROM operation WHERE id = ${f.op};`, /hours booked on it and cannot be removed/);
+  const spare = value(`INSERT INTO operation (jobcard_id, seq, description)
+    VALUES (${f.jobcard}, 6, 'Spare step') RETURNING id;`);
+  allowed('the office taking off a step nobody has touched', 'varmak_office', PEOPLE.office,
+    `DELETE FROM operation WHERE id = ${spare};`);
+  step('Work: the office may edit the plan, and not even the office may erase work already booked');
+}
+
 function aWelderCannotReadAPrice(f) {
   denied('a welder reading the cost of a plate', 'varmak_workshop', PEOPLE.welder,
     `SELECT avg_cost FROM stock_item WHERE id = ${f.item};`, /permission denied|column .* does not exist/);
@@ -832,6 +856,9 @@ function main() {
   aGateCanStillReadWhatItNeeds();
   theGoodsInBookIsNotRubbedOut();
   historyRecordsWhoSignedIn();
+  // Last, because it books hours on the shared fixture's step to get at the refusal that protects
+  // them, and a later test asserting that step's total would then be reading this one's leavings.
+  theFloorWorksToThePlanAndDoesNotEditIt(f);
 
   console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, `
     + 'every one of them asked as a real database role.');

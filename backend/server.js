@@ -80,6 +80,17 @@ const RPC = {
     'discount_agreement', 'billing_address'],
   set_customer_contacts: ['customer_id', 'contacts'],
 
+  // Work. save_jobcard has no customer parameter on purpose — it comes from the project.
+  save_project: ['id', 'name', 'customer_id', 'status', 'planned_hours', 'progress', 'deadline',
+    'description', 'phase', 'work_types', 'po_number', 'workshop', 'responsible', 'material_status',
+    'notes', 'planned_start', 'planned_completion', 'expected_completion', 'deliver_on',
+    'hold_reason', 'hold_comment', 'expected_resume', 'cancel_reason', 'quoted_value'],
+  save_jobcard: ['id', 'project_id', 'title', 'status', 'item', 'quantity', 'drawing_no', 'revision',
+    'planned_hours', 'planned_start', 'planned_completion', 'delivery_target', 'work_type',
+    'location', 'priority', 'responsible', 'material_readiness', 'heat_no', 'material_cert_ref',
+    'notes', 'progress'],
+  set_jobcard_operations: ['jobcard_id', 'operations'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],

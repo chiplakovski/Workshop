@@ -403,7 +403,26 @@ cannot touch anything else.
    in server mode it **says so and writes nothing**, rather than saving to a browser that the next
    reload wipes. Same rule as the hours screen refusing an entry that carries material.
 
-   Writing the screen also found two refusals that never reached anybody, both of which had passed
+   **Work can reach the floor.** `save_project`, `save_jobcard` and `set_jobcard_operations` are the
+   workflows that were missing, and their absence was larger than it sounds: the only way a job got
+   onto a bench was `accept_estimate`, so a workshop that took an order over the telephone had no way
+   to record it at all and the hours screen had nothing to book against.
+
+   Two decisions in them are worth keeping:
+
+   * **`save_jobcard` has no customer parameter.** It takes the customer from the project. A jobcard
+     carrying a different customer from its project makes every report disagree with itself, and
+     nobody would ever put the two columns side by side to notice.
+   * **The steps cannot be replaced wholesale, unlike every other list here.** `hours_entry.operation_id`
+     is `ON DELETE SET NULL`, so deleting a step succeeds silently and leaves every hour ever booked
+     on it pointing at nothing — losing the answer to "how long did the weld-out actually take",
+     which is the only number that makes the next estimate better than a guess. So the list is
+     matched on the ids the snapshot handed out, the workflow names any step it is about to lose and
+     refuses, and a `BEFORE DELETE` trigger refuses it whoever asks. Re-ordering the rest is what
+     made `UNIQUE (jobcard_id, seq)` deferrable: the halfway state of a re-order is a collision the
+     finished list does not have.
+
+      Writing the screen also found two refusals that never reached anybody, both of which had passed
    two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`
    replaces the text of every 42501 with "that is not yours to do" — because Postgres writes its own
    privilege errors as "permission denied for table stock_item" and that names the inside of the
@@ -464,7 +483,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 139 mutations across the four SQL files and the backup script.
+breaking. 146 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

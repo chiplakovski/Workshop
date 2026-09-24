@@ -474,6 +474,12 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- means somebody rings a number that has been reassigned and believes what they are told.
 GRANT DELETE ON customer_contact TO varmak_office;
 
+-- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
+-- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
+-- this safe is not this grant being narrow — it is the trigger in schema.sql that refuses to delete a
+-- step with hours booked on it or one that has been started, whoever asks and however they ask.
+GRANT DELETE ON operation TO varmak_office;
+
 -- Only an admin creates or changes people — no self-registration, and nobody promotes themselves.
 GRANT INSERT, UPDATE, DELETE ON app_user TO varmak_admin;
 GRANT SELECT, INSERT, UPDATE ON app_session TO varmak_admin, varmak_office, varmak_workshop;
