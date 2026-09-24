@@ -320,11 +320,17 @@ const MUTATIONS = [
     to: 'result        text NOT NULL,'
   },
   {
-    what: 'an NCR may be closed with no root cause and no action',
+    // Re-anchored, and the rule it guards changed with it. This used to read root_cause and
+    // corrective_action, which is what closed_ncr_says_what_was_done demanded — and no screen in this
+    // system can fill either, so the constraint could not have been satisfied by anything a person
+    // does. It now demands what the closure screen actually collects. A stale anchor is a rule nobody
+    // is testing while the report says otherwise, which is why the harness reports one rather than
+    // skipping it.
+    what: 'an NCR may be closed with nothing written down at all',
     from: `  CONSTRAINT closed_ncr_says_what_was_done CHECK (
     status <> 'closed' OR (
-      btrim(coalesce(root_cause,'')) <> '' AND
-      btrim(coalesce(corrective_action,'')) <> '' AND
+      btrim(coalesce(verification_result,'')) <> '' AND
+      btrim(coalesce(closure_approval,'')) <> '' AND
       closed_on IS NOT NULL
     )
   )`,

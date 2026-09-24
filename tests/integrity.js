@@ -294,10 +294,41 @@ function theGuardKnowsWhichPagesAreWired(failures) {
   }
 }
 
+// A reference written into the markup, where a record's own reference belongs.
+//
+// The Store screen's shortage panel carried "P-2026-014 — Ventilation Duct System" and a jobcard number
+// under it, in the HTML, and nothing ever replaced them — while the rows beneath came from whichever
+// project happened to be first in the register. So the panel labelled its own figures with the name of
+// a different job, and on an empty system it named a project that did not exist. Nothing threw, and
+// every check passed: the list was simply about something other than the line above it said.
+//
+// This looks for the shape rather than that one case: a project, jobcard, order or supplier reference
+// sitting in a page's markup outside a <script>. They belong to records, and a page has no business
+// knowing one.
+const A_RECORD_REFERENCE = /\b(P|JC|PO|INS|NCR|HOLD|DEL|EST|SUP|MV|EQ|DOC|OFF|CAPA|ITP)-\d{3,4}(-\d{3,4})?\b/g;
+
+function noPageNamesARecordItCannotKnow(failures) {
+  for (const file of appPages()) {
+    // Scripts and the translation dictionaries are where a placeholder, an example in a hint and a
+    // format string legitimately live. What this is about is markup a browser renders as fact.
+    const markup = readPage(file).replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '');
+    const named = [...new Set((markup.match(A_RECORD_REFERENCE) || []))]
+      // A placeholder in a form field is telling somebody what to type, not stating a fact.
+      .filter((ref) => !new RegExp(`placeholder="[^"]*${ref}`).test(markup));
+    if (named.length) {
+      failures.push(`${file} names ${named.join(', ')} in its markup — a reference belongs to a record, `
+        + 'and a page that writes one in states a fact about work that may not exist');
+    }
+  }
+  if (!failures.length) console.log('OK   no page names a project, order or jobcard in its own markup');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const failures = [];
   theGuardKnowsWhichPagesAreWired(failures);
+  noPageNamesARecordItCannotKnow(failures);
   try {
     for (const file of appPages()) {
       await checkPage(harness.context, harness.baseUrl, file, failures);
