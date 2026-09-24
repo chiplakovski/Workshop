@@ -379,6 +379,11 @@ body{overflow:hidden}
 <div class="toast" id="toast"></div>
 </main></div>
 <script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="planning-rules.js"></script><script src="estimate-memory.js"></script>
+<script src="project-record.js"></script><script src="jobcard-record.js"></script>
+<script>/* Wired to the server: the board, the schedule and the weekly load are drawn from the
+   workshop's own projects, and moving a project or setting its dates goes to the database. Declared
+   rather than detected, because this screen is where somebody decides what the shop does next week. */
+window.WORKSHOP_SERVER_READY=true;</script>
 <script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -397,6 +402,11 @@ const dateShort=v=>{const d=dayOf(v);return d?d.toLocaleDateString('en-GB',{day:
 
 const T={};
 T.en={
+  srv_refused:'The database refused this:',
+  srv_not_built:'Creating a project from a quotation does not exist on the server yet, so nothing was written. Make the project on the Project / Estimator screen instead.',
+  srv_offline:'The workshop could not be read. Try again when there is a connection.',
+  srv_no_project:'That project is no longer here — refresh and try again.',
+  srv_no_jobcard:'That item is no longer here — refresh and try again.',
   subtitle:'Schedule & capacity',grpPlan:'The plan',navBoard:'Board',navSchedule:'Schedule',navCapacity:'Capacity',
   sideSummary:'On the plan',sideProjects:'Projects',sideScheduled:'With dates',sideWaiting:'Waiting',sideHours:'Hours left',
   sideWhere:'Where the numbers come from',
@@ -467,6 +477,11 @@ T.en={
   quoteCreated:'{no} created from {quote}. Give it its dates next.'
 };
 T.sv={
+  srv_refused:'Databasen nekade detta:',
+  srv_not_built:'Att skapa ett projekt från en offert finns inte på servern än, så ingenting skrevs. Skapa projektet på sidan Projekt / Kalkyl i stället.',
+  srv_offline:'Verkstaden kunde inte läsas. Försök igen när det finns anslutning.',
+  srv_no_project:'Det projektet finns inte längre här — uppdatera och försök igen.',
+  srv_no_jobcard:'Den posten finns inte längre här — uppdatera och försök igen.',
   subtitle:'Tidplan & kapacitet',grpPlan:'Planen',navBoard:'Tavla',navSchedule:'Tidplan',navCapacity:'Kapacitet',
   sideSummary:'I planen',sideProjects:'Projekt',sideScheduled:'Med datum',sideWaiting:'Väntar',sideHours:'Timmar kvar',
   sideWhere:'Varifrån siffrorna kommer',
@@ -537,6 +552,11 @@ T.sv={
   quoteCreated:'{no} skapat från {quote}. Ange dess datum härnäst.'
 };
 T.mk={
+  srv_refused:'Базата го одби ова:',
+  srv_not_built:'Создавање проект од понуда сè уште не постои на серверот, па ништо не беше запишано. Создај го проектот на страницата Проект / Пресметка.',
+  srv_offline:'Работилницата не можеше да се прочита. Обиди се повторно кога има врска.',
+  srv_no_project:'Тој проект веќе не е тука — освежи и обиди се повторно.',
+  srv_no_jobcard:'Таа позиција веќе не е тука — освежи и обиди се повторно.',
   subtitle:'План и капацитет',grpPlan:'Планот',navBoard:'Табла',navSchedule:'План',navCapacity:'Капацитет',
   sideSummary:'Во планот',sideProjects:'Проекти',sideScheduled:'Со датуми',sideWaiting:'Чекаат',sideHours:'Часови преостанати',
   sideWhere:'Од каде се бројките',
@@ -1154,6 +1174,103 @@ showView(location.hash.slice(1)||'board');
   for(let i=0;i<18;i++){const e=document.createElement('div');e.className='ember';
     const s=1+Math.random()*2.2;e.style.width=s+'px';e.style.height=s+'px';e.style.left=(Math.random()*100)+'%';
     e.style.animation=`rise ${9+Math.random()*9}s linear ${Math.random()*9}s infinite`;box.appendChild(e);}
+})();
+
+// ── Planning on the database ──────────────────────────────────────────────────────────────
+//
+// This screen is the one an office opens to answer "what is the shop doing next week", and it was one
+// of the screens a signed-in session could not see at all. Wiring it is mostly reading: every render
+// already goes through WorkshopData.get(), so adopting a snapshot makes the board, the schedule and the
+// weekly load the workshop's own. Nothing on this page holds a copy of anything.
+//
+// What it writes is three things, and two of them have workflows already:
+//
+//   * moving a project between lanes — a status, a phase and sometimes a progress of 100
+//   * setting a project's dates and its planned hours
+//   * setting an item's dates, which on the server is a jobcard
+//
+// The third write has no workflow and cannot have one yet: `createProjectFromEstimation` is the
+// estimating path, and an estimate is the one record on this system whose schema gap is real work
+// rather than a mapping. It refuses out loud, in the place this page already shows refusals.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  const words=k=>(currentT&&currentT[k])||T.en[k]||k;
+  let sending=Promise.resolve();
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.offline||answer.failed){wAlert(answer.failed||words('srv_offline'));return false;}
+    WorkshopData.adoptSnapshot(answer.data);
+    renderAll();
+    return true;
+  }
+
+  // One at a time and in order: setting a project's dates writes the project and then each item that
+  // moved, and those have to arrive in that order — a jobcard whose planned start is outside its
+  // project's span is exactly what this screen exists to stop somebody doing.
+  function queue(name,args){
+    sending=sending.then(async ()=>{
+      const body=(typeof args==='function')?args():args;
+      const answer=await WorkshopApi.call(name,body);
+      if(answer.signedOut){location.href='login.html';return;}
+      if(!answer.ok){await refresh();wAlert(words('srv_refused')+' '+answer.refused);return;}
+      await refresh();
+    }).catch(e=>wAlert(String(e&&e.message||e)));
+  }
+
+  const projectByNo=no=>(WorkshopData.get().projects||[]).find(p=>String(p.no)===String(no))||null;
+  const jobcardByNo=no=>(WorkshopData.listJobcards()||[]).find(j=>String(j.no)===String(no))||null;
+
+  const SENT={
+    // save_project replaces the record, and this page sends a patch — three fields for a lane move, six
+    // for the date form. So the patch goes on top of the record the snapshot handed over, and the same
+    // record rides along as `_server` for everything neither of them mentions. Without that, dragging a
+    // project across the board would clear its purchase order number, its responsible and its notes,
+    // and nothing on screen would say so.
+    updateProject(no,patch){
+      const record=projectByNo(no);
+      if(!record)return{error:words('srv_no_project')};
+      // The items a project carries itself, which only browser-storage records have: on the server
+      // every item is a jobcard row and has its own call. Refused rather than quietly dropped, because
+      // toServer has nowhere to put it and the dates would look saved.
+      if(patch&&'jobcards'in patch)return{error:words('srv_not_built')};
+      queue('save_project',ProjectRecord.toServer(Object.assign({},record,patch,{_server:record})));
+      return{pending:true};
+    },
+    updateJobcard(no,patch){
+      const record=jobcardByNo(no);
+      if(!record)return{error:words('srv_no_jobcard')};
+      // sharedId, because that is the field JobcardRecord.toServer reads the id from — the snapshot
+      // calls it `id`, and sending it as anything else would create a second jobcard every time
+      // somebody nudged a bar on the schedule.
+      queue('save_jobcard',JobcardRecord.toServer(
+        Object.assign({},record,patch,{sharedId:record.id,_server:record})));
+      return{pending:true};
+    }
+  };
+
+  const NOT_BUILT=['createProjectFromEstimation'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:words('srv_not_built')};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){
+      e.preventDefault();await WorkshopApi.signOut();location.href='login.html';
+    });
+  })();
 })();
 </script>
 </body></html>

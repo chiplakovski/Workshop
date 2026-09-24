@@ -641,6 +641,37 @@ cannot touch anything else.
    (`tests/hub-server.e2e.js`), and the last one asks whether a welder's front door carries a figure in
    kronor anywhere.
 
+      **Planning, which is the screen an office opens to answer "what is the shop doing".** It was one
+   of the screens a signed-in session could not see at all, so a workshop on the database had the
+   projects and no way to look at them together. Wiring it turned out to be mostly reading: every render
+   on that page already goes through `WorkshopData.get()`, and the snapshot's project already carries
+   `start` as an alias of `planned_start`, which is what the schedule reads. Nothing on the page holds a
+   copy of anything, so adopting a snapshot made the board, the schedule and the weekly load the
+   workshop's own with no translation layer at all.
+
+   It writes three things and two had workflows already — a project's stage (a status, a phase, and a
+   progress of 100 for the done lane) and a project's dates with its planned hours, plus each item that
+   moved with them, which on the server is a jobcard. The third, creating a project from a quotation, is
+   the estimating path and refuses out loud.
+
+   Two things it confirmed rather than discovered, which is the useful kind of confirmation:
+
+   * **The subset rule holds one level down as well.** Dragging a card sends three fields and
+     `save_project` replaces the record, so the patch rides on top of the record the snapshot handed
+     over. The check asserts eight fields the board never shows — the purchase order number, the
+     responsible, the notes, the workshop, the material state, the kinds of work, the quoted value and
+     the deadline — are all still there after a card is moved. The same for a jobcard: nudging a bar on
+     the schedule must not clear its heat number.
+   * **`sharedId`, not `id`.** `JobcardRecord.toServer` reads the id from `sharedId` because that is
+     what the jobcard screen calls it, and the snapshot calls it `id`. Sending it under the wrong name
+     creates a second jobcard every time somebody moves a bar, which is the kind of bug that is
+     invisible for a week and then unpickable.
+
+   And one thing left as it is, deliberately: the weekly capacity in hours lives in `localStorage` per
+   browser. It is an assumption rather than a record and the schema has nowhere for it, so two people
+   can hold different figures — worth knowing, and not worth inventing a column for until somebody says
+   what the number is.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared

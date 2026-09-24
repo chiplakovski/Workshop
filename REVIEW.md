@@ -298,17 +298,28 @@ Group → subgroup → warehouse → sublocation → bin, for one building. A sh
    nowhere to put a picture.
 5. **A phone that works.** Only Hours and Hub have mobile pages. Everything else assumes a desk.
 6. **Macedonian is written in two scripts, and nobody has decided which.** Measured over every
-   page's `mk:{}` table: **1,526 strings in Latin script, 419 in Cyrillic.** It is not scattered
-   noise — Quality (115 of 116) and Reports (151 of 153) are written almost entirely in Cyrillic,
-   while Customers, Suppliers, the two Hubs and Hours-desktop have not a single Cyrillic character.
-   Estimations, Jobcards, Marketing, Hours-mobile and Login are mixed, and Login is nearly half and
-   half — so the screen a person signs in on changes script as they read down it.
+   page's Macedonian dictionary: **1,616 strings in Latin script, 727 in Cyrillic** — 31% of the
+   Macedonian in this app is in the other script from the rest of it.
+
+   It is not scattered noise. Five screens are written almost entirely in Cyrillic — Equipment (166 of
+   166), Reports (151 of 153), Planning (142 of 144), Quality (115 of 116) — while Customers,
+   Suppliers, Access, both Hubs and Hours-desktop have not a single Cyrillic character. Jobcards,
+   Marketing, Estimations and Hours-mobile are mixed, and **Login is nearly half and half**, so the
+   screen a person signs in on changes script as they read down it.
 
    Both are correct Macedonian, so nothing is unreadable and no test can see it; this is a decision,
    not a bug, and it is yours. Say which script and it is a mechanical pass — Macedonian romanisation
    is a letter-for-letter map, and the transliteration in the Latin pages is already consistent
    (`š ž č ḱ`) apart from a handful of `kj` for `ḱ`. Until then new strings follow whichever script
-   dominates the page they are added to, which is how Hours-mobile's queue messages came out Latin.
+   dominates the page they are added to: that is why Hours-mobile's queue messages came out Latin and
+   Planning's came out Cyrillic.
+
+   **The first version of this count was wrong, and how it was wrong is worth keeping.** It said 419
+   Cyrillic strings out of 1,945, because the scan looked only for dictionaries written as `mk:{…}`
+   inside one object and this app has five pages that write `T.mk = {…}` as their own statement —
+   including Equipment and Planning, the first and third largest Cyrillic pages in the list. A
+   measurement that cannot see a third of what it is measuring understates the work by exactly that
+   third, and this project has now had the same lesson from `coverage.js` twice and from here once.
 
 ---
 
