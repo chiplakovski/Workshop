@@ -318,7 +318,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="jobcard-equipment-rules.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="jobcard-record.js"></script>
+<!-- Reads and writes the database when there is a session, so the two-worlds guard lets it through. -->
+<script>window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-guard.js"></script>
 <script src="jobcard-rules.js"></script>
 <script src="workshop-ui.js"></script><script>
 const $=id=>document.getElementById(id);
@@ -428,6 +431,9 @@ function currentDate(){return new Date();}
 
 const T={
 en:{
+  srv_refused:"The database refused this:",
+  srv_gone:"That jobcard is no longer on screen — the list has been refreshed.",
+  srv_not_built:"This does not exist on the server yet, so it is not being saved. The jobcard itself and its operations do; notes, inspections, offcuts and pre-use checks still need their own workflow. Nothing was written.",
   locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Jobcards",msub:"Workshop production orders",msub_short:"Work orders",
   sbox_t:"Connected workflow",sbox_p:"Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.",
   nav_overview:"Overview",nav_jobcards:"Jobcards",scope_label:"Narrow the list",nav_all:"All Jobcards",nav_ready:"Ready to Start",nav_inprogress:"In Progress",nav_blocked:"Paused / Blocked",nav_inspection:"Inspection Required",nav_completed:"Completed",nav_archived:"Archived",nav_newjc:"New Jobcard",
@@ -487,6 +493,9 @@ en:{
   chart_none:"No data yet."
 },
 sv:{
+  srv_refused:"Databasen nekade detta:",
+  srv_gone:"Det jobbkortet finns inte längre på skärmen — listan har uppdaterats.",
+  srv_not_built:"Det här finns inte på servern än, så det sparas inte. Jobbkortet och dess operationer gör det; anteckningar, kontroller, spillbitar och kontroll före användning behöver fortfarande sitt eget arbetsflöde. Ingenting skrevs.",
   locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Jobbkort",msub:"Verkstadens tillverkningsorder",msub_short:"Arbetsorder",
   sbox_t:"Kopplat arbetsflöde",sbox_p:"Jobbkort skapas från accepterade, planerade projekt och för tillbaka timmar och materialförbrukning till den delade verkstadsdatan.",
   nav_overview:"Översikt",nav_jobcards:"Jobbkort",scope_label:"Avgränsa listan",nav_all:"Alla jobbkort",nav_ready:"Redo att starta",nav_inprogress:"Pågående",nav_blocked:"Pausade / Blockerade",nav_inspection:"Kräver besiktning",nav_completed:"Klara",nav_archived:"Arkiverade",nav_newjc:"Nytt jobbkort",
@@ -546,6 +555,9 @@ sv:{
   chart_none:"Ingen data ännu."
 },
 mk:{
+  srv_refused:"Bazata go odbi ova:",
+  srv_gone:"Toj raboten karton go nema veke na ekranot — spisokot e osvežen.",
+  srv_not_built:"Ova seušte ne postoi na serverot, pa ne se zapišuva. Rabotniot karton i negovite operacii postojat; zabeleškite, kontrolite, ostatocite i proverkata pred upotreba seušte imaat potreba od sopstven tok. Ništo ne bese zapišano.",
   locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Rabotni kartoni",msub:"Rabotni nalozi za rabotilnicata",msub_short:"Rabotni nalozi",
   sbox_t:"Poврзан tek na rabota",sbox_p:"Rabotnite kartoni se izdavaat od prifateni, planirani proekti i gi vraќaat časovite i upotrebata na materijal vo споделените podatoci.",
   nav_overview:"Pregled",nav_jobcards:"Rabotni kartički",scope_label:"Stesni ja listata",nav_all:"Site rabotni kartoni",nav_ready:"Podgotveni za početok",nav_inprogress:"Vo tek",nav_blocked:"Pauzirani / Blokirani",nav_inspection:"Baraat inspekcija",nav_completed:"Završeni",nav_archived:"Arhivirani",nav_newjc:"Nov raboten karton",
@@ -2127,5 +2139,143 @@ function renderApp(){
 
 window.addEventListener('workshop:data',()=>{refreshShared();renderApp();});
 setLang('en');
+
+// ── On the database ───────────────────────────────────────────────────────────────────────────
+//
+// Everything above is the screen as it has always been, on browser storage. This is the other world.
+//
+// The customers screen was wired by wrapping its own save function, which worked because it had one.
+// This page has sixty-odd write sites across seventeen calls to updateJobcard, six to
+// updateJobcardOperation and thirty-four to recordJobcardActivity — wrapping each of them would be
+// sixty chances to miss one, and a missed one writes to a browser the next reload wipes.
+//
+// So the intervention is one layer lower: the WorkshopData methods this page writes through are
+// replaced, for this page only, with versions that send the same intent to the server instead. The
+// page's own logic — its ordering, its locks, its gates, its error handling — runs unchanged, and it
+// already checks `res.error` at nearly every call site, which is how a workflow that does not exist
+// yet gets to say so.
+//
+// Nothing is changed locally. A mutator queues the server call, returns the shape the page expects,
+// and the refresh that follows is what moves the screen. That is deliberate: showing a step as
+// started and then taking it back when the database refuses — because the machine is out of service —
+// is worse than showing nothing for the moment it takes to ask.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  const words=k=>(T[LANG]&&T[LANG][k])||T.en[k]||k;
+  let sending=Promise.resolve();
+
+  // The page's own re-read, redirected rather than worked around. It reassigns JOBCARDS from
+  // WorkshopData, and it is called from sixty places — so translating the records anywhere else meant
+  // the next refreshShared() put the server's raw shapes back and the screen broke on a field that was
+  // no longer there. One function, one source of truth, and every caller is right by construction.
+  const refreshLocally=refreshShared;
+  refreshShared=function(){
+    if(!onServer())return refreshLocally();
+    SHARED=WorkshopData.get();
+    JOBCARDS=(SHARED.jobcards||[]).map(j=>JobcardRecord.fromServer(j,j.id));
+  };
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.failed){wAlert(answer.failed);return false;}
+    // adoptSnapshot dispatches workshop:data synchronously, and the listener at the bottom of this
+    // file calls refreshShared() and renders — which is now the translated path, so the order of these
+    // two lines no longer matters and the screen cannot see an untranslated record.
+    WorkshopData.adoptSnapshot(answer.data);
+    refreshShared();
+    renderApp();
+    return true;
+  }
+
+  // Every refusal is the database's own words: "cannot start: MIG 400 is out-of-service",
+  // "step 2 (Weld out) has 6.50 hours booked on it and cannot be taken off the jobcard".
+  function queue(name,args){
+    sending=sending.then(async ()=>{
+      const answer=await WorkshopApi.call(name,args);
+      if(answer.signedOut){location.href='login.html';return;}
+      if(!answer.ok){await refresh();wAlert(words('srv_refused')+' '+answer.refused);return;}
+      await refresh();
+    }).catch(e=>wAlert(String(e&&e.message||e)));
+  }
+
+  const record=j=>JobcardRecord.toServer(j);
+  const steps=list=>JobcardRecord.operationsToServer({operations:list});
+
+  // The methods this page writes the work through, each mapped to the workflow that does the same
+  // thing in the database.
+  const SENT={
+    upsertJobcard(payload){
+      queue('save_jobcard',record(payload));
+      // The page uses the returned id to open the new jobcard. There is none yet — the database has
+      // not been asked — so it is told so rather than handed an invented one, and the refresh puts the
+      // new jobcard on screen a moment later.
+      return {pending:true};
+    },
+    updateJobcard(id,patch){
+      const j=getJC(id);
+      if(!j)return {error:words('srv_gone')};
+      if(patch&&Object.prototype.hasOwnProperty.call(patch,'operations')){
+        queue('set_jobcard_operations',{jobcard_id:Number(j.sharedId),operations:steps(patch.operations)});
+        return {ok:true};
+      }
+      queue('save_jobcard',record(Object.assign({},j,patch)));
+      return {ok:true};
+    },
+    addJobcardOperation(id,op){
+      const j=getJC(id);
+      if(!j)return {error:words('srv_gone')};
+      queue('set_jobcard_operations',
+        {jobcard_id:Number(j.sharedId),operations:steps((j.operations||[]).concat([op]))});
+      return {ok:true};
+    },
+    updateJobcardOperation(id,opId,patch){
+      const j=getJC(id);
+      if(!j)return {error:words('srv_gone')};
+      // A status on its own is what the tablet does, and the database has a workflow for exactly that
+      // — with the equipment gate, the dependency gate and the quality hold behind it. Anything else
+      // is an edit to the plan and goes back as the whole list.
+      const keys=Object.keys(patch||{});
+      if(keys.length===1&&keys[0]==='status'){
+        queue('record_operation',{operation_id:Number(opId),status:patch.status});
+        return {ok:true};
+      }
+      const list=(j.operations||[]).map(o=>String(o.id)===String(opId)?Object.assign({},o,patch):o);
+      queue('set_jobcard_operations',{jobcard_id:Number(j.sharedId),operations:steps(list)});
+      return {ok:true};
+    },
+    startJobcardOperation(id,opId){
+      queue('record_operation',{operation_id:Number(opId),status:'in-progress'});
+      return {ok:true};
+    },
+    // The database writes its own record of what happened, from inside each workflow, under the name
+    // the session belongs to. A second copy written from here would be a second thing that can be
+    // wrong, and it would be written in whatever name this browser happens to hold.
+    recordJobcardActivity(){return {ok:true};}
+  };
+
+  // And the ones with no workflow yet. Each returns the shape this page already checks for, so the
+  // refusal appears where the page already shows refusals rather than as a silent nothing.
+  const NOT_BUILT=['addJobcardNote','addJobcardInspection','updateJobcardInspection','addOffcut',
+    'recordEquipmentPreUseCheck'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:words('srv_not_built')};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){e.preventDefault();await WorkshopApi.signOut();location.href='login.html';});
+  })();
+})();
 </script>
 </body></html>

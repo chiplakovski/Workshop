@@ -1130,7 +1130,15 @@ function aStepRemembersTheWorkDoneOnIt() {
   }
   refused('material readiness in a word nothing uses',
     `UPDATE jobcard SET material_readiness = 'ready' WHERE id = ${f.jobcard};`, /material_readiness|check/i);
-  step('Work: the material state uses the four words the jobcard screen uses, and no others');
+
+  // The same argument for the priority. The dropdown offers low, medium and high; the column was
+  // invented with low, normal, high and urgent, and refused the one value the screen actually writes.
+  for (const word of ['low', 'medium', 'high']) {
+    accepted(`priority "${word}"`, `UPDATE jobcard SET priority = '${word}' WHERE id = ${f.jobcard};`);
+  }
+  refused('a priority nothing offers', `UPDATE jobcard SET priority = 'urgent' WHERE id = ${f.jobcard};`,
+    /priority|check/i);
+  step('Work: the material state and the priority use the words the jobcard screen uses, and no others');
 }
 
 // The people at a customer. Held as a list on the record for as long as this app has existed, which

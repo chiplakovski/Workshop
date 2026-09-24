@@ -282,8 +282,9 @@ cannot touch anything else.
    | Pass 3 — stock_item, stock_movement, offcut, document | **51% → 54%** |
    | Pass 4 — lead, opportunity, inspection, ncr | **54% → 61%** |
    | Pass 5 — no columns at all: the meter itself was wrong | **61% → 68%** |
-   | Still to do | 58 fields need a column, 23 want a join rather than a column, 31 hold a list and want a child table |
-   | Not a gap | 52 more fields are carried by the demo data and read by no page at all |
+   | Pass 6 — the meter was wrong the other way too | **68% → 65%** |
+   | Still to do | 70 fields need a column, 23 want a join rather than a column, 31 hold a list and want a child table |
+   | Not a gap | 38 more fields are carried by the demo data and read by no page at all |
 
    Pass 5 is the one worth reading. Wiring the customers screen meant looking at the five customer
    fields the meter said had no column — and all five had had one since pass 1, under a longer name:
@@ -299,6 +300,15 @@ cannot touch anything else.
    the 58 are on `equipment` and 9 on `lead`, and the rest are single fields on five other tables. So
    the order changes: the screens whose tables are already wide get wired first, and widening becomes
    a per-screen job rather than a phase.
+
+   Pass 6 went the other way, and is the more useful of the two. The meter's test for "does any page
+   actually read this field" listed the characters it expected after the name and therefore missed
+   every read written as `j.inspectionRequired ? a : b`. Fourteen fields the pages do read were being
+   reported as width nobody misses — `inspection_required` among them, which the jobcard screen, the
+   quality screen and `equipment-gates.js` all read. Correcting it took the coverage **down** and the
+   ratchet refused the run until the baseline moved, which is the only honest reason to move one: the
+   number got worse because the measurement got better. A meter that overstates the work gets planned
+   around; one that understates it hides work. Both had happened.
 
    Three fields were deliberately left as gaps rather than mapped, because mapping them would have
    hidden real work: `inventory.certificate` holds a PDF's filename and wants the document table and
@@ -341,8 +351,8 @@ cannot touch anything else.
    in backed mode that still called a mutator would put the record somewhere the server never sees and
    the next reload wipes, which is the worst outcome available because it looks like it worked.
 
-   It is opt-in per page. Three pages opt in — the phone hours screen, `admin.html` and Customers.
-   Nothing changes for the rest, which still run on browser storage exactly as before.
+   It is opt-in per page. Four pages opt in — the phone hours screen, `admin.html`, Customers and
+   Jobcards. Nothing changes for the rest, which still run on browser storage exactly as before.
 
    **`admin.html` is the second, and it was not a choice of convenience.** Until it existed, giving
    anybody access to this system meant opening psql — which is not a workshop using software, it is
@@ -422,6 +432,35 @@ cannot touch anything else.
      made `UNIQUE (jobcard_id, seq)` deferrable: the halfway state of a re-order is a collision the
      finished list does not have.
 
+      **Jobcards is the fourth screen, and it was wired differently** — because Customers had one save
+   function to wrap and this page writes through sixty-odd call sites: seventeen calls to
+   `updateJobcard`, six to `updateJobcardOperation`, thirty-four to `recordJobcardActivity`. Wrapping
+   each would have been sixty chances to miss one, and a missed one writes to a browser the next reload
+   wipes. So the intervention is one layer lower: **the `WorkshopData` methods the page writes through
+   are replaced, for that page, with versions that send the same intent to the server.** The page's own
+   logic — its ordering, its locks, its gates, its error handling — runs unchanged, and because it
+   already checks `res.error` at nearly every site, a workflow that does not exist yet gets to say so
+   in the place the page already shows refusals.
+
+   Two things fell out of it that will apply to the remaining screens:
+
+   * **Redirect the page's own re-read, not just its writes.** `refreshShared()` reassigns the
+     jobcard list from `WorkshopData` and is called from sixty places, so translating the records
+     anywhere else meant the next call put the server's raw shapes back and the screen broke on a field
+     that was no longer there. One function, one source of truth, every caller right by construction.
+     The customers screen needed the same for `hydrateSharedCustomers()`.
+   * **Nothing is changed locally.** A mutator queues the call and returns the shape the page expects;
+     the refresh that follows moves the screen. Showing a step as started and then taking it back
+     because the database refused — the machine is out of service — is worse than showing nothing for
+     the moment it takes to ask.
+
+   It also turned up two more vocabularies where the schema had invented words nobody uses. The
+   jobcard priority dropdown offers **low, medium, high**; the column was `low, normal, high, urgent`
+   and therefore refused the one value the screen actually writes. Material readiness was the same
+   story. Both now hold the screen's words, by the rule from `material_readiness`: one spelling per
+   state, and when the two disagree the screen wins, because those are the words somebody picks from a
+   dropdown.
+
       Writing the screen also found two refusals that never reached anybody, both of which had passed
    two suites. `bootstrap_first_admin` raised its refusal as `insufficient_privilege`, and `server.js`
    replaces the text of every 42501 with "that is not yours to do" — because Postgres writes its own
@@ -483,7 +522,7 @@ and still stops the workshop working.
 
 `npm run test:mutations` then puts each rule's bug back, one at a time, and fails if the suite
 sleeps through it. A passing test tells you the rule works today, not that anybody would notice it
-breaking. 146 mutations across the four SQL files and the backup script.
+breaking. 149 mutations across the four SQL files and the backup script.
 
 The two checks caught different things, and the difference is the point. **The tests** found five
 real defects in the schema, three of which had already survived a careful reading of the file: the

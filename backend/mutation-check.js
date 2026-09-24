@@ -1074,6 +1074,29 @@ TO varmak_workshop;`
     to: ''
   },
 
+  {
+    // The words nobody uses. 'medium' is what the dropdown writes and this refused it, so every
+    // jobcard saved at the middle priority was refused by a constraint the screen could not satisfy.
+    what: 'the priority goes back to words the screen never writes',
+    from: `  priority      text CHECK (priority IS NULL OR priority IN ('low','medium','high')),`,
+    to: `  priority      text CHECK (priority IS NULL OR priority IN ('low','normal','high','urgent')),`
+  },
+  {
+    what: 'the material state goes back to words the screen never writes',
+    from: `  material_readiness text CHECK (material_readiness IS NULL OR
+                       material_readiness IN ('not-checked','shortage','partial','available')),`,
+    to: `  material_readiness text CHECK (material_readiness IS NULL OR
+                       material_readiness IN ('none','partial','ready')),`
+  },
+  {
+    // The jobcard-level flag, as opposed to a step being a checkpoint. Dropped from the snapshot, the
+    // screen cannot show what it was told and nothing else would notice.
+    what: 'the snapshot stops carrying whether a jobcard needs signing off',
+    file: 'views',
+    from: `        'inspectionRequired', j.inspection_required,`,
+    to: ''
+  },
+
   // ── backup.sh, and the restore suite ──────────────────────────────────────────────────────
   //
   // test-restore.js is the one suite that can be green while proving nothing: it takes a backup,

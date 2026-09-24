@@ -576,6 +576,18 @@ async function workReachesTheFloorOverHttp(tokens, f) {
   assert.equal(steps, 2);
   assert.equal(sql(`SELECT string_agg(seq::text || '=' || description, ', ' ORDER BY seq)
     FROM operation WHERE jobcard_id = ${jobcard};`), '1=Cut and prepare, 2=Weld out');
+  // The jobcard-level inspection flag, which is a different thing from a step being a checkpoint and
+  // had nowhere to live until now — coverage.js called it width nobody misses, because its test for
+  // "is this read anywhere" missed every read written as `j.inspectionRequired ? a : b`.
+  wentThrough('marking the jobcard as needing signing off',
+    await call('POST', '/rpc/save_jobcard', { token: tokens.office, body: {
+      id: Number(jobcard), project_id: Number(project), title: 'Hopper weldment',
+      inspection_required: true
+    } }));
+  const back = await call('GET', '/read/snapshot', { token: tokens.office });
+  const mine = back.body.jobcards.find((j) => String(j.id) === String(jobcard));
+  assert.equal(mine.inspectionRequired, true,
+    'the flag has to come back on the snapshot, or the screen cannot show what it was told');
   step('Work over HTTP: a project, a jobcard on it and its steps all go in through the endpoint');
 
   const byTheFloor = await call('POST', '/rpc/save_project',

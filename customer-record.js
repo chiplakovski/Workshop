@@ -84,7 +84,13 @@
       deliveryTerms: dash(c.deliveryTerms),
       discountAgreement: dash(c.discountAgreement),
       billing: lines(c.billing).length ? lines(c.billing) : [c.name],
-      shipping: lines(c.billing).length ? lines(c.billing) : [c.name],
+      // Where the steel goes, which is not always where the invoice goes. The screen has shown the
+      // two side by side since it was written, and until shipping_address existed the shipping card
+      // was showing the billing address under a heading that said otherwise. Falls back to the
+      // billing address when nobody has given a separate one, which is the usual case and is what
+      // the screen did before — the difference is that now it can be told apart.
+      shipping: lines(c.shipping).length ? lines(c.shipping)
+        : (lines(c.billing).length ? lines(c.billing) : [c.name]),
       quotes: [],
       invoices: [],
       documents: [],
@@ -133,8 +139,19 @@
       price_list: knows ? said(c.pricelist) : said(kept.priceList),
       delivery_terms: knows ? said(c.deliveryTerms) : said(kept.deliveryTerms),
       discount_agreement: knows ? said(c.discountAgreement) : said(kept.discountAgreement),
-      billing_address: (c.billing || []).filter((l) => l && l !== '—').join('\n') || null
+      billing_address: (c.billing || []).filter((l) => l && l !== '—').join('\n') || null,
+      // Only when it differs. Sending a copy of the billing address as the shipping address would
+      // make "they are the same" indistinguishable from "somebody typed it twice", and the first is
+      // a fact worth keeping.
+      shipping_address: sameAddress(c) ? null
+        : ((c.shipping || []).filter((l) => l && l !== '—').join('\n') || null)
     };
+  }
+
+  function sameAddress(c) {
+    const one = (c.billing || []).filter((l) => l && l !== '—').join('\n');
+    const other = (c.shipping || []).filter((l) => l && l !== '—').join('\n');
+    return one === other;
   }
 
   // The contacts, which go through their own call because they are a list. Only the four fields the
@@ -150,7 +167,7 @@
     }));
   }
 
-  const api = { fromServer, toServer, contactsToServer, days, lines, figure, TYPE_WORDS };
+  const api = { fromServer, toServer, contactsToServer, days, lines, figure, sameAddress, TYPE_WORDS };
   root.CustomerRecord = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

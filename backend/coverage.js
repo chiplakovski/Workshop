@@ -58,6 +58,7 @@ const SAME_THING = {
   // column" was the size of the remaining work, and a number that overstates the work is a number
   // that gets planned around. Every entry below was checked against the column list in schema.sql.
   since: 'customer_since', terms: 'payment_terms_days', billing: 'billing_address',
+  shipping: 'shipping_address',
   // NOT is_preferred, which is what this said when it was first written here and was wrong: the
   // customer screen's `preferred` sits under a label reading "Preferred Contact" and holds 'Email'.
   // is_preferred is whether the workshop favours the customer, which nothing reads. Mapping one to
@@ -162,7 +163,12 @@ function classify(field, columns, pages, collection) {
   }
   if (A_JOIN.has(field)) return 'join';
   if (A_CHILD_TABLE.has(field)) return 'child table';
-  const used = new RegExp(`[.\\['"]${field}['"\\]\\s.,;)=]`).test(pages);
+  // A property access or a quoted key, followed by anything that is not more of the name. The first
+  // version listed the characters it expected afterwards — `['"]\s.,;)=` — and therefore missed every
+  // read of the form `j.inspectionRequired?a:b`, because `?` was not on the list. That field is read
+  // by three pages and a rules module and was being reported as width nobody misses. A negative
+  // lookahead asks the question that was meant: is this word used as a field anywhere.
+  const used = new RegExp(`[.\\['"]${field}(?![A-Za-z0-9_])`).test(pages);
   return used ? 'needs a column' : 'unused';
 }
 
@@ -225,7 +231,11 @@ function main() {
 
   // The ratchet. These are the numbers as they stood when this was written; a pass that widens the
   // schema should move the first up and the second down, and neither may go the wrong way.
-  const BASELINE = { stored: 233, needsColumn: 58 };
+  // Moved when the "is this field read anywhere" test was corrected, not when the schema narrowed:
+  // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
+  // were being reported as width nobody misses. The number got worse because the measurement got
+  // better, which is the only reason a ratchet is ever allowed to move backwards.
+  const BASELINE = { stored: 235, needsColumn: 70 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

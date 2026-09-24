@@ -142,6 +142,10 @@ CREATE TABLE customer (
   delivery_terms text,
   discount_agreement text,
   billing_address text,
+  -- Where the steel goes, which is not always where the invoice goes. The customer screen has always
+  -- shown the two addresses side by side and had one column between them, so the shipping card was
+  -- showing the billing address under a heading that said otherwise.
+  shipping_address text,
   notes       text,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -258,7 +262,11 @@ CREATE TABLE jobcard (
   revision      text,
   work_type     text,
   location      text,
-  priority      text CHECK (priority IS NULL OR priority IN ('low','normal','high','urgent')),
+  -- low, medium, high — the three the jobcard screen offers in its dropdown. 'normal' and 'urgent'
+  -- came from the table plan and are in nobody's vocabulary: the screen has never written either, and
+  -- the value it does write for the middle one, 'medium', this column refused. One spelling per state,
+  -- and the spelling is the screen's.
+  priority      text CHECK (priority IS NULL OR priority IN ('low','medium','high')),
   responsible   text,
   created_by    text,
   notes         text,
@@ -272,6 +280,12 @@ CREATE TABLE jobcard (
   -- 'partial' onto one value, losing the difference between "some is missing" and "some is here".
   material_readiness text CHECK (material_readiness IS NULL OR
                        material_readiness IN ('not-checked','shortage','partial','available')),
+  -- Whether this job needs signing off before it leaves. Read by the jobcard screen, the quality
+  -- screen and equipment-gates.js, and it had nowhere to live: coverage.js reported it as width
+  -- nobody misses, because the test for "is this field read anywhere" missed every read written as
+  -- `j.inspectionRequired ? a : b`. Distinct from operation.inspection_checkpoint, which marks one
+  -- step; this is the job as a whole.
+  inspection_required boolean NOT NULL DEFAULT false,
   delivery_target date,
   actual_start  date,
   actual_completion date,

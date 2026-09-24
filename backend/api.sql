@@ -765,7 +765,8 @@ CREATE FUNCTION save_jobcard(
   p_heat_no text DEFAULT NULL,
   p_material_cert_ref text DEFAULT NULL,
   p_notes text DEFAULT NULL,
-  p_progress int DEFAULT 0
+  p_progress int DEFAULT 0,
+  p_inspection_required boolean DEFAULT false
 ) RETURNS bigint
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -801,11 +802,12 @@ BEGIN
     INSERT INTO jobcard (project_id, customer_id, title, status, item, quantity, drawing_no,
                          revision, planned_hours, planned_start, planned_completion, delivery_target,
                          work_type, location, priority, responsible, material_readiness, heat_no,
-                         material_cert_ref, notes, progress, created_by)
+                         material_cert_ref, notes, progress, inspection_required, created_by)
     VALUES (p_project_id, owner, btrim(p_title), p_status::jobcard_status, p_item, p_quantity,
             p_drawing_no, p_revision, p_planned_hours, p_planned_start, p_planned_completion,
             p_delivery_target, p_work_type, p_location, p_priority, p_responsible,
-            p_material_readiness, p_heat_no, p_material_cert_ref, p_notes, p_progress, who)
+            p_material_readiness, p_heat_no, p_material_cert_ref, p_notes, p_progress,
+            coalesce(p_inspection_required, false), who)
     RETURNING id INTO saved;
     INSERT INTO activity_log (entity, entity_id, action, actor, detail)
     VALUES ('jobcard', saved, 'created', who, project_name || ' — ' || btrim(p_title));
@@ -818,7 +820,7 @@ BEGIN
       delivery_target = p_delivery_target, work_type = p_work_type, location = p_location,
       priority = p_priority, responsible = p_responsible, material_readiness = p_material_readiness,
       heat_no = p_heat_no, material_cert_ref = p_material_cert_ref, notes = p_notes,
-      progress = p_progress
+      progress = p_progress, inspection_required = coalesce(p_inspection_required, false)
      WHERE id = p_id
     RETURNING id INTO saved;
     IF saved IS NULL THEN
@@ -969,7 +971,8 @@ CREATE FUNCTION save_customer(
   p_price_list text DEFAULT NULL,
   p_delivery_terms text DEFAULT NULL,
   p_discount_agreement text DEFAULT NULL,
-  p_billing_address text DEFAULT NULL
+  p_billing_address text DEFAULT NULL,
+  p_shipping_address text DEFAULT NULL
 ) RETURNS bigint
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -1002,11 +1005,12 @@ BEGIN
     INSERT INTO customer (name, status, city, country, org_no, vat_no, email, phone, website,
                           industry, customer_since, customer_type, is_preferred, preferred_contact,
                           notes, credit_limit, currency, payment_terms_days, price_list,
-                          delivery_terms, discount_agreement, billing_address)
+                          delivery_terms, discount_agreement, billing_address, shipping_address)
     VALUES (btrim(p_name), p_status, p_city, p_country, p_org_no, p_vat_no, p_email, p_phone,
             p_website, p_industry, p_customer_since, p_customer_type, p_is_preferred,
             p_preferred_contact, p_notes, p_credit_limit, p_currency, p_payment_terms_days,
-            p_price_list, p_delivery_terms, p_discount_agreement, p_billing_address)
+            p_price_list, p_delivery_terms, p_discount_agreement, p_billing_address,
+            p_shipping_address)
     RETURNING id INTO saved;
     INSERT INTO activity_log (entity, entity_id, action, actor, detail)
     VALUES ('customer', saved, 'created', current_app_name(), btrim(p_name));
@@ -1019,7 +1023,7 @@ BEGIN
       credit_limit = p_credit_limit,
       currency = p_currency, payment_terms_days = p_payment_terms_days, price_list = p_price_list,
       delivery_terms = p_delivery_terms, discount_agreement = p_discount_agreement,
-      billing_address = p_billing_address
+      billing_address = p_billing_address, shipping_address = p_shipping_address
      WHERE id = p_id
     RETURNING id INTO saved;
     -- Row-level security filters rather than refuses, so an UPDATE nobody is allowed to make simply
@@ -1094,11 +1098,11 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION save_customer(bigint, text, text, text, text, text, text, text, text, text,
-  text, date, text, boolean, text, text, numeric, text, int, text, text, text, text) FROM PUBLIC;
+  text, date, text, boolean, text, text, numeric, text, int, text, text, text, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_project(bigint, text, bigint, text, numeric, int, date, text, text, text, text, text,
                 text, text, text, date, date, date, date, text, text, date, text, numeric) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
-                text, text, text, text, text, text, text, text, int) FROM PUBLIC;
+                text, text, text, text, text, text, text, text, int, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_jobcard_operations(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_customer_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION send_estimate(bigint, int) FROM PUBLIC;
@@ -1115,12 +1119,12 @@ TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   receive_goods(bigint, numeric, text), convert_lead(bigint, text, text),
   save_customer(bigint, text, text, text, text, text, text, text, text, text, text, date, text,
-                boolean, text, text, numeric, text, int, text, text, text, text),
+                boolean, text, text, numeric, text, int, text, text, text, text, text),
   set_customer_contacts(bigint, jsonb),
   save_project(bigint, text, bigint, text, numeric, int, date, text, text, text, text, text,
                 text, text, text, date, date, date, date, text, text, date, text, numeric),
   save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
-                text, text, text, text, text, text, text, text, int),
+                text, text, text, text, text, text, text, text, int, boolean),
   set_jobcard_operations(bigint, jsonb)
 TO varmak_admin, varmak_office;
 

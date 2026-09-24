@@ -47,6 +47,20 @@ test('the billing address is one block of text and several lines on screen', () 
   assert.deepEqual(bare.billing, ['Höganäs Mekaniska AB']);
 });
 
+test('the shipping address is only stored when it differs from the billing one', () => {
+  // Same address is the usual case, and a copy of the billing address stored as the shipping address
+  // makes "they are the same" indistinguishable from "somebody typed it twice" — the first is a fact
+  // worth keeping and the second is a maintenance problem.
+  const same = CustomerRecord.fromServer(SERVED, 1);
+  assert.deepEqual(same.shipping, same.billing, 'the screen still shows an address in both cards');
+  assert.equal(CustomerRecord.toServer(same).shipping_address, null);
+
+  const apart = CustomerRecord.fromServer({ ...SERVED, shipping: 'Gate 4\nIndustrivägen 8\n263 21 Höganäs' }, 1);
+  assert.deepEqual(apart.shipping, ['Gate 4', 'Industrivägen 8', '263 21 Höganäs']);
+  assert.notDeepEqual(apart.shipping, apart.billing);
+  assert.equal(CustomerRecord.toServer(apart).shipping_address, 'Gate 4\nIndustrivägen 8\n263 21 Höganäs');
+});
+
 test('money crosses as text and is only turned into a number to be formatted', () => {
   assert.equal(typeof SERVED.credit, 'string', 'the wire keeps its scale');
   assert.equal(CustomerRecord.fromServer(SERVED, 1).credit, 180000);

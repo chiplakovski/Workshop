@@ -12,7 +12,7 @@ Four things, each with a suite that attacks it:
 | `backup.sh` | the backup, in the two pieces it actually takes |
 
 `mutation-check.js` then checks that the tests would notice if any of these stopped refusing:
-**146 mutations**, across the four SQL files and the backup script.
+**149 mutations**, across the four SQL files and the backup script.
 
 Where it stands: 111 refusals on the schema, 57 on auth, 25 on the workflows and 18 over real HTTP,
 with 112 allowances beside them — because a gate that refuses everything passes every refusal test
@@ -56,7 +56,7 @@ npm run serve              # the API itself, on PORT (8787 by default)
 the Postgres wire protocol to avoid one dependency would be a worse trade than taking it.
 
 `test:schema` takes a few seconds. `test:mutations` rebuilds the database and re-runs the whole
-suite once per mutation — 146 of them, a couple of hours — so it is a check to run when a rule
+suite once per mutation — 149 of them, a couple of hours — so it is a check to run when a rule
 changes, not on every save. One rule, or one file, at a time:
 
 ```sh
@@ -318,16 +318,28 @@ somewhere else.
 It exists because step 5 of BACKEND.md ("point the frontend at it; the sixteen pages do not change")
 turned out to rest on something nobody had checked. The schema was built from the twenty-five-table
 plan in §2, which trimmed the *collections* — it said nothing about the fields inside them. The first
-measurement: **111 of 345 fields the pages read could be stored. 32%.** Today it is **233, or 68%.**
+measurement: **111 of 345 fields the pages read could be stored. 32%.** Today it is **235 of 359, or
+65%** — and the denominator moved because the meter itself was corrected twice, which is the next
+thing in this section.
 
-Seven of those points came from correcting the meter rather than the schema. Five customer fields it
-reported as having no column had had one since the first pass under a longer name — `since` is
-`customer_since`, `terms` is `payment_terms_days` — and the same was true of `created`/`created_at` on
-three tables, the four store columns for groups and locations, and three lists whose child table
-already existed. Twenty-three fields, no schema change. It matters because **58, not 86, is the real
-remaining work**, and because customers, projects and jobcards turn out to need no widening at all —
-which changes what gets wired first. A progress meter that overstates the work is a meter that gets
-planned around.
+Two corrections to the meter itself are worth knowing about, because both moved the number more than
+any pass of column-adding has.
+
+Seven points came from names: five customer fields it reported as having no column had had one since
+the first pass under a longer name — `since` is `customer_since`, `terms` is `payment_terms_days` — and
+the same was true of `created`/`created_at` on three tables, the four store columns for groups and
+locations, and three lists whose child table already existed. Twenty-three fields, no schema change.
+
+Then the other direction. Its test for "does any page actually read this field" listed the characters
+it expected after the name — `['"]\s.,;)=` — and therefore missed every read written as
+`j.inspectionRequired ? a : b`, because `?` was not on the list. Fourteen fields the pages do read were
+being reported as width nobody misses, `inspection_required` among them. Correcting that took the
+coverage **down** from 68% to 65% and the missing columns up from 58 to 72, and the ratchet refused the
+run until the baseline moved — which is the only honest reason a ratchet is ever allowed to move
+backwards: the number got worse because the measurement got better.
+
+A progress meter that overstates the work is a meter that gets planned around; one that understates it
+is a meter that hides work. Both happened here, and the numbers in this file are the corrected ones.
 
 The classification matters more than the total, and the judgements are written down in the file
 rather than inferred, because a rule that maps `no` to `no` and shrugs at `org` would overstate the

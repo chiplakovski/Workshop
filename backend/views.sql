@@ -117,6 +117,7 @@ LANGUAGE sql STABLE AS $$
         'actualStart', j.actual_start, 'actualCompletion', j.actual_completion,
         'materialReadiness', j.material_readiness, 'deliveryTarget', j.delivery_target,
         'heatNo', j.heat_no, 'materialCertRef', j.material_cert_ref,
+        'inspectionRequired', j.inspection_required,
         'archived', j.archived, 'created', j.created_at, 'createdBy', j.created_by,
         'notes', j.notes,
         'operations', operations_of(j.id)
@@ -189,7 +190,8 @@ LANGUAGE sql STABLE AS $$
         -- rule that has to be read carefully every time somebody adds a field.
         'terms', c.payment_terms_days::text, 'priceList', c.price_list,
         'deliveryTerms', c.delivery_terms, 'discountAgreement', c.discount_agreement,
-        'billing', c.billing_address)) FROM customer c), '{}'::jsonb),
+        'billing', c.billing_address, 'shipping', c.shipping_address))
+      FROM customer c), '{}'::jsonb),
     'projects', coalesce((SELECT jsonb_object_agg(p.id::text,
         jsonb_build_object('quotedValue', p.quoted_value::text)) FROM project p), '{}'::jsonb),
     'inventory', coalesce((SELECT jsonb_object_agg(i.id::text,
