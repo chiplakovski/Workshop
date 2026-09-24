@@ -161,11 +161,16 @@ async function main() {
     assert.equal(w.stock, '300.000', 'which the database agrees is 300 against a floor of 500');
     step('Reports: what is low in stock is read from the shelf, not from this browser');
 
-    // ── The three that cannot be answered yet ───────────────────────────────────────────────
+    // ── The ones that cannot be answered yet ────────────────────────────────────────────────
     //
     // This is the check the suite exists for. "No quotations were accepted" and "these records are not
     // on the database yet" are different answers, and only one of them is true here.
-    for (const [section, what] of [['won', 'quotations'], ['bought', 'purchase orders'], ['failed', 'inspections']]) {
+    //
+    // Two now, not three. Wiring Quality put inspections in the snapshot, and the note disappeared from
+    // that report by itself — which is the whole point of asking `servedCollections()` rather than
+    // keeping a list of excuses on this page. The list below is what changed; nothing on the reports
+    // screen did.
+    for (const [section, what] of [['won', 'quotations'], ['bought', 'purchase orders']]) {
       await show(section);
       const note = await page.locator(`#section-${section} .srvnote`).count();
       assert.equal(note, 1, `the ${what} report has to say its records are not on the database yet`);
@@ -174,15 +179,15 @@ async function main() {
       assert.match(said, /not saying the answer is none/,
         'and say plainly that it is not claiming the answer is nothing');
     }
-    step('Reports: the three reports with no records on the database say so, instead of reporting none');
+    step('Reports: the two reports with no records on the database say so, instead of reporting none');
 
-    // And the three that can be answered do NOT carry that note.
-    for (const section of ['late', 'hours', 'stock']) {
+    // And the four that can be answered do NOT carry that note.
+    for (const section of ['late', 'hours', 'stock', 'failed']) {
       await show(section);
       assert.equal(await page.locator(`#section-${section} .srvnote`).count(), 0,
         `${section} can be answered from the database, so it must not be excused`);
     }
-    step('Reports: and the three that can be answered carry no such note');
+    step('Reports: and the four that can be answered carry no such note — inspections joined them');
 
     // ── What this screen cannot write ───────────────────────────────────────────────────────
     const refused = await page.evaluate(() => {

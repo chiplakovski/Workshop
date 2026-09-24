@@ -2070,6 +2070,7 @@ DECLARE
   found record;
   existing text;
   why text;
+  held bigint;
   made text;
 BEGIN
   SELECT id, ref, result, critical, project_id, jobcard_id, findings, inspector
@@ -2101,7 +2102,13 @@ BEGIN
           CASE WHEN found.jobcard_id IS NULL THEN found.project_id END,
           found.jobcard_id, why, 'critical', coalesce(found.inspector, 'system'),
           'Corrective action and re-inspection required.', found.ref)
-  RETURNING ref INTO made;
+  RETURNING id, ref INTO held, made;
+
+  -- The hold's own history, the same entry place_hold writes. Without it the holds with the least
+  -- explanation on the screen would be exactly the ones that matter most: an office hold shows who
+  -- applied it and why, and an automatic one would show an empty panel.
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('quality_hold', held, 'applied', coalesce(found.inspector, 'system'), made || ' — ' || why);
   RETURN made;
 END;
 $$;

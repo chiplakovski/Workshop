@@ -592,7 +592,12 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
+<script src="quality-gates.js"></script><script src="quality-record.js"></script><script src="equipment-gates.js"></script>
+<script>/* Wired to the server. Declared rather than detected, and this is the page where it matters
+   most: a hold is the only thing in this system that physically stops work leaving the building, and
+   a hold list read out of this browser while the holds are in a database is a list that says the work
+   is clear when the database is refusing to let it go. */
+window.WORKSHOP_SERVER_READY=true;</script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
 <script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
 'use strict';
@@ -993,7 +998,7 @@ function openNewInspectionModal(){
   clearFormErr('insFormErr');
   openModal('inspModal');
 }
-function submitInspection(){
+async function submitInspection(){
   const payload={
     projectNo:$('ins_project').value,jobcard:$('ins_jobcard').value||null,operation:$('ins_operation').value.trim(),
     component:$('ins_component').value.trim(),drawingNo:$('ins_drawing').value.trim(),drawingRev:$('ins_rev').value.trim(),
@@ -1003,11 +1008,15 @@ function submitInspection(){
   };
   if(!payload.projectNo){formErr('insFormErr','Select a project.');return;}
   if(!payload.plannedDate){formErr('insFormErr','Planned date is required.');return;}
-  const note=$('ins_notes').value.trim();
-  const rec=WorkshopData.requestInspection(payload);
+  // The Notes box goes on the record rather than into the activity trail as a separate note. It used
+  // to be a second call — requestInspection, then addQualityNote against the reference the first call
+  // returned — which cannot work against a database: the reference does not exist until the round trip
+  // comes back, and two calls for one form is a form that can half-save.
+  payload.notes=$('ins_notes').value.trim()||null;
+  const rec=await WorkshopData.requestInspection(payload);
   if(rec.error){formErr('insFormErr',rec.error);return;}
-  if(note)WorkshopData.addQualityNote('inspection',rec.no,{author:'Aleksandar C.',text:note});
-  invalidateDataCache();closeModal('inspModal');notify('Inspection request created: '+rec.no);
+  invalidateDataCache();closeModal('inspModal');
+  notify(rec.no?('Inspection request created: '+rec.no):'Inspection request created.');
   if(currentSection)loadSectionData(currentSection);
 }
 
@@ -1048,7 +1057,7 @@ function openExecInspection(no){
   clearFormErr('execFormErr');
   openModal('inspExecModal');
 }
-function submitInspectionResult(){
+async function submitInspectionResult(){
   const data=getData();
   const rec=(data.qualityInspections||[]).find(i=>i.no===execCurrentNo);
   if(!rec)return;
@@ -1059,18 +1068,18 @@ function submitInspectionResult(){
   });
   const result=$('exec_result').value;
   const resultData={result,findings:$('exec_findings').value.trim(),checklist,critical:$('exec_critical').checked,inspector:rec.inspector,actualDate:todayStr()};
-  const res=WorkshopData.completeInspection(execCurrentNo,resultData);
+  const res=await WorkshopData.completeInspection(execCurrentNo,resultData);
   if(res.error){formErr('execFormErr',res.error);return;}
   invalidateDataCache();
   notify('Inspection '+execCurrentNo+' completed'+(res.hold?(' — Quality Hold '+res.hold.no+' applied'):''));
   closeModal('inspExecModal');
   if(currentSection)loadSectionData(currentSection);
 }
-function createReinspectionFromModal(){
+async function createReinspectionFromModal(){
   if(!execCurrentNo)return;
-  const rec=WorkshopData.createReinspection(execCurrentNo,{});
+  const rec=await WorkshopData.createReinspection(execCurrentNo,{});
   if(rec.error){notify(rec.error);return;}
-  invalidateDataCache();notify('Reinspection created: '+rec.no);
+  invalidateDataCache();notify(rec.no?('Reinspection created: '+rec.no):'Reinspection created.');
   closeModal('inspExecModal');
   if(currentSection)loadSectionData(currentSection);
 }
@@ -1117,7 +1126,7 @@ function openNewNcrModal(){
   clearFormErr('ncrFormErr');
   openModal('ncrModal');
 }
-function submitNcr(){
+async function submitNcr(){
   const data=getData();
   const project=(data.projects||[]).find(p=>p.no===$('ncr_project').value);
   const payload={
@@ -1128,10 +1137,11 @@ function submitNcr(){
   };
   if(!payload.title){formErr('ncrFormErr','Title is required.');return;}
   if(!payload.projectNo){formErr('ncrFormErr','Select a project.');return;}
-  const res=WorkshopData.createNcr(payload);
+  const res=await WorkshopData.createNcr(payload);
   if(res.error){formErr('ncrFormErr',res.error);return;}
   invalidateDataCache();closeModal('ncrModal');
-  notify('NCR created: '+res.ncr.no+(res.hold?(' — Quality Hold '+res.hold.no+' applied'):''));
+  notify('NCR created'+(res.ncr&&res.ncr.no?(': '+res.ncr.no):'')
+    +(res.hold?(' — Quality Hold '+res.hold.no+' applied'):''));
   if(currentSection)loadSectionData(currentSection);
 }
 
@@ -1175,12 +1185,12 @@ function ncrShowAction(no,action){
   area.innerHTML=`<div class="panel" style="background:var(--lift-02);">${forms[action]||''}<div class="mformerr show" id="ncrActErr" style="display:none;"></div></div>`;
 }
 function ncrActErr(msg){const e=$('ncrActErr');if(e){e.textContent=msg;e.style.display='block';}}
-function ncrSubmitContainment(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Containment text is required.');return;}const r=WorkshopData.addNcrContainment(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Containment recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
-function ncrSubmitDisposition(no){const v=$('ncrActInput').value;const ref=$('ncrActRef').value.trim();const r=WorkshopData.setNcrDisposition(no,v,{approvalRef:ref});if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Disposition recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
-function ncrSubmitCapaLink(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Enter a CAPA reference.');return;}const r=WorkshopData.assignNcrCorrectiveAction(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Corrective action assigned.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
-function ncrSubmitVerify(no){const v=$('ncrActInput').value.trim();const by=$('ncrActRef').value.trim();const r=WorkshopData.verifyNcrCorrective(no,v,by);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Verification recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
-function ncrSubmitClose(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Closure approval reference is required.');return;}const r=WorkshopData.closeNcr(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('NCR closed.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
-function ncrSubmitReopen(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('A reason is required to reopen.');return;}const r=WorkshopData.reopenNcr(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('NCR reopened.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitContainment(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Containment text is required.');return;}const r=await WorkshopData.addNcrContainment(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Containment recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitDisposition(no){const v=$('ncrActInput').value;const ref=$('ncrActRef').value.trim();const r=await WorkshopData.setNcrDisposition(no,v,{approvalRef:ref});if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Disposition recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitCapaLink(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Enter a CAPA reference.');return;}const r=await WorkshopData.assignNcrCorrectiveAction(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Corrective action assigned.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitVerify(no){const v=$('ncrActInput').value.trim();const by=$('ncrActRef').value.trim();const r=await WorkshopData.verifyNcrCorrective(no,v,by);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('Verification recorded.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitClose(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('Closure approval reference is required.');return;}const r=await WorkshopData.closeNcr(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('NCR closed.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
+async function ncrSubmitReopen(no){const v=$('ncrActInput').value.trim();if(!v){ncrActErr('A reason is required to reopen.');return;}const r=await WorkshopData.reopenNcr(no,v);if(r.error){ncrActErr(r.error);return;}invalidateDataCache();notify('NCR reopened.');openNcrDetail(no);if(currentSection)loadSectionData(currentSection);}
 
 // ══════════════ CORRECTIVE ACTIONS (CAPA) ══════════════
 
@@ -1205,10 +1215,10 @@ let itpLineTarget=null;
 
 // ══════════════ NOTE MODAL (generic) ══════════════
 let noteTarget=null;
-function submitNote(){
+async function submitNote(){
   if(!noteTarget)return;
   const text=$('note_text').value.trim();if(!text)return;
-  const r=WorkshopData.addQualityNote(noteTarget.collection,noteTarget.idOrNo,{author:'Aleksandar C.',text});
+  const r=await WorkshopData.addQualityNote(noteTarget.collection,noteTarget.idOrNo,{author:'Aleksandar C.',text});
   if(r.error){notify(r.error);return;}
   invalidateDataCache();notify('Note added.');closeModal('noteModal');
   if(currentSection)loadSectionData(currentSection);
@@ -1224,10 +1234,10 @@ function openHoldReleaseModal(holdNo){
   clearFormErr('holdFormErr');
   openModal('holdReleaseModal');
 }
-function submitHoldRelease(){
+async function submitHoldRelease(){
   if(!holdReleaseTarget)return;
   const releaseAuthority=$('hold_authority').value.trim();const releaseReason=$('hold_reason').value.trim();
-  const r=WorkshopData.releaseQualityHold(holdReleaseTarget,{releaseAuthority,releaseReason});
+  const r=await WorkshopData.releaseQualityHold(holdReleaseTarget,{releaseAuthority,releaseReason});
   if(r.error){formErr('holdFormErr',r.error);return;}
   invalidateDataCache();notify('Quality Hold released.');closeModal('holdReleaseModal');
   renderHoldBanner();
@@ -1345,6 +1355,204 @@ function computeReleaseBlocking(data,projectNo,jobcardNo){
   }
   return {blockingReasons:[...new Set(reasons)]};
 }
+
+
+// ── The quality register on the database ────────────────────────────────────────────────────
+//
+// This screen was the widest gap left in the system, and not because it was hard: the database has
+// been refusing to complete a held jobcard since the schema was written, and the page that lists the
+// holds was reading them out of this browser's own storage. The gate and the list somebody reads to
+// understand the gate were looking at two different sets of facts, so a hold placed by the database
+// was invisible here and a hold "released" here stopped nothing.
+//
+// Reading is the easy half: the snapshot now carries qualityHolds, qualityInspections and
+// qualityNcrs, in the names this page already uses. Each record goes through QualityRecord.*FromServer
+// on the way in — for two things the snapshot cannot do, an unanswered checklist line that has to be
+// '' rather than null, and `_server`, which rides along for the overlay rule this is now the third
+// screen to need.
+//
+// Writing replaces the twelve WorkshopData methods this page calls. Two of them are the reason the
+// whole slice matters:
+//
+//   * completeInspection — a critical failure puts the hold on inside the same transaction that
+//     records the finding, rather than through a second call that is missing when the lorry is loaded.
+//   * releaseQualityHold — the one decision in the system that lets work leave the building, and the
+//     only one the floor is refused outright.
+//
+// Every refusal is the database's. Nothing here decides whether an NCR may close, whether a part may
+// be used as it is, or whether a hold may come off; the messages those refusals arrive in are written
+// where the rule is.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  let sending=Promise.resolve();
+
+  function adopt(data){
+    WorkshopData.adoptSnapshot(Object.assign({},data,{
+      qualityHolds:(data.qualityHolds||[]).map(QualityRecord.holdFromServer),
+      qualityInspections:(data.qualityInspections||[]).map(QualityRecord.inspectionFromServer),
+      qualityNcrs:(data.qualityNcrs||[]).map(QualityRecord.ncrFromServer)
+    }));
+  }
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.offline||answer.failed){notify(answer.failed||'The server cannot be reached.');return false;}
+    adopt(answer.data);
+    // adoptSnapshot fires workshop:data, which this page already listens for and re-renders on, so
+    // the banner, the filters and the open section all come back by themselves.
+    return true;
+  }
+
+  // One at a time, and awaited by the caller, because every one of these handlers has something to
+  // say afterwards that depends on the answer: the reference of the inspection just raised, the hold
+  // that went on with a failure, or the refusal in the words the database wrote it in.
+  function send(name,body){
+    const mine=sending.then(async ()=>{
+      const answer=await WorkshopApi.call(name,body);
+      if(answer.signedOut){location.href='login.html';return {error:'Signed out.'};}
+      if(!answer.ok){
+        // Re-read before reporting. A refusal usually means this screen is looking at something older
+        // than the database is, and the person is about to read the message and try again.
+        await refresh();
+        return {error:answer.refused||'The server refused that.'};
+      }
+      await refresh();
+      return {result:answer.result};
+    }).catch(e=>({error:String(e&&e.message||e)}));
+    sending=mine.then(()=>undefined,()=>undefined);
+    return mine;
+  }
+
+  // The refs on screen, and the ids underneath. Every one of these comes back null for something the
+  // snapshot does not hold, and QualityRecord sends null rather than a guess — the database then
+  // refuses by name instead of acting on the wrong row.
+  const rowOf=(list,no)=>((WorkshopData.get()[list]||[])
+    .find(x=>String(x.no)===String(no)||String(x.id)===String(no))||null);
+  const idOf=(list,no)=>{const row=rowOf(list,no);return row?Number(row.id):null;};
+  const LOOKUP={
+    project:no=>{const p=(WorkshopData.get().projects||[]).find(x=>String(x.no)===String(no));
+      return p?Number(p.id):null;},
+    jobcard:no=>{const j=(WorkshopData.get().jobcards||[]).find(x=>String(x.no)===String(no));
+      return j?Number(j.id):null;},
+    supplier:name=>{const s=(WorkshopData.get().suppliers||[])
+      .find(x=>String(x.name)===String(name));return s?Number(s.id):null;},
+    inspection:no=>idOf('qualityInspections',no),
+    ncr:no=>idOf('qualityNcrs',no),
+    hold:no=>idOf('qualityHolds',no)
+  };
+
+  // What the screen reads off the answer, from what the database returned. save_inspection hands back
+  // an id and nothing else, so the reference is read out of the refreshed snapshot — by then it is
+  // there, because send() re-reads before returning.
+  const refOfId=(list,id)=>{
+    const row=(WorkshopData.get()[list]||[]).find(x=>String(x.id)===String(id));
+    return row?row.no:null;
+  };
+
+  const SENT={
+    async requestInspection(payload){
+      const answer=await send('save_inspection',
+        QualityRecord.inspectionToServer(Object.assign({},payload,{status:'requested'}),LOOKUP));
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result,no:refOfId('qualityInspections',answer.result)};
+    },
+    async createInspection(payload){return SENT.requestInspection(payload);},
+    async completeInspection(no,resultData){
+      const answer=await send('complete_inspection',
+        QualityRecord.resultToServer(no,resultData,LOOKUP));
+      if(answer.error)return {error:answer.error};
+      const said=answer.result||{};
+      // The shape this screen reads: the record, and the hold if one went on. The hold arrives as a
+      // reference and the page wants an object with a `no` on it, which is what the notify line reads.
+      return {inspection:rowOf('qualityInspections',said.inspection||no),
+              hold:said.hold?{no:said.hold}:null};
+    },
+    async createReinspection(no){
+      const answer=await send('create_reinspection',{id:LOOKUP.inspection(no)});
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result,no:refOfId('qualityInspections',answer.result)};
+    },
+    async createNcr(payload){
+      const answer=await send('save_ncr',QualityRecord.ncrToServer(payload,LOOKUP));
+      if(answer.error)return {error:answer.error};
+      const said=answer.result||{};
+      return {ncr:rowOf('qualityNcrs',said.ncr)||{no:said.ncr},
+              hold:said.hold?{no:said.hold}:null};
+    },
+    async updateNcr(no,patch){
+      const held=rowOf('qualityNcrs',no);
+      if(!held)return {error:'That non-conformance is not in this workshop.'};
+      const answer=await send('save_ncr',
+        QualityRecord.ncrToServer(Object.assign({},held,patch),LOOKUP));
+      return answer.error?{error:answer.error}:(rowOf('qualityNcrs',no)||{});
+    },
+    async releaseQualityHold(no,evidence){
+      const answer=await send('release_hold',QualityRecord.releaseToServer(no,evidence,LOOKUP));
+      return answer.error?{error:answer.error}:(rowOf('qualityHolds',no)||{});
+    },
+    async applyQualityHold(payload){
+      const given=payload||{};
+      const answer=await send('place_hold',{
+        project_id:LOOKUP.project(given.projectNo||given.reference),
+        jobcard_id:LOOKUP.jobcard(given.jobcard||given.reference),
+        reason:given.reason||null,
+        severity:given.severity||'major',
+        required_action:given.requiredAction||null,
+        related_ref:given.relatedRef||null
+      });
+      if(answer.error)return {error:answer.error};
+      return rowOf('qualityHolds',answer.result)||{no:answer.result};
+    },
+    async addQualityNote(collection,no,note){
+      const answer=await send('add_quality_note',
+        QualityRecord.noteToServer(collection,no,note,LOOKUP));
+      return answer.error?{error:answer.error}:{text:note&&note.text};
+    }
+  };
+
+  // The six steps, from the six methods the screen calls. The mapping is in QualityRecord, because
+  // the database has one function with a step and the screen has six methods — and the state machine
+  // deciding what follows what lives in neither of them.
+  Object.keys(QualityRecord.STEPS).forEach(method=>{
+    SENT[method]=async function(no,text,second){
+      // verifyNcrCorrective(no, result, verifiedBy) and setNcrDisposition(no, disposition, {approvalRef})
+      // both carry a second value, in different shapes. Neither is the step's text.
+      const reference=(second&&typeof second==='object')?(second.approvalRef||null):(second||null);
+      const answer=await send('record_ncr_step',
+        QualityRecord.stepToServer(method,no,text,reference,LOOKUP));
+      return answer.error?{error:answer.error}:(rowOf('qualityNcrs',no)||{});
+    };
+  });
+
+  // Written down rather than left to be discovered: the ITP register, the CAPA records, the quality
+  // dossiers and the final-release sign-off all have methods on WorkshopData and no table behind them
+  // yet. Wired to say so, because the alternative is a browser-storage write on a page that is
+  // otherwise reading from the database — which looks like it worked and is gone on the next reload.
+  const NOT_BUILT=['createItp','addItpLine','updateItp','reviseItp','createCapa','updateCapa',
+    'closeCapa','addCapaFiveWhy','createDossier','updateDossier','signFinalRelease',
+    'reopenFinalRelease','startInspection','updateInspection','cancelInspection','addQualityActivity'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:'That part of the quality system is not on the database yet.'};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){
+      e.preventDefault();await WorkshopApi.signOut();location.href='login.html';
+    });
+  })();
+})();
 
 // ── data-i translation helpers used broadly ──
 function tr(key){return (i18n[currentLang]&&i18n[currentLang][key])||i18n.en[key]||key;}

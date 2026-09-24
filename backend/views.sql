@@ -94,6 +94,11 @@ $$;
 -- a quality note somebody can quietly edit afterwards is worth less than no note at all, and that
 -- table is append-only by trigger. A note is the row whose action is 'note', which is what lets the
 -- screen tell the two apart while they live in one place.
+-- The newest twenty, and the limit is the same judgement the movement log's two hundred already makes:
+-- this runs once per hold, inspection and NCR in the snapshot, and activity_log is the table that grows
+-- fastest in the whole system. The panels that show it are a scrolling list about six entries tall. A
+-- record with a longer history than this has it in the log, where the audit trail is, rather than in
+-- every snapshot every screen takes.
 CREATE FUNCTION quality_activity_of(p_entity text, p_entity_id bigint) RETURNS jsonb
 LANGUAGE sql STABLE AS $$
   SELECT coalesce(jsonb_agg(jsonb_build_object(
@@ -104,7 +109,11 @@ LANGUAGE sql STABLE AS $$
       'reason', a.detail, 'text', a.detail, 'author', a.actor,
       'date', a.happened_at::date, 'note', a.action = 'note'
     ) ORDER BY a.happened_at DESC, a.id DESC), '[]'::jsonb)
-  FROM activity_log a WHERE a.entity = p_entity AND a.entity_id = p_entity_id;
+  FROM (
+    SELECT * FROM activity_log
+     WHERE entity = p_entity AND entity_id = p_entity_id
+     ORDER BY happened_at DESC, id DESC LIMIT 20
+  ) a;
 $$;
 
 CREATE FUNCTION workspace_snapshot() RETURNS jsonb
@@ -232,6 +241,18 @@ LANGUAGE sql STABLE AS $$
         'operationId', h.operation_id::text,
         'hours', h.hours, 'note', h.note
       ) ORDER BY h.worked_on DESC, h.id DESC) FROM hours_entry h), '[]'::jsonb),
+
+    -- The merchants. Here because the non-conformance form asks which supplier a rejected batch came
+    -- from and its dropdown was empty — the snapshot carried no suppliers at all, so on a wired system
+    -- the one field that makes a supplier complaint traceable could not be filled in.
+    --
+    -- payment_terms_days is not here. It is what this workshop is charged by, which §1b withholds from
+    -- the floor for the same reason a customer's price list is withheld, and the floor reads this list.
+    'suppliers', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', s.id::text, 'no', s.ref, 'name', s.name, 'org', s.org_no,
+        'email', s.email, 'phone', s.phone, 'city', s.city, 'country', s.country,
+        'status', s.status
+      ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),
 
     -- ── Quality ────────────────────────────────────────────────────────────────────────────
     --

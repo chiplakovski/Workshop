@@ -97,7 +97,7 @@ function theServerDecidesNothing() {
     'convert_lead', 'create_reinspection', 'issue_material_offline',
     'place_hold', 'receive_goods', 'receive_stock',
     'record_equipment_event', 'record_ncr_step', 'record_operation', 'record_stocktake',
-    'release_hold', 'return_equipment',
+    'release_hold', 'replace_inspection_checks', 'return_equipment',
     'save_customer',
     'save_equipment', 'save_inspection', 'save_jobcard', 'save_ncr', 'save_project',
     'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
@@ -774,6 +774,13 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
 
   // And now the read side, as the floor sees it.
   const snapshot = (await call('GET', '/read/snapshot', { token: tokens.floor })).body;
+  // The merchants, which the snapshot did not carry at all before this: the non-conformance form asks
+  // which supplier a rejected batch came from and its dropdown was empty, so the one field that makes
+  // a supplier complaint traceable could not be filled in.
+  assert.ok(Array.isArray(snapshot.suppliers) && snapshot.suppliers.length,
+    'the suppliers have to reach the screen, or the NCR form cannot name one');
+  assert.ok(snapshot.suppliers.every((s) => s.name && s.id),
+    'and each of them by name and by the row a save has to send back');
   for (const list of ['qualityHolds', 'qualityInspections', 'qualityNcrs']) {
     assert.ok(Array.isArray(snapshot[list]) && snapshot[list].length,
       `${list} has to reach the screen — the Quality page reads its whole register from it`);
@@ -811,6 +818,21 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
   assert.ok(raised.customer, 'and whose job it is');
   assert.ok(raised.activity.some((a) => a.note === true), 'the note has to reach the screen');
   assert.ok(raised.activity.some((a) => a.action === 'close'), 'and so does what was done to it');
+
+  // The history is bounded, for the same reason the movement log's two hundred is: it is built once per
+  // hold, inspection and NCR, and activity_log grows faster than anything else in the system. A record
+  // with a longer history than this has it in the log, not in every snapshot every screen takes.
+  for (let i = 0; i < 25; i += 1) {
+    wentThrough(`note ${i}`, await call('POST', '/rpc/add_quality_note',
+      { token: tokens.office, body: { entity: 'ncr', entity_id: ncrId, text: `Chased, call ${i}` } }));
+    attempts.allowed -= 1;
+  }
+  const busy = (await call('GET', '/read/snapshot', { token: tokens.floor })).body
+    .qualityNcrs.find((n) => n.no === ncr.ncr);
+  assert.equal(busy.activity.length, 20,
+    `a record's history in the snapshot is capped, and this one carries ${busy.activity.length}`);
+  assert.equal(busy.activity[0].text, 'Chased, call 24', 'and it is the newest twenty, not the oldest');
+  step('Quality over HTTP: a record\'s history reaches the screen newest-first and bounded');
 
   const hold = snapshot.qualityHolds.find((h) => h.no === answered.hold);
   assert.equal(hold.reference, value(`SELECT ref FROM jobcard WHERE id = ${f.jobcard};`),

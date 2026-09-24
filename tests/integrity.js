@@ -264,9 +264,40 @@ async function checkPage(context, baseUrl, file, failures) {
   }
 }
 
+// The list of wired pages inside the guard, against the pages that actually declare themselves wired.
+//
+// Two lists, in two files, that have to agree — and they did not: the guard offered a signed-in person
+// two pages to go to while twelve were wired, so an administrator who landed on an unwired screen was
+// sent to the welders' phone screen or nowhere. Nothing failed, because the notice worked perfectly; it
+// just pointed at the wrong world. A list nobody checks is a list that is already wrong.
+function theGuardKnowsWhichPagesAreWired(failures) {
+  const guard = fs.readFileSync(path.join(ROOT, 'workshop-guard.js'), 'utf8');
+  const block = guard.slice(guard.indexOf('const WIRED = ['), guard.indexOf('];', guard.indexOf('const WIRED = [')));
+  const offered = new Set([...block.matchAll(/\['([^']+\.html)'/g)].map((m) => m[1]));
+  const declared = new Set(appPages().filter((file) =>
+    /window\.WORKSHOP_SERVER_READY\s*=\s*true/.test(readPage(file))));
+
+  for (const file of declared) {
+    if (!offered.has(file)) {
+      failures.push(`${file} declares itself wired, and the guard does not offer it — a signed-in `
+        + 'person on an unwired page is never sent there');
+    }
+  }
+  for (const file of offered) {
+    if (!declared.has(file)) {
+      failures.push(`workshop-guard.js offers ${file} as wired and that page does not declare itself `
+        + 'wired — the notice would send somebody to a screen that refuses them');
+    }
+  }
+  if (!failures.length) {
+    console.log(`OK   the guard offers exactly the ${declared.size} pages that declare themselves wired`);
+  }
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const failures = [];
+  theGuardKnowsWhichPagesAreWired(failures);
   try {
     for (const file of appPages()) {
       await checkPage(harness.context, harness.baseUrl, file, failures);

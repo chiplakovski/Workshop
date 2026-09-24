@@ -196,11 +196,18 @@ access.
 
 ## Status
 The backend exists and is tested: schema and safety rules, sign-in and roles, the workflows, reading
-it back, and backups verified by restoring one. What is not done is step 5 of
-[`BACKEND.md`](BACKEND.md) — pointing the pages at it. Six of the seventeen are on it; the rest need
-their workflows written and their screens wired, and there is a measured gap in how much of what the
-pages collect the database can hold (`npm run coverage` — 67% today, and the remainder is concentrated
-on Equipment, Quality, estimating and the sales pipeline rather than spread).
+it back, and backups verified by restoring one. Step 5 of [`BACKEND.md`](BACKEND.md) — pointing the
+pages at it — is most of the way: **thirteen of the seventeen screens are on the database**, and the
+four that are not are Suppliers, Documents, Marketing and the login page itself. There is still a
+measured gap in how much of what the pages collect the database can hold (`npm run coverage` — 73%
+today, and the remainder is concentrated on estimating, purchasing and the sales pipeline rather than
+spread).
+
+There is also a deployment path now: [`DEPLOY.md`](DEPLOY.md) installs the four SQL files onto a
+hosted PostgreSQL as a non-superuser, over verified TLS, with real passwords — and
+[`backend/test-deploy.js`](backend/test-deploy.js) proves it against a Postgres shaped like a hosted
+one. Secure file storage still does not exist, so photographs and attachments have nowhere real to
+live, which is why Documents is one of the four.
 
 One thing wiring Customers settled, which is worth knowing before the next screen: the claim in
 `BACKEND.md` that the pages would not change was wrong about shapes as well as about writes. The
@@ -210,14 +217,13 @@ lines; the database holds a count of days and one block of text. The translation
 [`project-record.js`](project-record.js) and [`stock-record.js`](stock-record.js), each with its own
 unit tests, and each remaining screen will need one.
 
-Twice now the schema turned out to hold words nobody uses — a jobcard priority of `normal` where the
-dropdown offers `medium`, a material state of `ready` where the screen says `available`. The rule that
-came out of it: one spelling per state, and when the schema and the screen disagree the screen wins,
-because those are the words somebody picks from a dropdown.
-
-There is also no deployment: everything above runs on a local PostgreSQL started by the test
-suites. Secure file storage does not exist — photographs and attachments still have nowhere real to
-live.
+Four times now the schema has turned out to hold words nobody uses — a jobcard priority of `normal`
+where the dropdown offers `medium`, a material state of `ready` where the screen says `available`, an
+equipment status of `out-of-service` where seven places compare against `Out of Service`, and an
+inspection status of `done` where the screen writes `completed`. The rule that came out of it: one
+spelling per state, and when the schema and the screen disagree the screen wins, because those are the
+words somebody picks from a dropdown. The equipment one was not a preference — the gate fails closed on
+a status it cannot read, so it was refusing every machine in the workshop.
 
 The shared-data consolidation is done — every module reads and writes one `WorkshopData` state and
 re-renders on the `workshop:data` event, rather than keeping its own copy.

@@ -648,8 +648,9 @@ cannot touch anything else.
    input says it is not connected and is disabled. Whether the workshop wants a message feed at all is
    a decision for them, not for the pass that found it.
 
-   The `vertical-slice.e2e.js` example of an unwired page moved to Quality, which genuinely has no
-   workflows yet. Nine end-to-end checks drive both hubs as two different people
+   The `vertical-slice.e2e.js` example of an unwired page moved to Quality, and has since moved again
+   to Suppliers, for the same reason both times: the check needs a screen that genuinely has no
+   workflows yet, and screens keep getting them. Nine end-to-end checks drive both hubs as two different people
    (`tests/hub-server.e2e.js`), and the last one asks whether a welder's front door carries a figure in
    kronor anywhere.
 
@@ -799,6 +800,80 @@ cannot touch anything else.
    equipment screen renders `item.safetyWarnings[0]` and calls `.join` on it, and the column is one text
    field — so the first machine from the database to reach the screen that shows what is dangerous about
    it threw `item.safetyWarnings.join is not a function`.
+
+      **Quality, which is the screen where being wrong matters most.** A hold is the only thing in this
+   system that physically stops work leaving the building, and the database has been refusing to complete
+   a held jobcard since the schema was written — while the page that lists the holds read them out of the
+   browser's own storage. **The gate and the list somebody reads to understand the gate were looking at
+   two different sets of facts.** A hold placed by the database was invisible on that screen, and a hold
+   "released" there stopped nothing. The snapshot carried no quality records at all.
+
+   Two rules in the schema turned out to be impossible to obey, and both had been read past:
+
+   * **`closed_ncr_says_what_was_done` demanded `root_cause` and `corrective_action`.** No screen in the
+     system can fill either — in this application the root-cause analysis belongs to the CAPA record,
+     where the five whys and the fishbone live, and the NCR points at it with a reference. What the
+     closure screen collects is the verification evidence, the name against it and the closure approval.
+     So the constraint demanded two columns nothing writes and ignored the three that are: **every close
+     from the Quality screen would have been refused with a message about a root cause the screen has no
+     box for.** A rule that cannot be obeyed is not enforcement, it is a locked door. Rewritten in the
+     terms the screen actually collects; both columns stay for an NCR closed without a full CAPA.
+   * **The status vocabularies, for the third and fourth time.** `inspection.status` allowed
+     requested/scheduled/done/cancelled and the screens write draft, planned, requested, in-progress,
+     completed and cancelled — three of the six refused on arrival. `ncr_status` was worse: four of the
+     screen's ten states had no value at all and two more were spelled differently, so a containment
+     recorded on the floor and any NCR reopened after closure were both impossible. The screen won
+     again, for the reason it won the first two times: it is what somebody is looking at.
+
+   **The hold a critical failed inspection puts on now goes on inside the transaction that records the
+   failure**, rather than through a second call that is missing when the lorry is loaded. That needed a
+   split, and it is the second time the same shape has come up: the floor holds no privilege on
+   `quality_hold` and `only_the_office_holds` sits behind it, so a welder's transaction failed at the
+   hold and **rolled the finding back with it** — the shop kept neither the hold nor what was found,
+   which is worse than either alone. `hold_after_failed_inspection` runs as `varmak_engine`, takes an
+   inspection id and nothing else, and refuses to act unless that inspection is failed and critical as it
+   stands. A welder cannot point it at anything else. Same shape as `equipment_state_after_event`, and
+   the second instance of "a GRANT with no policy behind it fails closed, which is safe and still the
+   wrong answer".
+
+   **The checklist is a table now**, because a passed final inspection on a pressure vessel with no lines
+   behind it is one word in a database. `inspection_check` holds a line, a verdict and — for a measured
+   line — a nominal, a tolerance band and a reading, with the constraints a JSON array could not have: a
+   nominal with no band is refused, because the screen renders such a line as a considered "N/A" and it
+   is not one. The floor writes it, and only while its inspection is undecided; once somebody has signed
+   for a result neither the verdict nor its evidence is theirs to revise, which is row security rather
+   than a grant — they still hold `UPDATE` on `result`, and the row simply no longer matches.
+
+   Three smaller decisions worth keeping:
+
+   * **Who did what comes from the session, throughout.** `detected_by` on an NCR (the screen had
+     `'Aleksandar C.'` written into the page, so every non-conformance in the register would have been
+     found by the same person, whoever was standing there), and `inspector` on a *completed* inspection —
+     that column is who is answerable for the result, and that can only be whoever was signed in when it
+     was recorded.
+   * **`operation_id` on `inspection` and `ncr`, which nothing ever wrote, is free text now.** Half the
+     inspections in a workshop are of something that is not a routing step — a weld seam, a batch of
+     incoming plate, a pressure test — and a foreign key to the routing cannot say any of those. Same
+     reasoning `stock_movement.moved_from` already carries.
+   * **The floor can read a supplier's name.** A welder who has just rejected a batch of steel needs to
+     be able to say whose steel it was, and the NCR register shows that column. `payment_terms_days`
+     stays with the money, so this is a column grant rather than the table.
+
+   One thing left as it is, and written down rather than papered over: **nothing in the app can put a
+   checklist on an inspection request.** The plan's lines belong to an ITP and the ITP register has no
+   table, so today they reach a request through `replace_inspection_checks` — an office or an import —
+   and the request form has no checklist editor. Fifteen end-to-end checks drive the screen as two
+   different people (`tests/quality-server.e2e.js`), including the one that matters: a welder records a
+   critical failure, the hold appears in Postgres, the jobcard cannot be completed, and the welder is
+   refused the release.
+
+   Measurement, for the fourth time: **five of the seven quality fields the coverage meter called
+   missing were renames**, two of them columns that had existed since before this pass. The meter
+   compares a page's word against a column's name and cannot see a field stored under a different one —
+   the same correction as the customers, the movements and the equipment register. And the mutation
+   harness had the same class of bug in its reporting: it dropped lines beginning `OK ` and kept lines
+   beginning `ok `, so a unit-test mutation was "caught by" whichever TAP assertion happened to pass
+   last. It reads exactly as convincingly as the real thing.
 
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in

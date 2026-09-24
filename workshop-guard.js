@@ -23,8 +23,25 @@
 
   // The screens that read and write the database. A page not on this list shows the notice below to
   // a signed-in session, and the list is what the notice offers as somewhere to go instead.
+  //
+  // This list had two entries in it while twelve pages were wired, which is the shape of mistake this
+  // project keeps finding: a list somebody has to remember to add to, next to a fact somebody else
+  // declares. A signed-in administrator reading the notice was offered the welders' phone screen and
+  // Access, and nothing else — so the check in tests/integrity.js now asserts this list against the
+  // pages that actually declare themselves wired, and a page added to one and not the other fails.
   const WIRED = [
+    ['hub-desktop.html', 'The workshop'],
+    ['hub-mobile.html', 'The workshop, on a phone'],
     ['hours-mobile.html', 'The hours screen'],
+    ['hours-desktop.html', 'Hours'],
+    ['planning-desktop.html', 'Planning'],
+    ['jobcard-desktop.html', 'Work'],
+    ['customers-desktop.html', 'Customers'],
+    ['estimations-desktop.html', 'Estimating'],
+    ['store-desktop.html', 'Store'],
+    ['equipment-machines-desktop.html', 'Machines'],
+    ['quality-desktop.html', 'Quality'],
+    ['reports-desktop.html', 'Reports'],
     ['admin.html', 'Access']
   ];
 

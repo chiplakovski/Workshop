@@ -81,6 +81,22 @@ const FILES = {
   deployapi: {
     path: path.join(__dirname, 'api.sql'),
     suite: 'test-deploy.js', env: 'VARMAK_API'
+  },
+  // auth.sql against the suite that loads the workflows as well. Some of what auth.sql grants exists
+  // only so a workflow can run — varmak_engine's INSERT on quality_hold is there for the one function
+  // that holds work behind a critical failed inspection, and test-auth.js never loads api.sql, so
+  // taking that grant away is invisible to it. The suite that can tell is the one that calls the
+  // function.
+  authapi: {
+    path: path.join(__dirname, 'auth.sql'),
+    suite: 'test-api.js', env: 'VARMAK_AUTH'
+  },
+  // The quality register's translation between the screen's words and the database's. Two of its
+  // promises are made in JavaScript and nowhere else: an unanswered checklist line stays unanswered,
+  // and the screen's marker for a measured row is never sent as a verdict.
+  qualityrecord: {
+    path: path.join(__dirname, '..', 'quality-record.js'),
+    suite: path.join('..', 'tests', 'quality-record.test.js'), env: 'VARMAK_QUALITY_RECORD'
   }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
@@ -1517,6 +1533,377 @@ $$;`,
     file: 'serverjs',
     from: "  if (proto === 'https') headers['strict-transport-security'] = 'max-age=31536000';",
     to: "  headers['strict-transport-security'] = 'max-age=31536000';"
+  },
+
+  // ── Quality: the register that stops work leaving the building ──────────────────────────────
+
+  {
+    what: 'a non-conformance can be closed with nothing verified',
+    from: `      btrim(coalesce(verification_result,'')) <> '' AND
+      btrim(coalesce(closure_approval,'')) <> '' AND`,
+    to: `      btrim(coalesce(closure_approval,'')) <> '' AND`
+  },
+  {
+    what: 'a non-conforming part can be used as it is with nobody signing for it',
+    from: `  CONSTRAINT use_as_is_is_signed_for CHECK (
+    disposition IS DISTINCT FROM 'use-as-is' OR
+    btrim(coalesce(disposition_approval_ref,'')) <> ''
+  ),`,
+    to: ''
+  },
+  {
+    what: 'a critical non-conformance needs no date by which it is answered',
+    from: `  CONSTRAINT serious_ncrs_have_a_date CHECK (severity = 'minor' OR due_on IS NOT NULL)`,
+    to: `  CONSTRAINT serious_ncrs_have_a_date CHECK (true)`
+  },
+  {
+    what: 'passed with observations can be recorded with no observation',
+    from: `  CONSTRAINT observations_say_what_was_observed CHECK (
+    result <> 'passed-observations' OR btrim(coalesce(findings,'')) <> ''
+  ),`,
+    to: ''
+  },
+  {
+    what: 'an inspection written off as not applicable is made to claim a date it happened on',
+    from: `    CHECK (result IN ('pending','not-applicable') OR actual_date IS NOT NULL),`,
+    to: `    CHECK (result = 'pending' OR actual_date IS NOT NULL),`
+  },
+  {
+    what: 'the inspection statuses go back to four the screens do not write',
+    from: `                CHECK (status IN ('draft','planned','requested','in-progress','completed','cancelled')),`,
+    to: `                CHECK (status IN ('requested','scheduled','done','cancelled')),`
+  },
+  {
+    what: 'the non-conformance statuses go back to six, four of which no screen can reach',
+    from: `CREATE TYPE ncr_status AS ENUM
+  ('draft','open','containment-required','under-investigation','disposition-required',
+   'corrective-action','waiting-verification','closed','rejected','reopened');`,
+    to: `CREATE TYPE ncr_status AS ENUM
+  ('open','investigating','corrective-action','verification','closed','rejected');`
+  },
+  {
+    what: 'a checklist line can carry a nominal with no tolerance to judge it by',
+    from: `  CONSTRAINT a_nominal_needs_a_tolerance CHECK (
+    nominal IS NULL OR (tol_lower IS NOT NULL AND tol_upper IS NOT NULL)
+  ),`,
+    to: ''
+  },
+  {
+    what: 'a tolerance band can be upside down, so every measurement against it fails',
+    from: `  CONSTRAINT tolerance_band_is_the_right_way_up CHECK (
+    tol_lower IS NULL OR tol_upper IS NULL OR tol_upper >= tol_lower
+  ),`,
+    to: ''
+  },
+  {
+    what: 'the checklist outlives the inspection it is evidence for',
+    from: `  inspection_id bigint NOT NULL REFERENCES inspection(id) ON DELETE CASCADE,
+  line_no       int NOT NULL CHECK (line_no > 0),`,
+    to: `  inspection_id bigint NOT NULL REFERENCES inspection(id),
+  line_no       int NOT NULL CHECK (line_no > 0),`
+  },
+  {
+    what: 'two checklist lines can share a line number, so one of them is not there',
+    from: `  UNIQUE (inspection_id, line_no)
+);
+
+CREATE INDEX inspection_check_idx`,
+    to: `  UNIQUE (inspection_id, line_no, item)
+);
+
+CREATE INDEX inspection_check_idx`
+  },
+
+  // ── Quality: the workflows ─────────────────────────────────────────────────────────────────
+
+  {
+    what: 'an ordinary failed inspection puts a hold on as well, so the register fills with noise',
+    file: 'api',
+    from: `  IF found.id IS NULL OR found.result <> 'failed' OR NOT found.critical THEN
+    RETURN NULL;
+  END IF;`,
+    to: `  IF found.id IS NULL OR found.result <> 'failed' THEN
+    RETURN NULL;
+  END IF;`
+  },
+  {
+    what: 'a decided inspection can be answered a second time',
+    file: 'api',
+    from: `  IF found.result <> 'pending' THEN
+    RAISE EXCEPTION 'inspection % was already decided as %; a second look is a re-inspection',
+      found.ref, found.result USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'the verdict is written before its evidence, which row security then refuses',
+    file: 'api',
+    edits: [
+      { from: `  PERFORM replace_inspection_checks(found.id, p_checks);
+
+  UPDATE inspection SET
+    result = p_result, findings = p_findings, critical = coalesce(p_critical, false),`,
+        to: `  UPDATE inspection SET
+    result = p_result, findings = p_findings, critical = coalesce(p_critical, false),` },
+      { from: `    status = CASE WHEN p_result = 'not-applicable' THEN 'cancelled' ELSE 'completed' END
+   WHERE id = found.id;`,
+        to: `    status = CASE WHEN p_result = 'not-applicable' THEN 'cancelled' ELSE 'completed' END
+   WHERE id = found.id;
+
+  PERFORM replace_inspection_checks(found.id, p_checks);` }
+    ]
+  },
+  {
+    what: 'a completed inspection keeps the name the request was planned for',
+    file: 'api',
+    from: `    actual_date = CASE WHEN p_result = 'not-applicable' THEN NULL ELSE on_day END,
+    inspector = who,`,
+    to: `    actual_date = CASE WHEN p_result = 'not-applicable' THEN NULL ELSE on_day END,`
+  },
+  {
+    what: 'an unanswered checklist line is stored as an empty verdict rather than as unanswered',
+    file: 'api',
+    from: `         nullif(btrim(coalesce(line->>'result', '')), ''),`,
+    to: `         btrim(coalesce(line->>'result', '')),`
+  },
+  {
+    what: 'the standard an inspection was judged against can be edited after the result is in',
+    file: 'api',
+    from: `    SELECT ref INTO locked FROM inspection WHERE id = p_id AND result <> 'pending';
+    IF locked IS NOT NULL THEN
+      RAISE EXCEPTION 'inspection % already has a result — raise a re-inspection rather than editing it',
+        locked USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: ''
+  },
+  {
+    what: 'a re-inspection arrives carrying the first inspection’s own answers',
+    file: 'api',
+    from: `  INSERT INTO inspection_check (inspection_id, line_no, item, nominal, tol_lower, tol_upper)
+  SELECT made, line_no, item, nominal, tol_lower, tol_upper
+    FROM inspection_check WHERE inspection_id = original.id ORDER BY line_no;`,
+    to: `  INSERT INTO inspection_check (inspection_id, line_no, item, nominal, tol_lower, tol_upper,
+                               result, actual)
+  SELECT made, line_no, item, nominal, tol_lower, tol_upper, result, actual
+    FROM inspection_check WHERE inspection_id = original.id ORDER BY line_no;`
+  },
+  {
+    what: 'a hold given both a project and a jobcard claims to hold both',
+    file: 'api',
+    from: `  IF on_jobcard IS NOT NULL THEN
+    on_project := NULL;
+  ELSIF on_project IS NULL THEN`,
+    to: `  IF on_jobcard IS NOT NULL THEN
+    NULL;
+  ELSIF on_project IS NULL THEN`
+  },
+  {
+    what: 'the same hold asked for twice becomes two holds, so releasing one leaves the work held',
+    file: 'api',
+    from: `  IF existing IS NOT NULL THEN
+    RETURN existing;
+  END IF;
+
+  INSERT INTO quality_hold (scope, project_id, jobcard_id, reason, severity, applied_by,
+                            required_action, related_ref)
+  VALUES (CASE WHEN on_jobcard IS NOT NULL THEN 'jobcard' ELSE 'project' END::hold_scope,`,
+    to: `  INSERT INTO quality_hold (scope, project_id, jobcard_id, reason, severity, applied_by,
+                            required_action, related_ref)
+  VALUES (CASE WHEN on_jobcard IS NOT NULL THEN 'jobcard' ELSE 'project' END::hold_scope,`
+  },
+  {
+    what: 'a released hold can be released again, restamping it with the second name',
+    file: 'api',
+    from: `  IF held.status = 'released' THEN
+    RAISE EXCEPTION 'hold % has already been released', held.ref USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a hold comes off with no evidence of what was resolved',
+    file: 'api',
+    from: `  IF authority = '' OR why = '' THEN
+    RAISE EXCEPTION 'releasing a hold takes an authorised approval and written evidence of what was resolved'
+      USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'who found a non-conformance comes from the form rather than from the session',
+    file: 'api',
+    from: `            btrim(p_description), btrim(p_responsible), who, p_due_on, p_operation, p_component,`,
+    to: `            btrim(p_description), btrim(p_responsible), 'Aleksandar C.', p_due_on, p_operation, p_component,`
+  },
+  {
+    what: 'a critical non-conformance no longer holds the work it is about',
+    file: 'api',
+    from: `    IF p_severity = 'critical' THEN
+      held := place_hold(p_project_id, p_jobcard_id,`,
+    to: `    IF false THEN
+      held := place_hold(p_project_id, p_jobcard_id,`
+  },
+  {
+    what: 'a non-conformance closes on an approval with nothing verified behind it',
+    file: 'api',
+    from: `    IF coalesce(btrim(it.verification_result), '') = '' THEN
+      RAISE EXCEPTION 'non-conformance % has nothing verified — closing it would record that the fix worked without anybody checking',
+        it.ref USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: ''
+  },
+  {
+    what: 'a reopened non-conformance keeps its closure, so it reads as approved and open at once',
+    file: 'api',
+    from: `    UPDATE ncr SET status = moved_to, closure_approval = NULL, closed_on = NULL WHERE id = it.id;`,
+    to: `    UPDATE ncr SET status = moved_to WHERE id = it.id;`
+  },
+  {
+    what: 'a closed non-conformance can be edited without reopening it',
+    file: 'api',
+    from: `     WHERE id = p_id AND status <> 'closed'
+    RETURNING id, ref INTO saved, raised;`,
+    to: `     WHERE id = p_id
+    RETURNING id, ref INTO saved, raised;`
+  },
+  {
+    what: 'a quality note can be written against a record that is not there',
+    file: 'api',
+    from: `  IF exists_here IS NOT TRUE THEN
+    RAISE EXCEPTION 'no such %', p_entity USING ERRCODE = 'foreign_key_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a hold placed by the system has no history, so the panel that explains it is empty',
+    file: 'api',
+    from: `  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('quality_hold', held, 'applied', coalesce(found.inspector, 'system'), made || ' — ' || why);`,
+    to: ''
+  },
+  {
+    what: 'the hold that follows a critical failure runs as the caller, who cannot write a hold',
+    file: 'api',
+    from: `ALTER FUNCTION hold_after_failed_inspection(bigint) OWNER TO varmak_engine;`,
+    to: ''
+  },
+
+  // ── Quality: who may do what ───────────────────────────────────────────────────────────────
+
+  {
+    what: 'a welder can turn a failure they signed for into a pass a week later',
+    file: 'auth',
+    from: `CREATE POLICY floor_records_a_result ON inspection FOR UPDATE
+  USING (is_signed_in() AND result = 'pending') WITH CHECK (is_signed_in());`,
+    to: `CREATE POLICY floor_records_a_result ON inspection FOR UPDATE
+  USING (is_signed_in()) WITH CHECK (is_signed_in());`
+  },
+  {
+    what: 'the floor can move the standard the work was judged against, not only record the verdict',
+    file: 'auth',
+    from: `GRANT UPDATE (result, findings, critical, actual_date, inspector, status)
+ON inspection TO varmak_workshop;`,
+    to: `GRANT UPDATE ON inspection TO varmak_workshop;`
+  },
+  {
+    what: 'evidence can be added to an inspection after somebody has signed for its result',
+    file: 'auth',
+    from: `CREATE POLICY floor_writes_the_checklist ON inspection_check FOR INSERT
+  WITH CHECK (is_signed_in() AND EXISTS (
+    SELECT 1 FROM inspection i WHERE i.id = inspection_id AND i.result = 'pending'));`,
+    to: `CREATE POLICY floor_writes_the_checklist ON inspection_check FOR INSERT
+  WITH CHECK (is_signed_in());`
+  },
+  {
+    what: 'the floor can place a hold by hand, which is most of the way to releasing one',
+    file: 'auth',
+    from: `CREATE POLICY only_the_office_holds ON quality_hold FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());`,
+    to: `CREATE POLICY only_the_office_holds ON quality_hold FOR ALL USING (is_signed_in()) WITH CHECK (is_signed_in());
+GRANT INSERT ON quality_hold TO varmak_workshop;`
+  },
+  {
+    what: 'the engine cannot write the hold a critical failed inspection is supposed to place',
+    file: 'authapi',
+    from: `GRANT SELECT, INSERT ON quality_hold TO varmak_engine;`,
+    to: ''
+  },
+
+  // ── Quality: what reaches the screen ───────────────────────────────────────────────────────
+
+  {
+    what: 'the hold register is left out of the snapshot, as it was before this pass',
+    file: 'views',
+    from: `    'qualityHolds', coalesce((SELECT jsonb_agg(jsonb_build_object(`,
+    to: `    'qualityHoldsNotSent', coalesce((SELECT jsonb_agg(jsonb_build_object(`
+  },
+  {
+    what: 'an unanswered checklist line reaches the screen as null, which its dropdown shows as a word',
+    file: 'views',
+    from: `            'item', c.item, 'resultItem', coalesce(c.result, ''),`,
+    to: `            'item', c.item, 'resultItem', c.result,`
+  },
+  {
+    what: 'the inspection type arrives under the column’s name instead of the screen’s',
+    file: 'views',
+    from: `        'id', i.id::text, 'no', i.ref, 'type', i.kind, 'status', i.status, 'result', i.result,`,
+    to: `        'id', i.id::text, 'no', i.ref, 'kind', i.kind, 'status', i.status, 'result', i.result,`
+  },
+  {
+    what: 'the person answerable for a non-conformance arrives under a name no screen reads',
+    file: 'views',
+    from: `        'responsiblePerson', n.responsible, 'dueDate', n.due_on,`,
+    to: `        'responsible', n.responsible, 'dueDate', n.due_on,`
+  },
+  {
+    what: 'a quality record\u2019s whole history travels in every snapshot every screen takes',
+    file: 'views',
+    from: `     ORDER BY happened_at DESC, id DESC LIMIT 20`,
+    to: `     ORDER BY happened_at DESC, id DESC`
+  },
+  {
+    what: 'the merchants are left out, so the non-conformance form cannot name one',
+    file: 'views',
+    from: `    'suppliers', coalesce((SELECT jsonb_agg(jsonb_build_object(`,
+    to: `    'suppliersNotSent', coalesce((SELECT jsonb_agg(jsonb_build_object(`
+  },
+  {
+    what: 'what we pay a merchant on travels in the list every welder reads',
+    file: 'views',
+    from: `        'status', s.status
+      ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),`,
+    to: `        'status', s.status, 'terms', s.payment_terms_days::text
+      ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),`
+  },
+
+  // ── Quality: the translation in the browser ────────────────────────────────────────────────
+
+  {
+    what: 'an unanswered checklist line comes back as null, not as the empty string the page expects',
+    file: 'qualityrecord',
+    from: `      .map((line) => Object.assign({}, line, { resultItem: line.resultItem || '' }));`,
+    to: `      .map((line) => Object.assign({}, line));`
+  },
+  {
+    what: 'the screen’s marker for a measured row is sent as though it were a verdict',
+    file: 'qualityrecord',
+    from: `      result: VERDICTS.indexOf(verdict) === -1 ? '' : verdict,`,
+    to: `      result: verdict === null ? '' : verdict,`
+  },
+  {
+    what: 'the request form can set the result, so work can be passed without being looked at',
+    file: 'qualityrecord',
+    from: `    'acceptanceCriteria', 'customerWitness', 'materialTraceabilityOk', 'plannedDate', 'inspector',
+    'status', 'notes'
+  ];`,
+    to: `    'acceptanceCriteria', 'customerWitness', 'materialTraceabilityOk', 'plannedDate', 'inspector',
+    'status', 'notes', 'result', 'findings', 'critical'
+  ];`
+  },
+  {
+    what: 'a line whose name is three spaces is sent as a check of nothing',
+    file: 'qualityrecord',
+    from: `    const item = said(line && line.item === undefined ? null : String(line.item === null
+      || line.item === undefined ? '' : line.item).trim());`,
+    to: `    const item = said(line && line.item);`
   }
 ];
 
@@ -1555,8 +1942,16 @@ function runSuiteAgainst(damaged, which, index, suite) {
     // version matched on "can read" among others and happily reported a passing `OK` line as the
     // reason a mutation was caught — a report that reads as though it knows something it does not.
     const output = `${error.stdout || ''}${error.stderr || ''}`;
-    const line = output.split('\n')
-      .filter((l) => !/^OK\s/.test(l.trim()))
+    // A suite run under `node --test` prints TAP, where every passing subtest is a line beginning
+    // `ok N - <name>` and the failure is `not ok N - <name>`. The filter below dropped `OK ` and kept
+    // `ok `, so a unit-test mutation was reported as caught by whichever assertion happened to pass
+    // last — the same mistake in a different spelling, and it read exactly as convincingly. Where a
+    // `not ok` line exists it is the answer; nothing else in TAP output is.
+    const lines = output.split('\n');
+    const tap = lines.filter((l) => /^\s*not ok\s/.test(l));
+    if (tap.length) return { caught: true, by: tap[0].trim().slice(0, 130) };
+    const line = lines
+      .filter((l) => !/^(OK|ok)\s/.test(l.trim()))
       .reverse()
       .find((l) => /the database ACCEPTED|ALLOWED —|should have been|refused, but|must |cannot |can read these|did not come back|did not survive|has to |ERROR:|AssertionError/.test(l));
     return { caught: true, by: (line || '').trim().slice(0, 130) };

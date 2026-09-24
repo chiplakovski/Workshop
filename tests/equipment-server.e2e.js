@@ -44,7 +44,10 @@ async function until(what, check, ms = 12000) {
   const deadline = Date.now() + ms;
   let last = null;
   while (Date.now() < deadline) {
-    last = check();
+    // Awaited, so a check that returns a promise is actually asked. Without this an async check
+    // returns a truthy promise on the first pass and the wait is no wait at all — which is how one
+    // assertion in this family passed on timing for weeks and then failed the day the snapshot grew.
+    last = await check();
     if (last) return last;
     await pause(150);
   }
@@ -255,9 +258,15 @@ async function main() {
     assert.equal(value(`SELECT j.ref FROM equipment_assignment a JOIN jobcard j ON j.id = a.jobcard_id
       WHERE a.equipment_id = ${machine} AND a.released_at IS NULL;`), w.firstRef);
     // And the snapshot says where it is, which is what the screen reads.
-    await until('the screen to show where it is', async () => true);
-    assert.equal(await page.evaluate(() => (window.WorkshopData.getEquipment() || [])[0].assignedJobcard),
-      w.firstRef, 'the register shows which jobcard has it, from the assignment rather than a column');
+    //
+    // Polled rather than read once. This used to be `until(..., async () => true)`, which is a wait
+    // that returns immediately — an async check always returns a truthy promise — so the assertion
+    // below was racing the screen's own re-read and passing on timing. It started failing the day the
+    // snapshot grew three more lists, which is the only warning a check like this ever gives.
+    const shows = await until('the screen to show where it is', () => page.evaluate(
+      () => ((window.WorkshopData.getEquipment() || [])[0] || {}).assignedJobcard || null));
+    assert.equal(shows, w.firstRef,
+      'the register shows which jobcard has it, from the assignment rather than a column');
     assert.equal(value(`SELECT status::text FROM equipment WHERE id = ${machine};`), 'Available',
       'and its status is untouched: where it is and whether it may be run are different questions');
     step('Machines: a machine goes to a bench through the screen, and the register shows where it is');

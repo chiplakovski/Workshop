@@ -841,7 +841,13 @@
   // Which collections the snapshot actually covers. The rest are left EMPTY rather than filled with
   // demo data: a screen showing three real jobs beside eleven invented ones is worse than a screen
   // showing three real jobs and nothing else, because nobody can tell which is which.
-  const SERVED_COLLECTIONS = ['customers','projects','jobcards','equipment','hours','inventory','movements'];
+  const SERVED_COLLECTIONS = ['customers','projects','jobcards','equipment','hours','inventory','movements',
+    // The merchants, because the non-conformance form asks which one a rejected batch came from.
+    'suppliers',
+    // The quality register. The database was already refusing to complete held work while the screen
+    // showing the holds read them out of this browser's storage — so the gate and the list somebody
+    // reads to understand the gate were looking at two different sets of facts.
+    'qualityHolds','qualityInspections','qualityNcrs'];
   function adoptSnapshot(data){
     if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
     const fresh=emptyState();

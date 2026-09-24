@@ -187,6 +187,12 @@ const RPC = {
     'drawing_rev', 'method', 'acceptance_criteria', 'customer_witness', 'material_traceability_ok',
     'planned_date', 'inspector', 'status', 'notes'],
   complete_inspection: ['id', 'result', 'findings', 'critical', 'checks', 'actual_date', 'event_id'],
+  // The lines an inspection is to be checked against, set before it is done. Reachable on its own
+  // because the plan and the result are written at different times by different people: an inspection
+  // and test plan says what will be measured, and the inspector then answers it. Nothing in the app
+  // writes a plan yet — the ITP register has no table — so today this is how an imported or
+  // office-prepared checklist reaches a request.
+  replace_inspection_checks: ['inspection_id', 'lines'],
   create_reinspection: ['id'],
   save_ncr: ['id', 'title', 'project_id', 'jobcard_id', 'category', 'severity', 'description',
     'responsible', 'due_on', 'operation', 'component', 'material', 'supplier_id', 'notes'],

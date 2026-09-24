@@ -1503,6 +1503,13 @@ function anInspectionIsAskedForThenAnswered(w) {
   assert.equal(value(`SELECT jobcard_id = ${card} FROM quality_hold WHERE ref = '${held}';`), 't');
   assert.equal(value(`SELECT related_ref = (SELECT ref FROM inspection WHERE id = ${ins})
     FROM quality_hold WHERE ref = '${held}';`), 't', 'the hold has to say which inspection caused it');
+  // Its own history, too. Without this entry the holds with the least explanation on the screen would
+  // be exactly the ones that matter most — an office hold shows who applied it and why, and an
+  // automatic one would show an empty panel.
+  assert.equal(value(`SELECT action || '|' || actor FROM activity_log
+    WHERE entity = 'quality_hold'
+      AND entity_id = (SELECT id FROM quality_hold WHERE ref = '${held}');`), 'applied|Marko Ilic',
+    'a hold placed by the system still says who was standing there and why');
   step('Quality: the floor records what it found, with its evidence, and a critical failure holds the work');
 
   // The name on a completed inspection is whoever was signed in, not whoever the request named.
@@ -1514,6 +1521,18 @@ function anInspectionIsAskedForThenAnswered(w) {
   assert.equal(value(`SELECT inspector FROM inspection WHERE id = ${byPetra};`), 'Petra Nilsson',
     'a result carries the name of whoever recorded it, never the name on the request');
   step('Quality: a result is signed by whoever was signed in, not by the name typed on the request');
+
+  // A failure that is not critical does not hold the work. The hold is what a critical failure means,
+  // and a system that held every rejected weld would have a hold register nobody reads.
+  const ordinary = value(`INSERT INTO inspection (project_id, jobcard_id, kind, inspector, planned_date)
+    VALUES (${w.project}, ${card}, 'visual', 'Inspector', current_date) RETURNING id;`);
+  const held_before = value(`SELECT count(*) FROM quality_hold;`);
+  const quiet = ok('a welder recording an ordinary failure', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ordinary}, 'failed', 'Undercut, to be dressed back', false);`);
+  assert.equal(JSON.parse(quiet).hold, null, 'only a critical failure puts a hold on');
+  assert.equal(value(`SELECT count(*) FROM quality_hold;`), held_before,
+    'and nothing was written to the hold register at all');
+  step('Quality: an ordinary failure is recorded and holds nothing — the hold is what critical means');
 
   refused('answering it a second time', 'varmak_workshop', PEOPLE.welder,
     `SELECT complete_inspection(${ins}, 'passed', 'Had another look');`, /already decided/);

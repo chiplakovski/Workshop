@@ -48,7 +48,10 @@ async function until(what, check, ms = 12000) {
   const deadline = Date.now() + ms;
   let last = null;
   while (Date.now() < deadline) {
-    last = check();
+    // Awaited, so a check that returns a promise is actually asked. Without this an async check
+    // returns a truthy promise on the first pass and the wait is no wait at all — which is how one
+    // assertion in this family passed on timing for weeks and then failed the day the snapshot grew.
+    last = await check();
     if (last) return last;
     await pause(150);
   }
