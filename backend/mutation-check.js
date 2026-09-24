@@ -469,9 +469,11 @@ const MUTATIONS = [
     to: "  status      text NOT NULL DEFAULT 'current',"
   },
   {
+    // Re-anchored: the rule gained 'not-applicable' when that result was added to the enum, because an
+    // inspection written off as not applicable never happened and has no date to claim.
     what: 'an inspection can be passed on no particular day',
     from: `  CONSTRAINT decided_inspection_has_a_date
-    CHECK (result = 'pending' OR actual_date IS NOT NULL),`,
+    CHECK (result IN ('pending','not-applicable') OR actual_date IS NOT NULL),`,
     to: '  CONSTRAINT decided_inspection_has_a_date CHECK (true),'
   },
   {
@@ -492,9 +494,13 @@ const MUTATIONS = [
     to: '  CONSTRAINT lost_opportunity_says_why CHECK (true)'
   },
   {
+    // Re-anchored: the list is the screen's eight now rather than five, three of which the dropdown
+    // offered and the column refused — 'pending' among them, which is what the screen shows while the
+    // decision is still being argued about.
     what: 'an NCR may be given a disposition that means nothing',
     from: `  disposition   text CHECK (disposition IS NULL OR
-                  disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),`,
+                  disposition IN ('rework','repair','use-as-is','return-to-supplier','scrap',
+                                  'replace','reclassify','pending')),`,
     to: '  disposition   text,'
   },
   {
