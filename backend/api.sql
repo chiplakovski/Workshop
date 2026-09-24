@@ -869,6 +869,248 @@ $$;
 ALTER FUNCTION receive_stock(bigint, numeric, numeric, text, text, text, text, text, text) OWNER TO varmak_engine;
 ALTER FUNCTION record_stocktake(bigint, numeric, text) OWNER TO varmak_engine;
 
+-- CREATE on the schema stays granted through the equipment section below, which has the last
+-- ownership change in the file; it is revoked at the end of that section.
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The machines, and what has been done to them
+--
+-- The equipment register was the strangest gap in this system: every safety gate in the app reads it,
+-- the jobcard screen refuses to attach a machine that may not be run, the shop-floor hours screen
+-- refuses to book time against one — and nothing could put a machine in the register, mark it serviced,
+-- or sign a check before use. The gates were real and had nothing to read. `equipment-gates.js` has
+-- looked for a passed pre-use check since it was written, and the answer was always "there isn't one".
+--
+-- Two functions, and the split is the authorisation. Editing the register is the office's job — what a
+-- machine is, what it cost, when its certificate runs out. Signing a check before running it is the
+-- welder's, and it is the one thing on this screen the floor may write: a check nobody on the floor can
+-- record is a check the office signs for machines it is not standing in front of.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_equipment(
+  p_id bigint,
+  p_ref text,
+  p_name text,
+  p_category text,
+  p_status equipment_status DEFAULT 'available',
+  p_manufacturer text DEFAULT NULL,
+  p_model text DEFAULT NULL,
+  p_serial_no text DEFAULT NULL,
+  p_asset_no text DEFAULT NULL,
+  p_year_of_manufacture int DEFAULT NULL,
+  p_description text DEFAULT NULL,
+  p_current_location text DEFAULT NULL,
+  p_home_location text DEFAULT NULL,
+  p_department text DEFAULT NULL,
+  p_responsible_person text DEFAULT NULL,
+  p_operator text DEFAULT NULL,
+  p_condition text DEFAULT NULL,
+  p_criticality text DEFAULT NULL,
+  p_safety_warnings text DEFAULT NULL,
+  p_certification_expiry date DEFAULT NULL,
+  p_purchase_date date DEFAULT NULL,
+  p_purchase_supplier text DEFAULT NULL,
+  p_purchase_price numeric DEFAULT NULL,
+  p_warranty_expiry date DEFAULT NULL,
+  p_operating_hours numeric DEFAULT NULL,
+  p_service_interval_hours int DEFAULT NULL,
+  p_qr_code text DEFAULT NULL,
+  p_pre_use_check_required boolean DEFAULT false,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  saved bigint;
+  existing text;
+  who text;
+BEGIN
+  PERFORM require_session('saving a machine');
+  who := current_app_name();
+
+  IF coalesce(btrim(p_ref), '') = '' THEN
+    RAISE EXCEPTION 'a machine needs a reference — it is what is written on the machine itself';
+  END IF;
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'a machine needs a name';
+  END IF;
+  IF coalesce(btrim(p_category), '') = '' THEN
+    RAISE EXCEPTION 'a machine needs a category — it is what the safety rules are grouped by';
+  END IF;
+
+  -- Two rows under one reference is two machines to the system and one machine to whoever is standing
+  -- in front of it, which is how a service record ends up on the wrong press.
+  SELECT name INTO existing FROM equipment
+   WHERE upper(btrim(ref)) = upper(btrim(p_ref)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a machine referenced % — it is %', upper(btrim(p_ref)), existing;
+  END IF;
+
+  -- The three dates a machine is judged by are not touched here, and that is deliberate: the date of
+  -- the last service, inspection and calibration are what record_equipment_event writes, from the event
+  -- that actually happened. A form that could type them in is a form that can claim a service nobody
+  -- performed, which is exactly the claim a certificate is supposed to make impossible.
+  IF p_id IS NULL THEN
+    INSERT INTO equipment (ref, name, category, status, manufacturer, model, serial_no, asset_no,
+                           year_of_manufacture, description, current_location, home_location,
+                           department, responsible_person, operator, condition, criticality,
+                           safety_warnings, certification_expiry, purchase_date, purchase_supplier,
+                           purchase_price, warranty_expiry, operating_hours, service_interval_hours,
+                           qr_code, pre_use_check_required, notes)
+    VALUES (upper(btrim(p_ref)), btrim(p_name), btrim(p_category), p_status, p_manufacturer, p_model,
+            p_serial_no, p_asset_no, p_year_of_manufacture, p_description, p_current_location,
+            p_home_location, p_department, p_responsible_person, p_operator, p_condition,
+            p_criticality, p_safety_warnings, p_certification_expiry, p_purchase_date,
+            p_purchase_supplier, p_purchase_price, p_warranty_expiry, coalesce(p_operating_hours, 0),
+            p_service_interval_hours, p_qr_code, coalesce(p_pre_use_check_required, false), p_notes)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('equipment', saved, 'created', who, upper(btrim(p_ref)) || ' ' || btrim(p_name));
+  ELSE
+    UPDATE equipment SET
+      ref = upper(btrim(p_ref)), name = btrim(p_name), category = btrim(p_category),
+      status = p_status, manufacturer = p_manufacturer, model = p_model, serial_no = p_serial_no,
+      asset_no = p_asset_no, year_of_manufacture = p_year_of_manufacture, description = p_description,
+      current_location = p_current_location, home_location = p_home_location,
+      department = p_department, responsible_person = p_responsible_person, operator = p_operator,
+      condition = p_condition, criticality = p_criticality, safety_warnings = p_safety_warnings,
+      certification_expiry = p_certification_expiry, purchase_date = p_purchase_date,
+      purchase_supplier = p_purchase_supplier, purchase_price = p_purchase_price,
+      warranty_expiry = p_warranty_expiry,
+      operating_hours = coalesce(p_operating_hours, operating_hours),
+      service_interval_hours = p_service_interval_hours, qr_code = p_qr_code,
+      pre_use_check_required = coalesce(p_pre_use_check_required, false), notes = p_notes
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such machine, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('equipment', saved, 'updated', who, upper(btrim(p_ref)));
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- Something happened to a machine: it was serviced, calibrated, inspected, repaired, it broke down, or
+-- somebody signed a check before running it.
+--
+-- One function for all six because they are one fact — a dated record of who did what to which machine
+-- and how it came out — and six functions would be six places for the date of the last service to be
+-- written differently. The kind decides which of the three "last done" dates moves, which is the only
+-- branch in here.
+--
+-- Who performed it is the session, never a parameter. A service record somebody else's name can be put
+-- on is not a service record, and a pre-use check signed in another welder's name is worse than none.
+-- What an event does to the machine, and the only function in the system allowed to write it.
+--
+-- Two columns, both of which have to move and neither of which any of the three roles should hold
+-- directly: the date a machine was last serviced, and its status when it breaks down. A welder with
+-- UPDATE on equipment.status could bring a quarantined machine back into service; a welder with UPDATE
+-- on last_service_date could claim a service nobody performed. So this runs as varmak_engine, does
+-- exactly these two things, and every other route to those columns stays shut.
+--
+-- Split out rather than making record_equipment_event itself SECURITY DEFINER, which is the shape
+-- issue_material_offline already uses: the replay protection stays in the caller's own role — where the
+-- grants on device_event are — and only the write nobody should hold runs as the engine.
+CREATE FUNCTION equipment_state_after_event(
+  p_equipment_id bigint,
+  p_kind equipment_event_kind,
+  p_result text,
+  p_day date
+) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  -- Keyed on the kind as well as the result, and not only for tidiness: written on the result alone, a
+  -- pre-use check that passed ran an UPDATE changing all three dates to their own current values — a
+  -- no-op that still needs the privilege to write them.
+  IF p_result IN ('pass', 'done') AND p_kind IN ('service', 'repair', 'inspection', 'calibration') THEN
+    UPDATE equipment SET
+      last_service_date = CASE WHEN p_kind IN ('service', 'repair') THEN p_day ELSE last_service_date END,
+      last_inspection_date = CASE WHEN p_kind = 'inspection' THEN p_day ELSE last_inspection_date END,
+      last_calibration_date = CASE WHEN p_kind = 'calibration' THEN p_day ELSE last_calibration_date END
+     WHERE id = p_equipment_id;
+  END IF;
+
+  -- A breakdown takes the machine out of service by itself. Nobody has to remember to, which is the
+  -- point: the record of the breakdown and the machine being stopped are the same event, and a shop
+  -- where they are two actions is a shop where one of them gets missed.
+  IF p_kind = 'breakdown' THEN
+    UPDATE equipment SET status = 'out-of-service' WHERE id = p_equipment_id;
+  END IF;
+END;
+$$;
+
+CREATE FUNCTION record_equipment_event(
+  p_equipment_id bigint,
+  p_kind equipment_event_kind,
+  p_result text,
+  p_happened_on date DEFAULT NULL,
+  p_next_due_on date DEFAULT NULL,
+  p_cost numeric DEFAULT NULL,
+  p_note text DEFAULT NULL,
+  p_jobcard_id bigint DEFAULT NULL,
+  p_resolves_event_id bigint DEFAULT NULL,
+  p_event_id text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording what happened to a machine');
+  seen text := already_done(p_event_id, 'record_equipment_event');
+  machine text;
+  made bigint;
+  on_day date := coalesce(p_happened_on, current_date);
+BEGIN
+  -- Replay protection, for the same reason booking hours has it: a pre-use check is signed at the
+  -- machine, which is where the signal dies, and a second check for the same press is a second record
+  -- of a thing that happened once.
+  IF seen IS NOT NULL THEN
+    RETURN seen;
+  END IF;
+
+  SELECT name INTO machine FROM equipment WHERE id = p_equipment_id;
+  IF machine IS NULL THEN
+    RAISE EXCEPTION 'no such machine' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF on_day > current_date THEN
+    RAISE EXCEPTION 'a service or a check cannot be recorded for a date that has not happened yet'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  INSERT INTO equipment_event (equipment_id, kind, happened_on, performed_by, result, next_due_on,
+                               cost, note, jobcard_id, resolves_event_id)
+  VALUES (p_equipment_id, p_kind, on_day, who, p_result, p_next_due_on, p_cost, p_note,
+          p_jobcard_id, p_resolves_event_id)
+  RETURNING id INTO made;
+
+  -- An event that answers an earlier failure marks that failure answered. Done here rather than left
+  -- to the caller, because a resolution recorded without it is a machine that stays stopped for a
+  -- reason somebody has already dealt with — and the gate reads the flag, not the link.
+  IF p_resolves_event_id IS NOT NULL THEN
+    UPDATE equipment_event SET resolved = true
+     WHERE id = p_resolves_event_id AND equipment_id = p_equipment_id;
+  END IF;
+
+  -- The date a machine is judged by moves only when the thing that sets it actually happened and
+  -- passed. A failed inspection is not an inspection date; it is a reason the machine is stopped.
+  -- What the event does to the machine itself, through the one function allowed to write those columns.
+  PERFORM equipment_state_after_event(p_equipment_id, p_kind, p_result, on_day);
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('equipment', p_equipment_id, p_kind::text, who,
+          machine || ': ' || p_result || coalesce(' — ' || p_note, ''));
+
+  PERFORM record_result(p_event_id, 'E-' || made);
+  RETURN 'E-' || made;
+END;
+$$;
+
+ALTER FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date)
+  OWNER TO varmak_engine;
+REVOKE ALL ON FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date)
+TO varmak_admin, varmak_office, varmak_workshop;
+
 -- The last ownership change in the system, so the privilege goes back now.
 REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 
@@ -1352,6 +1594,10 @@ REVOKE ALL ON FUNCTION save_project(bigint, text, bigint, text, numeric, int, da
 REVOKE ALL ON FUNCTION save_jobcard(bigint, bigint, text, text, text, int, text, int, numeric, date, date, date,
                 text, text, text, text, text, text, text, text, int, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_jobcard_operations(bigint, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_equipment(bigint, text, text, text, equipment_status, text, text, text, text, int, text,
+                 text, text, text, text, text, text, text, text, date, date, text, numeric,
+                 date, numeric, int, text, boolean, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_equipment_event(bigint, equipment_event_kind, text, date, date, numeric, text, bigint, bigint, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_stock_item(bigint, text, text, text, bigint, bigint, bigint, bigint, text, text, text,
                   text, text, numeric, numeric, numeric, numeric, numeric, text, text, numeric, numeric) FROM PUBLIC;
 REVOKE ALL ON FUNCTION receive_stock(bigint, numeric, numeric, text, text, text, text, text, text) FROM PUBLIC;
@@ -1381,12 +1627,22 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   save_stock_item(bigint, text, text, text, bigint, bigint, bigint, bigint, text, text, text,
                   text, text, numeric, numeric, numeric, numeric, numeric, text, text, numeric, numeric),
   receive_stock(bigint, numeric, numeric, text, text, text, text, text, text),
-  record_stocktake(bigint, numeric, text)
+  record_stocktake(bigint, numeric, text),
+  -- The register itself is the office's: what a machine is, what it cost, when its certificate runs
+  -- out. The floor reads it through every safety gate in the app and does not edit it.
+  save_equipment(bigint, text, text, text, equipment_status, text, text, text, text, int, text,
+                 text, text, text, text, text, text, text, text, date, date, text, numeric,
+                 date, numeric, int, text, boolean, text)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   record_operation(bigint, operation_status, text),
-  issue_material_offline(bigint, numeric, bigint, text, text)
+  issue_material_offline(bigint, numeric, bigint, text, text),
+  -- The floor as well, and this one deliberately: a check signed before running a machine is signed by
+  -- whoever is standing in front of it. Granted to the office too, because a service is recorded the
+  -- same way and that is theirs — the function takes the name from the session either way, so a record
+  -- can only ever carry the name of whoever actually made it.
+  record_equipment_event(bigint, equipment_event_kind, text, date, date, numeric, text, bigint, bigint, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 COMMIT;

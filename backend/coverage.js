@@ -72,6 +72,20 @@ const SAME_THING = {
   reorderQty: 'reorder_quantity', heat: 'heat_no',
   // The bin, as opposed to the warehouse and the rack above it.
   location: 'bin_code',
+
+  // The equipment register, and the third time this meter has understated the work by not knowing the
+  // schema's own names. Every one of these was checked against the column list in schema.sql: the
+  // table has had them since the equipment pass, under the longer names an insurer or an auditor would
+  // use. Nine fields, no schema change — and `equipment` was the table this document called the largest
+  // remaining gap, at sixteen fields. It is seven.
+  serial: 'serial_no', assetNumber: 'asset_no',
+  operatingHourMeter: 'operating_hours', serviceInterval: 'service_interval_hours',
+  // Dated per collection, because "the maintenance date" on a machine is the date of its last service
+  // and means something else anywhere else.
+  maintenanceDate: { equipment: 'last_service_date' },
+  inspectionDate: { equipment: 'last_inspection_date' },
+  calibrationDate: { equipment: 'last_calibration_date' },
+  assignedProject: { equipment: 'assigned_project_id' },
   // The movement log. Every one of these is a rename rather than a gap: the store screen asks when,
   // what happened, who did it and where it went; the table says moved_at, kind, moved_by, moved_from
   // and moved_to. The one that is genuinely a lookup is the item's code, which lives on stock_item.
@@ -105,7 +119,15 @@ const A_JOIN = new Set([
   'estimationId',
   // A movement names its item by code, which is a column on stock_item. A copy of it on the movement
   // is a copy that can disagree with the item it points at.
-  'code'
+  'code',
+  // The jobcard a machine is on right now, which is the current row in `equipment_assignment` — the
+  // table whose partial unique index is what makes "one machine, one jobcard" true. A column on
+  // equipment would be a second answer to the same question, and the two would disagree the first time
+  // an assignment was returned.
+  'assignedJobcard',
+  // A timestamp derived from the newest event against the machine. Storing it is storing an answer that
+  // has to be kept in step with the rows it is computed from, which is how a figure goes stale.
+  'lastActivity'
 ]);
 
 // Fields holding a list. These want a child table, not a column, for the reason every other list in
@@ -116,7 +138,16 @@ const A_CHILD_TABLE = new Set([
   // Lists whose child table already exists and is already pointing the right way: jobcard.project_id,
   // hours_entry.jobcard_id, inspection.jobcard_id. They were counted as missing columns, which is
   // the one thing they must never become — a list in a column cannot have a foreign key.
-  'jobcards', 'hours', 'inspections'
+  'jobcards', 'hours', 'inspections',
+  // The equipment screen's six logs, every one of them a list of dated events against a machine, and
+  // every one of them already a row in `equipment_event` — which has a kind for each: service,
+  // calibration, inspection, breakdown, pre-use-check, repair. They were being counted as six missing
+  // columns, and six lists in six columns is the shape this schema exists not to have. `usageHistory`
+  // is the one that is not an event: it is the assignment record, and `equipment_assignment` holds it.
+  'maintenance', 'certifications', 'calibrations', 'notesLog', 'usageHistory', 'downtimeRecords',
+  // The pre-use checks a welder signs before running a machine. `equipment_event` has a kind for them,
+  // and it is the one list in this app whose rows a safety gate actually reads.
+  'preUseChecks'
 ]);
 
 function dbColumns() {
@@ -244,7 +275,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 242, needsColumn: 62 };
+  const BASELINE = { stored: 250, needsColumn: 45 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

@@ -56,6 +56,38 @@ LANGUAGE sql STABLE AS $$
   FROM operation o WHERE o.jobcard_id = p_jobcard_id;
 $$;
 
+-- What has been done to a machine, in the shapes the equipment screen and the safety gates read.
+--
+-- One table behind all of it — equipment_event, with a kind per row — and six lists in front of it,
+-- because that is how the screen asks: a service history, a calibration record, an inspection record,
+-- the breakdowns, the checks signed before use, and the notes. Splitting one table into six named lists
+-- is the whole job of this file, and doing it here rather than in the browser means the names are said
+-- once.
+--
+-- `preUseChecks` is the one that matters. equipment-gates.js refuses to let a machine be used unless it
+-- finds a check that passed, for the same day, and for the same jobcard when the caller named one — so
+-- the rows carry the date, the jobcard's own reference, and whether a failure has been answered. The
+-- gate has been asking for exactly this since it was written and getting an empty list every time.
+CREATE FUNCTION equipment_events_of(p_equipment_id bigint, p_kinds text[]) RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+    'id', 'E-' || v.id,
+    'kind', v.kind,
+    'date', v.happened_on,
+    'by', v.performed_by,
+    -- 'passed' / 'failed', because that is the vocabulary the gate matches on. The column holds the
+    -- database's four words and this is the screen's two; the translation belongs on this side.
+    'result', CASE v.result WHEN 'pass' THEN 'passed' WHEN 'fail' THEN 'failed' ELSE v.result END,
+    'nextDue', v.next_due_on,
+    'note', v.note,
+    'jobcardNo', (SELECT j.ref FROM jobcard j WHERE j.id = v.jobcard_id),
+    'resolved', v.resolved,
+    'resolves', CASE WHEN v.resolves_event_id IS NULL THEN NULL ELSE 'E-' || v.resolves_event_id END
+  ) ORDER BY v.happened_on DESC, v.id DESC), '[]'::jsonb)
+  FROM equipment_event v
+  WHERE v.equipment_id = p_equipment_id AND v.kind::text = ANY (p_kinds);
+$$;
+
 CREATE FUNCTION workspace_snapshot() RETURNS jsonb
 LANGUAGE sql STABLE AS $$
   SELECT jsonb_build_object(
@@ -152,6 +184,24 @@ LANGUAGE sql STABLE AS $$
         'maintenanceDate', e.last_service_date, 'inspectionDate', e.last_inspection_date,
         'calibrationDate', e.last_calibration_date, 'qrCode', e.qr_code,
         'assignedProject', (SELECT p.ref FROM project p WHERE p.id = e.assigned_project_id),
+        -- The jobcard it is on right now, from the assignment rather than from a column: the partial
+        -- unique index on equipment_assignment is what makes "one machine, one jobcard" true, and a
+        -- column here would be a second answer that can disagree with it.
+        'assignedJobcard', (SELECT j.ref FROM equipment_assignment a
+                             JOIN jobcard j ON j.id = a.jobcard_id
+                            WHERE a.equipment_id = e.id AND a.released_at IS NULL
+                            ORDER BY a.id DESC LIMIT 1),
+        'purchaseDate', e.purchase_date, 'purchaseSupplier', e.purchase_supplier,
+        -- What the safety gate reads before it may require anything of anybody.
+        'requirements', jsonb_build_object('preUseCheckRequired', e.pre_use_check_required),
+        -- The six logs, one table, split the way the screen asks for them.
+        'preUseChecks', equipment_events_of(e.id, ARRAY['pre-use-check']),
+        'maintenance', equipment_events_of(e.id, ARRAY['service', 'repair']),
+        'calibrations', equipment_events_of(e.id, ARRAY['calibration']),
+        'inspections', equipment_events_of(e.id, ARRAY['inspection']),
+        'downtimeRecords', equipment_events_of(e.id, ARRAY['breakdown']),
+        'activity', equipment_events_of(e.id,
+          ARRAY['service', 'repair', 'calibration', 'inspection', 'breakdown', 'pre-use-check']),
         'notes', e.notes
       ) ORDER BY e.ref) FROM equipment e), '[]'::jsonb),
 
@@ -245,10 +295,12 @@ LANGUAGE sql STABLE AS $$
 $$;
 
 REVOKE ALL ON FUNCTION operations_of(bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION equipment_events_of(bigint, text[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
 
-GRANT EXECUTE ON FUNCTION operations_of(bigint), workspace_snapshot()
+GRANT EXECUTE ON FUNCTION operations_of(bigint), equipment_events_of(bigint, text[]),
+  workspace_snapshot()
 TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;
 

@@ -526,15 +526,39 @@ ON stock_item TO varmak_workshop;
 GRANT SELECT (id, ref, name, category, status, certification_expiry, manufacturer, model, serial_no,
               asset_no, year_of_manufacture, description, current_location, home_location,
               department, responsible_person, operator, condition, criticality, safety_warnings,
-              warranty_expiry, operating_hours, service_interval_hours, last_service_date,
+              warranty_expiry,
+              -- When it was bought and from whom, which the register shows and neither of which is a
+              -- figure in kronor. purchase_price is, and is deliberately not here — the whole reason
+              -- this grant is written column by column.
+              purchase_date, purchase_supplier,
+              operating_hours, service_interval_hours, last_service_date,
               last_inspection_date, last_calibration_date, qr_code, assigned_project_id, notes,
+              -- Whether this machine needs a check before it is run. The floor is the only place that
+              -- can answer it, so the floor has to be able to see that it is being asked.
+              pre_use_check_required,
               created_at)
 ON equipment TO varmak_workshop;
 
-GRANT SELECT (id, equipment_id, kind, happened_on, performed_by, result, next_due_on, note, created_at)
+-- The three added with the pre-use check are here rather than left out, and each is needed by name:
+-- `jobcard_id` because a check is signed for a particular job and the gate matches on that, `resolved`
+-- because it is the flag the gate reads to decide whether a failure still stops the machine, and
+-- `resolves_event_id` because a passing check has to be able to say which failure it answers. `cost`
+-- stays out: what a repair cost is money, and this list is column by column for exactly that reason.
+--
+-- Left out, the gate in schema.sql read `resolved` on the welder's behalf and Postgres answered
+-- "permission denied for table equipment_event" — so every welder starting a job got a privilege error
+-- instead of a safety check. That is the fifth time a new column has done this, and it is the column
+-- grant working: a column nobody has thought about is a column nobody can read.
+GRANT SELECT (id, equipment_id, kind, happened_on, performed_by, result, next_due_on, note,
+              jobcard_id, resolved, resolves_event_id, created_at)
 ON equipment_event TO varmak_workshop;
-GRANT INSERT (equipment_id, kind, happened_on, performed_by, result, next_due_on, note)
+GRANT INSERT (equipment_id, kind, happened_on, performed_by, result, next_due_on, note,
+              jobcard_id, resolves_event_id)
 ON equipment_event TO varmak_workshop;
+-- And UPDATE on the one flag, because record_equipment_event marks a failure answered when the check
+-- that answers it is signed — by the welder standing in front of the machine. Only that column: a
+-- floor that could rewrite the result of a check it made yesterday is not a record.
+GRANT UPDATE (resolved) ON equipment_event TO varmak_workshop;
 
 -- The commercial tables are not granted to the workshop at all, so there is nothing to revoke a
 -- column from: estimate, estimate_line, supplier, supplier_item, purchase_order,
@@ -698,6 +722,18 @@ CREATE POLICY anyone_signed_in_moves_stock ON stock_movement FOR INSERT WITH CHE
 CREATE POLICY commercial_writes_stock ON stock_item FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());
 
 CREATE POLICY floor_records_equipment_events ON equipment_event FOR INSERT WITH CHECK (is_signed_in());
+-- And answers a failed check. Narrow on both ends: the policy allows the floor to touch only a row that
+-- is a failed pre-use check, and the column grant above allows it to touch only `resolved` on that row.
+-- Together that is one sentence — a welder may mark a failed check answered — and nothing else.
+--
+-- Needed because the ALL policy above is the office's and asks may_see_money(), so a welder's UPDATE
+-- matched no policy and quietly affected nothing: record_equipment_event would insert the check that
+-- answers the failure and leave the failure standing, so the machine stayed stopped for a reason
+-- somebody had already dealt with. A GRANT with no policy behind it fails closed, which is the safe
+-- direction and still the wrong answer.
+CREATE POLICY floor_answers_a_failed_check ON equipment_event FOR UPDATE
+  USING (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail')
+  WITH CHECK (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail');
 CREATE POLICY floor_assigns_equipment ON equipment_assignment FOR ALL USING (is_signed_in()) WITH CHECK (is_signed_in());
 
 -- Quality: a welder records what they found. Only the office releases a hold, which is the
@@ -809,6 +845,19 @@ BEGIN
 END;
 $$;
 GRANT SELECT, INSERT, UPDATE ON app_user, app_session, stock_item, project TO varmak_engine;
+-- And four columns on equipment, for equipment_state_after_event and nothing else: the date a machine
+-- was last serviced, inspected or calibrated, and its status when it breaks down. Column by column
+-- rather than the table, because this role bypasses row security and the whole point of the function is
+-- that it can do exactly two things — a table-wide UPDATE here would make it able to rewrite the
+-- register, the certificate expiry and the purchase price of every machine in the shop.
+-- SELECT on the three dates as well as the id, because the UPDATE below reads them: each is set to
+-- `CASE WHEN ... THEN p_day ELSE last_service_date END`, and reading a column in a SET expression needs
+-- SELECT on it. Granted UPDATE and not SELECT, the statement came back as "permission denied for table
+-- equipment" with nothing to say which column it meant.
+GRANT SELECT (id, status, last_service_date, last_inspection_date, last_calibration_date)
+ON equipment TO varmak_engine;
+GRANT UPDATE (status, last_service_date, last_inspection_date, last_calibration_date)
+ON equipment TO varmak_engine;
 -- Read-only, and only what the roll-up above walks: an hours entry names a jobcard, and the jobcard
 -- names the project whose figure is being recomputed.
 GRANT SELECT ON jobcard, hours_entry TO varmak_engine;

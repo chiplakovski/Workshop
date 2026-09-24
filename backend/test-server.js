@@ -94,7 +94,8 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'add_person', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
     'convert_lead', 'issue_material_offline', 'receive_goods', 'receive_stock',
-    'record_operation', 'record_stocktake', 'save_customer', 'save_jobcard', 'save_project',
+    'record_equipment_event', 'record_operation', 'record_stocktake', 'save_customer',
+    'save_equipment', 'save_jobcard', 'save_project',
     'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
     'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
   ], 'the reachable workflows should be exactly the ones named here');

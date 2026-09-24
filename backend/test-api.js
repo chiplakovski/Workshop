@@ -138,7 +138,8 @@ function theBypassListIsStillShort() {
     // for somebody the policies cannot yet see — the first because there is nobody at all, the
     // second because it compares a password hash, which no role may read.
     'bootstrap_first_admin', 'change_my_password',
-    'current_app_name', 'current_app_role', 'issue_material', 'issue_stock',
+    'current_app_name', 'current_app_role', 'equipment_state_after_event',
+    'issue_material', 'issue_stock',
     'project_hours_roll_up',
     // Steel arriving and a shelf being counted, for the same reason issuing is here: both write a
     // stock movement, and the name on it is the session's rather than anything the caller passed. The
@@ -618,6 +619,173 @@ function theFirstAdminAndEveryoneAfter() {
 // The store. Material could leave the shelf before these — issue_material_offline is what the shop
 // tablet calls — but nothing could put an item on the shelf, or record steel arriving. So a workshop
 // could issue material it had no way of telling the system it had.
+// ── What the role that bypasses row security may actually write ───────────────────────────
+
+// The companion to theBypassListIsStillShort. That one asks which functions run as varmak_engine; this
+// asks what varmak_engine can write when they do — which is the question that decides how much those
+// functions could do if one of them were wrong.
+//
+// Written down as a list rather than derived, because the point is that somebody has to look at it when
+// it changes. It was added when a mutation widened `GRANT UPDATE (four columns) ON equipment` to the
+// whole table and nothing anywhere noticed: a wider grant breaks no test, which is exactly why a
+// privilege list needs a check of its own rather than a comment saying it is narrow.
+function theEngineWritesOnlyWhatItMust() {
+  const surface = sql(`
+    SELECT table_name || ' ' || lower(privilege_type)
+      FROM information_schema.table_privileges
+     WHERE table_schema = 'public' AND grantee = 'varmak_engine'
+       AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE')
+    UNION
+    SELECT c.table_name || ' ' || lower(c.privilege_type)
+        || '(' || string_agg(c.column_name, ',' ORDER BY c.column_name) || ')'
+      FROM (SELECT DISTINCT table_name, privilege_type, column_name
+              FROM information_schema.column_privileges
+             WHERE table_schema = 'public' AND grantee = 'varmak_engine'
+               AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE')) c
+     GROUP BY c.table_name, c.privilege_type
+     ORDER BY 1;`).split('\n').map((l) => l.trim()).filter(Boolean);
+
+  // A whole-table grant shows up twice — once as the table and once as every column of it — so the
+  // interesting question is which tables it holds wholesale and which it holds column by column.
+  const whole = surface.filter((l) => !l.includes('(')).sort();
+  assert.deepEqual(whole, [
+    // Signing in, signing out, locking an account after failed attempts, and creating the first admin:
+    // all of them write app_user or app_session for somebody no policy can see yet.
+    'app_session insert', 'app_session update', 'app_user insert', 'app_user update',
+    // The audit trail, which every workflow appends to and nobody may edit.
+    'activity_log insert',
+    // The store: issuing, receiving and counting all move a shelf and write the movement that explains
+    // it, and the name on the movement is the session's rather than anything the caller passed.
+    'stock_item insert', 'stock_item update', 'stock_movement insert',
+    // The project roll-up, which recomputes one figure when a welder books hours against a jobcard.
+    'project insert', 'project update'
+  ].sort(), `varmak_engine writes these tables wholesale: ${whole.join(', ')}`);
+
+  const narrow = surface.filter((l) => l.includes('(') && !whole.includes(l.split('(')[0]));
+  assert.deepEqual(narrow, [
+    // Four columns on equipment and nothing else on it: the three dates a machine is judged by, and its
+    // status when it breaks down. A table-wide UPDATE here would let equipment_state_after_event rewrite
+    // the register, the certificate expiry and the purchase price of every machine in the shop.
+    'equipment update(last_calibration_date,last_inspection_date,last_service_date,status)'
+  ], `varmak_engine writes these columns and only these: ${narrow.join(', ')}`);
+  step('Bypass: the role that steps around row security writes ten tables and four columns, and that list is read by hand');
+}
+
+function theRegisterOfMachinesAndWhatHappensToThem() {
+  const f = world();
+  const office = PEOPLE.office;
+  const welder = PEOPLE.welder;
+
+  const machine = ok('the office putting a machine in the register', 'varmak_office', office,
+    `SELECT save_equipment(NULL, 'eq-0100', 'Plasma 120', 'cutting', 'available', 'Hypertherm',
+      'Powermax 120', 'SN-99812', 'A-0100', 2022, 'Handheld plasma cutter',
+      'Bay 2', 'Bay 2', 'Fabrication', 'Anna Berg', 'Marko Ilic', 'good', 'high',
+      'Eye protection and gloves', current_date + 200, current_date - 400, 'Nordic Machines',
+      84000, current_date + 100, 120.5, 500, 'QR-0100', true, 'Bought with the press');`);
+  assert.equal(value(`SELECT ref FROM equipment WHERE id = ${machine};`), 'EQ-0100',
+    'the reference is what is written on the machine, and that is upper case');
+  assert.equal(value(`SELECT pre_use_check_required::text FROM equipment WHERE id = ${machine};`), 'true',
+    'and the flag the safety gate reads is finally settable — nothing could set it before');
+  // The three dates a machine is judged by are not parameters.
+  assert.equal(value(`SELECT count(*) FROM information_schema.parameters
+     WHERE specific_schema = 'public' AND specific_name LIKE 'save_equipment%'
+       AND parameter_name IN ('p_last_service_date', 'p_last_inspection_date', 'p_last_calibration_date');`), '0',
+    'save_equipment must not take the date of the last service — a form that can type it in is a form '
+    + 'that can claim a service nobody performed');
+  step('Machines: a machine goes in the register, and the dates it is judged by are not typed into it');
+
+  refused('a machine with no reference', 'varmak_office', office,
+    `SELECT save_equipment(NULL, '  ', 'Something', 'welding');`, /needs a reference/);
+  refused('a machine with no name', 'varmak_office', office,
+    `SELECT save_equipment(NULL, 'EQ-X', '   ', 'welding');`, /needs a name/);
+  refused('a machine with no category', 'varmak_office', office,
+    `SELECT save_equipment(NULL, 'EQ-X', 'Something', '  ');`, /needs a category/);
+  const twice = refused('a second machine under the same reference', 'varmak_office', office,
+    `SELECT save_equipment(NULL, 'EQ-0100', 'Another plasma', 'cutting');`,
+    /already a machine referenced EQ-0100/);
+  assert.match(twice, /Plasma 120/, 'and it says which machine that reference already belongs to');
+  refused('a welder editing the register', 'varmak_workshop', welder,
+    `SELECT save_equipment(NULL, 'FLOOR-1', 'Floor machine', 'welding');`, /permission denied/);
+  step('Machines: a machine needs a reference, a name and a category, and the register is the office\'s');
+
+  // ── What happened to it ─────────────────────────────────────────────────────────────────
+  const serviced = ok('the office recording a service', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'service', 'done', current_date - 10,
+      current_date + 170, 4500, 'Annual service', NULL, NULL, 'svc-1');`);
+  assert.match(serviced, /^E-\d+$/);
+  assert.equal(value(`SELECT last_service_date::text FROM equipment WHERE id = ${machine};`),
+    value(`SELECT (current_date - 10)::text;`),
+    'the date of the last service is the date of the service that happened');
+  assert.equal(value(`SELECT performed_by FROM equipment_event WHERE id = ${serviced.slice(2)};`), 'Lars Holm',
+    'and who performed it is the session, never a parameter');
+  // Asked twice, as a tablet flushing a queue does.
+  assert.equal(ok('the same service sent twice', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'service', 'done', current_date - 10,
+      current_date + 170, 4500, 'Annual service', NULL, NULL, 'svc-1');`), serviced);
+  assert.equal(value(`SELECT count(*) FROM equipment_event WHERE kind = 'service';`), '1',
+    'one service, not two');
+  step('Machines: a service moves the date it is judged by, in the name of whoever recorded it, once');
+
+  // A failed inspection is not an inspection date. It is a reason the machine is stopped.
+  ok('a failed inspection', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'inspection', 'fail', current_date, NULL, NULL,
+      'Guard missing');`);
+  assert.equal(value(`SELECT coalesce(last_inspection_date::text, 'none') FROM equipment WHERE id = ${machine};`),
+    'none', 'a failed inspection must not count as the date it was last inspected');
+  ok('and then a passed one', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'inspection', 'pass', current_date, NULL, NULL, 'Guard refitted');`);
+  assert.equal(value(`SELECT last_inspection_date::text FROM equipment WHERE id = ${machine};`),
+    value(`SELECT current_date::text;`));
+  step('Machines: only a service or check that passed moves the date — a failure is not a date');
+
+  // A breakdown stops the machine by itself, because remembering to is how it gets missed.
+  ok('a breakdown', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'breakdown', 'observations', current_date, NULL, NULL,
+      'Torch head cracked');`);
+  assert.equal(value(`SELECT status::text FROM equipment WHERE id = ${machine};`), 'out-of-service',
+    'recording a breakdown and the machine being stopped are one event, not two actions');
+  step('Machines: a breakdown takes the machine out of service without anybody remembering to');
+
+  refused('a service recorded for next week', 'varmak_office', office,
+    `SELECT record_equipment_event(${machine}, 'service', 'done', current_date + 7);`,
+    /a date that has not happened yet/);
+  refused('an event against a machine that does not exist', 'varmak_office', office,
+    `SELECT record_equipment_event(999999, 'service', 'done');`, /no such machine/);
+  step('Machines: an event cannot be dated in the future, nor recorded against nothing');
+
+  // ── The check a welder signs, which is the whole reason the gate exists ──────────────────
+  sql(`UPDATE equipment SET status = 'available' WHERE id = ${f.machine};`);
+  const failedCheck = ok('a welder signing a check that failed', 'varmak_workshop', welder,
+    `SELECT record_equipment_event(${f.machine}, 'pre-use-check', 'fail', current_date, NULL, NULL,
+      'Gas leak at the torch', NULL, NULL, 'chk-1');`);
+  assert.equal(value(`SELECT performed_by FROM equipment_event WHERE id = ${failedCheck.slice(2)};`),
+    'Marko Ilic', 'signed in the name of whoever is standing in front of the machine');
+  // A project of its own, because world() has no projects in it — the first version of this selected
+  // one that did not exist and produced `VALUES (, 1, ...)`.
+  const project = value(`INSERT INTO project (name, customer_id)
+    VALUES ('Cutting work', ${f.customer}) RETURNING id;`);
+  const jobcard = value(`INSERT INTO jobcard (project_id, title)
+    VALUES (${project}, 'Frame') RETURNING id;`);
+  const op = value(`INSERT INTO operation (jobcard_id, seq, description, equipment_id)
+    VALUES (${jobcard}, 1, 'Cut out', ${f.machine}) RETURNING id;`);
+  refused('starting the work while that check is unanswered', 'varmak_office', office,
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`,
+    /a pre-use check on .+ failed and has not been answered/);
+  step('Machines: a check the welder failed stops the work, and the database is what stops it');
+
+  // And the welder answers it themselves, which is the part that needed a policy of its own.
+  const answer = ok('the same welder signing a check that passed, answering the failure',
+    'varmak_workshop', welder,
+    `SELECT record_equipment_event(${f.machine}, 'pre-use-check', 'pass', current_date, NULL, NULL,
+      'Hose replaced', ${jobcard}, ${failedCheck.slice(2)}, 'chk-2');`);
+  assert.match(answer, /^E-\d+$/);
+  assert.equal(value(`SELECT resolved::text FROM equipment_event WHERE id = ${failedCheck.slice(2)};`),
+    'true', 'the failure is marked answered by the event that answers it, not by somebody remembering');
+  ok('and now the work starts', 'varmak_office', office,
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${op};`);
+  step('Machines: the welder answers their own failed check and the work starts — one call, not two');
+}
+
 function theStoreCanBeStockedAndCounted() {
   const f = world();
   const office = PEOPLE.office;
@@ -1196,6 +1364,8 @@ async function main() {
   await twoTabletsFlushingAtOnce(f, w);
   eachRoleReachesItsOwnWork(f, w);
   const work = workReachesTheFloor();
+  theEngineWritesOnlyWhatItMust();
+  theRegisterOfMachinesAndWhatHappensToThem();
   theStoreCanBeStockedAndCounted();
   theStepsRememberTheWorkDoneOnThem(work);
   const c = aCustomerCanBeMadeAndCorrected();

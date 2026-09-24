@@ -434,6 +434,12 @@ CREATE TABLE equipment (
   last_inspection_date date,
   last_calibration_date date,
   qr_code     text UNIQUE,
+  -- Whether a welder has to sign a check before running this machine. A flag rather than a rule
+  -- applied to everything, because it is true of a crane and a press and false of a bench grinder, and
+  -- a system that demanded a signed check for the grinder would teach people to sign without looking.
+  -- equipment-gates.js has read this through a `requirements` object since it was written; nothing has
+  -- ever been able to set it, so the answer was always "not required".
+  pre_use_check_required boolean NOT NULL DEFAULT false,
   -- What it is on right now. Restricted rather than cascading: losing a project must not quietly
   -- detach every machine that was working on it.
   assigned_project_id bigint REFERENCES project(id) ON DELETE SET NULL,
@@ -1042,9 +1048,46 @@ CREATE TABLE equipment_event (
   next_due_on   date,
   cost          numeric(12,2) CHECK (cost IS NULL OR cost >= 0),
   note          text,
+  -- Which job the check was signed for. A pre-use check is signed for a particular piece of work on a
+  -- particular day, and equipment-gates.js matches on exactly that: a check passed this morning for
+  -- another jobcard is not a check for this one. Without the link the gate can only ask "was anything
+  -- checked today", which is the question that lets a machine onto the wrong job.
+  jobcard_id    bigint REFERENCES jobcard(id) ON DELETE SET NULL,
+  -- A failed check stops the machine until somebody deals with it, and "dealt with" has to be a record
+  -- rather than a flag somebody flips: `resolves_event_id` is the later event that answers this one.
+  -- Setting `resolved` on the failure itself is what that later event does, so both exist — one is the
+  -- state the gate reads, the other is the evidence for it.
+  resolved      boolean NOT NULL DEFAULT false,
+  resolves_event_id bigint REFERENCES equipment_event(id) ON DELETE SET NULL,
   created_at    timestamptz NOT NULL DEFAULT now(),
-  CHECK (next_due_on IS NULL OR next_due_on >= happened_on)
+  CHECK (next_due_on IS NULL OR next_due_on >= happened_on),
+  -- A failed check cannot resolve anything: the thing that clears a failure is a later check that
+  -- passed, or a repair. Allowing it would let one broken machine clear another's failure.
+  CHECK (resolves_event_id IS NULL OR result <> 'fail')
 );
+
+-- An event cannot resolve itself, which a self-reference makes expressible and therefore worth
+-- refusing. It would make a failed check its own answer.
+CREATE FUNCTION equipment_event_cannot_answer_itself() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.resolves_event_id IS NOT NULL AND NEW.resolves_event_id = NEW.id THEN
+    RAISE EXCEPTION 'an equipment event cannot resolve itself' USING ERRCODE = 'check_violation';
+  END IF;
+  -- And it can only answer an event about the same machine. A pre-use check on the plasma cutter
+  -- clearing a failure on the press is the kind of thing that is obvious when written down and
+  -- invisible in a list of ids.
+  IF NEW.resolves_event_id IS NOT NULL
+     AND (SELECT equipment_id FROM equipment_event WHERE id = NEW.resolves_event_id)
+         IS DISTINCT FROM NEW.equipment_id THEN
+    RAISE EXCEPTION 'an equipment event can only resolve one about the same machine'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER equipment_event_answers_itself_trg BEFORE INSERT OR UPDATE ON equipment_event
+  FOR EACH ROW EXECUTE FUNCTION equipment_event_cannot_answer_itself();
 
 CREATE INDEX equipment_event_machine_idx ON equipment_event(equipment_id, happened_on DESC);
 
@@ -1257,6 +1300,16 @@ BEGIN
     IF machine_cert IS NOT NULL AND machine_cert < current_date THEN
       RAISE EXCEPTION 'operation % cannot start: the certification for % expired on %',
         NEW.description, machine_name, machine_cert USING ERRCODE = 'check_violation';
+    END IF;
+    -- A pre-use check that failed and has not been answered stops the machine. equipment-gates.js has
+    -- refused this in the browser since it was written, and the browser is not where a safety rule can
+    -- live: a welder who reaches the same jobcard through another screen, or an import, or a console,
+    -- walks straight past it. The rule is the same one and it is stated here as well.
+    IF EXISTS (SELECT 1 FROM equipment_event
+                WHERE equipment_id = NEW.equipment_id
+                  AND kind = 'pre-use-check' AND result = 'fail' AND NOT resolved) THEN
+      RAISE EXCEPTION 'operation % cannot start: a pre-use check on % failed and has not been answered',
+        NEW.description, machine_name USING ERRCODE = 'check_violation';
     END IF;
   END IF;
   RETURN NEW;

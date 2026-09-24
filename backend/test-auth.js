@@ -86,7 +86,7 @@ function makeWorkshop() {
   sql(`SET client_min_messages = warning;
        TRUNCATE app_session, activity_log, hours_entry, stock_movement, operation, jobcard,
              project, customer, stock_item, quality_hold, estimate, estimate_line, supplier,
-             supplier_item, app_user RESTART IDENTITY CASCADE;`);
+             supplier_item, equipment, equipment_event, app_user RESTART IDENTITY CASCADE;`);
   PEOPLE.admin = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('anna@varmak.se', 'Anna Berg', 'admin') RETURNING id;`);
   PEOPLE.office = value(`INSERT INTO app_user (email, display_name, role)
@@ -107,10 +107,15 @@ function makeWorkshop() {
   const op = value(`INSERT INTO operation (jobcard_id, seq, description) VALUES (${jobcard}, 1, 'Weld out') RETURNING id;`);
   const item = value(`INSERT INTO stock_item (code, description, unit, stock, avg_cost)
     VALUES ('S355-10', 'Plate S355J2 10mm', 'KG', 500, 14.50) RETURNING id;`);
+  // A machine, because there were no machines in this fixture at all — and the checks about them were
+  // written as `INSERT INTO equipment_event ... SELECT id ... FROM equipment LIMIT 1`, which selects no
+  // rows, inserts nothing, and is reported as allowed. Two checks in this file were passing that way.
+  const equipment = value(`INSERT INTO equipment (ref, name, category, status)
+    VALUES ('EQ-0001', 'MIG 400', 'welding', 'available') RETURNING id;`);
   const estimate = value(`INSERT INTO estimate (title, customer_id) VALUES ('Conveyor frame', ${customer}) RETURNING id;`);
   sql(`INSERT INTO estimate_line (estimate_id, kind, description, quantity, unit_price)
        VALUES (${estimate}, 'material', 'Plate', 500, 22.00);`);
-  return { customer, project, jobcard, op, item, estimate };
+  return { customer, project, jobcard, op, item, estimate, equipment };
 }
 
 // ── Nothing here is being tested as somebody who cannot be stopped ────────────────────────
@@ -161,9 +166,25 @@ function theTestsAreNotCheating() {
 // tests up to then asked what the floor could not do and took the office for granted, and it only
 // came out when a workflow in step 4 tried to lock an estimate row and was told no such estimate.
 function everyWritePrivilegeHasAPolicyBehindIt() {
+  // Both tables, and the second one is the point: `table_privileges` lists only whole-table grants, and
+  // most of this system's writes are granted column by column — so a column-level INSERT or UPDATE on a
+  // table with no policy for it was invisible to this check. That is not hypothetical; the floor's
+  // UPDATE on equipment_event.resolved was added and this check said nothing.
   const orphans = sql(`
     SELECT g.grantee || ' ' || lower(g.privilege_type) || ' on ' || g.table_name
       FROM information_schema.table_privileges g
+     WHERE g.table_schema = 'public'
+       AND g.grantee IN ('varmak_admin', 'varmak_office', 'varmak_workshop')
+       AND g.privilege_type IN ('INSERT', 'UPDATE', 'DELETE')
+       AND NOT EXISTS (
+         SELECT 1 FROM pg_policies p
+          WHERE p.schemaname = 'public' AND p.tablename = g.table_name
+            AND (p.cmd = 'ALL' OR p.cmd = g.privilege_type)
+       )
+    UNION
+    SELECT DISTINCT g.grantee || ' ' || lower(g.privilege_type) || ' on '
+        || g.table_name || '(' || g.column_name || ')'
+      FROM information_schema.column_privileges g
      WHERE g.table_schema = 'public'
        AND g.grantee IN ('varmak_admin', 'varmak_office', 'varmak_workshop')
        AND g.privilege_type IN ('INSERT', 'UPDATE', 'DELETE')
@@ -539,8 +560,46 @@ function theFloorDoesTheWork(f) {
      VALUES (${f.jobcard}, 'visual', 'Marko Ilic', 'passed', current_date, 'done');`);
   allowed('a welder recording a pre-use check on a machine', 'varmak_workshop', PEOPLE.welder,
     `INSERT INTO equipment_event (equipment_id, kind, performed_by, result)
-     SELECT id, 'pre-use-check', 'Marko Ilic', 'pass' FROM equipment LIMIT 1;`);
+     VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'pass');`);
+  // Named rather than selected, and then counted. The version above it read `SELECT id FROM equipment
+  // LIMIT 1` against a fixture with no machines in it: no rows selected, no rows inserted, and an
+  // INSERT of nothing succeeds. It had been reported as allowed since it was written.
+  assert.equal(value(`SELECT count(*) FROM equipment_event WHERE equipment_id = ${f.equipment};`), '1',
+    'the check has to have actually been recorded, not merely permitted');
   step('The floor: a welder can move the work along, book hours, inspect, and check a machine over');
+
+  // Answering a failed check, asked as a real welder — because the structural check two functions up
+  // cannot answer this one. equipment_event has an ALL policy, so a grant on it looks covered; that
+  // policy is the office's and asks may_see_money(), so a welder's UPDATE matched nothing and affected
+  // no rows. A privilege that fails closed still reads as working from every angle but this one.
+  const failed = value(`INSERT INTO equipment_event (equipment_id, kind, performed_by, result, note)
+    VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'fail', 'gas leak') RETURNING id;`);
+  const answered = as('varmak_workshop', PEOPLE.welder,
+    `UPDATE equipment_event SET resolved = true WHERE id = ${failed};`);
+  assert.ok(answered.ok, `a welder has to be able to answer a failed check: ${answered.message}`);
+  assert.equal(value(`SELECT resolved::text FROM equipment_event WHERE id = ${failed};`), 'true',
+    'and the row has to actually change — an UPDATE that matches no policy affects nothing and says nothing');
+  attempts.allowed += 1;
+  step('The floor: a welder answers a failed pre-use check, and the row actually changes');
+
+  // And only that. The result of a check made yesterday is not theirs to rewrite — that one is a
+  // privilege error, because the column is not granted at all.
+  denied('a welder rewriting the result of a check', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE equipment_event SET result = 'pass' WHERE id = ${failed};`, /permission denied/);
+
+  // A different shape of refusal, and worth writing as a different kind of check: the floor DOES hold
+  // the privilege on `resolved`, so this one is refused by the policy rather than by the grant — and a
+  // policy refuses by matching no rows, not by raising. It succeeds and changes nothing, which is why
+  // asserting on an error here would assert the opposite of what happens.
+  const service = value(`INSERT INTO equipment_event (equipment_id, kind, performed_by, result)
+    VALUES (${f.equipment}, 'service', 'Anna Berg', 'done') RETURNING id;`);
+  const overreach = as('varmak_workshop', PEOPLE.welder,
+    `UPDATE equipment_event SET resolved = true WHERE kind <> 'pre-use-check' OR result <> 'fail';`);
+  assert.ok(overreach.ok, 'a policy refuses by matching no rows, so this statement itself succeeds');
+  assert.equal(value(`SELECT resolved::text FROM equipment_event WHERE id = ${service};`), 'false',
+    'and the service record is untouched — the policy allows only a failed pre-use check');
+  attempts.refused += 1;
+  step('The floor: and nothing else on that record is theirs — not the result, not another kind of event');
 
   // Booking hours in somebody else's name is how a timesheet stops being evidence of anything.
   denied('a welder booking hours in another name', 'varmak_workshop', PEOPLE.welder,

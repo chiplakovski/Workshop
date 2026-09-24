@@ -942,10 +942,15 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
     // nobody is testing while the report says the opposite. The first attempt at re-anchoring added a
     // function to the list instead, which was a no-op: `book_hours` is already granted to the office
     // further down. The rule is the TO, so that is what this damages. It appears once in the file.
-    from: `  record_stocktake(bigint, numeric, text)
-TO varmak_admin, varmak_office;`,
-    to: `  record_stocktake(bigint, numeric, text)
-TO varmak_admin, varmak_office, varmak_workshop;`
+    // The anchor is the TO alone, on the one line in the file that reads exactly this. Quoting the
+    // function above it went stale the moment save_equipment was added to the list, which is the second
+    // time this mutation has gone stale for the same reason — a list that grows is not an anchor.
+    from: `TO varmak_admin, varmak_office;
+
+GRANT EXECUTE ON FUNCTION book_hours`,
+    to: `TO varmak_admin, varmak_office, varmak_workshop;
+
+GRANT EXECUTE ON FUNCTION book_hours`
   },
   {
     what: 'changing the quantity sidesteps the repricing rule',
@@ -1263,6 +1268,93 @@ TO varmak_workshop;`
     to: `GRANT SELECT ON
   stock_item, equipment_event,
   jobcard, operation, equipment_assignment,`
+  },
+
+  // ── The machines, and the gate that finally has something to read ─────────────────────────
+  {
+    // The rule this whole pass exists for. equipment-gates.js has refused this in the browser since it
+    // was written, and the browser is not where a safety rule can live.
+    what: 'a failed pre-use check no longer stops the work',
+    from: `    IF EXISTS (SELECT 1 FROM equipment_event
+                WHERE equipment_id = NEW.equipment_id
+                  AND kind = 'pre-use-check' AND result = 'fail' AND NOT resolved) THEN`,
+    to: '    IF false THEN'
+  },
+  {
+    what: 'a failed check stops the work even after it has been answered',
+    from: "                  AND kind = 'pre-use-check' AND result = 'fail' AND NOT resolved) THEN",
+    to: "                  AND kind = 'pre-use-check' AND result = 'fail') THEN"
+  },
+  {
+    what: 'a failed check can be answered by another failed check',
+    from: `  CHECK (resolves_event_id IS NULL OR result <> 'fail')`,
+    to: '  CHECK (true)'
+  },
+  {
+    what: 'an event can answer one about a different machine',
+    from: `  IF NEW.resolves_event_id IS NOT NULL
+     AND (SELECT equipment_id FROM equipment_event WHERE id = NEW.resolves_event_id)
+         IS DISTINCT FROM NEW.equipment_id THEN`,
+    to: '  IF false THEN'
+  },
+  {
+    what: 'a failed inspection counts as the date the machine was last inspected',
+    file: 'api',
+    from: "  IF p_result IN ('pass', 'done') AND p_kind IN ('service', 'repair', 'inspection', 'calibration') THEN",
+    to: "  IF true THEN"
+  },
+  {
+    what: 'a breakdown leaves the machine in service',
+    file: 'api',
+    from: `  IF p_kind = 'breakdown' THEN
+    UPDATE equipment SET status = 'out-of-service' WHERE id = p_equipment_id;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'the event that answers a failure does not mark it answered',
+    file: 'api',
+    from: `  IF p_resolves_event_id IS NOT NULL THEN
+    UPDATE equipment_event SET resolved = true
+     WHERE id = p_resolves_event_id AND equipment_id = p_equipment_id;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a machine can be registered twice under one reference',
+    file: 'api',
+    from: `  SELECT name INTO existing FROM equipment
+   WHERE upper(btrim(ref)) = upper(btrim(p_ref)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a machine referenced % — it is %', upper(btrim(p_ref)), existing;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'the floor may not answer a failed check after all, so the machine stays stopped',
+    file: 'auth',
+    from: `CREATE POLICY floor_answers_a_failed_check ON equipment_event FOR UPDATE
+  USING (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail')
+  WITH CHECK (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail');`,
+    to: ''
+  },
+  {
+    what: 'the floor may answer anything on an equipment event, not only a failed check',
+    file: 'auth',
+    from: `  USING (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail')
+  WITH CHECK (is_signed_in() AND kind = 'pre-use-check' AND result = 'fail');`,
+    to: `  USING (is_signed_in()) WITH CHECK (is_signed_in());`
+  },
+  {
+    // The narrow grant is what keeps the engine's extra power to two columns.
+    what: 'the engine is given the whole equipment table rather than four columns of it',
+    file: 'auth',
+    // Asked of the api suite, because that is where the list of what varmak_engine may write is written
+    // down. The auth suite builds only schema.sql and auth.sql and has no such list.
+    suite: 'api',
+    from: `GRANT UPDATE (status, last_service_date, last_inspection_date, last_calibration_date)
+ON equipment TO varmak_engine;`,
+    to: 'GRANT UPDATE ON equipment TO varmak_engine;'
   },
 
   // ── The shop tablet, with the connection cut ──────────────────────────────────────────────

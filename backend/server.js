@@ -158,6 +158,17 @@ const RPC = {
   set_jobcard_operations: ['jobcard_id', 'operations'],
 
   // The store. save_stock_item has no stock parameter on purpose — steel arrives through a movement.
+  // The machines. The register is the office's; recording what happened to one is the floor's as well,
+  // and the database decides which is which rather than this list.
+  save_equipment: ['id', 'ref', 'name', 'category', 'status', 'manufacturer', 'model', 'serial_no',
+    'asset_no', 'year_of_manufacture', 'description', 'current_location', 'home_location',
+    'department', 'responsible_person', 'operator', 'condition', 'criticality', 'safety_warnings',
+    'certification_expiry', 'purchase_date', 'purchase_supplier', 'purchase_price',
+    'warranty_expiry', 'operating_hours', 'service_interval_hours', 'qr_code',
+    'pre_use_check_required', 'notes'],
+  record_equipment_event: ['equipment_id', 'kind', 'result', 'happened_on', 'next_due_on', 'cost',
+    'note', 'jobcard_id', 'resolves_event_id', 'event_id'],
+
   save_stock_item: ['id', 'code', 'description', 'unit', 'group_id', 'subgroup_id', 'location_id',
     'sublocation_id', 'bin_code', 'category', 'grade', 'dimensions', 'base_unit', 'size_per_unit',
     'weight_per_base', 'unit_weight', 'min_stock', 'reorder_quantity', 'heat_no',

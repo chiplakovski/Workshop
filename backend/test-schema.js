@@ -392,6 +392,47 @@ function expiredCertificationStopsStart() {
   step('Equipment: an expired certification stops the start, and a valid one does not');
 }
 
+function failedPreUseCheckStopsStart() {
+  const f = fixture();
+  sql(`UPDATE equipment SET status = 'available', certification_expiry = NULL WHERE id = ${f.equipment};
+       UPDATE operation SET equipment_id = ${f.equipment}, status = 'pending' WHERE id = ${f.op1};`);
+  const failed = value(`INSERT INTO equipment_event (equipment_id, kind, performed_by, result, note)
+    VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'fail', 'gas leak at the torch')
+    RETURNING id;`);
+  const message = refused('starting on a machine whose pre-use check failed this morning',
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${f.op1};`,
+    /a pre-use check on .+ failed and has not been answered/);
+  assert.ok(message.includes('Fixture MIG 400'), `the refusal must name the machine — said: ${message}`);
+
+  // A later check that passed is what answers it, and it has to say which failure it answers.
+  const passed = value(`INSERT INTO equipment_event
+    (equipment_id, kind, performed_by, result, resolves_event_id, note)
+    VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'pass', ${failed}, 'hose replaced')
+    RETURNING id;`);
+  refused('starting while the failure is still marked unresolved',
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${f.op1};`, /pre-use check/);
+  sql(`UPDATE equipment_event SET resolved = true WHERE id = ${failed};`);
+  accepted('starting once the failure has been answered',
+    `UPDATE operation SET status = 'in-progress' WHERE id = ${f.op1};`);
+  step('Equipment: a failed pre-use check stops the start until it is answered, and the answer names it');
+
+  // The three ways of writing a resolution that would mean nothing.
+  refused('a failed check resolving something',
+    `INSERT INTO equipment_event (equipment_id, kind, performed_by, result, resolves_event_id)
+     VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'fail', ${passed});`,
+    /equipment_event_check|resolves_event_id/);
+  // A second machine, because the interesting version of this mistake is cross-machine and the first
+  // attempt at this check used the same machine twice — which is legal, and passed while testing
+  // nothing at all.
+  const other = value(`INSERT INTO equipment (ref, name, category)
+    VALUES ('EQ-OTHER', 'Fixture plasma', 'cutting') RETURNING id;`);
+  refused('an event resolving one about another machine',
+    `INSERT INTO equipment_event (equipment_id, kind, performed_by, result, resolves_event_id)
+     VALUES (${other}, 'repair', 'Anna Berg', 'done', ${failed});`,
+    /same machine/);
+  step('Equipment: a failure cannot be answered by another failure, nor by an event about another machine');
+}
+
 function machineCannotBeInTwoPlaces() {
   const f = fixture();
   const other = value(`INSERT INTO jobcard (project_id, title) VALUES (${f.project}, 'Other work') RETURNING id;`);
@@ -1373,6 +1414,7 @@ async function main() {
   holdNamesExactlyOneThing();
   equipmentGateStopsStart();
   expiredCertificationStopsStart();
+  failedPreUseCheckStopsStart();
   machineCannotBeInTwoPlaces();
   dependencyGateStopsStart();
   dependencyCannotLoop();
