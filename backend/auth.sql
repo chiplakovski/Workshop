@@ -488,6 +488,24 @@ GRANT INSERT ON hours_entry, stock_movement, equipment_event, inspection, equipm
 TO varmak_workshop;
 GRANT UPDATE ON operation, jobcard, hours_entry, equipment_assignment TO varmak_workshop;
 
+-- What a welder writes when they record an inspection result, column by column. Everything that says
+-- what was asked for — the drawing, the revision, the acceptance criteria, whether the customer is
+-- coming to witness it — stays out of this list, because a result recorded alongside a quietly
+-- changed acceptance criterion is a pass against a standard nobody agreed to.
+GRANT UPDATE (result, findings, critical, actual_date, inspector, status)
+ON inspection TO varmak_workshop;
+-- The checklist is the evidence, so the floor writes it and can clear it while the inspection is
+-- still open — complete_inspection replaces the lines wholesale rather than patching them.
+GRANT SELECT, INSERT, DELETE ON inspection_check TO varmak_workshop;
+
+-- The merchant a non-conforming plate came from, by name. payment_terms_days is what this supplier is
+-- paid on, which is a commercial term and stays out by the same §1b line that withholds a customer's
+-- price list — so this is a column grant and not the table. The name is in because a welder who has
+-- just rejected a batch of steel needs to be able to say whose steel it was, and the NCR register
+-- shows exactly that column.
+GRANT SELECT (id, ref, name, org_no, email, phone, city, country, status) ON supplier
+TO varmak_workshop;
+
 -- The customer is visible because a welder needs to know whose job is on the bench: who they are,
 -- where they are, how to reach them if a drawing is wrong.
 --
@@ -739,6 +757,23 @@ CREATE POLICY floor_assigns_equipment ON equipment_assignment FOR ALL USING (is_
 -- Quality: a welder records what they found. Only the office releases a hold, which is the
 -- decision that lets work leave the building.
 CREATE POLICY floor_records_inspections ON inspection FOR INSERT WITH CHECK (is_signed_in());
+-- And records what they found on one that is still open. The USING clause is read against the row as
+-- it stands, so this permits a verdict on an undecided inspection and nothing else: a welder cannot
+-- come back a week later and turn a failure into a pass, because by then the row it is matched
+-- against no longer says pending.
+CREATE POLICY floor_records_a_result ON inspection FOR UPDATE
+  USING (is_signed_in() AND result = 'pending') WITH CHECK (is_signed_in());
+-- The checklist, while its inspection is still undecided. Tied to the parent rather than to the
+-- signed-in person, because an inspection is not owned by whoever happens to write a line on it —
+-- what makes a line writable is that nobody has yet signed for the result it is evidence for.
+CREATE POLICY floor_writes_the_checklist ON inspection_check FOR INSERT
+  WITH CHECK (is_signed_in() AND EXISTS (
+    SELECT 1 FROM inspection i WHERE i.id = inspection_id AND i.result = 'pending'));
+CREATE POLICY floor_clears_the_checklist ON inspection_check FOR DELETE
+  USING (is_signed_in() AND EXISTS (
+    SELECT 1 FROM inspection i WHERE i.id = inspection_id AND i.result = 'pending'));
+CREATE POLICY commercial_writes_the_checklist ON inspection_check FOR ALL
+  USING (may_see_money()) WITH CHECK (may_see_money());
 CREATE POLICY commercial_writes_inspections ON inspection FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());
 CREATE POLICY only_the_office_holds ON quality_hold FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());
 CREATE POLICY commercial_writes_ncrs ON ncr FOR ALL USING (may_see_money()) WITH CHECK (may_see_money());
@@ -858,6 +893,12 @@ GRANT SELECT (id, status, last_service_date, last_inspection_date, last_calibrat
 ON equipment TO varmak_engine;
 GRANT UPDATE (status, last_service_date, last_inspection_date, last_calibration_date)
 ON equipment TO varmak_engine;
+-- And the one route by which the floor places a hold: hold_after_failed_inspection reads the
+-- inspection it is holding work for and writes the hold. SELECT on inspection and no UPDATE, because
+-- that function must not be able to change what was found — only to act on it. INSERT on quality_hold
+-- and no UPDATE either: releasing a hold is the office's decision and this role has no part in it.
+GRANT SELECT ON inspection TO varmak_engine;
+GRANT SELECT, INSERT ON quality_hold TO varmak_engine;
 -- Read-only, and only what the roll-up above walks: an hours entry names a jobcard, and the jobcard
 -- names the project whose figure is being recomputed.
 GRANT SELECT ON jobcard, hours_entry TO varmak_engine;

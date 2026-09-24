@@ -139,6 +139,11 @@ function theBypassListIsStillShort() {
     // second because it compares a password hash, which no role may read.
     'bootstrap_first_admin', 'change_my_password',
     'current_app_name', 'current_app_role', 'equipment_state_after_event',
+    // The hold that follows a critical failed inspection. The floor holds no INSERT on quality_hold
+    // and `only_the_office_holds` sits behind it, so without this the welder's whole transaction rolls
+    // back and the shop keeps neither the hold nor the finding. It takes an inspection id and nothing
+    // else, and refuses to do anything unless that inspection is failed and critical as it stands.
+    'hold_after_failed_inspection',
     'issue_material', 'issue_stock',
     'project_hours_roll_up',
     // Steel arriving and a shelf being counted, for the same reason issuing is here: both write a
@@ -658,7 +663,11 @@ function theEngineWritesOnlyWhatItMust() {
     // it, and the name on the movement is the session's rather than anything the caller passed.
     'stock_item insert', 'stock_item update', 'stock_movement insert',
     // The project roll-up, which recomputes one figure when a welder books hours against a jobcard.
-    'project insert', 'project update'
+    'project insert', 'project update',
+    // The hold that follows a critical failed inspection. INSERT and nothing else: this role can put a
+    // hold on, and no route through it can take one off — releasing is the office's decision and the
+    // one that lets work leave the building.
+    'quality_hold insert'
   ].sort(), `varmak_engine writes these tables wholesale: ${whole.join(', ')}`);
 
   const narrow = surface.filter((l) => l.includes('(') && !whole.includes(l.split('(')[0]));
@@ -1375,6 +1384,267 @@ function nobodyCanLockTheWorkshopOut() {
 
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
+// ── Quality: the hold register, inspections and non-conformances ───────────────────────────
+
+// A hold is the only thing in this system that physically stops work leaving the building, so these
+// are the workflows whose refusals matter most.
+function aHoldIsThePointOfTheWholeThing() {
+  const project = value(`INSERT INTO project (name, customer_id, status)
+    VALUES ('Tank skid', (SELECT id FROM customer LIMIT 1), 'production') RETURNING id;`);
+  const card = value(`INSERT INTO jobcard (project_id, title, status)
+    VALUES (${project}, 'Weld the frame', 'in-progress') RETURNING id;`);
+
+  refused('a hold naming nothing at all', 'varmak_office', PEOPLE.office,
+    `SELECT place_hold(NULL, NULL, 'Something is wrong somewhere');`,
+    /has to name a project or a jobcard/);
+  refused('a hold that does not say what it is for', 'varmak_office', PEOPLE.office,
+    `SELECT place_hold(${project}, NULL, '   ');`, /has to say what it is for/);
+
+  const held = ok('holding the jobcard', 'varmak_office', PEOPLE.office,
+    `SELECT place_hold(${project}, ${card}, 'Weld rejected on the root pass', 'critical',
+       'Grind out, re-run and re-inspect', 'INS-2026-001');`);
+  assert.match(held, /^HOLD-\d{4}-\d{3}$/);
+  // Given both, it holds the narrower thing — and the row says so rather than the two disagreeing.
+  assert.equal(value(`SELECT scope || ' ' || (jobcard_id IS NOT NULL) || ' ' || (project_id IS NULL)
+    FROM quality_hold WHERE ref = '${held}';`), 'jobcard true true');
+  step('Quality: a hold names one thing, says what it is for, and holds the narrower of the two');
+
+  // The same hold asked for twice is one hold. Two rows saying one thing means releasing it leaves
+  // the work still held by its twin, and nobody can see why.
+  const again = ok('asking for the same hold again', 'varmak_office', PEOPLE.office,
+    `SELECT place_hold(${project}, ${card}, 'Weld rejected on the root pass', 'critical');`);
+  assert.equal(again, held, 'an identical active hold has to be the same hold');
+  const another = ok('a second, different problem on the same jobcard', 'varmak_office', PEOPLE.office,
+    `SELECT place_hold(${project}, ${card}, 'Material certificate missing for heat 4471');`);
+  assert.notEqual(another, held, 'a different reason is a different hold');
+  assert.equal(value(`SELECT count(*) FROM quality_hold WHERE jobcard_id = ${card} AND status = 'active';`), '2');
+  step('Quality: the same hold twice is one hold; a different reason is a hold of its own');
+
+  // What the hold is actually for: the work cannot be finished while it stands.
+  refused('completing held work', 'varmak_office', PEOPLE.office,
+    `UPDATE jobcard SET status = 'completed' WHERE id = ${card};`, /quality hold/);
+
+  const holdId = value(`SELECT id FROM quality_hold WHERE ref = '${held}';`);
+  refused('releasing it on nobody’s authority', 'varmak_office', PEOPLE.office,
+    `SELECT release_hold(${holdId}, '  ', 'Looks fine');`, /authorised approval and written evidence/);
+  refused('releasing it with no evidence of what was resolved', 'varmak_office', PEOPLE.office,
+    `SELECT release_hold(${holdId}, 'Lars Holm', '');`, /authorised approval and written evidence/);
+  refused('a welder releasing it', 'varmak_workshop', PEOPLE.welder,
+    `SELECT release_hold(${holdId}, 'Marko Ilic', 'I had another look');`, /permission denied/);
+  ok('the office releasing it', 'varmak_office', PEOPLE.office,
+    `SELECT release_hold(${holdId}, 'Lars Holm', 'Ground out, re-run, PT accepted to level B');`);
+  refused('releasing it a second time', 'varmak_office', PEOPLE.office,
+    `SELECT release_hold(${holdId}, 'Somebody Else', 'And again');`, /already been released/);
+  assert.equal(value(`SELECT release_authority FROM quality_hold WHERE ref = '${held}';`), 'Lars Holm',
+    'a second release would restamp the record with the wrong name');
+  step('Quality: a release takes a named authority and written evidence, once, and only from the office');
+
+  // And the other hold is still standing, which is why releasing one is not releasing the work.
+  refused('completing the work with the other hold still on', 'varmak_office', PEOPLE.office,
+    `UPDATE jobcard SET status = 'completed' WHERE id = ${card};`, /quality hold/);
+  ok('releasing the second one too', 'varmak_office', PEOPLE.office,
+    `SELECT release_hold((SELECT id FROM quality_hold WHERE ref = '${another}'), 'Lars Holm',
+       'Certificate found and filed against the heat');`);
+  // Through inspection, because the transition rulebook says so: from in-progress a jobcard may only
+  // become blocked, paused or inspection. Two gates, and the hold is the one that was being tested.
+  ok('and now the work can be finished', 'varmak_office', PEOPLE.office,
+    `UPDATE jobcard SET status = 'inspection' WHERE id = ${card};
+     UPDATE jobcard SET status = 'completed' WHERE id = ${card};`);
+  step('Quality: releasing one hold does not release the work — every hold on it has to come off');
+
+  return { project, card };
+}
+
+// An inspection is asked for, then answered. The two are separate calls because a form that could
+// arrive already passed is a form for passing work without looking at it.
+function anInspectionIsAskedForThenAnswered(w) {
+  const card = value(`INSERT INTO jobcard (project_id, title, status)
+    VALUES (${w.project}, 'Weld the nozzles', 'in-progress') RETURNING id;`);
+
+  refused('an inspection of nothing', 'varmak_office', PEOPLE.office,
+    `SELECT save_inspection(NULL, NULL, NULL, 'welding', NULL, NULL, NULL, NULL, NULL, NULL,
+       false, false, current_date);`, /has to be of something/);
+  refused('an inspection with no date it is planned for', 'varmak_office', PEOPLE.office,
+    `SELECT save_inspection(NULL, ${w.project}, ${card}, 'welding');`, /needs a date it is planned for/);
+  refused('an inspection that does not say what kind of check it is', 'varmak_office', PEOPLE.office,
+    `SELECT save_inspection(NULL, ${w.project}, ${card}, '  ', NULL, NULL, NULL, NULL, NULL, NULL,
+       false, false, current_date);`, /what kind of check/);
+
+  const ins = ok('raising one', 'varmak_office', PEOPLE.office,
+    `SELECT save_inspection(NULL, ${w.project}, ${card}, 'welding', 'Nozzle N2 root pass',
+       'Nozzle N2', 'BR-4410', 'C', 'visual + PT', 'ISO 5817 level B', true, true, current_date,
+       'Marko Ilic', 'requested', 'Customer attending');`);
+  assert.equal(value(`SELECT result || ' ' || status FROM inspection WHERE id = ${ins};`),
+    'pending completed'.replace('completed', 'requested'),
+    'a request arrives undecided, whatever else it carries');
+  step('Quality: an inspection is raised against real work, to a criterion, and arrives undecided');
+
+  refused('completing it with no result', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ins}, 'pending');`, /takes a result/);
+  refused('passing it with observations and no observation', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ins}, 'passed-observations', '   ');`,
+    /something to say/);
+  refused('completing it on a day that has not arrived', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ins}, 'passed', 'Fine', false, NULL, current_date + 1);`,
+    /has not arrived/);
+
+  // A welder records what they found, the checklist goes in with it, and a critical failure puts the
+  // hold on inside the same transaction.
+  const answer = ok('a welder recording a critical failure', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ins}, 'failed', 'Porosity beyond level B in the root', true,
+       '[{"item":"Weld cap profile","result":"pass"},
+         {"item":"Root penetration","result":"fail"},
+         {"item":"Overall length","nominal":2400,"lower":-2,"upper":2,"actual":2401.5},
+         {"item":"","result":"pass"}]'::jsonb);`);
+  const held = JSON.parse(answer).hold;
+  assert.match(held, /^HOLD-\d{4}-\d{3}$/, 'a critical failure has to put a hold on by itself');
+  assert.equal(value(`SELECT count(*) FROM inspection_check WHERE inspection_id = ${ins};`), '3',
+    'the nameless line is not evidence of anything and is dropped');
+  assert.equal(value(`SELECT jobcard_id = ${card} FROM quality_hold WHERE ref = '${held}';`), 't');
+  assert.equal(value(`SELECT related_ref = (SELECT ref FROM inspection WHERE id = ${ins})
+    FROM quality_hold WHERE ref = '${held}';`), 't', 'the hold has to say which inspection caused it');
+  step('Quality: the floor records what it found, with its evidence, and a critical failure holds the work');
+
+  // The name on a completed inspection is whoever was signed in, not whoever the request named.
+  assert.equal(value(`SELECT inspector FROM inspection WHERE id = ${ins};`), 'Marko Ilic');
+  const byPetra = value(`INSERT INTO inspection (project_id, jobcard_id, kind, inspector, planned_date)
+    VALUES (${w.project}, ${card}, 'visual', 'Somebody Else', current_date) RETURNING id;`);
+  ok('another welder completing an inspection planned for a third person', 'varmak_workshop',
+    PEOPLE.other, `SELECT complete_inspection(${byPetra}, 'passed', 'Acceptable');`);
+  assert.equal(value(`SELECT inspector FROM inspection WHERE id = ${byPetra};`), 'Petra Nilsson',
+    'a result carries the name of whoever recorded it, never the name on the request');
+  step('Quality: a result is signed by whoever was signed in, not by the name typed on the request');
+
+  refused('answering it a second time', 'varmak_workshop', PEOPLE.welder,
+    `SELECT complete_inspection(${ins}, 'passed', 'Had another look');`, /already decided/);
+  refused('editing what it was measured against now that it has a result', 'varmak_office', PEOPLE.office,
+    `SELECT save_inspection(${ins}, ${w.project}, ${card}, 'welding', NULL, NULL, 'BR-9999', 'D',
+       NULL, 'Whatever looks alright', false, false, current_date);`, /already has a result/);
+  step('Quality: a decided inspection is not edited — not its result and not the standard behind it');
+
+  // The second look. A copy with the verdicts cleared, pointing back at the failure it repeats.
+  const second = ok('raising the re-inspection', 'varmak_office', PEOPLE.office,
+    `SELECT create_reinspection(${ins});`);
+  assert.equal(value(`SELECT result || ' ' || status FROM inspection WHERE id = ${second};`),
+    'pending planned');
+  assert.equal(value(`SELECT reinspection_of = ${ins} FROM inspection WHERE id = ${second};`), 't');
+  assert.equal(value(`SELECT acceptance_criteria || ' / ' || drawing_rev FROM inspection WHERE id = ${second};`),
+    'ISO 5817 level B / C', 'the second look is measured against the same standard as the first');
+  assert.equal(value(`SELECT count(*) FROM inspection_check WHERE inspection_id = ${second};`), '3');
+  assert.equal(value(`SELECT count(*) FROM inspection_check
+    WHERE inspection_id = ${second} AND (result IS NOT NULL OR actual IS NOT NULL);`), '0',
+    'a re-inspection that arrives carrying the first inspection’s answers is the whole failure this record exists to prevent');
+  assert.equal(value(`SELECT count(*) FROM inspection_check
+    WHERE inspection_id = ${second} AND nominal IS NOT NULL AND tol_upper IS NOT NULL;`), '1',
+    'the band it is measured against comes across; only the reading is cleared');
+  refused('repeating an inspection nobody has decided yet', 'varmak_office', PEOPLE.office,
+    `SELECT create_reinspection(${second});`, /has not been decided yet/);
+  step('Quality: a re-inspection repeats the check and clears every answer, keeping the band');
+
+  return { card, failed: ins };
+}
+
+// The life of a non-conformance. One function moves it along, because six would be six places
+// deciding what follows what.
+function aNonConformanceLivesItsWholeLife(w) {
+  refused('an NCR with nothing wrong with it', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(NULL, 'Something', ${w.project}, NULL, 'welding', 'minor', '   ', 'Lars Holm');`,
+    /description of what is wrong/);
+  refused('an NCR nobody is answerable for', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(NULL, 'Something', ${w.project}, NULL, 'welding', 'minor', 'Porosity', '  ');`,
+    /somebody answerable/);
+  refused('a major NCR with no date it must be answered by', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(NULL, 'Porosity', ${w.project}, NULL, 'welding', 'major', 'In the root pass',
+       'Lars Holm');`, /needs a date by which it is answered/);
+
+  const raised = JSON.parse(ok('raising a major one', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(NULL, 'Porosity beyond level B', ${w.project}, NULL, 'welding', 'major',
+       'Found on the nozzle weld during PT', 'Lars Holm', current_date + 14, 'Nozzle N2 root pass',
+       'Nozzle N2', 'S355J2 10mm', (SELECT id FROM supplier LIMIT 1));`));
+  assert.match(raised.ncr, /^NCR-\d{4}-\d{3}$/);
+  assert.equal(raised.hold, null, 'only a critical one holds the work by itself');
+  // Who found it is the session, never the form. The screen that raises these had the name written
+  // into the page, so every NCR would have been found by the same person.
+  assert.equal(value(`SELECT detected_by FROM ncr WHERE ref = '${raised.ncr}';`), 'Lars Holm');
+  step('Quality: an NCR is raised by whoever is signed in, against work, with a date it is answered by');
+
+  const critical = JSON.parse(ok('raising a critical one', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(NULL, 'Root crack in the shell seam', ${w.project}, ${w.card}, 'welding',
+       'critical', 'Crack found on radiography', 'Lars Holm', current_date + 3);`));
+  assert.match(critical.hold, /^HOLD-\d{4}-\d{3}$/,
+    'a critical non-conformance holds the work in the same transaction that raises it');
+  assert.equal(value(`SELECT related_ref FROM quality_hold WHERE ref = '${critical.hold}';`),
+    critical.ncr);
+  step('Quality: a critical non-conformance puts the hold on itself, rather than waiting for a second call');
+
+  const id = value(`SELECT id FROM ncr WHERE ref = '${raised.ncr}';`);
+  refused('a step that does not exist', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'sort-it-out', 'Somehow');`, /no such step/);
+  refused('a blank containment', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'containment', '  ');`, /cannot be blank/);
+  assert.equal(ok('recording the containment', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'containment',
+       'Nozzle quarantined on the rack; welder stood down from the seam');`),
+    'under-investigation');
+
+  refused('closing it with nothing verified', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'close', 'QM-2026-14');`, /nothing verified/);
+  refused('using the part as it is with nobody signing for it', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'disposition', 'use-as-is');`, /has to be signed for/);
+  assert.equal(ok('deciding it is reworked', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'disposition', 'rework');`), 'corrective-action');
+  assert.equal(ok('naming the corrective action', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'corrective-action', 'CAPA-2026-007');`), 'corrective-action');
+  refused('verifying nothing', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'verify', '');`, /what was checked/);
+  assert.equal(ok('recording the verification', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'verify', 'Re-run and PT accepted to level B', 'Anna Berg');`),
+    'waiting-verification');
+  assert.equal(value(`SELECT verified_by FROM ncr WHERE id = ${id};`), 'Anna Berg');
+  refused('closing it with no approval reference', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'close', '   ');`, /closure approval reference/);
+  assert.equal(ok('closing it', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'close', 'QM-2026-14');`), 'closed');
+  assert.equal(value(`SELECT closed_on = current_date FROM ncr WHERE id = ${id};`), 't');
+  step('Quality: contained, dispositioned, answered, verified, closed — in that order or not at all');
+
+  refused('changing a closed one', 'varmak_office', PEOPLE.office,
+    `SELECT save_ncr(${id}, 'Something milder', ${w.project}, NULL, 'welding', 'minor',
+       'On reflection it was fine', 'Lars Holm');`, /closed — reopen it/);
+  refused('moving a closed one on', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'containment', 'Actually we did something else');`,
+    /closed — reopen it first/);
+  refused('reopening it for no reason', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'reopen', '');`, /takes a reason/);
+  assert.equal(ok('reopening it when the fault comes back', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'reopen', 'Same porosity on the next two nozzles');`), 'reopened');
+  // The closure comes off with it. Left standing, the record reads as approved and open at once.
+  assert.equal(value(`SELECT coalesce(closure_approval, 'none') || ' ' || coalesce(closed_on::text, 'none')
+    FROM ncr WHERE id = ${id};`), 'none none');
+  ok('and it can be worked on again', 'varmak_office', PEOPLE.office,
+    `SELECT record_ncr_step(${id}, 'containment', 'All remaining nozzles quarantined');`);
+  step('Quality: a reopened non-conformance loses its closure, so nothing reads as approved and open at once');
+
+  // Notes go into the audit trail, which is append-only by trigger.
+  refused('an empty note', 'varmak_office', PEOPLE.office,
+    `SELECT add_quality_note('ncr', ${id}, '   ');`, /not a note/);
+  refused('a note on something that is not a quality record', 'varmak_office', PEOPLE.office,
+    `SELECT add_quality_note('jobcard', ${w.card}, 'Hello');`, /inspection, an NCR or a hold/);
+  refused('a note on a record that is not there', 'varmak_office', PEOPLE.office,
+    `SELECT add_quality_note('ncr', 99999, 'Hello');`, /no such ncr/);
+  const note = ok('a note on the NCR', 'varmak_office', PEOPLE.office,
+    `SELECT add_quality_note('ncr', ${id}, 'Customer told on the telephone; expects a report');`);
+  // Two answers, and either is the right one: the office holds no UPDATE on the trail at all, and
+  // behind that a trigger refuses the statement even for a role that did.
+  refused('editing it afterwards', 'varmak_office', PEOPLE.office,
+    `UPDATE activity_log SET detail = 'Never mind' WHERE id = ${note};`,
+    /append-only|permission denied/);
+  refused('and not even the owner of the database can', null, PEOPLE.office,
+    `UPDATE activity_log SET detail = 'Never mind' WHERE id = ${note};`, /append-only/);
+  assert.equal(value(`SELECT actor FROM activity_log WHERE id = ${note};`), 'Lars Holm');
+  step('Quality: a note is written into the append-only trail, under the name of whoever wrote it');
+}
+
 function buildDatabase() {
   ensureUp();
   try {
@@ -1411,6 +1681,11 @@ async function main() {
   theRegisterOfMachinesAndWhatHappensToThem();
   theStoreCanBeStockedAndCounted();
   theStepsRememberTheWorkDoneOnThem(work);
+  // Before the people tests, which rebuild app_user from scratch: these run as the office and the
+  // floor by id, and those ids stop meaning anybody once the list has been replaced.
+  const q = aHoldIsThePointOfTheWholeThing();
+  const insp = anInspectionIsAskedForThenAnswered(q);
+  aNonConformanceLivesItsWholeLife({ project: q.project, card: insp.card });
   const c = aCustomerCanBeMadeAndCorrected();
   theContactListIsReplacedAtomically(c);
   theFirstAdminAndEveryoneAfter();

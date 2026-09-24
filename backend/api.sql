@@ -1223,9 +1223,6 @@ TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION equipment_state_after_event(bigint, equipment_event_kind, text, date)
 TO varmak_admin, varmak_office, varmak_workshop;
 
--- The last ownership change in the system, so the privilege goes back now.
-REVOKE CREATE ON SCHEMA public FROM varmak_engine;
-
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Work: the project, the jobcards on it, and the steps on those
 --
@@ -1699,6 +1696,641 @@ BEGIN
 END;
 $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- Quality
+--
+-- A hold is the only thing in this system that physically stops work leaving the building, so the
+-- rules about putting one on and taking one off are in here rather than in the page that happens to
+-- be showing the button.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+-- Put a hold on.
+--
+-- Which of project or jobcard it names is worked out from what it is given rather than taken as a
+-- scope word, because the two have to agree — `hold_names_one_thing` refuses a hold whose scope says
+-- project and whose only reference is a jobcard, and a caller that can get that wrong will.
+--
+-- A hold naming nothing is refused outright. The application's own hold code had a third scope,
+-- 'other', for exactly that case; a hold scoped to 'other' cannot appear in any gate, so it stops
+-- nothing while looking on the screen exactly like one that does. The honest answer is to say so at
+-- the point somebody tries to place it.
+--
+-- An identical active hold is reused rather than duplicated: same thing held, same reason. Automatic
+-- holds fire from a failed inspection and again from the NCR raised about it, and two rows saying one
+-- thing means releasing the hold leaves the work still held by its twin. A hold on the same jobcard
+-- for a genuinely different reason is a different hold and still gets its own row.
+CREATE FUNCTION place_hold(
+  p_project_id bigint,
+  p_jobcard_id bigint,
+  p_reason text,
+  p_severity severity DEFAULT 'major',
+  p_required_action text DEFAULT NULL,
+  p_related_ref text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('placing a quality hold');
+  -- Named `why` rather than `reason`: inside the SELECT below, a variable called `reason` and the
+  -- column called `reason` are the same word, and Postgres refuses the statement as ambiguous.
+  why text := btrim(coalesce(p_reason, ''));
+  on_project bigint := p_project_id;
+  on_jobcard bigint := p_jobcard_id;
+  existing text;
+  made text;
+BEGIN
+  IF why = '' THEN
+    RAISE EXCEPTION 'a hold has to say what it is for — it is the only thing the person it stops can read'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  -- A jobcard is the narrower thing, so a hold given both holds the jobcard.
+  IF on_jobcard IS NOT NULL THEN
+    on_project := NULL;
+  ELSIF on_project IS NULL THEN
+    RAISE EXCEPTION 'a hold has to name a project or a jobcard — one that names nothing stops nothing'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT ref INTO existing FROM quality_hold
+   WHERE status = 'active' AND btrim(reason) = why
+     AND jobcard_id IS NOT DISTINCT FROM on_jobcard
+     AND project_id IS NOT DISTINCT FROM on_project
+   LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RETURN existing;
+  END IF;
+
+  INSERT INTO quality_hold (scope, project_id, jobcard_id, reason, severity, applied_by,
+                            required_action, related_ref)
+  VALUES (CASE WHEN on_jobcard IS NOT NULL THEN 'jobcard' ELSE 'project' END::hold_scope,
+          on_project, on_jobcard, why, p_severity, who, p_required_action, p_related_ref)
+  RETURNING ref INTO made;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  SELECT 'quality_hold', h.id, 'applied', who, made || ' — ' || why
+    FROM quality_hold h WHERE h.ref = made;
+  RETURN made;
+END;
+$$;
+
+-- Take a hold off. The one decision in this system that lets work leave the building.
+--
+-- Requires a named authority and written evidence, and the database requires them too
+-- (`release_needs_evidence`) — this raises the readable version of that refusal first. It releases
+-- exactly the one hold it is given and touches nothing else: not the jobcard, not the project, not
+-- another hold on the same work. After a release somebody retries the move that was blocked, and if
+-- a second hold is still on it, it is still blocked, which is the point.
+CREATE FUNCTION release_hold(p_hold_id bigint, p_authority text, p_reason text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('releasing a quality hold');
+  authority text := btrim(coalesce(p_authority, ''));
+  -- `why` rather than `reason`, for the reason place_hold gives: a variable sharing a name with a
+  -- column of the table being written is ambiguous and the statement is refused.
+  why text := btrim(coalesce(p_reason, ''));
+  held record;
+BEGIN
+  SELECT id, ref, status INTO held FROM quality_hold WHERE id = p_hold_id;
+  IF held.id IS NULL THEN
+    RAISE EXCEPTION 'no such hold' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF authority = '' OR why = '' THEN
+    RAISE EXCEPTION 'releasing a hold takes an authorised approval and written evidence of what was resolved'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  -- Releasing an already-released hold is not harmless. It would restamp the authority and the date,
+  -- so the record would say the second person released it and the first release would be gone.
+  IF held.status = 'released' THEN
+    RAISE EXCEPTION 'hold % has already been released', held.ref USING ERRCODE = 'check_violation';
+  END IF;
+
+  UPDATE quality_hold SET status = 'released', release_authority = authority,
+         release_reason = why, released_at = now()
+   WHERE id = held.id;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('quality_hold', held.id, 'released', who, held.ref || ' — ' || authority || ': ' || why);
+  RETURN held.ref;
+END;
+$$;
+
+-- An inspection is asked for: what is to be checked, against which drawing, to what criteria, by when.
+--
+-- The result is not here, and that is the whole shape of the thing. An inspection request that could
+-- arrive already passed is a form for passing work without looking at it.
+CREATE FUNCTION save_inspection(
+  p_id bigint,
+  p_project_id bigint,
+  p_jobcard_id bigint,
+  p_kind text,
+  p_operation text DEFAULT NULL,
+  p_component text DEFAULT NULL,
+  p_drawing_no text DEFAULT NULL,
+  p_drawing_rev text DEFAULT NULL,
+  p_method text DEFAULT NULL,
+  p_acceptance_criteria text DEFAULT NULL,
+  p_customer_witness boolean DEFAULT false,
+  p_material_traceability_ok boolean DEFAULT false,
+  p_planned_date date DEFAULT NULL,
+  p_inspector text DEFAULT NULL,
+  p_status text DEFAULT 'requested',
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('raising an inspection');
+  saved bigint;
+  locked text;
+BEGIN
+  IF coalesce(btrim(p_kind), '') = '' THEN
+    RAISE EXCEPTION 'an inspection has to say what kind of check it is';
+  END IF;
+  IF p_project_id IS NULL AND p_jobcard_id IS NULL THEN
+    RAISE EXCEPTION 'an inspection has to be of something — a project or a jobcard'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_planned_date IS NULL THEN
+    RAISE EXCEPTION 'an inspection needs a date it is planned for, or it is a note rather than a plan'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO inspection (project_id, jobcard_id, kind, operation, component, drawing_no,
+                            drawing_rev, method, acceptance_criteria, customer_witness,
+                            material_traceability_ok, planned_date, inspector, status, notes)
+    VALUES (p_project_id, p_jobcard_id, btrim(p_kind), p_operation, p_component, p_drawing_no,
+            p_drawing_rev, p_method, p_acceptance_criteria, coalesce(p_customer_witness, false),
+            coalesce(p_material_traceability_ok, false), p_planned_date, p_inspector,
+            coalesce(p_status, 'requested'), p_notes)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'inspection', i.id, 'raised', who, i.ref || ' — ' || i.kind
+      FROM inspection i WHERE i.id = saved;
+  ELSE
+    -- What was found is not editable through the form that asks for the check. Re-opening a decided
+    -- inspection to change its drawing number would leave the result standing against a different
+    -- drawing, which is the one way a passed inspection can become evidence of nothing.
+    SELECT ref INTO locked FROM inspection WHERE id = p_id AND result <> 'pending';
+    IF locked IS NOT NULL THEN
+      RAISE EXCEPTION 'inspection % already has a result — raise a re-inspection rather than editing it',
+        locked USING ERRCODE = 'check_violation';
+    END IF;
+    UPDATE inspection SET
+      project_id = p_project_id, jobcard_id = p_jobcard_id, kind = btrim(p_kind),
+      operation = p_operation, component = p_component, drawing_no = p_drawing_no,
+      drawing_rev = p_drawing_rev, method = p_method, acceptance_criteria = p_acceptance_criteria,
+      customer_witness = coalesce(p_customer_witness, false),
+      material_traceability_ok = coalesce(p_material_traceability_ok, false),
+      planned_date = p_planned_date, inspector = p_inspector,
+      status = coalesce(p_status, status), notes = p_notes
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such inspection, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'inspection', i.id, 'updated', who, i.ref FROM inspection i WHERE i.id = saved;
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- The checklist, replaced wholesale. Shared by completing an inspection and by raising the
+-- re-inspection that repeats it.
+--
+-- An empty string for the verdict arrives as NULL, because '' and "nobody has answered this line" are
+-- the same fact and two spellings of it is how a blank line gets counted as a pass.
+CREATE FUNCTION replace_inspection_checks(p_inspection_id bigint, p_lines jsonb) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  written int := 0;
+BEGIN
+  DELETE FROM inspection_check WHERE inspection_id = p_inspection_id;
+  IF p_lines IS NULL OR jsonb_typeof(p_lines) <> 'array' THEN
+    RETURN 0;
+  END IF;
+  INSERT INTO inspection_check (inspection_id, line_no, item, result, nominal, tol_lower, tol_upper,
+                                actual, note)
+  SELECT p_inspection_id, ordinality,
+         btrim(line->>'item'),
+         nullif(btrim(coalesce(line->>'result', '')), ''),
+         (line->>'nominal')::numeric, (line->>'lower')::numeric, (line->>'upper')::numeric,
+         (line->>'actual')::numeric, line->>'note'
+    FROM jsonb_array_elements(p_lines) WITH ORDINALITY AS t(line, ordinality)
+   WHERE btrim(coalesce(line->>'item', '')) <> '';
+  GET DIAGNOSTICS written = ROW_COUNT;
+  RETURN written;
+END;
+$$;
+
+-- What the inspector found, and what follows from it.
+--
+-- Three things happen here and they belong together in one transaction: the result and its evidence
+-- are written, and a critical failure puts a hold on the work. Leaving the hold to the caller is how
+-- a failed inspection gets recorded and the work ships anyway, because the second call was the one
+-- that did not arrive.
+--
+-- `inspector` is taken from the session and overwrites whoever the request was planned for. On a
+-- completed inspection that column is the person answerable for the result, and that can only be
+-- whoever was signed in when it was recorded — the same rule a service record already follows. Until
+-- it is completed the column holds who it is planned for, which is a different question.
+CREATE FUNCTION complete_inspection(
+  p_id bigint,
+  p_result inspection_result,
+  p_findings text DEFAULT NULL,
+  p_critical boolean DEFAULT false,
+  p_checks jsonb DEFAULT NULL,
+  p_actual_date date DEFAULT NULL,
+  p_event_id text DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording an inspection result');
+  seen text := already_done(p_event_id, 'complete_inspection');
+  found record;
+  on_day date := coalesce(p_actual_date, current_date);
+  held text := NULL;
+  answer jsonb;
+BEGIN
+  IF seen IS NOT NULL THEN
+    RETURN seen::jsonb;
+  END IF;
+
+  SELECT id, ref, result, project_id, jobcard_id INTO found FROM inspection WHERE id = p_id;
+  IF found.id IS NULL THEN
+    RAISE EXCEPTION 'no such inspection' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF p_result = 'pending' THEN
+    RAISE EXCEPTION 'completing an inspection takes a result — pending is what it already says'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF found.result <> 'pending' THEN
+    RAISE EXCEPTION 'inspection % was already decided as %; a second look is a re-inspection',
+      found.ref, found.result USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_result = 'passed-observations' AND coalesce(btrim(p_findings), '') = '' THEN
+    RAISE EXCEPTION 'passed with observations is the result that says there is something to say'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF on_day > current_date THEN
+    RAISE EXCEPTION 'an inspection cannot have happened on a date that has not arrived'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- The evidence goes in before the verdict, and the order is load-bearing rather than tidy: the
+  -- floor's policy on the checklist lets a line be written only while its inspection is still
+  -- undecided. Written the other way round, a welder's own checklist would be refused by the row
+  -- security a statement earlier in the same transaction had just made apply to it.
+  PERFORM replace_inspection_checks(found.id, p_checks);
+
+  UPDATE inspection SET
+    result = p_result, findings = p_findings, critical = coalesce(p_critical, false),
+    actual_date = CASE WHEN p_result = 'not-applicable' THEN NULL ELSE on_day END,
+    inspector = who,
+    status = CASE WHEN p_result = 'not-applicable' THEN 'cancelled' ELSE 'completed' END
+   WHERE id = found.id;
+
+  -- Read back off the row rather than from the parameters, so the hold quotes what was actually
+  -- recorded. Returns NULL for anything that is not a critical failure, including the ordinary case.
+  held := hold_after_failed_inspection(found.id);
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('inspection', found.id, p_result::text, who,
+          found.ref || coalesce(' — ' || nullif(btrim(coalesce(p_findings, '')), ''), '') ||
+          coalesce(' — held under ' || held, ''));
+
+  answer := jsonb_build_object('inspection', found.ref, 'hold', held);
+  PERFORM record_result(p_event_id, answer::text);
+  RETURN answer;
+END;
+$$;
+
+-- The weld was ground out and re-run. This is the second look.
+--
+-- A copy of the original with the result cleared and a link back to it, so the history of a rejected
+-- weld reads as one story rather than two unrelated checks. The checklist comes across with every
+-- verdict blanked: a re-inspection that arrives pre-passed on the first inspection's answers is the
+-- exact failure this whole record exists to prevent.
+CREATE FUNCTION create_reinspection(p_id bigint) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('raising a re-inspection');
+  original record;
+  made bigint;
+BEGIN
+  SELECT * INTO original FROM inspection WHERE id = p_id;
+  IF original.id IS NULL THEN
+    RAISE EXCEPTION 'no such inspection' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF original.result = 'pending' THEN
+    RAISE EXCEPTION 'inspection % has not been decided yet — there is nothing to repeat', original.ref
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  INSERT INTO inspection (project_id, jobcard_id, kind, operation, component, drawing_no, drawing_rev,
+                          method, acceptance_criteria, customer_witness, material_traceability_ok,
+                          planned_date, inspector, status, reinspection_of, notes)
+  VALUES (original.project_id, original.jobcard_id, original.kind, original.operation,
+          original.component, original.drawing_no, original.drawing_rev, original.method,
+          original.acceptance_criteria, original.customer_witness, original.material_traceability_ok,
+          current_date, original.inspector, 'planned', original.id, original.notes)
+  RETURNING id INTO made;
+
+  INSERT INTO inspection_check (inspection_id, line_no, item, nominal, tol_lower, tol_upper)
+  SELECT made, line_no, item, nominal, tol_lower, tol_upper
+    FROM inspection_check WHERE inspection_id = original.id ORDER BY line_no;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  SELECT 'inspection', made, 'raised as a re-inspection', who, i.ref || ' repeats ' || original.ref
+    FROM inspection i WHERE i.id = made;
+  RETURN made;
+END;
+$$;
+
+-- The hold that follows a critical failed inspection, and the only route by which the floor ever
+-- places one.
+--
+-- Split out and run as varmak_engine for the same reason equipment_state_after_event is: a welder
+-- recording what they found must not be able to put an arbitrary hold on arbitrary work — releasing a
+-- hold is the office's decision and placing one is most of the way there — but the hold that follows
+-- automatically from a critical failure they have just recorded is the system's decision, not theirs.
+--
+-- Without this split the welder's transaction fails at the hold: no INSERT grant on quality_hold for
+-- the floor, and `only_the_office_holds` behind it. The whole transaction rolls back, so the failed
+-- inspection is not recorded either — the shop ends up with neither the hold nor the finding, which is
+-- worse than either one alone. That is the "a GRANT with no policy behind it fails closed, which is
+-- safe and still the wrong answer" shape, met a second time.
+--
+-- It reads the inspection rather than taking a reason, so there is nothing to pass: it can only place
+-- a hold that quotes an inspection which is, right now, failed and marked critical. Called with
+-- anything else it does nothing and says so by returning NULL.
+CREATE FUNCTION hold_after_failed_inspection(p_inspection_id bigint) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  found record;
+  existing text;
+  why text;
+  made text;
+BEGIN
+  SELECT id, ref, result, critical, project_id, jobcard_id, findings, inspector
+    INTO found FROM inspection WHERE id = p_inspection_id;
+  IF found.id IS NULL OR found.result <> 'failed' OR NOT found.critical THEN
+    RETURN NULL;
+  END IF;
+  IF found.project_id IS NULL AND found.jobcard_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  why := 'Critical failed inspection ' || found.ref || ' — ' ||
+         coalesce(nullif(btrim(coalesce(found.findings, '')), ''), 'see the inspection record');
+
+  SELECT ref INTO existing FROM quality_hold
+   WHERE status = 'active' AND btrim(reason) = why
+     AND jobcard_id IS NOT DISTINCT FROM CASE WHEN found.jobcard_id IS NOT NULL
+                                              THEN found.jobcard_id END
+     AND project_id IS NOT DISTINCT FROM CASE WHEN found.jobcard_id IS NULL
+                                              THEN found.project_id END
+   LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RETURN existing;
+  END IF;
+
+  INSERT INTO quality_hold (scope, project_id, jobcard_id, reason, severity, applied_by,
+                            required_action, related_ref)
+  VALUES (CASE WHEN found.jobcard_id IS NOT NULL THEN 'jobcard' ELSE 'project' END::hold_scope,
+          CASE WHEN found.jobcard_id IS NULL THEN found.project_id END,
+          found.jobcard_id, why, 'critical', coalesce(found.inspector, 'system'),
+          'Corrective action and re-inspection required.', found.ref)
+  RETURNING ref INTO made;
+  RETURN made;
+END;
+$$;
+
+-- A non-conformance, raised.
+--
+-- Who found it comes from the session, never from the form. The screen it is typed on had the name
+-- written into the page — every NCR raised on that machine would have been found by the same person,
+-- whoever was actually standing there.
+--
+-- A critical one puts a hold on by itself, in this transaction. Same reason completing a failed
+-- inspection does: the hold that depends on a second call is the hold that is missing when the lorry
+-- is loaded.
+CREATE FUNCTION save_ncr(
+  p_id bigint,
+  p_title text,
+  p_project_id bigint,
+  p_jobcard_id bigint,
+  p_category text,
+  p_severity severity,
+  p_description text,
+  p_responsible text,
+  p_due_on date DEFAULT NULL,
+  p_operation text DEFAULT NULL,
+  p_component text DEFAULT NULL,
+  p_material text DEFAULT NULL,
+  p_supplier_id bigint DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('raising a non-conformance');
+  saved bigint;
+  raised text;
+  held text := NULL;
+BEGIN
+  IF coalesce(btrim(p_title), '') = '' THEN
+    RAISE EXCEPTION 'a non-conformance needs a title — it is what the register is read by';
+  END IF;
+  IF coalesce(btrim(p_description), '') = '' THEN
+    RAISE EXCEPTION 'a non-conformance needs a description of what is wrong';
+  END IF;
+  IF coalesce(btrim(p_responsible), '') = '' THEN
+    RAISE EXCEPTION 'a non-conformance needs somebody answerable for it';
+  END IF;
+  IF p_severity <> 'minor' AND p_due_on IS NULL THEN
+    RAISE EXCEPTION 'a % non-conformance needs a date by which it is answered', p_severity
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO ncr (title, project_id, jobcard_id, category, severity, description, responsible,
+                     detected_by, due_on, operation, component, material, supplier_id, notes)
+    VALUES (btrim(p_title), p_project_id, p_jobcard_id, btrim(p_category), p_severity,
+            btrim(p_description), btrim(p_responsible), who, p_due_on, p_operation, p_component,
+            p_material, p_supplier_id, p_notes)
+    RETURNING id, ref INTO saved, raised;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('ncr', saved, 'raised', who, raised || ' — ' || btrim(p_title));
+
+    IF p_severity = 'critical' THEN
+      held := place_hold(p_project_id, p_jobcard_id,
+        'Critical NCR ' || raised || ' — ' || btrim(p_title), 'critical',
+        'Resolve the NCR and verify the corrective action before release.', raised);
+    END IF;
+  ELSE
+    UPDATE ncr SET title = btrim(p_title), project_id = p_project_id, jobcard_id = p_jobcard_id,
+           category = btrim(p_category), severity = p_severity, description = btrim(p_description),
+           responsible = btrim(p_responsible), due_on = p_due_on, operation = p_operation,
+           component = p_component, material = p_material, supplier_id = p_supplier_id,
+           notes = p_notes
+     WHERE id = p_id AND status <> 'closed'
+    RETURNING id, ref INTO saved, raised;
+    IF saved IS NULL THEN
+      -- Two different refusals, and the difference matters to whoever is looking at the screen.
+      IF EXISTS (SELECT 1 FROM ncr WHERE id = p_id) THEN
+        RAISE EXCEPTION 'that non-conformance is closed — reopen it before changing it'
+          USING ERRCODE = 'check_violation';
+      END IF;
+      RAISE EXCEPTION 'no such non-conformance' USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('ncr', saved, 'updated', who, raised);
+  END IF;
+
+  RETURN jsonb_build_object('ncr', raised, 'id', saved::text, 'hold', held);
+END;
+$$;
+
+-- The life of a non-conformance after it is raised: contained, dispositioned, answered by a corrective
+-- action, verified, closed — or reopened when it comes back.
+--
+-- One function rather than six, because it is one state machine. Six functions would be six places
+-- deciding what 'corrective-action' follows, and they would disagree within a year.
+CREATE FUNCTION record_ncr_step(
+  p_id bigint,
+  p_step text,
+  p_text text DEFAULT NULL,
+  p_ref text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('moving a non-conformance on');
+  it record;
+  said text := btrim(coalesce(p_text, ''));
+  reference text := nullif(btrim(coalesce(p_ref, '')), '');
+  moved_to ncr_status;
+BEGIN
+  SELECT id, ref, status, verification_result INTO it FROM ncr WHERE id = p_id;
+  IF it.id IS NULL THEN
+    RAISE EXCEPTION 'no such non-conformance' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF it.status = 'closed' AND p_step <> 'reopen' THEN
+    RAISE EXCEPTION 'non-conformance % is closed — reopen it first', it.ref
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_step = 'containment' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'containment is what was done about it straight away — it cannot be blank'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := CASE WHEN it.status IN ('draft', 'open', 'containment-required')
+                     THEN 'under-investigation'::ncr_status ELSE it.status END;
+    UPDATE ncr SET containment = said, status = moved_to WHERE id = it.id;
+
+  ELSIF p_step = 'disposition' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'a disposition says what happens to the parts' USING ERRCODE = 'check_violation';
+    END IF;
+    -- The database refuses this too. Raised here first because the constraint's name is not a
+    -- sentence anybody standing at the screen can act on.
+    IF said = 'use-as-is' AND reference IS NULL THEN
+      RAISE EXCEPTION 'using a non-conforming part as it is has to be signed for — record the concession'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := CASE WHEN it.status IN ('under-investigation', 'disposition-required')
+                     THEN 'corrective-action'::ncr_status ELSE it.status END;
+    UPDATE ncr SET disposition = said, disposition_approval_ref = reference, status = moved_to
+     WHERE id = it.id;
+
+  ELSIF p_step = 'corrective-action' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'name the corrective action this is answered by' USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := 'corrective-action';
+    UPDATE ncr SET corrective_action_ref = said, status = moved_to WHERE id = it.id;
+
+  ELSIF p_step = 'verify' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'verification records what was checked and how it came out'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := 'waiting-verification';
+    UPDATE ncr SET verification_result = said, verified_by = coalesce(reference, who),
+           status = moved_to WHERE id = it.id;
+
+  ELSIF p_step = 'close' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'closing a non-conformance takes a closure approval reference'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    IF coalesce(btrim(it.verification_result), '') = '' THEN
+      RAISE EXCEPTION 'non-conformance % has nothing verified — closing it would record that the fix worked without anybody checking',
+        it.ref USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := 'closed';
+    UPDATE ncr SET closure_approval = said, closed_on = current_date, status = moved_to
+     WHERE id = it.id;
+
+  ELSIF p_step = 'reopen' THEN
+    IF said = '' THEN
+      RAISE EXCEPTION 'reopening a non-conformance takes a reason — it is the record of why it came back'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    moved_to := 'reopened';
+    -- The closure comes off with it. A reopened NCR still carrying its closure approval reads as
+    -- approved and open at once, and the next close would leave the first approval standing behind
+    -- the second one's evidence.
+    UPDATE ncr SET status = moved_to, closure_approval = NULL, closed_on = NULL WHERE id = it.id;
+
+  ELSE
+    RAISE EXCEPTION 'there is no such step as %', p_step USING ERRCODE = 'check_violation';
+  END IF;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('ncr', it.id, p_step, who, it.ref || ' — ' || said || coalesce(' (' || reference || ')', ''));
+  RETURN moved_to::text;
+END;
+$$;
+
+-- A note against a quality record. Written into the audit trail rather than a notes column, because a
+-- quality note somebody can quietly edit afterwards is worth less than no note at all — and the
+-- activity log is append-only by trigger.
+CREATE FUNCTION add_quality_note(p_entity text, p_entity_id bigint, p_text text) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('adding a quality note');
+  said text := btrim(coalesce(p_text, ''));
+  exists_here boolean;
+  made bigint;
+BEGIN
+  IF said = '' THEN
+    RAISE EXCEPTION 'an empty note is not a note' USING ERRCODE = 'check_violation';
+  END IF;
+  -- The entity/id pair is not a foreign key and cannot be one, so the three tables it may name are
+  -- listed and the row is checked to exist. A note against a record that is not there is a note
+  -- nothing will ever show.
+  IF p_entity = 'inspection' THEN
+    SELECT true INTO exists_here FROM inspection WHERE id = p_entity_id;
+  ELSIF p_entity = 'ncr' THEN
+    SELECT true INTO exists_here FROM ncr WHERE id = p_entity_id;
+  ELSIF p_entity = 'quality_hold' THEN
+    SELECT true INTO exists_here FROM quality_hold WHERE id = p_entity_id;
+  ELSE
+    RAISE EXCEPTION 'a quality note goes on an inspection, an NCR or a hold, not on %', p_entity
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF exists_here IS NOT TRUE THEN
+    RAISE EXCEPTION 'no such %', p_entity USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES (p_entity, p_entity_id, 'note', who, said)
+  RETURNING id INTO made;
+  RETURN made;
+END;
+$$;
+
 REVOKE ALL ON FUNCTION save_customer(bigint, text, text, text, text, text, text, text, text, text,
   text, date, text, boolean, text, text, numeric, text, int, text, text, text, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_project(bigint, text, bigint, text, numeric, int, date, text, text, text, text, text,
@@ -1722,6 +2354,22 @@ REVOKE ALL ON FUNCTION convert_lead(bigint, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_operation(bigint, operation_status, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION issue_material_offline(bigint, numeric, bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION place_hold(bigint, bigint, text, severity, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION release_hold(bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_inspection(bigint, bigint, bigint, text, text, text, text, text, text,
+                 text, boolean, boolean, date, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION replace_inspection_checks(bigint, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION complete_inspection(bigint, inspection_result, text, boolean, jsonb, date, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION create_reinspection(bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_ncr(bigint, text, bigint, bigint, text, severity, text, text, date,
+                 text, text, text, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_ncr_step(bigint, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION add_quality_note(text, bigint, text) FROM PUBLIC;
+ALTER FUNCTION hold_after_failed_inspection(bigint) OWNER TO varmak_engine;
+REVOKE ALL ON FUNCTION hold_after_failed_inspection(bigint) FROM PUBLIC;
+
+-- The last ownership change in the system, so the privilege goes back now.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 
 GRANT EXECUTE ON FUNCTION already_done(text, text), record_result(text, text), require_session(text)
 TO varmak_admin, varmak_office, varmak_workshop;
@@ -1744,7 +2392,16 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   -- out. The floor reads it through every safety gate in the app and does not edit it.
   save_equipment(bigint, text, text, text, equipment_status, text, text, text, text, int, text,
                  text, text, text, text, text, text, text, text, date, date, text, numeric,
-                 date, numeric, int, text, boolean, text)
+                 date, numeric, int, text, boolean, text),
+  -- Quality. Putting a hold on and taking one off are both the office's, and taking one off is the
+  -- decision that lets work leave the building — §1b gives the floor no part in it. The floor's own
+  -- part in quality is recording what it found, which is the inspection route below.
+  place_hold(bigint, bigint, text, severity, text, text),
+  release_hold(bigint, text, text),
+  save_ncr(bigint, text, bigint, bigint, text, severity, text, text, date, text, text, text, bigint, text),
+  record_ncr_step(bigint, text, text, text),
+  save_inspection(bigint, bigint, bigint, text, text, text, text, text, text, text, boolean,
+                  boolean, date, text, text, text)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
@@ -1754,7 +2411,16 @@ GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   -- whoever is standing in front of it. Granted to the office too, because a service is recorded the
   -- same way and that is theirs — the function takes the name from the session either way, so a record
   -- can only ever carry the name of whoever actually made it.
-  record_equipment_event(bigint, equipment_event_kind, text, date, date, numeric, text, bigint, bigint, text)
+  record_equipment_event(bigint, equipment_event_kind, text, date, date, numeric, text, bigint, bigint, text),
+  -- A welder records what they found, and a critical failure puts the hold on from inside that same
+  -- transaction — which is why place_hold is not in this list and does not need to be: the function
+  -- doing the holding runs in the caller's own role, and only reaches quality_hold through the route
+  -- a failed inspection takes. Releasing is not here at all, and that is the whole §1b line.
+  complete_inspection(bigint, inspection_result, text, boolean, jsonb, date, text),
+  hold_after_failed_inspection(bigint),
+  create_reinspection(bigint),
+  replace_inspection_checks(bigint, jsonb),
+  add_quality_note(text, bigint, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 COMMIT;

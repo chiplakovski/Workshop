@@ -697,6 +697,14 @@ CREATE TABLE quality_hold (
   severity      severity NOT NULL DEFAULT 'major',
   applied_by    text NOT NULL CHECK (btrim(applied_by) <> ''),
   applied_at    timestamptz NOT NULL DEFAULT now(),
+  -- What has to happen before this hold can come off, written when it goes on. A hold whose reason is
+  -- recorded but whose remedy is not is a hold nobody can clear without asking the person who applied
+  -- it, and that person is on holiday.
+  required_action text,
+  -- The inspection or NCR this hold came out of. A reference rather than a foreign key because it is
+  -- one column naming a row in either of two tables, and the screen looks a hold up by it: the NCR
+  -- detail panel finds its own hold this way. Held as the ref people read, not an id.
+  related_ref   text,
   status        hold_status NOT NULL DEFAULT 'active',
   -- Releasing a hold demands a named authority and written evidence. Not a convention somebody
   -- can forget: the columns are required the moment the status says released.
@@ -720,7 +728,11 @@ CREATE TABLE quality_hold (
 CREATE INDEX hold_active_jobcard_idx ON quality_hold(jobcard_id) WHERE status = 'active';
 CREATE INDEX hold_active_project_idx ON quality_hold(project_id) WHERE status = 'active';
 
-CREATE TYPE inspection_result AS ENUM ('pending','passed','passed-observations','failed');
+-- 'not-applicable' is the fifth answer and it is a real one: an inspection is raised, and then the
+-- thing it was raised against is cancelled, re-scoped or absorbed into another check. Without it the
+-- inspector's only options are to leave it pending forever or to pass something nobody looked at.
+CREATE TYPE inspection_result AS ENUM
+  ('pending','passed','passed-observations','failed','not-applicable');
 
 CREATE TABLE inspection (
   id            bigserial PRIMARY KEY,
@@ -734,24 +746,91 @@ CREATE TABLE inspection (
   findings      text,
   planned_date  date,
   actual_date   date,
-  -- Which operation, and against which drawing. An inspection that does not name the drawing it was
-  -- measured against is not evidence of anything.
-  operation_id  bigint REFERENCES operation(id) ON DELETE SET NULL,
+  -- What was inspected, and against which drawing at which revision. An inspection that does not name
+  -- the drawing it was measured against is not evidence of anything, and one that names the drawing
+  -- but not the revision is evidence against the wrong drawing.
+  --
+  -- `operation` is free text, and it replaced a foreign key to `operation` that nothing ever wrote.
+  -- The reason is the one stock_movement.moved_from already gives: half the inspections in a workshop
+  -- are of something that is not a routing step — a weld seam, a batch of incoming plate, a painted
+  -- surface, a pressure test — and a foreign key to the routing cannot say any of those. The screen's
+  -- field is a text box, so the column is text.
+  operation     text,
   drawing_no    text,
+  drawing_rev   text,
   method        text,
+  -- What the inspection is measured against. Recorded when it is requested, because an acceptance
+  -- criterion agreed after the measurement is not a criterion.
+  acceptance_criteria text,
+  -- Two facts about the check itself rather than its result. A witnessed inspection cannot be done
+  -- without telling the customer; material traceability confirmed says the heat numbers were checked
+  -- against the certificates before anybody measured anything.
+  customer_witness boolean NOT NULL DEFAULT false,
+  material_traceability_ok boolean NOT NULL DEFAULT false,
+  -- A critical failure is the one that puts a hold on. Kept on the inspection rather than inferred
+  -- from the hold, because the hold can be released and the inspection stays the record of how bad it
+  -- was.
+  critical      boolean NOT NULL DEFAULT false,
+  -- The screen's six, in the screen's spelling. The four this CHECK used to allow — requested,
+  -- scheduled, done, cancelled — were not what any screen writes: a request opens at 'requested', an
+  -- inspector moves it to 'in-progress', a reinspection is created 'planned', and a finished one is
+  -- 'completed'. Three of the six would have been refused on arrival.
   status        text NOT NULL DEFAULT 'requested'
-                CHECK (status IN ('requested','scheduled','done','cancelled')),
+                CHECK (status IN ('draft','planned','requested','in-progress','completed','cancelled')),
   -- A re-inspection after a failure points back at the one it is repeating, so the history of a
   -- weld that was rejected and re-run reads as one story.
   reinspection_of bigint REFERENCES inspection(id) ON DELETE SET NULL,
   notes         text,
   CHECK (reinspection_of IS DISTINCT FROM id),
-  -- A decided inspection has a date it happened on; a pending one does not pretend to.
+  -- A decided inspection has a date it happened on; one still pending, or one written off as not
+  -- applicable, does not pretend to. Adding 'not-applicable' to the result enum without adding it here
+  -- would have demanded a date for an inspection that never took place.
   CONSTRAINT decided_inspection_has_a_date
-    CHECK (result = 'pending' OR actual_date IS NOT NULL),
+    CHECK (result IN ('pending','not-applicable') OR actual_date IS NOT NULL),
+  -- Passed with observations means there is something to say. An empty findings box with that result
+  -- is the observation nobody wrote down, which is the whole value of the category.
+  CONSTRAINT observations_say_what_was_observed CHECK (
+    result <> 'passed-observations' OR btrim(coalesce(findings,'')) <> ''
+  ),
   created_at    timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT inspection_names_something CHECK (jobcard_id IS NOT NULL OR project_id IS NOT NULL)
 );
+
+-- What was actually checked, line by line, and what each line measured.
+--
+-- This is the evidence. The inspection row says an inspection passed; these rows say what was looked
+-- at and what the tape read, and without them a passed final inspection on a pressure vessel is one
+-- word in a database. The screen renders exactly this: a text line with pass/fail/na, or a measured
+-- line with a nominal, a tolerance band and an actual, where it works the verdict out itself.
+--
+-- A NULL result is a line nobody has answered yet, not a line that passed. The screen sends an empty
+-- string for that and it arrives here as NULL, because '' and 'unanswered' are the same fact and two
+-- spellings of it is how a blank line gets counted as a pass.
+CREATE TABLE inspection_check (
+  id            bigserial PRIMARY KEY,
+  inspection_id bigint NOT NULL REFERENCES inspection(id) ON DELETE CASCADE,
+  line_no       int NOT NULL CHECK (line_no > 0),
+  item          text NOT NULL CHECK (btrim(item) <> ''),
+  result        text CHECK (result IS NULL OR result IN ('pass','fail','na')),
+  nominal       numeric(12,3),
+  tol_lower     numeric(12,3),
+  tol_upper     numeric(12,3),
+  actual        numeric(12,3),
+  note          text,
+  -- A nominal with no tolerance band is not a measurement anybody can judge. The screen prints "N/A"
+  -- in the verdict column for such a line, which looks like a considered answer and is not one.
+  CONSTRAINT a_nominal_needs_a_tolerance CHECK (
+    nominal IS NULL OR (tol_lower IS NOT NULL AND tol_upper IS NOT NULL)
+  ),
+  -- Upper below lower is a band nothing can fall inside, so every measurement against it fails and
+  -- the failure is the typist's.
+  CONSTRAINT tolerance_band_is_the_right_way_up CHECK (
+    tol_lower IS NULL OR tol_upper IS NULL OR tol_upper >= tol_lower
+  ),
+  UNIQUE (inspection_id, line_no)
+);
+
+CREATE INDEX inspection_check_idx ON inspection_check(inspection_id, line_no);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Suppliers, and what they sell
@@ -1118,8 +1197,15 @@ CREATE INDEX equipment_event_machine_idx ON equipment_event(equipment_id, happen
 -- Non-conformances
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 
+-- The screen's ten, in the screen's spelling. The six this enum used to hold were a different set of
+-- words for the same machine — 'investigating' where the screen says 'under-investigation',
+-- 'verification' where it says 'waiting-verification' — and four of the screen's states had no value
+-- here at all, so a containment recorded on the floor and an NCR reopened after closure would both
+-- have been refused. Third time in this project that the schema and a screen were found to be naming
+-- one state two ways, and the third time the screen won: it is what somebody is looking at.
 CREATE TYPE ncr_status AS ENUM
-  ('open','investigating','corrective-action','verification','closed','rejected');
+  ('draft','open','containment-required','under-investigation','disposition-required',
+   'corrective-action','waiting-verification','closed','rejected','reopened');
 
 CREATE TABLE ncr (
   id            bigserial PRIMARY KEY,
@@ -1133,7 +1219,14 @@ CREATE TABLE ncr (
   responsible   text NOT NULL CHECK (btrim(responsible) <> ''),
   status        ncr_status NOT NULL DEFAULT 'open',
   due_on        date,
-  operation_id  bigint REFERENCES operation(id) ON DELETE SET NULL,
+  -- Who found it and when, which is not the same as who is responsible for fixing it and not the same
+  -- as when the record was typed. An NCR raised on Friday and entered on Monday is dated Friday, or
+  -- the interval between finding a fault and recording it can never be measured.
+  detected_by   text NOT NULL CHECK (btrim(detected_by) <> ''),
+  detected_on   date NOT NULL DEFAULT current_date,
+  -- Free text, for the reason inspection.operation gives: what a non-conformance is against is often
+  -- not a routing step. This replaced a foreign key to `operation` that nothing ever wrote.
+  operation     text,
   component     text,
   material      text,
   supplier_id   bigint REFERENCES supplier(id) ON DELETE SET NULL,
@@ -1141,8 +1234,21 @@ CREATE TABLE ncr (
   -- as distinct from the corrective action that stops it happening again. Conflating the two is how
   -- an NCR gets closed on the containment alone.
   containment   text,
+  -- The screen's eight. 'replace', 'reclassify' and 'pending' were missing, and 'pending' is the one
+  -- that matters: it is what the screen offers while the decision is still being argued about, so
+  -- without it the only way to save the record was to decide.
   disposition   text CHECK (disposition IS NULL OR
-                  disposition IN ('rework','repair','use-as-is','scrap','return-to-supplier')),
+                  disposition IN ('rework','repair','use-as-is','return-to-supplier','scrap',
+                                  'replace','reclassify','pending')),
+  -- Who approved the disposition, and what was verified afterwards by whom. Three separate facts that
+  -- were all being written into `notes` because there was nowhere else: the approval that let a part
+  -- be used as-is, the evidence that the fix worked, and the name against that evidence.
+  disposition_approval_ref text,
+  verification_result text,
+  verified_by   text,
+  -- The corrective action this NCR was answered by, as a CAPA reference. The root-cause analysis lives
+  -- on the CAPA — five whys, fishbone — not here; this column is the pointer to it.
+  corrective_action_ref text,
   closure_approval text,
   notes         text,
   root_cause    text,
@@ -1150,15 +1256,36 @@ CREATE TABLE ncr (
   closed_on     date,
   created_at    timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ncr_names_something CHECK (project_id IS NOT NULL OR jobcard_id IS NOT NULL),
-  -- A non-conformance closed with no root cause and no action taken is a record of nothing. The
-  -- point of the register is that the same fault does not come back.
+  -- A non-conformance closed with nothing written down is a record of nothing; the point of the
+  -- register is that the same fault does not come back. What "written down" means, though, had to
+  -- change, and the change is worth explaining because the old version could not have been satisfied.
+  --
+  -- This constraint used to demand root_cause and corrective_action. No screen in the system can fill
+  -- either: in this application the root-cause analysis belongs to the CAPA record — where the five
+  -- whys and the fishbone actually live — and the NCR points at it. What the closure screen collects
+  -- is the verification evidence, the name against it, and the closure approval reference. So the
+  -- constraint demanded two columns nothing writes and ignored the three that are, which means every
+  -- close from the Quality screen would have been refused with a message about a root cause the
+  -- screen has no box for. A rule that cannot be obeyed is not enforcement, it is a locked door.
+  --
+  -- Both columns stay, for an NCR closed without a full CAPA, and root_cause is no longer the gate.
   CONSTRAINT closed_ncr_says_what_was_done CHECK (
     status <> 'closed' OR (
-      btrim(coalesce(root_cause,'')) <> '' AND
-      btrim(coalesce(corrective_action,'')) <> '' AND
+      btrim(coalesce(verification_result,'')) <> '' AND
+      btrim(coalesce(closure_approval,'')) <> '' AND
       closed_on IS NOT NULL
     )
-  )
+  ),
+  -- Using a non-conforming part as it is, is a decision somebody signs for. It is the one disposition
+  -- that leaves the fault in the delivered work, so the approval reference is a condition of recording
+  -- it rather than a field somebody means to come back and fill in.
+  CONSTRAINT use_as_is_is_signed_for CHECK (
+    disposition IS DISTINCT FROM 'use-as-is' OR
+    btrim(coalesce(disposition_approval_ref,'')) <> ''
+  ),
+  -- Major and critical get a date by which they are answered. A minor may sit on the list; a critical
+  -- with no due date is how one sits there for eight months.
+  CONSTRAINT serious_ncrs_have_a_date CHECK (severity = 'minor' OR due_on IS NOT NULL)
 );
 
 CREATE INDEX ncr_open_idx ON ncr(status) WHERE status NOT IN ('closed','rejected');

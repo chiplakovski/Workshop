@@ -179,6 +179,20 @@ const RPC = {
     'material_cert_ref', 'bin_code', 'note'],
   record_stocktake: ['item_id', 'counted', 'note'],
 
+  // Quality. place_hold and release_hold are both here and the database decides who may call them:
+  // releasing is the office's, and it is the decision that lets work leave the building.
+  place_hold: ['project_id', 'jobcard_id', 'reason', 'severity', 'required_action', 'related_ref'],
+  release_hold: ['hold_id', 'authority', 'reason'],
+  save_inspection: ['id', 'project_id', 'jobcard_id', 'kind', 'operation', 'component', 'drawing_no',
+    'drawing_rev', 'method', 'acceptance_criteria', 'customer_witness', 'material_traceability_ok',
+    'planned_date', 'inspector', 'status', 'notes'],
+  complete_inspection: ['id', 'result', 'findings', 'critical', 'checks', 'actual_date', 'event_id'],
+  create_reinspection: ['id'],
+  save_ncr: ['id', 'title', 'project_id', 'jobcard_id', 'category', 'severity', 'description',
+    'responsible', 'due_on', 'operation', 'component', 'material', 'supplier_id', 'notes'],
+  record_ncr_step: ['id', 'step', 'text', 'ref'],
+  add_quality_note: ['entity', 'entity_id', 'text'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],

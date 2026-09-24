@@ -92,12 +92,14 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
-    'accept_estimate', 'add_person', 'assign_equipment', 'book_hours', 'bootstrap_first_admin',
-    'change_my_password',
-    'convert_lead', 'issue_material_offline', 'receive_goods', 'receive_stock',
-    'record_equipment_event', 'record_operation', 'record_stocktake', 'return_equipment',
+    'accept_estimate', 'add_person', 'add_quality_note', 'assign_equipment', 'book_hours',
+    'bootstrap_first_admin', 'change_my_password', 'complete_inspection',
+    'convert_lead', 'create_reinspection', 'issue_material_offline',
+    'place_hold', 'receive_goods', 'receive_stock',
+    'record_equipment_event', 'record_ncr_step', 'record_operation', 'record_stocktake',
+    'release_hold', 'return_equipment',
     'save_customer',
-    'save_equipment', 'save_jobcard', 'save_project',
+    'save_equipment', 'save_inspection', 'save_jobcard', 'save_ncr', 'save_project',
     'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
     'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
   ], 'the reachable workflows should be exactly the ones named here');
@@ -695,6 +697,132 @@ function buildDatabase() {
   }
 }
 
+// ── Quality, end to end over HTTP ─────────────────────────────────────────────────────────
+
+// The register that stops work leaving the building, driven through the API and then read back out
+// of the snapshot in the shape the Quality screen indexes it in. The three lists were not in the
+// snapshot at all until now, which meant the database was enforcing holds the screen was reading
+// out of the browser's own storage.
+async function theQualityRegisterWorksOverHttp(tokens, f) {
+  const ins = wentThrough('the office raising an inspection', await call('POST', '/rpc/save_inspection', {
+    token: tokens.office,
+    body: {
+      project_id: f.project, jobcard_id: f.jobcard, kind: 'welding',
+      operation: 'Nozzle N2 root pass', component: 'Nozzle N2', drawing_no: 'BR-4410',
+      drawing_rev: 'C', method: 'visual + PT', acceptance_criteria: 'ISO 5817 level B',
+      customer_witness: true, material_traceability_ok: true, planned_date: '2026-09-24',
+      inspector: 'Marko Ilic', status: 'requested'
+    }
+  }));
+
+  // A welder records what they found, and the hold that follows a critical failure is placed in the
+  // same request. The floor holds no privilege on quality_hold at all — the route is the engine
+  // function, which is why this is the check that matters most in this file.
+  const answered = wentThrough('a welder recording a critical failure', await call('POST', '/rpc/complete_inspection', {
+    token: tokens.floor,
+    body: {
+      id: ins, result: 'failed', findings: 'Porosity beyond level B in the root', critical: true,
+      checks: [
+        { item: 'Weld cap profile', result: 'pass' },
+        { item: 'Root penetration', result: 'fail' },
+        { item: 'Overall length', nominal: 2400, lower: -2, upper: 2, actual: 2401.5 }
+      ]
+    }
+  }));
+  assert.match(answered.hold, /^HOLD-\d{4}-\d{3}$/,
+    'a critical failure recorded by the floor has to put the hold on in the same request');
+  step('Quality over HTTP: the floor records a critical failure and the hold goes on with it');
+
+  turnedAway('a welder releasing that hold', await call('POST', '/rpc/release_hold', {
+    token: tokens.floor,
+    body: {
+      hold_id: Number(value(`SELECT id FROM quality_hold WHERE ref = '${answered.hold}';`)),
+      authority: 'Marko Ilic', reason: 'I had another look at it'
+    }
+  }), 403, /not yours to do/);
+  turnedAway('a welder holding a job by hand', await call('POST', '/rpc/place_hold', {
+    token: tokens.floor,
+    body: { project_id: f.project, reason: 'I think this one is wrong too' }
+  }), 403, /not yours to do/);
+  step('Quality over HTTP: placing a hold by hand and releasing one are both the office\'s');
+
+  const ncr = wentThrough('raising a non-conformance', await call('POST', '/rpc/save_ncr', {
+    token: tokens.office,
+    body: {
+      title: 'Porosity beyond level B', project_id: f.project, jobcard_id: f.jobcard,
+      category: 'welding', severity: 'major', description: 'Found on the nozzle weld during PT',
+      responsible: 'Lars Holm', due_on: '2026-10-08', operation: 'Nozzle N2 root pass',
+      component: 'Nozzle N2', material: 'S355J2 10mm'
+    }
+  }));
+  const ncrId = Number(value(`SELECT id FROM ncr WHERE ref = '${ncr.ncr}';`));
+  wentThrough('containing it', await call('POST', '/rpc/record_ncr_step',
+    { token: tokens.office, body: { id: ncrId, step: 'containment', text: 'Nozzle quarantined' } }));
+  turnedAway('closing it with nothing verified', await call('POST', '/rpc/record_ncr_step',
+    { token: tokens.office, body: { id: ncrId, step: 'close', text: 'QM-2026-14' } }),
+    422, /nothing verified/);
+  wentThrough('verifying the fix', await call('POST', '/rpc/record_ncr_step',
+    { token: tokens.office, body: { id: ncrId, step: 'verify', text: 'Re-run, PT accepted', ref: 'Anna Berg' } }));
+  wentThrough('closing it', await call('POST', '/rpc/record_ncr_step',
+    { token: tokens.office, body: { id: ncrId, step: 'close', text: 'QM-2026-14' } }));
+  wentThrough('a note on it', await call('POST', '/rpc/add_quality_note',
+    { token: tokens.office, body: { entity: 'ncr', entity_id: ncrId, text: 'Customer told by telephone' } }));
+  step('Quality over HTTP: an NCR is raised, contained, verified and closed — and cannot skip the middle');
+
+  const second = wentThrough('raising the re-inspection', await call('POST', '/rpc/create_reinspection',
+    { token: tokens.office, body: { id: ins } }));
+
+  // And now the read side, as the floor sees it.
+  const snapshot = (await call('GET', '/read/snapshot', { token: tokens.floor })).body;
+  for (const list of ['qualityHolds', 'qualityInspections', 'qualityNcrs']) {
+    assert.ok(Array.isArray(snapshot[list]) && snapshot[list].length,
+      `${list} has to reach the screen — the Quality page reads its whole register from it`);
+  }
+  const failed = snapshot.qualityInspections.find((i) => i.result === 'failed');
+  assert.equal(failed.type, 'welding', 'the screen\'s word is type, not kind');
+  assert.equal(failed.acceptanceCriteria, 'ISO 5817 level B');
+  assert.equal(failed.drawingRev, 'C');
+  assert.equal(failed.customerWitness, true);
+  assert.equal(failed.inspector, 'Marko Ilic', 'the result carries whoever recorded it');
+  assert.ok(failed.projectNo, 'an inspection on a jobcard still names its project');
+  // The checklist in the keys the page indexes, not the column names it is stored under.
+  const measured = failed.checklist.find((c) => c.nominal !== null && c.nominal !== undefined);
+  assert.deepEqual(Object.keys(measured).sort(),
+    ['actual', 'item', 'lower', 'nominal', 'note', 'resultItem', 'upper'],
+    'the page walks this array looking for exactly these keys');
+  assert.equal(failed.checklist.find((c) => c.item === 'Root penetration').resultItem, 'fail');
+  assert.ok(failed.activity.some((a) => a.action === 'failed'),
+    'and the history of the record reaches the panel that shows it');
+  step(`Quality over HTTP: ${snapshot.qualityInspections.length} inspections reach the screen with their evidence in the keys it reads`);
+
+  const repeat = snapshot.qualityInspections.find((i) => String(i.id) === String(second));
+  assert.match(repeat.reinspectionOf, /^INS-/, 'the link back is the ref people read, not an id');
+  // An unanswered line arrives as an empty string, which is what the page's dropdown expects for
+  // "no verdict yet" — null there renders as the word null in a select.
+  assert.equal(repeat.checklist.every((c) => c.resultItem === ''), true,
+    'a re-inspection arriving pre-answered is the whole failure the record exists to prevent');
+  assert.equal(repeat.checklist.length, 3);
+  step('Quality over HTTP: the re-inspection carries the same lines with every answer cleared');
+
+  const raised = snapshot.qualityNcrs.find((n) => n.no === ncr.ncr);
+  assert.equal(raised.responsiblePerson, 'Lars Holm', 'the screen\'s word is responsiblePerson');
+  assert.equal(raised.status, 'closed');
+  assert.equal(raised.detectedBy, 'Lars Holm', 'who found it comes from the session, not the form');
+  assert.ok(raised.customer, 'and whose job it is');
+  assert.ok(raised.activity.some((a) => a.note === true), 'the note has to reach the screen');
+  assert.ok(raised.activity.some((a) => a.action === 'close'), 'and so does what was done to it');
+
+  const hold = snapshot.qualityHolds.find((h) => h.no === answered.hold);
+  assert.equal(hold.reference, value(`SELECT ref FROM jobcard WHERE id = ${f.jobcard};`),
+    'a hold has to say which piece of work it is holding');
+  assert.equal(hold.relatedRef, failed.no, 'and which inspection put it there');
+  assert.ok(hold.requiredAction, 'and what has to happen before it comes off');
+  // The one thing that must not be in there: what we pay the merchant on is a commercial term, and
+  // the floor reads this list.
+  assert.equal(/"terms"\s*:/.test(JSON.stringify(snapshot.qualityNcrs)), false);
+  step(`Quality over HTTP: ${snapshot.qualityNcrs.length} NCR(s) and ${snapshot.qualityHolds.length} hold(s), with their notes, history and nothing priced`);
+}
+
 function world() {
   sql(`SET client_min_messages = warning;
        INSERT INTO app_user (email, display_name, role) VALUES
@@ -760,6 +888,7 @@ async function main() {
     await replayOverHttpIsHarmless(tokens, f);
     await aRefusalFromTheDatabaseReachesThePerson(tokens, f);
     await theMovementLogReachesTheScreen(tokens);
+    await theQualityRegisterWorksOverHttp(tokens, f);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
     console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, over real HTTP.`);
   } finally {

@@ -91,7 +91,8 @@ const ALL_TABLES = [
   'equipment_event', 'operation', 'hours_entry', 'item_group', 'location', 'stock_item',
   'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_item', 'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
-  'estimate_line', 'quality_hold', 'inspection', 'ncr', 'document', 'activity_log'
+  'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document',
+  'activity_log'
 ];
 
 // Reference data, shipped by schema.sql rather than written by whoever is using the system. These
@@ -997,15 +998,43 @@ function anInspectionIsEvidenceOrItIsNothing() {
   accepted('one still waiting to be done',
     `INSERT INTO inspection (jobcard_id, kind, inspector, planned_date)
      VALUES (${f.jobcard}, 'visual', 'Inspector', current_date + 3);`);
-  const failed = value(`INSERT INTO inspection (jobcard_id, operation_id, kind, drawing_no, method,
-      inspector, result, actual_date, status, findings)
-    VALUES (${f.jobcard}, ${f.op1}, 'welding', 'BR-4410-A', 'visual + PT', 'Inspector',
-            'failed', current_date, 'done', 'Porosity beyond level C') RETURNING id;`);
+  accepted('one written off as not applicable, with no date and no pretence of one',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, result, status)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', 'not-applicable', 'cancelled');`);
+  const failed = value(`INSERT INTO inspection (jobcard_id, operation, kind, drawing_no, drawing_rev,
+      method, acceptance_criteria, customer_witness, inspector, result, actual_date, status,
+      critical, findings)
+    VALUES (${f.jobcard}, 'Weld seam 3, root pass', 'welding', 'BR-4410', 'C', 'visual + PT',
+            'ISO 5817 level C', true, 'Inspector',
+            'failed', current_date, 'completed', true, 'Porosity beyond level C') RETURNING id;`);
   step('Quality: an inspection with a result has a date it happened on; one still to be done does not pretend to');
+
+  // Passed with observations is the result that says "acceptable, but". With the box empty it says
+  // only "acceptable", and the observation nobody wrote down is the entire value of the category.
+  refused('passed with observations and nothing observed',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date, status)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', 'passed-observations', current_date, 'completed');`,
+    /observations_say_what_was_observed/);
+  accepted('passed with observations, and the observation',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date, status, findings)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', 'passed-observations', current_date, 'completed',
+             'Undercut at the toe, within tolerance, dressed');`);
+
+  // The six the screens actually write. Three of these were refused by the CHECK this replaced, which
+  // is a rule nobody could have obeyed: an inspector moving a request to in-progress got an error.
+  for (const s of ['draft', 'planned', 'requested', 'in-progress', 'completed', 'cancelled']) {
+    accepted(`the status a screen writes: ${s}`,
+      `INSERT INTO inspection (jobcard_id, kind, inspector, status)
+       VALUES (${f.jobcard}, 'visual', 'Inspector', '${s}');`);
+  }
+  refused('a status no screen has a word for',
+    `INSERT INTO inspection (jobcard_id, kind, inspector, status)
+     VALUES (${f.jobcard}, 'visual', 'Inspector', 'nearly');`, /status/);
+  step('Quality: the six inspection statuses are the six the screen writes, and nothing else');
 
   const again = value(`INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date,
       status, reinspection_of, findings)
-    VALUES (${f.jobcard}, 'welding', 'Inspector', 'passed', current_date, 'done', ${failed},
+    VALUES (${f.jobcard}, 'welding', 'Inspector', 'passed', current_date, 'completed', ${failed},
             'Ground out and re-run; PT accepted') RETURNING id;`);
   refused('an inspection that re-inspects itself',
     `UPDATE inspection SET reinspection_of = id WHERE id = ${again};`, /check/i);
@@ -1015,6 +1044,39 @@ function anInspectionIsEvidenceOrItIsNothing() {
   assert.equal(story, 'Porosity beyond level C → Ground out and re-run; PT accepted',
     'the rejected weld and its re-inspection must read as one story');
   step('Quality: a re-inspection points back at the failure it repeats, and cannot point at itself');
+
+  // The checklist is the evidence. Without it a passed final inspection on a pressure vessel is one
+  // word in a database.
+  accepted('a line somebody signed off', `INSERT INTO inspection_check
+    (inspection_id, line_no, item, result) VALUES (${failed}, 1, 'Weld cap profile', 'pass');`);
+  accepted('a measured line, with the band it was measured against', `INSERT INTO inspection_check
+    (inspection_id, line_no, item, nominal, tol_lower, tol_upper, actual)
+    VALUES (${failed}, 2, 'Overall length', 2400.0, -2.0, 2.0, 2401.5);`);
+  accepted('a line nobody has answered yet', `INSERT INTO inspection_check
+    (inspection_id, line_no, item) VALUES (${failed}, 3, 'Surface finish');`);
+  refused('a verdict that is not one of the three',
+    `INSERT INTO inspection_check (inspection_id, line_no, item, result)
+     VALUES (${failed}, 4, 'Something', 'probably');`, /result/);
+  refused('a nominal with no tolerance to judge it by',
+    `INSERT INTO inspection_check (inspection_id, line_no, item, nominal, actual)
+     VALUES (${failed}, 5, 'Bore', 40.0, 40.1);`, /a_nominal_needs_a_tolerance/);
+  refused('a tolerance band upside down, which nothing can fall inside',
+    `INSERT INTO inspection_check (inspection_id, line_no, item, nominal, tol_lower, tol_upper)
+     VALUES (${failed}, 6, 'Bore', 40.0, 0.5, -0.5);`, /tolerance_band_is_the_right_way_up/);
+  refused('a line with no line number of its own',
+    `INSERT INTO inspection_check (inspection_id, line_no, item)
+     VALUES (${failed}, 2, 'Overall length again');`, /line_no|duplicate key/);
+  refused('a check against nothing',
+    `INSERT INTO inspection_check (inspection_id, line_no, item)
+     VALUES (${failed}, 7, '   ');`, /item/);
+  step('Quality: the checklist is the evidence — a line is answered, measured against a real band, or open');
+
+  // Deleting an inspection takes its evidence with it rather than leaving orphan measurements
+  // pointing at a record that no longer exists.
+  sql(`DELETE FROM inspection WHERE id = ${failed};`);
+  assert.equal(value(`SELECT count(*) FROM inspection_check WHERE inspection_id = ${failed};`), '0',
+    'the checklist belongs to its inspection and goes with it');
+  step('Quality: a checklist cannot outlive the inspection it belongs to');
 }
 
 // A lost enquiry with no reason recorded teaches the workshop nothing, and somebody who has asked
@@ -1049,32 +1111,74 @@ function thePipelineRemembersWhyAndRespectsNo() {
 
 function ncrCannotCloseOnNothing() {
   const f = fixture();
-  const n = value(`INSERT INTO ncr (title, project_id, jobcard_id, category, severity, description, responsible, due_on)
+  const n = value(`INSERT INTO ncr (title, project_id, jobcard_id, category, severity, description,
+      responsible, detected_by, due_on)
     VALUES ('Porosity beyond level C', ${f.project}, ${f.jobcard}, 'welding', 'major',
-            'Found on the bracket weld during visual inspection', 'Quality Manager', '2026-12-01') RETURNING ref;`);
+            'Found on the bracket weld during visual inspection', 'Quality Manager',
+            'Aleksandar C.', '2026-12-01') RETURNING ref;`);
   assert.match(n, /^NCR-\d{4}-\d{3}$/);
-  refused('an NCR about nothing', `INSERT INTO ncr (title, category, description, responsible)
-    VALUES ('Floating problem', 'welding', 'Somewhere', 'Quality Manager');`, /ncr_names_something/);
-  refused('closing it with no root cause and no action',
+  refused('an NCR about nothing', `INSERT INTO ncr (title, category, description, responsible, detected_by)
+    VALUES ('Floating problem', 'welding', 'Somewhere', 'Quality Manager', 'Aleksandar C.');`,
+    /ncr_names_something/);
+  // Who found it is not who has to fix it, and a register that cannot say who raised a fault cannot
+  // answer the only question asked after a delivery goes wrong: how long did we know.
+  refused('a fault nobody found',
+    `INSERT INTO ncr (title, project_id, category, severity, description, responsible, detected_by)
+     VALUES ('Anonymous', ${f.project}, 'welding', 'minor', 'Somewhere', 'QM', '  ');`, /detected_by/);
+  refused('a critical fault with no date by which it is answered',
+    `INSERT INTO ncr (title, project_id, category, severity, description, responsible, detected_by)
+     VALUES ('Cracked weld', ${f.project}, 'welding', 'critical', 'Root crack', 'QM', 'Inspector');`,
+    /serious_ncrs_have_a_date/);
+  accepted('a minor one that may sit on the list',
+    `INSERT INTO ncr (title, project_id, category, severity, description, responsible, detected_by)
+     VALUES ('Paint run', ${f.project}, 'surface-coating', 'minor', 'Cosmetic', 'QM', 'Inspector');`);
+  step('Quality: an NCR says who found it, and a serious one says when it must be answered by');
+
+  refused('closing it on nothing at all',
     `UPDATE ncr SET status = 'closed' WHERE ref = '${n}';`, /closed_ncr_says_what_was_done/);
-  refused('closing it with a root cause but no action taken',
-    `UPDATE ncr SET status = 'closed', root_cause = 'Damp filler wire', closed_on = current_date
-     WHERE ref = '${n}';`, /closed_ncr_says_what_was_done/);
+  refused('closing it on verification with no approval behind it',
+    `UPDATE ncr SET status = 'closed', verification_result = 'Re-tested, accepted',
+     closed_on = current_date WHERE ref = '${n}';`, /closed_ncr_says_what_was_done/);
+  refused('closing it on an approval with nothing verified',
+    `UPDATE ncr SET status = 'closed', closure_approval = 'QM-2026-14',
+     closed_on = current_date WHERE ref = '${n}';`, /closed_ncr_says_what_was_done/);
   // Containment is what was done about it immediately — the parts quarantined, the machine stopped.
   // Conflating that with the corrective action is how an NCR gets closed on the containment alone.
   accepted('recording the containment and what happens to the parts',
     `UPDATE ncr SET containment = 'Batch quarantined on the rack; welder stood down from the seam',
-     disposition = 'rework', component = 'Bracket BR-4410', material = 'S355J2 10mm'
-     WHERE ref = '${n}';`);
+     disposition = 'rework', component = 'Bracket BR-4410', material = 'S355J2 10mm',
+     operation = 'Weld seam 3, root pass' WHERE ref = '${n}';`);
   refused('a disposition that means nothing',
     `UPDATE ncr SET disposition = 'probably fine' WHERE ref = '${n}';`, /check/i);
-  step('Quality: containment is recorded separately from the fix, and the parts get one of five real dispositions');
+  // The one disposition that leaves the fault in the delivered work. Somebody signs for it or it is
+  // not recorded.
+  refused('using a non-conforming part as it is, with nobody signing for it',
+    `UPDATE ncr SET disposition = 'use-as-is' WHERE ref = '${n}';`, /use_as_is_is_signed_for/);
+  accepted('using it as it is, with the concession recorded',
+    `UPDATE ncr SET disposition = 'use-as-is', disposition_approval_ref = 'CONC-2026-03'
+     WHERE ref = '${n}';`);
+  accepted('and back to rework once the customer refuses the concession',
+    `UPDATE ncr SET disposition = 'rework', disposition_approval_ref = NULL WHERE ref = '${n}';`);
+  step('Quality: containment is separate from the fix, and using a bad part as it is has to be signed for');
 
-  accepted('closing it with what was found and what was done',
-    `UPDATE ncr SET status = 'closed', root_cause = 'Damp filler wire from an opened spool',
-     corrective_action = 'Spool scrapped; wire now stored in the heated cabinet and logged on issue',
-     closure_approval = 'Quality Manager', closed_on = current_date WHERE ref = '${n}';`);
-  step('Quality: a non-conformance closes only on what was found and what was done about it');
+  // The ten states the screen writes. Four of them had no value in the enum this replaced, and two
+  // more were spelled differently there — so a containment recorded on the floor, and any NCR
+  // reopened after closure, would have been refused by the database.
+  for (const st of ['draft', 'open', 'containment-required', 'under-investigation',
+                    'disposition-required', 'corrective-action', 'waiting-verification',
+                    'rejected', 'reopened']) {
+    accepted(`the status the screen writes: ${st}`,
+      `UPDATE ncr SET status = '${st}' WHERE ref = '${n}';`);
+  }
+  refused('a status no screen has a word for',
+    `UPDATE ncr SET status = 'nearly-done' WHERE ref = '${n}';`, /ncr_status|invalid input/);
+  step('Quality: the ten NCR statuses are the ten the screen writes, and nothing else');
+
+  accepted('closing it on what was verified and who approved it',
+    `UPDATE ncr SET status = 'closed', verification_result = 'Re-tested by PT, accepted to level B',
+     verified_by = 'Quality Manager', corrective_action_ref = 'CAPA-2026-007',
+     closure_approval = 'QM-2026-14', closed_on = current_date WHERE ref = '${n}';`);
+  step('Quality: a non-conformance closes only on verified evidence and a named approval');
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────────────────

@@ -557,7 +557,7 @@ function theFloorDoesTheWork(f) {
      VALUES (${f.jobcard}, ${f.op}, 'Marko Ilic', 6.5);`);
   allowed('a welder recording an inspection', 'varmak_workshop', PEOPLE.welder,
     `INSERT INTO inspection (jobcard_id, kind, inspector, result, actual_date, status)
-     VALUES (${f.jobcard}, 'visual', 'Marko Ilic', 'passed', current_date, 'done');`);
+     VALUES (${f.jobcard}, 'visual', 'Marko Ilic', 'passed', current_date, 'completed');`);
   allowed('a welder recording a pre-use check on a machine', 'varmak_workshop', PEOPLE.welder,
     `INSERT INTO equipment_event (equipment_id, kind, performed_by, result)
      VALUES (${f.equipment}, 'pre-use-check', 'Marko Ilic', 'pass');`);
@@ -640,6 +640,60 @@ function theFloorDoesNotRunTheBusiness(f) {
     `UPDATE quality_hold SET status = 'released', release_authority = 'Lars Holm',
      release_reason = 'Re-run and PT accepted', released_at = now() WHERE ref = '${hold}';`);
   step('The floor: the person who did the weld cannot clear the hold on it — that is the office');
+}
+
+// A welder records what they found. The line between that and running the quality system is drawn in
+// columns, not in tables: the same row holds the verdict — theirs — and the acceptance criteria it was
+// judged against, which are not.
+function theFloorRecordsWhatItFoundAndNothingElse(f) {
+  const open = value(`INSERT INTO inspection (jobcard_id, kind, inspector, planned_date,
+      acceptance_criteria, drawing_no) VALUES (${f.jobcard}, 'welding', 'Marko Ilic', current_date,
+      'ISO 5817 level C', 'BR-4410') RETURNING id;`);
+  allowed('a welder writing a checklist line on an open inspection', 'varmak_workshop', PEOPLE.welder,
+    `INSERT INTO inspection_check (inspection_id, line_no, item, result)
+     VALUES (${open}, 1, 'Weld cap profile', 'pass');`);
+  allowed('a welder recording the verdict', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE inspection SET result = 'failed', findings = 'Porosity beyond level C',
+     actual_date = current_date, status = 'completed' WHERE id = ${open};`);
+  assert.equal(value(`SELECT result FROM inspection WHERE id = ${open};`), 'failed',
+    'the verdict a welder recorded has to actually be on the row');
+
+  denied('a welder moving the standard the work was judged against', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE inspection SET acceptance_criteria = 'Whatever looks alright' WHERE id = ${open};`,
+    /permission denied/);
+  denied('a welder pointing a recorded result at a different drawing', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE inspection SET drawing_no = 'BR-9999' WHERE id = ${open};`, /permission denied/);
+  assert.equal(value(`SELECT acceptance_criteria || ' / ' || drawing_no FROM inspection WHERE id = ${open};`),
+    'ISO 5817 level C / BR-4410');
+  step('Quality: a welder writes the verdict and cannot touch the standard it was measured against');
+
+  // The row is out of reach once it has been decided, and this is row security rather than a column
+  // grant: the welder still holds UPDATE on `result`. An UPDATE matching no row is not an error, so
+  // the assertion is on the value, not on the refusal.
+  allowed('a welder going back to a decided inspection', 'varmak_workshop', PEOPLE.welder,
+    `UPDATE inspection SET result = 'passed', findings = 'On reflection it is fine' WHERE id = ${open};`);
+  assert.equal(value(`SELECT result || ' / ' || findings FROM inspection WHERE id = ${open};`),
+    'failed / Porosity beyond level C',
+    'a failure somebody has signed for cannot be turned into a pass a week later');
+  denied('and cannot add evidence to it afterwards either', 'varmak_workshop', PEOPLE.welder,
+    `INSERT INTO inspection_check (inspection_id, line_no, item, result)
+     VALUES (${open}, 2, 'Added later', 'pass');`, /row-level security/);
+  // A DELETE that row security filters out is not an error either — it deletes nothing and says
+  // nothing, which is why this one is asserted on the count and not on a refusal.
+  allowed('nor clear the evidence that is there', 'varmak_workshop', PEOPLE.welder,
+    `DELETE FROM inspection_check WHERE inspection_id = ${open};`);
+  assert.equal(value(`SELECT count(*) FROM inspection_check WHERE inspection_id = ${open};`), '1',
+    'the checklist behind a signed-for result has to still be there');
+  step('Quality: once a result is signed for, neither it nor its evidence is the floor\'s to revise');
+
+  // And placing a hold directly is not the floor's at all. The one route by which a welder's critical
+  // failure puts a hold on runs as varmak_engine, is tested in test-api.js, and cannot be pointed at
+  // anything but an inspection that is failed and critical right now.
+  denied('a welder holding a job by hand', 'varmak_workshop', PEOPLE.welder,
+    `INSERT INTO quality_hold (scope, jobcard_id, reason, applied_by)
+     VALUES ('jobcard', ${f.jobcard}, 'I think this is wrong', 'Marko Ilic');`,
+    /permission denied|row-level security/);
+  step('Quality: and a hold is never placed by hand from the floor');
 }
 
 function materialLeavesThroughOneDoor(f) {
@@ -907,6 +961,7 @@ function main() {
   sessionsEnd();
   theFloorDoesTheWork(f);
   theFloorDoesNotRunTheBusiness(f);
+  theFloorRecordsWhatItFoundAndNothingElse(f);
   materialLeavesThroughOneDoor(f);
   theSessionCannotLieAboutWho();
   peopleAreMadeByAnAdmin();

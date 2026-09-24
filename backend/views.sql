@@ -88,6 +88,25 @@ LANGUAGE sql STABLE AS $$
   WHERE v.equipment_id = p_equipment_id AND v.kind::text = ANY (p_kinds);
 $$;
 
+-- What happened to a quality record, and the notes written on it, as one list.
+--
+-- Both come out of activity_log, and the notes are in there rather than in a notes column on purpose:
+-- a quality note somebody can quietly edit afterwards is worth less than no note at all, and that
+-- table is append-only by trigger. A note is the row whose action is 'note', which is what lets the
+-- screen tell the two apart while they live in one place.
+CREATE FUNCTION quality_activity_of(p_entity text, p_entity_id bigint) RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'timestamp', a.happened_at, 'action', a.action, 'user', a.actor,
+      -- `reason` is the screen's word for the detail beside an entry, and `text` is what it reads a
+      -- note's body from. One column, under both names, because a note rendered in the activity list
+      -- and the same note in the notes panel are the same row.
+      'reason', a.detail, 'text', a.detail, 'author', a.actor,
+      'date', a.happened_at::date, 'note', a.action = 'note'
+    ) ORDER BY a.happened_at DESC, a.id DESC), '[]'::jsonb)
+  FROM activity_log a WHERE a.entity = p_entity AND a.entity_id = p_entity_id;
+$$;
+
 CREATE FUNCTION workspace_snapshot() RETURNS jsonb
 LANGUAGE sql STABLE AS $$
   SELECT jsonb_build_object(
@@ -214,6 +233,82 @@ LANGUAGE sql STABLE AS $$
         'hours', h.hours, 'note', h.note
       ) ORDER BY h.worked_on DESC, h.id DESC) FROM hours_entry h), '[]'::jsonb),
 
+    -- ── Quality ────────────────────────────────────────────────────────────────────────────
+    --
+    -- Three lists the snapshot did not carry at all, which meant the one screen whose job is to stop
+    -- work leaving the building was reading its whole register out of the browser's own storage. The
+    -- hold gates in the database were already enforcing against `quality_hold`; the screen showing
+    -- the holds was looking somewhere else entirely.
+
+    -- What is being held right now, and why. `reference` is the ref of whichever thing the hold names
+    -- — the screen shows one column and a scope beside it, so the two are worked out from the same
+    -- row rather than trusted to agree.
+    'qualityHolds', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', h.id::text, 'no', h.ref, 'scope', h.scope, 'status', h.status,
+        'reference', coalesce((SELECT j.ref FROM jobcard j WHERE j.id = h.jobcard_id),
+                              (SELECT p.ref FROM project p WHERE p.id = h.project_id)),
+        'projectNo', (SELECT p.ref FROM project p WHERE p.id = coalesce(h.project_id,
+                       (SELECT j.project_id FROM jobcard j WHERE j.id = h.jobcard_id))),
+        'reason', h.reason, 'severity', h.severity, 'requiredAction', h.required_action,
+        'relatedRef', h.related_ref, 'appliedBy', h.applied_by, 'appliedDate', h.applied_at,
+        'releaseAuthority', h.release_authority, 'releaseReason', h.release_reason,
+        'releaseDate', h.released_at,
+        'activity', quality_activity_of('quality_hold', h.id)
+      ) ORDER BY h.applied_at DESC, h.id DESC) FROM quality_hold h), '[]'::jsonb),
+
+    -- The inspections. `type` rather than `kind`, because that is the word on the screen and on the
+    -- filter above it; the column is named the way the rest of this schema names a kind of thing, and
+    -- one of the two had to give.
+    'qualityInspections', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', i.id::text, 'no', i.ref, 'type', i.kind, 'status', i.status, 'result', i.result,
+        'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = i.jobcard_id),
+        'projectNo', (SELECT p.ref FROM project p WHERE p.id = coalesce(i.project_id,
+                       (SELECT j.project_id FROM jobcard j WHERE j.id = i.jobcard_id))),
+        'operation', i.operation, 'component', i.component,
+        'drawingNo', i.drawing_no, 'drawingRev', i.drawing_rev, 'method', i.method,
+        'acceptanceCriteria', i.acceptance_criteria, 'customerWitness', i.customer_witness,
+        'materialTraceabilityOk', i.material_traceability_ok, 'critical', i.critical,
+        'plannedDate', i.planned_date, 'actualDate', i.actual_date, 'inspector', i.inspector,
+        'findings', i.findings, 'notes', i.notes,
+        'reinspectionOf', (SELECT o.ref FROM inspection o WHERE o.id = i.reinspection_of),
+        -- The evidence, in the shape the screen indexes it in: `lower` and `upper` rather than the
+        -- column names, and `resultItem` rather than `result`, because the page walks this array
+        -- looking for exactly those keys and a nominal with no band beside it renders as a verdict of
+        -- "N/A" on a line nobody measured.
+        'checklist', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'item', c.item, 'resultItem', coalesce(c.result, ''),
+            'nominal', c.nominal, 'lower', c.tol_lower, 'upper', c.tol_upper,
+            'actual', c.actual, 'note', c.note
+          ) ORDER BY c.line_no)
+          FROM inspection_check c WHERE c.inspection_id = i.id), '[]'::jsonb),
+        'activity', quality_activity_of('inspection', i.id)
+      ) ORDER BY i.id DESC) FROM inspection i), '[]'::jsonb),
+
+    -- The non-conformances. `responsiblePerson` and `dueDate` are the screen's names for `responsible`
+    -- and `due_on`; the supplier arrives as a name because that is what the register shows.
+    'qualityNcrs', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', n.id::text, 'no', n.ref, 'title', n.title, 'category', n.category,
+        'severity', n.severity, 'status', n.status, 'description', n.description,
+        'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = n.jobcard_id),
+        'projectNo', (SELECT p.ref FROM project p WHERE p.id = coalesce(n.project_id,
+                       (SELECT j.project_id FROM jobcard j WHERE j.id = n.jobcard_id))),
+        'customer', (SELECT c.name FROM customer c JOIN project p ON p.customer_id = c.id
+                      WHERE p.id = coalesce(n.project_id,
+                        (SELECT j.project_id FROM jobcard j WHERE j.id = n.jobcard_id))),
+        'responsiblePerson', n.responsible, 'dueDate', n.due_on,
+        'detectedBy', n.detected_by, 'detectionDate', n.detected_on,
+        'operation', n.operation, 'component', n.component, 'material', n.material,
+        'supplier', (SELECT s.name FROM supplier s WHERE s.id = n.supplier_id),
+        'supplierId', n.supplier_id::text,
+        'containment', n.containment, 'disposition', n.disposition,
+        'dispositionApprovalRef', n.disposition_approval_ref,
+        'correctiveActionRef', n.corrective_action_ref,
+        'verificationResult', n.verification_result, 'verifiedBy', n.verified_by,
+        'closureApproval', n.closure_approval, 'closedOn', n.closed_on,
+        'rootCause', n.root_cause, 'correctiveAction', n.corrective_action, 'notes', n.notes,
+        'activity', quality_activity_of('ncr', n.id)
+      ) ORDER BY n.id DESC) FROM ncr n), '[]'::jsonb),
+
     'inventory', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', i.id::text, 'code', i.code, 'itemNo', i.code, 'description', i.description,
         'unit', i.unit, 'baseUnit', i.base_unit, 'sizePerUnit', i.size_per_unit,
@@ -296,11 +391,12 @@ $$;
 
 REVOKE ALL ON FUNCTION operations_of(bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION equipment_events_of(bigint, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION quality_activity_of(text, bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION operations_of(bigint), equipment_events_of(bigint, text[]),
-  workspace_snapshot()
+  quality_activity_of(text, bigint), workspace_snapshot()
 TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;
 

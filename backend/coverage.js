@@ -100,8 +100,23 @@ const SAME_THING = {
   // cannot say: a customer's `type` is direct/reseller/oem/public, a document's is
   // Certificate/Drawing/Report. Written per collection rather than picked between, because picking
   // would mean reporting one of them wrongly for ever.
-  type: { customers: 'customer_type', documents: 'kind' },
-  name: { documents: 'title' }
+  type: { customers: 'customer_type', documents: 'kind',
+          // An inspection's type is what kind of check it is — visual, dimensional, pressure — which
+          // is `kind`, the word this schema uses for the kind of any thing. The screen's word won on
+          // the wire (the snapshot sends `type`); the column keeps the schema's.
+          qualityInspections: 'kind' },
+  name: { documents: 'title' },
+
+  // The quality register, and the fourth time this meter has overstated the work by not knowing a
+  // column's own name. Five of the seven fields it reported missing across inspections and NCRs were
+  // renames, and two of the five had had a column since before this pass started. Checked one by one
+  // against the column list in schema.sql.
+  responsiblePerson: { qualityNcrs: 'responsible' },
+  dueDate: { qualityNcrs: 'due_on' },
+  detectionDate: { qualityNcrs: 'detected_on' },
+  // Not a rename: the inspection screen's `correctiveActionRef` is read off an NCR and is on the
+  // inspection record only because the demo data copies it there. It is a join, below.
+  requiredAction: { qualityHolds: 'required_action' }
 };
 
 // Deliberately NOT mapped, having looked at what they hold:
@@ -127,13 +142,22 @@ const A_JOIN = new Set([
   'assignedJobcard',
   // A timestamp derived from the newest event against the machine. Storing it is storing an answer that
   // has to be kept in step with the rows it is computed from, which is how a figure goes stale.
-  'lastActivity'
+  'lastActivity',
+  // The corrective action an inspection's failure was answered by. It belongs to the NCR raised about
+  // that failure — ncr.corrective_action_ref — and the inspection reaches it through `ncrRef`. A copy
+  // on the inspection is a copy that can disagree with the NCR it names.
+  'correctiveActionRef'
 ]);
 
 // Fields holding a list. These want a child table, not a column, for the reason every other list in
 // this schema already has one: a JSON array cannot have a foreign key or a constraint on its rows.
 const A_CHILD_TABLE = new Set([
   'workers', 'machines', 'bom', 'contacts', 'items', 'documents', 'subgroups', 'activity',
+  // The inspection checklist: a line, a verdict, and for a measured line a nominal, a tolerance band
+  // and a reading. `inspection_check` holds it, one row per line, with the constraints a JSON array
+  // could not have — a nominal with no band to judge it by is refused there, and would be a silently
+  // unjudgeable line here.
+  'checklist',
   'operations', 'materials', 'attachments', 'lines', 'events', 'history', 'checks', 'readings',
   // Lists whose child table already exists and is already pointing the right way: jobcard.project_id,
   // hours_entry.jobcard_id, inspection.jobcard_id. They were counted as missing columns, which is
@@ -275,7 +299,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 250, needsColumn: 45 };
+  const BASELINE = { stored: 264, needsColumn: 32 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);
