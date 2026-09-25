@@ -2888,6 +2888,10 @@ function scaleDays(days,factor){return Math.max(0.5,Math.round(days*factor*2)/2)
   // The estimating half, and the two other collections this screen writes. Each returns the shape the
   // page already checks, so the refusal shows where the page already shows refusals.
   const NOT_BUILT=['upsertEstimation','updateEstimation','deleteEstimation','upsertDocument'];
+  // The document register IS on the database; filing one from this screen's own panel is what is not
+  // built, because that needs this bridge's own call to save_document. So the refusal names where it
+  // can be done rather than implying it cannot be done at all.
+  const INSTEAD={upsertDocument:'File it in the Documents register and link it to this record there.'};
 
   const original={};
   Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
@@ -2896,7 +2900,7 @@ function scaleDays(days,factor){return Math.max(0.5,Math.round(days*factor*2)/2)
     WorkshopData[name]=function(){
       if(!onServer())return original[name].apply(null,arguments);
       if(SENT[name])return SENT[name].apply(null,arguments);
-      return {error:words('srv_not_built')};
+      return {error:words('srv_not_built')+(INSTEAD[name]?' '+INSTEAD[name]:'')};
     };
   });
 

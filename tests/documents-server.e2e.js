@@ -32,7 +32,11 @@ const { ensureUp } = require('../backend/pg');
 const HOST = process.env.PGHOST || '/tmp';
 const PORT = process.env.PGPORT || '5433';
 const USER = process.env.PGUSER || 'postgres';
-const DB = 'varmak_documents_test';
+// Named from the environment when the mutation harness is driving, so a damaged copy of one backend file
+// is actually the one this suite builds against. A suite that ignores that override silently builds the real
+// files and reports every mutation as uncaught — and a run where everything is MISSED reads as a row of
+// untested rules when it is a harness fault. That happened once already, to all five views.sql mutations.
+const DB = process.env.VARMAK_TEST_DB || 'varmak_documents_test';
 const HTTP_PORT = Number(process.env.VARMAK_DOCUMENTS_PORT || 8957);
 
 const conn = () => ['-h', HOST, '-p', PORT, '-U', USER, '-d', DB, '-v', 'ON_ERROR_STOP=1', '-qtAX'];
@@ -71,7 +75,9 @@ function buildDatabase() {
     '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   for (const name of ['schema', 'auth', 'api', 'views']) {
-    execFileSync('psql', [...conn(), '-f', path.join(__dirname, '..', 'backend', `${name}.sql`)],
+    const file = process.env[`VARMAK_${name.toUpperCase()}`]
+      || path.join(__dirname, '..', 'backend', `${name}.sql`);
+    execFileSync('psql', [...conn(), '-f', file],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   }
 }
@@ -312,6 +318,56 @@ async function main() {
     assert.equal(value(`SELECT revision || '|' || category FROM document WHERE id = ${loose};`),
       '2|Procedures', 'and linking it kept its revision and its category');
     step('Documents: a document is filed unlinked, then linked, without losing what was on it');
+
+    // ── Three rules a mutation found nothing testing ────────────────────────────────────────
+    //
+    // Each of these exists in api.sql and each survived being broken, because nothing above asked.
+    //
+    // A module the screen does not have. The dropdown only offers the eight, so nothing on screen can
+    // send a ninth — but the RPC is reachable by name, and a document filed under a module nothing
+    // resolves is a document nobody will ever find by looking where it should be.
+    const nonsense = await page.evaluate(async () => {
+      const answer = await WorkshopApi.call('link_document',
+        { id: 1, module: 'Accounting', record: 'X-1' });
+      return answer.refused || (answer.ok ? 'ALLOWED' : 'refused without saying why');
+    });
+    assert.match(nonsense, /there is no module called Accounting/i,
+      `a module nothing resolves has to be refused by name, and said: ${nonsense}`);
+
+    // A document superseding itself. The screen never sends `by_id`, so this is only reachable by name
+    // too — and a record whose replacement is itself says a revision was replaced by the revision it is.
+    const itself = await page.evaluate(async (id) => {
+      const answer = await WorkshopApi.call('supersede_document', { id: Number(id), by_id: Number(id) });
+      return answer.refused || (answer.ok ? 'ALLOWED' : 'refused without saying why');
+    }, loose);
+    assert.match(itself, /cannot supersede itself/i,
+      `a document cannot be its own replacement, and the answer was: ${itself}`);
+    assert.equal(value(`SELECT status FROM document WHERE id = ${loose};`), 'approved',
+      'and the refusal left it exactly as it was');
+
+    // And the author, which no screen has a field for. Asked by name rather than through the form, and for
+    // a reason worth writing down: the screen sends back whatever author it read, so this rule is not
+    // reachable from it at all — a mutation that removed the rule changed nothing the screen could see,
+    // and the rule read as tested while being exercised by nothing. `author: null` is what every other
+    // caller sends, and it has to mean "leave whoever it was" rather than "nobody".
+    sql(`SET ROLE varmak_admin; SET app.user_id = '1';
+      UPDATE document SET author = 'Marcus Lind' WHERE id = ${loose};`);
+    // The link is sent as it stands, because save_document takes the whole record: leaving the reference out
+    // would unlink it, which is correct behaviour and not what is being asked about here.
+    const kept = await page.evaluate(async ({ id, ref }) => {
+      const answer = await WorkshopApi.call('save_document', {
+        id: Number(id), title: 'Welding Procedure WPS-12', kind: 'Document',
+        module: 'Purchasing', record: ref, category: 'Welding procedures',
+        status: 'approved', expires_on: null, revision: '2', author: null, notes: null
+      });
+      return answer.ok ? 'saved' : (answer.refused || 'refused without saying why');
+    }, { id: loose, ref: w.orderRef });
+    assert.equal(kept, 'saved', `the correction was refused: ${kept}`);
+    assert.equal(value(`SELECT coalesce(category,'-') FROM document WHERE id = ${loose};`),
+      'Welding procedures', 'the correction has to have landed, or the next line proves nothing');
+    assert.equal(value(`SELECT author FROM document WHERE id = ${loose};`), 'Marcus Lind',
+      'a save with no author named must leave the draughtsman\'s name on the drawing');
+    step('Documents: a module nothing resolves, a self-supersede, and a lost author are all refused');
 
     // ── The file itself ─────────────────────────────────────────────────────────────────────
     const noFile = await page.evaluate(async (id) =>

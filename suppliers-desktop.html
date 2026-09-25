@@ -598,11 +598,16 @@ window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();}
     async listSuppliers(){return (WorkshopData.get().suppliers||[]);}
   };
 
-  // A purchase order and a document are both this screen's to raise and neither has a workflow yet —
-  // purchase_order is a table with no save function, and a document needs somewhere for the file to
-  // live. They refuse out loud rather than writing into browser storage on a page that is otherwise
-  // reading from the database, which is the outcome that looks like it worked and is gone on reload.
+  // Four things this screen offers that it cannot do against the database, refusing out loud rather than
+  // writing into browser storage on a page otherwise reading from the database — that is the outcome which
+  // looks like it worked and is gone on reload.
+  //
+  // `upsertDocument` is here for a different reason from the other three. The document register IS on the
+  // database now, and a certificate can be filed there and linked to this merchant; what is not built is
+  // filing one from THIS panel, which would need this screen's own bridge to save_document. So the refusal
+  // names where to do it instead of implying it cannot be done at all.
   const NOT_BUILT=['upsertPurchaseOrder','upsertDocument','createInventoryItem','upsertSupplierQuality'];
+  const INSTEAD={upsertDocument:'File it in the Documents register and link it to this supplier there.'};
 
   const original={};
   Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
@@ -611,7 +616,7 @@ window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();}
     WorkshopData[name]=function(){
       if(!onServer())return original[name].apply(null,arguments);
       if(SENT[name])return SENT[name].apply(null,arguments);
-      return {error:'That is not on the workshop database yet.'};
+      return {error:'That is not on the workshop database yet.'+(INSTEAD[name]?' '+INSTEAD[name]:'')};
     };
   });
 

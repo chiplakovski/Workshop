@@ -197,25 +197,36 @@ access.
 ## Status
 The backend exists and is tested: schema and safety rules, sign-in and roles, the workflows, reading
 it back, and backups verified by restoring one. Step 5 of [`BACKEND.md`](BACKEND.md) — pointing the
-pages at it — is done but for one screen: **fifteen of the seventeen are on the database**, the login
-page is the sixteenth and needs nothing, and the one left is **Documents**, which cannot be wired until
-there is somewhere for a file to live. There is still a measured gap in how much of what the pages
-collect the database can hold (`npm run coverage` — 76% today), and the remainder is concentrated on
-estimating and purchasing. It is **not** concentrated on the sales pipeline, which is what this document
-said until the pipeline was wired and all twelve of the fields reported missing there turned out to be
-columns that already existed under longer names.
+pages at it — is **done: every screen is on the database**, the login page needing nothing of its own.
 
-Six collections have no table at all and are named as such in `backend/coverage.js`, because a meter
-that is silent about a module reads as though it covered it: a weld log, the NDT against those welds, the
-welding procedures, which welder is qualified to which, marketing campaigns, and the outward prospect
-sweep. The four welding ones are the next real schema work — for a fabrication shop they are what a
-delivery is signed off against.
+Documents was the last, and the thing it had been waiting for was the wrong thing. File storage was never
+what mattered: what a document register is for is knowing that a material certificate runs out on the 12th,
+that revision B supersedes revision A, and which job the procedure on file belongs to — all metadata, none
+of it needing the scan to exist. The register is wired; the file half of each row stays empty until there
+is object storage, and the screen says which is which rather than offering a download that leads nowhere.
+
+There is still a measured gap in how much of what the pages collect the database can hold
+(`npm run coverage` — 77% today), and the remainder is concentrated on **invoicing**, estimating and
+purchasing. It is **not** concentrated on the sales pipeline, which is what this document said until the
+pipeline was wired and all twelve of the fields reported missing there turned out to be columns that
+already existed under longer names.
+
+**Twenty-one collections are not measured against a table, and every one is named with its reason** in
+`backend/coverage.js`, because a meter silent about a module reads as though it covered it. Fourteen have no
+table; the other seven are a rollup, a grouping, a second copy of something, or this browser's own
+bookkeeping. Twenty of the twenty-one were found by fixing the meter rather than by reading the app — first
+eleven, then nine more when the check stopped skipping collections the demonstration fixture had left empty.
+
+The largest gap is **`invoices`**: two screens read it, there is no table, and it is the money going out of
+the door. Next are the four welding registers — a weld log, the NDT against those welds, the procedures, and
+which welder is qualified to which — which for a fabrication shop are what a delivery is signed off against.
 
 There is also a deployment path now: [`DEPLOY.md`](DEPLOY.md) installs the four SQL files onto a
 hosted PostgreSQL as a non-superuser, over verified TLS, with real passwords — and
 [`backend/test-deploy.js`](backend/test-deploy.js) proves it against a Postgres shaped like a hosted
-one. Secure file storage still does not exist, so photographs and attachments have nowhere real to
-live, which is why Documents is one of the four.
+one. Secure file storage still does not exist, so photographs and attachments have nowhere real to live —
+which is a smaller thing than it was once thought to be: it costs the bytes of a file and nothing else. The
+document register, the expiry dates and the revisions are all on the database without it.
 
 One thing wiring Customers settled, which is worth knowing before the next screen: the claim in
 `BACKEND.md` that the pages would not change was wrong about shapes as well as about writes. The

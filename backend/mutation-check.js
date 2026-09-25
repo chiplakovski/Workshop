@@ -33,6 +33,14 @@ const FILES = {
   // Named so a mutation can say `suite: 'restore'`, and so this run is thrown away if the restore
   // suite itself is edited underneath it. Nothing damages it.
   restore: { path: path.join(__dirname, 'test-restore.js'), suite: 'test-restore.js', env: 'VARMAK_RESTORE' },
+  // Named so a mutation can say `suite: 'documents'`. The document register's rules are asserted through
+  // its own screen — what is expiring, what supersedes what, and a welder reading it without losing the
+  // whole snapshot — and none of that is in test-server.js. The path and env are unused for this entry: a
+  // mutation names it only to redirect which suite runs.
+  documents: {
+    path: path.join(__dirname, 'schema.sql'),
+    suite: path.join('..', 'tests', 'documents-server.e2e.js'), env: 'VARMAK_SCHEMA'
+  },
 
   // The shop tablet's half of the offline queue is not SQL either, and the rules in it are as easy to
   // get wrong: which id goes with a retry, whose queue may be flushed, whether a dead signal counts as
@@ -349,16 +357,121 @@ const MUTATIONS = [
     to: '  CONSTRAINT closed_ncr_says_what_was_done CHECK (true)'
   },
   {
+    // The third time a list in the snapshot has closed the door on the floor. Replaced with the inline read
+    // it used to be: a welder holds nothing on purchase_order, so one certificate filed against one order
+    // refuses them the WHOLE workshop, on every screen, failing closed so it reads as a permissions success.
+    what: 'the document list reads an office-only table and refuses the floor the whole snapshot',
+    from: "        'record', document_record_label(d.entity, d.entity_id),",
+    to: "        'record', (SELECT x.ref FROM purchase_order x WHERE x.id = d.entity_id),",
+    file: 'views',
+    suite: 'documents'
+  },
+  {
+    // And the other half of it: the function running as the caller rather than the engine is the same
+    // failure with a longer path to it.
+    what: 'the document label lookup stops running as the engine',
+    from: 'CREATE FUNCTION document_record_label(p_entity text, p_entity_id bigint) RETURNS text\nLANGUAGE sql STABLE SECURITY DEFINER AS $$',
+    to: 'CREATE FUNCTION document_record_label(p_entity text, p_entity_id bigint) RETURNS text\nLANGUAGE sql STABLE AS $$',
+    file: 'views',
+    suite: 'documents'
+  },
+  {
+    what: 'a document may be filed against a reference nothing answers to',
+    from: `  IF entity_id IS NULL THEN
+    RAISE EXCEPTION 'nothing in % is called %', p_module, said USING ERRCODE = 'foreign_key_violation';
+  END IF;`,
+    to: '  NULL;',
+    file: 'api',
+    suite: 'documents'
+  },
+  {
+    what: 'a document register accepts a module that is not a module',
+    from: `    ELSE
+      RAISE EXCEPTION 'there is no module called %', p_module USING ERRCODE = 'check_violation';
+  END CASE;`,
+    to: `    ELSE
+      NULL;
+  END CASE;`,
+    file: 'api',
+    suite: 'documents'
+  },
+  {
+    what: 'a document can be superseded twice, losing what replaced it the first time',
+    from: `  IF old.status = 'superseded' THEN
+    RAISE EXCEPTION '% is already superseded', old.title USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: '  NULL;',
+    file: 'api',
+    suite: 'documents'
+  },
+  {
+    what: 'a document can supersede itself',
+    from: `  IF p_by_id = p_id THEN
+    RAISE EXCEPTION 'a document cannot supersede itself' USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: '  NULL;',
+    file: 'api',
+    suite: 'documents'
+  },
+  {
+    // The author is whoever filed it unless somebody says otherwise. Written this way because the form
+    // has no author field at all: a save that sent an empty one would take the name off a drawing every
+    // time somebody corrected its category.
+    what: 'correcting a document clears whoever was named as its author',
+    from: '      author = coalesce(nullif(btrim(coalesce(p_author,\'\')), \'\'), author),',
+    to: '      author = nullif(btrim(coalesce(p_author,\'\')), \'\'),',
+    file: 'api',
+    suite: 'documents'
+  },
+  {
+    // Re-anchored when the register was wired. The column stopped being NOT NULL — a document filed
+    // against nothing yet is a state the screen has a word for — and the list of tables moved inside the
+    // nullable check. Anchored on the list itself, which is the rule, rather than on the line.
     what: 'a document may be filed against a table that does not exist',
-    from: `  entity      text NOT NULL CHECK (entity IN
+    from: `  entity      text CHECK (entity IS NULL OR entity IN
                 ('customer','project','jobcard','operation','equipment','stock_item',
                  'quality_hold','inspection','ncr','supplier','purchase_order','estimate','tender')),`,
-    to: '  entity      text NOT NULL,'
+    to: '  entity      text,'
   },
   {
     what: 'two documents may claim one file in storage',
-    from: 'storage_key text NOT NULL UNIQUE CHECK (btrim(storage_key) <> \'\'),',
-    to: 'storage_key text NOT NULL CHECK (btrim(storage_key) <> \'\'),'
+    from: "  storage_key text UNIQUE CHECK (storage_key IS NULL OR btrim(storage_key) <> ''),",
+    to: "  storage_key text CHECK (storage_key IS NULL OR btrim(storage_key) <> ''),"
+  },
+  {
+    // The two halves that are all-or-nothing. Both were NOT NULL before the register was wired, which is
+    // the whole reason the table went unused: there is no object storage, so no entry could be made at all.
+    what: 'half a link — a table with no record, or a record with no table',
+    from: '  CONSTRAINT a_link_names_both_halves CHECK ((entity IS NULL) = (entity_id IS NULL)),',
+    to: '  CONSTRAINT a_link_names_both_halves CHECK (true),'
+  },
+  {
+    what: 'a filename with nowhere to be stored, or a stored file nothing can name',
+    from: '  CONSTRAINT a_stored_file_has_a_key CHECK ((storage_key IS NULL) = (filename IS NULL)),',
+    to: '  CONSTRAINT a_stored_file_has_a_key CHECK (true),'
+  },
+  {
+    // Anchored with the line below it, because `title text NOT NULL CHECK (btrim(title) <> ''),` appears
+    // character for character in three tables and String.replace takes the first.
+    what: 'a document nobody can find by name',
+    from: `  title       text NOT NULL CHECK (btrim(title) <> ''),
+  kind        text NOT NULL CHECK (kind IN`,
+    to: `  title       text,
+  kind        text NOT NULL CHECK (kind IN`
+  },
+  {
+    what: 'a kind of document no screen offers',
+    from: `  kind        text NOT NULL CHECK (kind IN
+                ('Document', 'Certificate', 'Drawing', 'Report', 'Template', 'Image')),`,
+    to: '  kind        text NOT NULL,'
+  },
+  {
+    // A template does not expire. The rule is small and the reason it is here is that an expiry on a
+    // template is a review date nobody will ever act on, sitting in the list of things running out.
+    what: 'a template can be given an expiry date',
+    from: `  CONSTRAINT only_a_dated_document_expires CHECK (
+    expires_on IS NULL OR kind IN ('Certificate', 'Drawing', 'Report', 'Document'))`,
+    to: '  CONSTRAINT only_a_dated_document_expires CHECK (true)'
   },
   {
     // The whole of the decision to keep certification possible later is that these fields exist.
@@ -476,9 +589,13 @@ const MUTATIONS = [
     to: "  status        text NOT NULL DEFAULT 'available',"
   },
   {
-    what: 'a document may be in any state at all',
-    from: "  status      text NOT NULL DEFAULT 'current' CHECK (status IN ('draft','current','superseded','expired')),",
-    to: "  status      text NOT NULL DEFAULT 'current',"
+    // Re-anchored: the states are an enum now rather than a CHECK, and two of the four words changed. The
+    // ones that left are the point — 'current' became 'valid' because that is the screen's word, and
+    // 'expired' left altogether because it is an answer to what the date is, worked out on every read. A
+    // register whose column says "expired" is a register that was right one morning.
+    what: 'a document may be in any state at all, including the two that are really dates',
+    from: "CREATE TYPE document_status AS ENUM ('draft', 'valid', 'approved', 'superseded');",
+    to: "CREATE DOMAIN document_status AS text;"
   },
   {
     // Re-anchored: the rule gained 'not-applicable' when that result was added to the enum, because an
@@ -2380,7 +2497,34 @@ function main() {
       missed.push(mutation.what);
       return;
     }
-    const damaged = edits.reduce((text, e) => text.replace(e.from, e.to), original);
+    // An anchor that matches in more than one place is as bad as one that matches nowhere, and quieter.
+    // String.replace takes the FIRST match, so the mutation damages whichever rule happens to come first
+    // in the file and reports its verdict under the name of the one it meant. Three tables carry the line
+    // `title text NOT NULL CHECK (btrim(title) <> ''),` character for character — lead, opportunity and
+    // document — so a mutation written for the document register was breaking a lead's title instead and
+    // reporting MISSED, which read as a rule nobody tests. It is neither: it is an anchor pointing at two
+    // things at once.
+    const ambiguous = edits.filter((e) => original.split(e.from).length - 1 > 1);
+    if (ambiguous.length) {
+      console.log(`?    ${mutation.what} — this anchor matches `
+        + `${original.split(ambiguous[0].from).length - 1} places in ${which}.sql, so it edits whichever `
+        + 'comes first rather than the one it names');
+      missed.push(mutation.what);
+      return;
+    }
+    // A FUNCTION as the replacement, not the string. String.replace treats `$` in a replacement string as
+    // a substitution pattern — `$$` means one literal `$`, `$&` means the whole match — so any mutation
+    // whose replacement holds a dollar sign was quietly producing something other than what it says.
+    //
+    // Six mutations do, and five of them were written long before this was noticed: the two that turn
+    // is_admin() and may_see_money() back to answering NULL, the two on the backup script, and one on the
+    // roles file. Every one of them names `$$`, which is how PL/pgSQL quotes a function body — so the
+    // mutant was `AS $` instead of `AS $$`, and the suite failed on a SYNTAX ERROR while the harness
+    // recorded it as the rule being caught. Four of the six are about money reaching the shop floor or
+    // password hashes leaving the building, and all four have been reading as tested for weeks.
+    //
+    // A function replacement takes no patterns at all, so the text goes in as written.
+    const damaged = edits.reduce((text, e) => text.replace(e.from, () => e.to), original);
     const result = runSuiteAgainst(damaged, which, index, mutation.suite);
     if (result.caught) {
       console.log(`caught   ${mutation.what}`);

@@ -4,8 +4,11 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4d, which is where this document actually ends. Everything above it is the state of a
-prototype with no backend; §4d is where it stands now.
+**HEAD:** see §4f, which is where this document actually ends. Everything above it is the state of a
+prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
+in; §4f is where it stands now. Sections 4b to 4e are the passes in between, in order, and each says what
+was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
+one more list nobody checks.
 **Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
 
 ---
@@ -489,6 +492,111 @@ had no price line anyway. Third: **a list nobody checks is already wrong.** The 
 pages had two entries while twelve were wired, the coverage meter's map was missing eleven collections,
 and `syncSupplier` enumerated the fields to save and had gone stale. All three are now asserted against
 the thing they are supposed to agree with.
+
+## 4f. Seventeen of seventeen — 25 September 2026
+
+**Every screen is on the database.** Documents was the last, and the thing it had been waiting for was the
+wrong thing. File storage was never what mattered: the part of a document register that earns its keep is
+knowing that the material certificate for heat H240516 runs out on the 12th, that revision B supersedes
+revision A, and which job the welding procedure on file belongs to. All metadata, none of it needing the
+scan to exist — and while it sat in a browser, the answer to "which certificates expire this month" lived
+on one person's laptop.
+
+The register is wired. The file half of each row is empty and will stay empty until there is object
+storage, and the screen says which is which at the point somebody attaches a file, rather than leaving
+them to find out from a download button that does nothing.
+
+**Two columns were NOT NULL and that is the whole reason the table went unused for four passes.**
+`storage_key` had nothing to hold, so no register entry could be made at all; and `entity`/`entity_id`
+were required while the screen has an explicit Unlinked state and a Link to Record action. Both halves are
+optional now and each is all-or-nothing: half a file is a download button leading nowhere, half a link
+reads as though it points somewhere. **Look for this shape on any table that still looks unusable** — the
+blocker may be a constraint written for a system that does not exist yet.
+
+**The bug class that took most of this session, and it was one bug wearing three faces.**
+
+Every screen's badge — the line that says who is reading it — had a person's name written into the markup,
+and six of them said the reader was an Admin. Every write those pages make is attributed by the server to
+the real session, so the screen said one person and the database recorded another. A welder opening
+Quality read "Aleksandar · Admin". It had been fixed three times before, once per page, and eleven pages
+still had it. It is one painter now, in `workshop-ui.js`, into elements the markup marks for it.
+
+The same three names were the options in every dropdown that asks *who* — Responsible on a jobcard, Owner
+on a lead, Estimator on a quote, Worker on a step, the workers table's job titles. At Varmak on day one
+those controls offered three strangers and none of the staff. The snapshot carries `people` now, narrowed
+by the row policy on `app_user`: the office reads the whole list, a welder reads their own row.
+
+And the same three names were the answer to "who did this" — sixty-eight literals across eight pages and
+thirty-three fallbacks inside `workshop-data.js`, writing one name into a history line, a note's author, a
+`createdBy`, a `detectedBy`, the name on a stock movement. `currentUser()` is defined once, beside the
+badge painter, because both answer the same question from the same field.
+
+**Two screens learned to refuse rather than record nobody, and a test that had been right for months
+found the second within a minute.** The desk hours screen reads its badge back as the worker — deliberately,
+because the server takes the worker from the session and ignores any name sent with it, so the badge *is*
+the field. The name used to be written into the page, so it could not be missing. `jobcards-hours-equipment`
+caught it the moment the markup changed: *"an hours record with nobody on it is not a time sheet."*
+
+**The measurement fixes matter more than the features this time.** Four of them, and each was a check
+passing while looking at less than it claimed:
+
+- `coverage.js` skipped any collection the demonstration fixture had left empty, so it only ever complained
+  about collections carrying a record. Fixing that surfaced **nine more unmapped collections**, on top of
+  the eleven found last session. Among them `invoices` — two screens read it, there is no table, and it is
+  the money going out of the door. It is the largest single gap in this schema and it is not in the
+  "needs a column" figure, because a whole register is not a field. It is named in `NOT_MEASURED` where it
+  cannot be mistaken for covered.
+- `SAME_THING` already had a `name` key, so a second one added lower down was dead the moment it was
+  written: the later key in an object literal wins. **Check for a duplicate key before adding one.**
+- `mutation-check.js` passed its replacement text to `String.replace` as a string, where `$` is a
+  substitution pattern — `$$` means one literal `$`. Six mutations name `$$`, which is how PL/pgSQL quotes
+  a function body, so each produced `AS $` and the suite failed on a **syntax error while the harness
+  recorded the rule as caught**. Five of the six predate this session, and four are about money reaching
+  the shop floor or password hashes leaving the building. All five are genuinely caught now, with real
+  reasons. The fix is a function replacement, which takes no patterns.
+- An anchor matching in more than one place is as bad as one matching nowhere, and quieter: `String.replace`
+  takes the first, so the mutation damages whichever rule comes first and reports under the name of the one
+  it meant. `title text NOT NULL CHECK (btrim(title) <> ''),` appears character for character in three
+  tables. The harness refuses an ambiguous anchor now.
+
+**Green as of this entry:**
+
+| | |
+|---|---|
+| Schema | 178 refusals, 126 allowances, 98 checks |
+| Auth | 71 refusals, asked as real database roles |
+| Workflows | 159 refusals over the API, 114 checks |
+| Over real HTTP | 41 refusals, 52 checks |
+| Backup and restore | 10 checks, a real dump restored and compared by checksum |
+| Hosted install | 13 checks — over verified TLS as a non-superuser |
+| Unit tests | 817 |
+| End-to-end | seventeen suites in a real browser |
+| Mutations | 284 |
+| Schema width | 77% of the fields the pages use can be stored |
+
+**The agreed order is finished:**
+
+1. ~~No two worlds~~ **done**
+2. ~~An access screen~~ **done**
+3. ~~Backups verified by restoring one~~ **done**
+4. ~~Wire the remaining screens~~ **done — seventeen of seventeen**
+5. Schema width — **77%**, and the remainder is concentrated on estimating, invoicing and purchasing
+6. ~~An offline queue that survives a failure~~ **done for booking hours**
+7. ~~Deploy~~ **done** — `DEPLOY.md`, and never yet run against the real Supabase project
+
+**What still cannot be done on the database**, each refusing out loud on a wired screen rather than
+writing into browser storage: estimating's nested work items, options, terms and revisions; invoicing,
+either direction; purchase orders; marketing campaigns; the outward prospect sweep; the quality register's
+ITP, CAPA and dossier; the four welding registers; document folders; and the bytes of any file.
+
+**Ninth time a screen's vocabulary and a column's disagreed**, and the ninth was not a preference either:
+the Documents screen offered "Review Soon" in its status dropdown, which is not a different spelling but a
+different *kind of thing* — an answer to what the date is. Stored, it would have been a fact that was true
+the morning somebody chose it. Both dated states are computed on every read now, and each record carries
+the word to print beside what somebody actually chose, because a screen showing only the computed word
+cannot offer the form a value to save back. A planted bug proved the first version of that check blind:
+'Review Soon' maps to the same stored value as what was chosen, so it passed. 'Expired' does not.
+**When a dropdown offers a state, ask whether anybody decides it.**
 
 ## 5. Decisions already made — do not re-open these
 

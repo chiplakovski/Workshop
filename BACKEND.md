@@ -102,8 +102,16 @@ today because there is exactly one user.
 
 ### The tables
 
-Twenty-five, down from forty. Thirteen of the current collections have never held a row and
-fourteen more hold only fixture data — the reasoning is in [`REVIEW.md`](REVIEW.md).
+Planned as twenty-five, down from forty; **thirty-four as built**, the extra nine being the child tables
+that a list on a screen turned out to need — `customer_contact`, `supplier_contact`, `inspection_check`,
+`estimate_line`, `purchase_order_line`, `allowed_transition`, `equipment_assignment`, `app_session` and
+`prospect_finding`. The count is stated as built rather than as planned because a number nobody checks is a
+number that is already wrong, and this project has now found that in the guard's list of wired pages, the
+coverage meter's map of collections, and a function list that had gone stale.
+
+Thirteen of the current collections have never held a row and fourteen more hold only fixture data — the
+reasoning is in [`REVIEW.md`](REVIEW.md), and the ones with no table at all are named with their reasons in
+`backend/coverage.js` under `NOT_MEASURED`, where they cannot be mistaken for covered.
 
 **Commercial** — `customers` · `suppliers` · **`supplier_items`** · `leads` · `opportunities` ·
 `tenders` · `prospect_findings`
@@ -138,7 +146,11 @@ back-filled then.
 The three that stay are the ones that protect the workshop rather than an auditor: an inspection
 result, a non-conformance, and a hold that stops work going out wrong.
 
-**System** — `users` · `documents` · `audit_log`
+**System** — `app_user` · `app_session` · `document` · `activity_log`
+
+`document` is the register, and it took four passes to become usable — see the section on it below, because
+what blocked it was a constraint written for a world that had not arrived rather than the missing file
+storage everybody assumed.
 
 ### Rules that belong in the schema, not the code
 
@@ -1178,6 +1190,94 @@ pursued. Their absence now fails a test rather than being noticed in two years.
 - The welder and filler as fields on the operation, so certification stays possible later
 - An offline write queue for hours, operation timing and material issues
 - A second login mode, because a tablet and a phone are not the same thing
+
+### The document register — what the table looked like before it was usable, and why (25 September)
+
+Worth reading before designing another table for a system that does not exist yet. `document` was written
+early and sat unused for four passes, blamed on the missing object storage. The blame was misplaced: two
+columns were NOT NULL for a world that had not arrived.
+
+- `storage_key text NOT NULL` — the key of a file in object storage. There is no object storage, so no row
+  could be inserted at all. But what a register is *for* is knowing that the material certificate for heat
+  H240516 runs out on the 12th, that revision B supersedes revision A, and which job the welding procedure
+  on file belongs to. None of that needs the scan to exist.
+- `entity text NOT NULL, entity_id bigint NOT NULL` — while the screen has had an explicit Unlinked state
+  and a Link to Record action since it was drawn. A document filed before anybody knows which job it
+  belongs to is a state somebody chose, not an error.
+
+Both halves are optional now and each is all-or-nothing, which is the part worth copying:
+
+```sql
+CONSTRAINT a_link_names_both_halves   CHECK ((entity IS NULL) = (entity_id IS NULL)),
+CONSTRAINT a_stored_file_has_a_key    CHECK ((storage_key IS NULL) = (filename IS NULL)),
+```
+
+A storage key with no filename is a file nobody can offer to download; a filename with no key is a download
+button leading nowhere; an entity with no id reads as though it points somewhere. Half of either is worse
+than neither.
+
+**Two of the four statuses are not statuses.** The screen's dropdown offered `Review Soon`, and `Expired`
+appeared in its lists — both answers to *what is the date today*. A column holding either is a fact that
+was true the morning somebody chose it and then silently stopped being true, in the one register whose job
+is to say what is running out. The enum holds only what somebody sets:
+
+```sql
+CREATE TYPE document_status AS ENUM ('draft', 'valid', 'approved', 'superseded');
+```
+
+and `workspace_snapshot()` computes both dated words from `expires_on` on every read. Each record carries
+the word to print *and* `setStatus`, what somebody actually chose, because a screen shown only the computed
+word cannot offer its form a value to save back — which is exactly how `Review Soon` would end up in the
+column. **Ask of any dropdown: does anybody decide this, or is it derived?**
+
+**The polymorphic link, and the trap in it.** `entity`/`entity_id` cannot be a foreign key, so `entity` is
+restricted to the tables it may name. The screen speaks of *modules* — Projects, Purchasing, Quality —
+where the database has tables; one word covers three tables for Quality and `Purchasing` is not the name of
+anything. `document_link_for(module, record)` is the whole of that translation, in one place, and it *looks
+the reference up* rather than trusting it: a certificate filed against a project number nobody has ever
+used is a certificate nobody will find, so it is refused, by name.
+
+**Reading the label back closed the door on the shop floor — the third time.** The snapshot has to show
+what each document is filed against, which means reading `purchase_order`, `estimate` and `supplier`. The
+floor holds no SELECT on any of them, so one certificate filed against one order refused a welder the
+**whole** snapshot, on every screen, failing closed so it read as a permissions success. The pipeline
+solved this by moving to `workspace_money()`. Documents cannot: a welder holding revision A while B is on
+file is the failure the register exists to prevent. So the lookup is one SECURITY DEFINER function owned by
+`varmak_engine`, granted exactly two columns per table:
+
+```sql
+GRANT SELECT (id, ref)  ON project, jobcard, purchase_order, estimate, ncr, inspection,
+                           quality_hold, equipment, tender TO varmak_engine;
+GRANT SELECT (id, name) ON supplier, customer TO varmak_engine;
+GRANT SELECT (id, code) ON stock_item TO varmak_engine;
+```
+
+Column grants, not table grants, so a money column added to any of those later is not granted by accident.
+SECURITY DEFINER is not a skeleton key — the engine is held to GRANTs like anybody else, which is what
+makes this safe to read as "exactly these reads and no others".
+
+**What is still not on the database here:** the file bytes, which need object storage; and document
+folders, which are a grouping over `document.category` rather than a record of their own — a folder row
+would be a second place the same grouping lived.
+
+### The next schema work, in order (25 September)
+
+Not a wish list: each of these is a collection the coverage meter accounts for as having no table, found by
+fixing the meter rather than by reading the app.
+
+1. **Invoicing, both directions.** `invoices` is read by two screens, has no table, and is the money going
+   out of the door. It is the largest single gap in this schema. `supplierInvoices` is the other half — the
+   invoice arriving against a purchase order — and `purchaseRfqs` is the enquiry that precedes the
+   `purchase_order` that does exist.
+2. **The four welding registers.** A weld log, the NDT against those welds, the procedure specifications
+   they are welded to, and which welder is qualified to each. `BACKEND.md` argued above that these are
+   paperwork for an auditor who does not exist yet, and that argument still holds — but the decision should
+   be made knowingly rather than by their being invisible to every figure this project prints, which is
+   what was actually happening.
+3. **Estimating's depth.** The schema holds a title, a total and a date; the screen holds nested work items,
+   options, terms, revisions and a priced bill of materials. This is the largest gap by field count.
+4. **The quality register's other three** — ITP, CAPA, dossier — each refusing out loud on a wired screen
+   today, which is the honest state until somebody asks for them.
 
 ### Still genuinely open
 
