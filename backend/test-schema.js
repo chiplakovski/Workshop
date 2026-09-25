@@ -89,7 +89,8 @@ function step(message) {
 const ALL_TABLES = [
   'app_user', 'customer', 'customer_contact', 'project', 'jobcard', 'equipment', 'equipment_assignment',
   'equipment_event', 'operation', 'hours_entry', 'item_group', 'location', 'stock_item',
-  'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_item', 'purchase_order',
+  'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_contact', 'supplier_item',
+  'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
   'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document',
   'activity_log'
@@ -803,6 +804,51 @@ function oneAnswerToWhoWeBuyFrom() {
   refused('a pack of nothing', `UPDATE supplier_item SET pack_size = 0 WHERE supplier_id = ${a};`, /pack_size/);
   refused('a lowercase currency', `UPDATE supplier_item SET currency = 'sek' WHERE supplier_id = ${a};`, /currency/);
   step('Suppliers: a price, a pack size and a currency are all shaped the one way they are read');
+
+  // The register itself, which held a name, a town and a payment term while the screen showed an
+  // address, a VAT number, a website, what they sell, the Incoterms, a minimum order and a rating. The
+  // screen was filling every one of those in for itself, which is why they are columns now.
+  accepted('a merchant recorded whole', `UPDATE supplier SET vat_no = 'SE556700000001',
+    website = 'www.stalmetall.se', address = 'Industrivägen 8, 212 41 Malmö', category = 'Steel',
+    supplier_type = 'Company', established = '1998', delivery_terms = 'DAP',
+    minimum_order = '2 500 SEK', payment_terms_days = 30, rating = 4.5, status = 'preferred',
+    notes = 'Cuts to length on request' WHERE id = ${a};`);
+  // 'preferred' is the merchant this workshop buys from first, and the screen has offered it since it
+  // was written — three filter tabs, a chip beside the name — against a column that allowed two words.
+  // Fifth time a screen's vocabulary and a column's were found disagreeing.
+  for (const st of ['active', 'preferred', 'inactive']) {
+    accepted(`the status the screen offers: ${st}`,
+      `UPDATE supplier SET status = '${st}' WHERE id = ${b};`);
+  }
+  refused('a status no screen has a word for',
+    `UPDATE supplier SET status = 'maybe' WHERE id = ${b};`, /status/);
+  // Out of five, and nobody has to rate anybody. A NULL rating has to stay tellable from a rating of
+  // zero: the screen printed four stars beside every supplier's name because absence was being filled
+  // in with 4, which is a judgement about a real merchant that nobody made.
+  refused('a rating out of more than five', `UPDATE supplier SET rating = 6 WHERE id = ${b};`, /rating/);
+  refused('a rating below nothing', `UPDATE supplier SET rating = -1 WHERE id = ${b};`, /rating/);
+  accepted('no rating at all', `UPDATE supplier SET rating = NULL WHERE id = ${b};`);
+  assert.equal(value(`SELECT rating IS NULL FROM supplier WHERE id = ${b};`), 't',
+    'nobody having rated a merchant is not the same fact as rating them zero');
+  step('Suppliers: the register holds what the screen shows, including the three states it filters by');
+
+  accepted('somebody to ring at the merchant', `INSERT INTO supplier_contact
+    (supplier_id, name, role, email, phone, is_primary)
+    VALUES (${a}, 'Erik Lund', 'Order desk', 'order@stalmetall.se', '+46 40 555 01 20', true);`);
+  accepted('and somebody in accounts', `INSERT INTO supplier_contact
+    (supplier_id, name, role, email) VALUES (${a}, 'Ann Ek', 'Accounts', 'ann@stalmetall.se');`);
+  refused('a second main contact at one merchant', `INSERT INTO supplier_contact
+    (supplier_id, name, phone, is_primary) VALUES (${a}, 'Somebody Else', '+46 40 555 01 21', true);`,
+    /supplier_has_one_main_contact|duplicate key/);
+  refused('a contact nobody can reach', `INSERT INTO supplier_contact
+    (supplier_id, name, role) VALUES (${a}, 'Nameless Desk', 'Sales');`,
+    /supplier_contact_can_be_reached/);
+  refused('a contact with no name', `INSERT INTO supplier_contact
+    (supplier_id, name, phone) VALUES (${a}, '  ', '+46 40 555 01 22');`, /name/);
+  sql(`DELETE FROM supplier WHERE id = ${a};`);
+  assert.equal(value(`SELECT count(*) FROM supplier_contact WHERE supplier_id = ${a};`), '0',
+    'contacts go with the merchant rather than becoming rows pointing at nobody');
+  step('Suppliers: one main contact per merchant, reachable, and they go with the merchant');
 }
 
 function buyingAddsUp() {

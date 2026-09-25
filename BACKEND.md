@@ -875,6 +875,57 @@ cannot touch anything else.
    beginning `ok `, so a unit-test mutation was "caught by" whichever TAP assertion happened to pass
    last. It reads exactly as convincingly as the real thing.
 
+      **The merchants, which was the thinnest table in the schema against the widest screen.** `supplier`
+   held a name, a town and a payment term. The screen showed an address, a VAT number, a website, what
+   they sell, the type of company, the year they were established, the Incoterms, a minimum order and a
+   rating out of five — so **the page filled all of it in for itself**, and that is the finding rather
+   than the wiring. Every supplier somebody typed a name for was shown an address on Industrial Road in
+   Malmö, a VAT number of SE556700000001, a telephone number, an order desk called Order Desk, two
+   documents, a note saying an annual review had been completed, a performance score of 4.3 out of 5 on
+   four invented percentages, four stars beside their name, and payment terms of 30 days with DAP
+   delivery. Identical for every merchant, in the same type as the name. Two of those are commercial
+   terms and one is a judgement about somebody else's company.
+
+   Eleven columns and a `supplier_contact` table closed it, and one more vocabulary mismatch came with
+   them: `status` allowed active and inactive while the screen has filtered by **preferred** — the
+   merchant this workshop buys from first — since it was written. Fifth time.
+
+   Two decisions in the workflows are worth keeping:
+
+   * **A rating can be taken back.** `save_supplier` writes NULL where it is given NULL, deliberately.
+     A `coalesce` there would mean a judgement about somebody's company could be recorded and never
+     withdrawn, and "nobody has rated them" has to stay tellable from "they scored zero" — which is the
+     distinction the four-stars-for-everybody bug collapsed.
+   * **Six figures are no longer saved onto a merchant at all**: the performance object, spend against
+     last year, the count of open orders and their value, and overdue deliveries and theirs. Every one is
+     an answer computed from rows elsewhere, and a stored answer is one that has to be kept in step with
+     what it came from. Open orders are counted live from the purchase orders this workshop raised; the
+     other three need deliveries and invoices this system does not keep, and the cards say so.
+
+   **A mutation found a real bug in the price list**, which is the kind of thing that pass exists for.
+   `save_supplier_item`'s preferred flag defaulted to false, so correcting a merchant's price — a call
+   that names no flag, because the price is what changed — quietly stopped them being the merchant this
+   workshop buys that item from. Nothing said so, and "who do we buy this from" then had no answer at
+   all. It is NULL-means-leave-it now. The mutation that found it was reported MISSED, not caught: by the
+   time the switch-over code ran in the tests, nothing was preferred to switch away from, so removing the
+   code changed nothing any test could see. That is what a missed mutation is for.
+
+   Two more measurement corrections. The coverage meter could not see the supplier register at all —
+   `(no demo record to compare)` — because the demonstration data had no suppliers, while its inventory
+   items named 'Nordic Steel' and 'WeldSupply' on their own rows. Two demo merchants, with no rating on
+   either. And four of the six fields it then called missing were renames, which is the fifth correction
+   of that exact kind. The other gap was in `test-server.js`: its check that every figure crosses the
+   wire as text walked collection → id → field and stopped, which was the whole money payload when it was
+   written. The supplier price list arrives as a list of lines under one merchant, so every price in it
+   sat one level below where the check was looking — and its fixture had no price line anyway, so it was
+   passing by having nothing to look at.
+
+   One thing left as it is: **the "Total supplied items" panel could never be answered.** Total quantity
+   and total spend per item need the invoices this system does not keep. What each merchant *quotes*
+   is on the register, so that is what the panel shows now — the item, their article number, their price
+   and their lead time — under a heading that says price list. Office only, because a price list is a
+   price.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared

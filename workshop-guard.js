@@ -41,6 +41,7 @@
     ['store-desktop.html', 'Store'],
     ['equipment-machines-desktop.html', 'Machines'],
     ['quality-desktop.html', 'Quality'],
+    ['suppliers-desktop.html', 'Suppliers'],
     ['reports-desktop.html', 'Reports'],
     ['admin.html', 'Access']
   ];

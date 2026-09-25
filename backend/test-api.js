@@ -1384,6 +1384,149 @@ function nobodyCanLockTheWorkshopOut() {
 
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
+// ── Suppliers: the merchants, and what they charge ─────────────────────────────────────────
+
+function theRegisterOfMerchants() {
+  refused('a merchant with no name', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(NULL, '   ');`, /needs a name/);
+
+  const first = ok('adding one', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(NULL, 'Nordic Steel', 'Steel & plate', 'preferred', '556123-4567',
+       'SE556123456701', 'order@nordicsteel.se', '+46 42 555 10 20', 'www.nordicsteel.se',
+       'Hamngatan 14, 252 21 Helsingborg', 'Helsingborg', 'Sweden', 'Company', '1994', 'DAP',
+       '5 000 SEK', 'sek', 4.5, 30, 'Cuts to length on request');`);
+  assert.match(value(`SELECT ref FROM supplier WHERE id = ${first};`), /^S-\d{3}$/);
+  assert.equal(value(`SELECT currency FROM supplier WHERE id = ${first};`), 'SEK',
+    'a currency is upper case, whatever was typed');
+  assert.equal(value(`SELECT status || '|' || supplier_type || '|' || delivery_terms
+    || '|' || minimum_order || '|' || rating::text || '|' || payment_terms_days::text
+    FROM supplier WHERE id = ${first};`), 'preferred|Company|DAP|5 000 SEK|4.5|30',
+    'the seven fields the screen showed and the register had nowhere to keep');
+  step('Suppliers: a merchant is recorded whole, in the words the register shows');
+
+  // Two rows under one name is two merchants to the system and one to whoever is ringing them, which is
+  // how half a supplier's orders end up invisible on the register meant to show them.
+  refused('a second merchant under the same name', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(NULL, 'Nordic Steel');`, /already a supplier called/);
+  refused('the same name in capitals', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(NULL, 'NORDIC STEEL');`, /already a supplier called/);
+  const second = ok('a genuinely different merchant', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(NULL, 'WeldSupply', 'Welding consumables');`);
+  ok('and renaming one to something free', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(${second}, 'WeldSupply Nordic AB', 'Welding consumables');`);
+  refused('renaming it onto the other one', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(${second}, 'Nordic Steel');`, /already a supplier called/);
+  step('Suppliers: one merchant per name, whatever case it is typed in');
+
+  // A rating is a judgement about somebody's company. Nobody has to make it, and one made has to be
+  // withdrawable — the screen showed four stars beside every supplier because absence was read as 4.
+  ok('withdrawing a rating', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(${first}, 'Nordic Steel', 'Steel & plate', 'preferred', NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'SEK', NULL, 30);`);
+  assert.equal(value(`SELECT rating IS NULL FROM supplier WHERE id = ${first};`), 't',
+    'a rating given has to be removable, or it is not a judgement anybody can change their mind about');
+  refused('a rating out of more than five', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier(${first}, 'Nordic Steel', NULL, 'active', NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'SEK', 6);`, /rating/);
+  step('Suppliers: nobody has to rate a merchant, and a rating can be taken back');
+
+  refused('a welder adding a merchant', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_supplier(NULL, 'Cheap Steel Ltd');`, /permission denied/);
+  refused('a welder renaming one', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_supplier(${first}, 'Whoever');`, /permission denied/);
+  // What the floor does get is the name, because a welder who has just rejected a batch of steel needs
+  // to say whose steel it was — and not what this workshop pays them on.
+  assert.equal(as('varmak_workshop', PEOPLE.welder,
+    `SELECT name FROM supplier WHERE id = ${first};`).out, 'Nordic Steel');
+  refused('a welder reading what we pay them on', 'varmak_workshop', PEOPLE.welder,
+    `SELECT payment_terms_days FROM supplier WHERE id = ${first};`, /permission denied/);
+  step('Suppliers: the register is the office’s, and the floor reads the name without the terms');
+
+  // The people at the merchant, replaced wholesale.
+  const kept = ok('two contacts', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(${first}, '[
+       {"name":"Erik Lund","role":"Order desk","email":"order@nordicsteel.se","phone":"+46 42 555 10 20","primary":true},
+       {"name":"Ann Ek","role":"Accounts","email":"ann@nordicsteel.se"}
+     ]'::jsonb);`);
+  assert.equal(kept, '2');
+  refused('two main contacts at one merchant', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(${first}, '[
+       {"name":"Erik Lund","phone":"+46 42 555 10 20","primary":true},
+       {"name":"Ann Ek","email":"ann@nordicsteel.se","primary":true}
+     ]'::jsonb);`, /has one main contact, and this list has 2/);
+  refused('a contact nobody can reach', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(${first}, '[{"name":"Order Desk","role":"Sales"}]'::jsonb);`,
+    /an email or a telephone number/);
+  refused('a contact with no name', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(${first}, '[{"phone":"+46 42 555 10 20"}]'::jsonb);`,
+    /needs a name/);
+  // Refused means nothing moved, which for a list that is replaced wholesale is the thing worth
+  // checking: a half-applied replacement is a contact list with people missing from it.
+  assert.equal(value(`SELECT count(*) FROM supplier_contact WHERE supplier_id = ${first};`), '2',
+    'a refused replacement leaves the list it was replacing exactly as it was');
+  ok('and the list can be emptied', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(${first}, '[]'::jsonb);`);
+  assert.equal(value(`SELECT count(*) FROM supplier_contact WHERE supplier_id = ${first};`), '0');
+  refused('contacts against a merchant that is not there', 'varmak_office', PEOPLE.office,
+    `SELECT set_supplier_contacts(99999, '[]'::jsonb);`, /no such supplier/);
+  step('Suppliers: the contact list is replaced whole, one main contact, and a refusal changes nothing');
+
+  refused('an empty note', 'varmak_office', PEOPLE.office,
+    `SELECT add_supplier_note(${first}, '  ');`, /not a note/);
+  refused('a note against nobody', 'varmak_office', PEOPLE.office,
+    `SELECT add_supplier_note(99999, 'Hello');`, /no such supplier/);
+  const note = ok('a note', 'varmak_office', PEOPLE.office,
+    `SELECT add_supplier_note(${first}, 'Lead time up to three weeks in January');`);
+  assert.equal(value(`SELECT actor FROM activity_log WHERE id = ${note};`), 'Lars Holm',
+    'a note carries whoever wrote it, from the session');
+  refused('editing it afterwards', null, PEOPLE.office,
+    `UPDATE activity_log SET detail = 'Never mind' WHERE id = ${note};`, /append-only/);
+  step('Suppliers: a note goes into the append-only trail under the name of whoever wrote it');
+
+  // The price list. Two merchants can quote the same plate, and exactly one of them is the one this
+  // workshop buys it from.
+  const item = value(`SELECT id FROM stock_item LIMIT 1;`);
+  refused('a price list line with no price', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(${first}, ${item}, NULL);`, /needs a price/);
+  refused('a line against a merchant that is not there', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(99999, ${item}, 13.90);`, /no such supplier/);
+  refused('a line against an item that is not there', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(${first}, 99999, 13.90);`, /no such item/);
+  ok('what the first merchant quotes', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(${first}, ${item}, 13.90, 'ST-10-S355', 'SEK', 1, 5, true);`);
+  ok('and what the second quotes for the same plate', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(${second}, ${item}, 14.75, 'WS-1055', 'SEK', 1, 12, false);`);
+  assert.equal(value(`SELECT count(*) FROM supplier_item WHERE stock_item_id = ${item};`), '2',
+    'the same plate bought from two merchants keeps both prices — the gap this table exists to close');
+  ok('correcting the first one’s price rather than adding a second line', 'varmak_office',
+    PEOPLE.office, `SELECT save_supplier_item(${first}, ${item}, 14.10, 'ST-10-S355');`);
+  assert.equal(value(`SELECT price::text FROM supplier_item
+    WHERE supplier_id = ${first} AND stock_item_id = ${item};`), '14.10');
+  assert.equal(value(`SELECT count(*) FROM supplier_item WHERE stock_item_id = ${item};`), '2');
+  // And it did not quietly stop them being the merchant we buy this from. That call names no preferred
+  // flag, because the price is what changed — and with the flag defaulting to false it un-preferred them
+  // and said nothing, so "who do we buy this from" had no answer at all. Found by a mutation: removing
+  // the code that switches the flag over changed nothing any test could see, because by then nothing was
+  // preferred to switch away from.
+  assert.equal(value(`SELECT is_preferred::text FROM supplier_item
+    WHERE supplier_id = ${first} AND stock_item_id = ${item};`), 'true',
+    'correcting a price is not a decision about who to buy from');
+
+  // Changing your mind about who to buy from. The partial unique index refuses a second preferred
+  // merchant, so the old one is cleared here rather than the save being refused — "we buy this from
+  // them now" is the whole point of the flag.
+  ok('switching to the second merchant', 'varmak_office', PEOPLE.office,
+    `SELECT save_supplier_item(${second}, ${item}, 14.75, 'WS-1055', 'SEK', 1, 12, true);`);
+  assert.equal(value(`SELECT supplier_id FROM supplier_item
+    WHERE stock_item_id = ${item} AND is_preferred;`), String(second),
+    'exactly one merchant is the preferred one, and it is the one just chosen');
+  assert.equal(value(`SELECT count(*) FROM supplier_item WHERE stock_item_id = ${item} AND is_preferred;`),
+    '1');
+  refused('a welder setting a price', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_supplier_item(${first}, ${item}, 1.00);`, /permission denied/);
+  step('Suppliers: two merchants quote the same plate, one of them is who we buy from, and the floor sets neither');
+}
+
 // ── Quality: the hold register, inspections and non-conformances ───────────────────────────
 
 // A hold is the only thing in this system that physically stops work leaving the building, so these
@@ -1702,6 +1845,7 @@ async function main() {
   theStepsRememberTheWorkDoneOnThem(work);
   // Before the people tests, which rebuild app_user from scratch: these run as the office and the
   // floor by id, and those ids stop meaning anybody once the list has been replaced.
+  theRegisterOfMerchants();
   const q = aHoldIsThePointOfTheWholeThing();
   const insp = anInspectionIsAskedForThenAnswered(q);
   aNonConformanceLivesItsWholeLife({ project: q.project, card: insp.card });

@@ -179,6 +179,15 @@ const RPC = {
     'material_cert_ref', 'bin_code', 'note'],
   record_stocktake: ['item_id', 'counted', 'note'],
 
+  // The merchants. The price list is money, so the database keeps all four of these to the office.
+  save_supplier: ['id', 'name', 'category', 'status', 'org_no', 'vat_no', 'email', 'phone', 'website',
+    'address', 'city', 'country', 'supplier_type', 'established', 'delivery_terms', 'minimum_order',
+    'currency', 'rating', 'payment_terms_days', 'notes'],
+  set_supplier_contacts: ['supplier_id', 'contacts'],
+  add_supplier_note: ['supplier_id', 'text'],
+  save_supplier_item: ['supplier_id', 'stock_item_id', 'price', 'article_no', 'currency', 'pack_size',
+    'lead_time_days', 'is_preferred'],
+
   // Quality. place_hold and release_hold are both here and the database decides who may call them:
   // releasing is the office's, and it is the decision that lets work leave the building.
   place_hold: ['project_id', 'jobcard_id', 'reason', 'severity', 'required_action', 'related_ref'],

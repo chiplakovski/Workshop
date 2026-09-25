@@ -165,11 +165,11 @@ async function main() {
   assert.match(said, /varmak_api can sign in/,
     `install.sh has to prove the server's own role can connect: ${said}`);
   assert.equal(value(`SELECT count(*) FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '35');
-  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '80');
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '36');
+  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '82');
   assert.equal(value(`SELECT string_agg(rolname, ',' ORDER BY rolname) FROM pg_roles
     WHERE rolname LIKE 'varmak%';`), 'varmak_admin,varmak_api,varmak_engine,varmak_office,varmak_workshop');
-  step('Deploy: all four files install as a non-superuser owner — 35 tables, 80 policies, five roles');
+  step('Deploy: all four files install as a non-superuser owner — 36 tables, 82 policies, five roles');
 
   // The attributes, because an install that finishes with the wrong ones is the failure that looks
   // like success. varmak_api holding BYPASSRLS would make every policy above decoration.

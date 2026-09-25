@@ -1697,6 +1697,240 @@ END;
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- Suppliers
+--
+-- The merchants a workshop buys from. Thin on purpose: what a supplier costs this workshop is on the
+-- orders and the price list, not here — and the one figure here that is a commercial term, the payment
+-- terms, is withheld from the floor the same way a customer's price list is.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_supplier(
+  p_id bigint,
+  p_name text,
+  p_category text DEFAULT NULL,
+  p_status text DEFAULT 'active',
+  p_org_no text DEFAULT NULL,
+  p_vat_no text DEFAULT NULL,
+  p_email text DEFAULT NULL,
+  p_phone text DEFAULT NULL,
+  p_website text DEFAULT NULL,
+  p_address text DEFAULT NULL,
+  p_city text DEFAULT NULL,
+  p_country text DEFAULT NULL,
+  p_supplier_type text DEFAULT NULL,
+  p_established text DEFAULT NULL,
+  p_delivery_terms text DEFAULT NULL,
+  p_minimum_order text DEFAULT NULL,
+  p_currency text DEFAULT 'SEK',
+  p_rating numeric DEFAULT NULL,
+  p_payment_terms_days int DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving a supplier');
+  saved bigint;
+  existing text;
+BEGIN
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'a supplier needs a name — it is what every order and certificate points back to';
+  END IF;
+
+  -- Two rows under one name is two merchants to the system and one to whoever is ringing them, which is
+  -- how half a supplier's orders end up invisible on the register that is supposed to show them. Asked
+  -- case-insensitively because 'Stål & Metall AB' and 'STÅL & METALL AB' are one company.
+  SELECT ref INTO existing FROM supplier
+   WHERE upper(btrim(name)) = upper(btrim(p_name)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a supplier called % — it is %', btrim(p_name), existing;
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO supplier (name, category, status, org_no, vat_no, email, phone, website, address,
+                          city, country, supplier_type, established, delivery_terms, minimum_order,
+                          currency, rating, payment_terms_days, notes)
+    VALUES (btrim(p_name), p_category, coalesce(p_status, 'active'), p_org_no, p_vat_no, p_email,
+            p_phone, p_website, p_address, p_city, p_country, p_supplier_type, p_established,
+            p_delivery_terms, p_minimum_order, upper(coalesce(nullif(btrim(coalesce(p_currency,'')), ''), 'SEK')),
+            p_rating, p_payment_terms_days, p_notes)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'supplier', s.id, 'added', who, s.ref || ' ' || s.name FROM supplier s WHERE s.id = saved;
+  ELSE
+    UPDATE supplier SET
+      name = btrim(p_name), category = p_category, status = coalesce(p_status, status),
+      org_no = p_org_no, vat_no = p_vat_no, email = p_email, phone = p_phone, website = p_website,
+      address = p_address, city = p_city, country = p_country, supplier_type = p_supplier_type,
+      established = p_established, delivery_terms = p_delivery_terms,
+      minimum_order = p_minimum_order,
+      currency = upper(coalesce(nullif(btrim(coalesce(p_currency,'')), ''), currency)),
+      -- The rating goes where it is put, NULL included. Nobody having rated a merchant is a real state
+      -- and it has to be settable back: a coalesce here would mean a rating could be given and never
+      -- taken away, which for a judgement about somebody's company is the wrong direction.
+      rating = p_rating, payment_terms_days = p_payment_terms_days, notes = p_notes
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such supplier, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'supplier', s.id, 'updated', who, s.ref FROM supplier s WHERE s.id = saved;
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- The people at the merchant, replaced wholesale — the same shape as set_customer_contacts and for the
+-- same reason: the screen holds a list and a patch-by-row API turns one edit into three calls, any of
+-- which can be the one that does not arrive.
+CREATE FUNCTION set_supplier_contacts(p_supplier_id bigint, p_contacts jsonb) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  row_in jsonb;
+  mains int := 0;
+  kept int := 0;
+  merchant text;
+BEGIN
+  PERFORM require_session('saving supplier contacts');
+  SELECT name INTO merchant FROM supplier WHERE id = p_supplier_id;
+  IF merchant IS NULL THEN
+    RAISE EXCEPTION 'no such supplier, or it is not yours to change'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  p_contacts := coalesce(p_contacts, '[]'::jsonb);
+  IF jsonb_typeof(p_contacts) <> 'array' THEN
+    RAISE EXCEPTION 'the contacts have to arrive as a list';
+  END IF;
+
+  -- Checked before anything is written, so the refusal is a sentence rather than the name of a unique
+  -- index. The index is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;
+    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+      RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
+        btrim(row_in->>'name');
+    END IF;
+    IF coalesce((row_in->>'primary')::boolean, false) THEN
+      mains := mains + 1;
+    END IF;
+  END LOOP;
+  IF mains > 1 THEN
+    RAISE EXCEPTION '% has one main contact, and this list has %', merchant, mains;
+  END IF;
+
+  DELETE FROM supplier_contact WHERE supplier_id = p_supplier_id;
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    INSERT INTO supplier_contact (supplier_id, name, role, email, phone, is_primary)
+    VALUES (p_supplier_id, btrim(row_in->>'name'), nullif(btrim(coalesce(row_in->>'role', '')), ''),
+            nullif(btrim(coalesce(row_in->>'email', '')), ''),
+            nullif(btrim(coalesce(row_in->>'phone', '')), ''),
+            coalesce((row_in->>'primary')::boolean, false));
+    kept := kept + 1;
+  END LOOP;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'contacts changed', current_app_name(),
+          kept::text || ' contact' || CASE WHEN kept = 1 THEN '' ELSE 's' END);
+  RETURN kept;
+END;
+$$;
+
+-- A note against a merchant, into the audit trail rather than a notes column, for the reason a quality
+-- note goes there: a note somebody can quietly edit afterwards is worth less than no note at all, and
+-- that table is append-only by trigger. The `notes` column on supplier is a different thing — it is the
+-- standing description of the merchant, not a dated entry.
+CREATE FUNCTION add_supplier_note(p_supplier_id bigint, p_text text) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('adding a supplier note');
+  said text := btrim(coalesce(p_text, ''));
+  made bigint;
+BEGIN
+  IF said = '' THEN
+    RAISE EXCEPTION 'an empty note is not a note' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM supplier WHERE id = p_supplier_id) THEN
+    RAISE EXCEPTION 'no such supplier' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'note', who, said)
+  RETURNING id INTO made;
+  RETURN made;
+END;
+$$;
+
+-- What a merchant sells, and at what price. One row per item per supplier, which is what makes "who do
+-- we buy this from and what did they quote" answerable for a plate two merchants both stock.
+--
+-- The price is here rather than on the item for exactly that reason, and it is why this function is the
+-- office's: a price list is a price.
+CREATE FUNCTION save_supplier_item(
+  p_supplier_id bigint,
+  p_stock_item_id bigint,
+  p_price numeric,
+  p_article_no text DEFAULT NULL,
+  p_currency text DEFAULT 'SEK',
+  p_pack_size numeric DEFAULT 1,
+  p_lead_time_days int DEFAULT NULL,
+  -- NULL means "leave it as it is", which is not the same as false.
+  --
+  -- It used to default to false, and a mutation found what that meant: correcting a merchant's price —
+  -- `save_supplier_item(them, item, 14.10, 'ST-10-S355')`, with no flag because the price is what
+  -- changed — silently stopped them being the merchant this workshop buys that item from. Nothing said
+  -- so. The next person to ask "who do we buy this from" got no answer at all.
+  p_is_preferred boolean DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving a supplier price');
+  saved bigint;
+BEGIN
+  IF p_price IS NULL OR p_price < 0 THEN
+    RAISE EXCEPTION 'a price list line needs a price' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM supplier WHERE id = p_supplier_id) THEN
+    RAISE EXCEPTION 'no such supplier' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM stock_item WHERE id = p_stock_item_id) THEN
+    RAISE EXCEPTION 'no such item' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  -- Preferred is one merchant per item, and the partial unique index refuses the second. Cleared here
+  -- rather than left to fail, because "we buy this from them now" is the whole point of the flag and a
+  -- refusal would make changing your mind impossible.
+  IF coalesce(p_is_preferred, false) THEN
+    UPDATE supplier_item SET is_preferred = false
+     WHERE stock_item_id = p_stock_item_id AND supplier_id <> p_supplier_id AND is_preferred;
+  END IF;
+
+  INSERT INTO supplier_item (supplier_id, stock_item_id, article_no, price, currency, pack_size,
+                             lead_time_days, is_preferred, updated_at)
+  VALUES (p_supplier_id, p_stock_item_id, p_article_no, p_price,
+          upper(coalesce(nullif(btrim(coalesce(p_currency,'')), ''), 'SEK')),
+          coalesce(p_pack_size, 1), p_lead_time_days, coalesce(p_is_preferred, false), now())
+  ON CONFLICT (supplier_id, stock_item_id) DO UPDATE SET
+    article_no = excluded.article_no, price = excluded.price, currency = excluded.currency,
+    pack_size = excluded.pack_size, lead_time_days = excluded.lead_time_days,
+    -- Read off the parameter rather than `excluded`, because excluded already holds the coalesced value
+    -- and cannot tell "not preferred" from "nobody said". Who this workshop buys an item from is a
+    -- decision, and a price correction is not one.
+    is_preferred = CASE WHEN p_is_preferred IS NULL THEN supplier_item.is_preferred
+                        ELSE p_is_preferred END,
+    updated_at = now()
+  RETURNING id INTO saved;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  SELECT 'supplier', p_supplier_id, 'price list', who,
+         (SELECT code FROM stock_item WHERE id = p_stock_item_id) || ' at ' || p_price::text
+    FROM supplier WHERE id = p_supplier_id;
+  RETURN saved;
+END;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Quality
 --
 -- A hold is the only thing in this system that physically stops work leaving the building, so the
@@ -2372,6 +2606,11 @@ REVOKE ALL ON FUNCTION save_ncr(bigint, text, bigint, bigint, text, severity, te
                  text, text, text, bigint, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_ncr_step(bigint, text, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION add_quality_note(text, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_supplier(bigint, text, text, text, text, text, text, text, text, text,
+                 text, text, text, text, text, text, text, numeric, int, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION set_supplier_contacts(bigint, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION add_supplier_note(bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean) FROM PUBLIC;
 ALTER FUNCTION hold_after_failed_inspection(bigint) OWNER TO varmak_engine;
 REVOKE ALL ON FUNCTION hold_after_failed_inspection(bigint) FROM PUBLIC;
 
@@ -2408,7 +2647,14 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   save_ncr(bigint, text, bigint, bigint, text, severity, text, text, date, text, text, text, bigint, text),
   record_ncr_step(bigint, text, text, text),
   save_inspection(bigint, bigint, bigint, text, text, text, text, text, text, text, boolean,
-                  boolean, date, text, text, text)
+                  boolean, date, text, text, text),
+  -- The merchants. The register is the office's, and the price list especially: what a supplier charges
+  -- is a price, which is the one thing §1b keeps off the shop floor.
+  save_supplier(bigint, text, text, text, text, text, text, text, text, text, text, text, text, text,
+                text, text, text, numeric, int, text),
+  set_supplier_contacts(bigint, jsonb),
+  add_supplier_note(bigint, text),
+  save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),

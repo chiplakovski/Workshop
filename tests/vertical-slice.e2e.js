@@ -308,12 +308,11 @@ async function main() {
     // The hazard the guard exists for: signed in on the tablet, a person opens the hub and sees the
     // workshop twice — the real records on one screen and whatever is in this browser on another,
     // with neither screen saying which it is. Somebody would make a decision on the wrong one.
-    // Suppliers rather than Quality, which used to be the example here, which was the hub before that.
-    // The example has moved twice for the same reason: the check needs a screen that genuinely has no
-    // workflows yet, and screens keep getting them. Quality went last — the hold register is what
-    // physically stops work leaving the building, so a hold list read out of this browser while the
-    // holds are in a database was the worst remaining case of the thing this guard exists to prevent.
-    await page.goto(`${site}/suppliers-desktop.html`, { waitUntil: 'load' });
+    // Marketing rather than Suppliers, which used to be the example here, which was Quality before that
+    // and the hub before that. The example has moved three times for the same reason: the check needs a
+    // screen that genuinely has no workflows yet, and screens keep getting them. Two are left —
+    // Marketing, and Documents, which is waiting on somewhere for a file to live.
+    await page.goto(`${site}/marketing-desktop.html`, { waitUntil: 'load' });
     const blocked = await page.locator('[role="alert"]').innerText();
     assert.match(blocked, /not connected to the server/,
       'an unwired page must refuse rather than show what is in this browser');
@@ -332,9 +331,9 @@ async function main() {
     step('Two worlds: it covers the page rather than sitting over the top of stale figures');
 
     // And it stays out of the way when there is no session: that is the app the workshop runs today,
-    // on browser storage, and three of the seventeen pages are still it.
+    // on browser storage, and two of the seventeen pages are still it.
     const guest = await context.newPage();
-    await guest.goto(`${site}/suppliers-desktop.html`, { waitUntil: 'load' });
+    await guest.goto(`${site}/marketing-desktop.html`, { waitUntil: 'load' });
     assert.equal(await guest.locator('[role="alert"]').count(), 0,
       'with no session the pages must work exactly as they did before');
     assert.ok(await guest.locator('body').isVisible());

@@ -249,9 +249,24 @@ LANGUAGE sql STABLE AS $$
     -- payment_terms_days is not here. It is what this workshop is charged by, which §1b withholds from
     -- the floor for the same reason a customer's price list is withheld, and the floor reads this list.
     'suppliers', coalesce((SELECT jsonb_agg(jsonb_build_object(
-        'id', s.id::text, 'no', s.ref, 'name', s.name, 'org', s.org_no,
-        'email', s.email, 'phone', s.phone, 'city', s.city, 'country', s.country,
-        'status', s.status
+        'id', s.id::text, 'no', s.ref, 'name', s.name, 'org', s.org_no, 'vat', s.vat_no,
+        'email', s.email, 'phone', s.phone, 'website', s.website,
+        'address', s.address, 'city', s.city, 'country', s.country,
+        'category', s.category, 'type', s.supplier_type, 'established', s.established,
+        'delivery', s.delivery_terms, 'minimum', s.minimum_order, 'currency', s.currency,
+        -- Cast because it is a numeric, and a JSON number parsed in a browser is a double. Not money,
+        -- but the same rule: everything shaped like a figure crosses as text, so "is anything in this
+        -- payload a JSON number" stays a question with one answer.
+        'rating', s.rating::text,
+        'status', s.status, 'notes', s.notes,
+        -- Who to ring. Named columns rather than a row, because a welder is granted this table column by
+        -- column and SELECT * would be refused for them — the trap the equipment gate fell into.
+        'contacts', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'name', k.name, 'role', k.role, 'email', k.email, 'phone', k.phone,
+            'primary', k.is_primary
+          ) ORDER BY k.is_primary DESC, k.name)
+          FROM supplier_contact k WHERE k.supplier_id = s.id), '[]'::jsonb),
+        'activity', quality_activity_of('supplier', s.id)
       ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),
 
     -- ── Quality ────────────────────────────────────────────────────────────────────────────
@@ -406,7 +421,26 @@ LANGUAGE sql STABLE AS $$
         jsonb_build_object('avgCost', i.avg_cost::text, 'lastPrice', i.last_price::text))
       FROM stock_item i), '{}'::jsonb),
     'equipment', coalesce((SELECT jsonb_object_agg(e.id::text,
-        jsonb_build_object('purchasePrice', e.purchase_price::text)) FROM equipment e), '{}'::jsonb)
+        jsonb_build_object('purchasePrice', e.purchase_price::text)) FROM equipment e), '{}'::jsonb),
+    -- What each merchant charges, and what they are paid on. Both are prices in the sense §1b means —
+    -- a price list is a price — so they are here rather than in the snapshot everybody reads, keyed by
+    -- supplier id so the office can merge them into the register record by record.
+    'suppliers', coalesce((SELECT jsonb_object_agg(s.id::text, jsonb_build_object(
+        'terms', s.payment_terms_days::text,
+        -- `priceList`, not `items`: the supplier screen's `items` is a rollup of what has been bought —
+        -- total quantity, total spend — which needs invoices this system does not keep. This is what
+        -- each merchant quotes, which is a different question and an answerable one. Two things under
+        -- one word is how a table of price lines gets rendered into a column headed "Total spend".
+        'priceList', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'itemId', si.stock_item_id::text,
+            'code', (SELECT i.code FROM stock_item i WHERE i.id = si.stock_item_id),
+            'description', (SELECT i.description FROM stock_item i WHERE i.id = si.stock_item_id),
+            'articleNo', si.article_no, 'price', si.price::text, 'currency', si.currency,
+            'packSize', si.pack_size::text, 'leadTime', si.lead_time_days::text,
+            'preferred', si.is_preferred
+          ) ORDER BY si.id)
+          FROM supplier_item si WHERE si.supplier_id = s.id), '[]'::jsonb)))
+      FROM supplier s), '{}'::jsonb)
   );
 $$;
 

@@ -100,7 +100,7 @@ const SAME_THING = {
   // cannot say: a customer's `type` is direct/reseller/oem/public, a document's is
   // Certificate/Drawing/Report. Written per collection rather than picked between, because picking
   // would mean reporting one of them wrongly for ever.
-  type: { customers: 'customer_type', documents: 'kind',
+  type: { customers: 'customer_type', documents: 'kind', suppliers: 'supplier_type',
           // An inspection's type is what kind of check it is — visual, dimensional, pressure — which
           // is `kind`, the word this schema uses for the kind of any thing. The screen's word won on
           // the wire (the snapshot sends `type`); the column keeps the schema's.
@@ -116,7 +116,16 @@ const SAME_THING = {
   detectionDate: { qualityNcrs: 'detected_on' },
   // Not a rename: the inspection screen's `correctiveActionRef` is read off an NCR and is on the
   // inspection record only because the demo data copies it there. It is a join, below.
-  requiredAction: { qualityHolds: 'required_action' }
+  requiredAction: { qualityHolds: 'required_action' },
+
+  // The supplier register, and the fifth correction to this meter of exactly the same kind. Four of
+  // the six fields it reported missing were renames of columns added in the same commit — the screen's
+  // `type`, `payment`, `delivery` and `minimum` are `supplier_type`, `payment_terms_days`,
+  // `delivery_terms` and `minimum_order`. Written per collection because `type` already means two other
+  // things: a customer's is direct/reseller/oem and a document's is Certificate/Drawing/Report.
+  payment: { suppliers: 'payment_terms_days' },
+  delivery: { suppliers: 'delivery_terms' },
+  minimum: { suppliers: 'minimum_order' }
 };
 
 // Deliberately NOT mapped, having looked at what they hold:
@@ -163,6 +172,11 @@ const A_CHILD_TABLE = new Set([
   // hours_entry.jobcard_id, inspection.jobcard_id. They were counted as missing columns, which is
   // the one thing they must never become — a list in a column cannot have a foreign key.
   'jobcards', 'hours', 'inspections',
+  // The orders raised against a merchant and the certificates filed against them. Both already have a
+  // table pointing the right way — purchase_order.supplier_id, document.entity/entity_id — and the
+  // supplier screen reads them live rather than holding a copy, which is what it should do: a stored
+  // list of orders is a list that goes stale the moment one is raised anywhere else.
+  'purchaseOrders', 'docs',
   // The equipment screen's six logs, every one of them a list of dated events against a machine, and
   // every one of them already a row in `equipment_event` — which has a kind for each: service,
   // calibration, inspection, breakdown, pre-use-check, repair. They were being counted as six missing
@@ -299,7 +313,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 264, needsColumn: 32 };
+  const BASELINE = { stored: 285, needsColumn: 32 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

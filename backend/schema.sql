@@ -846,14 +846,61 @@ CREATE TABLE supplier (
   ref         text NOT NULL UNIQUE DEFAULT next_ref('S-', 'seq_supplier'::regclass, 3),
   name        text NOT NULL CHECK (btrim(name) <> ''),
   org_no      text,
+  vat_no      text,
   email       text,
   phone       text,
+  website     text,
+  -- The whole address, not only the town. A supplier's address is where a lorry goes and where a
+  -- complaint is posted; the town alone is neither.
+  address     text,
   city        text,
   country     text,
+  -- What they sell, which is what the register is read and filtered by. Free text rather than an enum:
+  -- a workshop's suppliers are steel merchants, gas suppliers, platers, hauliers, calibration houses
+  -- and the man who sharpens the blades, and a fixed list gets a sixth one wrong.
+  category    text,
+  -- A company, a sole trader, a subcontractor. Affects who is invoiced and how, and it is on the screen.
+  supplier_type text,
+  established text,
   payment_terms_days int CHECK (payment_terms_days IS NULL OR payment_terms_days >= 0),
-  status      text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
+  -- Incoterms, and the smallest order they will take. Both are commitments with the merchant and both
+  -- sat on the screen with nowhere to go, so they were being made up at the moment somebody typed a
+  -- name: every supplier the form created got 30 days and DAP written onto them.
+  delivery_terms text,
+  minimum_order text,
+  currency    char(3) NOT NULL DEFAULT 'SEK' CHECK (currency = upper(currency)),
+  -- What this workshop thinks of them, out of five, when somebody has actually decided. NULL is "nobody
+  -- has rated them", and it has to stay distinguishable from a rating of zero — the screen showed four
+  -- stars beside every supplier's name because absence was being filled in with 4.
+  rating      numeric(2,1) CHECK (rating IS NULL OR (rating >= 0 AND rating <= 5)),
+  -- 'preferred' is the third state the screen offers and the column refused: the merchant this workshop
+  -- buys from first. Fifth time a screen's vocabulary and a column's disagreed.
+  status      text NOT NULL DEFAULT 'active'
+              CHECK (status IN ('active','preferred','inactive')),
+  notes       text,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Who to ring at the supplier. The same shape as customer_contact, and for the same reasons: one main
+-- contact rather than two, and a contact nobody can reach is not a contact.
+--
+-- A separate table rather than a column on supplier, because a merchant has an order desk, somebody in
+-- accounts and a technical contact, and the one you need depends on why you are ringing.
+CREATE TABLE supplier_contact (
+  id          bigserial PRIMARY KEY,
+  supplier_id bigint NOT NULL REFERENCES supplier(id) ON DELETE CASCADE,
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  role        text,
+  email       text,
+  phone       text,
+  is_primary  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT supplier_contact_can_be_reached
+    CHECK (coalesce(btrim(email), '') <> '' OR coalesce(btrim(phone), '') <> '')
+);
+
+CREATE UNIQUE INDEX supplier_has_one_main_contact
+  ON supplier_contact (supplier_id) WHERE is_primary;
 
 CREATE TABLE supplier_item (
   id            bigserial PRIMARY KEY,

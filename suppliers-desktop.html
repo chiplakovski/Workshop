@@ -66,7 +66,7 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 <div class="shell">
 <header class="top"><a class="back-link" href="hub-desktop.html">←&nbsp; <span data-i="back_hub">Hub</span></a><div class="module-icon" aria-hidden="true">▱</div><div class="title"><h1 data-i="title">Suppliers</h1><p data-i="subtitle">Vendor directory & management</p></div><div class="top-actions"><label for="globalSearch" data-i="search_all_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search all suppliers</label><input class="control search" id="globalSearch" name="globalSupplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><label for="filter" data-i="filter_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Filter suppliers</label><select class="control" id="filter"><option value="all" data-i="filter_all">All suppliers</option><option value="active" data-i="status_active">Active</option><option value="preferred" data-i="status_preferred">Preferred</option><option value="inactive" data-i="status_inactive">Inactive</option></select><button class="btn primary" onclick="openModal('supplier')" data-i="btn_new_supplier">＋ New Supplier</button></div></header>
 <main class="layout" id="mainContent"><aside class="panel pad supplier-panel"><div class="panel-title"><span data-i="supplier_list">Supplier list</span><span id="total">Total: 0</span></div><div class="list-search"><label for="listSearch" data-i="list_search_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search supplier list</label><input class="control" id="listSearch" name="supplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><button class="btn" aria-label="Search supplier list">⌕</button></div><div class="tabs-small"><button class="on" data-filter="all" data-i="f_all">All</button><button data-filter="active" data-i="status_active">Active</button><button data-filter="preferred" data-i="status_preferred">Preferred</button><button data-filter="inactive" data-i="status_inactive">Inactive</button></div><div class="supplier-list" id="supplierList"></div><div class="pager"><span id="showing"></span></div></aside>
-<section class="detail"><article class="panel profile" id="profile"></article><div class="metrics" id="metrics"></div><div class="content-grid"><article class="panel table-panel"><div class="panel-title"><span data-i="recent_po">Recent purchase orders</span></div><div id="poTable"></div></article><article class="panel table-panel"><div class="panel-title"><span data-i="top_items">Top supplied items</span><button class="btn" onclick="switchTab('items')" data-i="viewall">View all</button></div><div id="itemsTable"></div></article></div><div class="bottom-grid"><article class="panel info"><div class="panel-title" data-i="supplier_info">Supplier information</div><div id="supplierInfo"></div></article><article class="panel notes"><div class="panel-title"><span data-i="notes_title">Notes</span><button class="btn" onclick="openModal('note')" data-i="add_note">＋ Add note</button></div><div id="notes"></div></article></div></section>
+<section class="detail"><article class="panel profile" id="profile"></article><div class="metrics" id="metrics"></div><div class="content-grid"><article class="panel table-panel"><div class="panel-title"><span data-i="recent_po">Recent purchase orders</span></div><div id="poTable"></div></article><article class="panel table-panel"><div class="panel-title"><span data-i="price_list">Price list</span><button class="btn" onclick="switchTab('items')" data-i="viewall">View all</button></div><div id="itemsTable"></div></article></div><div class="bottom-grid"><article class="panel info"><div class="panel-title" data-i="supplier_info">Supplier information</div><div id="supplierInfo"></div></article><article class="panel notes"><div class="panel-title"><span data-i="notes_title">Notes</span><button class="btn" onclick="openModal('note')" data-i="add_note">＋ Add note</button></div><div id="notes"></div></article></div></section>
 <aside class="right"><article class="panel contacts"><div class="panel-title"><span data-i="contacts_title">Contact persons</span><button class="btn" onclick="openModal('contact')" data-i="add_contact">＋ Add contact</button></div><div id="contacts"></div></article><article class="panel performance"><div class="panel-title"><span><span data-i="performance_title">Performance</span> <small data-i="performance_sub">(last 12 months)</small></span><button class="btn" onclick="switchTab('performance')" data-i="details_btn">Details</button></div><div id="performance"></div></article><article class="panel documents"><div class="panel-title"><span data-i="documents_title">Documents</span><button class="btn" onclick="openModal('doc')" data-i="upload_btn">Upload</button></div><div id="documents"></div></article><article class="panel activity"><div class="panel-title" data-i="activity_title">Recent activity</div><div id="activity"></div></article></aside></main>
 <footer class="actionbar"><button onclick="openModal('po')"><span class="action-icon" aria-hidden="true">▤</span><span data-i="act_new_po">New Purchase Order</span></button><button onclick="switchTab('items')"><span class="action-icon" aria-hidden="true">◇</span><span data-i="act_pricelist">View Price List</span></button><button onclick="switchTab('performance')"><span class="action-icon" aria-hidden="true">☆</span><span data-i="act_evaluation">Supplier Evaluation</span></button><button onclick="importSupplierItems()"><span class="action-icon" aria-hidden="true">⇧</span><span data-i="act_import">Import Items</span></button><button onclick="switchTab('notes')"><span class="action-icon" aria-hidden="true">▣</span><span data-i="act_commlog">Communication Log</span></button><button class="danger" onclick="confirmToggleSupplier()"><span class="action-icon" aria-hidden="true">♲</span><span id="toggleLabel" data-i="act_deactivate">Deactivate Supplier</span></button></footer></div><input id="supplierItemImport" type="file" accept=".csv,text/csv" hidden onchange="handleSupplierItemImport(this)">
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="panel modal-card"><h2 id="modalTitle"></h2><form id="modalForm"><div class="form-grid" id="modalFields"></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal()" data-i="modal_cancel">Cancel</button><button class="btn primary" data-i="modal_save_supplier">Save Supplier Record</button></div></form></div></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -74,7 +74,13 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
   <div class="langmenu" id="langmenu"><button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Makedonski</button></div>
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="supplier-record.js"></script>
+<script>/* Wired to the server. Declared rather than detected: the register is what every purchase order,
+   certificate and supplier complaint points back to, and one read out of this browser while the
+   merchants are in a database is a register that answers "who do we buy this from" with the wrong
+   company. */
+window.WORKSHOP_SERVER_READY=true;</script>
+<script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
 <script src="workshop-ui.js"></script><script>
 const suppliers=[/* empty: hydrated from the shared supplier register */];
 let selected=0,currentFilter='all',activeTab='overview',LANG='en';const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])), fmt=n=>new Intl.NumberFormat('sv-SE',{style:'currency',currency:'SEK',maximumFractionDigits:0}).format(n);
@@ -114,7 +120,9 @@ const T={
     tab_overview:"overview",tab_contacts:"contacts",tab_items:"items",tab_po:"purchase orders",tab_deliveries:"deliveries",tab_invoices:"invoices",tab_performance:"performance",tab_ncr:"quality / NCR",tab_documents:"documents",tab_notes:"notes",
     metric_delivery:"On-Time Delivery",metric_quality:"Quality Rating",metric_spend:"Total Spend (YTD)",metric_openpos:"Open POs",metric_overdue:"Overdue Deliveries",metric_payment:"Payment Terms",
     metric_target_delivery:"Target: ≥ 90%",metric_target_quality:"Target: ≥ 4.0",metric_vslastyear:"vs Last Year ",metric_value_prefix:"Value: ",metric_frominvoice:"From Invoice Date",
-    recent_po:"Recent purchase orders",viewall:"View all",top_items:"Top supplied items",supplier_info:"Supplier information",notes_title:"Notes",add_note:"＋ Add note",
+    recent_po:"Recent purchase orders",viewall:"View all",price_list:"Price list",
+    th_articleno:"Their article no.",th_price:"Price",th_leadtime:"Lead time",
+    empty_prices:"Nothing has been priced by this supplier yet.",payment_days_unit:"days",supplier_info:"Supplier information",notes_title:"Notes",add_note:"＋ Add note",
     th_po_no:"PO Number",th_date:"Date",th_items:"Items",th_total_sek:"Total (SEK)",th_status:"Status",th_expected:"Expected",
     th_ncr:"NCR",th_issue:"Issue",th_action:"Action",th_item:"Item",th_category:"Category",th_totalqty:"Total Qty",th_totalspend:"Total Spend (SEK)",
     empty_records:"No records yet.",empty_items:"No items yet.",
@@ -151,7 +159,9 @@ const T={
     tab_overview:"översikt",tab_contacts:"kontakter",tab_items:"artiklar",tab_po:"inköpsordrar",tab_deliveries:"leveranser",tab_invoices:"fakturor",tab_performance:"prestanda",tab_ncr:"kvalitet / NCR",tab_documents:"dokument",tab_notes:"anteckningar",
     metric_delivery:"Leverans i tid",metric_quality:"Kvalitetsbetyg",metric_spend:"Total kostnad (i år)",metric_openpos:"Öppna inköpsordrar",metric_overdue:"Försenade leveranser",metric_payment:"Betalningsvillkor",
     metric_target_delivery:"Mål: ≥ 90%",metric_target_quality:"Mål: ≥ 4,0",metric_vslastyear:"Jämfört med förra året ",metric_value_prefix:"Värde: ",metric_frominvoice:"Från fakturadatum",
-    recent_po:"Senaste inköpsordrar",viewall:"Visa alla",top_items:"Mest levererade artiklar",supplier_info:"Leverantörsinformation",notes_title:"Anteckningar",add_note:"＋ Lägg till anteckning",
+    recent_po:"Senaste inköpsordrar",viewall:"Visa alla",price_list:"Prislista",
+    th_articleno:"Deras artikelnr",th_price:"Pris",th_leadtime:"Ledtid",
+    empty_prices:"Inget är prissatt av denna leverantör ännu.",payment_days_unit:"dagar",supplier_info:"Leverantörsinformation",notes_title:"Anteckningar",add_note:"＋ Lägg till anteckning",
     th_po_no:"Ordernummer",th_date:"Datum",th_items:"Artiklar",th_total_sek:"Totalt (SEK)",th_status:"Status",th_expected:"Förväntad",
     th_ncr:"NCR",th_issue:"Problem",th_action:"Åtgärd",th_item:"Artikel",th_category:"Kategori",th_totalqty:"Totalt antal",th_totalspend:"Total kostnad (SEK)",
     empty_records:"Inga poster ännu.",empty_items:"Inga artiklar ännu.",
@@ -188,7 +198,9 @@ const T={
     tab_overview:"pregled",tab_contacts:"kontakti",tab_items:"artikli",tab_po:"narački",tab_deliveries:"isporaki",tab_invoices:"fakturi",tab_performance:"performansi",tab_ncr:"kvalitet / NCR",tab_documents:"dokumenti",tab_notes:"beleški",
     metric_delivery:"Navremena isporaka",metric_quality:"Ocenka za kvalitet",metric_spend:"Vkupna potrošuvačka (ovaa godina)",metric_openpos:"Otvoreni narački",metric_overdue:"Zadocneti isporaki",metric_payment:"Uslovi za plakjanje",
     metric_target_delivery:"Cel: ≥ 90%",metric_target_quality:"Cel: ≥ 4.0",metric_vslastyear:"Sporedeno so minatata godina ",metric_value_prefix:"Vrednost: ",metric_frominvoice:"Od datum na faktura",
-    recent_po:"Posledni narački",viewall:"Vidi gi site",top_items:"Najisporačuvani artikli",supplier_info:"Informacii za dobavuvač",notes_title:"Beleški",add_note:"＋ Dodaj beleška",
+    recent_po:"Posledni narački",viewall:"Vidi gi site",price_list:"Cenovnik",
+    th_articleno:"Nihov artikl br.",th_price:"Cena",th_leadtime:"Rok na dostava",
+    empty_prices:"Sè ušte ništo ne e cenovno opredeleno od ovoj snabduvač.",payment_days_unit:"denovi",supplier_info:"Informacii za dobavuvač",notes_title:"Beleški",add_note:"＋ Dodaj beleška",
     th_po_no:"Broj na naračka",th_date:"Datum",th_items:"Artikli",th_total_sek:"Vkupno (SEK)",th_status:"Status",th_expected:"Očekuvano",
     th_ncr:"NCR",th_issue:"Problem",th_action:"Akcija",th_item:"Artikal",th_category:"Kategorija",th_totalqty:"Vkupna količina",th_totalspend:"Vkupna potrošuvačka (SEK)",
     empty_records:"Sè ušte nema zapisi.",empty_items:"Sè ušte nema artikli.",
@@ -222,7 +234,21 @@ const T={
 // suppliers.some(s=>s.name===ss.name) below) is unchanged and deliberate, same reason as every
 // other hydrate function in this sweep.
 function hydrateSharedSuppliers(){
-  if(!window.WorkshopData)return;const shared=WorkshopData.listSuppliers();
+  if(!window.WorkshopData)return;
+  // On a server-backed page there is no page-local copy to merge into: the list IS the register. Merging
+  // would drop what SupplierRecord.fromServer worked out — the price list, the contacts as rows, the
+  // `_server` record the overlay rule needs — because the merge below only copies the fields it knows
+  // about, and it was written when this page kept its own array.
+  if(WorkshopData.isServerBacked&&WorkshopData.isServerBacked()){
+    const register=WorkshopData.get().suppliers||[];
+    suppliers.length=0;
+    register.forEach((record,at)=>suppliers.push(Object.assign({
+      id:record.sharedNo||record.no||('SUP-'+String(at+1).padStart(4,'0'))
+    },record)));
+    if(selected>=suppliers.length)selected=0;
+    return;
+  }
+  const shared=WorkshopData.listSuppliers();
   shared.forEach(ss=>{
     if(suppliers.some(s=>s.name===ss.name))return;
     const id='SUP-'+String(suppliers.length+1).padStart(4,'0');
@@ -242,19 +268,33 @@ function hydrateSharedSuppliers(){
   });
 }
 hydrateSharedSuppliers();
+// Returns what the save came back with, so the form can report a refusal rather than announcing a
+// success it has not been told about. Against browser storage that is a record; against the database it
+// is a promise for one.
 function syncSupplier(s){
   if(!window.WorkshopData||!s)return;
-  // The six figures this used to carry — a performance object, spend against last year, a count of
-  // open orders and their value, and overdue deliveries and theirs — are not saved any more. Every one
-  // of them is an answer computed from records elsewhere (the purchase orders this workshop raised,
-  // and the deliveries and invoices it does not keep yet), and a stored answer is one that has to be
-  // kept in step with the rows it came from. The panels read them live instead.
-  const rec=WorkshopData.upsertSupplier({id:s.sharedId,name:s.name,category:s.category,status:s.status,
-    rating:s.rating,address:s.address,email:s.email,phone:s.phone,website:s.website,vat:s.vat,
-    currency:s.currency,type:s.type,country:s.country,established:s.established,payment:s.payment,
-    delivery:s.delivery,minimum:s.minimum,notes:s.notes,contacts:s.contacts,docs:s.docs,
-    purchaseOrders:s.purchaseOrders,items:s.items});
-  if(rec){s.sharedId=rec.id;s.sharedNo=rec.no;}
+  // The whole record, rather than a list of field names.
+  //
+  // This used to enumerate them, and the list went stale the moment the register gained columns: the
+  // merchant's standing description was not in it, so correcting a category through the four-field edit
+  // form cleared the description — and the `_server` record the overlay rule reads was not in it either,
+  // which is what made that possible. A hand-maintained list of what to send is a list that will be
+  // missing the next field somebody adds. What may actually be saved is decided in one place, by
+  // SupplierRecord's own SETTABLE, which is where a rule about the register belongs.
+  //
+  // Six figures it used to carry are gone for good, though, and not by omission: a performance object,
+  // spend against last year, a count of open orders and their value, and overdue deliveries and theirs.
+  // Every one is an answer computed from rows elsewhere, and a stored answer is one that has to be kept
+  // in step with what it came from.
+  const answer=WorkshopData.upsertSupplier(Object.assign({},s));
+  if(answer&&typeof answer.then==='function'){
+    return answer.then(rec=>{
+      if(rec&&!rec.error){s.sharedId=rec.id;s.sharedNo=rec.no;}
+      return rec;
+    });
+  }
+  if(answer){s.sharedId=answer.id;s.sharedNo=answer.no;}
+  return answer;
 }
 function initials(n){return n.split(/\s+/).map(x=>x[0]).slice(0,2).join('')}
 function filtered(){const q=$('listSearch').value.toLowerCase();return suppliers.filter(s=>(currentFilter==='all'||s.status===currentFilter)&&(s.name+' '+s.category).toLowerCase().includes(q))}
@@ -322,7 +362,16 @@ function supplierNcrRows(s){
   return all.filter(n=>n.supplier===s.name)
     .map(n=>[n.no,shown(n.detectionDate||n.dueDate),n.title||'',n.status||'',shown(n.disposition)]);
 }
-function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR';const po=isNcr?supplierNcrRows(s):supplierOrderRows(s);const head=isNcr?[t.th_ncr,t.th_date,t.th_issue,t.th_status,t.th_action]:[t.th_po_no,t.th_date,t.th_items,t.th_total_sek,t.th_status,t.th_expected];$('poTable').innerHTML=po.length?'<table><thead><tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+po.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i===3?'num':''}">${i===4?`<span class="status ${String(x).includes('Part')?'part':x==='Cancelled'?'cancel':''}">${esc(x)}</span>`:esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_records}</div>`;const items=s.items||[];$('itemsTable').innerHTML=items.length?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_category)+'</th><th class="num">'+esc(t.th_totalqty)+'</th><th class="num">'+esc(t.th_totalspend)+'</th></tr></thead><tbody>'+items.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_items}</div>`}
+function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR';const po=isNcr?supplierNcrRows(s):supplierOrderRows(s);const head=isNcr?[t.th_ncr,t.th_date,t.th_issue,t.th_status,t.th_action]:[t.th_po_no,t.th_date,t.th_items,t.th_total_sek,t.th_status,t.th_expected];$('poTable').innerHTML=po.length?'<table><thead><tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+po.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i===3?'num':''}">${i===4?`<span class="status ${String(x).includes('Part')?'part':x==='Cancelled'?'cancel':''}">${esc(x)}</span>`:esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>':`<div class="empty">${t.empty_records}</div>`;
+  // What the merchant quotes, rather than what has been bought from them. The panel was headed "Total
+  // qty / Total spend", which needs the invoices this system does not keep — so it could only ever be
+  // empty. What each supplier charges for an item IS on the register, so that is what it shows.
+  const prices=s.priceList||[];
+  $('itemsTable').innerHTML=prices.length
+    ?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_articleno)+'</th><th class="num">'+esc(t.th_price)+'</th><th class="num">'+esc(t.th_leadtime)+'</th></tr></thead><tbody>'
+      +prices.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>'
+    :`<div class="empty">${esc(t.empty_prices)}</div>`;
+}
 function renderSide(s){
   const t=T[LANG];
   $('contacts').innerHTML=s.contacts.map((c,i)=>`<div class="contact"><span class="avatar" aria-hidden="true">${esc(c[0])}</span><span><b>${esc(c[1])}${i===0?` <i class="chip">${esc(t.primary_chip)}</i>`:''}</b><small>${esc(c[2])}</small><small>${esc(shown(c[3]))}<br>${esc(shown(c[4]))}</small></span>${c[3]?`<button type="button" class="btn mailto-btn" data-email="${esc(c[3])}" aria-label="Email ${esc(c[1])}">✉</button>`:''}</div>`).join('')||`<div class="empty">${esc(t.empty_contacts)}</div>`;
@@ -378,32 +427,44 @@ function handleSupplierItemImport(input){
 function notify(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2200)}
 function openModal(type,edit=false){const t=T[LANG];const s=suppliers[selected];$('modal').classList.add('show');$('modal').dataset.type=type;$('modalTitle').textContent=type==='note'?t.mt_note:type==='contact'?t.mt_contact:type==='po'?t.mt_po:type==='doc'?t.mt_doc:edit?t.mt_edit:t.mt_new;$('modalFields').innerHTML=type==='note'?`<div class="field wide"><label for="noteText">${t.field_note}</label><textarea id="noteText" name="note" rows="5" required></textarea></div>`:type==='contact'?`<div class="field"><label for="contactName">${t.field_name}</label><input id="contactName" name="name" autocomplete="name" required></div><div class="field"><label for="contactRole">${t.field_role}</label><input id="contactRole" name="role" autocomplete="organization-title" required></div><div class="field"><label for="contactEmail">${t.field_email}</label><input id="contactEmail" name="email" type="email" autocomplete="email" spellcheck="false"></div><div class="field"><label for="contactPhone">${t.field_phone}</label><input id="contactPhone" name="phone" type="tel" autocomplete="tel"></div>`:type==='po'?`<div class="field wide"><label for="poCompany">${t.field_company}</label><input id="poCompany" value="${esc(s.name)}" disabled></div><div class="field"><label for="poProject">${t.field_project}</label><select id="poProject" name="project"><option value="">${t.field_project_none}</option>${(window.WorkshopData?.listProjects?.()||[]).map(p=>`<option value="${esc(p.no)}">${esc(p.no)} — ${esc(p.name)}</option>`).join('')}</select></div><div class="field wide"><label for="poItems">${t.field_items}</label><textarea id="poItems" name="items" rows="3" required></textarea></div><div class="field"><label for="poValue">${t.field_value}</label><input id="poValue" name="value" type="number" min="0" required></div><div class="field"><label for="poExpected">${t.field_expected}</label><input id="poExpected" name="expected" type="date" value="${new Date(Date.now()+14*86400000).toISOString().slice(0,10)}" required></div><div class="field"><label for="poBuyer">${t.field_buyer}</label><input id="poBuyer" name="buyer" value="Aleksandar C." autocomplete="name"></div><div class="field"><label for="poStatus">${t.field_status}</label><select id="poStatus" name="status"><option>Draft</option><option>Awaiting Approval</option><option>Confirmed</option></select></div>`:type==='doc'?`<div class="field wide"><label for="docName">${t.field_doc_name}</label><input id="docName" name="name" required></div><div class="field"><label for="docType">${t.field_doc_type}</label><select id="docType" name="type"><option>Document</option><option>Certificate</option><option>Drawing</option><option>Report</option><option>Template</option></select></div><div class="field"><label for="docCategory">${t.field_doc_category}</label><input id="docCategory" name="category"></div><div class="field"><label for="docExpiry">${t.field_doc_expiry}</label><input id="docExpiry" name="expiry" type="date"></div>`:`<div class="field"><label for="supplierName">${t.field_company}</label><input id="supplierName" name="name" value="${edit?esc(s.name):''}" autocomplete="organization" required></div><div class="field"><label for="supplierCategory">${t.field_category}</label><input id="supplierCategory" name="category" value="${edit?esc(s.category):''}" autocomplete="off" required></div><div class="field"><label for="supplierCountry">${t.field_country}</label><input id="supplierCountry" name="country" value="${edit?esc(s.country):'Sweden'}" autocomplete="country-name"></div><div class="field"><label for="supplierStatus">${t.field_status}</label><select id="supplierStatus" name="status"><option value="active">${t.status_active}</option><option value="preferred">${t.status_preferred}</option><option value="inactive">${t.status_inactive}</option></select></div>`;$('modal').dataset.edit=edit;requestAnimationFrame(()=>$('modalFields').querySelector('input:not([disabled]),textarea,select')?.focus())}
 function closeModal(){$('modal').classList.remove('show');$('modalForm').reset()}
-$('modalForm').onsubmit=e=>{
+// Awaited, and the refusal reported.
+//
+// This used to fire the save and then say "Supplier record saved" whatever came back, which against
+// browser storage was true — the write had already happened. Against a database it is not: a second
+// merchant under a name already in the register is refused, and the screen was saying it had been saved.
+// The refusal that matters most on this form was the one nobody was shown.
+$('modalForm').onsubmit=async e=>{
   e.preventDefault();
   const fd=Object.fromEntries(new FormData(e.target));
   const type=$('modal').dataset.type,s=suppliers[selected];
+  const said=answer=>{
+    if(answer&&answer.error){render();notify(answer.error);return true;}
+    return false;
+  };
   if(type==='note'){
     const note=[new Date().toISOString().slice(0,10),fd.note,'Aleksandar C.'];
     s.notes.unshift(note);
-    if(!s.sharedId)syncSupplier(s);
-    if(window.WorkshopData&&s.sharedId)WorkshopData.addSupplierNote(s.sharedId,note);
+    if(!s.sharedId&&said(await syncSupplier(s)))return;
+    if(window.WorkshopData&&s.sharedId&&said(await WorkshopData.addSupplierNote(s.sharedId,note)))return;
   }else if(type==='contact'){
     const contact=[initials(fd.name),fd.name,fd.role,fd.email,fd.phone];
     s.contacts.push(contact);
-    if(!s.sharedId)syncSupplier(s);
-    if(window.WorkshopData&&s.sharedId)WorkshopData.addSupplierContact(s.sharedId,contact);
+    if(!s.sharedId&&said(await syncSupplier(s)))return;
+    if(window.WorkshopData&&s.sharedId&&said(await WorkshopData.addSupplierContact(s.sharedId,contact)))return;
   }else if(type==='po'){
-    if(!s.sharedId)syncSupplier(s);
-    const po=window.WorkshopData.upsertPurchaseOrder({supplier:s.name,project:fd.project||null,date:new Date().toISOString().slice(0,10),expected:fd.expected,value:Number(fd.value),buyer:fd.buyer,status:fd.status,items:fd.items});
+    if(!s.sharedId&&said(await syncSupplier(s)))return;
+    const po=await window.WorkshopData.upsertPurchaseOrder({supplier:s.name,project:fd.project||null,date:new Date().toISOString().slice(0,10),expected:fd.expected,value:Number(fd.value),buyer:fd.buyer,status:fd.status,items:fd.items});
+    if(said(po))return;
     closeModal();render();notify(T[LANG].toast_new_po.replace('{no}',po.no));
     return;
   }else if(type==='doc'){
-    const doc=window.WorkshopData.upsertDocument({name:fd.name,type:fd.type||'Document',module:'Suppliers',record:s.name,category:fd.category||'General',status:'Valid',expiry:fd.expiry||'',revision:'1',author:'Aleksandar C.'});
+    const doc=await window.WorkshopData.upsertDocument({name:fd.name,type:fd.type||'Document',module:'Suppliers',record:s.name,category:fd.category||'General',status:'Valid',expiry:fd.expiry||'',revision:'1',author:'Aleksandar C.'});
+    if(said(doc))return;
     closeModal();render();notify(T[LANG].toast_doc_added.replace('{name}',doc.name));
     return;
   }else if($('modal').dataset.edit==='true'){
     Object.assign(s,fd);
-    syncSupplier(s);
+    if(said(await syncSupplier(s)))return;
   }else{
     // The currency only. A rating of four stars out of five, payment terms of 30 days and delivery
     // terms of DAP were being written onto every supplier this form created — three commitments with a
@@ -412,7 +473,7 @@ $('modalForm').onsubmit=e=>{
     const created=enrich({id:'SUP-'+String(suppliers.length+1).padStart(4,'0'),currency:'SEK',...fd});
     suppliers.unshift(created);
     selected=0;
-    syncSupplier(created);
+    if(said(await syncSupplier(created)))return;
   }
   closeModal();render();notify(T[LANG].toast_saved)
 };
@@ -436,4 +497,132 @@ setLang('en');
 // supplierDocRows() need to actually show a PO/document created in another tab - see
 // hydrateSharedSuppliers()'s own comment.
 window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();});
+
+// ── The merchants on the database ───────────────────────────────────────────────────────────
+//
+// The fourteenth screen, and the last one this pass wires. The register was thin in the schema — a name,
+// a town and a payment term — while the screen showed an address, a VAT number, a website, what they
+// sell, the Incoterms, a minimum order and a rating, so most of this slice was columns rather than code.
+//
+// Reading replaces `hydrateSharedSuppliers`, which merged the shared register into a page-local array and
+// kept the page-local copy. On a server-backed page there is no page-local copy to keep: the list IS the
+// snapshot, every record through SupplierRecord.fromServer, and `_server` rides along for the overlay
+// rule this is the fourth screen to need — the New Supplier form asks for four fields out of nineteen.
+//
+// Writing replaces four methods, and one of them is doing less than it used to on purpose:
+// `upsertSupplier` no longer carries a performance score, a spend figure, a count of open orders or a
+// count of overdue deliveries. Every one of those is an answer computed from rows elsewhere, and none of
+// them was ever being computed — the figures were written into the page.
+//
+// The payment terms come from the money payload rather than the snapshot, because what this workshop is
+// paid on is a commercial term and §1b keeps those off the shop floor. A welder opening this screen sees
+// the merchant, their address and who to ring, and a dash where the terms would be.
+(function(){
+  const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked());
+  let sending=Promise.resolve();
+
+  // WorkshopApi.snapshot() already merges the money payload onto each record by id, so a supplier
+  // arrives carrying `terms` and `priceList` for the office and neither for a welder. There is no second
+  // call to make here, and no branch on a role: what a welder is refused simply is not on the record,
+  // and the panels print a dash.
+  function adopt(data){
+    const unit=(T[LANG]&&T[LANG].payment_days_unit)||'days';
+    WorkshopData.adoptSnapshot(Object.assign({},data,{
+      suppliers:(data.suppliers||[]).map(record=>SupplierRecord.fromServer(record,
+        record.terms===undefined?null:{terms:record.terms,unit:unit}))
+    }));
+  }
+
+  async function refresh(){
+    const answer=await WorkshopApi.snapshot();
+    if(answer.signedOut){location.href='login.html';return false;}
+    if(answer.offline||answer.failed){notify(answer.failed||'The server cannot be reached.');return false;}
+    adopt(answer.data);
+    hydrateSharedSuppliers();
+    render();
+    return true;
+  }
+
+  function send(name,body){
+    const mine=sending.then(async ()=>{
+      const answer=await WorkshopApi.call(name,body);
+      if(answer.signedOut){location.href='login.html';return {error:'Signed out.'};}
+      if(!answer.ok){
+        await refresh();
+        return {error:answer.refused||'The server refused that.'};
+      }
+      await refresh();
+      return {result:answer.result};
+    }).catch(e=>({error:String(e&&e.message||e)}));
+    sending=mine.then(()=>undefined,()=>undefined);
+    return mine;
+  }
+
+  const rowOf=no=>((WorkshopData.get().suppliers||[])
+    .find(x=>String(x.no)===String(no)||String(x.id)===String(no)||x.name===no)||null);
+
+  const SENT={
+    async upsertSupplier(payload){
+      const answer=await send('save_supplier',SupplierRecord.toServer(payload));
+      if(answer.error)return {error:answer.error};
+      const saved=(WorkshopData.get().suppliers||[]).find(x=>String(x.id)===String(answer.result));
+      // The contacts are a second call, and deliberately so: they are a list the database replaces
+      // wholesale, and one function that took both would mean a refused contact list losing the
+      // merchant's corrected address with it.
+      if(Array.isArray(payload&&payload.contacts)&&payload.contacts.length){
+        const also=await send('set_supplier_contacts',{
+          supplier_id:Number(answer.result),
+          contacts:SupplierRecord.contactsToServer(payload.contacts)
+        });
+        if(also.error)return Object.assign({},saved||{},{error:also.error});
+      }
+      return saved||{id:answer.result};
+    },
+    async addSupplierNote(id,note){
+      // The screen's note is a three-element row: date, text, author. Only the text is sent — the date
+      // is when the database recorded it and the author is the session, because a note somebody else's
+      // name can be put on is not a note.
+      const text=Array.isArray(note)?note[1]:(note&&note.text);
+      const answer=await send('add_supplier_note',{supplier_id:Number(id),text:text||''});
+      return answer.error?{error:answer.error}:{};
+    },
+    async addSupplierContact(id,contact){
+      const held=(WorkshopData.get().suppliers||[]).find(x=>String(x.id)===String(id));
+      if(!held)return {error:'That supplier is not in this workshop.'};
+      const answer=await send('set_supplier_contacts',{
+        supplier_id:Number(id),
+        contacts:SupplierRecord.contactsToServer((held.contacts||[]).concat([contact]))
+      });
+      return answer.error?{error:answer.error}:{};
+    },
+    async listSuppliers(){return (WorkshopData.get().suppliers||[]);}
+  };
+
+  // A purchase order and a document are both this screen's to raise and neither has a workflow yet —
+  // purchase_order is a table with no save function, and a document needs somewhere for the file to
+  // live. They refuse out loud rather than writing into browser storage on a page that is otherwise
+  // reading from the database, which is the outcome that looks like it worked and is gone on reload.
+  const NOT_BUILT=['upsertPurchaseOrder','upsertDocument','createInventoryItem','upsertSupplierQuality'];
+
+  const original={};
+  Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{
+    if(typeof WorkshopData[name]!=='function')return;
+    original[name]=WorkshopData[name].bind(WorkshopData);
+    WorkshopData[name]=function(){
+      if(!onServer())return original[name].apply(null,arguments);
+      if(SENT[name])return SENT[name].apply(null,arguments);
+      return {error:'That is not on the workshop database yet.'};
+    };
+  });
+
+  (async function(){
+    if(!window.WorkshopApi||!WorkshopApi.signedIn())return;
+    if(!(await refresh()))return;
+    const out=document.querySelector('button.out')||document.getElementById('logoutBtn');
+    if(out)out.addEventListener('click',async function(e){
+      e.preventDefault();await WorkshopApi.signOut();location.href='login.html';
+    });
+  })();
+})();
+
 </script></body></html>

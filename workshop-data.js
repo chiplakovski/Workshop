@@ -156,7 +156,28 @@
       {id:1,code:'OFF-SS304-5-600X420',materialCode:'SS-SHT-304-2.0',description:'AISI 304 plate offcut',grade:'AISI 304',thickness:5,width:600,length:420,unit:'mm',location:'O1-01-01',status:'available',created:'2026-08-20',sourceProject:'P-2026-009'},
       {id:2,code:'OFF-TUBE-50-1450',materialCode:'MS-TUBE-40SQ-2.0',description:'Square tube offcut',grade:'S235JR',dimensions:'50×50×3',length:1450,unit:'mm',location:'O2-01-04',status:'available',created:'2026-08-24',sourceProject:'P-2026-014'}
     ],
-    suppliers:[],stockCounts:[],hours:[],activity:[],
+    // The merchants the demonstration store already buys from by name — the inventory records carry
+    // 'Nordic Steel' and 'WeldSupply' on their items, and the register they pointed at was empty, so the
+    // one screen whose job is answering "who do we buy this from" had nothing in it. Two rather than
+    // five, and no rating on either: this workshop has not rated anybody, and four stars nobody gave is
+    // the bug this register was carrying until now.
+    suppliers:[
+      {id:1,no:'S-001',name:'Nordic Steel',category:'Steel & plate',status:'preferred',
+        org:'556123-4567',vat:'SE556123456701',email:'order@nordicsteel.se',phone:'+46 42 555 10 20',
+        website:'www.nordicsteel.se',address:'Hamngatan 14, 252 21 Helsingborg',city:'Helsingborg',
+        country:'Sweden',type:'Company',established:'1994',payment:'30 days',delivery:'DAP',
+        minimum:'5 000 SEK',currency:'SEK',rating:null,
+        contacts:[['EL','Erik Lund','Order desk','order@nordicsteel.se','+46 42 555 10 20']],
+        notes:[],docs:[],purchaseOrders:[],items:[]},
+      {id:2,no:'S-002',name:'WeldSupply',category:'Welding consumables',status:'active',
+        org:'556987-1122',vat:'SE556987112201',email:'sales@weldsupply.se',phone:'+46 40 555 33 44',
+        website:'www.weldsupply.se',address:'Verkstadsgatan 3, 211 24 Malmö',city:'Malmö',
+        country:'Sweden',type:'Company',established:'2008',payment:'14 days',delivery:'EXW',
+        minimum:'1 500 SEK',currency:'SEK',rating:null,
+        contacts:[['AN','Anna Nyberg','Sales','sales@weldsupply.se','+46 40 555 33 44']],
+        notes:[],docs:[],purchaseOrders:[],items:[]}
+    ],
+    stockCounts:[],hours:[],activity:[],
     jobcards:[
       {id:1,no:'JC-2026-0001',projectId:14,projectNo:'P-2026-014',customerId:1,customer:'MarineVent AB',
         title:'Ventilation Duct Fabrication',item:'Duct Section Assembly A',quantity:4,revision:0,drawingNo:'DWG-VD-014-A',

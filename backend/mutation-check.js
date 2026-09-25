@@ -97,6 +97,12 @@ const FILES = {
   qualityrecord: {
     path: path.join(__dirname, '..', 'quality-record.js'),
     suite: path.join('..', 'tests', 'quality-record.test.js'), env: 'VARMAK_QUALITY_RECORD'
+  },
+  // And the supplier register's, whose own promises are the payment terms in words, a rating that can be
+  // absent, and the six figures it refuses to save.
+  supplierrecord: {
+    path: path.join(__dirname, '..', 'supplier-record.js'),
+    suite: path.join('..', 'tests', 'supplier-record.test.js'), env: 'VARMAK_SUPPLIER_RECORD'
   }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
@@ -1877,14 +1883,10 @@ GRANT INSERT ON quality_hold TO varmak_workshop;`
     from: `    'suppliers', coalesce((SELECT jsonb_agg(jsonb_build_object(`,
     to: `    'suppliersNotSent', coalesce((SELECT jsonb_agg(jsonb_build_object(`
   },
-  {
-    what: 'what we pay a merchant on travels in the list every welder reads',
-    file: 'views',
-    from: `        'status', s.status
-      ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),`,
-    to: `        'status', s.status, 'terms', s.payment_terms_days::text
-      ) ORDER BY s.name) FROM supplier s), '[]'::jsonb),`
-  },
+  // The mutation that used to be here became stale when the supplier list in the snapshot was widened,
+  // and the harness said so — "the rule this mutation edits is no longer in views.sql". It is replaced by
+  // 'what a merchant charges travels in the list every welder reads', further down, which anchors on the
+  // block as it now stands. Two anchors for one rule would be one anchor going quietly stale.
 
   // ── Quality: the translation in the browser ────────────────────────────────────────────────
 
@@ -1916,6 +1918,230 @@ GRANT INSERT ON quality_hold TO varmak_workshop;`
     from: `    const item = said(line && line.item === undefined ? null : String(line.item === null
       || line.item === undefined ? '' : line.item).trim());`,
     to: `    const item = said(line && line.item);`
+  },
+
+  // ── Suppliers: the merchants a workshop buys from ───────────────────────────────────────────
+
+  {
+    what: 'a merchant can be rated out of more than five, or below nothing',
+    from: `  rating      numeric(2,1) CHECK (rating IS NULL OR (rating >= 0 AND rating <= 5)),`,
+    to: `  rating      numeric(2,1),`
+  },
+  {
+    what: 'the supplier statuses go back to two, and the one the register filters by is refused',
+    from: `  status      text NOT NULL DEFAULT 'active'
+              CHECK (status IN ('active','preferred','inactive')),`,
+    to: `  status      text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),`
+  },
+  {
+    what: 'a merchant can have two main contacts, so "who do I ring" has two answers',
+    from: `CREATE UNIQUE INDEX supplier_has_one_main_contact
+  ON supplier_contact (supplier_id) WHERE is_primary;`,
+    to: ''
+  },
+  {
+    what: 'a supplier contact nobody can reach is still a contact',
+    from: `  CONSTRAINT supplier_contact_can_be_reached
+    CHECK (coalesce(btrim(email), '') <> '' OR coalesce(btrim(phone), '') <> '')`,
+    to: `  CONSTRAINT supplier_contact_can_be_reached CHECK (true)`
+  },
+  {
+    what: 'a supplier contact outlives the merchant it belongs to',
+    from: `  supplier_id bigint NOT NULL REFERENCES supplier(id) ON DELETE CASCADE,
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  role        text,
+  email       text,
+  phone       text,
+  is_primary  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT supplier_contact_can_be_reached`,
+    to: `  supplier_id bigint NOT NULL REFERENCES supplier(id),
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  role        text,
+  email       text,
+  phone       text,
+  is_primary  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT supplier_contact_can_be_reached`
+  },
+  {
+    what: 'two merchants can be recorded under one name',
+    file: 'api',
+    from: `  SELECT ref INTO existing FROM supplier
+   WHERE upper(btrim(name)) = upper(btrim(p_name)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a supplier called % — it is %', btrim(p_name), existing;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'one name in capitals is treated as a different merchant',
+    file: 'api',
+    from: `   WHERE upper(btrim(name)) = upper(btrim(p_name)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;`,
+    to: `   WHERE btrim(name) = btrim(p_name) AND (p_id IS NULL OR id <> p_id) LIMIT 1;`
+  },
+  {
+    what: 'a rating given to a merchant can never be taken back',
+    file: 'api',
+    from: `      rating = p_rating, payment_terms_days = p_payment_terms_days, notes = p_notes`,
+    to: `      rating = coalesce(p_rating, rating), payment_terms_days = p_payment_terms_days, notes = p_notes`
+  },
+  {
+    what: 'a refused supplier contact list has already deleted the one it was replacing',
+    file: 'api',
+    edits: [
+      { from: `  -- Checked before anything is written, so the refusal is a sentence rather than the name of a unique
+  -- index. The index is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;
+    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+      RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
+        btrim(row_in->>'name');
+    END IF;
+    IF coalesce((row_in->>'primary')::boolean, false) THEN
+      mains := mains + 1;
+    END IF;
+  END LOOP;
+  IF mains > 1 THEN
+    RAISE EXCEPTION '% has one main contact, and this list has %', merchant, mains;
+  END IF;
+
+  DELETE FROM supplier_contact WHERE supplier_id = p_supplier_id;`,
+        to: `  DELETE FROM supplier_contact WHERE supplier_id = p_supplier_id;` },
+      { from: `    VALUES (p_supplier_id, btrim(row_in->>'name'), nullif(btrim(coalesce(row_in->>'role', '')), ''),`,
+        to: `    VALUES (p_supplier_id, coalesce(nullif(btrim(coalesce(row_in->>'name','')),''), 'Somebody'),
+            nullif(btrim(coalesce(row_in->>'role', '')), ''),` }
+    ]
+  },
+  {
+    what: 'a price can be quoted against a merchant or an item that is not there',
+    file: 'api',
+    from: `  IF NOT EXISTS (SELECT 1 FROM supplier WHERE id = p_supplier_id) THEN
+    RAISE EXCEPTION 'no such supplier' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM stock_item WHERE id = p_stock_item_id) THEN
+    RAISE EXCEPTION 'no such item' USING ERRCODE = 'foreign_key_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'changing which merchant we buy an item from is refused instead of changing it',
+    file: 'api',
+    from: `  IF coalesce(p_is_preferred, false) THEN
+    UPDATE supplier_item SET is_preferred = false
+     WHERE stock_item_id = p_stock_item_id AND supplier_id <> p_supplier_id AND is_preferred;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a second quote from the same merchant becomes a second line rather than a correction',
+    file: 'api',
+    from: `  ON CONFLICT (supplier_id, stock_item_id) DO UPDATE SET
+    article_no = excluded.article_no, price = excluded.price, currency = excluded.currency,
+    pack_size = excluded.pack_size, lead_time_days = excluded.lead_time_days,
+    is_preferred = excluded.is_preferred, updated_at = now()
+  RETURNING id INTO saved;`,
+    to: `  RETURNING id INTO saved;`
+  },
+  {
+    what: 'a supplier note can be written against a merchant that is not there',
+    file: 'api',
+    from: `  IF NOT EXISTS (SELECT 1 FROM supplier WHERE id = p_supplier_id) THEN
+    RAISE EXCEPTION 'no such supplier' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'note', who, said)`,
+    to: `  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'note', who, said)`
+  },
+  {
+    what: 'the floor can read what this workshop pays a merchant on',
+    file: 'auth',
+    from: `GRANT SELECT (id, ref, name, org_no, vat_no, email, phone, website, address, city, country,
+              category, supplier_type, established, delivery_terms, minimum_order, currency,
+              rating, status, notes, created_at)
+ON supplier TO varmak_workshop;`,
+    to: `GRANT SELECT ON supplier TO varmak_workshop;`
+  },
+  {
+    what: 'the merchants reach the screen but who to ring at them does not',
+    file: 'views',
+    from: `        'contacts', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'name', k.name, 'role', k.role, 'email', k.email, 'phone', k.phone,
+            'primary', k.is_primary
+          ) ORDER BY k.is_primary DESC, k.name)
+          FROM supplier_contact k WHERE k.supplier_id = s.id), '[]'::jsonb),
+        'activity', quality_activity_of('supplier', s.id)`,
+    to: `        'activity', quality_activity_of('supplier', s.id)`
+  },
+  {
+    what: 'what a merchant charges travels in the list every welder reads',
+    file: 'views',
+    from: `        'rating', s.rating::text,
+        'status', s.status, 'notes', s.notes,`,
+    to: `        'rating', s.rating::text, 'terms', s.payment_terms_days::text,
+        'status', s.status, 'notes', s.notes,`
+  },
+  {
+    what: 'a merchant’s price crosses the wire as a JSON number, which a browser parses as a double',
+    file: 'views',
+    from: `            'articleNo', si.article_no, 'price', si.price::text, 'currency', si.currency,`,
+    to: `            'articleNo', si.article_no, 'price', si.price, 'currency', si.currency,`
+  },
+  {
+    what: 'a price correction quietly stops a merchant being the one we buy from',
+    file: 'api',
+    from: `    is_preferred = CASE WHEN p_is_preferred IS NULL THEN supplier_item.is_preferred
+                        ELSE p_is_preferred END,`,
+    to: `    is_preferred = excluded.is_preferred,`
+  },
+  {
+    what: 'the payment terms are sent as the words on screen rather than as a count of days',
+    file: 'supplierrecord',
+    from: `      payment_terms_days: paymentDays(whole.payment),`,
+    to: `      payment_terms_days: whole.payment,`
+  },
+  {
+    what: 'a missing rating is read as four stars, which nobody gave',
+    file: 'supplierrecord',
+    from: `    if (value === undefined || value === null || value === '') return null;
+    const score = Number(value);
+    if (!Number.isFinite(score) || score < 0 || score > 5) return null;
+    return score;`,
+    to: `    const score = Number(value);
+    if (!Number.isFinite(score) || score < 0 || score > 5) return 4;
+    return score;`
+  },
+  {
+    what: 'the figures computed from rows elsewhere are saved onto the merchant',
+    file: 'supplierrecord',
+    from: `    'country', 'type', 'established', 'delivery', 'minimum', 'currency', 'rating', 'payment',
+    'description'
+  ];`,
+    to: `    'country', 'type', 'established', 'delivery', 'minimum', 'currency', 'rating', 'payment',
+    'description', 'performance', 'spendYtd', 'openPOs'
+  ];`
+  },
+  {
+    what: 'the notes panel’s dated list is sent as the merchant’s standing description',
+    file: 'supplierrecord',
+    from: `      notes: trimmed(whole.description)`,
+    to: `      notes: trimmed(whole.notes)`
+  },
+  {
+    what: 'a price list is rendered into the panel headed by what has been bought',
+    file: 'supplierrecord',
+    from: `    shaped.items = [];`,
+    to: `    shaped.items = Array.isArray(given.priceList) ? given.priceList : [];`
+  },
+  {
+    what: 'the avatar initials are stored rather than worked out from the name beside them',
+    file: 'supplierrecord',
+    from: `        primary: Array.isArray(row) ? at === 0 : !!given.primary`,
+    to: `        initials: Array.isArray(row) ? row[0] : '',
+        primary: Array.isArray(row) ? at === 0 : !!given.primary`
   }
 ];
 

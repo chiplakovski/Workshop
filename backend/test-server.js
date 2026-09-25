@@ -92,16 +92,15 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
-    'accept_estimate', 'add_person', 'add_quality_note', 'assign_equipment', 'book_hours',
-    'bootstrap_first_admin', 'change_my_password', 'complete_inspection',
-    'convert_lead', 'create_reinspection', 'issue_material_offline',
-    'place_hold', 'receive_goods', 'receive_stock',
-    'record_equipment_event', 'record_ncr_step', 'record_operation', 'record_stocktake',
-    'release_hold', 'replace_inspection_checks', 'return_equipment',
-    'save_customer',
-    'save_equipment', 'save_inspection', 'save_jobcard', 'save_ncr', 'save_project',
-    'save_stock_item', 'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
-    'set_person_active', 'set_person_password', 'set_person_pin', 'set_person_role'
+    'accept_estimate', 'add_person', 'add_quality_note', 'add_supplier_note', 'assign_equipment',
+    'book_hours', 'bootstrap_first_admin', 'change_my_password', 'complete_inspection',
+    'convert_lead', 'create_reinspection', 'issue_material_offline', 'place_hold', 'receive_goods',
+    'receive_stock', 'record_equipment_event', 'record_ncr_step', 'record_operation',
+    'record_stocktake', 'release_hold', 'replace_inspection_checks', 'return_equipment',
+    'save_customer', 'save_equipment', 'save_inspection', 'save_jobcard', 'save_ncr',
+    'save_project', 'save_stock_item', 'save_supplier', 'save_supplier_item', 'send_estimate',
+    'set_customer_contacts', 'set_jobcard_operations', 'set_person_active', 'set_person_password',
+    'set_person_pin', 'set_person_role', 'set_supplier_contacts'
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 
@@ -316,14 +315,26 @@ async function theOfficeGetsTheFiguresItNeeds(tokens, f) {
   // Every figure a string, never a JSON number. A JSON number parsed in a browser is a double, and
   // money as a double is the mistake the schema rules out with numeric — reintroducing it on the
   // wire would undo that for the sake of two characters.
+  //
+  // Walked to the bottom rather than three levels deep. The first version looked at
+  // collection → id → field and stopped, which was the whole payload at the time; the supplier price
+  // list arrives as a list of lines under one supplier, so every price in it sat one level below where
+  // this was looking. A check that only inspects the shapes it was written for reports clean about the
+  // shape it has never seen.
   const asNumbers = [];
-  for (const [collection, records] of Object.entries(money.body)) {
-    for (const [id, fields] of Object.entries(records)) {
-      for (const [field, figure] of Object.entries(fields)) {
-        if (figure !== null && typeof figure !== 'string') asNumbers.push(`${collection}.${id}.${field}`);
-      }
+  const everyFigure = (value, path) => {
+    if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
+    if (Array.isArray(value)) {
+      value.forEach((entry, at) => everyFigure(entry, `${path}[${at}]`));
+      return;
     }
-  }
+    if (typeof value === 'object') {
+      for (const [key, entry] of Object.entries(value)) everyFigure(entry, `${path}.${key}`);
+      return;
+    }
+    asNumbers.push(path);
+  };
+  for (const [collection, records] of Object.entries(money.body)) everyFigure(records, collection);
   assert.deepEqual(asNumbers, [],
     `these figures crossed the wire as JSON numbers, which a browser parses as doubles: ${asNumbers.join(', ')}`);
   assert.equal(money.body.inventory[item.id].avgCost.length, 5, '14.50 must keep its scale, not arrive as 14.5');
@@ -878,7 +889,13 @@ function world() {
   sql(`INSERT INTO estimate_line (estimate_id, kind, description, quantity, unit, unit_price)
        VALUES (${estimate}, 'material', 'Plate', 500, 'KG', 22.00),
               (${estimate}, 'labour', 'Welding', 40, 'H', 650);`);
-  const supplier = value(`INSERT INTO supplier (name) VALUES ('Stål & Metall AB') RETURNING id;`);
+  const supplier = value(`INSERT INTO supplier (name, city, payment_terms_days, category)
+    VALUES ('Stål & Metall AB', 'Helsingborg', 30, 'Steel') RETURNING id;`);
+  // A price against an item, so the price list in the money payload has a line in it. Without one it is
+  // an empty array, and every check about what crosses the wire as a figure passes by having nothing to
+  // look at — which is how a price as a JSON number stayed invisible until a mutation asked.
+  sql(`INSERT INTO supplier_item (supplier_id, stock_item_id, article_no, price, lead_time_days, is_preferred)
+       VALUES (${supplier}, ${item}, 'ST-10-S355', 13.90, 5, true);`);
   const order = value(`INSERT INTO purchase_order (supplier_id, ordered_by) VALUES (${supplier}, 'Lars Holm') RETURNING id;`);
   const line = value(`INSERT INTO purchase_order_line (purchase_order_id, stock_item_id, description, quantity, unit_price)
     VALUES (${order}, ${item}, 'Plate S355J2 10mm', 500, 13.90) RETURNING id;`);

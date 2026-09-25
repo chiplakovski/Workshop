@@ -503,8 +503,15 @@ GRANT SELECT, INSERT, DELETE ON inspection_check TO varmak_workshop;
 -- price list — so this is a column grant and not the table. The name is in because a welder who has
 -- just rejected a batch of steel needs to be able to say whose steel it was, and the NCR register
 -- shows exactly that column.
-GRANT SELECT (id, ref, name, org_no, email, phone, city, country, status) ON supplier
-TO varmak_workshop;
+-- payment_terms_days is what this workshop is paid on, and supplier_item holds what each merchant
+-- charges — both are prices in the sense §1b means, so both stay with the money. Everything else about
+-- a merchant is here: what they sell, where they are, who to ring, and what this workshop thinks of
+-- them, because a welder who has just rejected a batch of steel needs to say whose steel it was.
+GRANT SELECT (id, ref, name, org_no, vat_no, email, phone, website, address, city, country,
+              category, supplier_type, established, delivery_terms, minimum_order, currency,
+              rating, status, notes, created_at)
+ON supplier TO varmak_workshop;
+GRANT SELECT ON supplier_contact TO varmak_workshop;
 
 -- The customer is visible because a welder needs to know whose job is on the bench: who they are,
 -- where they are, how to reach them if a drawing is wrong.
@@ -605,7 +612,10 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- A contact at a customer is not that. Somebody who has left the company is not a record of
 -- anything, and taking their name off the list is exactly a correction — while leaving it there
 -- means somebody rings a number that has been reassigned and believes what they are told.
-GRANT DELETE ON customer_contact TO varmak_office;
+-- Both contact lists are replaced wholesale by their save functions, which delete and re-insert, so the
+-- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
+-- for an edit: a contact who has left the company is not history, they are a mistake in a list.
+GRANT DELETE ON customer_contact, supplier_contact TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
@@ -697,7 +707,7 @@ BEGIN
     'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
     'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
     'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event',
-    'customer_contact'
+    'customer_contact', 'supplier_contact'
   ]
   LOOP
     EXECUTE format($p$CREATE POLICY the_office_runs_this ON %I FOR ALL
