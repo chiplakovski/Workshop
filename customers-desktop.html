@@ -258,12 +258,12 @@ body{overflow:hidden;min-height:0}
 .actionbar button:hover{color:#fff}
 </style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
-<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><div class="ms-scroll"><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div></div><div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
+<aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◎</div><div><h2 data-i="sb_title">CUSTOMERS</h2><small data-i="csub">Contacts & accounts</small></div></div><div class="ms-scroll"><nav class="module-side-nav" id="moduleSideNav"><button class="on" data-ms="overview" onclick="sidebarCustomer('overview')"><i>▦</i><span data-i="sb_overview">Customer Overview</span></button><button data-ms="contacts" onclick="sidebarCustomer('contacts')"><i>◉</i><span data-i="tab_contacts">Contacts</span></button><button data-ms="projects" onclick="sidebarCustomer('projects')"><i>▣</i><span data-i="tab_projects">Projects</span></button><button data-ms="quotes" onclick="sidebarCustomer('quotes')"><i>▤</i><span data-i="sb_quotes">Estimations / Quotes</span></button><button data-ms="invoices" onclick="sidebarCustomer('invoices')"><i>▧</i><span data-i="tab_invoices">Invoices</span></button><button data-ms="notes" onclick="sidebarCustomer('notes')"><i>✎</i><span data-i="sb_notes_docs">Notes & Documents</span></button><button onclick="openNewCustomer()"><i>＋</i><span data-i="newcust">New Customer</span></button></nav><div class="ms-sidebox"><b data-i="sb_workflow_title">Shared customer record</b><p data-i="sb_workflow_desc">Enter customer details once and reuse them in estimations, projects, planning and invoicing.</p></div></div><div class="ms-user"><div class="ms-avatar" data-session-initials>—</div><div><strong data-session-name>—</strong><small data-i="sb_role">Customer manager</small></div></div></aside>
 
 <div class="pagescroll"><div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
   <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+    <div class="who"><div class="badge"><span class="av" data-session-initials>—</span><span data-session-name>—</span><span class="role" data-session-role>—</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
 <div class="modhead">
@@ -321,7 +321,7 @@ const STATUS_CLASS={draft:"n",quotation:"b",approved:"b",planned:"b",active:"b",
 const STATUS_WORD_CLASS={active:"b",completed:"g","in production":"b",hold:"w"};
 
 const T={
-  en:{role:"Admin",logout:"Log out",back_hub:"Hub",ctitle:"Customers",csub:"Contacts & accounts",
+  en:{logout:"Log out",back_hub:"Hub",ctitle:"Customers",csub:"Contacts & accounts",
     sb_title:"CUSTOMERS",sb_overview:"Customer Overview",sb_quotes:"Estimations / Quotes",sb_notes_docs:"Notes & Documents",
     sb_workflow_title:"Shared customer record",sb_workflow_desc:"Enter customer details once and reuse them in estimations, projects, planning and invoicing.",sb_role:"Customer manager",
     p_list:"Customer List",p_summary:"Customer Summary",p_details:"Customer Details",p_contacts:"Contact Persons",p_recent:"Recent Projects",p_notes:"Latest Notes",p_docs:"Documents",
@@ -350,7 +350,7 @@ const T={
     srv_saved:"Saved.",srv_refused:"The database refused this:",
     srv_not_built:"This does not exist on the server yet, so it is not being saved. The customer record and the contacts do; documents, quotes, invoices and notes still need their own workflow. Nothing was written.",
     locale:"en-GB"},
-  sv:{role:"Admin",logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
+  sv:{logout:"Logga ut",back_hub:"Nav",ctitle:"Kunder",csub:"Kontakter & konton",
     sb_title:"KUNDER",sb_overview:"Kundöversikt",sb_quotes:"Kalkyler / Offerter",sb_notes_docs:"Anteckningar & dokument",
     sb_workflow_title:"Delat kundregister",sb_workflow_desc:"Ange kunduppgifter en gång och återanvänd dem i kalkyler, projekt, planering och fakturering.",sb_role:"Kundansvarig",
     p_list:"Kundlista",p_summary:"Kundöversikt",p_details:"Kunduppgifter",p_contacts:"Kontaktpersoner",p_recent:"Senaste projekt",p_notes:"Senaste anteckningar",p_docs:"Dokument",
@@ -379,7 +379,7 @@ const T={
     srv_saved:"Sparat.",srv_refused:"Databasen nekade detta:",
     srv_not_built:"Det här finns inte på servern än, så det sparas inte. Kundposten och kontakterna gör det; dokument, offerter, fakturor och anteckningar behöver fortfarande sitt eget arbetsflöde. Ingenting skrevs.",
     locale:"sv-SE"},
-  mk:{role:"Admin",logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
+  mk:{logout:"Odjavi se",back_hub:"Meni",ctitle:"Klienti",csub:"Kontakti i smetki",
     sb_title:"KLIENTI",sb_overview:"Pregled na klienti",sb_quotes:"Kalkulacii / Ponudi",sb_notes_docs:"Beleški i dokumenti",
     sb_workflow_title:"Zaednički zapis za klient",sb_workflow_desc:"Vnesete gi podatocite za klientot ednaš i iskoristete gi vo kalkulacii, proekti, planiranje i fakturiranje.",sb_role:"Menadžer za klienti",
     p_list:"Lista na klienti",p_summary:"Pregled na klienti",p_details:"Detali za klient",p_contacts:"Kontakt lica",p_recent:"Posledni proekti",p_notes:"Posledni beleški",p_docs:"Dokumenti",

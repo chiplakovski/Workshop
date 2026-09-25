@@ -291,13 +291,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button onclick="openNewJobcardMenu()"><i>&#65291;</i><span data-i="nav_newjc">New Jobcard</span></button>
   </nav>
   <div class="ms-sidebox"><b data-i="sbox_t">Connected workflow</b><p data-i="sbox_p">Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.</p></div>
-  <div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="role">Admin</small></div></div>
+  <div class="ms-user"><div class="ms-avatar" data-session-initials>—</div><div><strong data-session-name>—</strong><small data-session-role>—</small></div></div>
 </aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
   <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+    <div class="who"><div class="badge"><span class="av" data-session-initials>—</span><span data-session-name>—</span><span class="role" data-session-role>—</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
 <div class="wrap">
@@ -434,7 +434,7 @@ en:{
   srv_refused:"The database refused this:",
   srv_gone:"That jobcard is no longer on screen — the list has been refreshed.",
   srv_not_built:"This does not exist on the server yet, so it is not being saved. The jobcard itself and its operations do; notes, inspections, offcuts and pre-use checks still need their own workflow. Nothing was written.",
-  locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Jobcards",msub:"Workshop production orders",msub_short:"Work orders",
+  locale:"en-GB",logout:"Log out",back_hub:"Hub",mtitle:"Jobcards",msub:"Workshop production orders",msub_short:"Work orders",
   sbox_t:"Connected workflow",sbox_p:"Jobcards are issued from accepted, planned projects and feed hours and material use back into the shared workshop data.",
   nav_overview:"Overview",nav_jobcards:"Jobcards",scope_label:"Narrow the list",nav_all:"All Jobcards",nav_ready:"Ready to Start",nav_inprogress:"In Progress",nav_blocked:"Paused / Blocked",nav_inspection:"Inspection Required",nav_completed:"Completed",nav_archived:"Archived",nav_newjc:"New Jobcard",
   kpi_open:"Total open jobcards",kpi_ready:"Ready to start",kpi_inprogress:"In progress",kpi_blocked:"Blocked",kpi_waitmat:"Waiting for material",kpi_waitinsp:"Waiting for inspection",kpi_completedweek:"Completed this week",kpi_overdue:"Overdue jobcards",
@@ -496,7 +496,7 @@ sv:{
   srv_refused:"Databasen nekade detta:",
   srv_gone:"Det jobbkortet finns inte längre på skärmen — listan har uppdaterats.",
   srv_not_built:"Det här finns inte på servern än, så det sparas inte. Jobbkortet och dess operationer gör det; anteckningar, kontroller, spillbitar och kontroll före användning behöver fortfarande sitt eget arbetsflöde. Ingenting skrevs.",
-  locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Jobbkort",msub:"Verkstadens tillverkningsorder",msub_short:"Arbetsorder",
+  locale:"sv-SE",logout:"Logga ut",back_hub:"Nav",mtitle:"Jobbkort",msub:"Verkstadens tillverkningsorder",msub_short:"Arbetsorder",
   sbox_t:"Kopplat arbetsflöde",sbox_p:"Jobbkort skapas från accepterade, planerade projekt och för tillbaka timmar och materialförbrukning till den delade verkstadsdatan.",
   nav_overview:"Översikt",nav_jobcards:"Jobbkort",scope_label:"Avgränsa listan",nav_all:"Alla jobbkort",nav_ready:"Redo att starta",nav_inprogress:"Pågående",nav_blocked:"Pausade / Blockerade",nav_inspection:"Kräver besiktning",nav_completed:"Klara",nav_archived:"Arkiverade",nav_newjc:"Nytt jobbkort",
   kpi_open:"Totalt öppna jobbkort",kpi_ready:"Redo att starta",kpi_inprogress:"Pågående",kpi_blocked:"Blockerade",kpi_waitmat:"Väntar på material",kpi_waitinsp:"Väntar på besiktning",kpi_completedweek:"Klara denna vecka",kpi_overdue:"Försenade jobbkort",
@@ -558,7 +558,7 @@ mk:{
   srv_refused:"Bazata go odbi ova:",
   srv_gone:"Toj raboten karton go nema veke na ekranot — spisokot e osvežen.",
   srv_not_built:"Ova seušte ne postoi na serverot, pa ne se zapišuva. Rabotniot karton i negovite operacii postojat; zabeleškite, kontrolite, ostatocite i proverkata pred upotreba seušte imaat potreba od sopstven tok. Ništo ne bese zapišano.",
-  locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Rabotni kartoni",msub:"Rabotni nalozi za rabotilnicata",msub_short:"Rabotni nalozi",
+  locale:"mk",logout:"Odjavi se",back_hub:"Меni",mtitle:"Rabotni kartoni",msub:"Rabotni nalozi za rabotilnicata",msub_short:"Rabotni nalozi",
   sbox_t:"Poврзан tek na rabota",sbox_p:"Rabotnite kartoni se izdavaat od prifateni, planirani proekti i gi vraќaat časovite i upotrebata na materijal vo споделените podatoci.",
   nav_overview:"Pregled",nav_jobcards:"Rabotni kartički",scope_label:"Stesni ja listata",nav_all:"Site rabotni kartoni",nav_ready:"Podgotveni za početok",nav_inprogress:"Vo tek",nav_blocked:"Pauzirani / Blokirani",nav_inspection:"Baraat inspekcija",nav_completed:"Završeni",nav_archived:"Arhivirani",nav_newjc:"Nov raboten karton",
   kpi_open:"Vkupno otvoreni kartoni",kpi_ready:"Podgotveni za početok",kpi_inprogress:"Vo tek",kpi_blocked:"Blokirani",kpi_waitmat:"Čekaat materijal",kpi_waitinsp:"Čekaat inspekcija",kpi_completedweek:"Završeni ovaa nedela",kpi_overdue:"Docnети kartoni",

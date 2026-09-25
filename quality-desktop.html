@@ -277,8 +277,8 @@
     <p><span class="statusdot"></span><span data-i="connected_workflow_text">Quality reads projects and jobcards, and an active hold here blocks them from being completed or closed until it is released. Material certificates and traceability live in Store; instrument calibration lives in Equipment.</span></p>
   </div>
   <div class="ms-user">
-    <div class="ms-avatar">AK</div>
-    <div><strong>Aleksandar</strong><small class="role" data-i="role">Admin</small></div>
+    <div class="ms-avatar" data-session-initials>—</div>
+    <div><strong data-session-name>—</strong><small class="role" data-session-role>—</small></div>
   </div>
 </aside>
 
@@ -459,7 +459,7 @@
     </div>
     <div class="mrow2">
       <div><label data-i="planned_date" for="ins_planned">Planned Date</label><input id="ins_planned" type="date"></div>
-      <div><label data-i="responsible_inspector" for="ins_inspector">Responsible Inspector</label><input id="ins_inspector" type="text" placeholder="Aleksandar C."></div>
+      <div><label data-i="responsible_inspector" for="ins_inspector">Responsible Inspector</label><input id="ins_inspector" type="text" placeholder="Name of the inspector"></div>
     </div>
     <div class="mrow">
       <label data-i="acceptance_criteria" for="ins_criteria">Acceptance Criteria</label><input id="ins_criteria" type="text">
@@ -564,7 +564,7 @@
   <div class="mcard">
     <h2 data-i="release_quality_hold">Release Quality Hold</h2>
     <div class="msub" id="holdReleaseSub"></div>
-    <div class="mrow"><label data-i="release_authority" for="hold_authority">Release Authority</label><input id="hold_authority" type="text" placeholder="Aleksandar C. — Quality Manager"></div>
+    <div class="mrow"><label data-i="release_authority" for="hold_authority">Release Authority</label><input id="hold_authority" type="text" placeholder="Name — authority to release"></div>
     <div class="mrow"><label data-i="release_reason" for="hold_reason">Resolution Evidence / Release Reason</label><textarea id="hold_reason"></textarea></div>
     <div class="mformerr" id="holdFormErr"></div>
     <div class="mbtns">
@@ -642,7 +642,7 @@ const i18n={
     quality_short:'Inspections & defects',overview:'Overview',inspections:'Inspections',ncr:'NCR',new_inspection:'New Inspection',new_ncr:'New NCR',
     connected_workflow:'Connected Workflow',
     connected_workflow_text:'Quality reads projects and jobcards, and an active hold here blocks them from being completed or closed until it is released. Material certificates and traceability live in Store; instrument calibration lives in Equipment.',
-    back_hub:'Hub',role:'Admin',quality_title:'Quality Management',quality_sub:'Inspections, non-conformance reports and quality holds',
+    back_hub:'Hub',quality_title:'Quality Management',quality_sub:'Inspections, non-conformance reports and quality holds',
     search:'Search:',filt_project:'Project:',filt_status:'Status:',all_projects:'All Projects',all_statuses:'All Statuses',
     clear_filters:'Clear Filters',print:'Print',export_csv:'Export CSV',refresh:'Refresh',
     notice_prototype:'This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.',
@@ -676,7 +676,7 @@ const i18n={
     quality_short:'Besiktningar & avvikelser',overview:'Översikt',inspections:'Inspektioner',ncr:'Avvikelserapport',new_inspection:'Ny Inspektion',
     new_ncr:'Ny Avvikelserapport',connected_workflow:'Kopplat Arbetsflöde',
     connected_workflow_text:'Kvalitet läser projekt och arbetskort, och en aktiv spärr här hindrar att de slutförs eller stängs tills den släpps. Materialintyg och spårbarhet finns i Lager; kalibrering av instrument finns i Utrustning.',
-    back_hub:'Hub',role:'Admin',quality_title:'Kvalitetsstyrning',quality_sub:'Inspektioner, avvikelserapporter och kvalitetsspärrar',search:'Sök:',
+    back_hub:'Hub',quality_title:'Kvalitetsstyrning',quality_sub:'Inspektioner, avvikelserapporter och kvalitetsspärrar',search:'Sök:',
     filt_project:'Projekt:',filt_status:'Status:',all_projects:'Alla Projekt',all_statuses:'Alla Statusar',clear_filters:'Rensa Filter',
     print:'Skriv Ut',export_csv:'Exportera CSV',refresh:'Uppdatera',
     notice_prototype:'Denna prototyp visar kvalitetsarbetsflöde och validering. Produktionsbehörigheter, officiella godkännanden, digitala signaturer, säker dokumentlagring, granskningsloggning och regelefterlevnad kräver den framtida säkra backend-lösningen.',
@@ -712,7 +712,7 @@ const i18n={
     quality_short:'Инспекции & дефекти',overview:'Преглед',inspections:'Инспекции',ncr:'НЦР',new_inspection:'Нова Инспекција',new_ncr:'Нов НЦР',
     connected_workflow:'Поврзан Работен Тек',
     connected_workflow_text:'Квалитетот ги чита проектите и работните картички, а активното задржување тука ги спречува да се завршат или затворат додека не се ослободи. Материјалните сертификати и следливоста се во Магацин; калибрацијата на инструментите е во Опрема.',
-    back_hub:'Центар',role:'Администратор',quality_title:'Управување со Квалитет',
+    back_hub:'Центар',quality_title:'Управување со Квалитет',
     quality_sub:'Инспекции, извештаи за неусогласеност и задржувања за квалитет',search:'Пребарување:',filt_project:'Проект:',filt_status:'Статус:',
     all_projects:'Сите Проекти',all_statuses:'Сите Статуси',clear_filters:'Исчисти Филтри',print:'Печати',export_csv:'Извези CSV',refresh:'Освежи',
     notice_prototype:'Оваа прототип демонстрира работен тек и валидација на квалитет. Производствени дозволи, официјални одобренија, дигитални потписи, безбедно складирање документи, ревизиско логирање и регулаторна усогласеност бараат идна обезбедена позадинска инфраструктура.',

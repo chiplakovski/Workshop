@@ -250,5 +250,68 @@
     return box;
   };
 
-  window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,prompt:window.wPrompt};
+  // ── Whose session this is ─────────────────────────────────────────────
+  //
+  // Every screen has a badge saying whose session it is: an avatar, a name, sometimes a role. On every one
+  // of them the name was **Aleksandar** and the avatar **AK**, written into the page — and on six of them
+  // the role beside it said **Admin**. That badge is the only thing on a screen that says who the reader
+  // is, and every write the page makes is attributed by the server to the real session. So the screen said
+  // one person and the database recorded another. A welder opening Quality read "Aleksandar · Admin".
+  //
+  // It is the bug that was found on the phone hub, where a welder signing in on their own phone read that
+  // line. It was fixed there, on the desktop hub and on the desk hours screen, one page at a time — and
+  // eleven pages still had it, which is what a per-page fix gets you.
+  //
+  // So it is done here instead, once, for every page that loads this file. The markup says which elements
+  // hold it — `data-session-name`, `data-session-initials`, `data-session-role` — rather than this code
+  // guessing from the sidebar's shape, which got three badges wrong on the first attempt. Each one ships
+  // holding an em dash, the app's word for "nobody has said", so a page with no session shows no name
+  // instead of somebody else's. `takenBy`, `takenRole` and `takenById` are all answered by the database
+  // from the session rather than being sent to it, which is what makes them worth painting from.
+  function initialsOf(name){
+    return String(name||'').split(/\s+/).filter(Boolean)
+      .map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
+  }
+
+  function paintWhoIsSignedIn(){
+    var data=window.WorkshopData;
+    var state=data&&data.get?data.get():null;
+    var who=state&&state.takenBy, role=state&&state.takenRole;
+    // No session, or a page reading browser storage: the em dash stays. Painting a name here from
+    // anything other than a snapshot the server took would be inventing the one fact this badge states.
+    if(!who||!data.isServerBacked||!data.isServerBacked())return;
+    each('[data-session-name]',function(el){say(el,who);});
+    each('[data-session-initials]',function(el){say(el,initialsOf(who));});
+    // The role only where the markup says the element holds the reader's role. Several sidebars say what
+    // the page is for rather than who is reading it — "Store supervisor", "Estimator" — and overwriting
+    // one of those with a database role would lose a label somebody wrote on purpose.
+    if(role)each('[data-session-role]',function(el){say(el,role);});
+  }
+
+  // One of them is a form field — Store's "Issued by" — and a read-only input showing a name has to
+  // carry it as a value, not as text between the tags, or it submits an empty string.
+  function say(el,words){
+    if('value' in el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))el.value=words;
+    else el.textContent=words;
+  }
+
+  function each(selector,paint){
+    var found=document.querySelectorAll(selector);
+    for(var i=0;i<found.length;i++)paint(found[i]);
+  }
+
+  window.addEventListener('workshop:data',paintWhoIsSignedIn);
+  // And once at load, for the snapshot a page adopts before this file is listening. Also after a language
+  // switch, because the dictionary sweep walks every [data-i] on the page: an entry reading "Admin" over a
+  // welder's role is exactly how this came back on the phone hub after being fixed once. None of the three
+  // elements carries a data-i any more, but a page that gains one should not be able to reintroduce it.
+  window.addEventListener('workshop:lang',paintWhoIsSignedIn);
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',paintWhoIsSignedIn);
+  }else{
+    paintWhoIsSignedIn();
+  }
+
+  window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,
+    prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,initialsOf:initialsOf};
 })();

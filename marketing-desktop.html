@@ -314,13 +314,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button onclick="openLeadForm()"><i>&#65291;</i><span data-i="nav_newlead">New Lead</span></button>
   </nav>
   <div class="ms-sidebox"><b data-i="sbox_t">Shared pipeline</b><p data-i="sbox_p">Leads move from first contact through Estimation into Projects. Customers and estimates are read from the shared workshop data.</p></div>
-  <div class="ms-user"><div class="ms-avatar">AK</div><div><strong>Aleksandar</strong><small data-i="role">Admin</small></div></div>
+  <div class="ms-user"><div class="ms-avatar" data-session-initials>—</div><div><strong data-session-name>—</strong><small data-session-role>—</small></div></div>
 </aside>
 
 <div class="topfull"><div class="topbar">
   <div class="brand"><div class="logo"><span class="dot"></span>Varmak AB</div><div class="meta">Lagmansgatan 31 · 241 71 Marieholm</div></div>
   <div class="topright"><div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
-    <div class="who"><div class="badge"><span class="av">AK</span><span>Aleksandar</span><span class="role" data-i="role">Admin</span></div><button class="out" data-i="logout">Log out</button></div></div>
+    <div class="who"><div class="badge"><span class="av" data-session-initials>—</span><span data-session-name>—</span><span class="role" data-session-role>—</span></div><button class="out" data-i="logout">Log out</button></div></div>
 </div></div>
 
 <div class="wrap">
@@ -434,7 +434,7 @@ const SOURCE_KEYS=['website','referral','existing','email','linkedin','tender','
 
 const T={
 en:{
-  locale:"en-GB",role:"Admin",logout:"Log out",back_hub:"Hub",mtitle:"Marketing & Sales",msub:"Leads, campaigns & business growth",msub_short:"Leads & growth",
+  locale:"en-GB",logout:"Log out",back_hub:"Hub",mtitle:"Marketing & Sales",msub:"Leads, campaigns & business growth",msub_short:"Leads & growth",
   sbox_t:"Shared pipeline",sbox_p:"Leads move from first contact through Estimation into Projects. Customers and estimates are read from the shared workshop data.",
   nav_overview:"Marketing Overview",nav_leads:"Leads",nav_opportunities:"Opportunities",nav_tenders:"Tenders / RFQs",nav_campaigns:"Campaigns",nav_content:"Content Calendar",nav_casestudies:"Case Studies",nav_segments:"Audience Segments",nav_analytics:"Analytics",nav_newlead:"New Lead",
   kpi_newleads:"New leads · last 30 days",kpi_qualified:"Qualified opportunities",kpi_pipeline:"Active pipeline value",kpi_estimates:"Estimates generated",kpi_winrate:"Win rate",kpi_overdue:"Overdue follow-ups",trend_prev30:"vs previous 30 days",trend_prevq:"vs previous quarter",trend_flat:"steady vs last period",
@@ -467,7 +467,7 @@ en:{
   chart_none:"No data yet."
 },
 sv:{
-  locale:"sv-SE",role:"Admin",logout:"Logga ut",back_hub:"Nav",mtitle:"Marknadsföring & Försäljning",msub:"Leads, kampanjer & tillväxt",msub_short:"Leads & tillväxt",
+  locale:"sv-SE",logout:"Logga ut",back_hub:"Nav",mtitle:"Marknadsföring & Försäljning",msub:"Leads, kampanjer & tillväxt",msub_short:"Leads & tillväxt",
   sbox_t:"Delad pipeline",sbox_p:"Leads rör sig från första kontakt via kalkyl till projekt. Kunder och kalkyler hämtas från delad verkstadsdata.",
   nav_overview:"Marknadsöversikt",nav_leads:"Leads",nav_opportunities:"Affärsmöjligheter",nav_tenders:"Upphandlingar / Förfrågningar",nav_campaigns:"Kampanjer",nav_content:"Innehållskalender",nav_casestudies:"Referensfall",nav_segments:"Målgrupper",nav_analytics:"Analys",nav_newlead:"Ny lead",
   kpi_newleads:"Nya leads · senaste 30 dagarna",kpi_qualified:"Kvalificerade affärsmöjligheter",kpi_pipeline:"Aktivt pipelinevärde",kpi_estimates:"Genererade kalkyler",kpi_winrate:"Vinstfrekvens",kpi_overdue:"Försenade uppföljningar",trend_prev30:"jmf. föregående 30 dagar",trend_prevq:"jmf. föregående kvartal",trend_flat:"stabilt jmf. förra perioden",
@@ -500,7 +500,7 @@ sv:{
   chart_none:"Ingen data ännu."
 },
 mk:{
-  locale:"mk",role:"Admin",logout:"Odjavi se",back_hub:"Меni",mtitle:"Marketing i Prodažba",msub:"Potencijalni klienti, kampanji i razvoj",msub_short:"Leadovi i razvoj",
+  locale:"mk",logout:"Odjavi se",back_hub:"Меni",mtitle:"Marketing i Prodažba",msub:"Potencijalni klienti, kampanji i razvoj",msub_short:"Leadovi i razvoj",
   sbox_t:"Sподелена pipeline",sbox_p:"Leadovite se dvižat od prv kontakt preku procenka do proekt. Klientite i procenkite se čitaat od споделените podatoci.",
   nav_overview:"Marketing pregled",nav_leads:"Leadovi",nav_opportunities:"Prilики",nav_tenders:"Tenderi / Baraњa",nav_campaigns:"Kampanji",nav_content:"Kalendar za sodržina",nav_casestudies:"Referentni proekti",nav_segments:"Целни groupи",nav_analytics:"Analitika",nav_newlead:"Nov lead",
   kpi_newleads:"Novi leadovi · posledni 30 dena",kpi_qualified:"Kvalifikuvani prilики",kpi_pipeline:"Aktivna pipeline vrednost",kpi_estimates:"Generirani procenki",kpi_winrate:"Stapka na uspeh",kpi_overdue:"Docnети sledeњa",trend_prev30:"vs prethodni 30 dena",trend_prevq:"vs prethoden kvartal",trend_flat:"stabilno vs prethoden period",

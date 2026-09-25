@@ -324,11 +324,75 @@ function noPageNamesARecordItCannotKnow(failures) {
   if (!failures.length) console.log('OK   no page names a project, order or jobcard in its own markup');
 }
 
+// The badge that says whose session it is — the avatar, the name, and on some screens the role beside it.
+//
+// On every page that had one, the name in the markup was "Aleksandar" and the avatar "AK", and on six of
+// them the role said "Admin". Every write those pages make is attributed by the server to the real session,
+// so the screen said one person and the database recorded another. A welder opening Quality read
+// "Aleksandar · Admin".
+//
+// It is painted from the snapshot now, in workshop-ui.js, into the elements the markup marks for it
+// (`data-session-name`, `data-session-initials`, `data-session-role`). Each ships holding an em dash, the
+// app's word for "nobody has said", so a page whose snapshot never arrives shows no name rather than
+// somebody else's.
+//
+// The check below does NOT look at the badges. The first version did, enumerating the class names they use
+// — and passed while five pages still named a person: four in the bar across the top, which it had not
+// thought of, and one in a fifth wrapper class with its own dictionary key. A list of the places a bug can
+// hide is a list that will be short by one. So the rule is the whole page instead: nobody's name appears in
+// any page's markup, anywhere, in text or in an attribute. Names belong to records, and records arrive from
+// the database.
+const A_PERSON = /Aleksandar|Marko K\.|Elena N\.|Lars |Petra |Anna |Erik |David /;
+
+// A role word as an element's entire content. The exception is a page offering the roles as a vocabulary —
+// admin.html's role picker has an <option> per role, and its dictionary translates them under `role_admin`,
+// which is the honest way to name a role: as one of the values, not as this reader's.
+const A_ROLE_AS_TEXT = />\s*(Admin|Administrator|Администратор)\s*</;
+
+function markupOf(file) {
+  return readPage(file)
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+}
+
+function noPageNamesWhoIsSignedIn(failures) {
+  for (const file of appPages()) {
+    const markup = markupOf(file);
+    const named = markup.match(A_PERSON);
+    if (named) {
+      failures.push(`${file} writes the name ${named[0].trim()} into its markup — the badge is painted `
+        + 'from the snapshot, and a name written into a page cannot be told from a real one');
+    }
+    // The role, only where the element holding it is bound to the dictionary. An <option> naming a role is
+    // the vocabulary; a <small> beside somebody's name is a claim about the reader.
+    for (const at of markup.matchAll(/<(?:small|span|b|strong)[^>]*\bdata-i="([^"]+)"[^>]*>[^<]*</g)) {
+      if (!at[1].startsWith('role_') && A_ROLE_AS_TEXT.test(at[0] + '<')) {
+        failures.push(`${file} states the role "Admin" in an element the dictionary writes over — a welder `
+          + 'reading it is being told they are an administrator');
+      }
+    }
+  }
+  // And the dictionary itself, which is how this came back on the phone hub after being fixed once: the
+  // language sweep writes every [data-i] entry over whatever the session painted. Under a `role_` key the
+  // value is a translation of one role; under any other key it is a word about to be written over somebody.
+  for (const file of appPages()) {
+    for (const at of readPage(file).matchAll(
+      /\b([A-Za-z_]\w*)\s*:\s*("(?:Admin|Administrator)"|'(?:Admin|Administrator|Администратор)')/g)) {
+      if (at[1].startsWith('role_')) continue;
+      failures.push(`${file} keeps a dictionary entry ${at[0]} — nothing reads it, and an entry like it `
+        + 'put "Admin" back over a welder\'s role the last time this was fixed');
+    }
+  }
+  if (!failures.length) console.log('OK   no page states whose session it is, or what they may do, in its markup');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const failures = [];
   theGuardKnowsWhichPagesAreWired(failures);
   noPageNamesARecordItCannotKnow(failures);
+  noPageNamesWhoIsSignedIn(failures);
   try {
     for (const file of appPages()) {
       await checkPage(harness.context, harness.baseUrl, file, failures);

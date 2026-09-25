@@ -872,11 +872,23 @@
     // The sales pipeline, which arrives in the office's own payload rather than in the snapshot
     // everybody reads — `lead`, `opportunity` and `tender` are not granted to the floor at all.
     'marketingLeads','marketingOpportunities','marketingTenders'];
+  // Who the snapshot was taken for, kept beside the records rather than only in the page that asked for
+  // it. Three facts the database answers from the session rather than being told: the name, the role, and
+  // the id the offline queue is keyed on. Every page has a badge saying whose session it is, and each one
+  // that wanted these had to reach into its own copy of the snapshot to get them — which is why eleven
+  // pages simply did not, and showed a name written into the markup instead.
+  let takenFor={by:null,role:null,byId:null};
+  function signedInAs(){return Object.assign({},takenFor);}
+
   function adoptSnapshot(data){
     if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
     const fresh=emptyState();
     SERVED_COLLECTIONS.forEach(name=>{if(Array.isArray(data[name]))fresh[name]=data[name];});
     state=fresh;
+    takenFor={by:data.takenBy||null,role:data.takenRole||null,byId:data.takenById||null};
+    // On the state too, so a page reading WorkshopData.get() has them without a second call. The names
+    // are the snapshot's own, so a page that already reads `takenBy` off the payload reads the same word.
+    state.takenBy=takenFor.by;state.takenRole=takenFor.role;state.takenById=takenFor.byId;
     servedFrom=data.takenAt||new Date().toISOString();
     try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason:'snapshot',state:clone(state)}}))}catch(e){}
     return state;
@@ -1386,7 +1398,7 @@
     // Reading from the server. adoptSnapshot replaces everything with what the backend sent; after
     // that this module is a reader and every mutator here refuses, because a write has to be checked
     // by the database and these functions cannot wait for an answer from another machine.
-    adoptSnapshot,isServerBacked,servedAt,servedCollections,
+    adoptSnapshot,isServerBacked,servedAt,servedCollections,signedInAs,
     key:KEY,
     get:()=>clone(state),
     // Back to an empty system - the state a workshop opens on its first day.

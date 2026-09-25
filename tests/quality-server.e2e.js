@@ -203,6 +203,24 @@ async function main() {
     await signIn(floor, site, { email: 'marko@varmak.se', secret: 'a long enough passphrase' });
     await openQuality(floor, site);
 
+    // ── Whose session the screen says it is ──────────────────────────────────────────────────
+    //
+    // This page used to greet whoever opened it as "Aleksandar · Admin", written into its markup. The
+    // welder below is Marko Ilic, on the shop floor, and every quality record they are about to write is
+    // attributed by the server to their session. So the one line on the screen that says who they are
+    // said somebody else, with a role that can release a hold — which this welder cannot.
+    const badge = await until('the badge to name the welder', async () => {
+      const said = await floor.evaluate(() => {
+        const name = document.querySelector('[data-session-name]');
+        const role = document.querySelector('[data-session-role]');
+        return { name: name && name.textContent.trim(), role: role && role.textContent.trim() };
+      });
+      return said.name && said.name !== '\u2014' ? said : null;
+    });
+    assert.equal(badge.name, 'Marko Ilic', 'the badge must name whoever the session belongs to');
+    assert.equal(badge.role, 'workshop', 'and their real role — a welder is not an administrator');
+    step('Quality: the welder reads their own name and role in the badge, not the page author\'s');
+
     // The lines the inspection is to be checked against, put on the request before it is answered —
     // which is what an inspection and test plan does. There is no ITP register on the database yet, so
     // the office sets them through the function that exists for it; the screen's request form has no
