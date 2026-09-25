@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4f, which is where this document actually ends. Everything above it is the state of a
+**HEAD:** see §4h, which is where this document actually ends. Everything above it is the state of a
 prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
-in; §4f is where it stands now. Sections 4b to 4e are the passes in between, in order, and each says what
+in; §4h is where it stands now. Sections 4b to 4g are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
 **Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
@@ -622,6 +622,89 @@ not a preference but a defect: the same app reads two ways depending on which sc
 Cyrillic is the correct orthography, so the 1616 convert. Mechanical, but not *only* mechanical — a
 transliteration table gets `lj`/`nj`/`dž` wrong wherever they are two letters rather than one, and it must
 not touch what is deliberately untranslated.
+
+## 4h. The agreed order is finished — 25 September 2026
+
+Every item in the order the owner approved is done. What §4g recorded as three decisions is built, and two
+things that were on the "recorded but deliberately left" list are built as well.
+
+**The four welding registers.** Five tables — `wps`, `welder_qual`, `weld`, `weld_repair`, `ndt_report` —
+with the one sentence the subsystem exists for enforced in the database rather than on the screen: this weld
+was made by a welder qualified for that process, to a procedure somebody had approved, and it was tested.
+Four panels on Quality read and write them, in three languages. `tests/welding-server.e2e.js` drives all of
+it through the screen as an office session and as a welder's.
+
+The full mutation run on those rules came back with two MISSED, and both were the same shape — a rule that
+was there and nothing was asking for it:
+
+* `wps.ref` was `UNIQUE` on its own, which made the revision column a lie: WPS-304-02 rev 2 could not be
+  filed at all, and the unique index on `(ref, revision)` could never refuse anything, which is why
+  deleting it changed nothing. Both halves have a test now.
+* The rule refusing to sign off a weld while a report calls for a repair was tested by a regex that
+  accepted either that message or the evidence rule's. The evidence rule is first in the trigger, so on
+  that weld it always answered. It has a weld of its own now.
+
+**The invoice basis, and not an invoice.** `invoice_basis()` in views.sql, a seventh Reports section, and a
+line-level CSV export. Hours booked and material issued per project, every line with its date. No table, no
+invoice number, no VAT, nothing stored, no labour amount — there is no hourly rate recorded anywhere in this
+system and inventing one would be inventing the invoice. Granted to the office; the floor is refused by the
+database. §1 of BACKEND.md's "next schema work" called `invoices` the largest single gap; it was a gap in a
+direction this system should not fill.
+
+**The Macedonian, a second time.** The first pass reported 1607 strings converted and every check green.
+138 across three screens still read `Meѓuzbir` and `Režiski troшoci` — Latin transliteration with only the
+letters that have no ASCII form converted. The tool skipped any value containing a Cyrillic character, and
+`tests/integrity.js` — the check written to catch exactly that — passed any value containing a Cyrillic
+character. One ѓ in a Latin sentence satisfied both. They ask one detector now, `latinLeftIn`, exported from
+translit.js and used by the tool and the check. `tools/dicts.js` could also not read three pages at all,
+and `apply.js` skipped them without printing a line.
+
+**Five screens were telling the reader their own records were a demonstration.** Reports said "Reports use
+browser demonstration data" over figures read out of Postgres and printed "Report status: Demonstration
+data" on the sheet somebody files; Equipment said safety controls, permissions and audit logging "require
+the future secured backend", all three of which are in the database and tested. Each line now says what is
+actually the case, or, where something is genuinely missing, says that instead. Where the claim depends on
+which data the session has, the page asks: `paintWhereTheDataCameFrom()` shows `[data-when-demo]` only on
+browser storage.
+
+**Documents reads in three languages.** It was the seventeenth screen and the only one with no dictionary
+at all. The trap was its selects: every option carried its label as its value, and the label is what the
+server matches, so a translated form would have filed every document against nothing and saved every status
+as a draft — silently.
+
+### What these passes found by measuring, worth keeping in mind
+
+* **A check can pass by having nothing to look at.** Three times in one day: the Cyrillic check satisfied
+  by one letter, a mutation reported MISSED because its suite ignored the override and never loaded the
+  damaged file, and a welder-refused check that passed for the wrong reason (the floor holds no SELECT on
+  `quoted_value`, so the function fails on the column even when granted).
+* **A list nobody checks is already wrong.** BACKEND.md argued exactly this and then said 34 tables where
+  there were 41, and `schema.sql: 31 tables, 103 checks and 13 triggers` where it builds 39, 186 and 19.
+  Both are read back out of the live database by test-schema.js now, which also refuses a table count
+  spelled out in words — that spelling is why the first one drifted unseen.
+* **Two flaky suites were two real defects.** The jobcards one: `set_jobcard_operations` replaces the whole
+  step list, the page built that list at call time, and an add queued behind a delete sent the list from
+  before the delete — putting the deleted step back, with both writes reporting success. The documents one:
+  a toast read after a fixed 400ms picked up the previous answer. Neither was a flake.
+* **"Added This Month" was pinned to `'2026-08'`** and had read 0 since the first of September.
+
+### What is still not done, in the order it is worth doing
+
+1. **Run the deployment once, against the real Supabase.** `DEPLOY.md` and `backend/test-deploy.js` are
+   proved against a Postgres shaped like a hosted one, as a non-superuser, over verified TLS — but never
+   against the actual project. Nothing in this repository can do that: the container these sessions run in
+   is thrown away, so no credential should ever be pasted into one. This is the owner's step, and it is the
+   only one between here and the system holding real work.
+2. **The letterhead's two numbers.** Organisationsnummer and VAT number, and for an invoice also *Godkänd
+   för F-skatt* and a bankgiro or IBAN. Facts nobody here can supply; nothing has been guessed at.
+3. **Object storage**, which is the last thing the document register and the machine photographs wait on.
+   It costs the bytes of a file and nothing else.
+4. **The incoming invoice**, against a purchase order — the half of invoicing that is still absent, and
+   `purchaseRfqs`, the enquiry before an order.
+5. **Estimating's depth**: nested work items, options, terms, revisions and a priced bill of materials
+   against an `estimate` table holding a title, a total and a date.
+6. **Printing** works on four of seventeen pages. **Planning's weekly capacity** is still in `localStorage`
+   per browser. Both are recorded here rather than in a comment nobody opens.
 
 ## 5. Decisions already made — do not re-open these
 
