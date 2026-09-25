@@ -38,6 +38,10 @@ const TABLE_FOR = {
   documents: 'document', marketingLeads: 'lead', marketingOpportunities: 'opportunity',
   marketingTenders: 'tender',
   itemGroups: 'item_group', locationGroups: 'location', activity: 'activity_log',
+  // The welding registers, which were the four entries this list was written to name — "no table yet: a
+  // weld log is a register of its own". They have tables now: the firm turned out to be certified, so the
+  // auditor BACKEND.md said did not exist does. Measured against them like everything else.
+  qualityWelds: 'weld', qualityNdt: 'ndt_report', qualityWps: 'wps', qualityWelderQuals: 'welder_qual',
   // The staff, which the snapshot carries so a form can offer "Responsible" and "Owner" from the people
   // this workshop has rather than three names written into six pages. Measured against app_user, and it
   // will print "(no demo record to compare)": the demonstration state has no staff, because who works at
@@ -62,17 +66,6 @@ const NOT_MEASURED = {
   // There is no table, and whether this workshop runs marketing campaigns at all is a decision for them
   // rather than something to infer from demonstration data.
   marketingCampaigns: 'no table: whether the workshop runs campaigns is their decision, not a gap',
-
-  // The welding records, and this is the real gap in the system. A weld log, the NDT against those welds,
-  // the procedure specifications they are welded to, and the welders qualified to each — four tables, and
-  // for a pressure-vessel or structural shop they are what a delivery is signed off against. `inspection`
-  // and `inspection_check` cover a check and its measurements; none of these four is that. Named here
-  // rather than counted as loose fields because each is a register in its own right, and BACKEND.md now
-  // carries them as the next schema work rather than as a number at the bottom of this report.
-  qualityWelds: 'no table yet: a weld log is a register of its own — see BACKEND.md',
-  qualityNdt: 'no table yet: NDT against a weld, distinct from an inspection',
-  qualityWps: 'no table yet: the welding procedures welds are made to',
-  qualityWelderQuals: 'no table yet: which welder is qualified to which procedure',
 
   // The rest of the quality screens, each a record with its own rules and its own table to come. The
   // Quality screen refuses all of them out loud today, which is the honest state until somebody asks.
@@ -164,7 +157,10 @@ const SAME_THING = {
   // Dated per collection, because "the maintenance date" on a machine is the date of its last service
   // and means something else anywhere else.
   maintenanceDate: { equipment: 'last_service_date' },
-  inspectionDate: { equipment: 'last_inspection_date' },
+  // Two collections, one word: a machine's last inspection and an NDT report's date. Merged into one
+  // entry because this map is an object literal and the later key wins — the third time that has cost
+  // something today. Splitting it cost equipment.inspectionDate its mapping and read as a new gap.
+  inspectionDate: { equipment: 'last_inspection_date', qualityNdt: 'inspected_on' },
   calibrationDate: { equipment: 'last_calibration_date' },
   assignedProject: { equipment: 'assigned_project_id' },
   // The movement log. Every one of these is a rename rather than a gap: the store screen asks when,
@@ -189,6 +185,18 @@ const SAME_THING = {
   name: { documents: 'title', people: 'display_name' },
   // camelCase to a column that is one word, which the snake_case rule below turns into `file_name`.
   fileName: { documents: 'filename' }, fileSize: { documents: 'size_bytes' },
+  // The welding registers' own renames. `status` is per-collection because it is a real column on a dozen
+  // other tables: on an NDT report the screen shows a status beside the result and they are the same fact,
+  // read twice — two columns would be two answers to whether a joint is sound.
+  expiryDate: { qualityWelderQuals: 'expires_on' },
+  issueDate: { qualityWelderQuals: 'issued_on' }, qualNo: { qualityWelderQuals: 'qual_no' },
+  status: { qualityNdt: 'result' },
+  weldDate: { qualityWelds: 'welded_on' },
+  // The same column as `status`, read a second time. On these two registers `status` is worked out on every
+  // read — 'expiring-soon' from a date, 'valid' from an approved procedure — and `setStatus` is what
+  // somebody actually set, which is what the form has to send back. One column answering two questions, not
+  // a column missing: storing the derived word is the thing both registers exist to avoid.
+  setStatus: { qualityWps: 'status', qualityWelderQuals: 'status' },
 
   // The quality register, and the fourth time this meter has overstated the work by not knowing a
   // column's own name. Five of the seven fields it reported missing across inspections and NCRs were
@@ -234,6 +242,10 @@ const SAME_THING = {
 // Fields that are a copy of something on another record. These do not want a column — a copy of a
 // name that can drift from the name it copied is worse than a join.
 const A_JOIN = new Set([
+  // The welding registers. Each of these is a label on the record an id already points at: the step's
+  // description, the procedure's reference, and the welder's name — which is read through person_name()
+  // rather than a join in the strict sense, for the row-policy reason written up in views.sql.
+  'operation', 'wpsNo', 'welder', 'wpqrRef', 'welderQualRef', 'weldRef', 'ncrRef', 'documentRef',
   'customer', 'projectNo', 'supplier', 'project', 'jobcard', 'customerNo', 'supplierNo',
   'linkedEstimateNo', 'linkedProjectNo', 'relatedRef', 'reference', 'record', 'module',
   // A project does not hold the estimate it came from — the estimate holds project_id, set by
@@ -371,7 +383,33 @@ function classify(field, columns, pages, collection) {
   return used ? 'needs a column' : 'unused';
 }
 
+// A key written twice in SAME_THING, which an object literal resolves by keeping the last one and saying
+// nothing. Three times in one day that has cost something here: `name` — so the people rename was dead the
+// moment it was written; `inspectionDate` — so equipment lost a mapping it had had for weeks and read as a
+// new gap. Neither showed up as an error. Both showed up as a number moving.
+//
+// Read from the source rather than the object, because by the time it is an object the evidence is gone.
+function noRenameIsWrittenTwice() {
+  const source = fs.readFileSync(__filename, 'utf8');
+  const block = source.slice(source.indexOf('const SAME_THING = {'),
+    source.indexOf('\n};', source.indexOf('const SAME_THING = {')));
+  const seen = new Map();
+  for (const found of block.matchAll(/^  ([A-Za-z_]\w*):/gm)) {
+    seen.set(found[1], (seen.get(found[1]) || 0) + 1);
+  }
+  const twice = [...seen].filter(([, n]) => n > 1).map(([k]) => k);
+  if (twice.length) {
+    console.error(`SAME_THING names ${twice.join(', ')} more than once. An object literal keeps the last `
+      + 'one and drops the rest, so every entry above the duplicate is doing nothing. Merge them into one '
+      + 'entry with a key per collection.');
+    process.exitCode = 1;
+    return false;
+  }
+  return true;
+}
+
 function main() {
+  if (!noRenameIsWrittenTwice()) return;
   const columns = dbColumns();
   const records = frontendRecords();
   const pages = pageSource();
@@ -459,7 +497,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 301, needsColumn: 17 };
+  const BASELINE = { stored: 370, needsColumn: 17 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

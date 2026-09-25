@@ -91,6 +91,105 @@ function shadowedTranslationKeys(source) {
 }
 
 
+// A sentence with a hole in it, and a translation with no hole to fill. `notify(tr('wps_approved')
+// .replace('{no}', ref))` read "Approved" on every screen and in every language, because
+// `wps_approved` was already the name of a KPI card — one key, two meanings, and the substitution
+// quietly did nothing. Nothing threw: `String.replace` with no match returns the string unchanged,
+// which is the whole reason this needs checking rather than noticing.
+//
+// So: whatever a page substitutes into, every language's value for that key has to have the hole.
+function placeholdersWithNothingToFill(source) {
+  const tables = translationTables(source);
+  if (!tables.length) return [];
+  const values = new Map();
+  for (const { lang, body } of tables) {
+    const seen = new Map();
+    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*'((?:\\.|[^'\\])*)'/g)) {
+      seen.set(entry[1], entry[2]);
+    }
+    values.set(lang, seen);
+  }
+  const wrong = [];
+  // Every tr('key') followed by one or more .replace('{hole}', …) — the chained ones each count,
+  // because a sentence taking two substitutions needs both holes in all three languages.
+  for (const use of source.matchAll(/\btr\(\s*'([A-Za-z_][\w]*)'\s*\)((?:\s*\.replace\(\s*'\{[a-zA-Z]+\}'[^)]*\))+)/g)) {
+    const key = use[1];
+    const holes = [...use[2].matchAll(/'(\{[a-zA-Z]+\})'/g)].map((m) => m[1]);
+    for (const [lang, seen] of values) {
+      if (!seen.has(key)) { wrong.push(`${lang}:${key} is substituted into and does not exist`); continue; }
+      for (const hole of holes) {
+        if (!seen.get(key).includes(hole)) {
+          wrong.push(`${lang}:${key} is given ${hole} and has nowhere to put it`);
+        }
+      }
+    }
+  }
+  return [...new Set(wrong)];
+}
+
+// Keys reached through a variable, which the eye and the rendered page both miss. submitQual loops over
+// [['wq_no','err_qual_no'],['wq_process','err_process'],['wq_issuedby','err_issued_by']] and calls tr(key)
+// — two of those three keys did not exist in any language, so the form would have told a welder
+// "err_qual_no". No label on the page renders them, so the live sweep could not see them either.
+//
+// The invariant: in a literal list of pairs where some second element is a translation key, they all are.
+// A list holding one real key and two invented ones is a list nobody was checking.
+function keysNamedInAListThatDoNotExist(source) {
+  const tables = translationTables(source);
+  if (!tables.length) return [];
+  const known = new Map();
+  for (const { lang, body } of tables) {
+    const seen = new Set();
+    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*['"`]/g)) seen.add(entry[1]);
+    known.set(lang, seen);
+  }
+  const anywhere = new Set([...known.values()].flatMap((s) => [...s]));
+  const missing = [];
+  for (const list of source.matchAll(/\[\s*(\[\s*'[^']*'\s*,\s*'[^']*'\s*\]\s*,?\s*){2,}\]/g)) {
+    const pairs = [...list[0].matchAll(/\[\s*'([^']*)'\s*,\s*'([^']*)'\s*\]/g)].map((m) => m[2]);
+    if (!pairs.some((key) => anywhere.has(key))) continue;
+    for (const key of pairs) {
+      if (!anywhere.has(key)) { missing.push(`${key} is named beside real keys and is not one`); continue; }
+      for (const [lang, seen] of known) {
+        if (!seen.has(key)) missing.push(`${lang}:${key}`);
+      }
+    }
+  }
+  return [...new Set(missing)];
+}
+
+// wPrompt(message, initial, onOk) — three arguments, and the callback is the third. Called with two, the
+// callback lands in `initial`: the box opens with the source text of a function typed into its input, and
+// OK does nothing at all. Nothing throws and nothing is logged; the person clicks OK and the repair they
+// just described is not recorded.
+//
+// Written down because it happened twice in one file, on the two prompts a welder would actually use.
+function promptsThatGoNowhere(source) {
+  const wrong = [];
+  const looksLikeAFunction = /^\s*(async\b|function\b|\(\s*[A-Za-z_$,\s]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/;
+  for (const call of source.matchAll(/\bwPrompt\(/g)) {
+    let i = call.index + call[0].length;
+    let depth = 0;
+    let firstComma = -1;
+    for (; i < source.length; i += 1) {
+      const c = source[i];
+      if (c === '(' || c === '[' || c === '{') depth += 1;
+      else if (c === ')' || c === ']' || c === '}') { if (!depth) break; depth -= 1; }
+      else if (c === "'" || c === '"' || c === '`') {
+        const quote = c;
+        i += 1;
+        while (i < source.length && source[i] !== quote) { if (source[i] === '\\') i += 1; i += 1; }
+      } else if (c === ',' && !depth) { firstComma = i; break; }
+    }
+    if (firstComma < 0) { wrong.push('a wPrompt with one argument and no callback at all'); continue; }
+    const second = source.slice(firstComma + 1, firstComma + 40);
+    if (looksLikeAFunction.test(second)) {
+      wrong.push(`a wPrompt whose callback is its second argument: ${second.trim().slice(0, 30)}…`);
+    }
+  }
+  return [...new Set(wrong)];
+}
+
 // ── Live checks: things only the rendered page can answer ──────────────────────────────────
 
 async function liveDuplicateIds(page) {
@@ -183,6 +282,20 @@ async function checkPage(context, baseUrl, file, failures) {
   const shadowedKeys = shadowedTranslationKeys(source);
   if (shadowedKeys.length) {
     fail(`a translation key is written twice: ${shadowedKeys.join(', ')} — the later one silently wins`);
+  }
+  const unfilled = placeholdersWithNothingToFill(source);
+  if (unfilled.length) {
+    fail(`a substitution with nothing to substitute into: ${unfilled.slice(0, 6).join('; ')}`);
+  }
+  // Not `invented` — this file already has a function by that name, and shadowing it broke the figures
+  // check three lines further down. Which is the very fault this file was written to catch.
+  const inventedKeys = keysNamedInAListThatDoNotExist(source);
+  if (inventedKeys.length) {
+    fail(`a translation key named in a list and never written: ${inventedKeys.slice(0, 6).join('; ')}`);
+  }
+  const deadPrompts = promptsThatGoNowhere(source);
+  if (deadPrompts.length) {
+    fail(`${deadPrompts.join('; ')} — the box opens and OK does nothing`);
   }
   const shadowed = duplicateFunctionDeclarations(source);
   if (shadowed.length) {

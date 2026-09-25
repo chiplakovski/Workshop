@@ -34,7 +34,7 @@
 
   const emptyState=()=>({
     version:VERSION,
-    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0},
+    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0,wps:0,welderqual:0},
     customers:[],
     estimations:[],
     projects:[],
@@ -91,7 +91,7 @@
     version:VERSION,
     counters:{customer:40,estimation:25,project:110,movement:6,offcut:3,jobcard:2,
       inspection:6,ncr:3,capa:2,weld:2,ndt:2,itp:1,hold:1,complaint:1,release:0,dossier:1,wps:1,welderqual:2,
-      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:0,hours:0},
+      purchaseOrder:145,purchaseRfq:0,supplierInvoice:0,document:9,documentFolder:0,invoice:41,marketingLead:50,marketingOpportunity:109,marketingCampaign:4,marketingTender:0,hours:0,wps:0,welderqual:0},
     customers:[
       {id:1,no:'C-001',name:'MarineVent AB',status:'active',city:'Malmö',country:'Sweden',org:'556789-1234',vat:'SE556789123401',email:'info@marinevent.se',phone:'+46 40 123 45 67',website:'www.marinevent.se',since:'2023-03-15',terms:'30 days',credit:250000,currency:'SEK',industry:'Marine / Ventilation Systems',type:'Company',preferred:'Email',priceList:'Standard Price List 2026',deliveryTerms:'EXW Marieholm',discountAgreement:'0%',billing:['MarineVent AB','Att: Purchasing','Östra Varvsgatan 12','211 19 Malmö','Sweden'],shipping:['MarineVent AB','Östra Varvsgatan 12','211 19 Malmö','Sweden'],contacts:[{name:'Per Bengtsson',role:'CEO',department:'Management',primary:true,email:'per.bengtsson@marinevent.se',phone:'+46 70 555 66 77'},{name:'Lena Mårtensson',role:'Purchasing Manager',department:'Purchasing',primary:false,email:'lena.martensson@marinevent.se',phone:'+46 70 888 99 00'}],notes:[{date:'2026-08-22',author:'Aleksandar C.',text:'Discussed new ventilation unit project. Waiting for drawings.'}],documents:[{name:'Company Profile.pdf',type:'pdf',date:'2026-03-15'}]},
       {id:2,no:'C-002',name:'Sanus Glutenfri AB',status:'active',city:'Landskrona',country:'Sweden',org:'559812-4471',vat:'SE559812447101',email:'info@sanusglutenfri.se',phone:'+46 42 123 45 67',terms:'30 days',credit:150000,currency:'SEK',industry:'Food Production',type:'Company',contacts:[],notes:[],documents:[]},
@@ -303,11 +303,11 @@
       {id:1,no:'HOLD-2026-001',scope:'jobcard',reference:'JC-2026-0001',relatedRef:'NCR-2026-002',reason:'Critical NCR NCR-2026-002 — rejected mandatory NDT (NDT-2026-002) on weld W-03.',appliedBy:'Aleksandar C.',appliedDate:'2026-08-27T15:15:00',severity:'critical',requiredAction:'Repair weld W-03, obtain accepted PT reinspection, verify NCR-2026-002 corrective action.',releaseAuthority:'',releaseDate:'',releaseReason:'',status:'active',activity:[{timestamp:'2026-08-27T15:15:00',action:'Quality Hold applied',user:'Aleksandar C.',from:null,to:'active',reference:'HOLD-2026-001',reason:'Critical NCR NCR-2026-002'}]}
     ],
     qualityWps:[
-      {id:1,no:'WPS-304-02',revision:1,process:'TIG',materialGroup:'Stainless Steel (Group 8)',thicknessRange:'1.5–6.0 mm',diameterRange:'N/A',jointType:'Butt',position:'All positions (1G-4G)',fillerMaterial:'ER308L',shieldingGas:'Argon 99.99%',preheatInterpass:'No preheat; interpass ≤150°C',supportingWpqr:'WPQR-304-02-R1',status:'valid',documentRef:'WPS-304-02.pdf'}
+      {id:1,no:'WPS-304-02',revision:1,process:'TIG',materialGroup:'Stainless Steel (Group 8)',thicknessRange:'1.5–6.0 mm',diameterRange:'N/A',jointType:'Butt',position:'All positions (1G-4G)',fillerMaterial:'ER308L',shieldingGas:'Argon 99.99%',preheatInterpass:'No preheat; interpass ≤150°C',supportingWpqr:'WPQR-304-02-R1',status:'valid',setStatus:'approved',approvedOn:'2025-02-11',approvedBy:'Aleksandar C.',documentRef:'WPS-304-02.pdf'}
     ],
     qualityWelderQuals:[
-      {id:1,welder:'Elena N.',qualNo:'WPQ-EN-2024-11',process:'TIG',materialGroup:'Stainless Steel (Group 8)',thicknessRange:'1.5–8 mm',position:'All positions',issuedBy:'Nordic Weld Cert AB',issueDate:'2024-09-10',expiryDate:'2026-09-10',status:'expiring-soon',documentRef:'WPQ-EN-2024-11.pdf'},
-      {id:2,welder:'Marko K.',qualNo:'WPQ-MK-2023-05',process:'MAG',materialGroup:'Mild Steel (Group 1)',thicknessRange:'3–20 mm',position:'All positions',issuedBy:'Nordic Weld Cert AB',issueDate:'2023-05-14',expiryDate:'2027-05-14',status:'valid',documentRef:'WPQ-MK-2023-05.pdf'}
+      {id:1,welder:'Elena N.',qualNo:'WPQ-EN-2024-11',process:'TIG',materialGroup:'Stainless Steel (Group 8)',thicknessRange:'1.5–8 mm',position:'All positions',issuedBy:'Nordic Weld Cert AB',issueDate:'2024-09-10',expiryDate:'2026-09-10',status:'expiring-soon',setStatus:'valid',documentRef:'WPQ-EN-2024-11.pdf'},
+      {id:2,welder:'Marko K.',qualNo:'WPQ-MK-2023-05',process:'MAG',materialGroup:'Mild Steel (Group 1)',thicknessRange:'3–20 mm',position:'All positions',issuedBy:'Nordic Weld Cert AB',issueDate:'2023-05-14',expiryDate:'2027-05-14',status:'valid',setStatus:'valid',documentRef:'WPQ-MK-2023-05.pdf'}
     ],
     qualityComplaints:[
       {id:1,no:'CMP-2026-001',customer:'MarineVent AB',projectNo:'P-2026-014',deliveredItem:'Ventilation duct section (prior delivery)',deliveryDate:'2026-06-02',complaintDate:'2026-08-20',description:'Customer reports coating damage on one duct section on arrival at site.',severity:'major',warrantyStatus:'Under warranty',immediateResponse:'Acknowledged receipt, requested photos from customer.',investigation:'Reviewing transport packaging and pre-dispatch inspection records.',rootCause:'',correction:'',correctiveActionRef:null,costImpact:0,customerResponse:'',responsiblePerson:'Aleksandar C.',dueDate:'2026-09-03',closureConfirmation:'',documents:[],status:'under-investigation',activity:[{timestamp:'2026-08-20T11:00:00',action:'Complaint received',user:'Aleksandar C.',from:null,to:'received',reference:'CMP-2026-001',reason:''},{timestamp:'2026-08-20T13:00:00',action:'Status changed',user:'Aleksandar C.',from:'received',to:'under-investigation',reference:'CMP-2026-001',reason:''}],notes:[]}
@@ -900,6 +900,11 @@
     // to be able to see what is current. No file bytes in it — there is no object storage yet, and the
     // screen says so rather than offering a download that leads nowhere.
     'documents',
+    // The welding registers. Read by everybody and written by whoever did the work: a welder logs their
+    // own weld, and the procedures and qualifications are the office's. All four are here rather than in
+    // the office's own payload because a welder needs to read the procedure they are welding to and the
+    // qualification they hold — and nothing in any of them could be a price.
+    'qualityWelds','qualityNdt','qualityWps','qualityWelderQuals',
     // The staff, so a form offering "Responsible" or "Owner" offers the people this workshop has
     // instead of the three names that were written into six pages. Narrowed by the row policy on
     // app_user before it ever gets here: the office sees everybody, the floor sees itself.
@@ -3324,6 +3329,72 @@
       const from=rec.status; rec.status='repaired';
       qActivity(rec,'Weld repair recorded',from,'repaired',rec.no,repairEntry.reason||'');
       save(`Weld repair recorded: ${rec.no}`); return clone(rec);
+    },
+
+    // The welding registers' remaining doors, so the Quality screen has one name to call for each thing it
+    // does. On browser storage these write here; on the database the page's bridge intercepts every one of
+    // them, and the rules that matter — an unapproved procedure, an expired qualification, a weld signed off
+    // on evidence that does not exist — are the database's. Nothing below pretends to enforce them: that is
+    // the point of the refusals being over there, where an import or a console meets them too.
+    recordWeldRepair(idOrNo,reason,notes){
+      return this.addWeldRepair(idOrNo,{reason:reason,notes:notes||null,by:UNNAMED});
+    },
+    acceptWeld(idOrNo,accepted){
+      const rec=qFind(state.qualityWelds,idOrNo); if(!rec)return{error:'Weld record not found'};
+      const to=accepted===false?'rejected':'accepted';
+      const from=rec.status; rec.status=to; rec.finalResult=to;
+      qActivity(rec,'Weld '+to,from,to,rec.no,'');
+      save(`Weld ${to}: ${rec.no}`); return clone(rec);
+    },
+    listQualityWps:()=>clone(state.qualityWps),
+    saveWps(payload){
+      if(!payload||!payload.no)return{error:'A procedure needs a reference'};
+      if(!payload.process)return{error:'A procedure needs a process'};
+      let rec=payload.id!=null?qFind(state.qualityWps,payload.id):null;
+      if(rec){Object.assign(rec,clone(payload));}
+      else{
+        rec=Object.assign({status:'draft',setStatus:'draft',notes:null},clone(payload));
+        rec.id=rec.id||(state.counters.wps=(state.counters.wps||0)+1);
+        state.qualityWps.unshift(rec);
+      }
+      save(`Procedure saved: ${rec.no}`); return clone(rec);
+    },
+    approveWps(idOrNo){
+      const rec=qFind(state.qualityWps,idOrNo); if(!rec)return{error:'Procedure not found'};
+      // The one rule kept here as well, because it is the reason the register exists: a procedure is
+      // approved on a qualification record, not on its own say-so. The database refuses it too.
+      if(!rec.supportingWpqr)return{error:`procedure ${rec.no} cannot be approved with no supporting WPQR`};
+      rec.status='valid'; rec.setStatus='approved'; rec.approvedOn=now().slice(0,10);
+      save(`Procedure approved: ${rec.no}`); return clone(rec);
+    },
+    listQualityWelderQuals:()=>clone(state.qualityWelderQuals),
+    saveWelderQual(payload){
+      if(!payload||!payload.qualNo)return{error:'A qualification needs a number'};
+      if(!payload.expiryDate||!payload.issueDate)return{error:'A qualification needs both dates'};
+      if(payload.expiryDate<=payload.issueDate)return{error:'A qualification cannot expire before it was issued'};
+      let rec=payload.id!=null?qFind(state.qualityWelderQuals,payload.id):null;
+      if(rec){Object.assign(rec,clone(payload));}
+      else{
+        rec=Object.assign({setStatus:'valid'},clone(payload));
+        rec.id=rec.id||(state.counters.welderqual=(state.counters.welderqual||0)+1);
+        state.qualityWelderQuals.unshift(rec);
+      }
+      // Expiring soon and expired are the date's answer, not a stored one — worked out here the same way
+      // the view works them out, so the two halves of the app agree about a word nobody types.
+      const left=Math.round((new Date(rec.expiryDate)-new Date(now().slice(0,10)))/86400000);
+      rec.daysLeft=left;
+      rec.status=(rec.setStatus&&rec.setStatus!=='valid')?rec.setStatus
+        :(left<0?'expired':left<=60?'expiring-soon':'valid');
+      save(`Qualification saved: ${rec.qualNo}`); return clone(rec);
+    },
+    addWeldingNote(entity,idOrNo,text){
+      const lists={weld:state.qualityWelds,ndt_report:state.qualityNdt,
+                   wps:state.qualityWps,welder_qual:state.qualityWelderQuals};
+      const list=lists[entity]; if(!list)return{error:`There is no welding register called ${entity}`};
+      const rec=qFind(list,idOrNo); if(!rec)return{error:'Record not found'};
+      if(!text||!String(text).trim())return{error:'An empty note is not a note'};
+      rec.notes=rec.notes||[]; rec.notes.unshift({date:now().slice(0,10),author:UNNAMED,text:String(text).trim()});
+      save(`Note added: ${rec.no||rec.qualNo}`); return clone(rec);
     },
 
     listQualityNdt:()=>clone(state.qualityNdt),

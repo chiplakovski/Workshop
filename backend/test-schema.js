@@ -1450,6 +1450,12 @@ function aWeldIsMadeBySomebodyQualified() {
   refused('a procedure approved without saying who approved it', `INSERT INTO wps
     (ref, revision, process, status) VALUES ('WPS-NOBODY', 1, 'TIG', 'approved');`,
   /an_approved_wps_says_who/);
+  // A procedure is revised, and both revisions stay on file: the welds made to rev 1 were made to rev 1,
+  // and a register that could hold only one row per reference could not say what they were made to. This
+  // is the half of the rule that `ref UNIQUE` would have forbidden outright — which is how the unique index
+  // on (ref, revision) came to be a line nothing was testing.
+  accepted('a second revision of a procedure that already exists', `INSERT INTO wps
+    (ref, revision, process, status) VALUES ('WPS-304-02', 2, 'TIG', 'draft');`);
   refused('two copies of one revision of one procedure', `INSERT INTO wps
     (ref, revision, process, status) VALUES ('WPS-304-02', 1, 'MAG', 'draft');`,
   /wps_one_revision|duplicate key/);
@@ -1490,9 +1496,13 @@ function aWeldIsAcceptedOnlyOnEvidence() {
   assert.equal(value(`SELECT status::text || '/' || final_result::text FROM weld WHERE id = ${weld};`),
     'repair-required/rejected', 'a rejected report puts the weld into repair-required without being asked');
 
+  // Pinned to the one message that can be the answer here rather than either of two. Both rules live in
+  // one trigger and the evidence rule is the first of them, so on this weld — which no report has accepted
+  // — it is the evidence rule that fires and the repair rule is never reached. A regex accepting either
+  // was a test that passed with the repair rule deleted.
   refused('accepting it while that report stands',
     `UPDATE weld SET final_result = 'accepted' WHERE id = ${weld};`,
-    /requires RT and no report has accepted it|calls for a repair/);
+    /requires RT and no report has accepted it/);
 
   // Repaired, re-tested, and now it signs off — with the repair on file, because a weld that was
   // repaired is not a weld that was always right.
@@ -1506,6 +1516,24 @@ function aWeldIsAcceptedOnlyOnEvidence() {
     'and the repair is still on file — which is the question asked when a joint fails in service');
   refused('a repair that does not say why it was needed', `INSERT INTO weld_repair
     (weld_id, reason, repaired_by) VALUES (${weld}, '   ', 'x');`, /reason/);
+
+  // The repair rule on its own weld, where nothing else can answer for it: one report accepted this joint
+  // and a second calls for a repair, so the evidence the first rule looks for exists and only the second
+  // rule stands between two rows disagreeing about whether the joint is sound.
+  const twoMinds = value(`INSERT INTO weld (jobcard_id, process, welder_id, welded_on, recorded_by,
+      ndt_required, ndt_method, component)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, current_date - 1, 'Elena Nikolic', true, 'RT', 'Shell seam')
+    RETURNING id;`);
+  sql(`INSERT INTO ndt_report (weld_id, method, technician, result, recorded_by)
+       VALUES (${twoMinds}, 'RT', 'A. Technician', 'accepted', 'x');
+       INSERT INTO ndt_report (weld_id, method, technician, result, findings, recorded_by)
+       VALUES (${twoMinds}, 'PT', 'A. Technician', 'rejected', 'Linear indication at 120 mm', 'x');`);
+  const disagreed = refused('accepting a weld one report passed and another calls a repair on',
+    `UPDATE weld SET final_result = 'accepted' WHERE id = ${twoMinds};`,
+    /cannot be accepted while a report against it calls for a repair/);
+  assert.doesNotMatch(disagreed, /evidence that does not exist/,
+    'and it is the repair rule answering: a report did accept this weld, so the evidence rule had nothing to say');
+
   step('Welding: a weld that needs testing cannot be signed off on evidence that does not exist');
 }
 

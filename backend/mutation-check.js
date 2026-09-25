@@ -376,6 +376,120 @@ const MUTATIONS = [
     suite: 'documents'
   },
   {
+    // The sentence the whole welding subsystem exists for. Four refusals in one trigger, so four mutations:
+    // a gate that stops refusing one of the four is a gate that reads as working.
+    what: 'a weld may be made to a procedure nobody has approved',
+    from: `    IF procedure.status <> 'approved' THEN
+      RAISE EXCEPTION 'weld cannot be recorded to % rev %: that procedure is %, not approved',
+        procedure.ref, procedure.revision, procedure.status USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: '    NULL;'
+  },
+  {
+    what: 'a weld may be recorded as one process against a procedure for another',
+    from: `    IF lower(btrim(procedure.process)) <> lower(btrim(NEW.process)) THEN
+      RAISE EXCEPTION 'weld cannot be recorded as % against %, which is a % procedure',
+        NEW.process, procedure.ref, procedure.process USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: '    NULL;'
+  },
+  {
+    what: 'a welder may cite a qualification belonging to somebody else',
+    from: `    IF held.welder_id <> NEW.welder_id THEN
+      RAISE EXCEPTION 'qualification % does not belong to % — a qualification cannot be borrowed',
+        held.qual_no, coalesce(who, 'that welder') USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: '    NULL;'
+  },
+  {
+    // The one an auditor is actually asking about.
+    what: 'a weld may be made on a qualification that had already expired',
+    from: `    IF held.expires_on < NEW.welded_on THEN
+      RAISE EXCEPTION 'the qualification % held by % expired on %, and this weld was made on %',
+        held.qual_no, coalesce(who, 'that welder'), held.expires_on, NEW.welded_on
+        USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: '    NULL;'
+  },
+  {
+    what: 'a suspended qualification may still be cited for a weld',
+    from: `    IF held.status <> 'valid' THEN
+      RAISE EXCEPTION 'the qualification % held by % is %, so it cannot be cited for a weld',
+        held.qual_no, coalesce(who, 'that welder'), held.status USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: '    NULL;'
+  },
+  {
+    // The rule that stops a delivery being signed off against work nobody tested.
+    what: 'a weld that requires NDT may be accepted with no report at all',
+    from: `    IF NOT EXISTS (SELECT 1 FROM ndt_report r
+                    WHERE r.weld_id = NEW.id AND r.result = 'accepted') THEN`,
+    to: `    IF false THEN`
+  },
+  {
+    what: 'a weld may be accepted while a report against it calls for a repair',
+    from: `  IF NEW.final_result = 'accepted' AND EXISTS (
+       SELECT 1 FROM ndt_report r WHERE r.weld_id = NEW.id
+         AND (r.result = 'rejected' OR r.repair_required)) THEN`,
+    to: `  IF false THEN`
+  },
+  {
+    // A rejection has to reach the weld without a function remembering to carry it.
+    what: 'a rejected NDT report leaves the weld exactly as it was',
+    from: `  IF NEW.result = 'rejected' OR NEW.repair_required THEN
+    UPDATE weld SET status = 'repair-required', final_result = 'rejected', updated_at = now()
+     WHERE id = NEW.weld_id AND status <> 'repair-required';
+  END IF;`,
+    to: '  NULL;'
+  },
+  {
+    what: 'a weld may be dated tomorrow',
+    from: '  CONSTRAINT a_weld_is_not_made_tomorrow CHECK (welded_on <= current_date),',
+    to: '  CONSTRAINT a_weld_is_not_made_tomorrow CHECK (true),'
+  },
+  {
+    what: 'NDT is called for without saying which method',
+    from: `  CONSTRAINT ndt_that_is_required_says_how CHECK (
+    NOT ndt_required OR btrim(coalesce(ndt_method, '')) <> '')`,
+    to: '  CONSTRAINT ndt_that_is_required_says_how CHECK (true)'
+  },
+  {
+    what: 'a rejected NDT report need not say what was found',
+    from: `  CONSTRAINT a_rejected_report_says_what_was_found CHECK (
+    result <> 'rejected' OR btrim(coalesce(findings, '')) <> '')`,
+    to: '  CONSTRAINT a_rejected_report_says_what_was_found CHECK (true)'
+  },
+  {
+    what: 'an NDT report nobody signed',
+    from: `  CONSTRAINT ndt_is_signed_by_somebody CHECK (
+    btrim(coalesce(technician, '')) <> '' OR btrim(coalesce(external_company, '')) <> ''),`,
+    to: '  CONSTRAINT ndt_is_signed_by_somebody CHECK (true),'
+  },
+  {
+    what: 'a welder qualification that expires before it was issued',
+    from: '  CONSTRAINT a_qualification_runs_forwards CHECK (expires_on > issued_on),',
+    to: '  CONSTRAINT a_qualification_runs_forwards CHECK (true),'
+  },
+  {
+    what: 'a procedure is approved without saying who approved it',
+    from: `  CONSTRAINT an_approved_wps_says_who CHECK (
+    status <> 'approved' OR (approved_on IS NOT NULL AND btrim(coalesce(approved_by, '')) <> ''))`,
+    to: '  CONSTRAINT an_approved_wps_says_who CHECK (true)'
+  },
+  {
+    what: 'two copies of one revision of one welding procedure',
+    from: 'CREATE UNIQUE INDEX wps_one_revision ON wps(ref, revision);',
+    to: 'CREATE INDEX wps_one_revision ON wps(ref, revision);'
+  },
+  {
+    // The other direction, and the one that hid the mutation above: with `ref` unique on its own, two rows
+    // could never share a reference, the index on (ref, revision) could never refuse anything, and rev 2 of
+    // a procedure could not be filed at all. Wrong in a way that reads like tightening.
+    what: 'a welding procedure may have one revision and no more',
+    from: "  ref               text NOT NULL CHECK (btrim(ref) <> ''),",
+    to: "  ref               text NOT NULL UNIQUE CHECK (btrim(ref) <> ''),"
+  },
+  {
     what: 'a document may be filed against a reference nothing answers to',
     from: `  IF entity_id IS NULL THEN
     RAISE EXCEPTION 'nothing in % is called %', p_module, said USING ERRCODE = 'foreign_key_violation';

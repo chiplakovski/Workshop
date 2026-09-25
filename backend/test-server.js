@@ -92,22 +92,25 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
-    'accept_estimate', 'act_on_prospect_finding', 'add_document_note',
-    'add_person', 'add_quality_note', 'add_supplier_note',
+    'accept_estimate', 'accept_weld', 'act_on_prospect_finding',
+    'add_document_note', 'add_person', 'add_quality_note',
+    'add_supplier_note', 'add_welding_note', 'approve_wps',
     'assign_equipment', 'book_hours', 'bootstrap_first_admin',
     'change_my_password', 'complete_inspection', 'convert_lead',
     'create_reinspection', 'issue_material_offline', 'link_document',
     'place_hold', 'receive_goods', 'receive_stock',
-    'record_equipment_event', 'record_ncr_step', 'record_operation',
-    'record_prospect_finding', 'record_stocktake', 'release_hold',
+    'record_equipment_event', 'record_ncr_step', 'record_ndt',
+    'record_operation', 'record_prospect_finding', 'record_stocktake',
+    'record_weld', 'record_weld_repair', 'release_hold',
     'replace_inspection_checks', 'return_equipment', 'save_customer',
     'save_document', 'save_equipment', 'save_inspection',
     'save_jobcard', 'save_lead', 'save_ncr',
     'save_opportunity', 'save_project', 'save_stock_item',
     'save_supplier', 'save_supplier_item', 'save_tender',
-    'send_estimate', 'set_customer_contacts', 'set_jobcard_operations',
-    'set_person_active', 'set_person_password', 'set_person_pin',
-    'set_person_role', 'set_supplier_contacts', 'supersede_document'
+    'save_welder_qual', 'save_wps', 'send_estimate',
+    'set_customer_contacts', 'set_jobcard_operations', 'set_person_active',
+    'set_person_password', 'set_person_pin', 'set_person_role',
+    'set_supplier_contacts', 'supersede_document'
   ], 'the reachable workflows should be exactly the ones named here');
   step(`Thin: exactly ${Object.keys(RPC).length} workflows are reachable over HTTP, by name, from a fixed list`);
 

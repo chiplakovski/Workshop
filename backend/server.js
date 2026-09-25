@@ -231,6 +231,25 @@ const RPC = {
   supersede_document: ['id', 'by_id'],
   add_document_note: ['id', 'text'],
 
+  // The welding registers. `record_weld` takes no welder: the database takes it from the session, so a
+  // weld cannot be logged in somebody else's name over HTTP any more than it can in SQL.
+  record_weld: ['jobcard_id', 'process', 'component', 'wps_id', 'welder_qual_id', 'welded_on',
+    'operation_id', 'drawing_no', 'weld_map_position', 'joint_type', 'base_material', 'material_grade',
+    'thickness', 'filler_material', 'consumable_batch', 'shielding_gas', 'preheat_required',
+    'interpass_temp_req', 'visual_required', 'ndt_required', 'ndt_method', 'notes'],
+  record_weld_repair: ['weld_id', 'reason', 'notes'],
+  record_ndt: ['weld_id', 'method', 'result', 'findings', 'procedure_ref', 'inspection_percent',
+    'inspection_area', 'external_company', 'technician_cert_ref', 'inspected_on', 'acceptance_criteria',
+    'repair_required', 'reinspection_required', 'notes'],
+  accept_weld: ['weld_id', 'accepted', 'why'],
+  save_wps: ['id', 'ref', 'process', 'revision', 'material_group', 'thickness_range', 'diameter_range',
+    'joint_type', 'position', 'filler_material', 'shielding_gas', 'preheat_interpass', 'supporting_wpqr',
+    'document_id', 'notes'],
+  approve_wps: ['id', 'approve'],
+  save_welder_qual: ['id', 'welder_id', 'qual_no', 'process', 'issued_by', 'issued_on', 'expires_on',
+    'material_group', 'thickness_range', 'position', 'status', 'document_id', 'notes'],
+  add_welding_note: ['entity', 'id', 'text'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],

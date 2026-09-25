@@ -269,8 +269,15 @@
     <button class="sideitem" data-section="ncr"><i>⚠</i><span data-i="ncr">NCR</span></button>
     <button class="sideitem" data-section="holds"><i>⛔</i><span data-i="nav_holds">Quality Holds</span></button>
     <div class="sidediv"></div>
+    <button class="sideitem" data-section="welds"><i>◎</i><span data-i="nav_welds">Weld Log</span></button>
+    <button class="sideitem" data-section="ndt"><i>◈</i><span data-i="nav_ndt">NDT</span></button>
+    <button class="sideitem" data-section="wps"><i>▤</i><span data-i="nav_wps">Procedures</span></button>
+    <button class="sideitem" data-section="quals"><i>◉</i><span data-i="nav_quals">Welder Qualifications</span></button>
+    <div class="sidediv"></div>
     <button class="sideitem actionitem" id="newInspectionNav"><i>＋</i><span data-i="new_inspection">New Inspection</span></button>
     <button class="sideitem actionitem" id="newNcrNav"><i>＋</i><span data-i="new_ncr">New NCR</span></button>
+    <button class="sideitem actionitem" id="newWeldNav"><i>＋</i><span data-i="new_weld">Log a weld</span></button>
+    <button class="sideitem actionitem" id="newNdtNav"><i>＋</i><span data-i="new_ndt">Record NDT</span></button>
   </nav>
   <div class="statuspanel">
     <h4 data-i="connected_workflow">Connected Workflow</h4>
@@ -434,6 +441,104 @@
     </div>
   </div>
 
+  <!-- ══════════════ THE WELD LOG ══════════════
+       The register a delivery is signed off against. Every column here answers a question an auditor asks:
+       which joint, to which procedure, by whom under which qualification, with which filler batch. -->
+  <div id="section-welds" class="section" style="display:none;">
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl" data-i="welds_logged">Welds Logged</div><div class="kv" id="weld-count">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="welds_awaiting">Awaiting NDT</div><div class="kv warn" id="weld-awaiting">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="welds_repair">Repair Required</div><div class="kv danger" id="weld-repair">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="welds_accepted">Accepted</div><div class="kv ok" id="weld-accepted">N/A</div></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3 data-i="welds_register">Weld Log</h3></div>
+      <p class="dq-note" data-i="welds_note">A weld is logged by whoever made it. The database refuses one against a procedure nobody has approved, or on a qualification that had already run out — and a weld that needs testing cannot be signed off until a report accepts it.</p>
+      <div class="tablewrap"><table class="table">
+        <thead><tr>
+          <th data-i="weld_no">Weld No.</th><th data-i="weld_where">Jobcard / part</th>
+          <th data-i="weld_procedure">Procedure</th><th data-i="weld_welder">Welder</th>
+          <th data-i="weld_consumable">Filler / batch</th><th data-i="weld_date">Welded</th>
+          <th data-i="weld_testing">Testing</th><th data-i="status">Status</th><th data-i="actions">Actions</th>
+        </tr></thead>
+        <tbody id="weldsBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ NDT ══════════════ -->
+  <div id="section-ndt" class="section" style="display:none;">
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl" data-i="ndt_reports">Reports</div><div class="kv" id="ndt-count">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="ndt_pending">Pending</div><div class="kv warn" id="ndt-pending">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="ndt_rejected">Rejected</div><div class="kv danger" id="ndt-rejected">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="ndt_accepted">Accepted</div><div class="kv ok" id="ndt-accepted">N/A</div></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3 data-i="ndt_register">Non-Destructive Testing</h3></div>
+      <p class="dq-note" data-i="ndt_note">A report belongs to a weld. One that rejects a weld puts it into repair-required by itself, and a rejection has to say what was found — a rejected report with no findings is a decision nobody can check or act on.</p>
+      <div class="tablewrap"><table class="table">
+        <thead><tr>
+          <th data-i="ndt_no">Report No.</th><th data-i="ndt_weld">Weld</th>
+          <th data-i="ndt_method">Method</th><th data-i="ndt_extent">Extent</th>
+          <th data-i="ndt_by">Signed by</th><th data-i="ndt_date">Inspected</th>
+          <th data-i="ndt_findings">Findings</th><th data-i="ndt_result">Result</th><th data-i="actions">Actions</th>
+        </tr></thead>
+        <tbody id="ndtBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ WELDING PROCEDURES ══════════════ -->
+  <div id="section-wps" class="section" style="display:none;">
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl" data-i="wps_total">Procedures</div><div class="kv" id="wps-count">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="wps_approved">Approved</div><div class="kv ok" id="wps-approved">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="wps_awaiting">Awaiting Approval</div><div class="kv warn" id="wps-awaiting">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="wps_draft">Draft</div><div class="kv" id="wps-draft">N/A</div></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3 data-i="wps_register">Welding Procedure Specifications</h3>
+        <button class="btn" id="newWpsBtn" data-i="new_wps">New procedure</button></div>
+      <p class="dq-note" data-i="wps_note">A procedure cannot be approved with no qualification record behind it: a WPS is approved because somebody welded a test piece and it was tested, not because the document exists. Only an approved one may be welded to.</p>
+      <div class="tablewrap"><table class="table">
+        <thead><tr>
+          <th data-i="wps_no">Procedure</th><th data-i="wps_rev">Rev</th>
+          <th data-i="wps_process">Process</th><th data-i="wps_material">Material group</th>
+          <th data-i="wps_range">Thickness</th><th data-i="wps_wpqr">Supporting WPQR</th>
+          <th data-i="status">Status</th><th data-i="actions">Actions</th>
+        </tr></thead>
+        <tbody id="wpsBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ WELDER QUALIFICATIONS ══════════════
+       The register whose whole job is to say who may weld — which is why "expiring soon" and "expired" are
+       worked out from the date on every read and are not columns anybody can set. -->
+  <div id="section-quals" class="section" style="display:none;">
+    <div class="kpistrip">
+      <div class="kpi"><div class="kl" data-i="quals_total">Qualifications</div><div class="kv" id="qual-count">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="quals_valid">Valid</div><div class="kv ok" id="qual-valid">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="quals_soon">Expiring Soon</div><div class="kv warn" id="qual-soon">N/A</div></div>
+      <div class="kpi"><div class="kl" data-i="quals_expired">Expired</div><div class="kv danger" id="qual-expired">N/A</div></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h3 data-i="quals_register">Welder Qualifications</h3>
+        <button class="btn" id="newQualBtn" data-i="new_qual">Record a qualification</button></div>
+      <p class="dq-note" data-i="quals_note">Expiring soon and expired are worked out from the date every time this is read, never stored — a register that remembers "expiring soon" is a register that was right one morning. A weld cannot cite a qualification that had run out on the day it was made.</p>
+      <div class="tablewrap"><table class="table">
+        <thead><tr>
+          <th data-i="qual_no">Qualification</th><th data-i="qual_welder">Welder</th>
+          <th data-i="wps_process">Process</th><th data-i="wps_material">Material group</th>
+          <th data-i="qual_issued">Issued by</th><th data-i="qual_expires">Expires</th>
+          <th data-i="status">Status</th><th data-i="actions">Actions</th>
+        </tr></thead>
+        <tbody id="qualsBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- NEW / EDIT INSPECTION MODAL -->
@@ -473,6 +578,156 @@
     <div class="mbtns">
       <button class="mbtn" onclick="closeModal('inspModal')" data-i="cancel">Cancel</button>
       <button class="mbtn primary" onclick="submitInspection()" data-i="create_request">Create Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ THE WELDING FORMS ══════════════
+     Four forms, and what is NOT on any of them matters as much as what is. There is no welder field on the
+     weld form: the database takes the welder from the session and the row policy refuses a weld logged in
+     anybody else's name, so a field for it would be a field that cannot work. And there is no status field
+     on the qualification form beyond the three somebody sets — expiring soon and expired are the date's
+     answer, computed on every read. -->
+<div class="modal" id="weldModal">
+  <div class="mcard">
+    <h2 data-i="new_weld">Log a weld</h2>
+    <div class="msub" data-i="weld_form_sub">Logged under your own name — the database takes the welder from your session and refuses a weld recorded for somebody else.</div>
+    <div class="mrow2">
+      <div><label data-i="jobcard" for="wl_jobcard">Jobcard</label><select id="wl_jobcard"></select></div>
+      <div><label data-i="component" for="wl_component">Component / joint</label><input id="wl_component" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_process" for="wl_process">Process</label><input id="wl_process" type="text" placeholder="TIG"></div>
+      <div><label data-i="weld_procedure" for="wl_wps">Procedure</label><select id="wl_wps"><option value="">—</option></select></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="drawing_no" for="wl_drawing">Drawing No.</label><input id="wl_drawing" type="text"></div>
+      <div><label data-i="weld_map" for="wl_map">Weld map position</label><input id="wl_map" type="text" placeholder="W-03"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_joint" for="wl_joint">Joint type</label><input id="wl_joint" type="text" placeholder="Butt"></div>
+      <div><label data-i="weld_thickness" for="wl_thickness">Thickness (mm)</label><input id="wl_thickness" type="number" step="0.1" min="0"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_base" for="wl_base">Base material</label><input id="wl_base" type="text" placeholder="AISI 304"></div>
+      <div><label data-i="weld_filler" for="wl_filler">Filler material</label><input id="wl_filler" type="text" placeholder="ER308L"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_batch" for="wl_batch">Consumable batch</label><input id="wl_batch" type="text" placeholder="L260801"></div>
+      <div><label data-i="weld_gas" for="wl_gas">Shielding gas</label><input id="wl_gas" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_date" for="wl_date">Welded on</label><input id="wl_date" type="date"></div>
+      <div><label data-i="weld_ndt_method" for="wl_ndtmethod">NDT method, if any</label><input id="wl_ndtmethod" type="text" placeholder="RT"></div>
+    </div>
+    <div class="mrow"><label data-i="notes" for="wl_notes">Notes</label><textarea id="wl_notes"></textarea></div>
+    <div class="mformerr" id="weldFormErr"></div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="closeModal('weldModal')" data-i="cancel">Cancel</button>
+      <button class="mbtn primary" onclick="submitWeld()" data-i="log_weld">Log the weld</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ndtModal">
+  <div class="mcard">
+    <h2 data-i="record_ndt">Record NDT</h2>
+    <div class="msub" data-i="ndt_form_sub">A report belongs to one weld. Rejecting one puts that weld into repair-required, and a rejection has to say what was found.</div>
+    <div class="mrow2">
+      <div><label data-i="ndt_weld" for="nd_weld">Weld</label><select id="nd_weld"></select></div>
+      <div><label data-i="ndt_method" for="nd_method">Method</label><input id="nd_method" type="text" placeholder="RT"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="ndt_procedure" for="nd_procedure">Procedure reference</label><input id="nd_procedure" type="text" placeholder="EN ISO 17636-1"></div>
+      <div><label data-i="ndt_criteria" for="nd_criteria">Acceptance criteria</label><input id="nd_criteria" type="text" placeholder="EN ISO 10675-1 level 1"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="ndt_percent" for="nd_percent">Extent (%)</label><input id="nd_percent" type="number" min="1" max="100" step="1"></div>
+      <div><label data-i="ndt_area" for="nd_area">Area inspected</label><input id="nd_area" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="ndt_external" for="nd_external">Outside firm, if any</label><input id="nd_external" type="text"></div>
+      <div><label data-i="ndt_cert" for="nd_cert">Technician certificate</label><input id="nd_cert" type="text" placeholder="PCN-2025-02"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="ndt_date" for="nd_date">Inspected on</label><input id="nd_date" type="date"></div>
+      <div><label data-i="ndt_result" for="nd_result">Result</label><select id="nd_result"></select></div>
+    </div>
+    <div class="mrow"><label data-i="ndt_findings" for="nd_findings">Findings</label><textarea id="nd_findings"></textarea></div>
+    <div class="mformerr" id="ndtFormErr"></div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="closeModal('ndtModal')" data-i="cancel">Cancel</button>
+      <button class="mbtn primary" onclick="submitNdt()" data-i="record_result">Record the result</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="wpsModal">
+  <div class="mcard">
+    <h2 data-i="new_wps">New procedure</h2>
+    <div class="msub" data-i="wps_form_sub">Saved as a draft. Approving it is a separate action and needs the qualification record behind it.</div>
+    <div class="mrow2">
+      <div><label data-i="wps_no" for="wp_ref">Procedure reference</label><input id="wp_ref" type="text" placeholder="WPS-304-02"></div>
+      <div><label data-i="wps_rev" for="wp_rev">Revision</label><input id="wp_rev" type="number" min="0" step="1" value="1"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_process" for="wp_process">Process</label><input id="wp_process" type="text" placeholder="TIG"></div>
+      <div><label data-i="wps_material" for="wp_material">Material group</label><input id="wp_material" type="text" placeholder="Stainless Steel (Group 8)"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_range" for="wp_thickness">Thickness range</label><input id="wp_thickness" type="text" placeholder="1.5–6.0 mm"></div>
+      <div><label data-i="wps_diameter" for="wp_diameter">Diameter range</label><input id="wp_diameter" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_joint" for="wp_joint">Joint type</label><input id="wp_joint" type="text" placeholder="Butt"></div>
+      <div><label data-i="wps_position" for="wp_position">Positions</label><input id="wp_position" type="text" placeholder="All positions (1G-4G)"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="weld_filler" for="wp_filler">Filler material</label><input id="wp_filler" type="text" placeholder="ER308L"></div>
+      <div><label data-i="weld_gas" for="wp_gas">Shielding gas</label><input id="wp_gas" type="text" placeholder="Argon 99.99%"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_preheat" for="wp_preheat">Preheat / interpass</label><input id="wp_preheat" type="text"></div>
+      <div><label data-i="wps_wpqr" for="wp_wpqr">Supporting WPQR</label><input id="wp_wpqr" type="text" placeholder="WPQR-304-02-R1"></div>
+    </div>
+    <div class="mrow"><label data-i="notes" for="wp_notes">Notes</label><textarea id="wp_notes"></textarea></div>
+    <div class="mformerr" id="wpsFormErr"></div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="closeModal('wpsModal')" data-i="cancel">Cancel</button>
+      <button class="mbtn primary" onclick="submitWps()" data-i="save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="qualModal">
+  <div class="mcard">
+    <h2 data-i="new_qual">Record a qualification</h2>
+    <div class="msub" data-i="qual_form_sub">Expiring soon and expired are not choices here: both are worked out from the expiry date every time the register is read.</div>
+    <div class="mrow2">
+      <div><label data-i="qual_welder" for="wq_welder">Welder</label><select id="wq_welder"></select></div>
+      <div><label data-i="qual_no" for="wq_no">Qualification number</label><input id="wq_no" type="text" placeholder="WPQ-EN-2024-11"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_process" for="wq_process">Process</label><input id="wq_process" type="text" placeholder="TIG"></div>
+      <div><label data-i="wps_material" for="wq_material">Material group</label><input id="wq_material" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="wps_range" for="wq_thickness">Thickness range</label><input id="wq_thickness" type="text"></div>
+      <div><label data-i="wps_position" for="wq_position">Positions</label><input id="wq_position" type="text"></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="qual_issued" for="wq_issuedby">Issued by</label><input id="wq_issuedby" type="text" placeholder="Nordic Weld Cert AB"></div>
+      <div><label data-i="qual_status" for="wq_status">Status</label><select id="wq_status"></select></div>
+    </div>
+    <div class="mrow2">
+      <div><label data-i="qual_issued_on" for="wq_issued">Issued on</label><input id="wq_issued" type="date"></div>
+      <div><label data-i="qual_expires" for="wq_expires">Expires on</label><input id="wq_expires" type="date"></div>
+    </div>
+    <div class="mrow"><label data-i="notes" for="wq_notes">Notes</label><textarea id="wq_notes"></textarea></div>
+    <div class="mformerr" id="qualFormErr"></div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="closeModal('qualModal')" data-i="cancel">Cancel</button>
+      <button class="mbtn primary" onclick="submitQual()" data-i="save">Save</button>
     </div>
   </div>
 </div>
@@ -670,7 +925,58 @@ const i18n={
     holds_register:'Quality Holds',holds_note:'An active hold blocks completing or closing whatever it names, and is cleared here and nowhere else.',
     holds_none:'No quality holds match these filters',hold_no:'Hold No.',hold_blocks:'Blocks',hold_applied:'Applied',reason:'Reason',
     card_critical_alerts:'Critical Quality Alerts',card_due_today:'Inspections Required Today',card_failed:'Failed Inspections',
-    card_open_holds:'Active Quality Holds',card_blocked_projects:'Projects Blocked by Quality'
+    card_open_holds:'Active Quality Holds',card_blocked_projects:'Projects Blocked by Quality',
+    nav_welds:'Weld Log',nav_ndt:'NDT',nav_wps:'Procedures',nav_quals:'Welder Qualifications',
+    new_weld:'Log a weld',new_ndt:'Record NDT',new_wps:'New procedure',new_qual:'Record a qualification',
+    welds_logged:'Welds Logged',welds_awaiting:'Awaiting NDT',welds_repair:'Repair Required',welds_accepted:'Accepted',
+    welds_register:'Weld Log',welds_empty:'No welds match these filters',
+    welds_note:'A weld is logged by whoever made it. The database refuses one against a procedure nobody has approved, or on a qualification that had already run out — and a weld that needs testing cannot be signed off until a report accepts it.',
+    weld_no:'Weld No.',weld_where:'Jobcard / part',weld_procedure:'Procedure',weld_welder:'Welder',
+    weld_consumable:'Filler / batch',weld_date:'Welded',weld_testing:'Testing',
+    ndt_reports:'Reports',ndt_pending:'Pending',ndt_rejected:'Rejected',ndt_accepted:'Accepted',
+    ndt_register:'Non-Destructive Testing',ndt_empty:'No NDT reports match these filters',
+    ndt_note:'A report belongs to a weld. One that rejects a weld puts it into repair-required by itself, and a rejection has to say what was found — a rejected report with no findings is a decision nobody can check or act on.',
+    ndt_no:'Report No.',ndt_weld:'Weld',ndt_method:'Method',ndt_extent:'Extent',ndt_by:'Signed by',
+    ndt_date:'Inspected',ndt_findings:'Findings',ndt_result:'Result',
+    wps_total:'Procedures',wps_approved:'Approved',wps_awaiting:'Awaiting Approval',wps_draft:'Draft',
+    wps_register:'Welding Procedure Specifications',wps_empty:'No procedures match these filters',
+    wps_note:'A procedure cannot be approved with no qualification record behind it: a WPS is approved because somebody welded a test piece and it was tested, not because the document exists. Only an approved one may be welded to.',
+    wps_approved_now:'Procedure {no} approved.',
+    wps_no:'Procedure',wps_rev:'Rev',wps_process:'Process',wps_material:'Material group',
+    wps_range:'Thickness',wps_wpqr:'Supporting WPQR',
+    quals_total:'Qualifications',quals_valid:'Valid',quals_soon:'Expiring Soon',quals_expired:'Expired',
+    quals_register:'Welder Qualifications',quals_empty:'No qualifications match these filters',
+    quals_note:'Expiring soon and expired are worked out from the date every time this is read, never stored — a register that remembers “expiring soon” is a register that was right one morning. A weld cannot cite a qualification that had run out on the day it was made.',
+    qual_no:'Qualification',qual_welder:'Welder',qual_issued:'Issued by',qual_expires:'Expires',
+    weld_form_sub:'Logged under your own name — the database takes the welder from your session and refuses a weld recorded for somebody else.',
+    weld_map:'Weld map position',weld_joint:'Joint type',weld_thickness:'Thickness (mm)',
+    weld_base:'Base material',weld_filler:'Filler material',weld_batch:'Consumable batch',
+    weld_gas:'Shielding gas',weld_ndt_method:'NDT method, if any',log_weld:'Log the weld',
+    record_ndt:'Record NDT',
+    ndt_form_sub:'A report belongs to one weld. Rejecting one puts that weld into repair-required, and a rejection has to say what was found.',
+    ndt_procedure:'Procedure reference',ndt_criteria:'Acceptance criteria',ndt_percent:'Extent (%)',
+    ndt_area:'Area inspected',ndt_external:'Outside firm, if any',ndt_cert:'Technician certificate',
+    record_result:'Record the result',
+    wps_form_sub:'Saved as a draft. Approving it is a separate action and needs the qualification record behind it.',
+    wps_diameter:'Diameter range',wps_position:'Positions',wps_preheat:'Preheat / interpass',
+    qual_form_sub:'Expiring soon and expired are not choices here: both are worked out from the expiry date every time the register is read.',
+    qual_status:'Status',qual_issued_on:'Issued on',
+    record_ndt_short:'NDT',sign_off:'Sign off',log_repair:'Repair',approve:'Approve',edit:'Edit',
+    ndt_done:'accepted',ndt_outstanding:'outstanding',no_qual_cited:'no qualification cited',
+    days_ago:'{n} days ago',days_left:'{n} days left',no_procedure:'No procedure',
+    err_pick_jobcard:'Pick the jobcard this weld belongs to.',err_process:'Name the welding process.',
+    weld_logged:'Weld {no} logged.',weld_logged_short:'Weld logged.',
+    err_pick_weld:'Pick the weld this report belongs to.',err_method:'Name the testing method.',
+    ndt_recorded:'Report {no} recorded.',ndt_recorded_short:'Report recorded.',
+    err_qual_no:'Give the qualification its number.',err_issued_by:'Say who issued it.',
+    err_wps_ref:'Give the procedure a reference.',wps_saved:'Procedure saved.',
+    wps_not_found:'That procedure is not in the register.',
+    err_pick_welder:'Pick the welder this qualification belongs to.',
+    err_qual_dates:'Both the date it was issued and the date it expires are needed.',
+    qual_saved:'Qualification saved.',weld_not_found:'That weld is not in the log.',
+    weld_signed_off:'Weld {no} signed off.',repair_why:'Why does this weld need repair?',
+    repair_logged:'Repair logged against weld {no}.',record_not_found:'That record is not in the register.',
+    note_prompt:'Note',note_added:'Note added.'
   },
   sv:{
     quality_short:'Besiktningar & avvikelser',overview:'Översikt',inspections:'Inspektioner',ncr:'Avvikelserapport',new_inspection:'Ny Inspektion',
@@ -706,7 +1012,58 @@ const i18n={
     holds_note:'En aktiv spärr hindrar att det den gäller slutförs eller stängs, och släpps här och ingen annanstans.',
     holds_none:'Inga kvalitetsspärrar matchar dessa filter',hold_no:'Spärr nr',hold_blocks:'Spärrar',hold_applied:'Tillämpad',reason:'Orsak',
     card_critical_alerts:'Kritiska Kvalitetslarm',card_due_today:'Inspektioner Som Krävs Idag',card_failed:'Underkända Inspektioner',
-    card_open_holds:'Aktiva Kvalitetsspärrar',card_blocked_projects:'Projekt Spärrade av Kvalitet'
+    card_open_holds:'Aktiva Kvalitetsspärrar',card_blocked_projects:'Projekt Spärrade av Kvalitet',
+    nav_welds:'Svetsjournal',nav_ndt:'OFP',nav_wps:'Procedurer',nav_quals:'Svetsarprövningar',
+    new_weld:'Logga en svets',new_ndt:'Registrera OFP',new_wps:'Ny procedur',new_qual:'Registrera en prövning',
+    welds_logged:'Loggade svetsar',welds_awaiting:'Väntar på OFP',welds_repair:'Reparation krävs',welds_accepted:'Godkända',
+    welds_register:'Svetsjournal',welds_empty:'Inga svetsar matchar dessa filter',
+    welds_note:'En svets loggas av den som gjorde den. Databasen vägrar en svets mot en procedur som ingen har godkänt, eller på en prövning som redan hade gått ut — och en svets som kräver provning kan inte signeras förrän en rapport godkänner den.',
+    weld_no:'Svetsnr',weld_where:'Arbetskort / detalj',weld_procedure:'Procedur',weld_welder:'Svetsare',
+    weld_consumable:'Tillsats / charge',weld_date:'Svetsad',weld_testing:'Provning',
+    ndt_reports:'Rapporter',ndt_pending:'Väntande',ndt_rejected:'Underkända',ndt_accepted:'Godkända',
+    ndt_register:'Oförstörande provning',ndt_empty:'Inga OFP-rapporter matchar dessa filter',
+    ndt_note:'En rapport tillhör en svets. En som underkänner en svets sätter den själv i reparation krävs, och ett underkännande måste säga vad som hittades — en underkänd rapport utan fynd är ett beslut ingen kan kontrollera eller åtgärda.',
+    ndt_no:'Rapportnr',ndt_weld:'Svets',ndt_method:'Metod',ndt_extent:'Omfattning',ndt_by:'Signerad av',
+    ndt_date:'Kontrollerad',ndt_findings:'Fynd',ndt_result:'Resultat',
+    wps_total:'Procedurer',wps_approved:'Godkända',wps_awaiting:'Väntar på godkännande',wps_draft:'Utkast',
+    wps_register:'Svetsprocedurspecifikationer',wps_empty:'Inga procedurer matchar dessa filter',
+    wps_note:'En procedur kan inte godkännas utan en prövning bakom sig: en WPS godkänns för att någon svetsade ett provstycke och det provades, inte för att dokumentet finns. Bara en godkänd får svetsas mot.',
+    wps_approved_now:'Procedur {no} godkänd.',
+    wps_no:'Procedur',wps_rev:'Rev',wps_process:'Process',wps_material:'Materialgrupp',
+    wps_range:'Tjocklek',wps_wpqr:'Underliggande WPQR',
+    quals_total:'Prövningar',quals_valid:'Giltiga',quals_soon:'Går ut snart',quals_expired:'Utgångna',
+    quals_register:'Svetsarprövningar',quals_empty:'Inga prövningar matchar dessa filter',
+    quals_note:'Går ut snart och utgången räknas ut från datumet varje gång detta läses, aldrig lagrat — ett register som minns ”går ut snart” är ett register som hade rätt en morgon. En svets kan inte hänvisa till en prövning som hade gått ut den dag svetsen gjordes.',
+    qual_no:'Prövning',qual_welder:'Svetsare',qual_issued:'Utfärdad av',qual_expires:'Går ut',
+    weld_form_sub:'Loggas i ditt eget namn — databasen tar svetsaren från din session och vägrar en svets registrerad för någon annan.',
+    weld_map:'Position i svetsplan',weld_joint:'Fogtyp',weld_thickness:'Tjocklek (mm)',
+    weld_base:'Grundmaterial',weld_filler:'Tillsatsmaterial',weld_batch:'Charge för tillsatsmaterial',
+    weld_gas:'Skyddsgas',weld_ndt_method:'OFP-metod, om någon',log_weld:'Logga svetsen',
+    record_ndt:'Registrera OFP',
+    ndt_form_sub:'En rapport tillhör en svets. Att underkänna den sätter svetsen i reparation krävs, och ett underkännande måste säga vad som hittades.',
+    ndt_procedure:'Procedurreferens',ndt_criteria:'Godkännandekriterier',ndt_percent:'Omfattning (%)',
+    ndt_area:'Kontrollerad yta',ndt_external:'Extern firma, om någon',ndt_cert:'Teknikercertifikat',
+    record_result:'Registrera resultatet',
+    wps_form_sub:'Sparas som utkast. Att godkänna den är en egen åtgärd och kräver prövningen bakom sig.',
+    wps_diameter:'Diameterområde',wps_position:'Positioner',wps_preheat:'Förvärmning / mellansträngstemperatur',
+    qual_form_sub:'Går ut snart och utgången är inga val här: båda räknas ut från utgångsdatumet varje gång registret läses.',
+    qual_status:'Status',qual_issued_on:'Utfärdad',
+    record_ndt_short:'OFP',sign_off:'Signera',log_repair:'Reparation',approve:'Godkänn',edit:'Redigera',
+    ndt_done:'godkänd',ndt_outstanding:'utestående',no_qual_cited:'ingen prövning angiven',
+    days_ago:'för {n} dagar sedan',days_left:'{n} dagar kvar',no_procedure:'Ingen procedur',
+    err_pick_jobcard:'Välj arbetskortet svetsen hör till.',err_process:'Ange svetsprocessen.',
+    weld_logged:'Svets {no} loggad.',weld_logged_short:'Svetsen loggad.',
+    err_pick_weld:'Välj svetsen rapporten hör till.',err_method:'Ange provningsmetoden.',
+    ndt_recorded:'Rapport {no} registrerad.',ndt_recorded_short:'Rapporten registrerad.',
+    err_qual_no:'Ange prövningens nummer.',err_issued_by:'Ange vem som utfärdade den.',
+    err_wps_ref:'Ge proceduren en referens.',wps_saved:'Proceduren sparad.',
+    wps_not_found:'Den proceduren finns inte i registret.',
+    err_pick_welder:'Välj svetsaren prövningen hör till.',
+    err_qual_dates:'Både datumet den utfärdades och datumet den går ut behövs.',
+    qual_saved:'Prövningen sparad.',weld_not_found:'Den svetsen finns inte i journalen.',
+    weld_signed_off:'Svets {no} signerad.',repair_why:'Varför behöver denna svets repareras?',
+    repair_logged:'Reparation loggad på svets {no}.',record_not_found:'Den posten finns inte i registret.',
+    note_prompt:'Anteckning',note_added:'Anteckning tillagd.'
   },
   mk:{
     quality_short:'Инспекции & дефекти',overview:'Преглед',inspections:'Инспекции',ncr:'НЦР',new_inspection:'Нова Инспекција',new_ncr:'Нов НЦР',
@@ -741,7 +1098,58 @@ const i18n={
     holds_note:'Активното задржување спречува завршување или затворање на тоа што го именува, и се ослободува тука и никаде друго.',
     holds_none:'Нема задржувања за квалитет што одговараат на овие филтри',hold_no:'Задржување бр.',hold_blocks:'Блокира',hold_applied:'Применето',
     reason:'Причина',card_critical_alerts:'Критични Известувања за Квалитет',card_due_today:'Инспекции Потребни Денес',
-    card_failed:'Неуспешни Инспекции',card_open_holds:'Активни Задржувања за Квалитет',card_blocked_projects:'Проекти Блокирани од Квалитет'
+    card_failed:'Неуспешни Инспекции',card_open_holds:'Активни Задржувања за Квалитет',card_blocked_projects:'Проекти Блокирани од Квалитет',
+    nav_welds:'Дневник на Завари',nav_ndt:'НДТ',nav_wps:'Процедури',nav_quals:'Атестати на Заварувачи',
+    new_weld:'Запиши завар',new_ndt:'Запиши НДТ',new_wps:'Нова процедура',new_qual:'Запиши атестат',
+    welds_logged:'Запишани завари',welds_awaiting:'Чекаат НДТ',welds_repair:'Потребна поправка',welds_accepted:'Прифатени',
+    welds_register:'Дневник на Завари',welds_empty:'Нема завари што одговараат на овие филтри',
+    welds_note:'Заварот го запишува тој што го направил. Базата одбива завар по процедура што никој не ја одобрил, или на атестат што веќе истекол — а завар што бара испитување не може да се потпише додека извештај не го прифати.',
+    weld_no:'Завар бр.',weld_where:'Работна картичка / дел',weld_procedure:'Процедура',weld_welder:'Заварувач',
+    weld_consumable:'Додаток / шаржа',weld_date:'Заварено',weld_testing:'Испитување',
+    ndt_reports:'Извештаи',ndt_pending:'Во исчекување',ndt_rejected:'Одбиени',ndt_accepted:'Прифатени',
+    ndt_register:'Безразрушително Испитување',ndt_empty:'Нема НДТ извештаи што одговараат на овие филтри',
+    ndt_note:'Извештајот припаѓа на завар. Оној што одбива завар сам го става во потребна поправка, а одбивањето мора да каже што е најдено — одбиен извештај без наоди е одлука што никој не може да ја провери ни да постапи по неа.',
+    ndt_no:'Извештај бр.',ndt_weld:'Завар',ndt_method:'Метода',ndt_extent:'Обем',ndt_by:'Потпишал',
+    ndt_date:'Прегледано',ndt_findings:'Наоди',ndt_result:'Резултат',
+    wps_total:'Процедури',wps_approved:'Одобрени',wps_awaiting:'Чекаат одобрување',wps_draft:'Нацрт',
+    wps_register:'Спецификации за Постапка на Заварување',wps_empty:'Нема процедури што одговараат на овие филтри',
+    wps_note:'Процедурата не може да се одобри без атестат зад неа: процедурата се одобрува затоа што некој заварил пробно парче и тоа е испитано, не затоа што документот постои. Само одобрена процедура смее да се користи при заварување.',
+    wps_approved_now:'Процедурата {no} е одобрена.',
+    wps_no:'Процедура',wps_rev:'Рев.',wps_process:'Процес',wps_material:'Група материјал',
+    wps_range:'Дебелина',wps_wpqr:'Придружен WPQR',
+    quals_total:'Атестати',quals_valid:'Валидни',quals_soon:'Истекуваат Наскоро',quals_expired:'Истечени',
+    quals_register:'Атестати на Заварувачи',quals_empty:'Нема атестати што одговараат на овие филтри',
+    quals_note:'Истекува наскоро и истечен се пресметуваат од датумот при секое читање, никогаш не се чуваат — регистар што памти „истекува наскоро“ е регистар што бил точен едно утро. Заварот не може да се повика на атестат што истекол на денот кога е направен.',
+    qual_no:'Атестат',qual_welder:'Заварувач',qual_issued:'Издаден од',qual_expires:'Истекува',
+    weld_form_sub:'Се запишува на твое име — базата го зема заварувачот од твојата сесија и одбива завар запишан за некој друг.',
+    weld_map:'Позиција во план на завари',weld_joint:'Тип на спој',weld_thickness:'Дебелина (мм)',
+    weld_base:'Основен материјал',weld_filler:'Додатен материјал',weld_batch:'Шаржа на додатен материјал',
+    weld_gas:'Заштитен гас',weld_ndt_method:'НДТ метода, ако има',log_weld:'Запиши го заварот',
+    record_ndt:'Запиши НДТ',
+    ndt_form_sub:'Извештајот припаѓа на еден завар. Одбивањето го става тој завар во потребна поправка, а одбивањето мора да каже што е најдено.',
+    ndt_procedure:'Референца на процедура',ndt_criteria:'Критериуми за прифаќање',ndt_percent:'Обем (%)',
+    ndt_area:'Прегледана површина',ndt_external:'Надворешна фирма, ако има',ndt_cert:'Сертификат на техничар',
+    record_result:'Запиши го резултатот',
+    wps_form_sub:'Се зачувува како нацрт. Одобрувањето е посебно дејство и бара атестат зад себе.',
+    wps_diameter:'Опсег на дијаметар',wps_position:'Позиции',wps_preheat:'Предгреење / меѓуслојна',
+    qual_form_sub:'Истекува наскоро и истечен не се избори тука: и двете се пресметуваат од датумот на истекување при секое читање на регистарот.',
+    qual_status:'Статус',qual_issued_on:'Издаден на',
+    record_ndt_short:'НДТ',sign_off:'Потпиши',log_repair:'Поправка',approve:'Одобри',edit:'Измени',
+    ndt_done:'прифатено',ndt_outstanding:'нерешено',no_qual_cited:'нема наведен атестат',
+    days_ago:'пред {n} дена',days_left:'уште {n} дена',no_procedure:'Без процедура',
+    err_pick_jobcard:'Избери работна картичка на која припаѓа заварот.',err_process:'Наведи процес на заварување.',
+    weld_logged:'Заварот {no} е запишан.',weld_logged_short:'Заварот е запишан.',
+    err_pick_weld:'Избери завар на кој припаѓа извештајот.',err_method:'Наведи метода на испитување.',
+    ndt_recorded:'Извештајот {no} е запишан.',ndt_recorded_short:'Извештајот е запишан.',
+    err_qual_no:'Наведи го бројот на атестатот.',err_issued_by:'Наведи кој го издал.',
+    err_wps_ref:'Дај референца на процедурата.',wps_saved:'Процедурата е зачувана.',
+    wps_not_found:'Таа процедура ја нема во регистарот.',
+    err_pick_welder:'Избери заварувач на кој припаѓа атестатот.',
+    err_qual_dates:'Потребни се и датумот на издавање и датумот на истекување.',
+    qual_saved:'Атестатот е зачуван.',weld_not_found:'Тој завар го нема во дневникот.',
+    weld_signed_off:'Заварот {no} е потпишан.',repair_why:'Зошто овој завар бара поправка?',
+    repair_logged:'Поправката е запишана на заварот {no}.',record_not_found:'Тој запис го нема во регистарот.',
+    note_prompt:'Белешка',note_added:'Белешката е додадена.'
   }
 };
 
@@ -814,6 +1222,10 @@ function showSection(sectionId){
 document.querySelectorAll('.sideitem[data-section]').forEach(btn=>btn.addEventListener('click',()=>showSection(btn.getAttribute('data-section'))));
 $('newInspectionNav').addEventListener('click',()=>openNewInspectionModal());
 $('newNcrNav').addEventListener('click',()=>openNewNcrModal());
+$('newWeldNav').addEventListener('click',()=>openWeldForm());
+$('newNdtNav').addEventListener('click',()=>openNdtForm());
+$('newWpsBtn').addEventListener('click',()=>openWpsForm());
+$('newQualBtn').addEventListener('click',()=>openQualForm());
 
 // LANGUAGE
 $('langtoggle').addEventListener('click',()=>$('langc').classList.toggle('open'));
@@ -891,6 +1303,113 @@ function loadSectionData(section){
   else if(section==='inspections')renderInspections(data);
   else if(section==='ncr')renderNcrSection(data);
   else if(section==='holds')renderHolds(data);
+  else if(section==='welds')renderWelds(data);
+  else if(section==='ndt')renderNdt(data);
+  else if(section==='wps')renderWps(data);
+  else if(section==='quals')renderQuals(data);
+}
+
+// ══════════════ THE WELDING REGISTERS ══════════════
+//
+// Four read-only tables and four forms. What each of them prints is what the database sent: the two dated
+// statuses on a qualification — expiring soon, expired — are worked out by the view on every read, and the
+// column holds only what somebody chose. So nothing here computes a date, and nothing here decides whether
+// a weld may be accepted; both refusals come back from the database in words a welder can read.
+function renderWelds(data){
+  const all=data.qualityWelds||[];
+  const rows=all.filter(w=>matchStatus(w.status)&&matchSearch(w.no,w.jobcard,w.component,w.welder,w.wpsNo,w.consumableBatch));
+  $('weld-count').textContent=all.length;
+  $('weld-awaiting').textContent=all.filter(w=>w.ndtRequired&&w.finalResult==='pending').length;
+  $('weld-repair').textContent=all.filter(w=>w.status==='repair-required').length;
+  $('weld-accepted').textContent=all.filter(w=>w.finalResult==='accepted').length;
+  $('weldsBody').innerHTML=rows.map(w=>{
+    // The testing column says three different things and they are not the same: nothing is called for, a
+    // method is called for and nobody has answered, or a report has. A welder reading "RT" cannot tell
+    // which of the three it is, which is why the word is there as well.
+    const testing=!w.ndtRequired ? genericLabel('none')
+      : (w.finalResult==='accepted' ? esc(w.ndtMethod||'NDT')+' &mdash; '+tr('ndt_done')
+        : '<strong>'+esc(w.ndtMethod||'NDT')+'</strong> &mdash; '+tr('ndt_outstanding'));
+    return `<tr>
+      <td><strong>${esc(w.no)}</strong><br><small>${esc(w.projectNo||'')}</small></td>
+      <td>${esc(w.jobcard||'N/A')}<br><small>${esc(w.component||'')}${w.weldMapPosition?' &middot; '+esc(w.weldMapPosition):''}</small></td>
+      <td>${esc(w.wpsNo||'N/A')}<br><small>${esc(w.process||'')}</small></td>
+      <td>${esc(w.welder||'N/A')}<br><small>${esc(w.welderQualRef||tr('no_qual_cited'))}</small></td>
+      <td>${esc(w.fillerMaterial||'N/A')}<br><small>${esc(w.consumableBatch||'')}</small></td>
+      <td>${esc((w.weldDate||'').slice(0,10)||'N/A')}</td>
+      <td>${testing}</td>
+      <td>${badge(w.status,genericLabel(w.status))}</td>
+      <td class="rowacts">
+        <button class="btn sm" onclick="openNdtForm('${esc(w.no)}')" data-i="record_ndt_short">NDT</button>
+        ${w.finalResult!=='accepted'?`<button class="btn sm" onclick="signWeldOff('${esc(w.no)}')" data-i="sign_off">Sign off</button>`:''}
+        ${w.status==='repair-required'?`<button class="btn sm danger" onclick="openWeldRepair('${esc(w.no)}')" data-i="log_repair">Repair</button>`:''}
+      </td></tr>`;
+  }).join('')||emptyRow(9,'welds_empty');
+}
+
+function renderNdt(data){
+  const all=data.qualityNdt||[];
+  const rows=all.filter(r=>matchStatus(r.result)&&matchSearch(r.no,r.weldRef,r.method,r.technician,r.externalCompany));
+  $('ndt-count').textContent=all.length;
+  $('ndt-pending').textContent=all.filter(r=>r.result==='pending').length;
+  $('ndt-rejected').textContent=all.filter(r=>r.result==='rejected').length;
+  $('ndt-accepted').textContent=all.filter(r=>r.result==='accepted').length;
+  $('ndtBody').innerHTML=rows.map(r=>`<tr>
+      <td><strong>${esc(r.no)}</strong></td>
+      <td>${esc(r.weldRef||'N/A')}<br><small>${esc(r.jobcard||'')}</small></td>
+      <td>${esc(r.method||'N/A')}<br><small>${esc(r.procedureRef||'')}</small></td>
+      <td>${r.inspectionPercent!=null?esc(r.inspectionPercent)+'%':'N/A'}<br><small>${esc(r.inspectionArea||'')}</small></td>
+      <td>${esc(r.technician||r.externalCompany||'N/A')}<br><small>${esc(r.technicianCertRef||'')}</small></td>
+      <td>${esc((r.inspectionDate||'').slice(0,10)||'N/A')}</td>
+      <td>${esc(r.findings||'N/A')}</td>
+      <td>${badge(r.result,genericLabel(r.result))}</td>
+      <td class="rowacts"><button class="btn sm" onclick="openWeldingNote('ndt_report','${esc(r.no)}')" data-i="add_note">Note</button></td>
+    </tr>`).join('')||emptyRow(9,'ndt_empty');
+}
+
+function renderWps(data){
+  const all=data.qualityWps||[];
+  const rows=all.filter(w=>matchStatus(w.status)&&matchSearch(w.no,w.process,w.materialGroup,w.supportingWpqr));
+  $('wps-count').textContent=all.length;
+  $('wps-approved').textContent=all.filter(w=>w.setStatus==='approved').length;
+  $('wps-awaiting').textContent=all.filter(w=>w.setStatus==='awaiting-approval').length;
+  $('wps-draft').textContent=all.filter(w=>w.setStatus==='draft').length;
+  $('wpsBody').innerHTML=rows.map(w=>`<tr>
+      <td><strong>${esc(w.no)}</strong><br><small>${esc(w.jointType||'')}${w.position?' &middot; '+esc(w.position):''}</small></td>
+      <td>${esc(w.revision)}</td>
+      <td>${esc(w.process||'N/A')}<br><small>${esc(w.fillerMaterial||'')}</small></td>
+      <td>${esc(w.materialGroup||'N/A')}</td>
+      <td>${esc(w.thicknessRange||'N/A')}</td>
+      <td>${esc(w.supportingWpqr||'&mdash;')}</td>
+      <td>${badge(w.status,genericLabel(w.status))}${w.approvedBy?`<br><small>${esc(w.approvedBy)} ${esc((w.approvedOn||'').slice(0,10))}</small>`:''}</td>
+      <td class="rowacts">
+        ${w.setStatus!=='approved'?`<button class="btn sm" onclick="approveProcedure('${esc(w.id)}')" data-i="approve">Approve</button>`:''}
+        <button class="btn sm" onclick="openWpsForm('${esc(w.id)}')" data-i="edit">Edit</button>
+      </td></tr>`).join('')||emptyRow(8,'wps_empty');
+}
+
+function renderQuals(data){
+  const all=data.qualityWelderQuals||[];
+  const rows=all.filter(q=>matchStatus(q.status)&&matchSearch(q.qualNo,q.welder,q.process,q.materialGroup,q.issuedBy));
+  $('qual-count').textContent=all.length;
+  $('qual-valid').textContent=all.filter(q=>q.status==='valid').length;
+  $('qual-soon').textContent=all.filter(q=>q.status==='expiring-soon').length;
+  $('qual-expired').textContent=all.filter(q=>q.status==='expired').length;
+  $('qualsBody').innerHTML=rows.map(q=>`<tr>
+      <td><strong>${esc(q.qualNo)}</strong></td>
+      <td>${esc(q.welder||'N/A')}</td>
+      <td>${esc(q.process||'N/A')}<br><small>${esc(q.position||'')}</small></td>
+      <td>${esc(q.materialGroup||'N/A')}<br><small>${esc(q.thicknessRange||'')}</small></td>
+      <td>${esc(q.issuedBy||'N/A')}<br><small>${esc((q.issueDate||'').slice(0,10))}</small></td>
+      <td>${esc((q.expiryDate||'').slice(0,10)||'N/A')}
+        ${q.daysLeft!=null?`<br><small>${q.daysLeft<0?tr('days_ago').replace('{n}',Math.abs(q.daysLeft)):tr('days_left').replace('{n}',q.daysLeft)}</small>`:''}</td>
+      <td>${badge(q.status,genericLabel(q.status))}</td>
+      <td class="rowacts"><button class="btn sm" onclick="openQualForm('${esc(q.id)}')" data-i="edit">Edit</button></td>
+    </tr>`).join('')||emptyRow(8,'quals_empty');
+}
+
+// An empty register is a state, not a fault, and it says which register is empty rather than "no rows".
+function emptyRow(cols,key){
+  return `<tr><td colspan="${cols}" class="emptycell">${esc(tr(key))}</td></tr>`;
 }
 
 // ══════════════ OVERVIEW ══════════════
@@ -1018,6 +1537,211 @@ async function submitInspection(){
   invalidateDataCache();closeModal('inspModal');
   notify(rec.no?('Inspection request created: '+rec.no):'Inspection request created.');
   if(currentSection)loadSectionData(currentSection);
+}
+
+// ── The welding forms ────────────────────────────────────────────────────────────────────────
+//
+// Each of these sends one call and prints whatever comes back. None of them decides anything: whether a
+// procedure is approved, whether a qualification covers the process, whether it had run out on the day, and
+// whether a weld may be signed off are all the database's answers — and its refusals name the procedure,
+// the qualification and the date, so the message the welder reads is the reason and not "invalid".
+function openWeldForm(){
+  const data=getData();
+  populateJobcardSelect($('wl_jobcard'),'');
+  // Only approved procedures, because only an approved one may be welded to — offering a draft would be
+  // offering a choice the database refuses, which is worse than not offering it.
+  const approved=(data.qualityWps||[]).filter(w=>w.setStatus==='approved');
+  fillSelect($('wl_wps'),[['',tr('no_procedure')]].concat(approved.map(w=>[w.id,w.no+' rev '+w.revision+' ('+w.process+')'])));
+  $('wl_date').value=new Date().toISOString().slice(0,10);
+  ['wl_component','wl_process','wl_drawing','wl_map','wl_joint','wl_thickness','wl_base','wl_filler',
+   'wl_batch','wl_gas','wl_ndtmethod','wl_notes'].forEach(id=>{ $(id).value=''; });
+  // The process follows the procedure unless somebody changes it, because the two disagreeing is one of the
+  // four things the database refuses and the commonest way to hit it is by forgetting.
+  $('wl_wps').onchange=()=>{
+    const chosen=approved.find(w=>String(w.id)===$('wl_wps').value);
+    if(chosen&&!$('wl_process').value.trim())$('wl_process').value=chosen.process||'';
+  };
+  openModal('weldModal');
+}
+
+async function submitWeld(){
+  const jobcardNo=$('wl_jobcard').value;
+  if(!jobcardNo){formErr('weldFormErr',tr('err_pick_jobcard'));return;}
+  if(!$('wl_process').value.trim()){formErr('weldFormErr',tr('err_process'));return;}
+  const made=await WorkshopData.recordWeld({
+    jobcard:jobcardNo, component:$('wl_component').value.trim(), process:$('wl_process').value.trim(),
+    wpsId:$('wl_wps').value||null, drawingNo:$('wl_drawing').value.trim(),
+    weldMapPosition:$('wl_map').value.trim(), jointType:$('wl_joint').value.trim(),
+    thickness:$('wl_thickness').value||null, baseMaterial:$('wl_base').value.trim(),
+    fillerMaterial:$('wl_filler').value.trim(), consumableBatch:$('wl_batch').value.trim(),
+    shieldingGas:$('wl_gas').value.trim(), weldDate:$('wl_date').value||null,
+    ndtMethod:$('wl_ndtmethod').value.trim()||null, notes:$('wl_notes').value.trim()||null
+  });
+  if(made&&made.error){formErr('weldFormErr',made.error);return;}
+  invalidateDataCache();closeModal('weldModal');
+  notify(made&&made.no?tr('weld_logged').replace('{no}',made.no):tr('weld_logged_short'));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+function openNdtForm(weldNo){
+  const data=getData();
+  const welds=data.qualityWelds||[];
+  fillSelect($('nd_weld'),welds.map(w=>[w.no,w.no+' — '+(w.component||w.jobcard||'')]));
+  if(weldNo)$('nd_weld').value=weldNo;
+  const chosen=welds.find(w=>w.no===$('nd_weld').value);
+  fillSelect($('nd_result'),[['pending',genericLabel('pending')],['accepted',genericLabel('accepted')],
+    ['rejected',genericLabel('rejected')]]);
+  $('nd_method').value=(chosen&&chosen.ndtMethod)||'';
+  $('nd_date').value=new Date().toISOString().slice(0,10);
+  ['nd_procedure','nd_criteria','nd_percent','nd_area','nd_external','nd_cert','nd_findings']
+    .forEach(id=>{ $(id).value=''; });
+  openModal('ndtModal');
+}
+
+async function submitNdt(){
+  if(!$('nd_weld').value){formErr('ndtFormErr',tr('err_pick_weld'));return;}
+  if(!$('nd_method').value.trim()){formErr('ndtFormErr',tr('err_method'));return;}
+  const made=await WorkshopData.recordNdt({
+    weldRef:$('nd_weld').value, method:$('nd_method').value.trim(), result:$('nd_result').value,
+    findings:$('nd_findings').value.trim()||null, procedureRef:$('nd_procedure').value.trim(),
+    acceptanceCriteria:$('nd_criteria').value.trim(), inspectionPercent:$('nd_percent').value||null,
+    inspectionArea:$('nd_area').value.trim(), externalCompany:$('nd_external').value.trim()||null,
+    technicianCertRef:$('nd_cert').value.trim(), inspectionDate:$('nd_date').value||null
+  });
+  if(made&&made.error){formErr('ndtFormErr',made.error);return;}
+  invalidateDataCache();closeModal('ndtModal');
+  notify(made&&made.no?tr('ndt_recorded').replace('{no}',made.no):tr('ndt_recorded_short'));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+let wpsEditing=null;
+// By id, not by reference. A reference is shared by every revision of one procedure — rev 1 and rev 2 of
+// WPS-304-02 are two rows with the same `no`, and `find(w=>w.no===ref)` would have opened whichever came
+// back first and saved over it.
+function openWpsForm(id){
+  const found=id?(getData().qualityWps||[]).find(w=>String(w.id)===String(id)):null;
+  wpsEditing=found?found.id:null;
+  const set=(id,v)=>{ $(id).value=v==null?'':v; };
+  set('wp_ref',found?found.no:''); set('wp_rev',found?found.revision:1);
+  set('wp_process',found&&found.process); set('wp_material',found&&found.materialGroup);
+  set('wp_thickness',found&&found.thicknessRange); set('wp_diameter',found&&found.diameterRange);
+  set('wp_joint',found&&found.jointType); set('wp_position',found&&found.position);
+  set('wp_filler',found&&found.fillerMaterial); set('wp_gas',found&&found.shieldingGas);
+  set('wp_preheat',found&&found.preheatInterpass); set('wp_wpqr',found&&found.supportingWpqr);
+  set('wp_notes',found&&found.notes);
+  openModal('wpsModal');
+}
+
+async function submitWps(){
+  if(!$('wp_ref').value.trim()){formErr('wpsFormErr',tr('err_wps_ref'));return;}
+  if(!$('wp_process').value.trim()){formErr('wpsFormErr',tr('err_process'));return;}
+  const saved=await WorkshopData.saveWps({
+    id:wpsEditing, no:$('wp_ref').value.trim(), revision:$('wp_rev').value||1,
+    process:$('wp_process').value.trim(), materialGroup:$('wp_material').value.trim(),
+    thicknessRange:$('wp_thickness').value.trim(), diameterRange:$('wp_diameter').value.trim(),
+    jointType:$('wp_joint').value.trim(), position:$('wp_position').value.trim(),
+    fillerMaterial:$('wp_filler').value.trim(), shieldingGas:$('wp_gas').value.trim(),
+    preheatInterpass:$('wp_preheat').value.trim(), supportingWpqr:$('wp_wpqr').value.trim(),
+    notes:$('wp_notes').value.trim()||null
+  });
+  if(saved&&saved.error){formErr('wpsFormErr',saved.error);return;}
+  invalidateDataCache();closeModal('wpsModal');
+  notify(tr('wps_saved'));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+async function approveProcedure(id){
+  const found=(getData().qualityWps||[]).find(w=>String(w.id)===String(id));
+  if(!found){notify(tr('wps_not_found'));return;}
+  const done=await WorkshopData.approveWps(found.id);
+  // The refusal here is the one worth reading out loud: a procedure with no WPQR behind it is approved on
+  // its own say-so, and the database says exactly that.
+  if(done&&done.error){notify(done.error);return;}
+  invalidateDataCache();notify(tr('wps_approved_now').replace('{no}',found.no+' rev '+found.revision));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+let qualEditing=null;
+// By id: the schema makes a qualification number unique per welder, not on its own, so two welders may
+// hold the same number and `find(q=>q.qualNo===qualNo)` would edit one of them at random.
+function openQualForm(id){
+  const data=getData();
+  const found=id?(data.qualityWelderQuals||[]).find(q=>String(q.id)===String(id)):null;
+  qualEditing=found?found.id:null;
+  // The people this workshop has, from the snapshot. The floor's copy of that list is themselves, and this
+  // form is the office's, so in practice it is everybody.
+  fillSelect($('wq_welder'),(data.people||[]).map(p=>[p.id,p.name]));
+  if(found&&found.welderId)$('wq_welder').value=found.welderId;
+  // Only what somebody sets. Expiring soon and expired are not here and cannot be.
+  fillSelect($('wq_status'),[['valid',genericLabel('valid')],['suspended',genericLabel('suspended')],
+    ['withdrawn',genericLabel('withdrawn')]]);
+  const set=(id,v)=>{ $(id).value=v==null?'':v; };
+  set('wq_no',found&&found.qualNo); set('wq_process',found&&found.process);
+  set('wq_material',found&&found.materialGroup); set('wq_thickness',found&&found.thicknessRange);
+  set('wq_position',found&&found.position); set('wq_issuedby',found&&found.issuedBy);
+  set('wq_issued',found&&(found.issueDate||'').slice(0,10));
+  set('wq_expires',found&&(found.expiryDate||'').slice(0,10));
+  set('wq_notes',found&&found.notes);
+  if(found&&found.setStatus)$('wq_status').value=found.setStatus;
+  openModal('qualModal');
+}
+
+async function submitQual(){
+  if(!$('wq_welder').value){formErr('qualFormErr',tr('err_pick_welder'));return;}
+  for(const [id,key] of [['wq_no','err_qual_no'],['wq_process','err_process'],
+                         ['wq_issuedby','err_issued_by']]){
+    if(!$(id).value.trim()){formErr('qualFormErr',tr(key));return;}
+  }
+  if(!$('wq_issued').value||!$('wq_expires').value){formErr('qualFormErr',tr('err_qual_dates'));return;}
+  const saved=await WorkshopData.saveWelderQual({
+    id:qualEditing, welderId:$('wq_welder').value, qualNo:$('wq_no').value.trim(),
+    process:$('wq_process').value.trim(), materialGroup:$('wq_material').value.trim(),
+    thicknessRange:$('wq_thickness').value.trim(), position:$('wq_position').value.trim(),
+    issuedBy:$('wq_issuedby').value.trim(), issueDate:$('wq_issued').value,
+    expiryDate:$('wq_expires').value, setStatus:$('wq_status').value,
+    notes:$('wq_notes').value.trim()||null
+  });
+  if(saved&&saved.error){formErr('qualFormErr',saved.error);return;}
+  invalidateDataCache();closeModal('qualModal');
+  notify(tr('qual_saved'));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+async function signWeldOff(no){
+  const found=(getData().qualityWelds||[]).find(w=>w.no===no);
+  if(!found){notify(tr('weld_not_found'));return;}
+  const done=await WorkshopData.acceptWeld(found.id);
+  // This is where the rule that matters most speaks: a weld requiring NDT with nothing accepting it comes
+  // back refused, naming the method. Shown as it arrives rather than summarised.
+  if(done&&done.error){notify(done.error);return;}
+  invalidateDataCache();notify(tr('weld_signed_off').replace('{no}',no));
+  if(currentSection)loadSectionData(currentSection);
+}
+
+async function openWeldRepair(no){
+  const found=(getData().qualityWelds||[]).find(w=>w.no===no);
+  if(!found){notify(tr('weld_not_found'));return;}
+  wPrompt(tr('repair_why'),'',async why=>{
+    if(!why||!why.trim())return;
+    const done=await WorkshopData.recordWeldRepair(found.id,why.trim());
+    if(done&&done.error){notify(done.error);return;}
+    invalidateDataCache();notify(tr('repair_logged').replace('{no}',no));
+    if(currentSection)loadSectionData(currentSection);
+  });
+}
+
+function openWeldingNote(entity,ref){
+  const data=getData();
+  const list=entity==='ndt_report'?(data.qualityNdt||[]):(data.qualityWelds||[]);
+  const found=list.find(x=>x.no===ref);
+  if(!found){notify(tr('record_not_found'));return;}
+  wPrompt(tr('note_prompt'),'',async text=>{
+    if(!text||!text.trim())return;
+    const done=await WorkshopData.addWeldingNote(entity,found.id,text.trim());
+    if(done&&done.error){notify(done.error);return;}
+    invalidateDataCache();notify(tr('note_added'));
+    if(currentSection)loadSectionData(currentSection);
+  });
 }
 
 // ── Execute / view inspection modal ──
@@ -1439,7 +2163,8 @@ function computeReleaseBlocking(data,projectNo,jobcardNo){
       .find(x=>String(x.name)===String(name));return s?Number(s.id):null;},
     inspection:no=>idOf('qualityInspections',no),
     ncr:no=>idOf('qualityNcrs',no),
-    hold:no=>idOf('qualityHolds',no)
+    hold:no=>idOf('qualityHolds',no),
+    weld:no=>idOf('qualityWelds',no)
   };
 
   // What the screen reads off the answer, from what the database returned. save_inspection hands back
@@ -1451,6 +2176,96 @@ function computeReleaseBlocking(data,projectNo,jobcardNo){
   };
 
   const SENT={
+    // ── The welding registers ─────────────────────────────────────────────────────────────────
+    //
+    // Note what is not sent in recordWeld: no welder. The database takes it from the session and its row
+    // policy refuses a weld logged in anybody else's name, so sending one would be sending a field that
+    // cannot be honoured — and a screen that sends a field the server ignores is a screen that will one
+    // day disagree with the record it made.
+    async recordWeld(payload){
+      const answer=await send('record_weld',{
+        jobcard_id:LOOKUP.jobcard(payload.jobcard), process:payload.process,
+        component:payload.component||null, wps_id:payload.wpsId?Number(payload.wpsId):null,
+        welder_qual_id:null, welded_on:payload.weldDate||null, operation_id:null,
+        drawing_no:payload.drawingNo||null, weld_map_position:payload.weldMapPosition||null,
+        joint_type:payload.jointType||null, base_material:payload.baseMaterial||null,
+        material_grade:payload.materialGrade||null,
+        thickness:payload.thickness!=null&&payload.thickness!==''?Number(payload.thickness):null,
+        filler_material:payload.fillerMaterial||null, consumable_batch:payload.consumableBatch||null,
+        shielding_gas:payload.shieldingGas||null, preheat_required:!!payload.preheatRequired,
+        interpass_temp_req:payload.interpassTempReq||null, visual_required:true,
+        // NDT is required exactly when a method was named. The schema refuses one without the other, so
+        // the two are derived from one field rather than offered as two that can disagree.
+        ndt_required:!!payload.ndtMethod, ndt_method:payload.ndtMethod||null,
+        notes:payload.notes||null
+      });
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result,no:refOfId('qualityWelds',answer.result)};
+    },
+    async recordWeldRepair(idOrNo,reason,notes){
+      const id=String(idOrNo).startsWith('WLD-')?LOOKUP.weld(idOrNo):Number(idOrNo);
+      const answer=await send('record_weld_repair',{weld_id:id,reason:reason,notes:notes||null});
+      return answer.error?{error:answer.error}:{};
+    },
+    async recordNdt(payload){
+      const answer=await send('record_ndt',{
+        weld_id:LOOKUP.weld(payload.weldRef), method:payload.method,
+        result:payload.result||'pending', findings:payload.findings||null,
+        procedure_ref:payload.procedureRef||null,
+        inspection_percent:payload.inspectionPercent!=null&&payload.inspectionPercent!==''
+          ?Number(payload.inspectionPercent):null,
+        inspection_area:payload.inspectionArea||null, external_company:payload.externalCompany||null,
+        technician_cert_ref:payload.technicianCertRef||null,
+        inspected_on:payload.inspectionDate||null, acceptance_criteria:payload.acceptanceCriteria||null,
+        // A rejection means a repair is wanted. One field on the form rather than two that can disagree
+        // about whether a joint is sound.
+        repair_required:payload.result==='rejected', reinspection_required:payload.result==='rejected',
+        notes:payload.notes||null
+      });
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result,no:refOfId('qualityNdt',answer.result)};
+    },
+    async acceptWeld(idOrNo,accepted){
+      const id=String(idOrNo).startsWith('WLD-')?LOOKUP.weld(idOrNo):Number(idOrNo);
+      const answer=await send('accept_weld',{weld_id:id,accepted:accepted!==false,why:null});
+      return answer.error?{error:answer.error}:{};
+    },
+    async saveWps(payload){
+      const answer=await send('save_wps',{
+        id:payload.id!=null?Number(payload.id):null, ref:payload.no, process:payload.process,
+        revision:payload.revision!=null&&payload.revision!==''?Number(payload.revision):1,
+        material_group:payload.materialGroup||null, thickness_range:payload.thicknessRange||null,
+        diameter_range:payload.diameterRange||null, joint_type:payload.jointType||null,
+        position:payload.position||null, filler_material:payload.fillerMaterial||null,
+        shielding_gas:payload.shieldingGas||null, preheat_interpass:payload.preheatInterpass||null,
+        supporting_wpqr:payload.supportingWpqr||null, document_id:null, notes:payload.notes||null
+      });
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result};
+    },
+    async approveWps(idOrNo){
+      const answer=await send('approve_wps',{id:Number(idOrNo),approve:true});
+      return answer.error?{error:answer.error}:{};
+    },
+    async saveWelderQual(payload){
+      const answer=await send('save_welder_qual',{
+        id:payload.id!=null?Number(payload.id):null, welder_id:Number(payload.welderId),
+        qual_no:payload.qualNo, process:payload.process, issued_by:payload.issuedBy,
+        issued_on:payload.issueDate, expires_on:payload.expiryDate,
+        material_group:payload.materialGroup||null, thickness_range:payload.thicknessRange||null,
+        position:payload.position||null,
+        // Only what somebody set. `expiring-soon` and `expired` arrive computed and are never sent back —
+        // the same shape as a document's status, and for the same reason.
+        status:payload.setStatus||'valid', document_id:null, notes:payload.notes||null
+      });
+      if(answer.error)return {error:answer.error};
+      return {id:answer.result};
+    },
+    async addWeldingNote(entity,idOrNo,text){
+      const answer=await send('add_welding_note',{entity:entity,id:Number(idOrNo),text:text});
+      return answer.error?{error:answer.error}:{};
+    },
+
     async requestInspection(payload){
       const answer=await send('save_inspection',
         QualityRecord.inspectionToServer(Object.assign({},payload,{status:'requested'}),LOOKUP));

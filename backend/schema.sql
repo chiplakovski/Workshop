@@ -1511,7 +1511,12 @@ CREATE TYPE ndt_result AS ENUM ('pending', 'accepted', 'rejected');
 -- ── The procedure a weld is made to ──────────────────────────────────────────────────────────
 CREATE TABLE wps (
   id                bigserial PRIMARY KEY,
-  ref               text NOT NULL UNIQUE CHECK (btrim(ref) <> ''),
+  -- Not unique on its own. A procedure is revised — WPS-304-02 rev 1 is superseded by rev 2 and both stay
+  -- on file, because the welds made to rev 1 were made to rev 1 and a register that overwrote it cannot
+  -- say what they were made to. `ref UNIQUE` here would have forbidden the second revision outright and
+  -- left the revision column meaning nothing; the uniqueness that is wanted is one row per revision, and
+  -- it is the index below.
+  ref               text NOT NULL CHECK (btrim(ref) <> ''),
   revision          int NOT NULL DEFAULT 1 CHECK (revision >= 0),
   process           text NOT NULL CHECK (btrim(process) <> ''),
   material_group    text,
