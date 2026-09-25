@@ -71,7 +71,14 @@ function buildDatabase() {
     '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   for (const name of ['schema', 'auth', 'api', 'views']) {
-    execFileSync('psql', [...conn(), '-f', path.join(__dirname, '..', 'backend', `${name}.sql`)],
+    // Named from the environment when the mutation harness is driving, so a damaged copy of one backend
+    // file is the one this suite builds against. Sixteen suites ignored this, which meant a mutation aimed
+    // at any of them damaged a file nobody loaded: the suite passed, correctly, and the harness reported
+    // MISSED — "this rule has no test" — when the test had never seen the damage. Two invoice-basis
+    // mutations read that way before it was found.
+    const file = process.env[`VARMAK_${name.toUpperCase()}`]
+      || path.join(__dirname, '..', 'backend', `${name}.sql`);
+    execFileSync('psql', [...conn(), '-f', file],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   }
 }

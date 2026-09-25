@@ -2714,35 +2714,6 @@ function main() {
     return;
   }
 
-  // Does each suite this run depends on actually READ the damaged file?
-  //
-  // A suite builds its own database, and if it builds it from `backend/views.sql` rather than from the copy
-  // named in VARMAK_VIEWS, the harness damages a file nobody loads. The suite then passes — as it should,
-  // it is testing undamaged code — and the mutation is reported MISSED. Which reads as "this rule has no
-  // test", so somebody goes and writes one, and it passes too.
-  //
-  // That happened to the first two invoice-basis mutations. Sixteen of the twenty suites that build a
-  // database still ignore the override; it only matters for the ones a mutation names, and this is what
-  // makes naming one safe — a redirect to a suite that cannot see the damage stops the run rather than
-  // producing a report in the wrong direction.
-  const deaf = [];
-  for (const m of SELECTED) {
-    const entry = FILES[m.suite || m.file || 'schema'];
-    const env = FILES[m.file || 'schema'].env;
-    const source = fs.readFileSync(path.join(__dirname, entry.suite), 'utf8');
-    // Written either as the literal name or built from the file's own name, which is how the suites that
-    // do honour it are written.
-    if (source.includes(env) || /VARMAK_\$\{name\.toUpperCase\(\)\}/.test(source)) continue;
-    deaf.push(`${entry.suite} never reads ${env}, so "${m.what}" would be reported MISSED either way`);
-  }
-  if (deaf.length) {
-    console.error('These mutations point at a suite that cannot see the damaged file, so their result would');
-    console.error('mean nothing. Make the suite read the override first:');
-    [...new Set(deaf)].forEach((line) => console.error(`  ${line.slice(0, 170)}`));
-    process.exitCode = 1;
-    return;
-  }
-
   // Every suite this run depends on, passing, BEFORE anything is mutated.
   //
   // Without this the whole report is unfalsifiable. A mutation is "caught" when its suite fails — so a
@@ -2773,7 +2744,55 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log(`Baseline: ${suites.length} suite(s) pass before anything is mutated.\n`);
+  console.log(`Baseline: ${suites.length} suite(s) pass before anything is mutated.`);
+
+  // And does each suite actually READ the file this run is going to damage?
+  //
+  // A suite builds its own database. If it builds it from `backend/views.sql` rather than from the copy
+  // named in VARMAK_VIEWS, the harness damages a file nobody loads: the suite passes — correctly, it is
+  // testing undamaged code — and the mutation is reported MISSED. Which reads as "this rule has no test",
+  // so somebody writes one, and it passes too. Two invoice-basis mutations read that way.
+  //
+  // Asked by experiment rather than by reading the source. The first version of this check grepped the
+  // suite for its env var, and then the fix that taught fourteen suites to read the override put that
+  // exact string into a COMMENT in every one of them — so the check would have passed for a suite that
+  // ignored it. A check satisfied by the words next to the code is not a check.
+  //
+  // So: point the override at a file that cannot be loaded and require the suite to fail. Together with
+  // the baseline above — the same suite passing undamaged — that is conclusive. It costs seconds, not a
+  // full run: psql rejects the first statement and the suite dies in its own buildDatabase, long before a
+  // browser is launched.
+  const pairs = new Map();
+  for (const m of SELECTED) {
+    const suite = FILES[m.suite || m.file || 'schema'].suite;
+    const env = FILES[m.file || 'schema'].env;
+    if (!pairs.has(`${suite}|${env}`)) pairs.set(`${suite}|${env}`, { suite, env, what: m.what });
+  }
+  const nonsense = path.join(os.tmpdir(), 'varmak-unloadable.sql');
+  fs.writeFileSync(nonsense, 'this is not a statement in any language;\n');
+  const deaf = [];
+  for (const { suite, env, what } of pairs.values()) {
+    // Only the SQL files can be made unloadable this way. The others — backup.sh, the queue module, the
+    // hours page — are named here so a reader can see they were considered rather than forgotten.
+    if (!['VARMAK_SCHEMA', 'VARMAK_AUTH', 'VARMAK_API', 'VARMAK_VIEWS'].includes(env)) continue;
+    let failed = false;
+    try {
+      execFileSync('node', [path.join(__dirname, suite)],
+        { env: { ...process.env, [env]: nonsense, VARMAK_TEST_DB: 'varmak_deafcheck' },
+          encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) { failed = true; }
+    if (!failed) deaf.push(`${suite} passes with ${env} pointing at an unloadable file, so it never reads `
+      + `it — "${what}" would be reported MISSED either way`);
+  }
+  fs.unlinkSync(nonsense);
+  if (deaf.length) {
+    console.error('\nThese suites cannot see the file this run damages, so their results would mean');
+    console.error('nothing. Make the suite read its override first:');
+    deaf.forEach((line) => console.error(`  ${line.slice(0, 200)}`));
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`Override: ${pairs.size} suite/file pair(s) verified to read the damaged copy.\n`);
   SELECTED.forEach((mutation, index) => {
     const which = mutation.file || 'schema';
     const original = source[which];
