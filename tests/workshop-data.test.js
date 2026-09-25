@@ -4386,3 +4386,28 @@ test('tenders: a system that has never had one reports none', ()=>{
   assert.deepEqual(W.getMarketingTenders(),[]);
   assert.equal(W.findMarketingTender('RFQ-nope'),null);
 });
+
+// Asking for something that is not there.
+//
+// `clone(undefined)` is a JSON.parse error, so every one of these lookups is one `find` away from
+// throwing on a miss — and a miss is the ordinary case: a page asks for the record behind a reference
+// somebody typed, or behind an id from a stale bit of markup. The handover has carried this as a known
+// bug ("findMarketingLead('nope') and its siblings throw rather than returning nothing") since before
+// `clone` learnt to guard undefined. It does not throw any more, and this is what keeps that true —
+// asserted across every lookup rather than the four that were named, because the next one added will be
+// written by copying one of these.
+test('a lookup for a record that is not there answers nothing, and never throws', ()=>{
+  const W=loadEmptyWorkshopData();
+  const lookups=Object.keys(W).filter((name)=>/^find/.test(name)&&typeof W[name]==='function');
+  assert.ok(lookups.length>=10,`there should be a good few lookups to check, found ${lookups.length}`);
+  const threw=[];
+  const wrong=[];
+  for(const name of lookups){
+    let answer;
+    try{answer=W[name]('nothing-by-this-name');}
+    catch(error){threw.push(`${name}: ${error.message}`);continue;}
+    if(answer!==null&&answer!==undefined)wrong.push(`${name} answered ${JSON.stringify(answer)}`);
+  }
+  assert.deepEqual(threw,[],`these lookups throw on a miss rather than answering nothing: ${threw.join(' / ')}`);
+  assert.deepEqual(wrong,[],`and these answered something for a record that is not there: ${wrong.join(' / ')}`);
+});

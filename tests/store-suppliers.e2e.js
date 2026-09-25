@@ -548,6 +548,55 @@ async function receiveGoods(page, poNo) {
   step('Store: the shell is fixed, with the user badge at the foot and the headings set bolder');
 }
 
+// Registering an offcut, which is a measurement of a real piece of steel.
+//
+// This form used to open with a quantity of 1300, shelf O1-01-01 in the destination and "Offcut
+// dimensions: 600 × 420 mm · 5 mm thick" in the remarks — and the save fell back to that same shelf when
+// the box was cleared. So clicking straight through registered a piece measuring 600 by 420 that nobody
+// had measured, on a shelf nobody had chosen. An offcut register whose sizes were not measured is worse
+// than no register: somebody walks to the rack for a piece that is not there, or cuts a new plate because
+// the piece that IS there reads as the wrong size.
+async function anOffcutIsMeasuredBeforeItIsRegistered(page) {
+  const before = await page.evaluate(() => WorkshopData.get().offcuts.length);
+  const opened = await page.evaluate(() => {
+    openOperation('offcut');
+    return {
+      qty: document.getElementById('opQty').value,
+      destination: document.getElementById('opDestination').value,
+      remarks: document.getElementById('opRemarks').value
+    };
+  });
+  assert.deepEqual(opened, { qty: '', destination: '', remarks: '' },
+    `the offcut form must open empty rather than pre-measured: ${JSON.stringify(opened)}`);
+
+  // Clicking straight through is refused, and says which of the two is missing.
+  const withNothing = await page.evaluate(() => {
+    document.getElementById('opQty').value = '400';
+    commitOperation();
+    return document.getElementById('toast').innerText;
+  });
+  assert.match(withNothing, /Measure the offcut/i, `saving an unmeasured offcut must refuse: ${withNothing}`);
+  const withNoShelf = await page.evaluate(() => {
+    document.getElementById('opRemarks').value = '600 × 420 mm · 5 mm thick';
+    commitOperation();
+    return document.getElementById('toast').innerText;
+  });
+  assert.match(withNoShelf, /which shelf/i, `and one with no shelf: ${withNoShelf}`);
+  assert.equal(await page.evaluate(() => WorkshopData.get().offcuts.length), before,
+    'and neither refusal registered anything');
+
+  const done = await page.evaluate(() => {
+    document.getElementById('opDestination').value = 'O2-01-04';
+    commitOperation();
+    const kept = WorkshopData.get().offcuts;
+    return kept[0] ? { dimensions: kept[0].dimensions, location: kept[0].location, count: kept.length } : null;
+  });
+  assert.equal(done.count, before + 1);
+  assert.equal(done.dimensions, '600 × 420 mm · 5 mm thick', 'the size recorded is the size typed');
+  assert.equal(done.location, 'O2-01-04', 'and the shelf is the one chosen');
+  step('Store: an offcut is measured and shelved before it is registered, or it is refused');
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const page = await harness.context.newPage();
@@ -559,6 +608,7 @@ async function main() {
     await nothingIsInventedAboutASupplier(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);
+    await anOffcutIsMeasuredBeforeItIsRegistered(page);
     await page.goto(`${harness.baseUrl}/suppliers-desktop.html`, { waitUntil: 'load' });
     await verifySupplierOrder(page, poNo, 'Confirmed');
     step('Suppliers: live PO is visible in supplier purchase history');

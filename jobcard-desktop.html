@@ -1424,13 +1424,24 @@ function openAddOffcut(jcId){
   const invOpts=SHARED.inventory.map(i=>({v:i.code,l:`${i.code} — ${i.description}`}));
   $('fcard').innerHTML=`<h2>${esc(tt.m_offcut)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow">${fieldSelect('offcutCode',tt.mat_code,invOpts,invOpts[0]?invOpts[0].v:'')}</div>
-    <div class="frow2">${field('offcutDim','Dimensions','600 × 420 mm')}${field('offcutLoc',tt.mat_location,'O1-01-01')}</div>
+    <div class="frow2">${field('offcutDim','Dimensions','')}${field('offcutLoc',tt.mat_location,'')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="saveOffcut(${jcId})">${esc(tt.nc_save)}</button></div>`;
   $('fov').classList.add('show');
 }
+// The dimensions and the shelf arrive empty now, and are required.
+//
+// The form used to open with "600 × 420 mm" already in the dimensions box and shelf O1-01-01 in the
+// location, and the save fell back to that same shelf when the box was cleared. So clicking straight
+// through registered an offcut measuring 600 by 420 that nobody had measured, on a shelf nobody had
+// chosen — and an offcut register whose sizes were not measured is worse than no register: somebody
+// walks to the rack for a piece that is not there, or cuts a new plate because the piece that IS there
+// reads as the wrong size.
 function saveOffcut(jcId){
   const j=getJC(jcId);const code=$('offcutCode').value,inv=invByCode(code);
-  WorkshopData.addOffcut({materialCode:code,description:(inv?inv.description:code)+' offcut',grade:inv?inv.grade:'',dimensions:$('offcutDim').value.trim(),location:$('offcutLoc').value.trim()||'O1-01-01',sourceProject:j.projectNo});
+  const dimensions=$('offcutDim').value.trim(),location=$('offcutLoc').value.trim();
+  if(!dimensions){toast('Measure the offcut before registering it','warn');return;}
+  if(!location){toast('Say which shelf it is going on','warn');return;}
+  WorkshopData.addOffcut({materialCode:code,description:(inv?inv.description:code)+' offcut',grade:inv?inv.grade:'',dimensions:dimensions,location:location,sourceProject:j.projectNo});
   WorkshopData.recordJobcardActivity(jcId,{action:`Offcut registered from ${code}`});
   refreshShared();closeModal();renderApp();
   toast(t().m_offcut,'ok');

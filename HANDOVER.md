@@ -514,20 +514,20 @@ the thing they are supposed to agree with.
 3. ~~**`code` is overloaded**~~ **Fixed** by the same table: `supplier_item.article_no` is the merchant's
    own number for an item, separate from the item's code.
 
-4. **A lookup for a missing record throws.** `clone(undefined)` is a `JSON.parse` error, so
-   `findMarketingLead('nope')` and its siblings throw rather than returning nothing.
-   `findProspectFinding` and `lastProspectSweep` guard against this; the older ones do not.
+4. ~~**A lookup for a missing record throws.**~~ **Not true any more, and this entry was stale.** `clone`
+   guards `undefined` — every one of the eleven `find*` lookups answers `null` for a record that is not
+   there. Checked rather than assumed: `tests/workshop-data.test.js` now walks every lookup on the data
+   layer and asserts none throws and none invents an answer, so the next one added by copying an existing
+   one is covered too.
 
 5. **A page offers a file through a plain download link**, which the artifact viewer never grants
    permission for — the link silently does nothing for viewers. Pre-existing; surfaced by the
    Version 72 publish warning.
 
-6. **Two forms pre-fill a measurement, and one still names a shelf nobody chose.** The store's offcut
-   dialogue arrives with "Offcut dimensions: 600 × 420 mm · 5 mm thick" and a quantity of 1300 in it, and
-   both it and the jobcard's version fall back to shelf `O1-01-01` when the location box is left empty. A
-   prefilled measurement that gets saved is a measurement nobody took. Found while clearing the same
-   family of bug off the Suppliers and Store screens and left because it is a form-default question rather
-   than a wiring one — but it is the same class as the ones that were fixed, and it is on a wired screen.
+6. ~~**Two forms pre-fill a measurement, and one names a shelf nobody chose.**~~ **Fixed.** Both offcut
+   forms open empty and refuse to register a piece without a measurement and a shelf. An offcut register
+   whose sizes were not measured is worse than no register: somebody walks to the rack for a piece that is
+   not there, or cuts a new plate because the piece that IS there reads as the wrong size.
 
 7. **Printing works on four of seventeen pages**, and photographs have nowhere to live — which is the
    same blocker as Documents. Both are recorded rather than fixed.
