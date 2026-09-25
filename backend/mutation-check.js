@@ -2195,12 +2195,24 @@ GRANT INSERT ON quality_hold TO varmak_workshop;`
   {
     what: 'a second quote from the same merchant becomes a second line rather than a correction',
     file: 'api',
+    // Re-anchored twice over. The is_preferred line inside this block was rewritten when a MISSED mutation
+    // found that `excluded.is_preferred` could not tell "not preferred" from "nobody said", which left the
+    // original anchor stale. The first re-anchor took the ON CONFLICT line alone and left the SET body
+    // dangling — so the mutant was a syntax error and the harness recorded the rule as caught, which is the
+    // same false pass the $$ bug produced. A mutant has to be VALID and WRONG. This one is both: the whole
+    // clause goes, so a second quote from the same merchant is refused by the unique index rather than
+    // correcting the first — which is the behaviour before the upsert was written.
     from: `  ON CONFLICT (supplier_id, stock_item_id) DO UPDATE SET
     article_no = excluded.article_no, price = excluded.price, currency = excluded.currency,
     pack_size = excluded.pack_size, lead_time_days = excluded.lead_time_days,
-    is_preferred = excluded.is_preferred, updated_at = now()
+    -- Read off the parameter rather than \`excluded\`, because excluded already holds the coalesced value
+    -- and cannot tell "not preferred" from "nobody said". Who this workshop buys an item from is a
+    -- decision, and a price correction is not one.
+    is_preferred = CASE WHEN p_is_preferred IS NULL THEN supplier_item.is_preferred
+                        ELSE p_is_preferred END,
+    updated_at = now()
   RETURNING id INTO saved;`,
-    to: `  RETURNING id INTO saved;`
+    to: '  RETURNING id INTO saved;'
   },
   {
     what: 'a supplier note can be written against a merchant that is not there',
@@ -2512,6 +2524,9 @@ function runSuiteAgainst(damaged, which, index, suite) {
 
 function main() {
   const missed = [];
+  // Which of the above could not be applied, as against which were applied and noticed by
+  // nothing. Kept apart so the summary can say which kind of problem each one is.
+  const wentStale = new Set();
   if (only && !SELECTED.length) {
     console.error(`No mutation matches "${only}".`);
     process.exitCode = 1;
@@ -2528,7 +2543,7 @@ function main() {
     const absent = edits.filter((e) => !original.includes(e.from));
     if (absent.length) {
       console.log(`?    ${mutation.what} — the rule this mutation edits is no longer in ${which}.sql`);
-      missed.push(mutation.what);
+      missed.push(mutation.what); wentStale.add(mutation.what);
       return;
     }
     // An anchor that matches in more than one place is as bad as one that matches nowhere, and quieter.
@@ -2543,7 +2558,7 @@ function main() {
       console.log(`?    ${mutation.what} — this anchor matches `
         + `${original.split(ambiguous[0].from).length - 1} places in ${which}.sql, so it edits whichever `
         + 'comes first rather than the one it names');
-      missed.push(mutation.what);
+      missed.push(mutation.what); wentStale.add(mutation.what);
       return;
     }
     // A FUNCTION as the replacement, not the string. String.replace treats `$` in a replacement string as
@@ -2579,8 +2594,21 @@ function main() {
     return;
   }
   if (missed.length) {
-    console.error(`${missed.length} of ${SELECTED.length} mutations went unnoticed — these rules are not actually tested:`);
-    missed.forEach((what) => console.error(`  ${what}`));
+    // Separated, because they are different findings and lumping them together cost a reading of this
+    // report: a stale anchor is a mutation pointing at code that has moved, and a MISSED one is a rule
+    // nobody tests. The first is fixed by re-anchoring, the second by writing a test.
+    const stale = missed.filter((what) => wentStale.has(what));
+    const untested = missed.filter((what) => !wentStale.has(what));
+    if (untested.length) {
+      console.error(`${untested.length} of ${SELECTED.length} mutations went unnoticed — these rules are `
+        + 'not actually tested:');
+      untested.forEach((what) => console.error(`  ${what}`));
+    }
+    if (stale.length) {
+      console.error(`${stale.length} mutation(s) could not be applied at all, so they test nothing — the `
+        + 'code they point at has moved or appears twice:');
+      stale.forEach((what) => console.error(`  ${what}`));
+    }
     process.exitCode = 1;
     return;
   }

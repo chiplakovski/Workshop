@@ -799,6 +799,15 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
     'the suppliers have to reach the screen, or the NCR form cannot name one');
   assert.ok(snapshot.suppliers.every((s) => s.name && s.id),
     'and each of them by name and by the row a save has to send back');
+  // Who to ring at them. A merchant with no contact is a name and a town: the welder holding a drawing
+  // that is wrong needs a telephone number, which is why supplier_contact is one of the two tables the
+  // floor is granted at all.
+  const merchant = snapshot.suppliers.find((s) => s.name === 'Stål & Metall AB');
+  assert.ok(Array.isArray(merchant.contacts) && merchant.contacts.length,
+    'a merchant reaches the screen with the people to ring at them, or the panel prints nothing');
+  assert.equal(merchant.contacts[0].name + '|' + merchant.contacts[0].phone + '|'
+    + merchant.contacts[0].primary, 'Erik Lund|+46 42 555 10 20|true',
+  'and the main one first, which is the one the screen chips');
   for (const list of ['qualityHolds', 'qualityInspections', 'qualityNcrs']) {
     assert.ok(Array.isArray(snapshot[list]) && snapshot[list].length,
       `${list} has to reach the screen — the Quality page reads its whole register from it`);
@@ -939,6 +948,12 @@ function world() {
               (${estimate}, 'labour', 'Welding', 40, 'H', 650);`);
   const supplier = value(`INSERT INTO supplier (name, city, payment_terms_days, category)
     VALUES ('Stål & Metall AB', 'Helsingborg', 30, 'Steel') RETURNING id;`);
+  // Somebody to ring at them. Without a row here the check that the contacts reach the screen passes by
+  // having nothing to look at — which is exactly how it was passing: a mutation that removed the whole
+  // contacts block from workspace_snapshot() went unnoticed by this suite, and it is the suite that
+  // mutation runs. The suppliers e2e did catch it on screen, and was not the suite being run.
+  sql(`INSERT INTO supplier_contact (supplier_id, name, role, email, phone, is_primary)
+       VALUES (${supplier}, 'Erik Lund', 'Order desk', 'order@stalmetall.se', '+46 42 555 10 20', true);`);
   // A price against an item, so the price list in the money payload has a line in it. Without one it is
   // an empty array, and every check about what crosses the wire as a figure passes by having nothing to
   // look at — which is how a price as a JSON number stayed invisible until a mutation asked.
