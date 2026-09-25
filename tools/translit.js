@@ -40,13 +40,19 @@ const KEEP = new Set([
   'SEK', 'PIN', 'PDF', 'CSV', 'JSON', 'XML', 'SpreadsheetML', 'Excel', 'KB', 'MB', 'QR', 'AB',
   'NCR', 'NDT', 'WPS', 'ITP', 'CAPA', 'RFQ', 'PO', 'JC', 'DN', 'EST', 'DOC', 'EXW', 'DAP', 'DDP',
   'ISO', 'EN', 'MIG', 'TIG', 'TOG', 'VAT', 'IBAN',
+  // The welding registers' codes. WPQR was missing and came back as `WПQР` — a keep list is only as
+  // good as the corpus it was built from, and these five tables did not exist when it was built.
+  'WPQR', 'WPQ', 'MAG', 'MMA', 'PT', 'RT', 'UT', 'MT', 'VT', 'WLD', 'SIE',
   'LinkedIn', 'Kanban', 'Varmak', 'allabolag', 'Blocket', 'Google', 'Supabase',
-  'XXXX', 'XXXXXX', 'Rev', 'Incoterms', 'Hub',
+  'XXXX', 'XXXXXX', 'Rev', 'Incoterms', 'Hub', 'ID',
   // Swedish proper nouns in the firm's own address, which do not transliterate — an address has to be
   // typeable into a delivery note by whoever reads it.
   'Lagmansgatan', 'Marieholm', 'Malmö', 'Helsingborg', 'Landskrona',
   // A technical term with no Macedonian form in use, left as the thing somebody would search for.
   'origin',
+  // Two on the barcode panels. `УСБ` and `Блуетоотх` are what a letter table gives, and neither is
+  // written that way on any cable or in any settings menu.
+  'USB', 'Bluetooth',
   // Units, which are written the same in every language on a shop floor.
   'kg', 'mm', 'cm', 'm', 'st', 'h', 'kr', 'ton', 'mm2', 'm2', 'm3'
 ]);
@@ -69,6 +75,9 @@ const PROTECT = [
   // “Save as PDF” is what the browser's own print dialog says, in English, whatever language the page is
   // in. Turning it into Cyrillic tells somebody to look for a button that does not exist.
   /\u201C[^\u201D]*\u201D/g,
+  // And the Macedonian pair, „ … “, which is the one the Macedonian strings actually use. Missing it
+  // turned „Save as PDF“ into „Саве ас PDF“ — an instruction to press a button that does not exist.
+  /\u201E[^\u201C]*\u201C/g,
   // `cross-origin` and the like: a hyphenated English technical term the translator kept.
   /\bcross-origin\b/g
 ];
@@ -82,7 +91,17 @@ function protect(text) {
   let out = text;
   for (const re of PROTECT) out = out.replace(re, (m) => stash(m));
   out = out.replace(/[A-Za-zÀ-ÿĀ-ɏḰḱ]+/g, (word) => (KEEP.has(word) ? stash(word) : word));
-  return { out, restore: (s) => s.replace(/\u0000(\d+)\u0000/g, (_, i) => held[Number(i)]) };
+  // Restored until no marker is left, not once. The patterns nest — `“{stage}”` has the placeholder
+  // stashed first and the quoted run stashed around the marker — so a single pass puts the outer run back
+  // and leaves the inner marker sitting in the finished string, where it shipped as `“\u00000\u0000”`.
+  const restore = (s) => {
+    let out = s;
+    for (let round = 0; round < 8 && out.includes('\u0000'); round += 1) {
+      out = out.replace(/\u0000(\d+)\u0000/g, (_, i) => held[Number(i)]);
+    }
+    return out;
+  };
+  return { out, restore };
 }
 
 // The letter table alone, on text whose protected runs are already hidden.
@@ -92,13 +111,31 @@ function letters(text) {
   return out.replace(/[A-Za-zÀ-ÿĀ-ɏḰḱ]/g, (ch) => (LETTERS[ch] !== undefined ? LETTERS[ch] : ch));
 }
 
+// The Latin words left in a string once everything that is meant to stay Latin is hidden.
+//
+// One detector, two callers, and that is the point. `apply.js` used "does it contain a Cyrillic character"
+// to decide a value was already converted, and `tests/integrity.js` used the same question to decide it
+// was correct. Both were satisfied by one Cyrillic letter in a Latin sentence, so 143 strings across three
+// screens stayed as `Meѓuzbir` and `Režiski troшoci` — Latin transliteration with only the letters that
+// have no ASCII form converted. Unreadable, and green in both checks.
+//
+// So the question is asked properly here, in one place: after the placeholders, paths, codes and keep-list
+// words are taken out, is there a run of Latin letters left that reads as a word?
+function latinLeftIn(text) {
+  if (typeof text !== 'string' || !text) return [];
+  const { out } = protect(text);
+  // Two letters or more: a single Latin letter is an initial, a unit or a column heading, and the corpus
+  // has those on purpose. A word is what is left over.
+  return [...out.matchAll(/[A-Za-zÀ-ÿĀ-ɏ]{2,}/g)].map((m) => m[0]);
+}
+
 function transliterate(text) {
   if (typeof text !== 'string' || !text) return text;
   const { out, restore } = protect(text);
   return restore(letters(out));
 }
 
-module.exports = { transliterate, KEEP, LETTERS, DIGRAPHS };
+module.exports = { transliterate, latinLeftIn, KEEP, LETTERS, DIGRAPHS };
 
 // ── The three things a letter table cannot do ─────────────────────────────────────────────────────
 //
@@ -120,7 +157,9 @@ const RESTORE_DIACRITICS = [
   // Two words where `è` stands in for `č` rather than for the accented vowel. Every other `è` in the
   // corpus — 32 of them — is the real thing, in `sè` / `Sè`, which is why the letter table maps it to ѐ;
   // these two had to be listed rather than the mapping changed, or `сѐ` would come out as `сча`.
-  ['otkluèam', 'otklučam'], ['otkluèuvanjeto', 'otklučuvanjeto']
+  ['otkluèam', 'otklučam'], ['otkluèuvanjeto', 'otklučuvanjeto'],
+  // веќе, written bare in two places. The letter table gives веке, which is a different word.
+  ['Veke', 'Veḱe'], ['veke', 'veḱe']
 ];
 
 // `Se sto` is Сѐ што — everything — while a bare lowercase `se` is the reflexive се. One word, two
@@ -154,7 +193,23 @@ const TRANSLATE = [
   [/\bPlaceholder\b/g, 'Место за текст'],
   // `vs` is versus, four times in two pages, and the letter table gives вс — two Cyrillic letters that
   // mean nothing. Macedonian abbreviates it `сп.` (спореди).
-  [/\bvs\.?\s/g, 'сп. '], [/\bVs\.?\s/g, 'Сп. ']
+  [/\bvs\.?\s/g, 'сп. '], [/\bVs\.?\s/g, 'Сп. '],
+  // An English stem wearing a Macedonian ending, the same fault as `leadovi` and found the same way:
+  // `groupи` would have become гроупи. The Macedonian is групи.
+  //
+  // Written with no trailing \b, and that is the point: in JavaScript a Cyrillic letter is NOT a word
+  // character, so `\bgroupи\b` asks for a boundary after `и` and there is none. The first version of
+  // both entries here silently matched nothing, which looked exactly like the table being right.
+  [/\bgroupи/g, 'групи'], [/\bGroupи/g, 'Групи'],
+  // The definite form of the same English noun, which the bare-word rule above does not reach.
+  [/\bleadot\b/g, 'лидот'], [/\bLeadot\b/g, 'Лидот'],
+  // `real AI` is two English words in a Macedonian sentence, and реал АИ is neither language. What the
+  // sentence is saying is that the insights are rules rather than a model.
+  [/\breal AI\b/g, 'вистинска вештачка интелигенција'],
+  // Not a transliteration at all but a grammatical error the conversion surfaced: забрана is feminine,
+  // so `Aktiven kvalitativen zabranа` is wrong in any script. Written as the Quality screen writes it,
+  // and matched through its Cyrillic tail rather than up to a word boundary that is not there.
+  [/\bAktiven kvalitativen zabran[аa]/g, 'Активна забрана за квалитет']
 ];
 
 function convert(text) {

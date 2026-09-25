@@ -7,8 +7,7 @@
 // because a value carrying an apostrophe in a single-quoted literal is a syntax error if it is not.
 const fs = require('fs');
 const { dictsIn } = require('./dicts.js');
-const { convertValue } = require('./translit.js');
-const CYR = /[Ѐ-ӿ]/;
+const { convertValue, latinLeftIn } = require('./translit.js');
 
 function mkBlock(src) {
   const m = /(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{)/.exec(src);
@@ -51,14 +50,25 @@ let pages = 0, changed = 0, skipped = 0;
 const problems = [];
 for (const file of fs.readdirSync('.').filter((f) => f.endsWith('.html')).sort()) {
   const T = dictsIn(file);
-  if (!T || !T.mk) continue;
+  if (!T || !T.mk) {
+    // Said out loud rather than skipped. A page whose dictionary this tool cannot read looks exactly like
+    // a page with nothing to convert, and that is how Quality, Reports and Equipment were passed over
+    // without a line of output — Equipment still holding `backend`, `vs` and `ID` afterwards.
+    if (/(?:\bmk\s*:\s*\{|T\.mk\s*=)/.test(fs.readFileSync(file, 'utf8'))) {
+      problems.push(`${file}: has a Macedonian dictionary that dicts.js could not read`);
+    }
+    continue;
+  }
   let src = fs.readFileSync(file, 'utf8');
   const block = mkBlock(src);
   if (!block) { problems.push(`${file}: mk block not found in source`); continue; }
   // Collected first, applied from the end backwards so earlier offsets stay valid.
   const edits = [];
   for (const [key, value] of Object.entries(T.mk)) {
-    if (typeof value !== 'string' || !value.trim() || CYR.test(value)) { skipped++; continue; }
+    // Asked as "is there Latin left in this that should not be", not as "does it contain any Cyrillic".
+    // The second question was the first version, and it skipped every half-converted value: 143 strings
+    // across three screens kept their ASCII letters because one ѓ or ш in them looked like conversion.
+    if (typeof value !== 'string' || !value.trim() || !latinLeftIn(value).length) { skipped++; continue; }
     const want = convertValue(key, value);
     if (want === value) { skipped++; continue; }
     const lit = literalFor(src, block.start, block.end, key);

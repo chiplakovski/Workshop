@@ -15,6 +15,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { appPages, startBrowserHarness } = require('./helpers/browser-harness');
+// The conversion tool's detector, so the check and the tool cannot disagree about which Latin belongs
+// in a Macedonian string. Two lists for one question is how the first version of both got it wrong.
+const { latinLeftIn } = require('../tools/translit.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const LANGS = ['en', 'sv', 'mk'];
@@ -549,14 +552,32 @@ function theMacedonianIsCyrillic(failures) {
       // A value made only of a placeholder, a number and punctuation has no letters to be in any script.
       if (A_PLACEHOLDER_ONLY.test(value.replace(/\{[^}]*\}/g, ''))) continue;
       checked += 1;
-      if (CYRILLIC.test(value)) continue;
-      // Latin left in a Macedonian string: either it was never translated, or somebody added a new one in
-      // the transliteration the rest of the app has stopped using.
-      failures.push(`${file} has Macedonian in Latin script: ${JSON.stringify(value.slice(0, 60))} — `
-        + 'the Macedonian is Cyrillic, and two scripts in one app is one app reading two ways');
+      if (!CYRILLIC.test(value)) {
+        // Latin left in a Macedonian string: either it was never translated, or somebody added a new one in
+        // the transliteration the rest of the app has stopped using.
+        failures.push(`${file} has Macedonian in Latin script: ${JSON.stringify(value.slice(0, 60))} — `
+          + 'the Macedonian is Cyrillic, and two scripts in one app is one app reading two ways');
+        continue;
+      }
+      // And the half of the question the first version did not ask. "Contains a Cyrillic letter" was
+      // satisfied by `Meѓuzbir` and `Režiski troшoci` — Latin transliteration with only the letters that
+      // have no ASCII form converted — so 138 strings across three screens passed this check while being
+      // unreadable in either language. The same wrong question was in the conversion tool, which skipped
+      // every value that already held one Cyrillic character and therefore never finished these.
+      //
+      // Asked through the tool's own detector so there is one keep-list rather than two that drift: a
+      // Macedonian string may hold a code, a unit, a placeholder, a path or a brand name, and may not hold
+      // a Latin word.
+      const stillLatin = latinLeftIn(value);
+      if (stillLatin.length) {
+        failures.push(`${file} has a half-converted Macedonian string: ${JSON.stringify(value.slice(0, 60))}`
+          + ` — ${JSON.stringify(stillLatin.slice(0, 4))} is Latin inside Cyrillic, which reads as neither`);
+      }
     }
   }
-  if (!failures.length) console.log(`OK   all ${checked} Macedonian strings are in Cyrillic`);
+  if (!failures.length) {
+    console.log(`OK   all ${checked} Macedonian strings are in Cyrillic, with no Latin word left inside one`);
+  }
 }
 
 async function main() {
