@@ -197,10 +197,19 @@ access.
 ## Status
 The backend exists and is tested: schema and safety rules, sign-in and roles, the workflows, reading
 it back, and backups verified by restoring one. Step 5 of [`BACKEND.md`](BACKEND.md) — pointing the
-pages at it — is most of the way: **fourteen of the seventeen screens are on the database**, and the
-three that are not are Documents, Marketing and the login page itself. There is still a measured gap in
-how much of what the pages collect the database can hold (`npm run coverage` — 74% today, and the
-remainder is concentrated on estimating, purchasing and the sales pipeline rather than spread).
+pages at it — is done but for one screen: **fifteen of the seventeen are on the database**, the login
+page is the sixteenth and needs nothing, and the one left is **Documents**, which cannot be wired until
+there is somewhere for a file to live. There is still a measured gap in how much of what the pages
+collect the database can hold (`npm run coverage` — 76% today), and the remainder is concentrated on
+estimating and purchasing. It is **not** concentrated on the sales pipeline, which is what this document
+said until the pipeline was wired and all twelve of the fields reported missing there turned out to be
+columns that already existed under longer names.
+
+Six collections have no table at all and are named as such in `backend/coverage.js`, because a meter
+that is silent about a module reads as though it covered it: a weld log, the NDT against those welds, the
+welding procedures, which welder is qualified to which, marketing campaigns, and the outward prospect
+sweep. The four welding ones are the next real schema work — for a fabrication shop they are what a
+delivery is signed off against.
 
 There is also a deployment path now: [`DEPLOY.md`](DEPLOY.md) installs the four SQL files onto a
 hosted PostgreSQL as a non-superuser, over verified TLS, with real passwords — and
@@ -216,11 +225,13 @@ lines; the database holds a count of days and one block of text. The translation
 [`project-record.js`](project-record.js) and [`stock-record.js`](stock-record.js), each with its own
 unit tests, and each remaining screen will need one.
 
-Five times now the schema has turned out to hold words nobody uses — a jobcard priority of `normal`
+Eight times now the schema has turned out to hold words nobody uses — a jobcard priority of `normal`
 where the dropdown offers `medium`, a material state of `ready` where the screen says `available`, an
 equipment status of `out-of-service` where seven places compare against `Out of Service`, and an
-inspection status of `done` where the screen writes `completed`, and a supplier status with no word for
-`preferred` where the register has three filter tabs. The rule that came out of it: one
+inspection status of `done` where the screen writes `completed`, a supplier status with no word for
+`preferred` where the register has three filter tabs, two of the sales board's eight columns missing from
+the stage enum, a lead that could only be `lost` where the filter offers `disqualified`, and a contact
+preference in lower case where the dropdown offers `Email`. The rule that came out of it: one
 spelling per state, and when the schema and the screen disagree the screen wins, because those are the
 words somebody picks from a dropdown. The equipment one was not a preference — the gate fails closed on
 a status it cannot read, so it was refusing every machine in the workshop.

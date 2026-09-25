@@ -103,6 +103,13 @@ const FILES = {
   supplierrecord: {
     path: path.join(__dirname, '..', 'supplier-record.js'),
     suite: path.join('..', 'tests', 'supplier-record.test.js'), env: 'VARMAK_SUPPLIER_RECORD'
+  },
+  // And the pipeline's, whose own promises are the ids as numbers (the board puts them in its markup and
+  // compares with ===), the tender naming itself from what was typed, and a follow-up never sent for
+  // somebody who has asked not to be contacted.
+  marketingrecord: {
+    path: path.join(__dirname, '..', 'marketing-record.js'),
+    suite: path.join('..', 'tests', 'marketing-record.test.js'), env: 'VARMAK_MARKETING_RECORD'
   }
 };
 const source = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f.path, 'utf8')]));
@@ -293,11 +300,10 @@ const MUTATIONS = [
     from: 'CONSTRAINT opportunity_names_somebody CHECK (customer_id IS NOT NULL OR lead_id IS NOT NULL)',
     to: 'CONSTRAINT opportunity_names_somebody CHECK (true)'
   },
-  {
-    what: 'a tender may be submitted on no date',
-    from: "CONSTRAINT submitted_tender_has_a_date CHECK (status <> 'submitted' OR submitted_on IS NOT NULL)",
-    to: 'CONSTRAINT submitted_tender_has_a_date CHECK (true)'
-  },
+  // The mutation for submitted_tender_has_a_date used to be here and anchored on the one-line version of
+  // that constraint. It is now 'a tender can be recorded as awarded having apparently never been sent',
+  // further down, which anchors on the rule as it stands — awarded and declined both mean it went in.
+  // Two anchors for one rule would be one anchor going quietly stale, which is what happened to this one.
   {
     what: 'the estimate total stops following its lines',
     from: `CREATE TRIGGER estimate_total_roll_up_trg AFTER INSERT OR UPDATE OR DELETE ON estimate_line
@@ -2142,6 +2148,161 @@ ON supplier TO varmak_workshop;`,
     from: `        primary: Array.isArray(row) ? at === 0 : !!given.primary`,
     to: `        initials: Array.isArray(row) ? row[0] : '',
         primary: Array.isArray(row) ? at === 0 : !!given.primary`
+  },
+
+  // ── The sales pipeline ──────────────────────────────────────────────────────────────────────
+
+  {
+    what: 'two of the board’s eight columns go back to having no value at all',
+    from: `CREATE TYPE opportunity_stage AS ENUM
+  ('discovery','qualified','rfq','preparing','quotesent','negotiation','won','lost');`,
+    to: `CREATE TYPE opportunity_stage AS ENUM
+  ('discovery','preparing','quotesent','negotiation','won','lost');`
+  },
+  {
+    what: 'a lead can only be lost, not disqualified, which is not the same thing',
+    from: `CREATE TYPE lead_status AS ENUM
+  ('new','contacted','qualified','disqualified','converted','lost');`,
+    to: `CREATE TYPE lead_status AS ENUM
+  ('new','contacted','qualified','converted','lost');`
+  },
+  {
+    what: 'the contact preference goes back to a case no dropdown offers',
+    from: `  contact_preference text CHECK (contact_preference IS NULL OR
+                       contact_preference IN ('Email','Phone','Post','None')),`,
+    to: `  contact_preference text CHECK (contact_preference IS NULL OR
+                       contact_preference IN ('email','phone','post','none')),`
+  },
+  {
+    what: 'a tender can be recorded as awarded having apparently never been sent',
+    from: `  CONSTRAINT submitted_tender_has_a_date
+    CHECK (status NOT IN ('submitted', 'awarded', 'declined') OR submitted_on IS NOT NULL),`,
+    to: `  CONSTRAINT submitted_tender_has_a_date
+    CHECK (status <> 'submitted' OR submitted_on IS NOT NULL),`
+  },
+  {
+    what: 'a tender can be from nobody at all',
+    from: `  CONSTRAINT tender_is_from_somebody CHECK (
+    customer_id IS NOT NULL OR opportunity_id IS NOT NULL OR btrim(coalesce(company,'')) <> ''
+  ),`,
+    to: ''
+  },
+  {
+    what: 'a tender marked no-bid can be submitted anyway',
+    from: `  CONSTRAINT no_bid_means_no_tender CHECK (
+    bid_decision <> 'no-bid' OR status NOT IN ('submitted', 'awarded')
+  )`,
+    to: `  CONSTRAINT no_bid_means_no_tender CHECK (true)`
+  },
+  {
+    what: 'a bid decision can be any word at all',
+    from: `  bid_decision   text NOT NULL DEFAULT 'pending'
+                 CHECK (bid_decision IN ('bid', 'pending', 'no-bid')),`,
+    to: `  bid_decision   text NOT NULL DEFAULT 'pending',`
+  },
+  {
+    what: 'the same firm can be entered as two leads',
+    file: 'api',
+    from: `  SELECT ref INTO existing FROM lead
+   WHERE upper(btrim(company)) = upper(btrim(p_company)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a lead for % — it is %', btrim(p_company), existing;
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a lead marked converted can be moved back by the ordinary form',
+    file: 'api',
+    from: `      status = CASE WHEN status = 'converted' THEN status ELSE coalesce(p_status, status) END,`,
+    to: `      status = coalesce(p_status, status),`
+  },
+  {
+    what: 'a next step can be booked on the enquiry of somebody who asked not to be contacted',
+    file: 'api',
+    from: `    IF said_no THEN
+      RAISE EXCEPTION '% has asked not to be contacted, so no next step can be booked against them',
+        whose USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: ''
+  },
+  {
+    what: 'a lost enquiry needs no reason from the workflow, only from the constraint',
+    file: 'api',
+    from: `  IF p_stage = 'lost' AND coalesce(btrim(p_decision_reason), '') = '' THEN
+    RAISE EXCEPTION 'a lost enquiry records why it was lost — it is the one field worth having'
+      USING ERRCODE = 'check_violation';
+  END IF;`,
+    to: ''
+  },
+  {
+    what: 'a finding about somebody who asked not to be contacted is a reason to ring them',
+    file: 'api',
+    from: `    IF found.do_not_contact THEN
+      RAISE EXCEPTION '% has asked not to be contacted — a finding about them is not a reason to ring',
+        found.company USING ERRCODE = 'check_violation';
+    END IF;`,
+    to: ''
+  },
+  {
+    what: 'the pipeline goes back into the snapshot, and the floor is refused the whole workshop',
+    file: 'views',
+    from: `    'marketingLeads', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', l.id::text, 'no', l.ref, 'company', l.company, 'contact', l.contact,`,
+    to: `    'marketingLeadsMoved', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', l.id::text, 'no', l.ref, 'company', l.company, 'contact', l.contact,`
+  },
+  {
+    what: 'a lead’s estimated value crosses the wire as a JSON number',
+    file: 'views',
+    from: `        'service', l.service_wanted, 'value', l.estimated_value::text,`,
+    to: `        'service', l.service_wanted, 'value', l.estimated_value,`
+  },
+  {
+    what: 'a follow-up is sent for somebody who has asked not to be contacted',
+    file: 'marketingrecord',
+    from: `      next_follow_up_on: yes(whole.dnc) ? null : day(whole.nextFollowUp),`,
+    to: `      next_follow_up_on: day(whole.nextFollowUp),`
+  },
+  {
+    what: 'the ids stay text, so no row on the board can be opened',
+    file: 'marketingrecord',
+    from: `    numberedIds(shaped, ['id', 'linkedCustomerId', 'linkedOpportunityId']);`,
+    to: ''
+  },
+  {
+    what: 'the tender has no title, so every one saved from that form is refused',
+    file: 'marketingrecord',
+    from: `      title: trimmed(whole.title) || trimmed(whole.ref) || trimmed(whole.company),`,
+    to: `      title: trimmed(whole.title),`
+  },
+  {
+    what: 'the priority the prospect queue writes is sent as the word the column refuses',
+    file: 'marketingrecord',
+    from: `    return given === null ? null : (PRIORITY[String(given).toLowerCase()] || null);`,
+    to: `    return given === null ? null : String(given);`
+  },
+  {
+    what: 'the form can mark a lead converted without making the customer',
+    file: 'marketingrecord',
+    from: `      status: said(whole.status) === 'converted' ? null : said(whole.status, 'new'),`,
+    to: `      status: said(whole.status, 'new'),`
+  },
+  {
+    what: 'the notes list goes down as a row of objects rather than as text',
+    file: 'marketingrecord',
+    from: `    return notes.map((entry) => {
+      if (typeof entry === 'string') return entry;`,
+    to: `    return notes.map((entry) => {
+      if (typeof entry === 'object') return String(entry);
+      if (typeof entry === 'string') return entry;`
+  },
+  {
+    what: 'a tender not yet gone in is stamped with today anyway',
+    file: 'marketingrecord',
+    from: `      submitted_on: day(whole.submitted)
+        || (['submitted', 'awarded', 'declined'].indexOf(status) === -1
+          ? null : new Date().toISOString().slice(0, 10)),`,
+    to: `      submitted_on: day(whole.submitted) || new Date().toISOString().slice(0, 10),`
   }
 ];
 

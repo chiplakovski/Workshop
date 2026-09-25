@@ -308,11 +308,10 @@ async function main() {
     // The hazard the guard exists for: signed in on the tablet, a person opens the hub and sees the
     // workshop twice — the real records on one screen and whatever is in this browser on another,
     // with neither screen saying which it is. Somebody would make a decision on the wrong one.
-    // Marketing rather than Suppliers, which used to be the example here, which was Quality before that
-    // and the hub before that. The example has moved three times for the same reason: the check needs a
-    // screen that genuinely has no workflows yet, and screens keep getting them. Two are left —
-    // Marketing, and Documents, which is waiting on somewhere for a file to live.
-    await page.goto(`${site}/marketing-desktop.html`, { waitUntil: 'load' });
+    // Documents, which is the last one. The example has moved four times now — the hub, then Quality, then
+    // Suppliers, then Marketing — each time because the screen it named got wired. Documents is the one
+    // that cannot be: a document record is a pointer to a file, and there is nowhere for the file to live.
+    await page.goto(`${site}/documents-desktop.html`, { waitUntil: 'load' });
     const blocked = await page.locator('[role="alert"]').innerText();
     assert.match(blocked, /not connected to the server/,
       'an unwired page must refuse rather than show what is in this browser');
@@ -331,9 +330,9 @@ async function main() {
     step('Two worlds: it covers the page rather than sitting over the top of stale figures');
 
     // And it stays out of the way when there is no session: that is the app the workshop runs today,
-    // on browser storage, and two of the seventeen pages are still it.
+    // on browser storage, and one of the seventeen pages is still it.
     const guest = await context.newPage();
-    await guest.goto(`${site}/marketing-desktop.html`, { waitUntil: 'load' });
+    await guest.goto(`${site}/documents-desktop.html`, { waitUntil: 'load' });
     assert.equal(await guest.locator('[role="alert"]').count(), 0,
       'with no session the pages must work exactly as they did before');
     assert.ok(await guest.locator('body').isVisible());

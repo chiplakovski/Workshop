@@ -422,6 +422,84 @@ LANGUAGE sql STABLE AS $$
       FROM stock_item i), '{}'::jsonb),
     'equipment', coalesce((SELECT jsonb_object_agg(e.id::text,
         jsonb_build_object('purchasePrice', e.purchase_price::text)) FROM equipment e), '{}'::jsonb),
+
+    -- ── The sales pipeline ─────────────────────────────────────────────────────────────────
+    --
+    -- Here rather than in the snapshot, and it was put in the snapshot first, which is how the reason
+    -- was found: `lead`, `opportunity` and `tender` are not granted to varmak_workshop at all, so a
+    -- welder calling workspace_snapshot() was refused the WHOLE THING — not the pipeline, the whole
+    -- workshop. One list a role cannot read makes every screen that role opens fail.
+    --
+    -- Three whole lists rather than figures keyed by id, which the money payload had not carried
+    -- before. What a lead is worth and what an enquiry is worth are figures, and none of the pipeline
+    -- is anything a welder has a part in — so the honest shape is the whole list on this side of the
+    -- line rather than an enquiry with its value removed, sent to somebody who is shown no enquiries.
+    'marketingLeads', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', l.id::text, 'no', l.ref, 'company', l.company, 'contact', l.contact,
+        'email', l.email, 'phone', l.phone, 'city', l.city, 'country', l.country,
+        'industry', l.industry, 'size', l.company_size, 'source', l.source,
+        'service', l.service_wanted, 'value', l.estimated_value::text,
+        'priority', l.priority, 'status', l.status, 'owner', l.owner,
+        'lastContact', l.last_contact_on, 'nextFollowUp', l.next_follow_up_on,
+        'commPref', l.contact_preference, 'dnc', l.do_not_contact,
+        'linkedCustomerId', l.customer_id::text,
+        -- The enquiry this lead became, read the way round the schema points: opportunity.lead_id. A
+        -- copy of the link on the lead would be a second thing that can be wrong about which is which.
+        'linkedOpportunityId', (SELECT o.id::text FROM opportunity o WHERE o.lead_id = l.id
+                                 ORDER BY o.id LIMIT 1),
+        'notes', l.notes, 'created', l.created_at,
+        'activity', quality_activity_of('lead', l.id),
+        -- What has been found out about them. Append-only, and the screen shows it as a queue.
+        'findings', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'id', pf.id::text, 'finding', pf.finding, 'source', pf.source,
+            'foundBy', pf.found_by, 'foundAt', pf.found_at
+          ) ORDER BY pf.found_at DESC, pf.id DESC)
+          FROM prospect_finding pf WHERE pf.lead_id = l.id), '[]'::jsonb)
+      ) ORDER BY l.id DESC) FROM lead l), '[]'::jsonb),
+
+    'marketingOpportunities', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', o.id::text, 'no', o.ref, 'title', o.title,
+        -- Whose enquiry it is, read off whichever of the two it points at. Not a column: an opportunity
+        -- belongs to a customer or to a lead, and the name lives on that record.
+        'company', coalesce((SELECT c.name FROM customer c WHERE c.id = o.customer_id),
+                            (SELECT l.company FROM lead l WHERE l.id = o.lead_id)),
+        'contact', o.contact, 'leadId', o.lead_id::text, 'customerId', o.customer_id::text,
+        'services', o.services, 'scope', o.scope, 'industry', o.industry,
+        'value', o.value::text, 'currency', o.currency, 'probability', o.probability,
+        'stage', o.stage, 'expectedClose', o.expected_close,
+        'expectedDecision', o.expected_decision_on, 'requiredDelivery', o.required_delivery_on,
+        'competitor', o.competitor, 'decisionReason', o.decision_reason, 'owner', o.owner,
+        'nextAction', o.next_action, 'followUpDate', o.follow_up_on,
+        'activity', quality_activity_of('opportunity', o.id),
+        -- The tenders offered against it. tender.opportunity_id already points this way.
+        'tenders', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'id', t.id::text, 'no', t.ref, 'title', t.title, 'status', t.status,
+            'due', t.due_on, 'submitted', t.submitted_on, 'value', t.value::text
+          ) ORDER BY t.id) FROM tender t WHERE t.opportunity_id = o.id), '[]'::jsonb)
+      ) ORDER BY o.id DESC) FROM opportunity o), '[]'::jsonb),
+
+    'marketingTenders', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', t.id::text, 'no', t.ref, 'title', t.title, 'status', t.status,
+        'opportunityId', t.opportunity_id::text, 'customerId', t.customer_id::text,
+        -- Who is asking. The column first, because a tender arrives from a company this workshop may
+        -- have no customer record for — that is what tendering is — and only then the customer or the
+        -- enquiry it was later tied to.
+        'company', coalesce(t.company,
+                            (SELECT c.name FROM customer c WHERE c.id = t.customer_id),
+                            (SELECT coalesce((SELECT c2.name FROM customer c2 WHERE c2.id = o.customer_id),
+                                             (SELECT l.company FROM lead l WHERE l.id = o.lead_id))
+                               FROM opportunity o WHERE o.id = t.opportunity_id)),
+        -- `ref` on this screen is THEIR reference for it, which is what every email about it quotes.
+        -- Our own is `no`, which the database allocates.
+        'ref', t.customer_ref, 'source', t.source, 'industry', t.industry,
+        'description', t.description, 'requirements', t.requirements,
+        'responsible', t.responsible, 'bidDecision', t.bid_decision,
+        'reminderDate', t.reminder_on, 'deadline', t.due_on,
+        'due', t.due_on, 'submitted', t.submitted_on, 'value', t.value::text,
+        'projectNo', (SELECT p.ref FROM project p WHERE p.id = t.project_id),
+        'activity', quality_activity_of('tender', t.id)
+      ) ORDER BY t.id DESC) FROM tender t), '[]'::jsonb),
+
     -- What each merchant charges, and what they are paid on. Both are prices in the sense §1b means —
     -- a price list is a price — so they are here rather than in the snapshot everybody reads, keyed by
     -- supplier id so the office can merge them into the register record by record.

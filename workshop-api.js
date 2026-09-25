@@ -141,9 +141,18 @@
       // stay strings — they are exact decimals from a numeric column, and turning them into numbers
       // here is the floating-point mistake the schema and the wire both avoided.
       for (const collection of Object.keys(money.body)) {
-        const byId = money.body[collection];
+        const sent = money.body[collection];
+        // A whole list, rather than figures to merge into one. Some collections are not in the plain
+        // snapshot at all: the sales pipeline is not granted to the floor, and a snapshot carrying one
+        // list a role cannot read fails for every screen that role opens — so those three arrive here
+        // in full. A list that is not shown at all is the honest shape for records the floor has no part
+        // in, as against an enquiry with its value removed sent to somebody who is shown no enquiries.
+        if (Array.isArray(sent)) {
+          data[collection] = sent;
+          continue;
+        }
         (data[collection] || []).forEach(function (record) {
-          Object.assign(record, byId[record.id] || {});
+          Object.assign(record, sent[record.id] || {});
         });
       }
       data.seesMoney = true;

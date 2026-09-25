@@ -1017,7 +1017,13 @@ CREATE TABLE barcode (
 -- so "where did this job come from" is answerable two years later.
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 
-CREATE TYPE lead_status AS ENUM ('new','contacted','qualified','converted','lost');
+-- The screen's five. `lost` was the schema's word and `disqualified` is the screen's, and they are not
+-- quite the same thing either: a lead is disqualified because it was never going to be work — wrong
+-- trade, wrong country, no budget — whereas an opportunity is lost, to somebody. Both are here, with
+-- `disqualified` added because the filter offers it and the column refused it. Sixth time a screen's
+-- vocabulary and a column's were found disagreeing.
+CREATE TYPE lead_status AS ENUM
+  ('new','contacted','qualified','disqualified','converted','lost');
 
 CREATE TABLE lead (
   id          bigserial PRIMARY KEY,
@@ -1043,8 +1049,12 @@ CREATE TABLE lead (
   -- How they may be contacted, and whether they have asked not to be. Do-not-contact is a legal
   -- obligation in Sweden as everywhere else, so it is a column the system cannot forget rather than
   -- a note somebody might not read.
+  -- Capitalised, because that is what the dropdown offers and what the customer register already stores
+  -- ('Email' in `customer.preferred_contact`). Lower case here meant every lead the form saved was
+  -- refused outright: `lead_contact_preference_check`, on a field nobody typed. Eighth time a screen's
+  -- vocabulary and a column's were found disagreeing, and the eighth time the screen won.
   contact_preference text CHECK (contact_preference IS NULL OR
-                       contact_preference IN ('email','phone','post','none')),
+                       contact_preference IN ('Email','Phone','Post','None')),
   do_not_contact boolean NOT NULL DEFAULT false,
   status      lead_status NOT NULL DEFAULT 'new',
   -- Set when the lead becomes a customer. A converted lead that names nobody is a dead end in the
@@ -1070,8 +1080,13 @@ CREATE TABLE prospect_finding (
 
 CREATE INDEX prospect_finding_lead_idx ON prospect_finding(lead_id);
 
+-- The screen's eight, which is the pipeline board's own set of columns: a card is dragged between them.
+-- The six here before were a different shape of the same idea — 'enquiry' where the board says
+-- 'discovery', 'estimating' where it says 'preparing', 'quoted' where it says 'quotesent' — and two of
+-- the board's columns, 'rfq' and 'qualified', had no value at all. So dragging a card into either of them
+-- would have been refused, which on a board is the one action there is.
 CREATE TYPE opportunity_stage AS ENUM
-  ('enquiry','estimating','quoted','negotiation','won','lost');
+  ('discovery','qualified','rfq','preparing','quotesent','negotiation','won','lost');
 
 CREATE TABLE opportunity (
   id          bigserial PRIMARY KEY,
@@ -1079,7 +1094,7 @@ CREATE TABLE opportunity (
   title       text NOT NULL CHECK (btrim(title) <> ''),
   customer_id bigint REFERENCES customer(id) ON DELETE RESTRICT,
   lead_id     bigint REFERENCES lead(id) ON DELETE SET NULL,
-  stage       opportunity_stage NOT NULL DEFAULT 'enquiry',
+  stage       opportunity_stage NOT NULL DEFAULT 'discovery',
   value       numeric(12,2) CHECK (value IS NULL OR value >= 0),
   currency    char(3) NOT NULL DEFAULT 'SEK' CHECK (currency = upper(currency)),
   probability int CHECK (probability IS NULL OR probability BETWEEN 0 AND 100),
@@ -1104,9 +1119,20 @@ CREATE TABLE opportunity (
   -- reconstructed six months later. Asked for at the moment it is known.
   CONSTRAINT lost_opportunity_says_why
     CHECK (stage <> 'lost' OR btrim(coalesce(decision_reason,'')) <> '')
+  -- A do-not-contact lead cannot have a follow-up booked against its opportunity either, and that is NOT
+  -- written here: a CHECK constraint that reads another table is only evaluated when this row changes, so
+  -- it would hold until the moment somebody set do_not_contact on the lead and then quietly stop being
+  -- true. The obligation lives on `lead`, where the flag is, and save_opportunity asks the question at the
+  -- point somebody books the follow-up. A half-checked legal obligation is worse than an unchecked one,
+  -- because it reads as enforced.
 );
 
-CREATE TYPE tender_status AS ENUM ('open','submitted','won','lost','withdrawn');
+-- The screen's five. 'awarded' and 'declined' are what a tender actually comes back as — the customer
+-- awards it or declines it, which is not the same voice as winning or losing — and 'in-progress' and
+-- 'reviewing' are the two states a tender sits in while it is being put together. Seventh vocabulary
+-- mismatch, and the same resolution as the other six.
+CREATE TYPE tender_status AS ENUM
+  ('in-progress','reviewing','submitted','awarded','declined');
 
 CREATE TABLE tender (
   id             bigserial PRIMARY KEY,
@@ -1114,7 +1140,25 @@ CREATE TABLE tender (
   title          text NOT NULL CHECK (btrim(title) <> ''),
   opportunity_id bigint REFERENCES opportunity(id) ON DELETE SET NULL,
   customer_id    bigint REFERENCES customer(id) ON DELETE RESTRICT,
-  status         tender_status NOT NULL DEFAULT 'open',
+  -- Who is asking, and under what number. A tender arrives from a company this workshop may have no
+  -- customer record for — that is the point of tendering — so the name is a column rather than only a
+  -- foreign key, and `customer_ref` is THEIR reference for it, which is what every email about it will
+  -- quote. Neither is our own `ref`, which the database allocates.
+  company        text,
+  customer_ref   text,
+  source         text,
+  industry       text,
+  description    text,
+  requirements   text,
+  responsible    text,
+  -- Whether this workshop is going to bid at all. The decision that comes before any of the work, and
+  -- the screen has had a control for it since it was written.
+  bid_decision   text NOT NULL DEFAULT 'pending'
+                 CHECK (bid_decision IN ('bid', 'pending', 'no-bid')),
+  -- When to be reminded, which is not the same date as when it is due: a tender due on the 30th needs
+  -- somebody looking at it on the 20th.
+  reminder_on    date,
+  status         tender_status NOT NULL DEFAULT 'in-progress',
   submitted_on   date,
   due_on         date,
   value          numeric(12,2) CHECK (value IS NULL OR value >= 0),
@@ -1122,7 +1166,22 @@ CREATE TABLE tender (
   -- project come from".
   project_id     bigint REFERENCES project(id) ON DELETE SET NULL,
   created_at     timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT submitted_tender_has_a_date CHECK (status <> 'submitted' OR submitted_on IS NOT NULL)
+  -- A tender that has gone in has a date it went in on. It is the date every chase and every deadline is
+  -- counted from, and it cannot be reconstructed afterwards. Awarded and declined both imply it went in,
+  -- so they are held to it too — the first version asked only of 'submitted', which meant a tender could
+  -- be recorded as awarded having apparently never been sent.
+  CONSTRAINT submitted_tender_has_a_date
+    CHECK (status NOT IN ('submitted', 'awarded', 'declined') OR submitted_on IS NOT NULL),
+  -- A tender has to be from somebody: a customer, an enquiry, or a company named outright. One that
+  -- names nobody is a row nobody can act on and nobody can find again.
+  CONSTRAINT tender_is_from_somebody CHECK (
+    customer_id IS NOT NULL OR opportunity_id IS NOT NULL OR btrim(coalesce(company,'')) <> ''
+  ),
+  -- Deciding not to bid is a decision; submitting one anyway is a contradiction the register should not
+  -- be able to hold.
+  CONSTRAINT no_bid_means_no_tender CHECK (
+    bid_decision <> 'no-bid' OR status NOT IN ('submitted', 'awarded')
+  )
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

@@ -868,7 +868,10 @@
     // The quality register. The database was already refusing to complete held work while the screen
     // showing the holds read them out of this browser's storage — so the gate and the list somebody
     // reads to understand the gate were looking at two different sets of facts.
-    'qualityHolds','qualityInspections','qualityNcrs'];
+    'qualityHolds','qualityInspections','qualityNcrs',
+    // The sales pipeline, which arrives in the office's own payload rather than in the snapshot
+    // everybody reads — `lead`, `opportunity` and `tender` are not granted to the floor at all.
+    'marketingLeads','marketingOpportunities','marketingTenders'];
   function adoptSnapshot(data){
     if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
     const fresh=emptyState();

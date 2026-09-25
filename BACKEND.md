@@ -926,6 +926,69 @@ cannot touch anything else.
    and their lead time — under a heading that says price list. Office only, because a price list is a
    price.
 
+      **The sales pipeline, where the measurement was most of the work.** The coverage meter reported
+   twelve fields across leads and enquiries as needing a column, and both README and BACKEND.md said the
+   remaining schema width was "concentrated on estimating, purchasing and the sales pipeline" — and every
+   one of the twelve had had a column since the pipeline was written, under the longer name the schema
+   uses for a date or a figure. `size` is `company_size`, `value` is `estimated_value`, `nextFollowUp` is
+   `next_follow_up_on`. **The pipeline part of that sentence was a measurement artefact**, and it is the
+   sixth correction of exactly that kind.
+
+   What was genuinely missing was narrower and much sharper:
+
+   * **Two of the board's eight columns had no value in the stage enum.** `rfq` and `qualified` — so
+     dragging a card into either was refused, on a board, where dragging a card is the one action there
+     is. The other six were the same idea under different words: `enquiry` for `discovery`, `estimating`
+     for `preparing`, `quoted` for `quotesent`.
+   * **`contact_preference` allowed lower case and the dropdown offers `Email`.** Every lead the form
+     saved was refused outright — `lead_contact_preference_check`, on a field nobody typed. Eighth
+     vocabulary mismatch, and the eighth time the screen won.
+   * **The lead filter has offered `disqualified` since it was written** against a column that allowed
+     only `lost`. They are not the same thing: a lead is disqualified because it was never going to be
+     work — wrong trade, wrong country, no budget — and an enquiry is lost, to somebody.
+   * **The tender form showed nine fields the table had nowhere to keep**: the customer's own reference,
+     the source, the industry, a description, the requirements, who is responsible, whether we are
+     bidding at all, and when to be reminded — which is not the same date as when it is due. And it has
+     no title field, while `title` is NOT NULL, so every tender saved from it was refused for a box the
+     screen does not have. Their reference is what the record is called.
+
+   **The one finding that is about the whole system rather than this screen**: the three pipeline lists
+   went into `workspace_snapshot()` first, and `lead`, `opportunity` and `tender` are not granted to
+   varmak_workshop at all — so a welder calling it was refused **the whole thing**. Not the pipeline: the
+   whole workshop, every screen they open. One list a role cannot read fails the snapshot for that role
+   entirely. They are in the office's own payload now, as three whole lists rather than figures keyed by
+   id, which that payload had not carried before — and a list that is not shown at all is the honest
+   shape for records the floor has no part in, as against an enquiry with its value removed sent to
+   somebody who is shown no enquiries.
+
+   Two smaller things, both of which only appear against a database:
+
+   * **The ids came back as text and the board compares them with `===`.** This screen puts ids straight
+     into its own markup — `onclick="openLeadForm(${l.id})"` — so what comes back is the number 1. Left
+     as text, the list rendered and **not one row in it could be opened**: every button found nothing and
+     threw on the next line.
+   * **do-not-contact is asked in two more places now.** It is the law, and the column enforced it on the
+     lead. The two places somebody would actually act against it are booking a follow-up on the lead and
+     booking a next step on their enquiry, so `save_opportunity` asks too — and it is deliberately NOT a
+     CHECK on `opportunity`: a constraint that reads another table is only evaluated when this row
+     changes, so it would hold until the moment the flag was set on the lead and then quietly stop being
+     true. A half-checked legal obligation reads as enforced.
+
+   Campaigns and the outward prospect sweep refuse out loud. A campaign has a budget, a spend, channels
+   and counts of what it produced, with no table behind it; the sweep keeps its own findings,
+   seen-fingerprints and triage verdicts, and `prospect_finding` holds none of that. Both are named in
+   `backend/coverage.js` so no coverage figure can read as though it covered them — which brings up the
+   last measurement finding of this pass, and the most useful one.
+
+   **`backend/coverage.js` was silent about eleven collections.** They carry records in the demonstration
+   workshop, have no table, and were in neither the map nor any list of exclusions — so every coverage
+   figure this project has printed, 67% through 74%, was about less than the whole app while reading as
+   though it covered all of it. Six of the eleven are welding records: a weld log, the NDT against those
+   welds, the welding procedure specifications, and which welder is qualified to which. For a fabrication
+   shop that is not a small omission, and it is now written down as the next schema work rather than
+   absent from the number at the bottom of a report. The meter refuses to run clean with an unaccounted
+   collection.
+
    One thing found while writing the schema that this step has to deal with: the status sequence
    lives in `ALLOWED_TRANSITIONS` in `jobcard-desktop.html`, page-local, and **not** in
    `workshop-data.js` — `canTransitionJobcard()` there checks only the quality gate. So the shared

@@ -36,7 +36,50 @@ const TABLE_FOR = {
   hours: 'hours_entry', estimations: 'estimate', qualityInspections: 'inspection',
   qualityNcrs: 'ncr', qualityHolds: 'quality_hold', purchaseOrders: 'purchase_order',
   documents: 'document', marketingLeads: 'lead', marketingOpportunities: 'opportunity',
+  marketingTenders: 'tender',
   itemGroups: 'item_group', locationGroups: 'location', activity: 'activity_log'
+};
+
+// Collections this meter deliberately does not measure, and why. Checked against the demonstration state
+// below, because the failure this list prevents is the one that has no symptom: a whole module missing
+// from the map is a module whose width is reported as neither covered nor missing. `marketingCampaigns`
+// was exactly that — four records, eighteen fields, no table, and invisible to every number this file
+// prints.
+//
+// Writing this list is what found them. Eleven collections carry records in the demonstration workshop
+// and had no table and no entry here, so every coverage figure this project has printed — 67%, 70%, 73% —
+// was about less than the whole app while reading as though it covered all of it. Six of the eleven are
+// welding records, which for a fabrication shop is not a small omission.
+const NOT_MEASURED = {
+  // A campaign has a budget, a spend, channels, and counts of the leads and quotations it produced.
+  // There is no table, and whether this workshop runs marketing campaigns at all is a decision for them
+  // rather than something to infer from demonstration data.
+  marketingCampaigns: 'no table: whether the workshop runs campaigns is their decision, not a gap',
+
+  // The welding records, and this is the real gap in the system. A weld log, the NDT against those welds,
+  // the procedure specifications they are welded to, and the welders qualified to each — four tables, and
+  // for a pressure-vessel or structural shop they are what a delivery is signed off against. `inspection`
+  // and `inspection_check` cover a check and its measurements; none of these four is that. Named here
+  // rather than counted as loose fields because each is a register in its own right, and BACKEND.md now
+  // carries them as the next schema work rather than as a number at the bottom of this report.
+  qualityWelds: 'no table yet: a weld log is a register of its own — see BACKEND.md',
+  qualityNdt: 'no table yet: NDT against a weld, distinct from an inspection',
+  qualityWps: 'no table yet: the welding procedures welds are made to',
+  qualityWelderQuals: 'no table yet: which welder is qualified to which procedure',
+
+  // The rest of the quality screens, each a record with its own rules and its own table to come. The
+  // Quality screen refuses all of them out loud today, which is the honest state until somebody asks.
+  qualityItps: 'no table yet: the Quality screen refuses it out loud',
+  qualityCapas: 'no table yet: the five whys and the fishbone, which the NCR points at',
+  qualityDossiers: 'no table yet: the Quality screen refuses it out loud',
+  qualityComplaints: 'no table yet: a customer complaint, which createNcr already turns into an NCR',
+  supplierQuality: 'a rollup of the NCRs and deliveries against a merchant, not a record',
+
+  // This browser's own conveniences, which have no business in a database: a numbering counter, a
+  // counting session that is not a record until it is posted, a saved filter.
+  counters: "this browser's own numbering, not a record",
+  stockCounts: 'a counting session in progress, which is not a record until it is posted',
+  savedReports: 'a report definition, which the Reports screen refuses out loud'
 };
 
 // The same thing under a different word. Every entry here is a judgement, so they are written down
@@ -118,6 +161,22 @@ const SAME_THING = {
   // inspection record only because the demo data copies it there. It is a join, below.
   requiredAction: { qualityHolds: 'required_action' },
 
+  // The sales pipeline, and the sixth correction to this meter of the same kind — this time all twelve
+  // of the fields it called missing across leads and opportunities. Every one has had a column since the
+  // pipeline was written, under the longer name the schema uses for a date or a figure. That mattered:
+  // README and BACKEND.md both said the remaining width was "concentrated on estimating, purchasing and
+  // the sales pipeline", and the pipeline part of that sentence was a measurement artefact.
+  size: { marketingLeads: 'company_size' },
+  service: { marketingLeads: 'service_wanted' },
+  lastContact: { marketingLeads: 'last_contact_on' },
+  nextFollowUp: { marketingLeads: 'next_follow_up_on' },
+  commPref: { marketingLeads: 'contact_preference' },
+  dnc: { marketingLeads: 'do_not_contact' },
+  linkedCustomerId: { marketingLeads: 'customer_id' },
+  expectedDecision: { marketingOpportunities: 'expected_decision_on' },
+  requiredDelivery: { marketingOpportunities: 'required_delivery_on' },
+  followUpDate: { marketingOpportunities: 'follow_up_on' },
+
   // The supplier register, and the fifth correction to this meter of exactly the same kind. Four of
   // the six fields it reported missing were renames of columns added in the same commit — the screen's
   // `type`, `payment`, `delivery` and `minimum` are `supplier_type`, `payment_terms_days`,
@@ -144,6 +203,12 @@ const A_JOIN = new Set([
   // A movement names its item by code, which is a column on stock_item. A copy of it on the movement
   // is a copy that can disagree with the item it points at.
   'code',
+  // Whose enquiry it is. On a lead `company` IS the record — a lead is a company nobody has dealt with
+  // yet — and the column is there, so `stored` wins for leads before this line is reached. It bites on an
+  // opportunity, where the name belongs to the customer or the lead it points at. Not mapped to `title`,
+  // which was the first guess here and was wrong: an opportunity's title is what the work is, not who
+  // wants it.
+  'company',
   // The jobcard a machine is on right now, which is the current row in `equipment_assignment` — the
   // table whose partial unique index is what makes "one machine, one jobcard" true. A column on
   // equipment would be a second answer to the same question, and the two would disagree the first time
@@ -172,11 +237,17 @@ const A_CHILD_TABLE = new Set([
   // hours_entry.jobcard_id, inspection.jobcard_id. They were counted as missing columns, which is
   // the one thing they must never become — a list in a column cannot have a foreign key.
   'jobcards', 'hours', 'inspections',
+  // The tenders on an opportunity and the leads on a campaign. `tender.opportunity_id` already exists;
+  // campaigns have no table, which is why that collection is named in NOT_MEASURED above.
+  'tenders',
   // The orders raised against a merchant and the certificates filed against them. Both already have a
   // table pointing the right way — purchase_order.supplier_id, document.entity/entity_id — and the
   // supplier screen reads them live rather than holding a copy, which is what it should do: a stored
   // list of orders is a list that goes stale the moment one is raised anywhere else.
   'purchaseOrders', 'docs',
+  // The opportunity a lead became. `opportunity.lead_id` points the right way already, and a second copy
+  // of the link on the lead is a second thing that can be wrong about which is which.
+  'linkedOpportunityId',
   // The equipment screen's six logs, every one of them a list of dated events against a machine, and
   // every one of them already a row in `equipment_event` — which has a kind for each: service,
   // calibration, inspection, breakdown, pre-use-check, repair. They were being counted as six missing
@@ -277,6 +348,19 @@ function main() {
     perCollection.push({ collection, table, counts, missing });
   }
 
+  // Every collection in the demonstration workshop is either measured above or named as deliberately not
+  // measured. A collection in neither is one this file is silent about, which is worse than reporting it
+  // as a gap: the number at the bottom reads as though it covered everything.
+  const unaccounted = Object.keys(records)
+    .filter((name) => Array.isArray(records[name]) && records[name].length)
+    .filter((name) => !TABLE_FOR[name] && !NOT_MEASURED[name]);
+  if (unaccounted.length) {
+    console.error(`\nThese collections carry records and this meter says nothing about them, `
+      + `so every figure below is about less than the whole app: ${unaccounted.join(', ')}`);
+    console.error('Add each to TABLE_FOR, or to NOT_MEASURED with the reason.');
+    process.exitCode = 1;
+  }
+
   if (only) {
     if (!perCollection.some((c) => c.collection === only)) {
       console.error(`No collection called ${only}. Try one of: ${Object.keys(TABLE_FOR).join(', ')}`);
@@ -313,7 +397,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 285, needsColumn: 32 };
+  const BASELINE = { stored: 295, needsColumn: 20 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

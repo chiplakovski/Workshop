@@ -1384,6 +1384,173 @@ function nobodyCanLockTheWorkshopOut() {
 
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
+// ── The sales pipeline: leads, enquiries, tenders ──────────────────────────────────────────
+
+function thePipelineFromEnquiryToOffer() {
+  refused('a lead with no company', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(NULL, '   ');`, /needs the company/);
+
+  const lead = ok('a lead', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(NULL, 'Nordic Fabrication AB', 'Petra Lind', 'petra@nordfab.se',
+       '+46 42 555 90 10', 'Helsingborg', 'Sweden', 'Marine', '50-200', 'Trade fair',
+       'Stainless fabrication', 480000, 'high', 'new', 'Lars Holm', current_date, current_date + 7,
+       'Email', false, 'Met at the Malmö show');`);
+  assert.match(value(`SELECT ref FROM lead WHERE id = ${lead};`), /^L-\d{4}$/);
+  assert.equal(value(`SELECT company_size || '|' || service_wanted || '|' || estimated_value::text
+    || '|' || contact_preference || '|' || last_contact_on::text
+    FROM lead WHERE id = ${lead};`),
+    `50-200|Stainless fabrication|480000.00|Email|${value(`SELECT current_date::text;`)}`,
+    'the five fields the coverage meter called missing, every one of which had a column all along');
+
+  // The same firm entered twice is two leads to the system and one company to whoever rings them, which
+  // is how one firm gets telephoned by two people in the same week.
+  refused('the same firm again', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(NULL, 'Nordic Fabrication AB');`, /already a lead for/);
+  refused('and in capitals', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(NULL, 'NORDIC FABRICATION AB');`, /already a lead for/);
+  step('Pipeline: a lead is recorded whole, once per company, whatever case it is typed in');
+
+  // Do-not-contact is the law, not a convention. The database refuses it and the workflow says so in a
+  // sentence first, because a constraint's name is not something anybody can act on.
+  refused('booking a follow-up against somebody who asked not to be contacted', 'varmak_office',
+    PEOPLE.office, `SELECT save_lead(${lead}, 'Nordic Fabrication AB', NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, 'contacted', NULL, NULL, current_date + 7, NULL, true);`,
+    /asked not to be contacted/);
+  ok('respecting it, with the follow-up cleared', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(${lead}, 'Nordic Fabrication AB', NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, 'contacted', NULL, NULL, NULL, NULL, true);`);
+  assert.equal(value(`SELECT do_not_contact::text || '|' || coalesce(next_follow_up_on::text, 'none')
+    FROM lead WHERE id = ${lead};`), 'true|none');
+  ok('and taking it back off when they ask again', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(${lead}, 'Nordic Fabrication AB', 'Petra Lind', 'petra@nordfab.se', NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, 480000, 'high', 'qualified', 'Lars Holm', current_date,
+       current_date + 7, 'Email', false);`);
+  step('Pipeline: somebody who asked not to be contacted cannot have a follow-up booked, in words');
+
+  refused('an enquiry with no title', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(NULL, '   ', NULL, ${lead});`, /needs a title/);
+  refused('an enquiry belonging to nobody', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(NULL, 'Floating enquiry');`, /belongs to somebody/);
+
+  const opp = ok('an enquiry off that lead', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(NULL, 'Stainless duct run', NULL, ${lead}, 'discovery', 420000, 40,
+       'Petra Lind', 'Marine', 'Fabrication, coating', 'Ten runs, 316L', 'Lars Holm',
+       current_date + 60, current_date + 30, current_date + 90, NULL, NULL,
+       'Site visit booked', current_date + 3);`);
+  assert.equal(value(`SELECT expected_decision_on IS NOT NULL AND required_delivery_on IS NOT NULL
+    AND follow_up_on IS NOT NULL FROM opportunity WHERE id = ${opp};`), 't',
+    'the three date fields the meter called missing, all three of which had a column');
+
+  // The board's eight columns, which is what a card is dragged between.
+  for (const stage of ['qualified', 'rfq', 'preparing', 'quotesent', 'negotiation', 'won']) {
+    ok(`dragging the card into ${stage}`, 'varmak_office', PEOPLE.office,
+      `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, '${stage}', 420000, 40);`);
+  }
+  refused('losing it without saying why', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, 'lost', 420000, 10);`,
+    /records why it was lost/);
+  ok('losing it and saying why', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, 'lost', 420000, 0, NULL,
+       NULL, NULL, NULL, 'Lars Holm', NULL, NULL, NULL, 'Malmö Mekaniska',
+       'Beaten on lead time by three weeks');`);
+  assert.equal(value(`SELECT competitor || ' — ' || decision_reason FROM opportunity WHERE id = ${opp};`),
+    'Malmö Mekaniska — Beaten on lead time by three weeks');
+  step('Pipeline: an enquiry moves through the board’s own eight columns, and a loss says why');
+
+  // The obligation asked where somebody would act on it. Not a CHECK on `opportunity`, because a
+  // constraint that reads another table stops being true the moment that other table changes.
+  ok('the lead asking not to be contacted', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(${lead}, 'Nordic Fabrication AB', NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, 'contacted', NULL, NULL, NULL, NULL, true);`);
+  refused('booking a next step on their enquiry anyway', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, 'negotiation', 420000, 50,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Ring them again', current_date + 3);`,
+    /asked not to be contacted/);
+  ok('and without one', 'varmak_office', PEOPLE.office,
+    `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, 'negotiation', 420000, 50);`);
+  step('Pipeline: the obligation is asked at the enquiry too, where somebody would act against it');
+
+  refused('a tender recorded as awarded having never been sent', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(NULL, 'Duct run tender', ${opp}, NULL, 'awarded', current_date + 14);`,
+    /needs the date it went in on/);
+  const tender = ok('a tender being put together', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(NULL, 'Duct run tender', ${opp}, NULL, 'in-progress', current_date + 14);`);
+  ok('out for internal review', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(${tender}, 'Duct run tender', ${opp}, NULL, 'reviewing', current_date + 14);`);
+  ok('submitted, with the date', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(${tender}, 'Duct run tender', ${opp}, NULL, 'submitted', current_date + 14,
+       current_date, 418000);`);
+  ok('and awarded', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(${tender}, 'Duct run tender', ${opp}, NULL, 'awarded', current_date + 14,
+       current_date, 418000);`);
+  assert.equal(value(`SELECT status::text || '|' || submitted_on::text || '|' || value::text
+    FROM tender WHERE id = ${tender};`),
+    `awarded|${value(`SELECT current_date::text;`)}|418000.00`);
+  refused('a tender from nobody', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(NULL, 'Floating tender');`, /a tender is from somebody/);
+  const outside = ok('one from a company with no customer record yet', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(NULL, 'Harbour gantry', NULL, NULL, 'in-progress', '2026-11-30', NULL,
+       1250000, 'Helsingborgs Hamn AB', 'HH-2026-441', 'Public procurement', 'Marine',
+       'Two gantry frames, hot-dip galvanised', 'EN 1090-2 EXC3', 'Lars Holm', 'pending',
+       '2026-11-20');`);
+  assert.equal(value(`SELECT company || '|' || customer_ref || '|' || responsible || '|'
+    || reminder_on::text || '|' || bid_decision FROM tender WHERE id = ${outside};`),
+    'Helsingborgs Hamn AB|HH-2026-441|Lars Holm|2026-11-20|pending',
+    'the nine fields the tender screen showed and the table had nowhere to keep');
+  ok('deciding not to bid', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(${outside}, 'Harbour gantry', NULL, NULL, 'in-progress', '2026-11-30', NULL,
+       1250000, 'Helsingborgs Hamn AB', NULL, NULL, NULL, NULL, NULL, NULL, 'no-bid');`);
+  refused('and submitting it anyway', 'varmak_office', PEOPLE.office,
+    `SELECT save_tender(${outside}, 'Harbour gantry', NULL, NULL, 'submitted', '2026-11-30',
+       current_date, 1250000, 'Helsingborgs Hamn AB', NULL, NULL, NULL, NULL, NULL, NULL, 'no-bid');`,
+    /marked no-bid/);
+  step('Pipeline: a tender goes in on a date, and awarded or declined both mean it went in');
+
+  // What was found out about a prospect, and what was done about it.
+  refused('a finding that says nothing', 'varmak_office', PEOPLE.office,
+    `SELECT record_prospect_finding(${lead}, '   ');`, /say what was found/);
+  refused('a finding about nobody', 'varmak_office', PEOPLE.office,
+    `SELECT record_prospect_finding(99999, 'Planning application filed');`, /no such lead/);
+  const finding = ok('a finding', 'varmak_office', PEOPLE.office,
+    `SELECT record_prospect_finding(${lead}, 'Planning application filed for a new hall',
+       'Helsingborg kommun');`);
+  assert.equal(value(`SELECT found_by FROM prospect_finding WHERE id = ${finding};`), 'Lars Holm',
+    'who found it comes from the session');
+  // They are still marked do-not-contact from the check above, and a finding is not a reason to ring.
+  refused('taking it forward against somebody who asked not to be contacted', 'varmak_office',
+    PEOPLE.office, `SELECT act_on_prospect_finding(${finding}, true);`, /not a reason to ring/);
+  ok('setting it aside instead', 'varmak_office', PEOPLE.office,
+    `SELECT act_on_prospect_finding(${finding}, false, 'They have asked us not to call');`);
+  assert.equal(value(`SELECT count(*) FROM activity_log
+    WHERE entity = 'lead' AND entity_id = ${lead} AND action = 'finding set aside';`), '1',
+    'and setting it aside is recorded against the lead, where whoever picks it up next will look');
+  refused('acting on a finding that is not there', 'varmak_office', PEOPLE.office,
+    `SELECT act_on_prospect_finding(99999, true);`, /no such finding/);
+  step('Pipeline: what was found about a prospect is recorded, and acting on it is recorded too');
+
+  // A lead becomes a customer through convert_lead, which makes the customer and ties the two together in
+  // one transaction. The ordinary form cannot undo that: a lead moved back out of 'converted' is a
+  // customer with nothing pointing at where they came from, and the chain back stops being walkable.
+  const settled = value(`INSERT INTO lead (company, status, customer_id)
+    VALUES ('Settled Steel AB', 'converted', (SELECT id FROM customer LIMIT 1)) RETURNING id;`);
+  ok('editing a converted lead\u2019s details', 'varmak_office', PEOPLE.office,
+    `SELECT save_lead(${settled}, 'Settled Steel AB', 'Somebody New', 'new@settled.se', NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'contacted');`);
+  assert.equal(value(`SELECT status::text FROM lead WHERE id = ${settled};`), 'converted',
+    'the details change and the converted status does not — it is not this form\u2019s to undo');
+  assert.equal(value(`SELECT contact FROM lead WHERE id = ${settled};`), 'Somebody New');
+  step('Pipeline: a converted lead can be corrected and cannot be un-converted by the ordinary form');
+
+  refused('a welder recording a lead', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_lead(NULL, 'Somebody AB');`, /permission denied/);
+  refused('a welder moving an enquiry', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_opportunity(${opp}, 'Stainless duct run', NULL, ${lead}, 'won', 420000);`,
+    /permission denied/);
+  refused('a welder reading what an enquiry is worth', 'varmak_workshop', PEOPLE.welder,
+    `SELECT value FROM opportunity WHERE id = ${opp};`, /permission denied/);
+  step('Pipeline: none of it is the floor’s, and what an enquiry is worth is not readable there');
+}
+
 // ── Suppliers: the merchants, and what they charge ─────────────────────────────────────────
 
 function theRegisterOfMerchants() {
@@ -1846,6 +2013,7 @@ async function main() {
   // Before the people tests, which rebuild app_user from scratch: these run as the office and the
   // floor by id, and those ids stop meaning anybody once the list has been replaced.
   theRegisterOfMerchants();
+  thePipelineFromEnquiryToOffer();
   const q = aHoldIsThePointOfTheWholeThing();
   const insp = anInspectionIsAskedForThenAnswered(q);
   aNonConformanceLivesItsWholeLife({ project: q.project, card: insp.card });

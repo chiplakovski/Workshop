@@ -943,11 +943,64 @@ function thePipelineKeepsItsLinksBack() {
     VALUES ('Conveyor frame tender', ${opp}, ${f.customer}, '2026-11-30') RETURNING id;`);
   refused('a tender submitted on no date', `UPDATE tender SET status = 'submitted' WHERE id = ${tender};`,
     /submitted_tender_has_a_date/);
+  // Awarded and declined both mean it went in, so both are held to the date too. Asked only of
+  // 'submitted', a tender could be recorded as awarded having apparently never been sent.
+  refused('a tender awarded having apparently never been sent',
+    `UPDATE tender SET status = 'awarded' WHERE id = ${tender};`, /submitted_tender_has_a_date/);
+  refused('and declined the same way',
+    `UPDATE tender SET status = 'declined' WHERE id = ${tender};`, /submitted_tender_has_a_date/);
+  // The two states a tender sits in while it is being put together, which the screen offers and the
+  // column refused. Those need no date, because nothing has gone anywhere.
+  accepted('one still being put together',
+    `UPDATE tender SET status = 'in-progress' WHERE id = ${tender};`);
+  accepted('one out for internal review',
+    `UPDATE tender SET status = 'reviewing' WHERE id = ${tender};`);
   accepted('a tender submitted with its date',
     `UPDATE tender SET status = 'submitted', submitted_on = current_date WHERE id = ${tender};`);
-  accepted('the won tender naming the project it became',
-    `UPDATE tender SET status = 'won', project_id = ${f.project} WHERE id = ${tender};`);
+  accepted('the awarded tender naming the project it became',
+    `UPDATE tender SET status = 'awarded', project_id = ${f.project} WHERE id = ${tender};`);
 
+  // The pipeline board's own eight columns. A card is dragged between them, so a column the enum has no
+  // word for is a drag that is refused — and 'rfq' and 'qualified' had no word at all.
+  for (const stage of ['discovery', 'qualified', 'rfq', 'preparing', 'quotesent', 'negotiation', 'won']) {
+    accepted(`the stage the board drags a card into: ${stage}`,
+      `UPDATE opportunity SET stage = '${stage}' WHERE id = ${opp};`);
+  }
+  refused('a stage no column on the board has a word for',
+    `UPDATE opportunity SET stage = 'thinking-about-it' WHERE id = ${opp};`,
+    /opportunity_stage|invalid input/);
+  // A lead the filter can show as disqualified, which the column refused: disqualified is not lost. A
+  // lead is disqualified because it was never going to be work; an opportunity is lost, to somebody.
+  accepted('a lead disqualified rather than lost',
+    `UPDATE lead SET status = 'disqualified' WHERE id = ${lead};`);
+  step('Pipeline: the board\'s eight columns and the tender\'s five states are the ones the screen has');
+
+  // A tender arrives from a company this workshop may have no customer record for — that is what
+  // tendering is — so it may name one outright, and it must name something.
+  refused('a tender from nobody', `INSERT INTO tender (title) VALUES ('Floating tender');`,
+    /tender_is_from_somebody/);
+  const outside = value(`INSERT INTO tender (title, company, customer_ref, source, industry,
+      description, requirements, responsible, due_on, reminder_on, bid_decision)
+    VALUES ('Harbour gantry', 'Helsingborgs Hamn AB', 'HH-2026-441', 'Public procurement', 'Marine',
+            'Two gantry frames, hot-dip galvanised', 'EN 1090-2 EXC3', 'Lars Holm',
+            '2026-11-30', '2026-11-20', 'pending') RETURNING id;`);
+  assert.equal(value(`SELECT company || '|' || customer_ref || '|' || responsible || '|'
+    || reminder_on::text FROM tender WHERE id = ${outside};`),
+    'Helsingborgs Hamn AB|HH-2026-441|Lars Holm|2026-11-20',
+    'the nine fields the tender screen showed and the table had nowhere to keep');
+  refused('a bid decision that means nothing',
+    `UPDATE tender SET bid_decision = 'maybe' WHERE id = ${outside};`, /bid_decision/);
+  // Deciding not to bid and then submitting one is a contradiction the register should not hold.
+  accepted('deciding not to bid', `UPDATE tender SET bid_decision = 'no-bid' WHERE id = ${outside};`);
+  refused('and submitting it anyway',
+    `UPDATE tender SET status = 'submitted', submitted_on = current_date WHERE id = ${outside};`,
+    /no_bid_means_no_tender/);
+  accepted('bidding after all, then submitting',
+    `UPDATE tender SET bid_decision = 'bid', status = 'submitted', submitted_on = current_date
+     WHERE id = ${outside};`);
+  step('Pipeline: a tender says who it is from, whether we are bidding, and cannot be both no-bid and sent');
+
+  sql(`UPDATE lead SET status = 'converted', customer_id = ${f.customer} WHERE id = ${lead};`);
   const trail = sql(`SELECT l.company FROM project p
     JOIN tender t ON t.project_id = p.id
     JOIN opportunity o ON o.id = t.opportunity_id
@@ -1132,7 +1185,12 @@ function thePipelineRemembersWhyAndRespectsNo() {
   const theLead = value(`INSERT INTO lead (company, city, priority, estimated_value)
     VALUES ('Nordic Fabrication AB', 'Helsingborg', 'high', 480000) RETURNING id;`);
   accepted('booking a follow-up', `UPDATE lead SET next_follow_up_on = current_date + 7,
-    last_contact_on = current_date WHERE id = ${theLead};`);
+    last_contact_on = current_date, contact_preference = 'Email' WHERE id = ${theLead};`);
+  // Capitalised, because that is what the dropdown offers. Lower case here meant every lead the form
+  // saved was refused on a field nobody typed.
+  refused('a contact preference in a case no dropdown offers',
+    `UPDATE lead SET contact_preference = 'email' WHERE id = ${theLead};`,
+    /lead_contact_preference_check/);
   refused('marking them do-not-contact while a follow-up stands',
     `UPDATE lead SET do_not_contact = true WHERE id = ${theLead};`,
     /do_not_contact_means_no_follow_up/);

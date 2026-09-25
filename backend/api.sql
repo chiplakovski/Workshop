@@ -1697,6 +1697,354 @@ END;
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The sales pipeline
+--
+-- A lead is a company nobody has dealt with yet; an opportunity is a piece of work somebody wants; a
+-- tender is a formal offer of it. The chain has to stay walkable backwards — from a running project to
+-- the enquiry it came from, two years later — which is what the foreign keys are for and what
+-- convert_lead already protects at the customer end.
+--
+-- The one obligation in here that is not a convention is do-not-contact. It is the law in Sweden as
+-- everywhere else, and the column enforces it on the lead. The two places somebody would actually act
+-- against it are booking a follow-up on the lead and booking one against the enquiry, so both ask.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE FUNCTION save_lead(
+  p_id bigint,
+  p_company text,
+  p_contact text DEFAULT NULL,
+  p_email text DEFAULT NULL,
+  p_phone text DEFAULT NULL,
+  p_city text DEFAULT NULL,
+  p_country text DEFAULT NULL,
+  p_industry text DEFAULT NULL,
+  p_company_size text DEFAULT NULL,
+  p_source text DEFAULT NULL,
+  p_service_wanted text DEFAULT NULL,
+  p_estimated_value numeric DEFAULT NULL,
+  p_priority text DEFAULT NULL,
+  p_status lead_status DEFAULT 'new',
+  p_owner text DEFAULT NULL,
+  p_last_contact_on date DEFAULT NULL,
+  p_next_follow_up_on date DEFAULT NULL,
+  p_contact_preference text DEFAULT NULL,
+  p_do_not_contact boolean DEFAULT false,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving a lead');
+  saved bigint;
+  existing text;
+BEGIN
+  IF coalesce(btrim(p_company), '') = '' THEN
+    RAISE EXCEPTION 'a lead is a company — it needs the company''s name';
+  END IF;
+
+  -- The same enquiry entered twice is two leads to the system and one company to whoever rings them,
+  -- which is how the same firm gets telephoned by two people in the same week.
+  SELECT ref INTO existing FROM lead
+   WHERE upper(btrim(company)) = upper(btrim(p_company)) AND (p_id IS NULL OR id <> p_id) LIMIT 1;
+  IF existing IS NOT NULL THEN
+    RAISE EXCEPTION 'there is already a lead for % — it is %', btrim(p_company), existing;
+  END IF;
+
+  -- The refusal the database also makes, said in a sentence first. Somebody who has asked not to be
+  -- contacted cannot have a follow-up booked against them, and the constraint's name is not something
+  -- whoever is looking at the screen can act on.
+  IF coalesce(p_do_not_contact, false) AND p_next_follow_up_on IS NOT NULL THEN
+    RAISE EXCEPTION '% has asked not to be contacted, so no follow-up can be booked against them',
+      btrim(p_company) USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO lead (company, contact, email, phone, city, country, industry, company_size, source,
+                      service_wanted, estimated_value, priority, status, owner, last_contact_on,
+                      next_follow_up_on, contact_preference, do_not_contact, notes)
+    VALUES (btrim(p_company), p_contact, p_email, p_phone, p_city, p_country, p_industry,
+            p_company_size, p_source, p_service_wanted, p_estimated_value, p_priority,
+            coalesce(p_status, 'new'), p_owner, p_last_contact_on, p_next_follow_up_on,
+            p_contact_preference, coalesce(p_do_not_contact, false), p_notes)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'lead', l.id, 'added', who, l.ref || ' ' || l.company FROM lead l WHERE l.id = saved;
+  ELSE
+    -- `customer_id` and the converted status are not settable here, deliberately: a lead becomes a
+    -- customer through convert_lead, which makes the customer and ties the two together in one
+    -- transaction. A form that could set the status by itself could mark a lead converted to nobody.
+    UPDATE lead SET
+      company = btrim(p_company), contact = p_contact, email = p_email, phone = p_phone,
+      city = p_city, country = p_country, industry = p_industry, company_size = p_company_size,
+      source = p_source, service_wanted = p_service_wanted, estimated_value = p_estimated_value,
+      priority = p_priority,
+      status = CASE WHEN status = 'converted' THEN status ELSE coalesce(p_status, status) END,
+      owner = p_owner, last_contact_on = p_last_contact_on, next_follow_up_on = p_next_follow_up_on,
+      contact_preference = p_contact_preference, do_not_contact = coalesce(p_do_not_contact, false),
+      notes = p_notes
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such lead, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'lead', l.id, 'updated', who, l.ref FROM lead l WHERE l.id = saved;
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- A piece of work somebody wants, at a stage on the board.
+--
+-- The stages are the board's own columns and a card is dragged between them, so the enum holds the
+-- board's eight words rather than a tidier six — two of the board's columns had no value at all before
+-- this, which means dragging a card into either of them was refused.
+CREATE FUNCTION save_opportunity(
+  p_id bigint,
+  p_title text,
+  p_customer_id bigint DEFAULT NULL,
+  p_lead_id bigint DEFAULT NULL,
+  p_stage opportunity_stage DEFAULT 'discovery',
+  p_value numeric DEFAULT NULL,
+  p_probability int DEFAULT NULL,
+  p_contact text DEFAULT NULL,
+  p_industry text DEFAULT NULL,
+  p_services text DEFAULT NULL,
+  p_scope text DEFAULT NULL,
+  p_owner text DEFAULT NULL,
+  p_expected_close date DEFAULT NULL,
+  p_expected_decision_on date DEFAULT NULL,
+  p_required_delivery_on date DEFAULT NULL,
+  p_competitor text DEFAULT NULL,
+  p_decision_reason text DEFAULT NULL,
+  p_next_action text DEFAULT NULL,
+  p_follow_up_on date DEFAULT NULL,
+  p_currency text DEFAULT 'SEK'
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving an enquiry');
+  saved bigint;
+  said_no boolean;
+  whose text;
+BEGIN
+  IF coalesce(btrim(p_title), '') = '' THEN
+    RAISE EXCEPTION 'an enquiry needs a title — what the work is';
+  END IF;
+  IF p_customer_id IS NULL AND p_lead_id IS NULL THEN
+    RAISE EXCEPTION 'an enquiry belongs to somebody, whether they are a customer yet or not'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  -- The readable half of lost_opportunity_says_why. The most useful field in the pipeline and the one
+  -- most often left empty, and it cannot be reconstructed six months later.
+  IF p_stage = 'lost' AND coalesce(btrim(p_decision_reason), '') = '' THEN
+    RAISE EXCEPTION 'a lost enquiry records why it was lost — it is the one field worth having'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- Do-not-contact, asked where somebody would act on it. This is NOT a CHECK on `opportunity`, and the
+  -- reason is written in schema.sql beside where one would have gone: a constraint that reads another
+  -- table is only evaluated when this row changes, so it would hold until the moment the flag was set on
+  -- the lead and then quietly stop being true. A half-checked legal obligation reads as enforced.
+  IF p_lead_id IS NOT NULL AND (p_follow_up_on IS NOT NULL OR coalesce(btrim(p_next_action),'') <> '') THEN
+    SELECT do_not_contact, company INTO said_no, whose FROM lead WHERE id = p_lead_id;
+    IF said_no IS NULL THEN
+      RAISE EXCEPTION 'no such lead' USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    IF said_no THEN
+      RAISE EXCEPTION '% has asked not to be contacted, so no next step can be booked against them',
+        whose USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO opportunity (title, customer_id, lead_id, stage, value, currency, probability,
+                             contact, industry, services, scope, owner, expected_close,
+                             expected_decision_on, required_delivery_on, competitor,
+                             decision_reason, next_action, follow_up_on)
+    VALUES (btrim(p_title), p_customer_id, p_lead_id, coalesce(p_stage, 'discovery'), p_value,
+            upper(coalesce(nullif(btrim(coalesce(p_currency,'')), ''), 'SEK')), p_probability,
+            p_contact, p_industry, p_services, p_scope, p_owner, p_expected_close,
+            p_expected_decision_on, p_required_delivery_on, p_competitor, p_decision_reason,
+            p_next_action, p_follow_up_on)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'opportunity', o.id, 'raised', who, o.ref || ' ' || o.title
+      FROM opportunity o WHERE o.id = saved;
+  ELSE
+    UPDATE opportunity SET
+      title = btrim(p_title), customer_id = p_customer_id, lead_id = p_lead_id,
+      stage = coalesce(p_stage, stage), value = p_value,
+      currency = upper(coalesce(nullif(btrim(coalesce(p_currency,'')), ''), currency)),
+      probability = p_probability, contact = p_contact, industry = p_industry, services = p_services,
+      scope = p_scope, owner = p_owner, expected_close = p_expected_close,
+      expected_decision_on = p_expected_decision_on, required_delivery_on = p_required_delivery_on,
+      competitor = p_competitor, decision_reason = p_decision_reason, next_action = p_next_action,
+      follow_up_on = p_follow_up_on
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such enquiry, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'opportunity', o.id, 'moved to ' || o.stage::text, who, o.ref
+      FROM opportunity o WHERE o.id = saved;
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- A formal offer, and the date it went in on.
+--
+-- Awarded and declined both mean it went in, so all three demand the date. It is what every chase and
+-- every deadline is counted from and it cannot be reconstructed afterwards.
+CREATE FUNCTION save_tender(
+  p_id bigint,
+  p_title text,
+  p_opportunity_id bigint DEFAULT NULL,
+  p_customer_id bigint DEFAULT NULL,
+  p_status tender_status DEFAULT 'in-progress',
+  p_due_on date DEFAULT NULL,
+  p_submitted_on date DEFAULT NULL,
+  p_value numeric DEFAULT NULL,
+  p_company text DEFAULT NULL,
+  p_customer_ref text DEFAULT NULL,
+  p_source text DEFAULT NULL,
+  p_industry text DEFAULT NULL,
+  p_description text DEFAULT NULL,
+  p_requirements text DEFAULT NULL,
+  p_responsible text DEFAULT NULL,
+  p_bid_decision text DEFAULT 'pending',
+  p_reminder_on date DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving a tender');
+  saved bigint;
+BEGIN
+  IF coalesce(btrim(p_title), '') = '' THEN
+    RAISE EXCEPTION 'a tender needs a title';
+  END IF;
+  IF p_status IN ('submitted', 'awarded', 'declined') AND p_submitted_on IS NULL THEN
+    RAISE EXCEPTION 'a tender recorded as % has gone in — it needs the date it went in on', p_status
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_customer_id IS NULL AND p_opportunity_id IS NULL
+     AND coalesce(btrim(p_company), '') = '' THEN
+    RAISE EXCEPTION 'a tender is from somebody — name the company, or the customer or enquiry it belongs to'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF coalesce(p_bid_decision, 'pending') = 'no-bid' AND p_status IN ('submitted', 'awarded') THEN
+    RAISE EXCEPTION 'this tender is marked no-bid, so it cannot also be recorded as %', p_status
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO tender (title, opportunity_id, customer_id, status, due_on, submitted_on, value,
+                        company, customer_ref, source, industry, description, requirements,
+                        responsible, bid_decision, reminder_on)
+    VALUES (btrim(p_title), p_opportunity_id, p_customer_id, coalesce(p_status, 'in-progress'),
+            p_due_on, p_submitted_on, p_value, p_company, p_customer_ref, p_source, p_industry,
+            p_description, p_requirements, p_responsible, coalesce(p_bid_decision, 'pending'),
+            p_reminder_on)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'tender', t.id, 'raised', who, t.ref || ' ' || t.title FROM tender t WHERE t.id = saved;
+  ELSE
+    -- project_id is not settable here. The link from a tender to the work it became is written by
+    -- whatever turns the one into the other, and a form that could type it in could point a tender at
+    -- somebody else's project — which is the join the whole chain back is walked along.
+    UPDATE tender SET
+      title = btrim(p_title), opportunity_id = p_opportunity_id, customer_id = p_customer_id,
+      status = coalesce(p_status, status), due_on = p_due_on, submitted_on = p_submitted_on,
+      value = p_value, company = p_company, customer_ref = p_customer_ref, source = p_source,
+      industry = p_industry, description = p_description, requirements = p_requirements,
+      responsible = p_responsible, bid_decision = coalesce(p_bid_decision, bid_decision),
+      reminder_on = p_reminder_on
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such tender, or it is not yours to change'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    SELECT 'tender', t.id, t.status::text, who, t.ref FROM tender t WHERE t.id = saved;
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- Something found out about a prospect — a planning application, a new plant, a piece of news — and what
+-- was done about it.
+--
+-- Recording one is append-only: `prospect_finding` has no status and that is deliberate. Acting on a
+-- finding is acting on the lead, which is what the two functions below do; the finding itself is what was
+-- found, and that does not change afterwards.
+CREATE FUNCTION record_prospect_finding(p_lead_id bigint, p_finding text, p_source text DEFAULT NULL)
+RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording what was found out about a prospect');
+  said text := btrim(coalesce(p_finding, ''));
+  made bigint;
+BEGIN
+  IF said = '' THEN
+    RAISE EXCEPTION 'a finding has to say what was found' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM lead WHERE id = p_lead_id) THEN
+    RAISE EXCEPTION 'no such lead' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO prospect_finding (lead_id, finding, source, found_by)
+  VALUES (p_lead_id, said, p_source, who)
+  RETURNING id INTO made;
+  RETURN made;
+END;
+$$;
+
+-- Acted on, or set aside. Both move the lead rather than the finding: taking a finding forward means the
+-- lead is worth speaking to, and setting it aside means it is not — and both are recorded against the
+-- lead, where whoever picks it up next will look.
+CREATE FUNCTION act_on_prospect_finding(p_finding_id bigint, p_take_it boolean, p_why text DEFAULT NULL)
+RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('acting on what was found out about a prospect');
+  found record;
+  said text := nullif(btrim(coalesce(p_why, '')), '');
+BEGIN
+  SELECT f.id, f.finding, f.lead_id, l.ref, l.company, l.do_not_contact, l.status
+    INTO found
+    FROM prospect_finding f JOIN lead l ON l.id = f.lead_id
+   WHERE f.id = p_finding_id;
+  IF found.id IS NULL THEN
+    RAISE EXCEPTION 'no such finding' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  IF coalesce(p_take_it, false) THEN
+    IF found.do_not_contact THEN
+      RAISE EXCEPTION '% has asked not to be contacted — a finding about them is not a reason to ring',
+        found.company USING ERRCODE = 'check_violation';
+    END IF;
+    -- A finding worth acting on makes the lead worth speaking to. A converted lead is left where it is:
+    -- they are a customer now, and moving them back to 'contacted' would lose that.
+    UPDATE lead SET status = CASE WHEN status IN ('new', 'disqualified') THEN 'contacted'::lead_status
+                                 ELSE status END
+     WHERE id = found.lead_id;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('lead', found.lead_id, 'finding taken forward', who,
+            found.finding || coalesce(' — ' || said, ''));
+    RETURN 'taken forward';
+  END IF;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('lead', found.lead_id, 'finding set aside', who,
+          found.finding || coalesce(' — ' || said, ''));
+  RETURN 'set aside';
+END;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Suppliers
 --
 -- The merchants a workshop buys from. Thin on purpose: what a supplier costs this workshop is on the
@@ -2611,6 +2959,14 @@ REVOKE ALL ON FUNCTION save_supplier(bigint, text, text, text, text, text, text,
 REVOKE ALL ON FUNCTION set_supplier_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION add_supplier_note(bigint, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_lead(bigint, text, text, text, text, text, text, text, text, text, text,
+                 numeric, text, lead_status, text, date, date, text, boolean, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_opportunity(bigint, text, bigint, bigint, opportunity_stage, numeric, int,
+                 text, text, text, text, text, date, date, date, text, text, text, date, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_tender(bigint, text, bigint, bigint, tender_status, date, date, numeric,
+                 text, text, text, text, text, text, text, text, date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_prospect_finding(bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION act_on_prospect_finding(bigint, boolean, text) FROM PUBLIC;
 ALTER FUNCTION hold_after_failed_inspection(bigint) OWNER TO varmak_engine;
 REVOKE ALL ON FUNCTION hold_after_failed_inspection(bigint) FROM PUBLIC;
 
@@ -2654,7 +3010,17 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
                 text, text, text, numeric, int, text),
   set_supplier_contacts(bigint, jsonb),
   add_supplier_note(bigint, text),
-  save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean)
+  save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean),
+  -- The sales pipeline. Every one of these carries a figure somebody is quoting or hoping for, which is
+  -- the one thing §1b keeps off the shop floor — and none of it is work a welder has any part in.
+  save_lead(bigint, text, text, text, text, text, text, text, text, text, text, numeric, text,
+            lead_status, text, date, date, text, boolean, text),
+  save_opportunity(bigint, text, bigint, bigint, opportunity_stage, numeric, int, text, text, text,
+                   text, text, date, date, date, text, text, text, date, text),
+  save_tender(bigint, text, bigint, bigint, tender_status, date, date, numeric, text, text, text,
+              text, text, text, text, text, date),
+  record_prospect_finding(bigint, text, text),
+  act_on_prospect_finding(bigint, boolean, text)
 TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),

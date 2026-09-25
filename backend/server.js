@@ -179,6 +179,20 @@ const RPC = {
     'material_cert_ref', 'bin_code', 'note'],
   record_stocktake: ['item_id', 'counted', 'note'],
 
+  // The sales pipeline, all of it the office's — every record in it carries a figure somebody is quoting
+  // or hoping for.
+  save_lead: ['id', 'company', 'contact', 'email', 'phone', 'city', 'country', 'industry',
+    'company_size', 'source', 'service_wanted', 'estimated_value', 'priority', 'status', 'owner',
+    'last_contact_on', 'next_follow_up_on', 'contact_preference', 'do_not_contact', 'notes'],
+  save_opportunity: ['id', 'title', 'customer_id', 'lead_id', 'stage', 'value', 'probability',
+    'contact', 'industry', 'services', 'scope', 'owner', 'expected_close', 'expected_decision_on',
+    'required_delivery_on', 'competitor', 'decision_reason', 'next_action', 'follow_up_on', 'currency'],
+  save_tender: ['id', 'title', 'opportunity_id', 'customer_id', 'status', 'due_on', 'submitted_on',
+    'value', 'company', 'customer_ref', 'source', 'industry', 'description', 'requirements',
+    'responsible', 'bid_decision', 'reminder_on'],
+  record_prospect_finding: ['lead_id', 'finding', 'source'],
+  act_on_prospect_finding: ['finding_id', 'take_it', 'why'],
+
   // The merchants. The price list is money, so the database keeps all four of these to the office.
   save_supplier: ['id', 'name', 'category', 'status', 'org_no', 'vat_no', 'email', 'phone', 'website',
     'address', 'city', 'country', 'supplier_type', 'established', 'delivery_terms', 'minimum_order',

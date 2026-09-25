@@ -92,13 +92,14 @@ function theServerDecidesNothing() {
   assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
-    'accept_estimate', 'add_person', 'add_quality_note', 'add_supplier_note', 'assign_equipment',
-    'book_hours', 'bootstrap_first_admin', 'change_my_password', 'complete_inspection',
-    'convert_lead', 'create_reinspection', 'issue_material_offline', 'place_hold', 'receive_goods',
-    'receive_stock', 'record_equipment_event', 'record_ncr_step', 'record_operation',
-    'record_stocktake', 'release_hold', 'replace_inspection_checks', 'return_equipment',
-    'save_customer', 'save_equipment', 'save_inspection', 'save_jobcard', 'save_ncr',
-    'save_project', 'save_stock_item', 'save_supplier', 'save_supplier_item', 'send_estimate',
+    'accept_estimate', 'act_on_prospect_finding', 'add_person', 'add_quality_note', 'add_supplier_note',
+    'assign_equipment', 'book_hours', 'bootstrap_first_admin', 'change_my_password',
+    'complete_inspection', 'convert_lead', 'create_reinspection', 'issue_material_offline',
+    'place_hold', 'receive_goods', 'receive_stock', 'record_equipment_event', 'record_ncr_step',
+    'record_operation', 'record_prospect_finding', 'record_stocktake', 'release_hold',
+    'replace_inspection_checks', 'return_equipment', 'save_customer', 'save_equipment',
+    'save_inspection', 'save_jobcard', 'save_lead', 'save_ncr', 'save_opportunity', 'save_project',
+    'save_stock_item', 'save_supplier', 'save_supplier_item', 'save_tender', 'send_estimate',
     'set_customer_contacts', 'set_jobcard_operations', 'set_person_active', 'set_person_password',
     'set_person_pin', 'set_person_role', 'set_supplier_contacts'
   ], 'the reachable workflows should be exactly the ones named here');
@@ -845,6 +846,26 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
   assert.equal(busy.activity[0].text, 'Chased, call 24', 'and it is the newest twenty, not the oldest');
   step('Quality over HTTP: a record\'s history reaches the screen newest-first and bounded');
 
+  // And the pipeline, which is the one part of the workshop that arrives in the office's own payload as
+  // three whole lists rather than as figures merged into the snapshot. It was put in the snapshot first,
+  // which is how the reason was found: `lead` is not granted to the floor, so a snapshot carrying it was
+  // refused in full — not the pipeline, the whole workshop, for every screen a welder opens.
+  const figures = await call('GET', '/read/money', { token: tokens.office });
+  assert.equal(figures.status, 200);
+  attempts.allowed += 1;
+  for (const list of ['marketingLeads', 'marketingOpportunities', 'marketingTenders']) {
+    assert.ok(Array.isArray(figures.body[list]), `${list} has to reach the office`);
+  }
+  // The floor's own snapshot has none of it, and — the point of the check — still arrives at all. One
+  // list a role cannot read, left in workspace_snapshot(), refuses that role the whole workshop.
+  assert.equal('marketingLeads' in snapshot, false,
+    'a welder is shown no leads rather than leads with the figures taken out');
+  assert.ok(Array.isArray(snapshot.jobcards) && snapshot.jobcards.length,
+    'and the rest of the workshop still reaches them, which is what putting the pipeline here protects');
+  turnedAway('a welder asking for the figures', await call('GET', '/read/money',
+    { token: tokens.floor }), 403, /not yours/);
+  step('Pipeline over HTTP: the office reads the pipeline, and the floor\'s whole workshop still arrives');
+
   const hold = snapshot.qualityHolds.find((h) => h.no === answered.hold);
   assert.equal(hold.reference, value(`SELECT ref FROM jobcard WHERE id = ${f.jobcard};`),
     'a hold has to say which piece of work it is holding');
@@ -899,7 +920,11 @@ function world() {
   const order = value(`INSERT INTO purchase_order (supplier_id, ordered_by) VALUES (${supplier}, 'Lars Holm') RETURNING id;`);
   const line = value(`INSERT INTO purchase_order_line (purchase_order_id, stock_item_id, description, quantity, unit_price)
     VALUES (${order}, ${item}, 'Plate S355J2 10mm', 500, 13.90) RETURNING id;`);
-  const lead = value(`INSERT INTO lead (company, city) VALUES ('Malmö Mekaniska AB', 'Malmö') RETURNING id;`);
+  // With a value on it, because the check that every figure crosses the wire as text can only see the
+  // figures that are actually there — a lead with no estimated value passes it by having nothing to look
+  // at, which is the same way the supplier price list was invisible to it.
+  const lead = value(`INSERT INTO lead (company, city, estimated_value, contact_preference)
+    VALUES ('Malmö Mekaniska AB', 'Malmö', 480000, 'Email') RETURNING id;`);
   return { customer, item, project, jobcard, op, blockedOp, estimate, line, lead };
 }
 
