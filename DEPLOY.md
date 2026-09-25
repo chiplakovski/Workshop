@@ -40,12 +40,41 @@ while you sleep. You will still take your own — see step 15, and the reason th
 3. **Download the certificate authority** from the same page ("Download certificate"). Put it
    somewhere the server will be able to read it — step 9 points at it.
 
-## 2 · Install the schema
+## 2 · Ask the database whether the install will work, before writing to it
+
+```sh
+export DATABASE_URL='postgresql://postgres:OWNER-PASSWORD@db.xxxxxxxxxxxx.supabase.co:5432/postgres?sslmode=verify-full'
+export PGSSLROOTCERT=/path/to/prod-ca-2021.crt      # downloaded from the project's dashboard
+sh backend/preflight.sh
+```
+
+It writes nothing and creates nothing. It answers one question — will `install.sh` get all the way
+through here — and it refuses with a reason rather than a code when the answer is no. Run it first,
+because `install.sh` finds out about a wrong database *halfway through*: after the tables and before the
+ownership changes, which is a database that looks installed and is not.
+
+Every check in it is a failure this deployment path has actually had:
+
+| It refuses | Because |
+|---|---|
+| `sslmode=require`, or no `sslmode` | Those encrypt and verify nothing — the owner's password goes to whoever answered. Only `verify-full` checks the certificate *and* the hostname. |
+| A role with neither superuser nor `CREATEROLE` | The install makes five roles and cannot start. |
+| No `CREATE` on schema `public` | From PostgreSQL 15 that is not granted by default, and the ownership changes are refused after everything else has gone in. |
+| pgcrypto missing, or in a schema this role cannot use | `app_session.token` defaults to `gen_random_bytes`, and a column default is parsed as the table is created — so this one stops the install three tables in. |
+| A server encoding that is not UTF8 | Every name on every screen is Swedish or Macedonian. |
+| Some of the tables already there, but not all | A half-installed database. Restore a backup or start a new one; do not install over it. |
+
+It ends in `Clear to install.` or in `Refusing: N check(s) failed`, and
+[`backend/test-deploy.js`](backend/test-deploy.js) runs it both ways against a Postgres shaped like a
+hosted one — refusing an unverified URL, passing a verified one.
+
+## 3 · Install the schema
 
 On any machine with `psql` and this repository checked out:
 
 ```sh
-export DATABASE_URL='postgresql://postgres:OWNER-PASSWORD@db.xxxxxxxxxxxx.supabase.co:5432/postgres'
+export DATABASE_URL='postgresql://postgres:OWNER-PASSWORD@db.xxxxxxxxxxxx.supabase.co:5432/postgres?sslmode=verify-full'
+export PGSSLROOTCERT=/path/to/prod-ca-2021.crt
 export VARMAK_API_PASSWORD="$(openssl rand -base64 32)"
 echo "$VARMAK_API_PASSWORD"          # write it down now; nothing stores it for you
 sh backend/install.sh
@@ -63,7 +92,7 @@ sh backend/install.sh
 than assuming: which schema `pgcrypto` is in, whether the roles already exist, whether the password
 works.
 
-## 3 · The server
+## 4 · The server
 
 6. **A small machine.** Any Debian or Ubuntu box with a public address: a 1 GB virtual machine is
    ample — this server holds no state, does no work the database could do, and the whole app is
@@ -101,7 +130,7 @@ works.
     It should say `Varmak Workshop on http://127.0.0.1:8787 — database db.xxxx.supabase.co`. If it
     refused to start, it said why in one sentence and the sentence is the instruction.
 
-## 4 · HTTPS
+## 5 · HTTPS
 
 11. **Caddy**, because it gets and renews the certificate itself and there is no cron job to forget in
     fourteen months:
@@ -114,7 +143,7 @@ works.
     Then open `https://your-name/` and you should see the sign-in page. The Node server is bound to
     127.0.0.1, so this is the only way in.
 
-## 5 · The people
+## 6 · The people
 
 12. **The first administrator**, once, from the screen: open `https://your-name/admin.html`. The form
     is offered only while the system has nobody in it, and it shuts behind itself — a second use is
@@ -125,7 +154,7 @@ works.
     password is for a device that belongs to one person.
 14. **Their own password** they change themselves, from the same screen, by typing the old one.
 
-## 6 · Backups, and the drill
+## 7 · Backups, and the drill
 
 15. **Supabase takes its own, and they are not enough on their own.** Measured rather than assumed: a
     `pg_dump` of this database carries around 500 `GRANT` statements and 94 row-level policies and
@@ -134,7 +163,8 @@ works.
     not exist there — and you are left with the data and none of the rules about who may read it,
     which is worse than no backup because you would trust it. So:
     ```sh
-    DATABASE_URL='postgresql://postgres:OWNER-PASSWORD@db.xxxx.supabase.co:5432/postgres' \
+    DATABASE_URL='postgresql://postgres:OWNER-PASSWORD@db.xxxx.supabase.co:5432/postgres?sslmode=verify-full' \
+    PGSSLROOTCERT=/path/to/prod-ca-2021.crt \
       sh backend/backup.sh /var/backups/varmak
     ```
     It writes two files and prints which one goes back first. Put it in cron weekly, keep a copy
@@ -145,7 +175,7 @@ works.
 16. **Do one now, before there is real data to lose**, so that the first time you restore this is not
     the day you need to.
 
-## 7 · The first day's data
+## 8 · The first day's data
 
 The system installs empty on purpose — no demonstration customers, no invented stock — so the first day is
 data entry, and the order matters because the database refuses a record that points at nothing. Every step

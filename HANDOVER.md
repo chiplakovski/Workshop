@@ -695,6 +695,14 @@ as a draft — silently.
    against the actual project. Nothing in this repository can do that: the container these sessions run in
    is thrown away, so no credential should ever be pasted into one. This is the owner's step, and it is the
    only one between here and the system holding real work.
+
+   What was added to make it safer: **`backend/preflight.sh`**, step 2 of DEPLOY.md. It writes nothing and
+   answers one question — will the install get all the way through on this database — because `install.sh`
+   otherwise finds out halfway, after the tables and before the ownership changes, which is a database that
+   looks installed and is not. It refuses a URL that encrypts without verifying, a role with no CREATEROLE,
+   no CREATE on `public`, pgcrypto missing or in a schema this role cannot use, a non-UTF8 encoding, and a
+   database that already holds some of the tables but not all. Every one of those is a failure this path has
+   actually had. test-deploy.js runs it both ways against the hosted-shaped cluster.
 2. **The letterhead's two numbers.** Organisationsnummer and VAT number, and for an invoice also *Godkänd
    för F-skatt* and a bankgiro or IBAN. Facts nobody here can supply; nothing has been guessed at.
 3. **Object storage**, which is the last thing the document register and the machine photographs wait on.

@@ -342,6 +342,44 @@ async function main() {
     assert.match(refused, /GRANT USAGE ON SCHEMA extensions TO varmak_engine/,
       'and hand over the one line somebody has to run');
     step('Deploy: a database that cannot let the engine reach pgcrypto is refused at install, with the fix in it');
+
+    // ── The preflight ───────────────────────────────────────────────────────────────────────
+    //
+    // Asked before anything is written, because install.sh finds out about a wrong database halfway
+    // through — after the tables and before the ownership changes, which is a database that looks
+    // installed and is not. Every check it makes is a failure this path has actually had.
+    //
+    // It writes nothing, so it is run here against the same hosted-shaped cluster: once with a URL that
+    // encrypts and verifies nothing, which it must refuse, and once with the real certificate authority,
+    // which it must pass.
+    const preflight = (url, env) => {
+      try {
+        return { code: 0, out: execFileSync('sh', [path.join(__dirname, 'preflight.sh')],
+          { encoding: 'utf8', env: { ...process.env, DATABASE_URL: url, ...(env || {}) },
+            stdio: ['ignore', 'pipe', 'pipe'] }) };
+      } catch (error) { return { code: error.status || 1, out: `${error.stdout || ''}${error.stderr || ''}` }; }
+    };
+
+    const loose = preflight(as('deploy_owner', OWNER, DB));
+    assert.notEqual(loose.code, 0, 'a URL that verifies nothing has to be refused before the install');
+    assert.match(loose.out, /sslmode=require encrypts and verifies nothing/,
+      `and say why, in a sentence somebody can act on: ${loose.out.slice(0, 300)}`);
+    assert.match(loose.out, /Nothing was written/, 'and say that it wrote nothing');
+
+    const verified = preflight(
+      `postgresql://deploy_owner:${OWNER}@localhost:${PORT}/${DB}`
+        + `?sslmode=verify-full&sslrootcert=${CERT}`,
+      { VARMAK_API_PASSWORD: API });
+    assert.equal(verified.code, 0, `a verified connection to a good database must pass: ${verified.out}`);
+    assert.match(verified.out, /sslmode=verify-full/);
+    assert.match(verified.out, /CREATEROLE/, 'having checked the one privilege the install cannot do without');
+    assert.match(verified.out, /CREATE on schema public/, 'and the one PostgreSQL 15 stopped granting');
+    assert.match(verified.out, /pgcrypto is installed, in schema extensions/,
+      'and found pgcrypto where a managed database puts it');
+    assert.match(verified.out, /already installed here/,
+      'and recognised a database that is already installed rather than calling it half done');
+    assert.match(verified.out, /Clear to install/);
+    step('Deploy: the preflight refuses an unverified connection and passes a verified one, writing nothing');
   } finally {
     server.close();
     await pool.end().catch(() => {});
