@@ -418,6 +418,78 @@ three mutations were found **stale** — the rule each damaged had been rewritte
 quoted the old wording, so the harness reported "no longer in schema.sql" instead of testing
 anything. Check the anchors after any pass that edits a rule.
 
+## 4e. Where it stands — 25 September 2026
+
+**Fifteen of the seventeen screens are on the database.** The login page is the sixteenth and needs
+nothing. The one left is **Documents**, and it is the one that cannot be wired: a document record is a
+pointer to a file, and there is nowhere for the file to live.
+
+**Green as of this entry:**
+
+| | |
+|---|---|
+| Schema | 168 refusals, 124 allowances, 97 checks |
+| Auth | 71 refusals, asked as real database roles |
+| Workflows | 159 refusals over the API, 114 checks |
+| Over real HTTP | 41 refusals, 51 checks |
+| Backup and restore | 10 checks, a real dump restored and compared by checksum |
+| Hosted install | 13 checks — 36 tables, 82 policies, over verified TLS as a non-superuser |
+| Unit tests | 787 |
+| End-to-end | sixteen suites in a real browser |
+| Mutations | 272 |
+| Schema width | 76% of the fields the pages use can be stored |
+
+**What can be done on the database today**, without a console: everything in §4d, plus — put a machine
+in the register and record what happened to it; raise an inspection, record what was found, and have the
+hold that follows a critical failure go on in the same transaction; run a non-conformance from raised to
+closed; keep the supplier register with its contacts and price list; and work the sales pipeline from a
+lead through the board to a tender.
+
+**What still cannot:** estimating (the schema holds a title, a total and a date; the screen holds nested
+work items, options, terms, revisions and a priced bill of materials), Documents, purchase orders,
+marketing campaigns, the outward prospect sweep, and the quality register's other screens — the ITP, the
+CAPA, the dossier. Each of those refuses out loud on a wired screen rather than writing into browser
+storage, which is the outcome that looks like it worked and is gone on the next reload.
+
+**The next real schema work, and it was found by fixing the meter rather than by looking at the app.**
+`backend/coverage.js` was silent about eleven collections: they carry records, have no table, and were in
+neither its map nor any list of exclusions — so every coverage figure this project has printed was about
+less than the whole app while reading as though it covered all of it. **Six of the eleven are welding
+records**: a weld log, the NDT against those welds, the welding procedure specifications, and which
+welder is qualified to which. For a fabrication shop those are what a delivery is signed off against.
+The meter refuses to run clean with an unaccounted collection now.
+
+**The order the remaining work was agreed in**, and where it got to:
+
+1. ~~No two worlds~~ **done**
+2. ~~An access screen~~ **done**
+3. ~~Backups verified by restoring one~~ **done**
+4. Wire the remaining screens — **fifteen of seventeen**; Documents is blocked on file storage
+5. Schema width — **76%**, and the remainder is concentrated on estimating and purchasing. It is *not*
+   concentrated on the sales pipeline, which is what every earlier entry said: all twelve of the fields
+   reported missing there were columns that already existed under longer names.
+6. ~~An offline queue that survives a failure~~ **done for booking hours**; starting a step and issuing
+   material have the database half and not the screen half
+7. ~~Deploy~~ **done** — `DEPLOY.md`, and never yet run against the real Supabase project
+
+**Eight times now a screen's vocabulary and a column's have been found disagreeing**, and eight times the
+screen won, because those are the words somebody picks from a dropdown. Two of the eight were not
+preferences: the equipment status gate fails closed on a word it cannot read, so it was refusing every
+machine in the workshop; and `lead.contact_preference` in lower case refused every lead the form saved.
+**Check the vocabularies first** on any screen still to be wired — it is the cheapest bug to find and the
+most expensive to miss.
+
+**Three things about the working method worth keeping, beyond what §4d says.** A MISSED mutation found a
+real bug this time rather than a no-op: `save_supplier_item`'s preferred flag defaulted to false, so
+correcting a merchant's price quietly stopped them being the merchant this workshop buys that item from.
+It read as MISSED because by the time the switch-over code ran in the tests, nothing was preferred to
+switch away from. Second: **a check can pass by having nothing to look at** — the "every figure crosses
+the wire as text" check walked three levels deep and the supplier price list sits four, and its fixture
+had no price line anyway. Third: **a list nobody checks is already wrong.** The guard's list of wired
+pages had two entries while twelve were wired, the coverage meter's map was missing eleven collections,
+and `syncSupplier` enumerated the fields to save and had gone stale. All three are now asserted against
+the thing they are supposed to agree with.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
@@ -431,18 +503,16 @@ anything. Check the anchors after any pass that edits a rule.
 
 ## 6. Known problems, in the order they are worth fixing
 
-1. **Tenders are page-local and are lost on reload.** `TENDERS` is a plain array inside
-   `marketing-desktop.html` (~line 375) — not in `workshop-data.js`, not saved, not refreshed on
-   the `workshop:data` event. This is a plain bug and the only module that breaks the one-state
-   rule. *Fix first.*
+1. ~~**Tenders are page-local and are lost on reload.**~~ **Fixed.** They are rows in `tender` now,
+   written through `save_tender` and read back from the office's payload, with the nine fields the form
+   showed and the table had nowhere to keep.
 
-2. **An item has exactly one price.** Buy the same plate from two suppliers and only the last one
-   entered survives. Needs a supplier–item table: item ↔ supplier ↔ their article number ↔ their
-   price ↔ pack size ↔ lead time. Useful immediately, and it is the landing zone every catalogue
-   import writes into later — building it after the import means redesigning instead of loading.
+2. ~~**An item has exactly one price.**~~ **Fixed.** `supplier_item` holds item ↔ supplier ↔ their
+   article number ↔ price ↔ pack size ↔ lead time, one merchant is the preferred one per item, and
+   `save_supplier_item` is the door. It is the landing zone a catalogue import writes into.
 
-3. **`code` is overloaded** — one field labelled "Supplier / drawing code" doing two jobs. The
-   supplier article number needs to be its own field.
+3. ~~**`code` is overloaded**~~ **Fixed** by the same table: `supplier_item.article_no` is the merchant's
+   own number for an item, separate from the item's code.
 
 4. **A lookup for a missing record throws.** `clone(undefined)` is a `JSON.parse` error, so
    `findMarketingLead('nope')` and its siblings throw rather than returning nothing.
@@ -451,6 +521,16 @@ anything. Check the anchors after any pass that edits a rule.
 5. **A page offers a file through a plain download link**, which the artifact viewer never grants
    permission for — the link silently does nothing for viewers. Pre-existing; surfaced by the
    Version 72 publish warning.
+
+6. **Two forms pre-fill a measurement, and one still names a shelf nobody chose.** The store's offcut
+   dialogue arrives with "Offcut dimensions: 600 × 420 mm · 5 mm thick" and a quantity of 1300 in it, and
+   both it and the jobcard's version fall back to shelf `O1-01-01` when the location box is left empty. A
+   prefilled measurement that gets saved is a measurement nobody took. Found while clearing the same
+   family of bug off the Suppliers and Store screens and left because it is a form-default question rather
+   than a wiring one — but it is the same class as the ones that were fixed, and it is on a wired screen.
+
+7. **Printing works on four of seventeen pages**, and photographs have nowhere to live — which is the
+   same blocker as Documents. Both are recorded rather than fixed.
 
 ## 7. The road to live, in order
 
