@@ -139,8 +139,22 @@ async function openDocuments(page, site) {
 }
 
 // Fills the upload form and submits it, the way somebody would.
+// Waits for THIS submission's answer rather than for 400ms.
+//
+// Reading the toast after a fixed sleep reads whatever toast is on screen, and on a slow round trip that
+// is the previous one — so the check for "a link to a record nobody has is refused by name" read back
+// "Document metadata saved" from the save before it and failed saying the refusal had the wrong wording.
+// The refusal was fine; the suite was looking too early at the wrong thing.
+//
+// Comparing the text was the first fix and it was not enough either: two filings in a row produce the same
+// words, so "the text changed" never fired. The toast is cleared first instead — `notify` adds `.show` and
+// writes the text, and both are taken away here — so what the wait sees can only be this one's answer.
 async function fileIt(page, fields) {
-  return page.evaluate(async (f) => {
+  await page.evaluate(() => {
+    const el = document.getElementById('toast');
+    if (el) { el.classList.remove('show'); el.textContent = ''; }
+  });
+  const answered = page.evaluate(async (f) => {
     openUpload();
     document.getElementById('docName').value = f.name;
     document.getElementById('docType').value = f.type;
@@ -153,10 +167,15 @@ async function fileIt(page, fields) {
     document.getElementById('docNotes').value = f.notes || '';
     const form = document.getElementById('uploadForm');
     form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    await new Promise((r) => setTimeout(r, 400));
-    const said = document.querySelector('.toast, .notice, #toast');
-    return said ? said.textContent.trim() : '';
   }, fields);
+  await answered;
+  return until('the register to answer', async () => {
+    const said = await page.evaluate(() => {
+      const el = document.getElementById('toast');
+      return (el && el.classList.contains('show')) ? el.textContent.trim() : '';
+    });
+    return said || null;
+  }, 8000);
 }
 
 async function main() {

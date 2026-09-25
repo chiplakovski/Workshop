@@ -269,6 +269,7 @@
     <button class="sideitem" data-section="stock"><i>▥</i><span data-i="nav_stock">What Is Low In Stock</span></button>
     <button class="sideitem" data-section="bought"><i>▣</i><span data-i="nav_bought">What We Bought</span></button>
     <button class="sideitem" data-section="failed"><i>⚠</i><span data-i="nav_failed">What Failed Inspection</span></button>
+    <button class="sideitem" data-section="invoice"><i>◫</i><span data-i="nav_invoice">What To Invoice</span></button>
     <div class="sidediv"></div>
     <button class="sideitem" data-section="saved"><i>★</i><span data-i="saved_reports">Saved Reports</span></button>
   </nav>
@@ -389,6 +390,30 @@
       <div class="panel">
         <div class="phead"><h3 data-i="buy_orders_title">The orders</h3></div>
         <div class="tablewrap"><table class="table"><thead><tr><th data-i="c_no">No</th><th data-i="c_supplier">Supplier</th><th data-i="c_project">Project</th><th data-i="c_expected">Expected</th><th data-i="c_status">Status</th><th data-i="c_value">Value</th></tr></thead><tbody id="buy-list-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="section-invoice" class="section" style="display:none;">
+      <p class="rlead" data-i="invoice_lead"></p>
+      <p class="dq-note" data-i="invoice_note">The basis for an invoice, not an invoice. Hours booked and material issued, per project, for the period on the left — no invoice number, no VAT, nothing stored, and nothing here remembers what has already been billed. Varmak issues the invoice itself from its accounting system.</p>
+      <p class="dq-note" data-i="invoice_missing">Two things are deliberately absent. There is no labour amount, because no hourly rate is recorded anywhere in this system — the hours are here, by job, by step and by who booked them, and the rate is the accounting system's. And there is no machine time, because machine usage hours are not recorded yet.</p>
+      <div class="kpistrip">
+        <div class="kpi"><div class="kl" data-i="inv_projects">Projects With Work</div><div class="kv" id="inv-projects">N/A</div></div>
+        <div class="kpi"><div class="kl" data-i="inv_hours">Hours Booked</div><div class="kv" id="inv-hours">N/A</div></div>
+        <div class="kpi"><div class="kl" data-i="inv_material">Material At Cost</div><div class="kv" id="inv-material">N/A</div></div>
+        <div class="kpi"><div class="kl" data-i="inv_quoted">Quoted On Those</div><div class="kv" id="inv-quoted">N/A</div></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><h3 data-i="inv_by_project">By project</h3></div>
+        <div class="tablewrap"><table class="table"><thead><tr><th data-i="c_project">Project</th><th data-i="c_customer">Customer</th><th data-i="c_status">Status</th><th data-i="inv_c_hours">Hours</th><th data-i="inv_c_material">Material at cost</th><th data-i="inv_c_quoted">Quoted</th></tr></thead><tbody id="inv-project-body"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><h3 data-i="inv_hour_lines">The hours, line by line</h3></div>
+        <div class="tablewrap"><table class="table"><thead><tr><th data-i="c_project">Project</th><th data-i="c_jobcard">Jobcard</th><th data-i="inv_c_step">Step</th><th data-i="inv_c_worker">Booked by</th><th data-i="c_date">Date</th><th data-i="inv_c_hours">Hours</th></tr></thead><tbody id="inv-hours-body"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><h3 data-i="inv_material_lines">The material, line by line</h3></div>
+        <div class="tablewrap"><table class="table"><thead><tr><th data-i="c_project">Project</th><th data-i="c_jobcard">Jobcard</th><th data-i="inv_c_item">Item</th><th data-i="inv_c_qty">Quantity</th><th data-i="inv_c_unitcost">Unit cost</th><th data-i="c_date">Date</th><th data-i="inv_c_cost">Cost</th></tr></thead><tbody id="inv-material-body"></tbody></table></div>
       </div>
     </div>
 
@@ -528,7 +553,21 @@ const i18n={
     none_accepted:'No quotation was accepted in this period',none_quoted:'No quotations in this period',none_late:'Nothing is past its deadline',
     none_late_jc:'No jobcard is past its deadline',none_projects:'No projects',none_hours:'No hours have been logged in this period',
     none_low:'Nothing is at or below its minimum',none_short:'No jobcard is short of material',none_bought:'Nothing was bought in this period',
-    no_purchasing:'Purchase orders could not be read',none_failed:'No inspection failed',none_ncr:'No non-conformance report is open'
+    no_purchasing:'Purchase orders could not be read',none_failed:'No inspection failed',none_ncr:'No non-conformance report is open',
+    nav_invoice:'What To Invoice',
+    invoice_lead:'Hours booked and material issued, per project, for the period on the left.',
+    invoice_note:'The basis for an invoice, not an invoice. No invoice number, no VAT, nothing stored, and nothing here remembers what has already been billed — Varmak issues the invoice itself from its accounting system. Export the month, then the next month.',
+    invoice_missing:'Two things are deliberately absent. There is no labour amount, because no hourly rate is recorded anywhere in this system — the hours are here, by job, by step and by who booked them, and the rate is the accounting system\'s. And there is no machine time, because machine usage hours are not recorded yet.',
+    inv_projects:'Projects With Work',inv_hours:'Hours Booked',inv_material:'Material At Cost',
+    inv_quoted:'Quoted On Those',inv_by_project:'By project',
+    inv_c_hours:'Hours',inv_c_material:'Material at cost',inv_c_quoted:'Quoted',
+    inv_hour_lines:'The hours, line by line',inv_c_step:'Step',inv_c_worker:'Booked by',
+    inv_material_lines:'The material, line by line',inv_c_item:'Item',inv_c_qty:'Quantity',
+    inv_c_unitcost:'Unit cost',inv_c_cost:'Cost',
+    inv_needs_server:'This report reads the workshop database and there is none connected to this browser.',
+    inv_refused:'That is not yours to read — what a job cost is the office\'s.',
+    inv_empty:'Nothing was booked or issued in this period',
+    inv_exported:'Invoice basis exported.'
   },
   sv:{
     srv_not_on_db:'Dessa uppgifter finns inte i verkstadens databas än, så den här rapporten har ingenting att läsa. Den säger inte att svaret är noll — den säger att ingen kan svara här än.',
@@ -573,7 +612,21 @@ const i18n={
     none_quoted:'Inga offerter under perioden',none_late:'Inget är förbi sin deadline',none_late_jc:'Inget arbetskort är förbi sin deadline',
     none_projects:'Inga projekt',none_hours:'Inga timmar har rapporterats under perioden',none_low:'Inget är på eller under sitt minimum',
     none_short:'Inget arbetskort saknar material',none_bought:'Inget köptes under perioden',no_purchasing:'Inköpsorder kunde inte läsas',
-    none_failed:'Ingen inspektion underkändes',none_ncr:'Ingen avvikelserapport är öppen'
+    none_failed:'Ingen inspektion underkändes',none_ncr:'Ingen avvikelserapport är öppen',
+    nav_invoice:'Att Fakturera',
+    invoice_lead:'Bokade timmar och uttaget material, per projekt, för perioden till vänster.',
+    invoice_note:'Underlaget för en faktura, inte en faktura. Inget fakturanummer, ingen moms, ingenting sparas, och ingenting här minns vad som redan fakturerats — Varmak utfärdar själva fakturan i sitt bokföringssystem. Exportera månaden, sedan nästa månad.',
+    invoice_missing:'Två saker saknas med avsikt. Det finns inget arbetsbelopp, eftersom ingen timtaxa finns registrerad någonstans i detta system — timmarna finns här, per jobb, per steg och per den som bokade dem, och taxan hör till bokföringssystemet. Och det finns ingen maskintid, eftersom maskintimmar inte registreras ännu.',
+    inv_projects:'Projekt Med Arbete',inv_hours:'Bokade Timmar',inv_material:'Material Till Kostpris',
+    inv_quoted:'Offererat På Dessa',inv_by_project:'Per projekt',
+    inv_c_hours:'Timmar',inv_c_material:'Material till kostpris',inv_c_quoted:'Offererat',
+    inv_hour_lines:'Timmarna, rad för rad',inv_c_step:'Steg',inv_c_worker:'Bokade av',
+    inv_material_lines:'Materialet, rad för rad',inv_c_item:'Artikel',inv_c_qty:'Kvantitet',
+    inv_c_unitcost:'Enhetskostnad',inv_c_cost:'Kostnad',
+    inv_needs_server:'Denna rapport läser verkstadsdatabasen och ingen är ansluten till denna webbläsare.',
+    inv_refused:'Det är inte ditt att läsa — vad ett jobb kostade hör till kontoret.',
+    inv_empty:'Ingenting bokades eller togs ut under denna period',
+    inv_exported:'Fakturaunderlaget exporterat.'
   },
   mk:{
     srv_not_on_db:'Овие записи сè уште не се во базата на работилницата, па овој извештај нема што да прочита. Не значи дека одговорот е ништо — значи дека тука сè уште никој не може да одговори.',
@@ -620,7 +673,21 @@ const i18n={
     none_projects:'Нема проекти',none_hours:'Нема запишани часови во овој период',none_low:'Ништо не е на или под својот минимум',
     none_short:'Ниедна работна картичка не е без материјал',none_bought:'Ништо не е купено во овој период',
     no_purchasing:'Нарачките не можеа да се прочитаат',none_failed:'Ниедна инспекција не падна',
-    none_ncr:'Ниеден извештај за неусогласеност не е отворен'
+    none_ncr:'Ниеден извештај за неусогласеност не е отворен',
+    nav_invoice:'За Фактурирање',
+    invoice_lead:'Запишани часови и издаден материјал, по проект, за периодот лево.',
+    invoice_note:'Основа за фактура, не фактура. Без број на фактура, без ДДВ, ништо не се чува и ништо тука не памти што е веќе фактурирано — Вармак сама ја издава фактурата од своето книговодствено систем. Извези го месецот, па следниот месец.',
+    invoice_missing:'Две работи намерно ги нема. Нема сума за работа, затоа што никаква часовна тарифа не е запишана никаде во овој систем — часовите се тука, по работа, по чекор и по тој што ги запишал, а тарифата е на книговодството. И нема машинско време, затоа што часовите на машините сѐ уште не се запишуваат.',
+    inv_projects:'Проекти Со Работа',inv_hours:'Запишани Часови',inv_material:'Материјал По Цена На Чинење',
+    inv_quoted:'Понудено За Тие',inv_by_project:'По проект',
+    inv_c_hours:'Часови',inv_c_material:'Материјал по цена на чинење',inv_c_quoted:'Понудено',
+    inv_hour_lines:'Часовите, ред по ред',inv_c_step:'Чекор',inv_c_worker:'Запишал',
+    inv_material_lines:'Материјалот, ред по ред',inv_c_item:'Артикл',inv_c_qty:'Количина',
+    inv_c_unitcost:'Цена по единица',inv_c_cost:'Чинење',
+    inv_needs_server:'Овој извештај чита од базата на работилницата, а ниедна не е поврзана со овој прелистувач.',
+    inv_refused:'Тоа не е твое да го читаш — колку чинела работата е на канцеларијата.',
+    inv_empty:'Ништо не е запишано ниту издадено во овој период',
+    inv_exported:'Основата за фактура е извезена.'
   }
 };
 
@@ -731,7 +798,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelec
 document.querySelectorAll('.modal').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
 
 // SECTIONS
-const SECTION_TITLE_KEY={won:'nav_won',late:'nav_late',hours:'nav_hours',stock:'nav_stock',bought:'nav_bought',failed:'nav_failed',saved:'saved_reports'};
+const SECTION_TITLE_KEY={won:'nav_won',late:'nav_late',hours:'nav_hours',stock:'nav_stock',bought:'nav_bought',failed:'nav_failed',invoice:'nav_invoice',saved:'saved_reports'};
 function showSection(sectionId){
   document.querySelectorAll('.section').forEach(s=>s.style.display='none');
   const section=$('section-'+sectionId);
@@ -889,6 +956,7 @@ function loadSectionData(section){
   else if(section==='stock')renderStock(data,range);
   else if(section==='bought')renderBought(data,range);
   else if(section==='failed')renderFailed(data,range);
+  else if(section==='invoice')renderInvoiceBasis(range);
   else if(section==='saved')renderSavedReports();
 }
 
@@ -896,6 +964,116 @@ function loadSectionData(section){
 // One question each, answered from records. Nothing here computes a figure the shop has not
 // actually recorded: where the records are missing the report says so, because a plausible
 // number is worse than a blank.
+
+// ══════════════ THE SEVENTH: WHAT TO INVOICE ══════════════
+//
+// The basis for an invoice, and not an invoice. It has its own read rather than riding the snapshot,
+// for two reasons: it is granted to the office only, so a welder asking for it is refused by the
+// database and every other screen they open is unaffected; and it is computed on every read, so there
+// is nothing to keep in step.
+//
+// Nothing is stored and nothing is remembered about what was already billed — the accounting system
+// knows that, and a second place that thinks it knows is the thing this section exists NOT to be. The
+// period on the left is how the office avoids billing the same hour twice: export the month, then the
+// next month.
+// An exact decimal, shown exactly. `sekStr` rounds to whole kronor, which is right for a KPI card
+// summarising a year and wrong here: a unit cost of 42.50 displayed as "SEK 43" beside a line cost of
+// "SEK 1 275" invites the reader to multiply 30 by 43 and get a different answer from the one in the
+// file. These figures arrive as text from a numeric column for exactly that reason, so they are
+// formatted from the text rather than parsed into a float first.
+function kronor(text){
+  if(text==null||text==='')return 'N/A';
+  const sign=String(text).trim().startsWith('-')?'-':'';
+  const digits=String(text).replace(/[^\d.]/g,'').split('.');
+  const whole=(digits[0]||'0').replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  const ore=(digits[1]||'').padEnd(2,'0').slice(0,2);
+  // The sign after the currency, not before it: '-SEK 170,00' reads as a negative currency.
+  return 'SEK '+sign+whole+','+ore;
+}
+
+let _basis=null,_basisAsked=false,_basisRefused='';
+async function fetchInvoiceBasis(){
+  if(_basisAsked)return _basis;
+  _basisAsked=true;
+  if(!window.WorkshopApi||!window.WorkshopData||!WorkshopData.isServerBacked()){
+    _basisRefused=tr('inv_needs_server');
+    return null;
+  }
+  const answer=await WorkshopApi.read('invoice_basis');
+  if(answer&&answer.ok){_basis=answer.data||[];return _basis;}
+  // Said as it arrived. A welder reaching this section is refused by the database, and that refusal is
+  // the system working — so it is shown as an answer rather than as a fault.
+  _basisRefused=(answer&&answer.refused)||tr('inv_refused');
+  return null;
+}
+
+// Every hour and every material line carries its own date, so the period is applied here rather than
+// stored anywhere. A project keeps its quoted value whatever the period, because what was agreed is not
+// a thing that happened in a month.
+function basisInRange(range){
+  return (_basis||[]).map(p=>({
+    id:p.id,no:p.no,name:p.name,status:p.status,customer:p.customer,quoted:num(p.quoted),
+    hours:(p.hours||[]).filter(h=>inRange(h.date,range)),
+    material:(p.material||[]).filter(m=>inRange(m.date,range))
+  })).filter(p=>p.hours.length||p.material.length);
+}
+const sumHours=rows=>rows.reduce((t,h)=>t+(num(h.hours)||0),0);
+const sumCost=rows=>rows.reduce((t,m)=>t+(num(m.cost)||0),0);
+
+async function renderInvoiceBasis(range){
+  const ids=['inv-projects','inv-hours','inv-material','inv-quoted'];
+  await fetchInvoiceBasis();
+  if(!_basis){
+    ids.forEach(id=>{$(id).textContent='N/A';});
+    ['inv-project-body','inv-hours-body','inv-material-body'].forEach((id,i)=>{
+      $(id).innerHTML=`<tr class="emptyrow"><td colspan="${[6,6,7][i]}">${esc(_basisRefused)}</td></tr>`;
+    });
+    return;
+  }
+  let projects=basisInRange(range);
+  if(activeFilters.project)projects=projects.filter(p=>p.no===activeFilters.project);
+  if(activeFilters.customer){
+    const data=getData();
+    const c=(data.customers||[]).find(x=>String(x.id)===String(activeFilters.customer));
+    if(c)projects=projects.filter(p=>p.customer===c.name);
+  }
+
+  $('inv-projects').textContent=projects.length;
+  const hours=projects.reduce((t,p)=>t+sumHours(p.hours),0);
+  const material=projects.reduce((t,p)=>t+sumCost(p.material),0);
+  $('inv-hours').textContent=projects.length?hrsStr(hours):'N/A';
+  $('inv-material').textContent=projects.length?kronor(material.toFixed(2)):'N/A';
+  // What was quoted for the projects in this period, for the office to compare against. Not a figure to
+  // invoice: it is what was agreed for the whole job, not for the month.
+  const quoted=projects.reduce((t,p)=>t+(p.quoted||0),0);
+  $('inv-quoted').textContent=projects.some(p=>p.quoted!=null)?sekStr(quoted):'N/A';
+
+  $('inv-project-body').innerHTML=projects.map(p=>`<tr>
+      <td><strong>${esc(p.no)}</strong><br><small>${esc(p.name||'')}</small></td>
+      <td>${esc(naOr(p.customer))}</td>
+      <td>${esc(naOr(p.status))}</td>
+      <td>${esc(hrsStr(sumHours(p.hours)))}</td>
+      <td>${esc(kronor(sumCost(p.material).toFixed(2)))}</td>
+      <td>${esc(p.quoted==null?'N/A':sekStr(p.quoted))}</td>
+    </tr>`).join('')||`<tr class="emptyrow"><td colspan="6">${esc(tr('inv_empty'))}</td></tr>`;
+
+  const hourLines=projects.flatMap(p=>p.hours.map(h=>({p,h})));
+  $('inv-hours-body').innerHTML=hourLines.map(({p,h})=>`<tr>
+      <td>${esc(p.no)}</td><td>${esc(naOr(h.jobcard))}</td><td>${esc(naOr(h.step))}</td>
+      <td>${esc(naOr(h.worker))}</td><td>${esc(String(h.date||'').slice(0,10))}</td>
+      <td>${esc(hrsStr(num(h.hours)))}</td>
+    </tr>`).join('')||`<tr class="emptyrow"><td colspan="6">${esc(tr('inv_empty'))}</td></tr>`;
+
+  const matLines=projects.flatMap(p=>p.material.map(m=>({p,m})));
+  $('inv-material-body').innerHTML=matLines.map(({p,m})=>`<tr>
+      <td>${esc(p.no)}</td><td>${esc(naOr(m.jobcard))}</td>
+      <td>${esc(naOr(m.item))}<br><small>${esc(m.description||'')}</small></td>
+      <td>${esc(naOr(m.quantity))} ${esc(m.unit||'')}</td>
+      <td>${esc(kronor(m.unitCost))}</td>
+      <td>${esc(String(m.date||'').slice(0,10))}</td>
+      <td>${esc(kronor(m.cost))}</td>
+    </tr>`).join('')||`<tr class="emptyrow"><td colspan="7">${esc(tr('inv_empty'))}</td></tr>`;
+}
 
 function emptyRow(id,cols,key){
   $(id).innerHTML=`<tr class="emptyrow"><td colspan="${cols}">${esc(tr(key))}</td></tr>`;
@@ -1238,6 +1416,42 @@ function confirmSavedModal(){
   closeModal('savedModal');
 }
 
+// The export the accounting system actually wants: one row per line, not a picture of a table.
+//
+// `tableToCsv` scrapes whatever table is on screen, which for this section would be the by-project
+// summary — three numbers somebody would then have to break down by hand. An invoice is made of lines,
+// so the lines are what goes out: every hour with its job, step, person and date, and every material
+// movement with its item, quantity and unit cost, each row naming which project it belongs to.
+//
+// Two leading rows say where it came from and what is not in it, because a file outlives the screen it
+// was exported from and the next person to open it will not have read the note on the panel.
+function invoiceBasisCsv(range){
+  const projects=basisInRange(range);
+  const rows=[
+    ['Varmak AB — invoice basis. A working copy, not an invoice: no invoice number, no VAT, and nothing here knows what has already been billed.'],
+    ['No labour amount: no hourly rate is recorded in the workshop system. No machine time: machine usage hours are not recorded.'],
+    ['Period', String(range.start).slice(0,10)+' to '+String(range.end).slice(0,10),
+     'Exported', new Date().toISOString().slice(0,19).replace('T',' ')],
+    [],
+    ['Kind','Project','Project name','Customer','Jobcard','Step or item','Description',
+     'Booked by or moved by','Date','Hours','Quantity','Unit','Unit cost','Cost']
+  ];
+  projects.forEach(p=>{
+    p.hours.forEach(h=>rows.push(['Hours',p.no,p.name||'',p.customer||'',h.jobcard||'',h.step||'','',
+      h.worker||'',String(h.date||'').slice(0,10),h.hours||'','','','','']));
+    p.material.forEach(m=>rows.push(['Material',p.no,p.name||'',p.customer||'',m.jobcard||'',m.item||'',
+      m.description||'',m.by||'',String(m.date||'').slice(0,10),'',m.quantity||'',m.unit||'',
+      m.unitCost||'',m.cost||'']));
+  });
+  // And the totals, once, at the bottom where a spreadsheet expects them.
+  rows.push([]);
+  rows.push(['Total hours','','','','','','','','',
+    String(projects.reduce((t,p)=>t+sumHours(p.hours),0)),'','','','']);
+  rows.push(['Total material at cost','','','','','','','','','','','','',
+    String(projects.reduce((t,p)=>t+sumCost(p.material),0).toFixed(2))]);
+  return rows.map(r=>r.map(csvEscape).join(',')).join('\r\n');
+}
+
 // EXPORT (top toolbar)
 function csvEscape(v){
   const s=String(v==null?'':v);
@@ -1279,6 +1493,12 @@ function preparePrint(){
   if(meta)meta.innerHTML=`<p><strong>${esc(title)}</strong></p><p>Filters: ${esc(filterParts.join(' · '))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>${esc(source)}</p>`;
 }
 function exportReport(format){
+  if(format==='csv'&&currentSection==='invoice'){
+    if(!_basis){notify(_basisRefused||tr('inv_refused'));closeModal('exportModal');return;}
+    downloadBlob(invoiceBasisCsv(getDateRange(currentFilter)),'text/csv;charset=utf-8',
+      'varmak-invoice-basis-'+new Date().toISOString().slice(0,10)+'.csv');
+    notify(tr('inv_exported'));closeModal('exportModal');return;
+  }
   if(format==='csv'){
     const table=getVisibleTable();
     if(!table){notify('No table is currently visible to export.');closeModal('exportModal');return;}

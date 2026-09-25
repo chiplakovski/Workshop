@@ -48,6 +48,12 @@ const FILES = {
     path: path.join(__dirname, 'views.sql'),
     suite: path.join('..', 'tests', 'welding-server.e2e.js'), env: 'VARMAK_VIEWS'
   },
+  // The invoice basis, whose arithmetic is only visible through the screen that reads it: a return that
+  // is not netted off, or a grant that lets the floor read what a job cost.
+  invoicing: {
+    path: path.join(__dirname, 'views.sql'),
+    suite: path.join('..', 'tests', 'reports-server.e2e.js'), env: 'VARMAK_VIEWS'
+  },
 
   // The shop tablet's half of the offline queue is not SQL either, and the rules in it are as easy to
   // get wrong: which id goes with a retry, whose queue may be flushed, whether a dead signal counts as
@@ -482,6 +488,31 @@ const MUTATIONS = [
     from: `  CONSTRAINT an_approved_wps_says_who CHECK (
     status <> 'approved' OR (approved_on IS NOT NULL AND btrim(coalesce(approved_by, '')) <> ''))`,
     to: '  CONSTRAINT an_approved_wps_says_who CHECK (true)'
+  },
+  {
+    // A return puts steel back on the shelf. Counted as an issue, the customer is billed for material
+    // that never left the job — the one direction of error nobody catches from inside the workshop.
+    what: 'material returned off a job is billed as if it had been used',
+    file: 'views', suite: 'invoicing',
+    from: "          'quantity', (CASE WHEN m.kind = 'return' THEN -m.quantity ELSE m.quantity END)::text,",
+    to: "          'quantity', m.quantity::text,"
+  },
+  {
+    // Same figure, the other column: the quantity reads right and the money does not.
+    what: 'a returned line reads as a credit and costs as if it were used',
+    file: 'views', suite: 'invoicing',
+    from: `          'cost', (round((CASE WHEN m.kind = 'return' THEN -m.quantity ELSE m.quantity END)
+                         * coalesce(i.avg_cost, 0), 2))::text,`,
+    to: "          'cost', (round(m.quantity * coalesce(i.avg_cost, 0), 2))::text,"
+  },
+  {
+    // What a job cost is the office's. Granted to the floor, a welder reads every project's hours,
+    // material and quoted value — and §1b is the one line this system is built around.
+    what: 'the floor may read what every job cost and what was quoted for it',
+    file: 'views', suite: 'invoicing',
+    from: 'GRANT EXECUTE ON FUNCTION workspace_money(), invoice_basis() TO varmak_admin, varmak_office;',
+    to: 'GRANT EXECUTE ON FUNCTION workspace_money(), invoice_basis() TO varmak_admin, varmak_office;\n'
+      + 'GRANT EXECUTE ON FUNCTION invoice_basis() TO varmak_workshop;'
   },
   {
     // The fourth floor trap, and the first that failed quietly rather than loudly: without person_name
@@ -2679,6 +2710,35 @@ function main() {
   const wentStale = new Set();
   if (only && !SELECTED.length) {
     console.error(`No mutation matches "${only}".`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Does each suite this run depends on actually READ the damaged file?
+  //
+  // A suite builds its own database, and if it builds it from `backend/views.sql` rather than from the copy
+  // named in VARMAK_VIEWS, the harness damages a file nobody loads. The suite then passes — as it should,
+  // it is testing undamaged code — and the mutation is reported MISSED. Which reads as "this rule has no
+  // test", so somebody goes and writes one, and it passes too.
+  //
+  // That happened to the first two invoice-basis mutations. Sixteen of the twenty suites that build a
+  // database still ignore the override; it only matters for the ones a mutation names, and this is what
+  // makes naming one safe — a redirect to a suite that cannot see the damage stops the run rather than
+  // producing a report in the wrong direction.
+  const deaf = [];
+  for (const m of SELECTED) {
+    const entry = FILES[m.suite || m.file || 'schema'];
+    const env = FILES[m.file || 'schema'].env;
+    const source = fs.readFileSync(path.join(__dirname, entry.suite), 'utf8');
+    // Written either as the literal name or built from the file's own name, which is how the suites that
+    // do honour it are written.
+    if (source.includes(env) || /VARMAK_\$\{name\.toUpperCase\(\)\}/.test(source)) continue;
+    deaf.push(`${entry.suite} never reads ${env}, so "${m.what}" would be reported MISSED either way`);
+  }
+  if (deaf.length) {
+    console.error('These mutations point at a suite that cannot see the damaged file, so their result would');
+    console.error('mean nothing. Make the suite read the override first:');
+    [...new Set(deaf)].forEach((line) => console.error(`  ${line.slice(0, 170)}`));
     process.exitCode = 1;
     return;
   }

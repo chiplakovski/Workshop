@@ -276,7 +276,10 @@ const WITHOUT_A_SESSION = new Set(['bootstrap_first_admin']);
 const READS = {
   snapshot: 'workspace_snapshot',
   money: 'workspace_money',
-  people: 'people'
+  people: 'people',
+  // What there is to bill for, computed on every read out of the hours and the material. Granted to the
+  // office only, like the money, and refused to the floor by the database rather than by a branch here.
+  invoice_basis: 'invoice_basis'
 };
 
 const ROLE_FOR = { admin: 'varmak_admin', office: 'varmak_office', workshop: 'varmak_workshop' };

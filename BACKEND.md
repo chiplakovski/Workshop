@@ -1290,15 +1290,37 @@ would be a second place the same grouping lived.
 Not a wish list: each of these is a collection the coverage meter accounts for as having no table, found by
 fixing the meter rather than by reading the app.
 
-1. **Invoicing, both directions.** `invoices` is read by two screens, has no table, and is the money going
-   out of the door. It is the largest single gap in this schema. `supplierInvoices` is the other half — the
-   invoice arriving against a purchase order — and `purchaseRfqs` is the enquiry that precedes the
-   `purchase_order` that does exist.
-2. **The four welding registers.** A weld log, the NDT against those welds, the procedure specifications
-   they are welded to, and which welder is qualified to each. `BACKEND.md` argued above that these are
-   paperwork for an auditor who does not exist yet, and that argument still holds — but the decision should
-   be made knowingly rather than by their being invisible to every figure this project prints, which is
-   what was actually happening.
+1. ~~**Invoicing, both directions.**~~ **Decided: the basis, not the invoice.** `invoices` was called the
+   largest single gap in this schema, and the decision taken was that it is not a gap at all in the
+   direction that was assumed. Varmak issues its invoices from its accounting system; a second place that
+   knows what a customer owes is two places that disagree, and the one in the workshop app would be the one
+   nobody reconciles.
+
+   So what this system provides is the **invoice basis** and nothing more: `invoice_basis()` in `views.sql`,
+   read by the Reports screen and exported as line-level CSV. Hours booked and material issued, per project,
+   each line with its own date so the office can take a period. No table, no invoice number, no VAT, no
+   sent/paid state, and nothing that remembers what has already been billed — computed on every read out of
+   `hours_entry` and `stock_movement`, granted to the office and refused to the floor by the database.
+
+   Three things it deliberately does not carry, and the screen says all three rather than leaving a reader
+   to assume the total is a total:
+
+   * **No labour amount.** No hourly rate is recorded anywhere — not on a project, a customer, a person or
+     an operation. The hours are there, by job, by step and by who booked them. The rate belongs to whoever
+     issues the invoice, and putting one here would be the beginning of the second system.
+   * **No machine time.** Machine usage hours are not recorded yet, so a machine-time line would be a
+     number with nothing behind it.
+   * **No period, stored.** Every line carries its date and the screen filters. A period held here would be
+     one more thing to keep in step with what the office actually invoiced.
+
+   Material is at `avg_cost`, what the store paid, and a `return` is netted off — what the invoice wants is
+   what stayed on the job. `supplierInvoices` and `purchaseRfqs` are still absent and are still the other
+   half of the same question: the invoice arriving against a purchase order, and the enquiry that precedes
+   the `purchase_order` that does exist.
+2. ~~**The four welding registers.**~~ **Done.** A weld log, the NDT against those welds, the procedure
+   specifications they are welded to, and which welder is qualified to each. This page argued they were
+   paperwork for an auditor who did not exist; the firm turned out to be certified, so the auditor does. The
+   five tables, their rules and the Quality panels that read them are described above.
 3. **Estimating's depth.** The schema holds a title, a total and a date; the screen holds nested work items,
    options, terms, revisions and a priced bill of materials. This is the largest gap by field count.
 4. **The quality register's other three** — ITP, CAPA, dossier — each refusing out loud on a wired screen

@@ -53,7 +53,13 @@ function buildDatabase() {
     '-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `CREATE DATABASE ${DB};`],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   for (const name of ['schema', 'auth', 'api', 'views']) {
-    execFileSync('psql', [...conn(), '-f', path.join(__dirname, '..', 'backend', `${name}.sql`)],
+    // Named from the environment when the mutation harness is driving. A suite that ignores this builds
+    // the real files and passes whatever was damaged — and the harness then reports MISSED, which reads
+    // as "this rule has no test" when in fact the test never saw the damage. Two invoice-basis mutations
+    // reported exactly that before this line existed.
+    const file = process.env[`VARMAK_${name.toUpperCase()}`]
+      || path.join(__dirname, '..', 'backend', `${name}.sql`);
+    execFileSync('psql', [...conn(), '-f', file],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   }
 }
@@ -79,8 +85,18 @@ function aWorkshop() {
        VALUES (${jobcard}, 'Marko Ilic', 6.5, current_date),
               (${jobcard}, 'Marko Ilic', 4, current_date),
               (${jobcard}, 'Erik Sund', 3.5, current_date);`);
+  // Material on the job, at a cost the store paid, and a welder — the invoice basis needs both halves,
+  // and needs somebody the database will refuse it to.
+  sql(`UPDATE stock_item SET avg_cost = 42.50 WHERE id = ${item};
+       INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by)
+       VALUES (${item}, 'issue', 30, ${jobcard}, 'Marko Ilic'),
+              (${item}, 'return', 4, ${jobcard}, 'Marko Ilic');`);
+  const welder = value(`INSERT INTO app_user (email, display_name, role)
+    VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
+  sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
+  sql(`UPDATE project SET quoted_value = 184000.00 WHERE id = ${project};`);
   return {
-    customer, project, jobcard, item,
+    customer, project, jobcard, item, welder,
     ref: value(`SELECT ref FROM project WHERE id = ${project};`),
     stock: value(`SELECT stock::text FROM stock_item WHERE id = ${item};`)
   };
@@ -208,6 +224,85 @@ async function main() {
     assert.equal(held.section, 'stock');
     assert.deepEqual(thrown, [], `the page threw: ${thrown.slice(0, 3).join(' / ')}`);
     step('Reports: the last-used view is kept in this browser rather than pushed at the database');
+
+    // ── What to invoice ─────────────────────────────────────────────────────────────────────
+    //
+    // The basis, computed on every read out of the hours and the material. Nothing is stored, so there
+    // is nothing to assert about a table — what matters is that the arithmetic is the database's own
+    // and that the figures on the screen are the ones psql gives.
+    await page.evaluate(() => { currentFilter = 'all'; });
+    await show('invoice');
+    await page.waitForTimeout(400);
+    const booked = value(`SELECT sum(h.hours)::text FROM hours_entry h JOIN jobcard j ON j.id = h.jobcard_id
+      WHERE j.project_id = ${w.project};`);
+    assert.equal(await text('inv-projects'), '1', 'one project has work recorded against it');
+    assert.equal(await text('inv-hours'), `${Number(booked)}h`,
+      `the hours on screen are the hours in the database: ${booked}`);
+    // 30 kg issued and 4 returned, at 42.50 — the return is netted off, because what the invoice wants
+    // is what stayed on the job.
+    // Compared on the digits, and to the öre: a unit cost of 42.50 shown as a whole 43 beside an
+    // unrounded line total is an invitation to multiply and get a different answer.
+    const figure = (s) => s.replace(/[^\d]/g, '');
+    assert.equal(figure(await text('inv-material')), '110500',
+      'and the material is netted: 30 issued less 4 returned, at what the store paid, to the öre');
+    assert.equal(figure(await text('inv-quoted')), '184000', 'beside what was quoted, to compare against');
+    const lines = await page.evaluate(() => ({
+      hours: document.querySelectorAll('#inv-hours-body tr:not(.emptyrow)').length,
+      material: document.querySelectorAll('#inv-material-body tr:not(.emptyrow)').length
+    }));
+    assert.deepEqual(lines, { hours: 3, material: 2 },
+      'every hour and every movement is its own line, because an invoice is made of lines');
+    // The return, on its own line and negative. A return puts steel back on the shelf, and the one
+    // direction of error nobody catches from inside the workshop is billing for material that came back.
+    const material = await page.locator('#inv-material-body').innerText();
+    assert.match(material, /-4[.,]000/,
+      `the returned quantity has to read as a credit on its own line: ${material}`);
+    assert.match(material, /SEK\s?[-\u2212]170,00/,
+      `and cost as one, to the öre: ${material}`);
+    assert.match(material, /42,50/, 'with the unit cost shown exactly rather than rounded to 43');
+    step('Reports: what to invoice adds up the hours and nets the material, from the database');
+
+    // The export, which is the point of the whole section: line-level rows an accounting system can take.
+    const csv = await page.evaluate(() => invoiceBasisCsv(getDateRange('all')));
+    assert.match(csv, /not an invoice/i, 'the file has to say what it is, because it outlives the screen');
+    assert.match(csv, /No labour amount/i, 'and what is not in it');
+    assert.match(csv, /^Hours,/m, 'an hour line');
+    assert.match(csv, /^Material,/m, 'and a material line');
+    assert.match(csv, /Total hours/, 'with the totals at the bottom where a spreadsheet expects them');
+    assert.equal(csv.split(/\r\n/).filter((r) => /^Hours,|^Material,/.test(r)).length, 5,
+      'three hour lines and two material lines, and nothing invented');
+    assert.match(csv, /^Material,[^\n]*,-4\.000,/m, 'with the return negative in the file too');
+    step('Reports: the export is line-level, says what it is not, and totals at the bottom');
+
+    // And a welder is refused it, by the database rather than by the page deciding. The section says so
+    // instead of showing an empty report, which would read as "there is nothing to invoice".
+    const floor = await context.newPage();
+    floor.on('pageerror', (error) => thrown.push(error.stack || error.message));
+    await floor.goto(`${site}/login.html`, { waitUntil: 'load' });
+    await floor.waitForSelector('#signInForm:not([hidden])', { timeout: 8000 });
+    await floor.locator('#signInEmail').fill('marko@varmak.se');
+    await floor.locator('#signInSecret').fill('a long enough passphrase');
+    await floor.locator('#signInGo').click();
+    await floor.waitForURL(/hours-mobile\.html|hub-/, { timeout: 8000 });
+    await floor.goto(`${site}/reports-desktop.html`, { waitUntil: 'load' });
+    await floor.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(),
+      { timeout: 8000 });
+    await floor.evaluate(() => showSection('invoice'));
+    await floor.waitForTimeout(600);
+    const told = await floor.locator('#inv-project-body').innerText();
+    assert.match(told, /not yours|permission|refused/i,
+      `a welder has to be told, not shown an empty report: ${told}`);
+    assert.equal(await floor.locator('#inv-hours').innerText(), 'N/A',
+      'and no figure at all, rather than a zero that reads as nothing to invoice');
+    // Asked of the grant itself as well as of the screen. The screen is refused either way — the floor
+    // holds no SELECT on `project.quoted_value`, so the function would fail on the column even if it were
+    // granted — and a check that passes for the wrong reason is a check that would still pass with the
+    // grant handed to the workshop. This one names the rule.
+    assert.equal(value(`SELECT has_function_privilege('varmak_workshop', 'invoice_basis()', 'EXECUTE');`),
+      'f', 'the floor must hold no EXECUTE on the invoice basis: what a job cost is the office\'s');
+    assert.equal(value(`SELECT has_function_privilege('varmak_office', 'invoice_basis()', 'EXECUTE');`),
+      't', 'and the office must hold it, or the report is refused to everybody');
+    step('Reports: a welder is refused the invoice basis and told so, rather than shown nothing');
   } finally {
     await browser.close();
     await pool.end().catch(() => {});

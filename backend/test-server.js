@@ -89,7 +89,7 @@ function theServerDecidesNothing() {
 
   // The allow-list is the difference between an API and a remote SQL console.
   const { RPC, READS } = require('./server');
-  assert.deepEqual(Object.keys(READS).sort(), ['money', 'people', 'snapshot'],
+  assert.deepEqual(Object.keys(READS).sort(), ['invoice_basis', 'money', 'people', 'snapshot'],
     'reads go through a list too, or the endpoint is a remote SQL console');
   assert.deepEqual(Object.keys(RPC).sort(), [
     'accept_estimate', 'accept_weld', 'act_on_prospect_finding',

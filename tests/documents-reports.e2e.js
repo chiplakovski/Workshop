@@ -130,15 +130,20 @@ async function reportsWorkflow(page, reportId) {
   step('Reports/Documents: archive and linked document state survive reload');
 }
 
-// Six fixed reports replaced fifteen sections and sixty-one tabs. The point of a report is that
-// its figures come from records, so that is what these check: every KPI against the same count
-// taken from the data layer, and - the part that matters most for a prototype - that an empty
-// system reports nothing rather than a plausible-looking number.
+// Six fixed reports replaced fifteen sections and sixty-one tabs, and a seventh joined them: what there
+// is to invoice, which is the one report the office takes a figure off to act on. The point of a report is
+// that its figures come from records, so that is what these check: every KPI against the same count taken
+// from the data layer, and — the part that matters most — that an empty system reports nothing rather than
+// a plausible-looking number.
+//
+// Named rather than counted, because the assertion is that the nav offers exactly these and nothing
+// half-built beside them.
+const REPORTS = ['won', 'late', 'hours', 'stock', 'bought', 'failed', 'invoice', 'saved'];
+
 async function sixReports(page) {
   const sections = await page.evaluate(() =>
     [...document.querySelectorAll('.sideitem[data-section]')].map((b) => b.dataset.section));
-  assert.deepEqual(sections, ['won', 'late', 'hours', 'stock', 'bought', 'failed', 'saved'],
-    'the module is six reports and the saved list');
+  assert.deepEqual(sections, REPORTS, 'the module is the fixed reports and the saved list');
   assert.equal(await page.evaluate(() => document.querySelectorAll('[data-tab]').length), 0,
     'a fixed report has no tabs to hunt through');
 

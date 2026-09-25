@@ -217,9 +217,18 @@ table; the other seven are a rollup, a grouping, a second copy of something, or 
 bookkeeping. Twenty of the twenty-one were found by fixing the meter rather than by reading the app — first
 eleven, then nine more when the check stopped skipping collections the demonstration fixture had left empty.
 
-The largest gap is **`invoices`**: two screens read it, there is no table, and it is the money going out of
-the door. Next are the four welding registers — a weld log, the NDT against those welds, the procedures, and
-which welder is qualified to which — which for a fabrication shop are what a delivery is signed off against.
+Two of those were the largest gaps and both are now settled, one by building and one by deciding.
+
+The **four welding registers** are built — a weld log, the NDT against those welds, the procedures they are
+welded to, and which welder is qualified to each — which for a fabrication shop are what a delivery is
+signed off against. Five tables, five rules enforced in the database, four panels on the Quality screen.
+
+**`invoices`** is settled the other way: this system provides the **invoice basis** and not the invoice.
+Hours booked and material issued, per project, per line, with dates — exported as CSV for the accounting
+system that issues the actual invoice. No invoice number, no VAT, nothing stored, and nothing that knows
+what has already been billed, because a second place that thinks it knows what a customer owes is the one
+nobody reconciles. There is no labour amount either: no hourly rate is recorded anywhere in this system, and
+inventing one here would be inventing the invoice. [`BACKEND.md`](BACKEND.md) has the reasoning in full.
 
 There is also a deployment path now: [`DEPLOY.md`](DEPLOY.md) installs the four SQL files onto a
 hosted PostgreSQL as a non-superuser, over verified TLS, with real passwords — and

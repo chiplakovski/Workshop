@@ -748,6 +748,82 @@ LANGUAGE sql STABLE AS $$
   );
 $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The invoice basis
+--
+-- What a job cost the workshop, per project, as lines somebody can put on an invoice — and NOT an
+-- invoice. There is no table behind this, no invoice number, no VAT, no sent/paid state and nothing
+-- stored: it is computed on every read out of the hours that were booked and the material that was
+-- issued. That is the whole design, and it was a decision rather than an omission. Varmak issues its
+-- invoices from its accounting system; a second place that knows what a customer owes is two places
+-- that disagree, and the one in the workshop app would be the one nobody reconciles.
+--
+-- So this answers one question — what is there to bill for — and stops.
+--
+-- Three things are deliberately absent, and the screen says so rather than leaving a reader to assume
+-- the total is a total:
+--
+--   * No labour amount. No hourly rate is recorded anywhere in this system, on a project, a customer,
+--     a person or an operation. The hours are here, by job, by step and by who booked them; the rate
+--     is the accounting system's, and inventing one here would be inventing the invoice.
+--   * No machine time. Machine usage hours are not recorded yet — the Equipment screen refuses them
+--     out loud — so a machine-time line would be a number with nothing behind it.
+--   * No period. Every hour and every issue is returned with its own date, and the screen filters. A
+--     period stored here would be a second thing to keep in step with whatever the office actually
+--     invoiced.
+--
+-- Material is at what the store paid, `avg_cost`, not at a selling price: what the workshop spent is
+-- a fact it holds, and what it charges for it is not.
+CREATE FUNCTION invoice_basis() RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'id', p.id::text, 'no', p.ref, 'name', p.name, 'status', p.status,
+      'customerId', p.customer_id::text,
+      'customer', (SELECT c.name FROM customer c WHERE c.id = p.customer_id),
+      -- What was agreed, for the office to compare the basis against. Text like every other figure on
+      -- this wire: an exact decimal from a numeric column, which a JSON number would round.
+      'quoted', p.quoted_value::text,
+      'started', p.actual_start, 'due', p.deadline,
+
+      -- Every hour booked against any jobcard on this project, one line each, with the date on it. Not
+      -- a total: a total cannot be filtered to the month the office is invoicing, and cannot be read
+      -- back to a person who asks which day it was.
+      'hours', coalesce((SELECT jsonb_agg(jsonb_build_object(
+          'id', h.id::text, 'jobcard', j.ref, 'jobcardTitle', j.title,
+          'step', (SELECT o.description FROM operation o WHERE o.id = h.operation_id),
+          'worker', h.worker, 'hours', h.hours::text, 'date', h.worked_on, 'note', h.note
+        ) ORDER BY h.worked_on, h.id)
+        FROM hours_entry h JOIN jobcard j ON j.id = h.jobcard_id
+        WHERE j.project_id = p.id), '[]'::jsonb),
+
+      -- And every movement of material onto or back off the job. An issue is positive and a return is
+      -- negative HERE, on the wire, because what the invoice wants is the net — while the table keeps
+      -- both positive with the direction in `kind`, which is the right shape for a stock ledger and the
+      -- wrong one for a bill.
+      'material', coalesce((SELECT jsonb_agg(jsonb_build_object(
+          'id', m.id::text, 'no', m.ref, 'jobcard', j.ref,
+          'item', i.code, 'description', i.description, 'unit', coalesce(m.unit, i.unit),
+          'kind', m.kind,
+          'quantity', (CASE WHEN m.kind = 'return' THEN -m.quantity ELSE m.quantity END)::text,
+          'unitCost', i.avg_cost::text,
+          'cost', (round((CASE WHEN m.kind = 'return' THEN -m.quantity ELSE m.quantity END)
+                         * coalesce(i.avg_cost, 0), 2))::text,
+          'date', m.moved_at, 'by', m.moved_by, 'note', m.note
+        ) ORDER BY m.moved_at, m.id)
+        FROM stock_movement m
+        JOIN jobcard j ON j.id = m.jobcard_id
+        JOIN stock_item i ON i.id = m.stock_item_id
+        WHERE j.project_id = p.id AND m.kind IN ('issue', 'return')), '[]'::jsonb)
+    ) ORDER BY p.ref), '[]'::jsonb)
+  FROM project p
+  -- Only projects with something recorded against them. A project with no hours and no material has
+  -- nothing to invoice, and a row of zeroes in an export is a line somebody has to think about.
+  WHERE EXISTS (SELECT 1 FROM hours_entry h JOIN jobcard j ON j.id = h.jobcard_id
+                 WHERE j.project_id = p.id)
+     OR EXISTS (SELECT 1 FROM stock_movement m JOIN jobcard j ON j.id = m.jobcard_id
+                 WHERE j.project_id = p.id AND m.kind IN ('issue', 'return'));
+$$;
+
 REVOKE ALL ON FUNCTION operations_of(bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION equipment_events_of(bigint, text[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION quality_activity_of(text, bigint) FROM PUBLIC;
@@ -761,11 +837,15 @@ ALTER FUNCTION document_record_label(text, bigint) OWNER TO varmak_engine;
 REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
+REVOKE ALL ON FUNCTION invoice_basis() FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION operations_of(bigint), equipment_events_of(bigint, text[]),
   quality_activity_of(text, bigint), workspace_snapshot(),
   document_record_label(text, bigint), person_name(bigint)
 TO varmak_admin, varmak_office, varmak_workshop;
-GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;
+-- The office and nobody else, for the same reason as the money: what a job cost and what was quoted
+-- for it are not a bench matter, and the grant is the whole enforcement — a welder asking for this
+-- read is refused by the database, not by the server deciding.
+GRANT EXECUTE ON FUNCTION workspace_money(), invoice_basis() TO varmak_admin, varmak_office;
 
 COMMIT;
