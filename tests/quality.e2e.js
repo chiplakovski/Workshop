@@ -9,7 +9,10 @@
 const assert = require('node:assert/strict');
 const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
-const SECTIONS = ['overview', 'inspections', 'ncr', 'holds'];
+// The four the screen started with, and the four welding registers that joined them. Named rather than
+// counted, because the point of the assertion below is that the nav offers exactly these and nothing
+// half-built beside them.
+const SECTIONS = ['overview', 'inspections', 'ncr', 'holds', 'welds', 'ndt', 'wps', 'quals'];
 const COMPONENT = 'E2E Bracket Weld B-07';
 const NCR_TITLE = 'E2E porosity beyond EN ISO 5817 level C';
 
@@ -20,7 +23,7 @@ function step(message) {
 async function navigation(page) {
   const nav = await page.evaluate(() =>
     [...document.querySelectorAll('#qualityNav .sideitem[data-section]')].map((b) => b.dataset.section));
-  assert.deepEqual(nav, SECTIONS, 'the module should offer exactly these four pages');
+  assert.deepEqual(nav, SECTIONS, `the module should offer exactly these ${SECTIONS.length} pages`);
 
   for (const section of SECTIONS) {
     await page.locator(`.sideitem[data-section="${section}"]`).click();

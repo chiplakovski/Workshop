@@ -343,8 +343,8 @@
         </div>
       </header>
 
-      <div class="notice" data-i="prototypeNotice">
-        This prototype demonstrates workflow and validation. Production safety controls, permissions, audit logging and regulatory records require the future secured backend.
+      <div class="notice" data-i="whatIsEnforced">
+        Safety, permissions and the audit trail are enforced in the database rather than on this screen: a machine whose certification has run out cannot be started, a failed pre-use check blocks work, and every event recorded against a machine is kept and cannot be edited afterwards. What is still missing is the photographs — a machine's pictures have nowhere to be stored yet.
       </div>
 
       <section id="view-overview" class="view active">
@@ -395,7 +395,7 @@
       <section id="view-all" class="view">
         <div class="toolbar">
           <button class="primary-btn" type="button" id="newEquipmentBtn" data-i="newEquipmentBtn">+ New equipment</button>
-          <button class="secondary-btn" type="button" id="openScannerBtn" data-i="demoScannerBtn">Demo scanner</button>
+          <button class="secondary-btn" type="button" id="openScannerBtn" data-i="demoScannerBtn">Enter a code</button>
           <button class="secondary-btn" type="button" id="printReportBtn" data-i="printSummaryBtn">Print summary</button>
         </div>
         <div class="panel">
@@ -744,13 +744,13 @@
 
   <div class="scanner-modal" id="scannerModal" aria-hidden="true">
     <div class="scanner-box">
-      <h3 data-i="scannerTitle">Demo scanner</h3>
-      <div class="demo-note" data-i="scannerNote">Demo scanner – camera and hardware scanning require a future integration.</div>
+      <h3 data-i="scannerTitle">Enter a code by hand</h3>
+      <div class="demo-note" data-i="scannerNote">No camera or hardware scanner is connected to this screen.</div>
       <div class="scan-input">
         <input id="scanValue" type="text" placeholder="Scan or enter QR/barcode value" aria-label="Scan or enter QR/barcode value" />
         <button class="primary-btn" type="button" id="scanLookupBtn" data-i="scanLookupBtn">Find equipment</button>
       </div>
-      <div class="scan-area" data-i="scannerArea">Manual demo scan area</div>
+      <div class="scan-area" data-i="scannerArea">Type the code here</div>
       <div class="scan-result" id="scanResult"></div>
       <div class="toolbar" style="margin-top:16px;">
         <button class="secondary-btn" type="button" id="scannerCloseBtn">Close</button>
@@ -775,11 +775,11 @@
           navOutOfService: 'Out of Service', navInspections: 'Inspections', navMaintenance: 'Maintenance', navCertifications: 'Certifications',
           navCalibration: 'Calibration', navDocuments: 'Documents', navNewEquipment: 'New Equipment',
           workflowTitle: 'Connected Workflow', workflowText: 'Equipment can be assigned to projects, jobcards and operations, while operating hours, inspections, maintenance and downtime contribute to shared workshop records.', backToHub: 'Back to Hub', pageTitle: 'Equipment / Machines', pageSubtitle: 'Workshop asset register',
-          prototypeNotice: 'This prototype demonstrates workflow and validation. Production safety controls, permissions, audit logging and regulatory records require the future secured backend.',
+          whatIsEnforced: 'Safety, permissions and the audit trail are enforced in the database rather than on this screen: a machine whose certification has run out cannot be started, a failed pre-use check blocks work, and every event recorded against a machine is kept and cannot be edited afterwards. What is still missing is the photographs — a machine\'s pictures have nowhere to be stored yet.',
           urgentTitle: 'Equipment requiring immediate attention', maintenanceSoonTitle: 'Maintenance due soon',
           statusChartTitle: 'Equipment by status', categoryChartTitle: 'Equipment by category', downtimeChartTitle: 'Monthly downtime',
           maintenancePlanChartTitle: 'Planned vs completed maintenance', chartTitle: 'Equipment overview', chartSubtitle: 'Live status summary',
-          searchPlaceholder: 'Search equipment...', newEquipmentBtn: '+ New equipment', demoScannerBtn: 'Demo scanner', printSummaryBtn: 'Print summary',
+          searchPlaceholder: 'Search equipment...', newEquipmentBtn: '+ New equipment', demoScannerBtn: 'Enter a code', printSummaryBtn: 'Print summary',
           clearFiltersBtn: 'Clear filters', sortEquipmentId: 'Equipment ID', sortName: 'Name', sortCategory: 'Category', sortStatus: 'Status',
           sortMaintenance: 'Next maintenance', sortInspection: 'Next inspection', sortHours: 'Operating hours', sortActivity: 'Last activity',
           colId: 'Equipment ID', colName: 'Name', colCategory: 'Category', colManufacturer: 'Manufacturer', colModel: 'Model', colSerial: 'Serial', colStatus: 'Status',
@@ -792,7 +792,7 @@
           fieldEqHours: 'Operating hour meter', fieldEqServiceInterval: 'Service interval', fieldEqMaintDate: 'Maintenance date', fieldEqInspectionDate: 'Inspection date',
           fieldEqCertExp: 'Certification expiry', fieldEqCalDate: 'Calibration date', fieldEqDescription: 'Description', fieldEqNotes: 'Notes',
           saveEquipmentBtn: 'Save equipment', resetFormBtn: 'Reset form', reserveAction: 'Reserve', assignAction: 'Assign', returnAction: 'Return',
-          scannerTitle: 'Demo scanner', scannerNote: 'Demo scanner – camera and hardware scanning require a future integration.', scannerArea: 'Manual demo scan area',
+          scannerTitle: 'Enter a code by hand', scannerNote: 'No camera or hardware scanner is connected to this screen.', scannerArea: 'Type the code here',
           scanLookupBtn: 'Find equipment',
           formErrorsTitle: 'Please fix the following fields:',
           safetyStatusSafe: 'Safe for assignment', safetyStatusBlocked: 'Blocked',
@@ -846,11 +846,11 @@
           navOutOfService: 'Ej i drift', navInspections: 'Inspektioner', navMaintenance: 'Underhåll', navCertifications: 'Certifikat',
           navCalibration: 'Kalibrering', navDocuments: 'Dokument', navNewEquipment: 'Ny utrustning',
           workflowTitle: 'Kopplat arbetsflöde', workflowText: 'Utrustning kan tilldelas projekt, jobbkort och operationer, medan drifttimmar, inspektioner, underhåll och driftstopp bidrar till delade verkstadsregister.', backToHub: 'Tillbaka till hubben', pageTitle: 'Utrustning / Maskiner', pageSubtitle: 'Verkstadstillgångar',
-          prototypeNotice: 'Denna prototyp visar arbetsflöde och validering. Produktionssäkerhetskontroller, behörigheter, revisionsloggning och regulatoriska register kräver framtida säkra backend.',
+          whatIsEnforced: 'Säkerhet, behörigheter och spårbarhet upprätthålls i databasen och inte på denna sida: en maskin vars certifiering har gått ut kan inte startas, en underkänd kontroll före användning hindrar arbete, och varje händelse som registreras på en maskin bevaras och kan inte ändras efteråt. Det som fortfarande saknas är fotografierna — en maskins bilder har ännu ingen plats att sparas på.',
           urgentTitle: 'Utrustning som kräver omedelbar uppmärksamhet', maintenanceSoonTitle: 'Underhåll förfaller snart',
           statusChartTitle: 'Utrustning efter status', categoryChartTitle: 'Utrustning efter kategori', downtimeChartTitle: 'Månatligt driftstopp',
           maintenancePlanChartTitle: 'Planerat vs slutfört underhåll', chartTitle: 'Utrustningsöversikt', chartSubtitle: 'Live statusöversikt',
-          searchPlaceholder: 'Sök utrustning...', newEquipmentBtn: '+ Ny utrustning', demoScannerBtn: 'Demo-skanner', printSummaryBtn: 'Skriv ut översikt',
+          searchPlaceholder: 'Sök utrustning...', newEquipmentBtn: '+ Ny utrustning', demoScannerBtn: 'Ange en kod', printSummaryBtn: 'Skriv ut översikt',
           clearFiltersBtn: 'Rensa filter', sortEquipmentId: 'Utrustnings-ID', sortName: 'Namn', sortCategory: 'Kategori', sortStatus: 'Status',
           sortMaintenance: 'Nästa underhåll', sortInspection: 'Nästa inspektion', sortHours: 'Drifttimmar', sortActivity: 'Senaste aktivitet',
           colId: 'Utrustnings-ID', colName: 'Namn', colCategory: 'Kategori', colManufacturer: 'Tillverkare', colModel: 'Modell', colSerial: 'Serienummer', colStatus: 'Status',
@@ -862,7 +862,7 @@
           fieldEqCondition: 'Tillstånd', fieldEqCriticality: 'Kritikalitet', fieldEqHours: 'Drifttimmätare', fieldEqServiceInterval: 'Serviceintervall', fieldEqMaintDate: 'Underhållsdatum',
           fieldEqInspectionDate: 'Inspektionsdatum', fieldEqCertExp: 'Certifikat utgång', fieldEqCalDate: 'Kalibreringsdatum', fieldEqDescription: 'Beskrivning', fieldEqNotes: 'Anteckningar',
           saveEquipmentBtn: 'Spara utrustning', resetFormBtn: 'Återställ formulär', reserveAction: 'Reservera', assignAction: 'Tilldela', returnAction: 'Återlämna',
-          scannerTitle: 'Demo-skanner', scannerNote: 'Demo-skanner – kamera och hårdvaruskanning kräver framtida integration.', scannerArea: 'Manuell demo-skanningsyta', scanLookupBtn: 'Hitta utrustning',
+          scannerTitle: 'Ange en kod för hand', scannerNote: 'Ingen kamera eller hårdvaruskanner är ansluten till denna sida.', scannerArea: 'Skriv koden här', scanLookupBtn: 'Hitta utrustning',
           formErrorsTitle: 'Rätta följande fält:',
           safetyStatusSafe: 'Säker för tilldelning', safetyStatusBlocked: 'Blockerad',
           safetyReasonsLabel: 'Blockerande orsaker', safetyWarningsLabel: 'Kommande förfallovarningar',
@@ -916,11 +916,11 @@
           navCalibration: 'Калибрација', navDocuments: 'Документи', navNewEquipment: 'Ново средство',
           workflowTitle: 'Поврзан работен тек', workflowText: 'Опремата може да се доделува на проекти, работни карти и операции, додека оперативните часови, инспекциите, одржувањето и прекините придонесуваат во заеднички записи на работилницата.',
           roleBadge: 'Админ', backToHub: 'Назад кон хабот', pageTitle: 'Опрема / Машини', pageSubtitle: 'Регистар на средства',
-          prototypeNotice: 'Оваа прототипна верзија ги прикажува работните текови и проверките. Контролите за безбедност, дозволите, евиденцијата и регулаторните записи бараат идно безбедно бекенд.',
+          whatIsEnforced: 'Безопасноста, дозволите и следливоста се спроведуваат во базата, а не на овој екран: машина чија сертификација истекла не може да се стартува, неуспешна проверка пред употреба го блокира работењето, а секој записан настан на машина се чува и не може да се менува потоа. Оноа што сѐ уште недостасува се фотографиите — сликите на машина сѐ уште немаат каде да се зачуваат.',
           urgentTitle: 'Опрема што бара веднаш внимание', maintenanceSoonTitle: 'Одржување наскоро',
           statusChartTitle: 'Опрема по статус', categoryChartTitle: 'Опрема по категорија', downtimeChartTitle: 'Месечни прекини',
           maintenancePlanChartTitle: 'Планско сп. завршено одржување', chartTitle: 'Преглед на опремата', chartSubtitle: 'Активен статусен преглед',
-          searchPlaceholder: 'Пребарувај опрема...', newEquipmentBtn: '+ Нова опрема', demoScannerBtn: 'Демо скенер', printSummaryBtn: 'Печати преглед',
+          searchPlaceholder: 'Пребарувај опрема...', newEquipmentBtn: '+ Нова опрема', demoScannerBtn: 'Внеси код', printSummaryBtn: 'Печати преглед',
           clearFiltersBtn: 'Исчисти филтри', sortEquipmentId: 'ID на опрема', sortName: 'Име', sortCategory: 'Категорија', sortStatus: 'Статус',
           sortMaintenance: 'Следно одржување', sortInspection: 'Следна инспекција', sortHours: 'Работни часови', sortActivity: 'Последна активност',
           colId: 'ID на опрема', colName: 'Име', colCategory: 'Категорија', colManufacturer: 'Производител', colModel: 'Модел', colSerial: 'Сериен број', colStatus: 'Статус',
@@ -932,7 +932,7 @@
           fieldEqCondition: 'Состојба', fieldEqCriticality: 'Критичност', fieldEqHours: 'Метар на работни часови', fieldEqServiceInterval: 'Интервал на сервис', fieldEqMaintDate: 'Датум на одржување',
           fieldEqInspectionDate: 'Датум на инспекција', fieldEqCertExp: 'Истекување на сертификат', fieldEqCalDate: 'Датум на калибрација', fieldEqDescription: 'Опис', fieldEqNotes: 'Белешки',
           saveEquipmentBtn: 'Зачувај опрема', resetFormBtn: 'Ресетирај формулар', reserveAction: 'Резервирај', assignAction: 'Додели', returnAction: 'Врати',
-          scannerTitle: 'Демо скенер', scannerNote: 'Демо скенер – камерата и хардверското скенирање бараат надворешна интеграција.', scannerArea: 'Рачна зона за демо скенирање', scanLookupBtn: 'Пронајди опрема',
+          scannerTitle: 'Внеси код ракописно', scannerNote: 'Никаква камера или хардверски скенер не е поврзан со овој екран.', scannerArea: 'Напиши го кодот тука', scanLookupBtn: 'Пронајди опрема',
           formErrorsTitle: 'Исправете ги следниве полиња:',
           safetyStatusSafe: 'Безбедно за доделување', safetyStatusBlocked: 'Блокирано',
           safetyReasonsLabel: 'Причини за блокирање', safetyWarningsLabel: 'Претстојни предупредувања за рокови',

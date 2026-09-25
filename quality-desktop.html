@@ -322,7 +322,7 @@
 
   <!-- OVERVIEW -->
   <div id="section-overview" class="section" style="display:none;">
-    <div class="noticebar" data-i="notice_prototype">This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.</div>
+    <div class="noticebar" data-i="notice_enforced">Permissions, approvals and the audit trail are enforced in the database rather than on this screen: a non-conformance closes only on verified evidence and a named approval, a critical failure applies its hold from inside the same transaction, and the history cannot be edited afterwards. Two things are not here — the documents themselves, which have nowhere to be stored yet, and a cryptographic signature: an approval here is a named person and a date.</div>
     <div class="kpistrip">
       <div class="kpi"><div class="kl" data-i="due_today">Inspections Due Today</div><div class="kv" id="kpi-due-today">N/A</div></div>
       <div class="kpi"><div class="kl" data-i="waiting">Inspections Waiting</div><div class="kv warn" id="kpi-waiting">N/A</div></div>
@@ -349,7 +349,7 @@
         <div id="viz-ncr-status" class="tabpanel"><div class="barchart" id="viz-ncr-status-body"></div></div>
         <div id="viz-ncr-cat" class="tabpanel"><div class="barchart" id="viz-ncr-cat-body"></div></div>
         <div id="viz-issues-project" class="tabpanel"><div class="barchart" id="viz-issues-project-body"></div></div>
-        <div id="viz-fpq" class="tabpanel"><div class="barchart" id="viz-fpq-body"></div><p class="dq-note" data-i="fpq_note">Demo calculation — first-pass quality trend requires more historical data than exists in this browser to be meaningful over time.</p></div>
+        <div id="viz-fpq" class="tabpanel"><div class="barchart" id="viz-fpq-body"></div><p class="dq-note" data-i="fpq_note">First-pass quality needs more history than this workshop has recorded yet to mean anything as a trend.</p></div>
       </div>
     </div>
 
@@ -900,12 +900,14 @@ const i18n={
     back_hub:'Hub',quality_title:'Quality Management',quality_sub:'Inspections, non-conformance reports and quality holds',
     search:'Search:',filt_project:'Project:',filt_status:'Status:',all_projects:'All Projects',all_statuses:'All Statuses',
     clear_filters:'Clear Filters',print:'Print',export_csv:'Export CSV',refresh:'Refresh',
-    notice_prototype:'This prototype demonstrates quality workflow and validation. Production permissions, official approvals, digital signatures, secure document storage, audit logging and regulatory compliance require the future secured backend.',
+    print_from_database:'Read from the Varmak workshop database. A working copy, not a legal record.',
+    print_from_browser:'Read from this browser\'s own demonstration data. Not a record of anything.',
+    notice_enforced:'Permissions, approvals and the audit trail are enforced in the database rather than on this screen: a non-conformance closes only on verified evidence and a named approval, a critical failure applies its hold from inside the same transaction, and the history cannot be edited afterwards. Two things are not here — the documents themselves, which have nowhere to be stored yet, and a cryptographic signature: an approval here is a named person and a date.',
     due_today:'Inspections Due Today',waiting:'Inspections Waiting',passed:'Passed Inspections',failed:'Failed Inspections',open_ncrs:'Open NCRs',
     critical_ncrs:'Critical NCRs',not_ready_handover:'Projects Not Ready for Handover',requires_attention:'Requires Attention',
     visual_summaries:'Visual Summaries',inspection_results:'Inspection Results',ncr_by_status:'NCRs by Status',ncr_by_category:'NCRs by Category',
     issues_by_project:'Issues by Project',fpq_trend:'First-Pass Quality Trend',
-    fpq_note:'Demo calculation — first-pass quality trend requires more historical data than exists in this browser to be meaningful over time.',
+    fpq_note:'Првичниот квалитет бара повеќе историја отколку што работилницата засега запишала за да значи нешто како тренд.',
     recent_activity:'Recent Quality Activity',date:'Date',record:'Record',action:'Action',user:'User',details:'Details',
     total_inspections:'Total Inspections',fpr:'First-Pass Rate',type:'Type',result:'Result',all:'All',overdue_only:'Overdue only',
     inspection_register:'Inspection Register',id:'ID',project:'Project',jobcard:'Jobcard',component:'Component',planned_date:'Planned',
@@ -985,7 +987,9 @@ const i18n={
     back_hub:'Hub',quality_title:'Kvalitetsstyrning',quality_sub:'Inspektioner, avvikelserapporter och kvalitetsspärrar',search:'Sök:',
     filt_project:'Projekt:',filt_status:'Status:',all_projects:'Alla Projekt',all_statuses:'Alla Statusar',clear_filters:'Rensa Filter',
     print:'Skriv Ut',export_csv:'Exportera CSV',refresh:'Uppdatera',
-    notice_prototype:'Denna prototyp visar kvalitetsarbetsflöde och validering. Produktionsbehörigheter, officiella godkännanden, digitala signaturer, säker dokumentlagring, granskningsloggning och regelefterlevnad kräver den framtida säkra backend-lösningen.',
+    print_from_database:'Läst ur Varmaks verkstadsdatabas. En arbetskopia, inte en juridisk handling.',
+    print_from_browser:'Läst ur denna webbläsares egna demonstrationsdata. Inte en handling om någonting.',
+    notice_enforced:'Behörigheter, godkännanden och spårbarhet upprätthålls i databasen och inte på denna sida: en avvikelse stängs endast mot verifierat underlag och ett namngivet godkännande, ett kritiskt fel sätter sin spärr inifrån samma transaktion, och historiken kan inte ändras efteråt. Två saker finns inte här — själva dokumenten, som ännu inte har någon plats att sparas på, och en kryptografisk signatur: ett godkännande här är en namngiven person och ett datum.',
     due_today:'Inspektioner Idag',waiting:'Väntande Inspektioner',passed:'Godkända Inspektioner',failed:'Underkända Inspektioner',
     open_ncrs:'Öppna Avvikelser',critical_ncrs:'Kritiska Avvikelser',not_ready_handover:'Projekt Ej Klara för Överlämning',
     requires_attention:'Kräver Åtgärd',visual_summaries:'Visuella Sammanfattningar',inspection_results:'Inspektionsresultat',
@@ -1072,7 +1076,9 @@ const i18n={
     back_hub:'Центар',quality_title:'Управување со Квалитет',
     quality_sub:'Инспекции, извештаи за неусогласеност и задржувања за квалитет',search:'Пребарување:',filt_project:'Проект:',filt_status:'Статус:',
     all_projects:'Сите Проекти',all_statuses:'Сите Статуси',clear_filters:'Исчисти Филтри',print:'Печати',export_csv:'Извези CSV',refresh:'Освежи',
-    notice_prototype:'Оваа прототип демонстрира работен тек и валидација на квалитет. Производствени дозволи, официјални одобренија, дигитални потписи, безбедно складирање документи, ревизиско логирање и регулаторна усогласеност бараат идна обезбедена позадинска инфраструктура.',
+    print_from_database:'Прочитано од базата на работилницата Вармак. Работна копија, не правен документ.',
+    print_from_browser:'Прочитано од демо-податоците на овој прелистувач. Не е запис за ништо.',
+    notice_enforced:'Дозволите, одобрувањата и следливоста се спроведуваат во базата, а не на овој екран: несообразност се затвара само со проверени докази и именувано одобрување, критичен неуспех го поставува задржувањето од внатре во истата трансакција, а историјата не може да се менува потоа. Две нешта не се тука — самите документи, кои сѐ уште немаат каде да се зачуваат, и криптографски потпис: одобрувањето тука е именувано лице и датум.',
     due_today:'Инспекции Денес',waiting:'Инспекции во Чекање',passed:'Поминати Инспекции',failed:'Неуспешни Инспекции',open_ncrs:'Отворени НЦР',
     critical_ncrs:'Критични НЦР',not_ready_handover:'Проекти Не Спремни за Предавање',requires_attention:'Бара Внимание',
     visual_summaries:'Визуелни Резимиња',inspection_results:'Резултати од Инспекција',ncr_by_status:'НЦР по Статус',
@@ -1274,7 +1280,8 @@ function preparePrint(){
   const header=$('printHeader');if(!header)return;
   const title=SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection;
   header.querySelector('#printSectionTitle').textContent=title;
-  header.querySelector('#printMeta').innerHTML=`<p><strong>${esc(title)}</strong> — Frontend Prototype Report</p><p>Generated: ${new Date().toLocaleString()}</p><p>Report status: Demonstration data.</p>`;
+  const live=!!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());
+  header.querySelector('#printMeta').innerHTML=`<p><strong>${esc(title)}</strong></p><p>${esc(live?tr('print_from_database'):tr('print_from_browser'))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>Report status: Demonstration data.</p>`;
 }
 function csvEscape(v){const s=String(v==null?'':v);return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function tableToCsv(table){if(!table)return '';return [...table.rows].filter(r=>!r.classList.contains('emptyrow')).map(r=>[...r.cells].map(c=>csvEscape(c.innerText.trim())).join(',')).join('\r\n');}

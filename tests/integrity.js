@@ -193,6 +193,46 @@ function promptsThatGoNowhere(source) {
   return [...new Set(wrong)];
 }
 
+// A screen that calls its own records a demonstration.
+//
+// Every page shipped with at least one line saying so, because when they were written it was true. It
+// stopped being true and the lines stayed: Reports said "Reports use browser demonstration data" over
+// figures read out of Postgres and printed "Report status: Demonstration data" on the sheet somebody files;
+// Equipment said safety controls, permissions and audit logging "require the future secured backend", all
+// three of which are enforced in the database and tested; Quality said the same about approvals. A page
+// that calls a real record a demonstration is worse than one that says nothing, because the reader stops
+// believing the true half either — and the true half is the part that says what is genuinely still missing.
+//
+// So the words are not allowed loose. A value may say "demo" or "prototype" only where it is one of these:
+const MAY_SAY_DEMONSTRATION = new Map([
+  // The login screen's own demonstration door, which is exactly what it is.
+  ['btn', 'the login screen\'s "Open local demo" button, which opens the demonstration'],
+  ['hint', 'the login screen saying authentication is off on the local demonstration'],
+  // The pair the page picks between at paint time. The demo half is shown only on browser storage.
+  ['reporting_status_text', 'shown only when the snapshot did come from browser storage'],
+  ['print_from_browser', 'the printed provenance line, shown only on browser storage'],
+  // The demonstration state the data layer ships, described where it is described.
+  ['demo_reset', 'the control that puts the demonstration data back'],
+  ['demo_state', 'a description of the demonstration state itself']
+]);
+const SAYS_DEMONSTRATION = /\b(prototype|prototyp|demonstration|demo|демо|прототип)\b/i;
+
+function screensThatCallTheirRecordsADemonstration(source, file) {
+  const wrong = [];
+  for (const { lang, body } of translationTables(source)) {
+    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*'((?:\\.|[^'\\])*)'/g)) {
+      const [, key, value] = entry;
+      if (MAY_SAY_DEMONSTRATION.has(key)) continue;
+      // A category somebody picks from a list — a lead wanting a prototype made — is the word as a noun
+      // about the customer's work, not a claim about this software. Those are one word long.
+      if (!/\s/.test(value)) continue;
+      if (!SAYS_DEMONSTRATION.test(value)) continue;
+      wrong.push(`${lang}:${key}`);
+    }
+  }
+  return [...new Set(wrong)];
+}
+
 // ── Live checks: things only the rendered page can answer ──────────────────────────────────
 
 async function liveDuplicateIds(page) {
@@ -299,6 +339,11 @@ async function checkPage(context, baseUrl, file, failures) {
   const deadPrompts = promptsThatGoNowhere(source);
   if (deadPrompts.length) {
     fail(`${deadPrompts.join('; ')} — the box opens and OK does nothing`);
+  }
+  const pretendingToBeADemo = screensThatCallTheirRecordsADemonstration(source, file);
+  if (pretendingToBeADemo.length) {
+    fail(`calls its own records a demonstration: ${pretendingToBeADemo.slice(0, 8).join(', ')}`
+      + ' — say what is actually missing, or mark the element data-when-demo so it is shown only then');
   }
   const shadowed = duplicateFunctionDeclarations(source);
   if (shadowed.length) {

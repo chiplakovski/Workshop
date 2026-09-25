@@ -274,7 +274,7 @@
   </nav>
   <div class="statuspanel">
     <h4 data-i="reporting_status">Reporting Status</h4>
-    <p><span class="statusdot"></span><span data-i="reporting_status_text">Reports use browser demonstration data</span></p>
+    <p><span class="statusdot"></span><span data-when-live hidden data-i="reporting_status_live">Reports read the workshop database</span><span data-when-demo data-i="reporting_status_text">Reports use browser demonstration data</span></p>
     <p style="margin-top:8px;font-size:10px;" id="lastCalc" data-i="last_calculated">Last calculated: —</p>
   </div>
   <div class="ms-user">
@@ -494,7 +494,10 @@ const i18n={
     filters:'Filters:',today:'Today',this_week:'This Week',this_month:'This Month',this_quarter:'This Quarter',this_year:'This Year',
     all_time:'All Time',export:'Export',print:'Print',refresh:'Refresh Calculations',clear_filters:'Clear Filters',save_view:'Save View',
     all_customers:'All Customers',all_projects:'All Projects',all_statuses:'All Statuses',reporting_status:'Reporting Status',
-    reporting_status_text:'Reports use browser demonstration data',last_calculated:'Last calculated: —',demo_calc:'Demo calculation',status:'Status',
+    reporting_status_text:'Reports use browser demonstration data',
+    reporting_status_live:'Reports read the workshop database',
+    print_from_database:'Read from the Varmak workshop database. A working copy, not a legal record.',
+    print_from_browser:'Read from this browser\'s own demonstration data. Not a record of anything.',last_calculated:'Last calculated: —',status:'Status',
     planned:'Planned',logged:'Logged',name:'Name',customer:'Customer',category:'Category',new_report:'New Report',created:'Created',actions:'Actions',
     cancel:'Cancel',save:'Save',export_report:'Export Report',select_format:'Select export format:',export_csv:'CSV',export_json:'JSON',
     export_print:'Print Preview',favourite:'★',last_used:'Last Used',report_name:'Report name:',duplicate:'Duplicate',open:'Open',rename:'Rename',
@@ -535,7 +538,10 @@ const i18n={
     filters:'Filter:',today:'Idag',this_week:'Denna Vecka',this_month:'Denna Månad',this_quarter:'Detta Kvartal',this_year:'Detta År',
     all_time:'All Tid',export:'Exportera',print:'Skriv ut',refresh:'Uppdatera beräkningar',clear_filters:'Rensa filter',save_view:'Spara vy',
     all_customers:'Alla kunder',all_projects:'Alla projekt',all_statuses:'Alla statusar',reporting_status:'Rapportstatus',
-    reporting_status_text:'Rapporter använder demonstrationsdata i webbläsaren',last_calculated:'Senast beräknad: —',demo_calc:'Demoberäkning',
+    reporting_status_text:'Rapporter använder demonstrationsdata i webbläsaren',
+    reporting_status_live:'Rapporterna läser verkstadsdatabasen',
+    print_from_database:'Läst ur Varmaks verkstadsdatabas. En arbetskopia, inte en juridisk handling.',
+    print_from_browser:'Läst ur denna webbläsares egna demonstrationsdata. Inte en handling om någonting.',last_calculated:'Senast beräknad: —',
     status:'Status',planned:'Planerat',logged:'Loggat',name:'Namn',customer:'Kund',category:'Kategori',new_report:'Ny Rapport',created:'Skapad',
     actions:'Åtgärder',cancel:'Avbryt',save:'Spara',export_report:'Exportera Rapport',select_format:'Välj exportformat:',export_csv:'CSV',
     export_json:'JSON',export_print:'Utskriftsvy',favourite:'★',last_used:'Senast Använd',report_name:'Rapportnamn:',duplicate:'Duplicera',
@@ -578,7 +584,10 @@ const i18n={
     this_quarter:'Овој Квартал',this_year:'Оваа Година',all_time:'Сите Времиња',export:'Извези',print:'Печати',refresh:'Освежи Пресметки',
     clear_filters:'Исчисти филтри',save_view:'Зачувај приказ',all_customers:'Сите клиенти',all_projects:'Сите проекти',all_statuses:'Сите статуси',
     reporting_status:'Статус на извештаи',reporting_status_text:'Извештаите користат демо-податоци во прелистувачот',
-    last_calculated:'Последно пресметано: —',demo_calc:'Демо пресметка',status:'Статус',planned:'Планирано',logged:'Евидентирано',name:'Име',
+    reporting_status_live:'Извештаите читаат од базата на работилницата',
+    print_from_database:'Прочитано од базата на работилницата Вармак. Работна копија, не правен документ.',
+    print_from_browser:'Прочитано од демо-податоците на овој прелистувач. Не е запис за ништо.',
+    last_calculated:'Последно пресметано: —',status:'Статус',planned:'Планирано',logged:'Евидентирано',name:'Име',
     customer:'Клиент',category:'Категорија',new_report:'Нов Извештај',created:'创Создадено',actions:'Акции',cancel:'Откажи',save:'Зачувај',
     export_report:'Извези Извештај',select_format:'Избери формат за извоз:',export_csv:'CSV',export_json:'JSON',export_print:'Приказ за печатење',
     favourite:'★',last_used:'Последно Користено',report_name:'Име на извештај:',duplicate:'Дуплирај',open:'Отвори',rename:'Преименувај',
@@ -1262,7 +1271,12 @@ function preparePrint(){
   if(activeFilters.project)filterParts.push('Project: '+activeFilters.project);
   if(activeFilters.status)filterParts.push('Status: '+activeFilters.status);
   const meta=header.querySelector('#printMeta');
-  if(meta)meta.innerHTML=`<p><strong>${esc(title)}</strong> — Frontend Prototype Report</p><p>Filters: ${esc(filterParts.join(' · '))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>Report status: Demonstration data — see Reporting Status panel for module coverage.</p>`;
+  // Where it came from, on the sheet itself. A printed report outlives the screen it was taken from, and
+  // this line said "Demonstration data" over figures read out of Postgres — on the one artefact somebody
+  // files, shows a customer or takes to an auditor.
+  const live=!!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());
+  const source=live?tr('print_from_database'):tr('print_from_browser');
+  if(meta)meta.innerHTML=`<p><strong>${esc(title)}</strong></p><p>Filters: ${esc(filterParts.join(' · '))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>${esc(source)}</p>`;
 }
 function exportReport(format){
   if(format==='csv'){
@@ -1271,7 +1285,14 @@ function exportReport(format){
     downloadBlob(tableToCsv(table),'text/csv;charset=utf-8','varmak-report-'+currentSection+'.csv');
     notify('CSV exported.');
   }else if(format==='json'){
-    const payload={section:currentSection,generatedAt:new Date().toISOString(),filters:{dateFilter:currentFilter,...activeFilters},note:'Frontend prototype demonstration export — not an official record.'};
+    const live=!!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());
+    const payload={section:currentSection,generatedAt:new Date().toISOString(),
+      source:live?'varmak-workshop-database':'browser-storage',
+      filters:{dateFilter:currentFilter,...activeFilters},
+      // Said as what it is rather than as what it is not. A working copy taken on a date: still not a legal
+      // record, and no longer a demonstration either.
+      note:live?'Exported from the Varmak workshop database. A working copy, not a legal record.'
+        :'Exported from this browser\'s own demonstration data. Not a record of anything.'};
     downloadBlob(JSON.stringify(payload,null,2),'application/json','varmak-report-'+currentSection+'.json');
     notify('JSON exported.');
   }else if(format==='print'){

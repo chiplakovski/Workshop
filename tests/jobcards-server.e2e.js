@@ -254,6 +254,35 @@ async function main() {
       WHERE jobcard_id = ${w.jobcard} ORDER BY seq DESC LIMIT 1;`), 'Final inspection|true');
     step('Jobcards: a step added on screen is in the database, as the last one, with its checkpoint');
 
+    // ── Two edits with no pause between them ────────────────────────────────────────────────
+    //
+    // The one that found the bug, and it found it by being flaky: `set_jobcard_operations` replaces the
+    // whole list, the page builds that list out of the snapshot, and every queued write ends by refreshing
+    // the snapshot. Read the list when the call is MADE rather than when it is sent, and an add queued
+    // behind a delete sends the list as it was BEFORE the delete — putting the deleted step straight back,
+    // silently, with no error anywhere and both writes reporting success.
+    //
+    // Asked as the screen's own delete followed immediately by an add, with nothing awaited between them,
+    // which is what a person produces by clicking twice quickly on a slow connection.
+    const doomed = await page.evaluate(() => {
+      const jc = JOBCARDS[0].id;
+      const list = (WorkshopData.get().jobcards || []).find((x) => x.id === jc).operations || [];
+      const first = list[0];
+      doDeleteOp(jc, first.id);
+      WorkshopData.addJobcardOperation(jc, { no: 99, desc: 'Packing', plannedHours: 1, loggedHours: 0,
+        status: 'pending', worker: '', machine: '', equipmentId: null, instructions: '',
+        plannedStart: null, dependency: null, inspectionCheckpoint: false, notes: '',
+        actualStart: null, actualCompletion: null, attachments: '' });
+      return first.desc;
+    });
+    await until('the added step to land', () => value(`SELECT count(*) FROM operation
+      WHERE jobcard_id = ${w.jobcard} AND description = 'Packing';`) === '1');
+    assert.equal(value(`SELECT count(*) FROM operation
+      WHERE jobcard_id = ${w.jobcard} AND description = ${JSON.stringify(doomed).replace(/"/g, "'")};`), '0',
+    `the deleted step must stay deleted: the add behind it used to send the list from before the delete `
+      + `and put ${doomed} back`);
+    step('Jobcards: an add queued behind a delete does not put the deleted step back');
+
     // ── What has no workflow yet ────────────────────────────────────────────────────────────
     const said = await page.evaluate((jc) =>
       window.WorkshopData.addJobcardNote(jc, { text: 'Kept for the morning' }),
