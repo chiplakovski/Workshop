@@ -678,7 +678,18 @@ Pictures need the backend — they cannot live in `localStorage`.
 works if the app is installed to the home screen as a PWA.** If that will not happen, use email or
 a Telegram bot instead. Decide before building, not after.
 
-## 8. Two things to settle before going live
+## 8. Things to settle before going live
+
+**The letterhead is missing two numbers, and they are facts nobody here can supply.** The printed offer,
+the item sheet and the offer email carry `Varmak AB · Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se`,
+written into the pages — which is correct, because that is the firm's own letterhead and not an invented
+fact about somebody else. What is not there is the **organisationsnummer** and the **VAT number**, and a
+Swedish offer or invoice is expected to carry both; an invoice also needs *Godkänd för F-skatt* and a
+bankgiro or IBAN. None of those has been guessed at, which is the only correct thing to do with them. Ask
+for them and they go in the same place the address is. (`customer.org_no` and `customer.vat_no` exist for
+*customers*; the firm's own are not customer data and belong in the page header beside the address.)
+
+**Two things to settle before going live**
 
 **GDPR.** Names and contacts taken from public forums are personal data. B2B prospecting can rest
 on legitimate interest, but those people are owed notice and a right to object. The `dnc` flag

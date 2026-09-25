@@ -1,7 +1,7 @@
 # Putting this into service
 
-For Varmak AB, Lagmansgatan 31, 241 71 Marieholm. Sixteen steps, and at the end of them the workshop
-is running on a real database with real data and nobody has to open psql again.
+For Varmak AB, Lagmansgatan 31, 241 71 Marieholm. Twenty-three steps, and at the end of them the workshop
+is running on a real database with its own data and nobody has to open psql again.
 
 **Read this first: none of it has been run against your Supabase project.** It has been run, in full,
 against a Postgres deliberately built to have the same shape — TLS only, a password, a non-superuser
@@ -145,6 +145,46 @@ works.
 16. **Do one now, before there is real data to lose**, so that the first time you restore this is not
     the day you need to.
 
+## 7 · The first day's data
+
+The system installs empty on purpose — no demonstration customers, no invented stock — so the first day is
+data entry, and the order matters because the database refuses a record that points at nothing. Every step
+here is a screen; none of it needs psql.
+
+17. **The item groups and the locations are already there**, and they are the one thing that ships
+    populated. They are a classification scheme rather than anything invented about this workshop — every
+    metal shop sorts stock into materials, consumables, hardware and tooling and puts it on a shelf in a
+    warehouse — and without them the first thing anybody must do is design a numbering scheme before
+    entering a single bolt. **Rename or delete them freely** from Store; they are a starting point, not a
+    decision.
+18. **Customers before projects.** A project names a customer and the database will not accept one that
+    does not exist. Customers → New Customer. The organisation number and the VAT number are worth
+    entering as you go: they are on the invoice later and nobody enjoys chasing them afterwards.
+19. **Suppliers before stock prices.** A merchant, then their contacts, then Items & Prices — which is one
+    row per item per merchant, so buying the same plate from two suppliers keeps both. That register is the
+    office's: a welder opening Suppliers sees the merchant, the address and who to ring, and a dash where
+    the terms would be.
+20. **Stock after the groups and the locations.** Store → an item can carry a group and a shelf, and the
+    database does *not* insist on either — checked rather than assumed: `stock_item.group_id` and
+    `location_id` are nullable. Fill them anyway. An item with no shelf is physical steel whose record has
+    forgotten where it is, and the only person who finds out is the one walking the racks looking for it.
+    Enter the stock you actually have; the first count is what every figure after it is measured against.
+21. **The machines.** Machines → the register, with the certification dates. Those dates are not
+    paperwork: the equipment gate refuses to start a job on a machine whose certification has run out, and
+    it refuses out loud with the date in the message. A machine entered without them is a machine the gate
+    cannot protect anybody from.
+22. **Then work.** A project, its jobcards, the steps on each. Hours get booked against a step from the
+    tablet or the desk, and the roll-up onto the jobcard and the project is the database's, not the
+    screen's.
+23. **The paperwork as it arrives.** Documents → file the certificate, give it its expiry date, and link it
+    to the order, the project or the merchant it belongs to. The file itself has nowhere to go yet; the
+    expiry date is the half that stops a delivery being signed off against a certificate that has run out.
+
+**Nothing here has to be finished before the next thing starts.** A workshop can enter one customer, one
+project and one jobcard and book hours against it on the first afternoon, then add stock and machines over
+the following week. The only hard order is the one above: a record cannot point at something that is not
+there yet.
+
 ---
 
 ## If something refuses
@@ -169,14 +209,27 @@ hosted-shaped database rather than by imagining it.
 
 Written down because a deployment guide that implies everything works is worse than one that does not.
 
-- **Eight of the sixteen screens are not on the database yet.** Wired: the shop-floor hours screen,
-  Access, Customers, Jobcards, Store, and the project half of Project / Estimator. The rest refuse to
-  show a signed-in session anything at all, and say why, rather than showing figures that are not the
-  workshop's. They still work for a browser with no session.
+- **Every screen is on the database now**, which the earlier version of this list did not say — it said
+  eight of sixteen were not. Kept as a note rather than deleted, because a deployment guide going stale
+  is how somebody plans around a limit that has been gone for a month.
+- **What a wired screen still cannot write, it refuses out loud** rather than putting it in the browser,
+  which is the outcome that looks like it worked and is gone on the next machine. Today that list is:
+  estimating's nested work items, options, terms and revisions; invoicing in either direction; purchase
+  orders; marketing campaigns; the outward prospect sweep; the quality register's ITP, CAPA and dossier;
+  the four welding registers; document folders; and the bytes of any file.
 - **The estimating half of Project / Estimator writes nothing**, on purpose: that screen holds work
   items in nested groups, options, terms, revisions and a priced bill of materials, and the `estimate`
   table holds a title, a total and a date. Quoting stays on paper or in the browser-storage app until
   that gap is real work rather than a mapping.
+- **Invoicing has no table at all**, and it is the money going out of the door — the largest single gap
+  in this schema. Two screens read an `invoices` collection that nothing stores.
+- **The document register works; the files do not.** A certificate's expiry date, its revision and which
+  job it belongs to are all on the database and a welder can read them. The scan itself has nowhere to
+  go until there is object storage, and the screen says so at the point somebody attaches one.
+- **The letterhead has no organisation number and no VAT number.** The printed offer carries the firm's
+  name, address and email. A Swedish offer is expected to carry both numbers, and an invoice also needs
+  *Godkänd för F-skatt* and a bankgiro or IBAN. Nothing has been guessed at — supply them and they go in
+  beside the address.
 - **The pages fetch their typefaces from `fonts.googleapis.com`**, which will not arrive on a tablet in
   a steel hall with no internet. The pages work; they look wrong. Self-hosting the fonts is a small job
   and is not done.
