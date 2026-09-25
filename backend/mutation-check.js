@@ -481,8 +481,11 @@ const MUTATIONS = [
   },
   {
     what: 'the material that went into the job is not recorded',
-    from: '  material_cert_ref text,',
-    to: ''
+    // `material_cert_ref text,` is a column on jobcard AND on stock_item, so on its own this anchor edited
+    // whichever came first and reported under the other's name. Paired with the heat number beside it,
+    // which is what makes it the jobcard's.
+    from: '  heat_no       text,\n  material_cert_ref text,',
+    to: '  heat_no       text,'
   },
   {
     // Reading the counter and writing it back is the browser bug, moved into the database. The
@@ -1104,12 +1107,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
     // The anchor is the TO alone, on the one line in the file that reads exactly this. Quoting the
     // function above it went stale the moment save_equipment was added to the list, which is the second
     // time this mutation has gone stale for the same reason — a list that grows is not an anchor.
-    from: `TO varmak_admin, varmak_office;
-
-GRANT EXECUTE ON FUNCTION book_hours`,
-    to: `TO varmak_admin, varmak_office, varmak_workshop;
-
-GRANT EXECUTE ON FUNCTION book_hours`
+    // Third time this one has gone stale, and the third cause: first the list grew, then it grew again,
+    // and this time a section inserted above it added a blank line the anchor was quoting. The rule is the
+    // TO and nothing else — one line, appearing exactly once in the file, with no neighbour to drift.
+    from: '\nTO varmak_admin, varmak_office;\n',
+    to: '\nTO varmak_admin, varmak_office, varmak_workshop;\n'
   },
   {
     what: 'changing the quantity sidesteps the repricing rule',
@@ -1180,13 +1182,45 @@ GRANT EXECUTE ON FUNCTION book_hours`
     to: ''
   },
   {
-    what: 'an unreachable contact is left to the constraint to refuse',
+    // Two mutations where there was one, and that is the finding rather than a tidy-up. This rule is written
+    // out twice — once in set_customer_contacts and once in set_supplier_contacts — character for character,
+    // so a single anchor edited the customer's copy and reported under a name that claimed to cover both.
+    // The supplier's copy has never been mutated at all. Each is anchored by the comment line above its own
+    // loop, which is the one thing that differs between them: "unique index" against "index".
+    what: 'an unreachable CUSTOMER contact is left to the constraint to refuse',
     file: 'api',
-    from: `    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+    from: `  -- unique index. The index behind it is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;
+    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
       RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
         btrim(row_in->>'name');
     END IF;`,
-    to: ''
+    to: `  -- unique index. The index behind it is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;`
+  },
+  {
+    what: 'an unreachable SUPPLIER contact is left to the constraint to refuse',
+    file: 'api',
+    from: `  -- index. The index is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;
+    IF coalesce(btrim(row_in->>'email'), '') = '' AND coalesce(btrim(row_in->>'phone'), '') = '' THEN
+      RAISE EXCEPTION 'give % an email or a telephone number — a contact nobody can reach is not one',
+        btrim(row_in->>'name');
+    END IF;`,
+    to: `  -- index. The index is what makes the rule true; this is what makes it readable.
+  FOR row_in IN SELECT * FROM jsonb_array_elements(p_contacts) LOOP
+    IF coalesce(btrim(row_in->>'name'), '') = '' THEN
+      RAISE EXCEPTION 'a contact needs a name';
+    END IF;`
   },
   // No mutation for "a refused contact list leaves the old one exactly as it was", and that is worth
   // saying rather than leaving as a gap in this list. set_customer_contacts deletes the list and

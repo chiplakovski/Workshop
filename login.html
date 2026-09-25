@@ -317,11 +317,11 @@
       btn_signin:"Најави се",
       no_server:"Нема врска со серверот — само локален режим",
       access_link:"Прв пат тука, или треба да додадете некого? Пристап",
-      eyebrow:"Sistem za rabotilnica",
-      headline:'Preciznosta počnuva<br>vo <em>rabotilnicata</em>.',
-      sub:"Lokalni alatki za rabotni nalozi, servisni izveštai i inventar vo eden prelistuvač.",
-      btn:"Otvori lokalno demo",
-      hint:"Lokalno demo vo prelistuvač — najavata ne e ovozmožena",
+      eyebrow:"Систем за работилница",
+      headline:'Прецизноста почнува<br>во <em>работилницата</em>.',
+      sub:"Локални алатки за работни налози, сервисни извештаи и инвентар во еден прелистувач.",
+      btn:"Отвори локално демо",
+      hint:"Локално демо во прелистувач — најавата не е овозможена",
       locale:"mk"
     }
   };
@@ -334,7 +334,7 @@
       const k=el.getAttribute('data-i');
       if(k==='headline')el.innerHTML=t[k];else el.textContent=t[k];
     });
-    document.documentElement.lang = code==="mk" ? "mk-Latn" : code;
+    document.documentElement.lang=code;/* `mk` rather than `mk-Latn`: the Macedonian on this page is Cyrillic now, and `lang` is what a screen reader takes its voice from and the browser its font and spell-checker. */
     document.querySelectorAll('.langmenu button').forEach(b=>{
       b.classList.toggle('active', b.getAttribute('data-lang')===code);
     });

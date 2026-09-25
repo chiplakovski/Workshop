@@ -387,12 +387,72 @@ function noPageNamesWhoIsSignedIn(failures) {
   if (!failures.length) console.log('OK   no page states whose session it is, or what they may do, in its markup');
 }
 
+// The Macedonian stays Macedonian.
+//
+// It was 727 strings in Cyrillic and 1616 in Latin — the same app reading two ways depending on which
+// screen somebody opened — and converting them was a one-off pass over sixteen dictionaries. A one-off pass
+// is exactly what this project has watched drift back three times: the badge naming one person was fixed
+// per page and came back on the next page somebody wrote. So the rule is checked rather than remembered.
+//
+// The exceptions are not a pattern. Each was read once and written down, because every rule-shaped guess
+// tried here was wrong about something: "all caps" would have protected PRISTAP, a Macedonian word in
+// capitals, and "looks like a language tag" would have protected `od` and `da`, which are Macedonian words
+// for "by" and "yes".
+const STAYS_LATIN = new Set([
+  // Codes, formats and units, which are written the same on any shop floor.
+  'SEK', 'PIN', 'PDF', 'CSV', 'JSON', 'XML', 'Excel', 'NCR', 'NDT', 'WPS', 'ITP', 'CAPA', 'RFQ',
+  'ID', 'Rev', 'Hub', 'Incoterms', 'LinkedIn', 'Kanban', 'Varmak AB',
+  'JC-0000', 'PO-0000', 'DN-00000', '#', '—', '★', '×',
+  // The one value that is not prose at all: a BCP-47 tag handed to toLocaleDateString. `мк` is not a
+  // language any browser knows, so converting it would have broken every date on every Macedonian screen.
+  'mk'
+]);
+const CYRILLIC = /[Ѐ-ӿ]/;
+const A_PLACEHOLDER_ONLY = /^[\s\d%{}()\[\]<>→≥≤.,:;·—–…+\-*/]*$/;
+
+function theMacedonianIsCyrillic(failures) {
+  let checked = 0;
+  for (const file of appPages()) {
+    const source = readPage(file);
+    // The mk dictionary, by walking braces from its opening one rather than by matching to a close — these
+    // objects contain braces inside their strings.
+    const opened = /(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{)/.exec(source);
+    if (!opened) continue;
+    let at = source.indexOf('{', opened.index);
+    let depth = 0;
+    let end = at;
+    for (; end < source.length; end += 1) {
+      if (source[end] === '{') depth += 1;
+      else if (source[end] === '}') { depth -= 1; if (!depth) break; }
+    }
+    const block = source.slice(at, end + 1);
+    for (const found of block.matchAll(/(?<!\\)(["'])((?:\\.|(?!\1)[^\\])*)\1/g)) {
+      const value = found[2];
+      // A quoted KEY, not a value: the keys with a hyphen in them have to be quoted, and `nt_machine-problem`
+      // is a key rather than a string anybody reads. The colon after it is what tells them apart.
+      const next = block.slice(found.index + found[0].length).match(/^\s*(.)/);
+      if (next && next[1] === ':') continue;
+      if (!value.trim() || STAYS_LATIN.has(value)) continue;
+      // A value made only of a placeholder, a number and punctuation has no letters to be in any script.
+      if (A_PLACEHOLDER_ONLY.test(value.replace(/\{[^}]*\}/g, ''))) continue;
+      checked += 1;
+      if (CYRILLIC.test(value)) continue;
+      // Latin left in a Macedonian string: either it was never translated, or somebody added a new one in
+      // the transliteration the rest of the app has stopped using.
+      failures.push(`${file} has Macedonian in Latin script: ${JSON.stringify(value.slice(0, 60))} — `
+        + 'the Macedonian is Cyrillic, and two scripts in one app is one app reading two ways');
+    }
+  }
+  if (!failures.length) console.log(`OK   all ${checked} Macedonian strings are in Cyrillic`);
+}
+
 async function main() {
   const harness = await startBrowserHarness();
   const failures = [];
   theGuardKnowsWhichPagesAreWired(failures);
   noPageNamesARecordItCannotKnow(failures);
   noPageNamesWhoIsSignedIn(failures);
+  theMacedonianIsCyrillic(failures);
   try {
     for (const file of appPages()) {
       await checkPage(harness.context, harness.baseUrl, file, failures);

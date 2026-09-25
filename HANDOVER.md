@@ -598,6 +598,31 @@ cannot offer the form a value to save back. A planted bug proved the first versi
 'Review Soon' maps to the same stored value as what was chosen, so it passed. 'Expired' does not.
 **When a dropdown offers a state, ask whether anybody decides it.**
 
+## 4g. Three decisions taken, 25 September — and what they mean
+
+Asked because each would otherwise have been a guess, and a wrong guess on any of them wastes a large piece
+of work rather than a small one.
+
+**Invoicing: the basis, not the invoice.** Varmak issues the legal invoice from its accounting system, as
+most Swedish firms do. So this app builds the *invoice basis* — hours, material and machine time rolled up
+per project, exportable — and no more: no VAT logic, no invoice numbering, no legal document, no second
+system of record for money going out. That is the smaller half by a wide margin, and the reason is not
+effort: two systems both claiming to be the invoice means one of them is wrong and nobody knows which.
+The `invoices` collection the two screens read is a *basis* now, not an invoice.
+
+**The four welding registers: build them.** The firm is certified or on the way, which turns
+`BACKEND.md`'s "paperwork for nobody" argument on its head — there is an auditor. A weld log, the NDT
+against those welds, the procedure specifications welds are made to, and which welder is qualified to
+which. For a fabrication shop these are what a delivery is signed off against, and they are the largest
+remaining piece of real schema work. Everything already kept for this reason — the heat number and the
+certificate reference on the jobcard — is what they build on.
+
+**Macedonian goes to Cyrillic.** The translation was 727 strings in Cyrillic and 1616 in Latin, which is
+not a preference but a defect: the same app reads two ways depending on which screen somebody opens.
+Cyrillic is the correct orthography, so the 1616 convert. Mechanical, but not *only* mechanical — a
+transliteration table gets `lj`/`nj`/`dž` wrong wherever they are two letters rather than one, and it must
+not touch what is deliberately untranslated.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
