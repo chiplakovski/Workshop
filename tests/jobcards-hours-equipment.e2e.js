@@ -82,6 +82,29 @@ async function hoursWorkflow(page, jobcard) {
   await page.locator('#equipList .eqsel').selectOption(EQUIPMENT_ID);
   await page.locator('#equipList .eqhrs').fill(String(LOGGED_HOURS));
 
+  // ── Nobody signed in ────────────────────────────────────────────────────────────────────────
+  //
+  // This screen books the signed-in person's own time: the server takes the worker from the session and
+  // ignores any name sent with it, so the badge IS the field, and the screen reads that label back as the
+  // worker. The name used to be written into the page — "Marko K." — so it could never be missing, and an
+  // hours entry always had somebody on it by accident. It is painted from the snapshot now, and this suite
+  // runs with no session at all, so the badge holds an em dash. Booking against that would write hours
+  // nobody can be asked about.
+  await page.locator('#saveEntry').click();
+  await page.waitForTimeout(150);
+  const refusedBadge = await page.locator('.wask .waskmsg').first().textContent();
+  assert.match(refusedBadge, /nobody is signed in/i,
+    `hours with no session must be refused, and the screen said: ${refusedBadge}`);
+  await page.locator('.wask .waskyes').click();
+  await page.waitForTimeout(70);
+  assert.equal(await page.evaluate((no) => (WorkshopData.get().hours || [])
+    .filter((h) => h.jobcard === no).length), 0, 'and nothing was written while it was refused');
+
+  // Now with a session, which on a real screen means the painter in workshop-ui.js has filled the badge
+  // from the snapshot. Setting the element is exactly what that does, and it is set rather than assumed so
+  // the rest of this suite depends on a name somebody put there instead of one baked into the page.
+  await page.evaluate(() => { document.querySelector('[data-session-name]').textContent = 'Marko K.'; });
+
   await page.locator('#saveEntry').click();
   await page.waitForTimeout(150);
   // The app tells you in its own markup: a native alert() is invisible in a sandboxed frame.

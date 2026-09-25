@@ -1591,7 +1591,7 @@
                 ${(item.notesLog || []).length ? (item.notesLog.map((entry) => `
                   <tr>
                     <td>${escapeHtml(entry.type || 'General')}</td>
-                    <td>${escapeHtml(entry.author || 'Aleksandar C.')}</td>
+                    <td>${escapeHtml(entry.author || currentUser())}</td>
                     <td>${escapeHtml(shortDate(entry.timestamp || new Date().toISOString()))}</td>
                     <td>${escapeHtml(entry.text || '')}</td>
                   </tr>
@@ -1610,7 +1610,7 @@
                   <tr>
                     <td>${escapeHtml(shortDate(entry.timestamp || new Date().toISOString()))}</td>
                     <td>${escapeHtml(entry.action || 'Activity')}</td>
-                    <td>${escapeHtml(entry.user || 'Aleksandar C.')}</td>
+                    <td>${escapeHtml(entry.user || currentUser())}</td>
                     <td>${escapeHtml(entry.reference || item.equipmentId)}</td>
                     <td>${escapeHtml(entry.details || '—')}</td>
                   </tr>

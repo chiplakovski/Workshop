@@ -922,7 +922,11 @@ function field(id,label,value,type){type=type||'text';return `<div><label for="$
 function fieldSelect(id,label,options,selected){return `<div><label for="${id}">${label}</label><select id="${id}">${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
 function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}</label><textarea id="${id}">${esc(value??'')}</textarea></div>`;}
 function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]}));}
-function ownerOptions(){return [{v:'Aleksandar C.',l:'Aleksandar C.'},{v:'Elena N.',l:'Elena N.'},{v:'Marko K.',l:'Marko K.'}];}
+
+// The staff, from the snapshot. Three names were written into this line: the Owner dropdown on a lead,
+// an opportunity, a campaign and a contact offered the same three strangers on every one of them.
+function ownerOptions(){return (WorkshopData.get().people||[]).map(p=>p.name)
+  .filter(Boolean).map(n=>({v:n,l:n}));}
 
 // ═══════════════ FINDINGS VIEW ═══════════════
 // The queue between an outward sweep of public sources and the person who has to decide what to
@@ -1119,7 +1123,7 @@ function fdAccept(id){
   if(!f)return;
   openModal(`<h2>${tt.fd_accept_t}</h2><div class="fsub">${esc(f.title)}</div>
     <div class="frow2">${field('fdCompany',tt.fd_company,f.company||f.title)}${field('fdContact',tt.fd_contact,'')}</div>
-    <div class="frow2">${fieldSelect('fdOwner',tt.fd_owner,ownerOptions(),'Aleksandar C.')}</div>
+    <div class="frow2">${fieldSelect('fdOwner',tt.fd_owner,ownerOptions(),currentUser())}</div>
     <p class="disclaimer">${tt.fd_accept_note}</p>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button>
       <button class="tbtn primary" onclick="fdAcceptSave('${esc(id)}')">${tt.fd_makelead}</button></div>`,true);
@@ -1139,7 +1143,7 @@ function fdAcceptSave(id){
 function fdDismiss(id){
   const tt=t();
   wConfirm(tt.fd_reject_q,()=>{
-    const got=WorkshopData.dismissProspectFinding(id,{by:'Aleksandar C.'});
+    const got=WorkshopData.dismissProspectFinding(id,{by:currentUser()});
     if(got&&got.error){wAlert(got.error);return;}
     renderApp();
   },{yes:tt.fd_reject,no:tt.btn_cancel});
@@ -1248,7 +1252,7 @@ function openLeadForm(id){
     <div class="frow2">${field('lfCity',tt.fl_city,l?l.city:'')}${field('lfCountry',tt.fl_country,l?l.country:'Sweden')}</div>
     <div class="frow2">${field('lfIndustry',tt.fl_industry,l?l.industry:'')}${field('lfSize',tt.fl_size,l?l.size:'')}</div>
     <div class="frow2">${fieldSelect('lfSource',tt.fl_source,optList(SOURCE_KEYS,'src_'),l?l.source:'website')}${field('lfService',tt.fl_service,l?l.service:'')}</div>
-    <div class="frow3">${field('lfValue',tt.fl_value,l?l.value:'','number')}${fieldSelect('lfPriority',tt.fl_priority,optList(['high','medium','low'],'pr_'),l?l.priority:'medium')}${fieldSelect('lfOwner',tt.fl_owner,ownerOptions(),l?l.owner:'Aleksandar C.')}</div>
+    <div class="frow3">${field('lfValue',tt.fl_value,l?l.value:'','number')}${fieldSelect('lfPriority',tt.fl_priority,optList(['high','medium','low'],'pr_'),l?l.priority:'medium')}${fieldSelect('lfOwner',tt.fl_owner,ownerOptions(),l?l.owner:currentUser())}</div>
     <div class="frow2">${field('lfFollowup',tt.fl_nextfollowup,l?l.nextFollowUp:'','date')}${fieldSelect('lfCommpref',tt.fl_commpref,[{v:'Email',l:'Email'},{v:'Phone',l:'Phone'}],l?l.commPref:'Email')}</div>
     <div class="frow checkrow"><input type="checkbox" id="lfDnc" ${l&&l.dnc?'checked':''}><label for="lfDnc" style="margin:0;">${tt.fl_dnc}</label></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadForm(${l?l.id:'null'})">${tt.btn_save}</button></div>`;
@@ -1279,7 +1283,7 @@ async function saveLeadForm(id){
 function openAddNote(id){const tt=t();const html=`<h2>${tt.m_addnote_t}</h2>${fieldTextarea('noteText',tt.f_notetext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadNote(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadNote(id){const txt=$('noteText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.notes.unshift({date:dt,author:'Aleksandar C.',text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});syncLead(l);leadDetailTab='notes';closeModal();renderApp();}
+  l.notes.unshift({date:dt,author:currentUser(),text:txt});l.activity.push({date:dt,type:'note',text:'Note added.'});syncLead(l);leadDetailTab='notes';closeModal();renderApp();}
 function openRecordCall(id){const tt=t();const html=`<h2>${tt.m_recordcall_t}</h2>${fieldTextarea('callText',tt.f_calltext,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveLeadCall(${id})">${tt.btn_save}</button></div>`;openModal(html);}
 function saveLeadCall(id){const txt=$('callText').value.trim();if(!txt)return;const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
@@ -1298,10 +1302,10 @@ function completeLeadFollowup(id){const l=getLead(id);const dt=currentDate().toI
 function openQualifyLead(id){const tt=t();const html=`<h2>${tt.m_qualify_t}</h2>${fieldTextarea('qualNote',tt.f_qualnote,'')}
   <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveQualifyLead(${id})">${tt.act_qualify}</button></div>`;openModal(html);}
 async function saveQualifyLead(id){const note=$('qualNote').value.trim();const l=getLead(id);const dt=currentDate().toISOString().slice(0,10);
-  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:'Aleksandar C.',text:note});
+  l.status='qualified';l.activity.push({date:dt,type:'qualify',text:'Lead qualified.'+(note?' '+note:'')});if(note)l.notes.unshift({date:dt,author:currentUser(),text:note});
   let opportunity=l.linkedOpportunityId?getOpp(l.linkedOpportunityId):OPPORTUNITIES.find(o=>o.leadId===l.id);
   if(!opportunity){
-    opportunity={leadId:l.id,customerId:l.linkedCustomerId||null,company:l.company,contact:l.contact,title:l.service||`Opportunity for ${l.company}`,industry:l.industry,scope:l.service||'',value:Number(l.value)||0,probability:50,stage:'qualified',expectedDecision:'',requiredDelivery:'',owner:l.owner||'Aleksandar C.',competitor:'',nextAction:'Prepare scope and quotation',services:l.service?[l.service]:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:l.nextFollowUp||null,activity:[{date:dt,text:`Created from qualified lead ${l.no}.`}]};
+    opportunity={leadId:l.id,customerId:l.linkedCustomerId||null,company:l.company,contact:l.contact,title:l.service||`Opportunity for ${l.company}`,industry:l.industry,scope:l.service||'',value:Number(l.value)||0,probability:50,stage:'qualified',expectedDecision:'',requiredDelivery:'',owner:l.owner||currentUser(),competitor:'',nextAction:'Prepare scope and quotation',services:l.service?[l.service]:[],decisionReason:'',linkedEstimateNo:null,linkedProjectNo:null,followUpDate:l.nextFollowUp||null,activity:[{date:dt,text:`Created from qualified lead ${l.no}.`}]};
     const saved=await syncOpportunity(opportunity);
     if(saved&&saved.error)return;
   }
@@ -1418,7 +1422,7 @@ function openOpportunityEstimation(id){
   let estimation=o.linkedEstimateNo?WorkshopData.listEstimations().find(e=>e.no===o.linkedEstimateNo):null;
   if(!estimation){
     const created=currentDate(),valid=new Date(created.getTime()+30*86400000).toISOString().slice(0,10);
-    estimation=WorkshopData.upsertEstimation({customerId:o.customerId||null,customer:o.company,title:o.title,status:'draft',revision:0,created:created.toISOString().slice(0,10),validUntil:valid,currency:'SEK',sellingPrice:Number(o.value)||0,totalCost:0,opportunityRef:o.no,requestedDelivery:o.requiredDelivery||'',deliveryTarget:o.requiredDelivery||'',estimator:o.owner||'Aleksandar C.'});
+    estimation=WorkshopData.upsertEstimation({customerId:o.customerId||null,customer:o.company,title:o.title,status:'draft',revision:0,created:created.toISOString().slice(0,10),validUntil:valid,currency:'SEK',sellingPrice:Number(o.value)||0,totalCost:0,opportunityRef:o.no,requestedDelivery:o.requiredDelivery||'',deliveryTarget:o.requiredDelivery||'',estimator:o.owner||currentUser()});
     o.linkedEstimateNo=estimation.no;o.activity.push({date:created.toISOString().slice(0,10),text:`Estimation ${estimation.no} created.`});syncOpportunity(o);
   }
   const shared=WorkshopData.get();SHARED.customers=shared.customers;SHARED.estimations=shared.estimations;SHARED.projects=shared.projects;
@@ -1444,7 +1448,7 @@ function openOppForm(id){
     <div class="frow">${fieldTextarea('ofScope',tt.fl_scope,o?o.scope:'')}</div>
     <div class="frow3">${field('ofValue',tt.fl_value,o?o.value:'','number')}${field('ofProb',tt.fl_probability,o?o.probability:50,'number')}${fieldSelect('ofStage',tt.fl_status,STAGES.map(s=>({v:s,l:tt['stg_'+s]})),o?o.stage:'discovery')}</div>
     <div class="frow2">${field('ofDecision',tt.fl_expecteddecision,o?o.expectedDecision:'','date')}${field('ofDelivery',tt.fl_requireddelivery,o?o.requiredDelivery:'','date')}</div>
-    <div class="frow2">${fieldSelect('ofOwner',tt.fl_owner,ownerOptions(),o?o.owner:'Aleksandar C.')}${field('ofCompetitor',tt.fl_competitor,o?o.competitor:'')}</div>
+    <div class="frow2">${fieldSelect('ofOwner',tt.fl_owner,ownerOptions(),o?o.owner:currentUser())}${field('ofCompetitor',tt.fl_competitor,o?o.competitor:'')}</div>
     <div class="frow">${field('ofNextAction',tt.fl_nextaction,o?o.nextAction:'')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveOppForm(${o?o.id:'null'})">${tt.btn_save}</button></div>`;
   openModal(html,true);
@@ -1488,7 +1492,7 @@ function openTenderForm(id){
     <div class="frow2">${field('tfRef',tt.fl_ref,x?x.ref:('RFQ-2026-0'+(TENDERS.length+11)))}${field('tfCompany',tt.fl_company,x?x.company:'')}</div>
     <div class="frow2">${field('tfIndustry',tt.fl_industry,x?x.industry:'')}${field('tfSource',tt.fl_source,x?x.source:'')}</div>
     <div class="frow">${fieldTextarea('tfDesc',tt.fl_description,x?x.description:'')}</div>
-    <div class="frow3">${field('tfDeadline',tt.fl_deadline,x?x.deadline:'','date')}${field('tfValue',tt.fl_value,x?x.value:'','number')}${fieldSelect('tfResponsible',tt.fl_responsible,ownerOptions(),x?x.responsible:'Aleksandar C.')}</div>
+    <div class="frow3">${field('tfDeadline',tt.fl_deadline,x?x.deadline:'','date')}${field('tfValue',tt.fl_value,x?x.value:'','number')}${fieldSelect('tfResponsible',tt.fl_responsible,ownerOptions(),x?x.responsible:currentUser())}</div>
     <div class="frow2">${fieldSelect('tfBid',tt.fl_biddecision,[{v:'bid',l:tt.bid_bid},{v:'pending',l:tt.bid_pending},{v:'no-bid',l:tt['bid_no-bid']}],x?x.bidDecision:'pending')}${field('tfReminder',tt.fl_reminder,x?x.reminderDate:'','date')}</div>
     <div class="frow">${fieldTextarea('tfRequirements',tt.fl_requirements,x?x.requirements:'')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveTenderForm(${x?x.id:'null'})">${tt.btn_save}</button></div>`;
@@ -1560,7 +1564,7 @@ function openCampaignForm(id){
     <div class="frow">${field('cfName',tt.fl_company,c?c.name:'')}</div>
     <div class="frow">${fieldTextarea('cfObjective',tt.fl_objective,c?c.objective:'')}</div>
     <div class="frow2">${field('cfIndustries',tt.fl_targetindustries,c?c.targetIndustries.join(', '):'')}${field('cfChannels',tt.fl_channels,c?c.channels.join(', '):'')}</div>
-    <div class="frow2">${field('cfSegment',tt.fl_segment,c?c.segment:'')}${fieldSelect('cfOwner',tt.fl_owner,ownerOptions(),c?c.owner:'Aleksandar C.')}</div>
+    <div class="frow2">${field('cfSegment',tt.fl_segment,c?c.segment:'')}${fieldSelect('cfOwner',tt.fl_owner,ownerOptions(),c?c.owner:currentUser())}</div>
     <div class="frow2">${field('cfStart',tt.fl_start,c?c.start:'','date')}${field('cfEnd',tt.fl_end,c?c.end:'','date')}</div>
     <div class="frow2">${field('cfBudget',tt.fl_budget,c?c.budget:'','number')}${field('cfSpend',tt.fl_spend,c?c.spend:0,'number')}</div>
     <div class="frow">${fieldSelect('cfStatus',tt.fl_status,[{v:'active',l:tt.cs_active},{v:'paused',l:tt.cs_paused},{v:'completed',l:tt.cs_completed},{v:'planned',l:tt.cs_planned}],c?c.status:'planned')}</div>
@@ -1638,7 +1642,7 @@ function openContentForm(id){
   const html=`<h2>${c?tt.btn_edit:tt.m_newcontent_t}</h2>
     <div class="frow">${field('cnTitle',tt.fl_title,c?c.title:'')}</div>
     <div class="frow2">${fieldSelect('cnType',tt.th_type,typeOptions.map(x=>({v:x,l:x})),c?c.type:typeOptions[0])}${field('cnChannel',tt.th_channel,c?c.channel:'')}</div>
-    <div class="frow2">${field('cnDate',tt.fl_publishdate,c?c.date:'','date')}${fieldSelect('cnOwner',tt.fl_owner,ownerOptions(),c?c.owner:'Aleksandar C.')}</div>
+    <div class="frow2">${field('cnDate',tt.fl_publishdate,c?c.date:'','date')}${fieldSelect('cnOwner',tt.fl_owner,ownerOptions(),c?c.owner:currentUser())}</div>
     <div class="frow2">${field('cnAudience',tt.th_audience,c?c.audience:'')}${field('cnCta',tt.fl_cta,c?c.cta:'')}</div>
     <div class="frow2">${fieldSelect('cnCampaign',tt.fl_campaign,[{v:'',l:'—'}].concat(CAMPAIGNS.map(x=>({v:x.id,l:x.name}))),c?c.campaignId:'')}${fieldSelect('cnStatus',tt.fl_status,['draft','review','approved','scheduled','published'].map(s=>({v:s,l:tt['co_'+s]})),c?c.status:'draft')}</div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${tt.btn_cancel}</button><button class="tbtn primary" onclick="saveContentForm(${c?c.id:'null'})">${tt.btn_save}</button></div>`;

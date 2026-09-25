@@ -300,6 +300,24 @@
     for(var i=0;i<found.length;i++)paint(found[i]);
   }
 
+  // Who is doing this, for the eight screens that write it into a record — a history line, a note's
+  // author, a createdBy, the name on a stock movement. Every one of them had the literal 'Aleksandar C.'
+  // in it, sixty-eight times across the eight, so a quality note added by a welder recorded that he had
+  // added it and an estimation revised by the office recorded that he had revised it.
+  //
+  // In the wired screens the server ignores a name sent with a write and takes it from the session, so
+  // this is not what ends up in the database — it is what the screen shows between saves, and it was
+  // showing something the database disagreed with. Where a page is still on browser storage, it is what
+  // gets stored, and a record signed by nobody is honest where one signed by the wrong person is not.
+  //
+  // It is global rather than a copy on each page on purpose: six copies of one answer is exactly what
+  // put a name in eleven badges and left three of them behind when it was fixed.
+  window.currentUser=function currentUser(){
+    var data=window.WorkshopData;
+    var who=data&&data.signedInAs?data.signedInAs().by:null;
+    return who||'\u2014';
+  };
+
   window.addEventListener('workshop:data',paintWhoIsSignedIn);
   // And once at load, for the snapshot a page adopts before this file is listening. Also after a language
   // switch, because the dictionary sweep walks every [data-i] on the page: an entry reading "Admin" over a

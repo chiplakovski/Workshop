@@ -784,7 +784,7 @@ function openAddNote(id){
 }
 function saveAddNote(id){
   const text=$("anText").value.trim();if(!text)return;
-  const c=getCust(id);c.notes.push({date:new Date().toISOString().slice(0,10),author:"Aleksandar C.",text});syncCustomer(c);
+  const c=getCust(id);c.notes.push({date:new Date().toISOString().slice(0,10),author:currentUser(),text});syncCustomer(c);
   closeModal();renderAll();
 }
 
@@ -803,7 +803,7 @@ async function saveUpload(id){
   if(file&&file.size>WorkshopData.maxDocumentFileBytes){$("udError").textContent=`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`;return;}
   let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);
   if(file&&fileData===null){$("udError").textContent='The selected file could not be read.';return;}
-  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Customers',record:c.name,category:'Customer Documents',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.',fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
+  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Customers',record:c.name,category:'Customer Documents',status:'Valid',expiry:'',revision:'1',author:currentUser(),fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
   if(saved.error){$("udError").textContent=saved.error;return;}
   closeModal();renderAll();
 }

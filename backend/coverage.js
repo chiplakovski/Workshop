@@ -37,7 +37,14 @@ const TABLE_FOR = {
   qualityNcrs: 'ncr', qualityHolds: 'quality_hold', purchaseOrders: 'purchase_order',
   documents: 'document', marketingLeads: 'lead', marketingOpportunities: 'opportunity',
   marketingTenders: 'tender',
-  itemGroups: 'item_group', locationGroups: 'location', activity: 'activity_log'
+  itemGroups: 'item_group', locationGroups: 'location', activity: 'activity_log',
+  // The staff, which the snapshot carries so a form can offer "Responsible" and "Owner" from the people
+  // this workshop has rather than three names written into six pages. Measured against app_user, and it
+  // will print "(no demo record to compare)": the demonstration state has no staff, because who works at
+  // a workshop is not something a fixture can invent. The Access screen's own suite covers these columns.
+  people: 'app_user',
+  // What a sweep found out about a prospect. `act_on_prospect_finding` already writes against these rows.
+  prospectFindings: 'prospect_finding'
 };
 
 // Collections this meter deliberately does not measure, and why. Checked against the demonstration state
@@ -79,7 +86,31 @@ const NOT_MEASURED = {
   // counting session that is not a record until it is posted, a saved filter.
   counters: "this browser's own numbering, not a record",
   stockCounts: 'a counting session in progress, which is not a record until it is posted',
-  savedReports: 'a report definition, which the Reports screen refuses out loud'
+  savedReports: 'a report definition, which the Reports screen refuses out loud',
+
+  // ── Nine more, found by fixing this check rather than by reading the code ──────────────────────
+  //
+  // The test above used to skip a collection the demonstration fixture had left empty, so it only ever
+  // complained about collections that carried a record. These nine carry none, and every one of them was
+  // invisible to this meter for the same reason `marketingCampaigns` was: not because anybody decided they
+  // did not matter, but because nothing asked. Two have a table. Seven do not, and saying so here is the
+  // point of this list — the coverage figure means "of the app", and it cannot mean that while a module is
+  // missing from the map.
+  //
+  // The one that matters most is `invoices`. Two screens read it, there is no table, and it is the money
+  // going out of the door. It is the largest single gap in this schema and it is not in the 20 fields the
+  // figure below calls missing, because a whole register is not a field.
+  invoices: 'NO TABLE, and two screens read it: invoicing is the largest gap in this schema',
+  supplierInvoices: 'no table: the invoice arriving against a purchase order, the other half of invoicing',
+  purchaseRfqs: 'no table: an enquiry to a merchant, which precedes the purchase_order that exists',
+  qualityReleases: 'no table yet: a release note, which the Quality screen refuses out loud',
+  documentFolders: 'a grouping over document rows rather than a record — document.entity already groups them',
+  // A breakdown is an equipment_event with kind 'breakdown', and the data layer keeps this list as a
+  // second copy of equipment.downtimeRecords, which its own comment says out loud. Two stored copies of
+  // one fact is the bug, not the missing table.
+  breakdowns: "equipment_event kind 'breakdown' — this list is a second copy of equipment.downtimeRecords",
+  prospectSeen: 'which findings this workshop has looked at; acting on one is written to activity_log',
+  prospectSweeps: 'no table: when a sweep last ran, which is this browser\'s bookkeeping rather than a record'
 };
 
 // The same thing under a different word. Every entry here is a judgement, so they are written down
@@ -102,6 +133,13 @@ const SAME_THING = {
   // that gets planned around. Every entry below was checked against the column list in schema.sql.
   since: 'customer_since', terms: 'payment_terms_days', billing: 'billing_address',
   shipping: 'shipping_address',
+
+  // Per collection, because both words mean something else everywhere else. A customer's `name` is
+  // `customer.name`; a person's is `app_user.display_name`. An offcut's `active` is not a column at all;
+  // a person's is `is_active`. This is what the per-collection form of an entry is for, and getting it
+  // wrong in either direction moves the figure below: a blanket `name: 'display_name'` would have called
+  // every customer, project and merchant name stored under a column that is not theirs.
+  active: { people: 'is_active' },
   // NOT is_preferred, which is what this said when it was first written here and was wrong: the
   // customer screen's `preferred` sits under a label reading "Preferred Contact" and holds 'Email'.
   // is_preferred is whether the workshop favours the customer, which nothing reads. Mapping one to
@@ -148,7 +186,7 @@ const SAME_THING = {
           // is `kind`, the word this schema uses for the kind of any thing. The screen's word won on
           // the wire (the snapshot sends `type`); the column keeps the schema's.
           qualityInspections: 'kind' },
-  name: { documents: 'title' },
+  name: { documents: 'title', people: 'display_name' },
 
   // The quality register, and the fourth time this meter has overstated the work by not knowing a
   // column's own name. Five of the seven fields it reported missing across inspections and NCRs were
@@ -351,8 +389,12 @@ function main() {
   // Every collection in the demonstration workshop is either measured above or named as deliberately not
   // measured. A collection in neither is one this file is silent about, which is worse than reporting it
   // as a gap: the number at the bottom reads as though it covered everything.
+  // Every list in the state, not only the ones the demonstration fixture happens to have filled. The
+  // emptiness test used to come first, and `people` slipped past this check on the run it was added:
+  // a collection nobody has mapped is unaccounted for whether or not a fixture carries a record of it,
+  // and it is newest — least likely to be in the map — exactly when it is still empty.
   const unaccounted = Object.keys(records)
-    .filter((name) => Array.isArray(records[name]) && records[name].length)
+    .filter((name) => Array.isArray(records[name]))
     .filter((name) => !TABLE_FOR[name] && !NOT_MEASURED[name]);
   if (unaccounted.length) {
     console.error(`\nThese collections carry records and this meter says nothing about them, `
@@ -397,7 +439,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 295, needsColumn: 20 };
+  const BASELINE = { stored: 299, needsColumn: 20 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

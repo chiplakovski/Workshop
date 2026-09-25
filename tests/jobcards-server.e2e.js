@@ -155,6 +155,25 @@ async function main() {
     assert.equal(shown.bom, 0);
     step('Jobcards: the screen reads the workshop\'s own jobcards, their steps and the hours on them');
 
+    // ── The dropdowns that offer a person ────────────────────────────────────────────────────
+    //
+    // Responsible, Worker, the filter by responsible, the Reassign select, and the job title in the
+    // workers table were all fed by a const holding three names written into this page: Aleksandar C.,
+    // Elena N., Marko K. At a real firm those five controls offered three strangers and none of the
+    // staff — so the one field that decides who is answerable for a weld could not be set to anybody
+    // who works there. The names come from the snapshot now, which takes them from app_user.
+    const offered = await page.evaluate(() => ({
+      names: staffNames(),
+      roleOfEach: staffNames().map((n) => staffRole(n)),
+      inTheForm: ownerOptions().map((o) => o.v)
+    }));
+    assert.deepEqual(offered.names, ['Anna Berg', 'Marko Ilic'],
+      `the dropdowns offer this workshop's people, and offered ${JSON.stringify(offered.names)}`);
+    assert.deepEqual(offered.roleOfEach, ['admin', 'workshop'],
+      'and the workers table states the role the database holds, not a job title nobody entered');
+    assert.deepEqual(offered.inTheForm, offered.names, 'and the form offers the same list');
+    step('Jobcards: the person dropdowns offer this workshop\'s staff, not three names from the page');
+
     // ── Editing the jobcard, through the page's own form ────────────────────────────────────
     const onScreen = await page.evaluate(() => JOBCARDS[0].id);
     await page.evaluate((id) => { openJcDetail(id); openJcForm(id); }, onScreen);

@@ -1004,7 +1004,7 @@ async function submitInspection(){
     component:$('ins_component').value.trim(),drawingNo:$('ins_drawing').value.trim(),drawingRev:$('ins_rev').value.trim(),
     type:$('ins_type').value,method:$('ins_method').value.trim(),plannedDate:$('ins_planned').value,inspector:$('ins_inspector').value.trim(),
     acceptanceCriteria:$('ins_criteria').value.trim(),customerWitness:$('ins_witness').checked,materialTraceabilityOk:$('ins_matready').checked,
-    status:'requested',createdBy:'Aleksandar C.'
+    status:'requested',createdBy:currentUser()
   };
   if(!payload.projectNo){formErr('insFormErr','Select a project.');return;}
   if(!payload.plannedDate){formErr('insFormErr','Planned date is required.');return;}
@@ -1133,7 +1133,7 @@ async function submitNcr(){
     title:$('ncr_title').value.trim(),projectNo:$('ncr_project').value,customer:project?project.customer:'',
     jobcard:$('ncr_jobcard').value||null,component:$('ncr_component').value.trim(),supplier:$('ncr_supplier').value||null,
     description:$('ncr_description').value.trim(),category:$('ncr_category').value,severity:$('ncr_severity').value,
-    detectedBy:'Aleksandar C.',responsiblePerson:$('ncr_responsible').value.trim(),dueDate:$('ncr_due').value
+    detectedBy:currentUser(),responsiblePerson:$('ncr_responsible').value.trim(),dueDate:$('ncr_due').value
   };
   if(!payload.title){formErr('ncrFormErr','Title is required.');return;}
   if(!payload.projectNo){formErr('ncrFormErr','Select a project.');return;}
@@ -1178,7 +1178,7 @@ function ncrShowAction(no,action){
     containment:`<div class="mrow"><label>Containment Action</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitContainment('${esc(no)}')">Save Containment</button>`,
     disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label for="ncrActRef">Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
     capa:`<div class="mrow"><label>Corrective Action Reference (CAPA No.)</label><input id="ncrActInput" type="text" placeholder="CAPA-2026-001"></div><button class="mbtn primary" onclick="ncrSubmitCapaLink('${esc(no)}')">Assign</button>`,
-    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label for="ncrActRef">Verified By</label><input id="ncrActRef" type="text" value="Aleksandar C."></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
+    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label for="ncrActRef">Verified By</label><input id="ncrActRef" type="text" value=currentUser()></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
     close:`<div class="mrow"><label>Closure Approval Reference</label><input id="ncrActInput" type="text" placeholder="Approved by Quality Manager — ref #"></div><button class="mbtn primary" onclick="ncrSubmitClose('${esc(no)}')">Close NCR</button>`,
     reopen:`<div class="mrow"><label>Reason for Reopening</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitReopen('${esc(no)}')">Reopen NCR</button>`
   };
@@ -1218,7 +1218,7 @@ let noteTarget=null;
 async function submitNote(){
   if(!noteTarget)return;
   const text=$('note_text').value.trim();if(!text)return;
-  const r=await WorkshopData.addQualityNote(noteTarget.collection,noteTarget.idOrNo,{author:'Aleksandar C.',text});
+  const r=await WorkshopData.addQualityNote(noteTarget.collection,noteTarget.idOrNo,{author:currentUser(),text});
   if(r.error){notify(r.error);return;}
   invalidateDataCache();notify('Note added.');closeModal('noteModal');
   if(currentSection)loadSectionData(currentSection);

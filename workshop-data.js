@@ -25,6 +25,13 @@
   // A new workshop opens an empty system. Nothing here is invented: no customers it has not
   // won, no machines it does not own, no jobs it has not been given. The shape is complete so
   // every module has something real to read; the content is what the workshop puts in.
+  // What this module writes where a caller did not say who was doing something. It used to write
+  // 'Aleksandar C.' — thirty-three times, in an activity line, a note's author, a stock movement, an
+  // inspection's createdBy, a CAPA's verifier — so a browser-storage workshop recorded him as having done
+  // everything anybody did. This module cannot know who is signed in: the snapshot answers that, and only
+  // when there is a server. So it writes the em dash and the caller supplies the name.
+  const UNNAMED='\u2014';
+
   const emptyState=()=>({
     version:VERSION,
     counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0},
@@ -70,6 +77,10 @@
     prospectSweeps:[],
     marketingCampaigns:[],
     savedReports:[],
+    // The staff, from the snapshot. Empty in browser-storage mode, and deliberately: this module has
+    // no way to know who works at a workshop, and the six pages that used to guess are the reason
+    // every note in this system was signed by the same man.
+    people:[],
     barcodeLinks:{},
     reportConfig:{}
   });
@@ -400,6 +411,18 @@
       {id:'demo-6',name:'Open Quality Actions',category:'Quality',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'quality',filters:{dateFilter:'all'},type:'view',archived:false},
       {id:'demo-7',name:'Equipment Maintenance Due',category:'Equipment',favourite:false,created:now().slice(0,10),lastUsed:now().slice(0,10),section:'equipment',filters:{dateFilter:'all'},type:'view',archived:false}
     ],
+    // The demonstration workshop's people. Three names are written all over the records above — they are
+    // who booked the hours, signed the inspections and own the leads — and until now they existed only
+    // inside those records: six screens offered them as dropdown options by holding the same three
+    // strings in their own markup. That is what made a real firm's first day wrong, because the strings
+    // were in the page rather than in the data. Here they are the fixture's own staff, in the shape the
+    // snapshot uses, with the roles the database has words for. A workshop that has not loaded the
+    // demonstration data has nobody until the Access screen adds them, which is correct.
+    people:[
+      {id:'1',name:'Aleksandar C.',role:'admin',active:true},
+      {id:'2',name:'Elena N.',role:'workshop',active:true},
+      {id:'3',name:'Marko K.',role:'workshop',active:true}
+    ],
     reportConfig:{}
   });
 
@@ -466,7 +489,7 @@
         expectedCompletion:legacyP.plannedCompletion||legacyP.deadline||'',
         progress:PROJECTS_UI_STATUS_PROGRESS[legacyP.status]!=null?PROJECTS_UI_STATUS_PROGRESS[legacyP.status]:0,
         plannedHours:legacyP.estLabourHours||0,usedHours,
-        responsible:legacyP.pm||'Aleksandar C.',workers,
+        responsible:legacyP.pm||UNNAMED,workers,
         machines:[],materialStatus:'unchecked',bom:[],tasks:[],milestones:[]
       });
       base.projects.push(rec);
@@ -871,7 +894,11 @@
     'qualityHolds','qualityInspections','qualityNcrs',
     // The sales pipeline, which arrives in the office's own payload rather than in the snapshot
     // everybody reads — `lead`, `opportunity` and `tender` are not granted to the floor at all.
-    'marketingLeads','marketingOpportunities','marketingTenders'];
+    'marketingLeads','marketingOpportunities','marketingTenders',
+    // The staff, so a form offering "Responsible" or "Owner" offers the people this workshop has
+    // instead of the three names that were written into six pages. Narrowed by the row policy on
+    // app_user before it ever gets here: the office sees everybody, the floor sees itself.
+    'people'];
   // Who the snapshot was taken for, kept beside the records rather than only in the page that asked for
   // it. Three facts the database answers from the session rather than being told: the name, the role, and
   // the id the offline queue is keyed on. Every page has a badge saying whose session it is, and each one
@@ -934,13 +961,13 @@
   function estimation(idOrNo){return state.estimations.find(x=>x.id===idOrNo||x.no===idOrNo)}
   function jobcard(idOrNo){return state.jobcards.find(x=>x.id===idOrNo||x.no===idOrNo)}
   function equip(idOrNo){return state.equipment.find(x=>x.equipmentId===idOrNo||x.id===idOrNo)}
-  function addMovement(m){const rec=Object.assign({id:state.counters.movement++,time:now(),user:'Aleksandar C.'},m);state.movements.unshift(rec);save(`${rec.action} ${rec.code}`);return rec}
+  function addMovement(m){const rec=Object.assign({id:state.counters.movement++,time:now(),user:UNNAMED},m);state.movements.unshift(rec);save(`${rec.action} ${rec.code}`);return rec}
   function projectReadiness(p){const rows=(p.bom||[]).map(line=>{const inv=inventory(line.code),available=inv?Math.max(0,inv.stock-inv.reserved):0,missing=Math.max(0,line.required-(line.reserved||0));return Object.assign({},line,{stock:inv?inv.stock:0,available,missing})});return{status:rows.some(x=>x.missing>0)?'MATERIAL SHORTAGE':'READY FOR PRODUCTION',rows}}
   // ── Quality module helpers: thin, reused across all quality record types. ──
   function qFind(arr,idOrNo){return (arr||[]).find(x=>x.id===idOrNo||x.no===idOrNo);}
   function qActivity(rec,action,from,to,reference,reason,user){
     rec.activity=rec.activity||[];
-    rec.activity.unshift({timestamp:now(),action,user:user||'Aleksandar C.',from:from||null,to:to||null,reference:reference||rec.no,reason:reason||''});
+    rec.activity.unshift({timestamp:now(),action,user:user||UNNAMED,from:from||null,to:to||null,reference:reference||rec.no,reason:reason||''});
   }
   function qCollection(name){
     const map={inspection:state.qualityInspections,ncr:state.qualityNcrs,capa:state.qualityCapas,weld:state.qualityWelds,ndt:state.qualityNdt,itp:state.qualityItps,hold:state.qualityHolds,complaint:state.qualityComplaints,dossier:state.qualityDossiers,release:state.qualityReleases,supplierQuality:state.supplierQuality};
@@ -1497,14 +1524,14 @@
     addSupplierNote(id,note){const s=(state.suppliers||[]).find(x=>x.id===id);if(!s)return;s.notes=s.notes||[];s.notes.unshift(clone(note));save(`Supplier note: ${s.name}`)},
     addSupplierContact(id,contact){const s=(state.suppliers||[]).find(x=>x.id===id);if(!s)return;s.contacts=s.contacts||[];s.contacts.push(clone(contact));save(`Supplier contact: ${s.name}`)},
     listEstimations:()=>clone(state.estimations),
-    upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:now().slice(0,10),author:'Aleksandar C.',reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
-    updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:now().slice(0,10),author:'Aleksandar C.',reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
+    upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:now().slice(0,10),author:UNNAMED,reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
+    updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:now().slice(0,10),author:UNNAMED,reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
     archiveEstimation(idOrNo,reason){
       const e=estimation(idOrNo);
       if(!e)return{error:'Estimation not found'};
       e.archived=true;
       e.history=e.history||[];
-      e.history.push({date:now().slice(0,10),action:reason||'Archived',by:'Aleksandar C.'});
+      e.history.push({date:now().slice(0,10),action:reason||'Archived',by:UNNAMED});
       save(`Estimation archived: ${e.no}`);
       return clone(e);
     },
@@ -1516,7 +1543,7 @@
       save(`Estimation deleted: ${e.no}`);
       return{success:true};
     },
-    createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:'Aleksandar C.',workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
+    createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:UNNAMED,workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
     listProjects:()=>clone(state.projects),
     getProjects:()=>clone(state.projects),
     findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
@@ -1525,7 +1552,7 @@
       // Eight rows entered from one returned sheet do exactly that, and were getting distinct ids
       // only because each save happens to take a fraction of a millisecond - luck, not design.
       // Counted like every other record here, so it is unique by construction.
-      const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:now().slice(0,10),user:'Aleksandar C.'},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
+      const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:now().slice(0,10),user:UNNAMED},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
     upsertProject(payload){
       if(!payload||!payload.name)return{error:'A project name is required'};
       let p=state.projects.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
@@ -1558,7 +1585,7 @@
         // A caller (e.g. the Projects module) may supply only its own richer fields — apply the
         // same shared-schema defaults normalize() would, so a brand-new project is immediately
         // usable by other modules (Store reservations, Jobcards) within the same session.
-        p=Object.assign({phase:'design',progress:0,plannedHours:0,usedHours:0,responsible:'Aleksandar C.',
+        p=Object.assign({phase:'design',progress:0,plannedHours:0,usedHours:0,responsible:UNNAMED,
           workers:[],machines:[],materialStatus:'unchecked',bom:[],tasks:[],milestones:[],estimationId:null},data);
         p.id=p.id||state.counters.project++;p.no=p.no||`P-2026-${String(p.id).padStart(3,'0')}`;
         state.projects.push(p);
@@ -1584,7 +1611,7 @@
       if(!p)return{error:'Project not found'};
       p.archived=true;
       p.activity=p.activity||[];
-      p.activity.push({date:now().slice(0,10),time:now().slice(11,16),user:'Aleksandar C.',action:reason||'Project archived'});
+      p.activity.push({date:now().slice(0,10),time:now().slice(11,16),user:UNNAMED,action:reason||'Project archived'});
       save(`Project archived: ${p.no}`);
       return clone(p);
     },
@@ -1946,7 +1973,7 @@
       save(`Inventory item created: ${rec.code}`);
       return clone(rec);
     },
-    reserveItem(input){const inv=inventory(input.code),p=project(input.projectNo);if(!inv||!p)return{error:'Item or project not found'};const requested=Math.max(0,Number(input.qty)||0),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(requested,free);if(!qty)return{error:'No available stock to reserve'};inv.reserved+=qty;let line=(p.bom||[]).find(x=>x.code===inv.code);if(!line){line={code:inv.code,description:inv.description,required:qty,reserved:0,issued:0,unit:inv.unit};p.bom=p.bom||[];p.bom.push(line)}line.reserved=(line.reserved||0)+qty;addMovement({action:'RESERVED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:p.no,projectNo:p.no,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`Material reserved: ${inv.code}`);return{item:clone(inv),project:clone(p),reserved:qty,readiness:clone(r)}},
+    reserveItem(input){const inv=inventory(input.code),p=project(input.projectNo);if(!inv||!p)return{error:'Item or project not found'};const requested=Math.max(0,Number(input.qty)||0),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(requested,free);if(!qty)return{error:'No available stock to reserve'};inv.reserved+=qty;let line=(p.bom||[]).find(x=>x.code===inv.code);if(!line){line={code:inv.code,description:inv.description,required:qty,reserved:0,issued:0,unit:inv.unit};p.bom=p.bom||[];p.bom.push(line)}line.reserved=(line.reserved||0)+qty;addMovement({action:'RESERVED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:p.no,projectNo:p.no,jobcard:input.jobcard,user:input.user||UNNAMED});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`Material reserved: ${inv.code}`);return{item:clone(inv),project:clone(p),reserved:qty,readiness:clone(r)}},
     reserveBom(no){const p=project(no);if(!p)return null;(p.bom||[]).forEach(line=>{const inv=inventory(line.code);if(!inv)return;const need=Math.max(0,line.required-(line.reserved||0)),free=Math.max(0,inv.stock-inv.reserved),qty=Math.min(need,free);line.reserved=(line.reserved||0)+qty;inv.reserved+=qty;if(qty)addMovement({action:'RESERVED',code:line.code,qty,unit:line.unit,from:inv.location,to:no,projectNo:no})});const r=projectReadiness(p);p.materialStatus=r.status==='READY FOR PRODUCTION'?'ready':'shortage';save(`BOM reserved: ${no}`);return clone(r)},
     resolveBarcode:code=>state.barcodeLinks[code]||null,
     linkBarcode(barcode,itemCode){if(!inventory(itemCode))return false;state.barcodeLinks[barcode]=itemCode;save(`Barcode linked: ${barcode}`);return true},
@@ -1975,8 +2002,8 @@
       addMovement({action:'RECEIVED',code:inv.code,qty,unit:inv.unit,from:`${input.supplier||inv.supplier} / ${poNo||'No PO'}`,to:inv.location,user:input.user||'John Smith',heat:input.heat,certificate:input.certificate,purchaseOrderNo:linkedPo?linkedPo.no:null,deliveryNote:String(input.deliveryNote||'').trim()});
       return clone(inv);
     },
-    issue(input){const inv=inventory(input.code),p=project(input.projectNo),qty=quantity(input.qty);if(!inv||!p)return{error:'Item or project not found'};if(!qty)return{error:'Quantity must be greater than zero'};const available=inv.stock-inv.reserved;if(qty>available&&qty>inv.reserved)return{error:'Quantity exceeds available stock'};inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});return{item:clone(inv),project:clone(p)}},
-    move(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};const from=inv.location;if(input.action==='RETURN')inv.stock+=qty;if(input.action==='SCRAP')inv.stock=Math.max(0,inv.stock-qty);if(input.action==='TRANSFER'&&input.to)inv.location=input.to;addMovement({action:input.action,code:inv.code,qty,unit:inv.unit,from,to:input.to||inv.location,projectNo:input.projectNo,jobcard:input.jobcard,user:input.user||'Aleksandar C.'});return clone(inv)},
+    issue(input){const inv=inventory(input.code),p=project(input.projectNo),qty=quantity(input.qty);if(!inv||!p)return{error:'Item or project not found'};if(!qty)return{error:'Quantity must be greater than zero'};const available=inv.stock-inv.reserved;if(qty>available&&qty>inv.reserved)return{error:'Quantity exceeds available stock'};inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||UNNAMED});return{item:clone(inv),project:clone(p)}},
+    move(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};const from=inv.location;if(input.action==='RETURN')inv.stock+=qty;if(input.action==='SCRAP')inv.stock=Math.max(0,inv.stock-qty);if(input.action==='TRANSFER'&&input.to)inv.location=input.to;addMovement({action:input.action,code:inv.code,qty,unit:inv.unit,from,to:input.to||inv.location,projectNo:input.projectNo,jobcard:input.jobcard,user:input.user||UNNAMED});return clone(inv)},
     addOffcut(offcut){offcut=clone(offcut);offcut.id=state.counters.offcut++;offcut.code=offcut.code||`OFF-${String(offcut.id).padStart(4,'0')}`;offcut.created=now().slice(0,10);offcut.status='available';state.offcuts.unshift(offcut);save(`Offcut created: ${offcut.code}`);return clone(offcut)},
     // The one real transition out of 'available' — without this, every offcut ever registered stays
     // 'available' forever (Register offcut sets status but nothing ever moved it), so the same
@@ -1989,11 +2016,11 @@
       off.usedProject=usage.project||null;
       off.usedJobcard=usage.jobcard||null;
       off.usedDate=now().slice(0,10);
-      off.usedBy=usage.user||'Aleksandar C.';
+      off.usedBy=usage.user||UNNAMED;
       save(`Offcut used: ${off.code}`);
       return clone(off);
     },
-    recordCount(rec){const inv=inventory(rec.code),counted=Number(rec.counted);if(!inv)return{error:'Item not found'};if(!Number.isFinite(counted)||counted<0)return{error:'Count must be zero or greater'};const count={date:now(),code:rec.code,system:inv.stock,counted,difference:counted-inv.stock,scope:rec.scope,user:rec.user||'Aleksandar C.'};state.stockCounts.unshift(count);save(`Stock counted: ${rec.code}`);return clone(count)},
+    recordCount(rec){const inv=inventory(rec.code),counted=Number(rec.counted);if(!inv)return{error:'Item not found'};if(!Number.isFinite(counted)||counted<0)return{error:'Count must be zero or greater'};const count={date:now(),code:rec.code,system:inv.stock,counted,difference:counted-inv.stock,scope:rec.scope,user:rec.user||UNNAMED};state.stockCounts.unshift(count);save(`Stock counted: ${rec.code}`);return clone(count)},
     adjustCount(code,counted){const inv=inventory(code);if(!inv)return null;const before=inv.stock;inv.stock=Number(counted);addMovement({action:'ADJUSTED',code,qty:inv.stock-before,unit:inv.unit,from:inv.location,to:inv.location});return clone(inv)},
 
     // ── Jobcards: production orders issued to the workshop, linked to a project. ──
@@ -2219,7 +2246,7 @@
     addJobcardNote(idOrNo,note){const j=jobcard(idOrNo);if(!j)return null;note=Object.assign({id:Date.now(),date:now().slice(0,10),time:new Date().toTimeString().slice(0,5)},clone(note));j.notes=j.notes||[];j.notes.unshift(note);save(`Note added: ${j.no}`);return clone(note)},
     addJobcardInspection(idOrNo,inspection){const j=jobcard(idOrNo);if(!j)return null;inspection=Object.assign({id:Date.now()},clone(inspection));j.inspections=j.inspections||[];j.inspections.push(inspection);save(`Inspection added: ${j.no}`);return clone(inspection)},
     updateJobcardInspection(idOrNo,inspId,patch){const j=jobcard(idOrNo);if(!j)return null;const insp=(j.inspections||[]).find(i=>i.id===inspId);if(!insp)return null;Object.assign(insp,clone(patch));save(`Inspection updated: ${j.no}`);return clone(insp)},
-    recordJobcardActivity(idOrNo,entry){const j=jobcard(idOrNo);if(!j)return null;entry=Object.assign({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:'Aleksandar C.'},clone(entry));j.activity=j.activity||[];j.activity.unshift(entry);save(`Jobcard activity: ${j.no}`);return clone(entry)},
+    recordJobcardActivity(idOrNo,entry){const j=jobcard(idOrNo);if(!j)return null;entry=Object.assign({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:UNNAMED},clone(entry));j.activity=j.activity||[];j.activity.unshift(entry);save(`Jobcard activity: ${j.no}`);return clone(entry)},
     // A read-only accessor: it must never mutate state. normalize() already guarantees
     // state.equipment is a valid array (backfilling it only when missing/invalid, never when it is
     // a genuinely empty user collection) — see the "empty stays empty" rule. Only the explicit
@@ -2314,7 +2341,7 @@
         currentLocation:item.currentLocation||'Workshop',
         homeLocation:item.homeLocation||item.currentLocation||'Workshop',
         department:item.department||'Workshop',
-        responsiblePerson:item.responsiblePerson||'Aleksandar C.',
+        responsiblePerson:item.responsiblePerson||UNNAMED,
         condition:item.condition||'Good',
         criticality:item.criticality||'Medium',
         description:item.description||'',
@@ -2336,7 +2363,7 @@
         assignedJobcard:null,
         operator:null,
         notes:item.notes||'Demo record created through the frontend workflow.',
-        activity:[{timestamp:now(),action:'Equipment created',user:item.responsiblePerson||'Aleksandar C.',reference:key}],
+        activity:[{timestamp:now(),action:'Equipment created',user:item.responsiblePerson||UNNAMED,reference:key}],
         inspections:[],
         maintenance:[],
         certifications:[],
@@ -2425,7 +2452,7 @@
       item.status=nextStatus;
       item.lastActivity=now();
       item.activity=item.activity||[];
-      item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:meta.user||'Aleksandar C.',reference:equipmentId,details:meta.reason||''});
+      item.activity.unshift({timestamp:now(),action:`Status changed to ${nextStatus}`,user:meta.user||UNNAMED,reference:equipmentId,details:meta.reason||''});
       // Review fix (3rd review): reconcile before the single save() below so both changes persist together.
       const recon=reconcileActiveOperationsForEquipment(equipmentId,`equipment status changed to ${nextStatus}`);
       save(`Equipment status changed: ${equipmentId}`);
@@ -2541,7 +2568,7 @@
       item.assignedProject=null; item.assignedJobcard=null; item.currentLocation=meta.location||item.homeLocation||item.currentLocation; item.operator=null;
       item.currentAssignment=null;
       if(!gate.blocked)item.status='Available';
-      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Equipment returned',user:meta.user||'Aleksandar C.',reference:item.equipmentId,details:meta.note||''});
+      item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Equipment returned',user:meta.user||UNNAMED,reference:item.equipmentId,details:meta.note||''});
       item.lastActivity=now();
       // Review fix (3rd review): the assignment is gone, so ANY still-in-progress operation that was
       // using this equipment is no longer authorized — reconcile before the single save() below.
@@ -2820,7 +2847,7 @@
       const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
       if(!item) return {error:'Equipment not found'};
       const rec={...clone(note), timestamp:now()};
-      item.notesLog=item.notesLog||[]; item.notesLog.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Note added',user:note.author||'Aleksandar C.',reference:equipmentId,details:note.text||''});
+      item.notesLog=item.notesLog||[]; item.notesLog.unshift(rec); item.activity=item.activity||[]; item.activity.unshift({timestamp:now(),action:'Note added',user:note.author||UNNAMED,reference:equipmentId,details:note.text||''});
       item.lastActivity=now();
       save(`Equipment note added: ${equipmentId}`);
       return clone(rec);
@@ -2828,7 +2855,7 @@
     addActivity:(equipmentId,entry)=>{
       const item=state.equipment.find(x=>x.equipmentId===equipmentId||x.id===equipmentId);
       if(!item) return {error:'Equipment not found'};
-      const rec={timestamp:now(),action:entry.action||'Activity',user:entry.user||'Aleksandar C.',reference:equipmentId,details:entry.details||''};
+      const rec={timestamp:now(),action:entry.action||'Activity',user:entry.user||UNNAMED,reference:equipmentId,details:entry.details||''};
       item.activity=item.activity||[]; item.activity.unshift(rec); item.lastActivity=now();
       save(`Equipment activity: ${equipmentId}`);
       return clone(rec);
@@ -3027,7 +3054,7 @@
       if(!item) return {error:'Equipment not found'};
       const cleanReason=reason!=null?String(reason).trim():'';
       if(!cleanReason)return{error:'Retiring equipment requires a non-whitespace reason'};
-      const retiredBy=meta&&meta.retiredBy!=null?String(meta.retiredBy).trim():'Aleksandar C.';
+      const retiredBy=meta&&meta.retiredBy!=null?String(meta.retiredBy).trim():UNNAMED;
       item.isRetired=true; item.retirementReason=cleanReason; item.status='Retired'; item.activity=item.activity||[];
       item.activity.unshift({timestamp:now(),action:'Equipment retired',user:retiredBy,reference:equipmentId,details:cleanReason});
       item.lastActivity=now();
@@ -3044,7 +3071,7 @@
     listQualityInspections:()=>clone(state.qualityInspections),
     findQualityInspection:idOrNo=>clone(qFind(state.qualityInspections,idOrNo)),
     createInspection(payload){
-      const rec=Object.assign({id:state.counters.inspection=(state.counters.inspection||0)+1,checklist:[],notes:[],documents:[],activity:[],createdBy:payload.createdBy||'Aleksandar C.',created:now().slice(0,10),modified:now().slice(0,10)},clone(payload));
+      const rec=Object.assign({id:state.counters.inspection=(state.counters.inspection||0)+1,checklist:[],notes:[],documents:[],activity:[],createdBy:payload.createdBy||UNNAMED,created:now().slice(0,10),modified:now().slice(0,10)},clone(payload));
       rec.no=rec.no||('INS-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.status=rec.status||'draft';
       rec.result=rec.result||'pending';
@@ -3080,7 +3107,7 @@
       qActivity(rec,resultData.result==='failed'?'Inspection failed':'Inspection completed',from,rec.status,rec.no,resultData.reason||'');
       let hold=null;
       if(resultData.result==='failed'&&resultData.critical){
-        hold=api.applyQualityHold({scope:resultData.holdScope||'jobcard',reference:resultData.holdReference||rec.jobcard||rec.projectNo,relatedRef:rec.no,reason:`Critical failed inspection ${rec.no} — ${rec.findings||'see inspection record'}`,severity:'critical',requiredAction:'Corrective action and reinspection required.',appliedBy:resultData.inspector||'Aleksandar C.'});
+        hold=api.applyQualityHold({scope:resultData.holdScope||'jobcard',reference:resultData.holdReference||rec.jobcard||rec.projectNo,relatedRef:rec.no,reason:`Critical failed inspection ${rec.no} — ${rec.findings||'see inspection record'}`,severity:'critical',requiredAction:'Corrective action and reinspection required.',appliedBy:resultData.inspector||UNNAMED});
       }
       save(`Inspection completed: ${rec.no}`);
       return{inspection:clone(rec),hold};
@@ -3111,7 +3138,7 @@
       state.qualityNcrs.unshift(rec);
       let hold=null;
       if(rec.severity==='critical'){
-        hold=api.applyQualityHold({scope:rec.jobcard?'jobcard':(rec.projectNo?'project':'other'),reference:rec.jobcard||rec.projectNo||rec.no,relatedRef:rec.no,reason:`Critical NCR ${rec.no} — ${rec.title||rec.description||''}`,severity:'critical',requiredAction:'Resolve NCR and verify corrective action before release.',appliedBy:rec.detectedBy||'Aleksandar C.'});
+        hold=api.applyQualityHold({scope:rec.jobcard?'jobcard':(rec.projectNo?'project':'other'),reference:rec.jobcard||rec.projectNo||rec.no,relatedRef:rec.no,reason:`Critical NCR ${rec.no} — ${rec.title||rec.description||''}`,severity:'critical',requiredAction:'Resolve NCR and verify corrective action before release.',appliedBy:rec.detectedBy||UNNAMED});
       }
       save(`NCR created: ${rec.no}`);
       return{ncr:clone(rec),hold};
@@ -3147,7 +3174,7 @@
       const rec=qFind(state.qualityNcrs,idOrNo); if(!rec)return{error:'NCR not found'};
       if(!verificationResult||!verificationResult.trim())return{error:'Verification result is required'};
       rec.verificationResult=verificationResult; const from=rec.status; rec.status='waiting-verification'===from||rec.status==='corrective-action'?'waiting-verification':rec.status;
-      qActivity(rec,'Verification completed',from,rec.status,rec.no,`Verified by ${verifiedBy||'Aleksandar C.'}`);
+      qActivity(rec,'Verification completed',from,rec.status,rec.no,`Verified by ${verifiedBy||UNNAMED}`);
       save(`NCR verification recorded: ${rec.no}`); return clone(rec);
     },
     closeNcr(idOrNo,closureApproval){
@@ -3185,7 +3212,7 @@
     verifyCapa(idOrNo,{verifiedBy,effectivenessCheck,result}={}){
       const rec=qFind(state.qualityCapas,idOrNo); if(!rec)return{error:'Corrective action not found'};
       if(!effectivenessCheck||!effectivenessCheck.trim())return{error:'Effectiveness check evidence is required'};
-      rec.verifiedBy=verifiedBy||'Aleksandar C.'; rec.verificationDate=now().slice(0,10); rec.effectivenessCheck=effectivenessCheck;
+      rec.verifiedBy=verifiedBy||UNNAMED; rec.verificationDate=now().slice(0,10); rec.effectivenessCheck=effectivenessCheck;
       const from=rec.status; rec.status=result==='ineffective'?'ineffective':'effective';
       qActivity(rec,'Verification completed',from,rec.status,rec.no,effectivenessCheck);
       save(`CAPA verified: ${rec.no}`); return clone(rec);
@@ -3248,7 +3275,7 @@
       const rec=Object.assign({id:state.counters.itp=(state.counters.itp||0)+1,lines:[],notes:[],activity:[],revisionHistory:[]},clone(payload));
       rec.no=rec.no||('ITP-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.status=rec.status||'active'; rec.revision=rec.revision||0;
-      rec.revisionHistory.push({revision:rec.revision,date:now().slice(0,10),author:rec.preparedBy||'Aleksandar C.',reason:'Initial issue'});
+      rec.revisionHistory.push({revision:rec.revision,date:now().slice(0,10),author:rec.preparedBy||UNNAMED,reason:'Initial issue'});
       qActivity(rec,'ITP created',null,rec.status,rec.no,'');
       state.qualityItps.unshift(rec);
       save(`ITP created: ${rec.no}`); return clone(rec);
@@ -3355,7 +3382,7 @@
     convertComplaintToNcr(idOrNo){
       const complaint=qFind(state.qualityComplaints,idOrNo); if(!complaint)return{error:'Complaint not found'};
       if(complaint.ncrRef)return{error:'Complaint already linked to '+complaint.ncrRef};
-      const result=api.createNcr({title:'Customer complaint: '+(complaint.description||'').slice(0,80),projectNo:complaint.projectNo,customer:complaint.customer,description:complaint.description,category:'customer-requirement',severity:complaint.severity==='critical'?'critical':'major',detectedBy:'Aleksandar C.',responsiblePerson:complaint.responsiblePerson,dueDate:complaint.dueDate});
+      const result=api.createNcr({title:'Customer complaint: '+(complaint.description||'').slice(0,80),projectNo:complaint.projectNo,customer:complaint.customer,description:complaint.description,category:'customer-requirement',severity:complaint.severity==='critical'?'critical':'major',detectedBy:UNNAMED,responsiblePerson:complaint.responsiblePerson,dueDate:complaint.dueDate});
       if(result.error)return result;
       complaint.ncrRef=result.ncr.no;
       qActivity(complaint,'Converted to NCR',complaint.status,complaint.status,complaint.no,result.ncr.no);
@@ -3474,7 +3501,7 @@
       const data=clone(payload);data.supplier=String(data.supplier).trim();data.items=String(data.items).trim();data.status=status;
       if(rfq)Object.assign(rfq,data);
       else{
-        rfq=Object.assign({id:(state.counters.purchaseRfq=(state.counters.purchaseRfq||0)+1),no:`RFQ-${new Date().getFullYear()}-${String(state.counters.purchaseRfq).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',project:'',buyer:'Aleksandar C.',archived:false},data);
+        rfq=Object.assign({id:(state.counters.purchaseRfq=(state.counters.purchaseRfq||0)+1),no:`RFQ-${new Date().getFullYear()}-${String(state.counters.purchaseRfq).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',project:'',buyer:UNNAMED,archived:false},data);
         state.purchaseRfqs.unshift(rfq);
       }
       save(`Purchase RFQ saved: ${rfq.no}`);return clone(rfq);
@@ -3572,7 +3599,7 @@
       if(!folder)folder=state.documentFolders.find(f=>!f.archived&&f.name.toLowerCase()===name.toLowerCase()&&f.module===module&&f.record===record);
       if(folder){Object.assign(folder,clone(payload),{name,module,record,archived:false});}
       else{
-        folder=Object.assign({id:(state.counters.documentFolder=(state.counters.documentFolder||0)+1),name,module,record,created:now(),author:'Aleksandar C.',archived:false},clone(payload),{name,module,record});
+        folder=Object.assign({id:(state.counters.documentFolder=(state.counters.documentFolder||0)+1),name,module,record,created:now(),author:UNNAMED,archived:false},clone(payload),{name,module,record});
         state.documentFolders.unshift(folder);
       }
       save(`Document folder saved: ${folder.name}`);

@@ -135,6 +135,23 @@ LANGUAGE sql STABLE AS $$
     -- this is, and it was saying somebody else's. The role comes from the session like the name does.
     'takenRole', current_app_role()::text,
 
+    -- The people this workshop has. Six screens offered a "Responsible", "Owner" or "Estimator"
+    -- dropdown whose three options were written into the page — Aleksandar C., Elena N., Marko K. —
+    -- so on the first day at a real firm those fields offered three strangers and none of the staff.
+    -- One of the three was also the answer to every "who did this": a note added by a welder was
+    -- signed Aleksandar C., and a quality record that names the wrong person is worse than one that
+    -- names nobody.
+    --
+    -- Name and role only. The email, the lock state and everything about a password stay in people(),
+    -- which the Access screen calls for itself; this is the list a form needs to offer a choice. The
+    -- row policy on app_user narrows it without any help from here: office and admin read the whole
+    -- staff list, and a welder reads their own row, so the floor's copy of this is one person. That is
+    -- the right answer for the floor — a welder does not assign responsibility — and it is why this
+    -- belongs in the snapshot everybody reads rather than in the office's own payload.
+    'people', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', u.id::text, 'name', u.display_name, 'role', u.role, 'active', u.is_active
+      ) ORDER BY u.display_name) FROM app_user u WHERE u.is_active), '[]'::jsonb),
+
     'customers', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', c.id::text, 'no', c.ref, 'name', c.name, 'status', c.status,
         'city', c.city, 'country', c.country, 'org', c.org_no, 'vat', c.vat_no,

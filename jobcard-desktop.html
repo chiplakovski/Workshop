@@ -388,7 +388,14 @@ function qualityHoldBanner(j){
   </div>`;
 }
 function invByCode(code){return SHARED.inventory.find(x=>x.code===code);}
-const OWNER_OPTIONS=['Aleksandar C.','Elena N.','Marko K.'];
+
+// The people this workshop has, from the snapshot, which takes them from app_user under its own row
+// policy: the office reads the whole staff list, a welder reads their own row. This was a const holding
+// three names written into the page — Aleksandar C., Elena N., Marko K. — so at a real firm the
+// Responsible and Worker dropdowns offered three strangers and none of the staff, and the workers table
+// gave every one of them a job title nobody had entered.
+function staffNames(){return (SHARED.people||[]).map(p=>p.name).filter(Boolean);}
+function staffRole(name){const who=(SHARED.people||[]).find(p=>p.name===name);return who?who.role:null;}
 
 // ── status workflow metadata ──
 // Draft → Released → Ready → In Progress → Inspection → Completed → Closed, with Paused/Blocked/Cancelled
@@ -477,7 +484,7 @@ en:{
   nt_general:"General note",nt_worker:"Worker note",nt_supervisor:"Supervisor instruction","nt_material-problem":"Material problem","nt_drawing-problem":"Drawing problem","nt_machine-problem":"Machine problem","nt_quality-issue":"Quality issue","nt_safety-issue":"Safety issue","nt_delay-reason":"Delay reason",
   act_empty:"No activity yet.",by_word:"by",
   nc_pick_t:"New Jobcard",nc_pick_sub:"Choose how to start this jobcard.",nc_blank:"Blank jobcard",nc_blank_sub:"Start from an empty jobcard and fill in every detail manually.",nc_fromproject:"From an existing project",nc_fromproject_sub:"Reuse the project's customer, delivery target, BOM, planned hours and machines.",nc_frombom:"From a project BOM item",nc_frombom_sub:"Scope the jobcard to a single material line from a project's bill of materials.",
-  nc_title:"New Jobcard",nc_edit_title:"Edit Jobcard",nc_save:"Save",nc_cancel:"Cancel",rs_open:"Enter returned sheet",rs_title:"Returned jobcard sheet",rs_lead:"The paper as it came back from the floor. Type in what each operation actually took, tick the ones that are finished, and save once.",rs_finished:"Finished",rs_save:"Save the sheet",rs_nothing:"Nothing to save — enter hours against at least one operation.",rs_needhours:"An operation cannot be marked finished without the hours it took.",rs_fromsheet:"Entered from the returned jobcard sheet",rs_activity:"Returned sheet entered by {who}: {h}h logged, {n} operation(s) finished",rs_done:"{h}h logged, {n} operation(s) finished",rs_refused:"Some rows were refused:",rs_held:"This jobcard is on a Quality Hold, so no operation can be closed here. The hours still go in — the work was done either way — and the operations can be finished once the hold is released.",nc_create:"Create",
+  nc_title:"New Jobcard",nc_edit_title:"Edit Jobcard",nc_save:"Save",nc_cancel:"Cancel",rs_open:"Enter returned sheet",rs_title:"Returned jobcard sheet",rs_lead:"The paper as it came back from the floor. Type in what each operation actually took, tick the ones that are finished, and save once.",rs_finished:"Finished",rs_save:"Save the sheet",rs_nothing:"Nothing to save — enter hours against at least one operation.",rs_needhours:"An operation cannot be marked finished without the hours it took.",rs_needworker:"Say who did this work. A sheet of hours with nobody on it cannot be checked or paid.",rs_fromsheet:"Entered from the returned jobcard sheet",rs_activity:"Returned sheet entered by {who}: {h}h logged, {n} operation(s) finished",rs_done:"{h}h logged, {n} operation(s) finished",rs_refused:"Some rows were refused:",rs_held:"This jobcard is on a Quality Hold, so no operation can be closed here. The hours still go in — the work was done either way — and the operations can be finished once the hold is released.",nc_create:"Create",
   a_edit:"Edit",a_print:"Print Jobcard",a_duplicate:"Duplicate",a_more:"More",a_start:"Start work",a_pause:"Pause",a_resume:"Resume",a_block:"Mark blocked",a_complete:"Mark completed",a_close:"Close jobcard",a_cancel:"Cancel jobcard",a_reopen:"Reopen",a_archive:"Archive",a_release:"Release",a_ready:"Mark ready",a_inspection:"Send to inspection",
   m_newjc:"New Jobcard",m_editjc:"Edit Jobcard",m_addop:"Add Operation",m_editop:"Edit Operation",m_pause_t:"Pause Jobcard",m_block_t:"Mark Jobcard Blocked",m_resume_t:"Resume Jobcard",resume_target_info:"This jobcard will resume to: {s}",resume_fallback_warning:"The recorded resume status was missing or invalid, so this jobcard will resume to Ready instead.",qh_title:"Quality Hold Active",qh_hold_label:"Hold",qh_severity_label:"Severity",qh_reason_label:"Reason",qh_requiredaction_label:"Required Action",qh_blocked_toast:"Blocked by active Quality Hold {holds} — this action is not allowed while the hold remains active.",m_complete_t:"Complete Jobcard",m_close_t:"Close Jobcard",m_cancel_t:"Cancel Jobcard",m_reopen_t:"Reopen Jobcard",m_addmat:"Add Material Line",m_reservemat:"Reserve Material",m_issuemat:"Issue Material",m_returnmat:"Return Material",m_scrapmat:"Record Scrap",m_offcut:"Register Offcut",m_scan:"Scan Barcode / QR",m_logtime:"Log Time",m_addmachine:"Add Machine",m_addinsp:"Add Inspection",m_editinsp:"Update Inspection",m_addnote:"Add Note",m_dup_t:"Duplicate Jobcard",
   f_reason:"Reason",f_comment:"Comment",f_resumestatus:"Resume to status",f_overridereason:"Override reason (required)",f_hours:"Hours",f_qty:"Quantity",f_date:"Date",f_barcode:"Barcode / QR value",f_destination:"Destination",
@@ -539,7 +546,7 @@ sv:{
   nt_general:"Allmän anteckning",nt_worker:"Personalanteckning",nt_supervisor:"Instruktion från arbetsledare","nt_material-problem":"Materialproblem","nt_drawing-problem":"Ritningsproblem","nt_machine-problem":"Maskinproblem","nt_quality-issue":"Kvalitetsproblem","nt_safety-issue":"Säkerhetsproblem","nt_delay-reason":"Förseningsorsak",
   act_empty:"Ingen aktivitet ännu.",by_word:"av",
   nc_pick_t:"Nytt jobbkort",nc_pick_sub:"Välj hur detta jobbkort ska skapas.",nc_blank:"Tomt jobbkort",nc_blank_sub:"Starta från ett tomt jobbkort och fyll i allt manuellt.",nc_fromproject:"Från ett befintligt projekt",nc_fromproject_sub:"Återanvänd projektets kund, leveransmål, materialbehov, planerade timmar och maskiner.",nc_frombom:"Från en materialrad i projektet",nc_frombom_sub:"Begränsa jobbkortet till en enskild materialrad från projektets materialspecifikation.",
-  nc_title:"Nytt jobbkort",nc_edit_title:"Redigera jobbkort",nc_save:"Spara",nc_cancel:"Avbryt",rs_open:"Registrera återlämnat kort",rs_title:"Återlämnat jobbkort",rs_lead:"Papperet som det kom tillbaka från verkstaden. Skriv in vad varje moment faktiskt tog, kryssa för de som är klara, och spara en gång.",rs_finished:"Klart",rs_save:"Spara kortet",rs_nothing:"Inget att spara — ange tid på minst ett moment.",rs_needhours:"Ett moment kan inte markeras klart utan tiden det tog.",rs_fromsheet:"Registrerat från återlämnat jobbkort",rs_activity:"Återlämnat kort registrerat av {who}: {h}h, {n} moment klara",rs_done:"{h}h registrerat, {n} moment klara",rs_refused:"Några rader nekades:",rs_held:"Det här jobbkortet har en kvalitetsspärr, så inget moment kan stängas här. Tiden registreras ändå — arbetet är utfört — och momenten kan slutföras när spärren släpps.",nc_create:"Skapa",
+  nc_title:"Nytt jobbkort",nc_edit_title:"Redigera jobbkort",nc_save:"Spara",nc_cancel:"Avbryt",rs_open:"Registrera återlämnat kort",rs_title:"Återlämnat jobbkort",rs_lead:"Papperet som det kom tillbaka från verkstaden. Skriv in vad varje moment faktiskt tog, kryssa för de som är klara, och spara en gång.",rs_finished:"Klart",rs_save:"Spara kortet",rs_nothing:"Inget att spara — ange tid på minst ett moment.",rs_needhours:"Ett moment kan inte markeras klart utan tiden det tog.",rs_needworker:"Ange vem som utfört arbetet. Ett tidkort utan namn kan varken kontrolleras eller betalas.",rs_fromsheet:"Registrerat från återlämnat jobbkort",rs_activity:"Återlämnat kort registrerat av {who}: {h}h, {n} moment klara",rs_done:"{h}h registrerat, {n} moment klara",rs_refused:"Några rader nekades:",rs_held:"Det här jobbkortet har en kvalitetsspärr, så inget moment kan stängas här. Tiden registreras ändå — arbetet är utfört — och momenten kan slutföras när spärren släpps.",nc_create:"Skapa",
   a_edit:"Redigera",a_print:"Skriv ut jobbkort",a_duplicate:"Duplicera",a_more:"Mer",a_start:"Starta arbete",a_pause:"Pausa",a_resume:"Återuppta",a_block:"Markera blockerat",a_complete:"Markera klart",a_close:"Stäng jobbkort",a_cancel:"Avbryt jobbkort",a_reopen:"Återöppna",a_archive:"Arkivera",a_release:"Utfärda",a_ready:"Markera redo",a_inspection:"Skicka till besiktning",
   m_newjc:"Nytt jobbkort",m_editjc:"Redigera jobbkort",m_addop:"Lägg till moment",m_editop:"Redigera moment",m_pause_t:"Pausa jobbkort",m_block_t:"Markera jobbkort blockerat",m_resume_t:"Återuppta jobbkort",resume_target_info:"Detta jobbkort återupptas till: {s}",resume_fallback_warning:"Den sparade återupptagningsstatusen saknades eller var ogiltig, så jobbkortet återupptas till Redo istället.",qh_title:"Kvalitetsspärr aktiv",qh_hold_label:"Spärr",qh_severity_label:"Allvarlighetsgrad",qh_reason_label:"Orsak",qh_requiredaction_label:"Nödvändig åtgärd",qh_blocked_toast:"Blockerad av aktiv kvalitetsspärr {holds} — denna åtgärd är inte tillåten medan spärren kvarstår.",m_complete_t:"Slutför jobbkort",m_close_t:"Stäng jobbkort",m_cancel_t:"Avbryt jobbkort",m_reopen_t:"Återöppna jobbkort",m_addmat:"Lägg till materialrad",m_reservemat:"Reservera material",m_issuemat:"Ta ut material",m_returnmat:"Returnera material",m_scrapmat:"Registrera skrot",m_offcut:"Registrera restbit",m_scan:"Skanna streckkod / QR",m_logtime:"Registrera tid",m_addmachine:"Lägg till maskin",m_addinsp:"Lägg till besiktning",m_editinsp:"Uppdatera besiktning",m_addnote:"Lägg till anteckning",m_dup_t:"Duplicera jobbkort",
   f_reason:"Anledning",f_comment:"Kommentar",f_resumestatus:"Återuppta till status",f_overridereason:"Anledning till överstyrning (krävs)",f_hours:"Timmar",f_qty:"Antal",f_date:"Datum",f_barcode:"Streckkod / QR-värde",f_destination:"Destination",
@@ -601,7 +608,7 @@ mk:{
   nt_general:"Opšta beleška",nt_worker:"Beleška od rabotnik",nt_supervisor:"Instrukcija od nadzornik","nt_material-problem":"Problem so materijal","nt_drawing-problem":"Problem so crtež","nt_machine-problem":"Problem so mašina","nt_quality-issue":"Problem so kvalitet","nt_safety-issue":"Bezbednosen problem","nt_delay-reason":"Pričina za docneñe",
   act_empty:"Sè uште nema aktivnost.",by_word:"od",
   nc_pick_t:"Nov raboten karton",nc_pick_sub:"Izberi kako da se kreira ovoj karton.",nc_blank:"Prazen karton",nc_blank_sub:"Počni od prazen karton i pополни sè rakoпisno.",nc_fromproject:"Od postoен proekt",nc_fromproject_sub:"Prezemi go klientot, celta za isporaka, spisokot na materijali, planiranite časovi i mašinite od proektot.",nc_frombom:"Od stavka od spisokot na materijali",nc_frombom_sub:"Ограничи go kartonot na eden materijalen red od spisokot na materijali na proektot.",
-  nc_title:"Nov raboten karton",nc_edit_title:"Uredi raboten karton",nc_save:"Začuvaj",nc_cancel:"Otkaži",rs_open:"Vnesi vraten list",rs_title:"Vraten raboten karton",rs_lead:"Hartijata kako što se vrati od rabotilnicata. Vpiši kolku navistina trael sekoj moment, čekiraj gi završenite, i začuvaj ednaš.",rs_finished:"Završeno",rs_save:"Začuvaj go listot",rs_nothing:"Nema što da se začuva — vnesi časovi barem na eden moment.",rs_needhours:"Moment ne može da se označi kako završen bez časovite što trael.",rs_fromsheet:"Vneseno od vraten raboten karton",rs_activity:"Vraten list vnesen od {who}: {h}h zapišani, {n} moment(i) završeni",rs_done:"{h}h zapišani, {n} moment(i) završeni",rs_refused:"Nekoi redovi bea odbieni:",rs_held:"Ovoj raboten karton ima zadržuvanje za kvalitet, pa nitu eden moment ne može da se zatvori tuka. Časovite sepak se zapišuvaat — rabotata e napravena — a momentite možat da se završat koga zadržuvanjeto kje se oslobodi.",nc_create:"Kreiraj",
+  nc_title:"Nov raboten karton",nc_edit_title:"Uredi raboten karton",nc_save:"Začuvaj",nc_cancel:"Otkaži",rs_open:"Vnesi vraten list",rs_title:"Vraten raboten karton",rs_lead:"Hartijata kako što se vrati od rabotilnicata. Vpiši kolku navistina trael sekoj moment, čekiraj gi završenite, i začuvaj ednaš.",rs_finished:"Završeno",rs_save:"Začuvaj go listot",rs_nothing:"Nema što da se začuva — vnesi časovi barem na eden moment.",rs_needhours:"Moment ne može da se označi kako završen bez časovite što trael.",rs_needworker:"Kaži koj ja rabotel rabotata. List so časovi bez ime ne može da se proveri nitu da se plati.",rs_fromsheet:"Vneseno od vraten raboten karton",rs_activity:"Vraten list vnesen od {who}: {h}h zapišani, {n} moment(i) završeni",rs_done:"{h}h zapišani, {n} moment(i) završeni",rs_refused:"Nekoi redovi bea odbieni:",rs_held:"Ovoj raboten karton ima zadržuvanje za kvalitet, pa nitu eden moment ne može da se zatvori tuka. Časovite sepak se zapišuvaat — rabotata e napravena — a momentite možat da se završat koga zadržuvanjeto kje se oslobodi.",nc_create:"Kreiraj",
   a_edit:"Uredi",a_print:"Pečati karton",a_duplicate:"Dupliciraj",a_more:"Poveќe",a_start:"Започни rabota",a_pause:"Pauziraj",a_resume:"Prodolži",a_block:"Označi kako blokiran",a_complete:"Označi kako završen",a_close:"Zatvori karton",a_cancel:"Otkaži karton",a_reopen:"Povторно otvori",a_archive:"Arhiviraj",a_release:"Izdadi",a_ready:"Označi kako podgotven",a_inspection:"Isprati na inspekcija",
   m_newjc:"Nov raboten karton",m_editjc:"Uredi raboten karton",m_addop:"Dodaj operacija",m_editop:"Uredi operacija",m_pause_t:"Pauziraj karton",m_block_t:"Označi karton kako blokiran",m_resume_t:"Prodolži karton",resume_target_info:"Ovoj karton kje prodolži do: {s}",resume_fallback_warning:"Začuvaniot status za prodolžuvanje nedostasuvaše ili beše nevaliden, pa kartonot kje prodolži do Podgotven naместо toa.",qh_title:"Aktiven kvalitativen zabranа",qh_hold_label:"Zabrana",qh_severity_label:"Ozbilnost",qh_reason_label:"Pričina",qh_requiredaction_label:"Potrebno dejstvo",qh_blocked_toast:"Blokirano od aktivna kvalitativna zabrana {holds} — ova dejstvo ne e dozvoleno dodeka zabranata e aktivna.",m_complete_t:"Završi karton",m_close_t:"Zatvori karton",m_cancel_t:"Otkaži karton",m_reopen_t:"Povторно otvori karton",m_addmat:"Dodaj red na materijal",m_reservemat:"Rezerviraj materijal",m_issuemat:"Izdadi materijal",m_returnmat:"Vrati materijal",m_scrapmat:"Zapiši otpad",m_offcut:"Registriraj otsečok",m_scan:"Skeniraj barkod / QR",m_logtime:"Zapiši vreme",m_addmachine:"Dodaj mašina",m_addinsp:"Dodaj inspekcija",m_editinsp:"Ažuriraj inspekcija",m_addnote:"Dodaj beleška",m_dup_t:"Dupliciraj karton",
   f_reason:"Pričina",f_comment:"Komentar",f_resumestatus:"Prodolži do status",f_overridereason:"Pričina za overriding (se bara)",f_hours:"Časovi",f_qty:"Količina",f_date:"Datum",f_barcode:"Barkod / QR vrednost",f_destination:"Destinacija",
@@ -626,7 +633,7 @@ function field(id,label,value,type){type=type||'text';return `<div><label for="$
 function fieldSelect(id,label,options,selected,disabled){return `<div><label for="${id}">${label}</label><select id="${id}" ${disabled?'disabled':''}>${options.map(o=>`<option value="${esc(o.v)}" ${String(o.v)===String(selected??'')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>`;}
 function fieldTextarea(id,label,value){return `<div><label for="${id}">${label}</label><textarea id="${id}">${esc(value??'')}</textarea></div>`;}
 function optList(keys,prefix){const tt=t();return keys.map(k=>({v:k,l:tt[prefix+k]??k}));}
-function ownerOptions(){return OWNER_OPTIONS.map(n=>({v:n,l:n}));}
+function ownerOptions(){return staffNames().map(n=>({v:n,l:n}));}
 function projectOptions(includeNone){const opts=SHARED.projects.map(p=>({v:p.no,l:`${p.no} — ${p.name}`}));return includeNone?[{v:'',l:t().ji_none}].concat(opts):opts;}
 
 // ── view / filter state ──
@@ -830,7 +837,7 @@ function renderList(){
     <div class="morewrap ${moreFiltersOpen?'open':''}"><div class="morepanel">
       <div><label for="jcFilterProjectSel">${esc(tt.f_project)}</label><select id="jcFilterProjectSel" onchange="jcFilterProject=this.value;renderApp();"><option value="all" ${jcFilterProject==='all'?'selected':''}>${esc(tt.filt_allprojects)}</option>${SHARED.projects.map(p=>`<option value="${esc(p.no)}" ${jcFilterProject===p.no?'selected':''}>${esc(p.no)}</option>`).join('')}</select></div>
       <div><label for="jcFilterCustomerSel">${esc(tt.f_customer)}</label><select id="jcFilterCustomerSel" onchange="jcFilterCustomer=this.value;renderApp();"><option value="all" ${jcFilterCustomer==='all'?'selected':''}>${esc(tt.filt_allcustomers)}</option>${SHARED.customers.map(c=>`<option value="${c.id}" ${jcFilterCustomer===String(c.id)?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
-      <div><label for="jcFilterRespSel">${esc(tt.f_responsible)}</label><select id="jcFilterRespSel" onchange="jcFilterResp=this.value;renderApp();"><option value="all" ${jcFilterResp==='all'?'selected':''}>${esc(tt.filt_allresp)}</option>${OWNER_OPTIONS.map(o=>`<option value="${esc(o)}" ${jcFilterResp===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+      <div><label for="jcFilterRespSel">${esc(tt.f_responsible)}</label><select id="jcFilterRespSel" onchange="jcFilterResp=this.value;renderApp();"><option value="all" ${jcFilterResp==='all'?'selected':''}>${esc(tt.filt_allresp)}</option>${staffNames().map(o=>`<option value="${esc(o)}" ${jcFilterResp===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
       <div><label for="jcFilterWorkerSel">${esc(tt.f_worker)}</label><select id="jcFilterWorkerSel" onchange="jcFilterWorker=this.value;renderApp();"><option value="all" ${jcFilterWorker==='all'?'selected':''}>${esc(tt.filt_allworkers)}</option>${allWorkersList().map(w=>`<option value="${esc(w)}" ${jcFilterWorker===w?'selected':''}>${esc(w)}</option>`).join('')}</select></div>
       <div><label for="jcFilterMachineSel">${esc(tt.f_machine)}</label><select id="jcFilterMachineSel" onchange="jcFilterMachine=this.value;renderApp();"><option value="all" ${jcFilterMachine==='all'?'selected':''}>${esc(tt.filt_allmachines)}</option>${allMachinesList().map(m=>`<option value="${esc(m)}" ${jcFilterMachine===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
       <div><label for="jcFilterMaterialSel">${esc(tt.f_material)}</label><select id="jcFilterMaterialSel" onchange="jcFilterMaterial=this.value;renderApp();"><option value="all" ${jcFilterMaterial==='all'?'selected':''}>${esc(tt.filt_allmaterial)}</option>${['not-checked','available','partial','reserved','issued','shortage','substitute'].map(m=>`<option value="${m}" ${jcFilterMaterial===m?'selected':''}>${esc(tt['ms_'+m.replace('-','')])}</option>`).join('')}</select></div>
@@ -1028,7 +1035,7 @@ function openOpForm(jcId,opId){
     <div class="frow"><label for="opDesc">${esc(tt.op_desc)}</label><input id="opDesc" value="${esc(op?op.desc:'')}"></div>
     <div id="opDescErr" class="errmsg" style="display:none;"></div>
     <div class="frow"><label for="opInstr">${esc(tt.op_instructions)}</label><textarea id="opInstr">${esc(op?op.instructions:'')}</textarea></div>
-    <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!OWNER_OPTIONS.includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
+    <div class="frow3">${fieldSelect('opWorker',tt.op_worker,[{v:'',l:tt.ji_none}].concat(ownerOptions()).concat((j.workers||[]).filter(w=>!staffNames().includes(w)).map(w=>({v:w,l:w}))),op?op.worker:'')}
       ${fieldSelect('opMachine',tt.op_machine,machineOpts,machineSelected,equipmentLocked)}
       ${fieldSelect('opStatus',tt.op_status,OP_STATUSES.filter(s=>(s!=='in-progress'||(op&&op.status==='in-progress'))&&(!jcQualityGate(j).blocked||s===(op?op.status:'pending')||!OPERATION_UNSAFE_STATUSES.includes(s))).map(s=>({v:s,l:tt['ops_'+s.replace('-','')]})),op?op.status:'pending')}</div>
     ${equipmentLocked?`<div class="fsub" style="margin-top:-8px;color:var(--steel-400);">${esc(tt.mc_pausetoedit)}</div>`:''}
@@ -1219,7 +1226,7 @@ function openReturnedSheet(jcId){
       <th>${esc(tt.pr_donedate)}</th><th>${esc(tt.rs_finished)}</th>
     </tr></thead><tbody id="rsBody">${rows}</tbody></table></div>
     <div class="frow"><label for="rsWorker">${esc(tt.op_worker)}</label>
-      <select id="rsWorker">${OWNER_OPTIONS.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select></div>
+      <select id="rsWorker">${[...new Set(staffNames().concat(j.workers||[]).concat(j.responsible?[j.responsible]:[]).filter(Boolean))].map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select></div>
     <div id="rsErr" class="errmsg" style="display:none;"></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button>
       <button class="tbtn primary" onclick="saveReturnedSheet(${j.id})">${esc(tt.rs_save)}</button></div>`,true);
@@ -1240,7 +1247,12 @@ function saveReturnedSheet(jcId){
   const noTime=rows.filter(r=>r.finish&&!(r.hours>0));
   if(noTime.length){showFieldError('rsBody','rsErr',tt.rs_needhours);return;}
 
-  const worker=$('rsWorker').value;
+  // Who did the work. A sheet is somebody's hours; an entry with nobody on it cannot be checked, paid or
+  // argued with. The select used to be filled with three names written into this page, so this could not
+  // be empty and did not need asking. Now it can: on browser storage there is no staff list, and a real
+  // workshop that has not added its people yet has an empty one.
+  const worker=$('rsWorker').value.trim();
+  if(!worker){showFieldError('rsWorker','rsErr',tt.rs_needworker);return;}
   let logged=0,finished=0;const refused=[];
   rows.forEach(r=>{
     const op=(getJC(jcId).operations||[]).find(o=>o.id===r.opId);
@@ -1379,10 +1391,10 @@ function commitMatOp(jcId,idx,kind){
   if(!isPositiveNumber(qty)){showFieldError('matOpQty','matOpErr',tt.err_qty);return;}
   if(!m.code){toast(tt.err_required,'error');return;}
   let result;
-  if(kind==='reserve')result=WorkshopData.reserveItem({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
-  else if(kind==='issue')result=WorkshopData.issue({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
-  else if(kind==='return')result=WorkshopData.move({action:'RETURN',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
-  else if(kind==='scrap')result=WorkshopData.move({action:'SCRAP',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||'Aleksandar C.'});
+  if(kind==='reserve')result=WorkshopData.reserveItem({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||currentUser()});
+  else if(kind==='issue')result=WorkshopData.issue({code:m.code,projectNo:j.projectNo,qty,jobcard:j.no,user:j.responsible||currentUser()});
+  else if(kind==='return')result=WorkshopData.move({action:'RETURN',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||currentUser()});
+  else if(kind==='scrap')result=WorkshopData.move({action:'SCRAP',code:m.code,qty,projectNo:j.projectNo,jobcard:j.no,user:j.responsible||currentUser()});
   if(result&&result.error){toast(result.error,'error');return;}
   if(kind==='reserve')m.reserved=(Number(m.reserved)||0)+(result.reserved||qty);
   if(kind==='issue'){m.issued=(Number(m.issued)||0)+qty;m.reserved=Math.max(0,(Number(m.reserved)||0)-qty);}
@@ -1448,7 +1460,7 @@ function saveOffcut(jcId){
 }
 
 // ── Workers & Hours ──
-const WORKER_ROLES={'Aleksandar C.':'Supervisor','Elena N.':'Welder / Fabricator','Marko K.':'Fabricator'};
+
 function workerStats(j,worker){const ops=(j.operations||[]).filter(o=>o.worker===worker);const planned=ops.reduce((a,o)=>a+(Number(o.plannedHours)||0),0),logged=ops.reduce((a,o)=>a+(Number(o.loggedHours)||0),0);
   const active=ops.find(o=>o.status==='in-progress');
   const entries=(SHARED.hours||[]).filter(h=>h.jobcard===j.no&&h.worker===worker).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -1459,7 +1471,7 @@ function renderTabWorkers(j){
   return `<div class="panel">
     <div class="phead"><h3>${esc(tt.wh_assigned)}</h3>${!locked?`<div style="display:flex;gap:8px;"><button class="tbtn small" onclick="openAssignWorker(${j.id})">+ ${esc(tt.ji_workers)}</button><button class="tbtn primary small" onclick="openLogTime(${j.id})">${esc(tt.wh_logtime)}</button></div>`:''}</div>
     ${workers.length?`<div class="tblwrap"><table class="stbl"><thead><tr><th>${esc(tt.ji_workers)}</th><th>${esc(tt.wh_role)}</th><th class="n">${esc(tt.wh_plannedhours)}</th><th class="n">${esc(tt.wh_loggedhours)}</th><th class="n">${esc(tt.wh_remaining)}</th><th>${esc(tt.wh_activeop)}</th><th>${esc(tt.wh_lastentry)}</th></tr></thead><tbody>
-      ${workers.map(w=>{const s=workerStats(j,w);return `<tr><td><b>${esc(w)}</b></td><td>${esc(WORKER_ROLES[w]||'—')}</td><td class="n">${s.planned}</td><td class="n">${s.logged}</td><td class="n">${s.remaining}</td><td>${s.active?esc(s.active.desc):'—'}</td><td>${s.last?fmtDate(s.last.date):'—'}</td></tr>`;}).join('')}
+      ${workers.map(w=>{const s=workerStats(j,w);return `<tr><td><b>${esc(w)}</b></td><td>${esc(staffRole(w)||'—')}</td><td class="n">${s.planned}</td><td class="n">${s.logged}</td><td class="n">${s.remaining}</td><td>${s.active?esc(s.active.desc):'—'}</td><td>${s.last?fmtDate(s.last.date):'—'}</td></tr>`;}).join('')}
     </tbody></table></div>`:`<div class="empty3">${esc(tt.wh_empty)}</div>`}
   </div>
   <div class="panel"><div class="phead"><h3>${esc(tt.wh_entries_t)}</h3></div>
@@ -1468,7 +1480,7 @@ function renderTabWorkers(j){
 }
 function openAssignWorker(jcId){
   const tt=t();const j=getJC(jcId);
-  const all=[...new Set(OWNER_OPTIONS.concat(j.workers||[]))];
+  const all=[...new Set(staffNames().concat(j.workers||[]))];
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.ji_workers)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow"><div class="mchips" id="workerChips">${all.map(w=>`<div class="mchip ${((j.workers||[]).includes(w))?'on':''}" data-w="${esc(w)}" onclick="this.classList.toggle('on')">${esc(w)}</div>`).join('')}</div></div>
@@ -1487,7 +1499,7 @@ function saveAssignWorker(jcId){
 function openLogTime(jcId){
   const tt=t();const j=getJC(jcId);
   const opOpts=(j.operations||[]).map(o=>({v:o.id,l:o.desc}));
-  const workerOpts=(j.workers.length?j.workers:OWNER_OPTIONS).map(w=>({v:w,l:w}));
+  const workerOpts=(j.workers.length?j.workers:staffNames()).map(w=>({v:w,l:w}));
   // Only equipment already linked to this Jobcard can be selected — never free text — so time
   // logging can be tied to a real equipmentId when relevant.
   const machineOpts=[{v:'',l:tt.ji_none}].concat((j.machines||[]).filter(m=>m.equipmentId).map(m=>({v:m.equipmentId,l:`${m.equipmentId} — ${m.name}`})));
@@ -1646,7 +1658,7 @@ function addMachineToJobcard(jcId,equipmentId){
   const operator=$('mcOperator').value.trim();
   // Never override/force/managerOverride/safetyApproved — assignEquipment() is called exactly as
   // WorkshopData defines it; the equipment link is added to the Jobcard only once it succeeds.
-  const res=WorkshopData.assignEquipment(equipmentId,{project:j.projectNo,jobcard:j.no,worker:operator,assignedBy:j.responsible||'Aleksandar C.'});
+  const res=WorkshopData.assignEquipment(equipmentId,{project:j.projectNo,jobcard:j.no,worker:operator,assignedBy:j.responsible||currentUser()});
   if(res&&res.error){toast(translateEquipmentBlockCode(res),'error');refreshShared();return;}
   const machines=(j.machines||[]).concat([{equipmentId,name:eq.name,plannedUsage}]);
   WorkshopData.updateJobcard(jcId,{machines});
@@ -1662,7 +1674,7 @@ function openPreUseCheckForm(jcId,equipmentId){
   if(!eq)return;
   $('fcard').className='fcard';
   $('fcard').innerHTML=`<h2>${esc(tt.mc_recordcheck)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
-    <div class="frow2">${field('pcDate',tt.f_date,todayISO(),'date')}${field('pcCheckedBy',tt.mc_checkedby,'Aleksandar C.')}</div>
+    <div class="frow2">${field('pcDate',tt.f_date,todayISO(),'date')}${field('pcCheckedBy',tt.mc_checkedby,currentUser())}</div>
     <div class="frow">${fieldSelect('pcResult',tt.mc_result,[{v:'passed',l:tt.pu_passed},{v:'failed',l:tt.pu_failed}],'passed')}</div>
     <div class="frow">${fieldTextarea('pcEvidence',tt.mc_evidence,'')}</div>
     <div class="frow">${fieldTextarea('pcNotes',tt.op_notes,'')}</div>
@@ -1735,7 +1747,7 @@ function doRemoveMachine(jcId,idx){
   if(m.equipmentId){
     const eq=SHARED.equipment.find(e=>e.equipmentId===m.equipmentId);
     if(canReturnEquipmentFromJobcard(eq,j.no)){
-      const res=WorkshopData.returnEquipment(m.equipmentId,{user:j.responsible||'Aleksandar C.',note:`Returned from ${j.no}`});
+      const res=WorkshopData.returnEquipment(m.equipmentId,{user:j.responsible||currentUser(),note:`Returned from ${j.no}`});
       if(res&&res.error){toast(res.error,'error');return;}
     }
   }
@@ -1768,7 +1780,7 @@ function openInspForm(jcId,inspId){
   $('fcard').className='fcard wide';
   $('fcard').innerHTML=`<h2>${insp?esc(tt.m_editinsp):esc(tt.m_addinsp)}</h2><p class="fsub">${esc(j.no)}</p>
     <div class="frow2">${fieldSelect('qType',tt.q_type,optList(INSPECTION_TYPES,'it_'),insp?insp.type:'dimensional')}${fieldSelect('qRequirement',tt.q_requirement,[{v:'required',l:tt.req_required},{v:'optional',l:tt.req_optional}],insp?insp.requirement:'required')}</div>
-    <div class="frow2">${field('qInspector',tt.q_inspector,insp?insp.inspector:'Aleksandar C.')}${field('qDate',tt.q_date,insp?insp.date:'','date')}</div>
+    <div class="frow2">${field('qInspector',tt.q_inspector,insp?insp.inspector:currentUser())}${field('qDate',tt.q_date,insp?insp.date:'','date')}</div>
     <div class="frow2">${fieldSelect('qResult',tt.q_result,optList(INSPECTION_RESULTS,'is_'),insp?insp.status:'pending')}${fieldSelect('qOperation',tt.q_relatedop,opOpts,insp?insp.relatedOperation:'')}</div>
     <div class="frow">${field('qReference',tt.q_reference,insp?insp.reference:'')}</div>
     <div class="frow">${fieldTextarea('qComments',tt.q_comments,insp?insp.comments:'')}</div>
@@ -1807,7 +1819,7 @@ function openNoteForm(jcId){
 function saveNoteForm(jcId){
   const tt=t();clearAllFieldErrors();const text=$('noteText').value.trim();
   if(!text){showFieldError('noteText','noteErr',tt.err_required);return;}
-  WorkshopData.addJobcardNote(jcId,{author:'Aleksandar C.',type:$('noteType').value,text});
+  WorkshopData.addJobcardNote(jcId,{author:currentUser(),type:$('noteType').value,text});
   WorkshopData.recordJobcardActivity(jcId,{action:`Note added: ${tt['nt_'+$('noteType').value]}`});
   refreshShared();closeModal();renderApp();
 }
@@ -1970,7 +1982,7 @@ function openJcForm(id){
     <div class="frow2">${field('jfItem',tt.ji_item,j?j.item:'')}${field('jfQty',tt.ji_qty,j?j.quantity:1,'number')}</div>
     <div class="frow2">${field('jfRevision',tt.ji_revision,j?j.revision:0,'number')}${field('jfDrawing',tt.ji_drawingno,j?j.drawingNo:'')}</div>
     <div class="frow3">${fieldSelect('jfWorktype',tt.ji_worktype,optList(WORK_TYPES,'wt_'),j?j.workType:'fabrication')}${fieldSelect('jfLocation',tt.ji_location,[{v:'workshop',l:tt.loc_workshop},{v:'site',l:tt.loc_site}],j?j.location:'workshop')}${fieldSelect('jfPriority',tt.ji_priority,[{v:'high',l:tt.pr_high},{v:'medium',l:tt.pr_medium},{v:'low',l:tt.pr_low}],j?j.priority:'medium')}</div>
-    <div class="frow2">${fieldSelect('jfResponsible',tt.ji_responsible,[{v:'',l:tt.ji_none}].concat(ownerOptions()),j?j.responsible:'Aleksandar C.')}${field('jfDelivery',tt.ji_deliverytarget,j?j.deliveryTarget:'','date')}</div>
+    <div class="frow2">${fieldSelect('jfResponsible',tt.ji_responsible,[{v:'',l:tt.ji_none}].concat(ownerOptions()),j?j.responsible:currentUser())}${field('jfDelivery',tt.ji_deliverytarget,j?j.deliveryTarget:'','date')}</div>
     <div class="frow3">${field('jfStart',tt.ji_plannedstart,j?j.plannedStart:todayISO(),'date')}${field('jfCompletion',tt.ji_plannedcompletion,j?j.plannedCompletion:'','date')}${field('jfPlannedHours',tt.ji_plannedhours,j?j.plannedHours:0,'number')}</div>
     <div id="jfDateErr" class="errmsg" style="display:none;"></div>
     <div class="frow checkrow"><input type="checkbox" id="jfInspectionReq" ${!j||j.inspectionRequired?'checked':''}><label for="jfInspectionReq" style="margin:0;">${esc(tt.ji_inspectionreq)}</label></div>
@@ -1995,7 +2007,7 @@ function saveJcForm(id){
     refreshShared();closeModal();renderApp();return;}
   const proj=projectNo?projByNo(projectNo):null;
   const created=WorkshopData.upsertJobcard(Object.assign({projectId:proj?proj.id:null,status:'draft',progress:0,materialReadiness:'not-checked',
-    actualStart:null,actualCompletion:null,created:todayISO(),createdBy:'Aleksandar C.',archived:false},payload));
+    actualStart:null,actualCompletion:null,created:todayISO(),createdBy:currentUser(),archived:false},payload));
   WorkshopData.recordJobcardActivity(created.id,{action:'Jobcard created (Draft)'});
   refreshShared();closeModal();openJcDetail(created.id);
 }
@@ -2025,10 +2037,10 @@ function saveFromProject(){
   const machines=(proj.machines||[]).map(name=>({name,plannedUsage:0}));
   const created=WorkshopData.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:proj.customerId,customer:proj.customer,title,
     item:proj.name,quantity:1,revision:0,drawingNo:'',workType:$('fpWorktype').value,location:'workshop',priority:$('fpPriority').value,
-    responsible:proj.responsible||'Aleksandar C.',workers:(proj.workers||[]).slice(),plannedStart:$('fpStart').value||todayISO(),
+    responsible:proj.responsible||currentUser(),workers:(proj.workers||[]).slice(),plannedStart:$('fpStart').value||todayISO(),
     plannedCompletion:proj.expectedCompletion||proj.deadline||null,actualStart:null,actualCompletion:null,plannedHours:proj.plannedHours||0,
     progress:0,status:'draft',materialReadiness:proj.materialStatus==='ready'?'available':(proj.materialStatus||'not-checked'),
-    inspectionRequired:true,deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
+    inspectionRequired:true,deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:currentUser(),archived:false,
     materials,machines,operations:[],inspections:[],notes:[],documents:[]});
   WorkshopData.recordJobcardActivity(created.id,{action:`Jobcard created from project ${proj.no}`});
   refreshShared();closeModal();openJcDetail(created.id);
@@ -2056,10 +2068,10 @@ function saveFromBom(){
   const inv=invByCode(line.code);
   const created=WorkshopData.upsertJobcard({projectId:proj.id,projectNo:proj.no,customerId:proj.customerId,customer:proj.customer,
     title:line.description,item:line.description,quantity:1,revision:0,drawingNo:'',workType:$('fbWorktype').value,location:'workshop',
-    priority:$('fbPriority').value,responsible:proj.responsible||'Aleksandar C.',workers:[],plannedStart:$('fbStart').value||todayISO(),
+    priority:$('fbPriority').value,responsible:proj.responsible||currentUser(),workers:[],plannedStart:$('fbStart').value||todayISO(),
     plannedCompletion:proj.expectedCompletion||proj.deadline||null,actualStart:null,actualCompletion:null,plannedHours:0,progress:0,status:'draft',
     materialReadiness:(line.issued>=line.required&&line.required>0)?'issued':'not-checked',inspectionRequired:true,
-    deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:'Aleksandar C.',archived:false,
+    deliveryTarget:proj.expectedCompletion||proj.deadline||null,created:todayISO(),createdBy:currentUser(),archived:false,
     materials:[{code:line.code,description:line.description,spec:inv?inv.grade:'',grade:inv?inv.grade:'',dimension:inv?inv.dimensions:'',required:line.required,reserved:line.reserved||0,issued:line.issued||0,unit:line.unit,location:inv?inv.location:'',heat:inv?inv.heat:'',certificate:inv?inv.certificate:null,status:'not-checked'}],
     machines:[],operations:[],inspections:[],notes:[],documents:[]});
   WorkshopData.recordJobcardActivity(created.id,{action:`Jobcard created from BOM item ${line.code} on ${proj.no}`});
@@ -2073,7 +2085,7 @@ function duplicateJc(id){
   const copy=JSON.parse(JSON.stringify(src));
   delete copy.id;delete copy.no;delete copy._resumeStatus;
   copy.status='draft';copy.progress=0;copy.actualStart=null;copy.actualCompletion=null;copy.archived=false;
-  copy.created=todayISO();copy.createdBy='Aleksandar C.';
+  copy.created=todayISO();copy.createdBy=currentUser();
   copy.operations=(copy.operations||[]).map(o=>Object.assign({},o,{status:'pending',loggedHours:0,actualStart:null,actualCompletion:null,equipmentId:null}));
   copy.materials=(copy.materials||[]).map(m=>Object.assign({},m,{reserved:0,issued:0,status:'not-checked'}));
   // Real equipment assignment is a live, single-Jobcard relationship (WorkshopData.assignEquipment)

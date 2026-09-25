@@ -866,6 +866,27 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
     { token: tokens.floor }), 403, /not yours/);
   step('Pipeline over HTTP: the office reads the pipeline, and the floor\'s whole workshop still arrives');
 
+  // The staff, which six screens used to offer as three names written into the page. This one is not in
+  // workspace_money and deliberately: a welder must reach the snapshot, and the row policy on app_user
+  // narrows it here rather than the payload being withheld. The office reads everybody; the floor reads
+  // itself, which is the right answer for a screen where a welder does not assign responsibility — and it
+  // means the same snapshot serves both without either being refused it.
+  const staff = (await call('GET', '/read/snapshot', { token: tokens.office })).body.people;
+  attempts.allowed += 1;
+  // Everybody the door checks above put in this workshop, and only those still switched on: an inactive
+  // account is not a person a form should offer as responsible for anything.
+  assert.deepEqual(staff.map((p) => p.name), value(
+    `SELECT string_agg(display_name, '|' ORDER BY display_name) FROM app_user WHERE is_active;`).split('|'),
+  `the office reads the whole staff list, and read ${JSON.stringify(staff.map((p) => p.name))}`);
+  assert.ok(staff.length >= 2, 'and more than one person, or this check proves nothing about narrowing');
+  assert.deepEqual(Object.keys(staff[0]).sort(), ['active', 'id', 'name', 'role'],
+    'and nothing about a password, a lock or an email reaches a form that only needs a name');
+  assert.deepEqual(snapshot.people.map((p) => p.name), ['Marko Ilic'],
+    'a welder reads their own row and no colleague\'s, because the row policy says so');
+  assert.equal(snapshot.people[0].role, 'workshop',
+    'and their real role, which is the one the badge on every screen now shows');
+  step('People over HTTP: the office reads the staff, a welder reads themselves, and nobody reads a hash');
+
   const hold = snapshot.qualityHolds.find((h) => h.no === answered.hold);
   assert.equal(hold.reference, value(`SELECT ref FROM jobcard WHERE id = ${f.jobcard};`),
     'a hold has to say which piece of work it is holding');

@@ -713,7 +713,7 @@ let nextEstId=10;
 // ── backfill new Phase-1 fields on the seed data so older records behave consistently with newly created ones ──
 (function normalizeSeedEstimations(){
   ESTIMATIONS.forEach(e=>{
-    if(e.estimator===undefined)e.estimator=e.createdBy||'Aleksandar C.';
+    if(e.estimator===undefined)e.estimator=e.createdBy||currentUser();
     if(e.opportunityRef===undefined)e.opportunityRef='';
     if(e.customerRfq===undefined)e.customerRfq=e.reference&&e.reference!=='—'?e.reference:'';
     if(e.requestedDelivery===undefined)e.requestedDelivery=e.deliveryTarget||'';
@@ -775,7 +775,7 @@ function hydrateSharedEstimations(){
     const project=shared.projects.find(p=>p.id===se.projectId),localCustomerId=localCustomerIdForShared(se.customerId,se.customer);
     const hasDetail=Array.isArray(se.bom)&&se.bom.length>0;
     const workItems=hasDetail?[{no:'',desc:'Bill of Materials',lines:se.bom.map(b=>({desc:b.description||b.code,category:'material',qty:Number(b.qty)||1,unit:b.unit||'EA',weight:0,waste:0,cost:0,sell:0,disc:0,tax:25}))}]:[{no:'',desc:'Work items',lines:[]}];
-    ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:(se.projectNo||null),projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:se.deliveryTime||'4–5 weeks',paymentTerms:se.paymentTerms||'30 days',priceList:se.priceList||'Standard Price List 2026',incoterms:se.incoterms||'EXW Marieholm',reference:se.reference||'—',customerRfq:se.customerRfq||'',opportunityRef:se.opportunityRef||'',requestedDelivery:se.requestedDelivery||se.deliveryTarget||'',createdBy:se.createdBy||'Aleksandar C.',estimator:se.estimator||'Aleksandar C.',overheadPct:se.overheadPct===undefined?8:se.overheadPct,contingencyPct:se.contingencyPct===undefined?5:se.contingencyPct,discount:se.discount||0,workItems:Array.isArray(se.workItems)?se.workItems:workItems,options:Array.isArray(se.options)?se.options:[],exclusions:Array.isArray(se.exclusions)?se.exclusions:[],terms:se.terms||'Prices valid for 30 days.',documents:Array.isArray(se.documents)?se.documents:[],history:Array.isArray(se.history)&&se.history.length?se.history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:Array.isArray(se.notes)?se.notes:[],revision:se.revision||0,revisionSnapshots:Array.isArray(se.revisionSnapshots)?se.revisionSnapshots:[],sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});
+    ESTIMATIONS.push({id:se.id,sharedId:se.id,no:se.no,customerId:localCustomerId,projectNo:project?project.no:(se.projectNo||null),projectTitle:se.title,status:se.status,created:se.created,validUntil:se.validUntil,currency:se.currency||'SEK',deliveryTime:se.deliveryTime||'4–5 weeks',paymentTerms:se.paymentTerms||'30 days',priceList:se.priceList||'Standard Price List 2026',incoterms:se.incoterms||'EXW Marieholm',reference:se.reference||'—',customerRfq:se.customerRfq||'',opportunityRef:se.opportunityRef||'',requestedDelivery:se.requestedDelivery||se.deliveryTarget||'',createdBy:se.createdBy||currentUser(),estimator:se.estimator||currentUser(),overheadPct:se.overheadPct===undefined?8:se.overheadPct,contingencyPct:se.contingencyPct===undefined?5:se.contingencyPct,discount:se.discount||0,workItems:Array.isArray(se.workItems)?se.workItems:workItems,options:Array.isArray(se.options)?se.options:[],exclusions:Array.isArray(se.exclusions)?se.exclusions:[],terms:se.terms||'Prices valid for 30 days.',documents:Array.isArray(se.documents)?se.documents:[],history:Array.isArray(se.history)&&se.history.length?se.history:(se.revisions||[]).map(r=>({date:r.date,action:`Revision ${r.rev}: ${r.reason}`,by:r.author})),notes:Array.isArray(se.notes)?se.notes:[],revision:se.revision||0,revisionSnapshots:Array.isArray(se.revisionSnapshots)?se.revisionSnapshots:[],sharedBom:se.bom||[],plannedHours:se.plannedHours||0,machines:se.machines||[],deliveryTarget:se.deliveryTarget});
     nextEstId=Math.max(nextEstId,se.id+1);
   });
   ESTIMATIONS.forEach(e=>{if(e.revision==null)e.revision=Math.max(0,(e.history||[]).filter(h=>/Rev|Revision/.test(h.action)).length-1)});
@@ -1105,8 +1105,8 @@ function adoptLegacyWorkItems(e){
     const material=lines.filter(l=>l.category==='material').reduce((a,l)=>a+EstimationRules.lineCostTotal(l),0);
     const saved=WorkshopData.upsertJobcard({projectId:p.id,projectNo:p.no,customerId:p.customerId,customer:p.customer,
       title:w.desc,item:w.desc,quantity:1,revision:0,workType:'other',location:'workshop',priority:'medium',
-      responsible:'Aleksandar C.',workers:[],status:'draft',plannedHours:hours,estimatedMaterialCost:material,
-      progress:0,actualHours:0,archived:false,created:todayISO(),createdBy:'Aleksandar C.'});
+      responsible:currentUser(),workers:[],status:'draft',plannedHours:hours,estimatedMaterialCost:material,
+      progress:0,actualHours:0,archived:false,created:todayISO(),createdBy:currentUser()});
     if(saved&&saved.no){w.no=saved.no;adopted++;}
   });
   if(adopted)syncEstimation(e);
@@ -1527,7 +1527,7 @@ function toggleOptionIncluded(estId,optId,included){
   const e=getEst(estId);if(!guardEdit(e))return;
   const opt=(e.options||[]).find(o=>o.id===optId);if(!opt)return;
   opt.included=included;
-  e.history.push({date:todayISO(),action:(included?'Option included in offer: ':'Option removed from offer: ')+opt.name,by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:(included?'Option included in offer: ':'Option removed from offer: ')+opt.name,by:currentUser()});
   syncEstimation(e);renderAll();
 }
 
@@ -1591,7 +1591,6 @@ function exportItemExcel(id,idx){
 // ── Locking an item's calculation ──
 // The current user and clock, in the one place the lock flows read them.
 function lockStamp(){return todayISO()+' '+nowTime();}
-function currentUser(){return 'Aleksandar C.';}
 function getWorkItem(e,idx){return e&&e.workItems?e.workItems[idx]:null;}
 // Every route that changes an item's lines goes through this, so a locked item cannot be edited by
 // reaching a form directly. A blocked action does not just fail: it asks whether to unlock, and the
@@ -1811,7 +1810,7 @@ function duplicateLine(id,wiIdx,lIdx){
   const e=getEst(id);if(!guardEdit(e)||!guardItemEdit(e,wiIdx,()=>duplicateLine(id,wiIdx,lIdx)))return;
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
   wi.lines.splice(lIdx+1,0,JSON.parse(JSON.stringify(line)));
-  e.history.push({date:todayISO(),action:'Line duplicated: '+line.desc,by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:'Line duplicated: '+line.desc,by:currentUser()});
   syncEstimation(e);renderAll();
 }
 function deleteLine(id,wiIdx,lIdx){
@@ -1819,7 +1818,7 @@ function deleteLine(id,wiIdx,lIdx){
   const wi=e.workItems[wiIdx];const line=wi.lines[lIdx];if(!line)return;
   wConfirm(T[LANG].confirm_delete_line.replace('{n}',line.desc),()=>{
     wi.lines.splice(lIdx,1);
-    e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:'Aleksandar C.'});
+    e.history.push({date:todayISO(),action:'Line removed: '+line.desc,by:currentUser()});
     syncEstimation(e);renderAll();
   },{danger:true});
 }
@@ -1933,7 +1932,7 @@ function createRevision(e,reason){
   e.revisionSnapshots.push(snapshot);
   e.revision=(e.revision||0)+1;
   e.status=(e.status==='sent'||e.status==='accepted'||e.status==='declined'||e.status==='expired')?'draft':e.status;
-  e.history.push({date:todayISO(),time:nowTime(),action:`Revision ${e.revision} created: ${reason}`,by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),time:nowTime(),action:`Revision ${e.revision} created: ${reason}`,by:currentUser()});
   syncEstimation(e);
   return e;
 }
@@ -2009,7 +2008,7 @@ function requestStageChange(id,stage){
     e.status=stage;
     e.history.push({date:todayISO(),
       action:`Status changed to ${t['st_'+stage]}`+(usual?'':` — out of the usual order, from ${t['st_'+from]}`),
-      by:"Aleksandar C."});
+      by:currentUser()});
     syncEstimation(e);
     renderAll();
     if(!usual)toast(t.stage_recorded.replace('{a}',t['st_'+from]).replace('{b}',t['st_'+stage]),'warn');
@@ -2022,7 +2021,10 @@ $("fov").addEventListener('click',ev=>{if(ev.target===$("fov"))closeModal();});
 // Starting-method templates: structure and category placeholders only, all costs/prices start at zero —
 // never an invented monetary figure. Anything other than Blank gets a visible "review before sending" note.
 
-function ownerOptionsHtml(){return ['Aleksandar C.','Elena N.','Marko K.'].map(n=>`<option>${esc(n)}</option>`).join('');}
+// The staff, from the snapshot. Three names were written into this line, so the Estimator dropdown at a
+// real firm offered three strangers and none of the people who would be writing the quote.
+function ownerOptionsHtml(){return (WorkshopData.get().people||[]).map(p=>p.name)
+  .filter(Boolean).map(n=>`<option>${esc(n)}</option>`).join('');}
 function openEditEst(id){
   const t=T[LANG];const e=getEst(id);if(!guardEdit(e))return;
   $("fcard").innerHTML=`<h2>${esc(t.edit)} — ${esc(e.no)}</h2>
@@ -2042,7 +2044,7 @@ function saveEditEst(id){
   e.validUntil=validUntil;e.requestedDelivery=$("eeReqDelivery").value||e.requestedDelivery;
   e.deliveryTime=$("eeDelivery").value.trim();e.paymentTerms=$("eeTerms").value.trim();
   e.incoterms=$("eeIncoterms").value.trim();e.estimator=$("eeEstimator").value.trim()||e.estimator;
-  e.history.push({date:todayISO(),action:'Commercial information updated',by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:'Commercial information updated',by:currentUser()});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2074,7 +2076,7 @@ function doConvertEst(id){
   const result=WorkshopData.createProjectFromEstimation(saved.id);
   if(result.error){toast(result.error,'error');return;}
   e.projectNo=result.project.no;PROJECTS[e.projectNo]={name:result.project.name,type:'Generated from estimation',status:'planned'};
-  e.history.push({date:todayISO(),action:`Converted to ${e.projectNo}`,by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:`Converted to ${e.projectNo}`,by:currentUser()});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2098,7 +2100,7 @@ function savePricingSettings(id){
   const subtotal=computeTotals(e).sellSubtotal;
   if(!isNonNegNumber(discount)||discount>subtotal){showFieldError('psDiscount','psErr',t.err_discount);return;}
   e.overheadPct=overhead;e.contingencyPct=contingency;e.discount=discount;
-  e.history.push({date:todayISO(),action:'Pricing settings updated',by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:'Pricing settings updated',by:currentUser()});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2192,9 +2194,9 @@ function saveLineForm(id,wiIdx,lIdx){
   // guardEdit()/getEst() above, just for the array position specifically.
   if(editing){
     if(!wi.lines[lIdx]){toast(t.err_line_changed,'error');closeModal();renderAll();return;}
-    Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:"Aleksandar C."});
+    Object.assign(wi.lines[lIdx],payload);e.history.push({date:todayISO(),action:`Line updated in ${wi.desc}: ${desc}`,by:currentUser()});
   }
-  else{wi.lines.push(payload);e.history.push({date:todayISO(),action:`Item added to ${wi.desc}: ${desc}`,by:"Aleksandar C."});}
+  else{wi.lines.push(payload);e.history.push({date:todayISO(),action:`Item added to ${wi.desc}: ${desc}`,by:currentUser()});}
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2215,7 +2217,7 @@ function saveEditText(id,field){
   const val=$("etText").value;
   if(isBlank(val)){showFieldError('etText','etErr',t.err_required);return;}
   if(field==='exclusions')e.exclusions=val.split("\n").map(s=>s.trim()).filter(Boolean);else e.terms=val;
-  e.history.push({date:todayISO(),action:(field==='exclusions'?'Exclusions updated':'Terms updated'),by:'Aleksandar C.'});
+  e.history.push({date:todayISO(),action:(field==='exclusions'?'Exclusions updated':'Terms updated'),by:currentUser()});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2231,7 +2233,7 @@ function openAddNote(id){
 function saveAddNote(id){
   const t=T[LANG];clearAllFieldErrors();const text=$("anText").value.trim();
   if(!text){showFieldError('anText','anErr',t.err_required);return;}
-  const e=getEst(id);e.notes.push({date:todayISO(),author:"Aleksandar C.",text});
+  const e=getEst(id);e.notes.push({date:todayISO(),author:currentUser(),text});
   syncEstimation(e);
   closeModal();renderAll();
 }
@@ -2254,9 +2256,9 @@ async function saveUpload(id){
   if(file&&file.size>WorkshopData.maxDocumentFileBytes){showFieldError('udName','udErr',`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`);return;}
   let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);
   if(file&&fileData===null){showFieldError('udName','udErr','The selected file could not be read.');return;}
-  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:'Aleksandar C.',fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
+  const saved=WorkshopData.upsertDocument({name,type:'Document',module:'Estimations',record:e.no,category:'Estimation Attachments',status:'Valid',expiry:'',revision:'1',author:currentUser(),fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});
   if(saved.error){showFieldError('udName','udErr',saved.error);return;}
-  e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:"Aleksandar C."});
+  e.history.push({date:todayISO(),action:`Document uploaded: ${name}`,by:currentUser()});
   syncEstimation(e);
   closeModal();renderAll();
   toast(t.demo_upload,'ok');
@@ -2274,7 +2276,7 @@ function deleteEst(id){
   if(e.projectNo){
     wConfirm(t.confirm_archive.replace('{no}',e.no).replace('{p}',e.projectNo),()=>{
       e.archived=true;
-      e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:'Aleksandar C.'});
+      e.history.push({date:todayISO(),action:'Archived (linked to project '+e.projectNo+')',by:currentUser()});
       syncEstimation(e);
       if(selectedId===id){const visible=ESTIMATIONS.filter(x=>x.id!==id&&!x.archived);selectedId=visible.length?visible[0].id:null;}
       renderAll();
@@ -2452,7 +2454,7 @@ function wfDate(iso){if(!iso)return "—";const[y,m,d]=String(iso).split('-');re
 // Every status change is written through the whole project record and leaves a line behind it.
 function wfSave(p,action){
   p.activity=p.activity||[];
-  p.activity.push({date:todayISO(),time:nowTime(),user:'Aleksandar C.',action});
+  p.activity.push({date:todayISO(),time:nowTime(),user:currentUser(),action});
   const res=WorkshopData.upsertProject(p);
   if(res&&res.code==='QUALITY_HOLD_ACTIVE'){wAlert(T[LANG].qh_blocked);return false;}
   hydrateProjects();closeModal();renderAll();return true;
@@ -2663,15 +2665,15 @@ function saveNewProject(){
   // the quoted value back. Creating it with a number would just be a figure nobody had worked out.
   const saved=WorkshopData.upsertProject({name,customerId:shared?shared.id:null,customer:shared?shared.name:c.name,
     status:'quotation',quoteKind:kind,quotedValue:0,deadline:$("npDeadline").value||'',plannedStart:'',
-    types:[kind==='service'?'Service':'Fabrication'],pm:'Aleksandar',createdDate:todayISO(),
-    activity:[{date:todayISO(),time:nowTime(),user:'Aleksandar C.',action:'Project created ('+kind+')'}]});
+    types:[kind==='service'?'Service':'Fabrication'],pm:currentUser(),createdDate:todayISO(),
+    activity:[{date:todayISO(),time:nowTime(),user:currentUser(),action:'Project created ('+kind+')'}]});
   if(!saved||saved.error){wAlert(saved&&saved.error?saved.error:t.err_required);return;}
   // Each line becomes a real project item, so the estimate has something to price straight away.
   newProjItems.forEach(desc=>WorkshopData.upsertJobcard({projectId:saved.id,projectNo:saved.no,
     customerId:saved.customerId,customer:saved.customer,title:desc,item:desc,quantity:1,revision:0,
     workType:kind==='service'?'maintenance':'other',location:'workshop',priority:'medium',
-    responsible:'Aleksandar C.',workers:[],status:'draft',plannedHours:0,estimatedMaterialCost:0,
-    progress:0,actualHours:0,archived:false,created:todayISO(),createdBy:'Aleksandar C.'}));
+    responsible:currentUser(),workers:[],status:'draft',plannedHours:0,estimatedMaterialCost:0,
+    progress:0,actualHours:0,archived:false,created:todayISO(),createdBy:currentUser()}));
   hydrateProjects();
   const e=ensureEstimateForProject(saved.no);
   if(e)selectedId=e.id;
@@ -2688,10 +2690,10 @@ function ensureEstimateForProject(no){
      customerId:localCustomerIdForShared(p.customerId,p.customer),status:'draft',created,
      validUntil:addDaysISO(created,30),currency:'SEK',deliveryTime:'—',paymentTerms:'30 days',
      priceList:'Standard Price List 2026',incoterms:'EXW Marieholm',reference:'—',customerRfq:'',
-     opportunityRef:'',requestedDelivery:'',createdBy:'Aleksandar C.',estimator:'Aleksandar C.',
+     opportunityRef:'',requestedDelivery:'',createdBy:currentUser(),estimator:currentUser(),
      overheadPct:8,contingencyPct:5,discount:0,workItems:[],retiredWorkItems:[],options:[],exclusions:[],
      terms:'Prices valid for 30 days.',documents:[],revision:0,revisionSnapshots:[],
-     history:[{date:created,time:nowTime(),action:'Estimation created (Rev 0)',by:'Aleksandar C.'}],notes:[]};
+     history:[{date:created,time:nowTime(),action:'Estimation created (Rev 0)',by:currentUser()}],notes:[]};
   ESTIMATIONS.push(e);syncEstimation(e);
   return e;
 }
