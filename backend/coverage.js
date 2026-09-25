@@ -187,6 +187,8 @@ const SAME_THING = {
           // the wire (the snapshot sends `type`); the column keeps the schema's.
           qualityInspections: 'kind' },
   name: { documents: 'title', people: 'display_name' },
+  // camelCase to a column that is one word, which the snake_case rule below turns into `file_name`.
+  fileName: { documents: 'filename' }, fileSize: { documents: 'size_bytes' },
 
   // The quality register, and the fourth time this meter has overstated the work by not knowing a
   // column's own name. Five of the seven fields it reported missing across inspections and NCRs were
@@ -263,6 +265,15 @@ const A_JOIN = new Set([
 
 // Fields holding a list. These want a child table, not a column, for the reason every other list in
 // this schema already has one: a JSON array cannot have a foreign key or a constraint on its rows.
+// Fields whose home is not the database at all. One entry so far, and it is the reason the Documents
+// screen went unwired for four passes: `fileData` is the file, base64 in a string, and putting it in a
+// column is the thing schema.sql's own comment rejects — the bytes belong in object storage and the row
+// belongs here. Counted apart from "needs a column" because that number is the size of the remaining
+// schema work, and a field that must never become a column is not schema work.
+const NOT_A_COLUMN = new Map([
+  ['fileData', 'the file itself, which belongs in object storage rather than in a row']
+]);
+
 const A_CHILD_TABLE = new Set([
   'workers', 'machines', 'bom', 'contacts', 'items', 'documents', 'subgroups', 'activity',
   // The inspection checklist: a line, a verdict, and for a measured line a nominal, a tolerance band
@@ -348,6 +359,7 @@ function classify(field, columns, pages, collection) {
       || columns.includes(snake)) {
     return 'stored';
   }
+  if (NOT_A_COLUMN.has(field)) return 'elsewhere';
   if (A_JOIN.has(field)) return 'join';
   if (A_CHILD_TABLE.has(field)) return 'child table';
   // A property access or a quoted key, followed by anything that is not more of the name. The first
@@ -365,7 +377,7 @@ function main() {
   const pages = pageSource();
   const only = process.argv[2];
 
-  const tally = { stored: 0, join: 0, 'child table': 0, 'needs a column': 0, unused: 0 };
+  const tally = { stored: 0, join: 0, 'child table': 0, elsewhere: 0, 'needs a column': 0, unused: 0 };
   const perCollection = [];
 
   for (const [collection, table] of Object.entries(TABLE_FOR)) {
@@ -374,7 +386,7 @@ function main() {
       perCollection.push({ collection, table, empty: true });
       continue;
     }
-    const counts = { stored: 0, join: 0, 'child table': 0, 'needs a column': 0, unused: 0 };
+    const counts = { stored: 0, join: 0, 'child table': 0, elsewhere: 0, 'needs a column': 0, unused: 0 };
     const missing = [];
     for (const field of Object.keys(record)) {
       const verdict = classify(field, columns[table] || [], pages, collection);
@@ -411,7 +423,8 @@ function main() {
     return;
   }
 
-  console.log('Collection               table                  stored  needs column  join  child  unused');
+  console.log('Collection               table                  stored  needs column  join  child  '
+    + 'elsewhere  unused');
   for (const row of perCollection) {
     if (row.empty) {
       console.log(`${row.collection.padEnd(24)} ${row.table.padEnd(22)} (no demo record to compare)`);
@@ -422,15 +435,22 @@ function main() {
       + `${String(row.counts['needs a column']).padStart(14)}`
       + `${String(row.counts.join).padStart(6)}`
       + `${String(row.counts['child table']).padStart(7)}`
+      + `${String(row.counts.elsewhere).padStart(11)}`
       + `${String(row.counts.unused).padStart(8)}`);
   }
 
-  const real = tally.stored + tally['needs a column'] + tally.join + tally['child table'];
+  // Every bucket that is about a field the pages read, which is what the percentage is a percentage of.
+  // `elsewhere` belongs in it: a field whose home is object storage is still a field the register has to
+  // account for, and leaving it out of the denominator would quietly flatter the figure — one field the
+  // first time, and nobody notices the second.
+  const real = tally.stored + tally['needs a column'] + tally.join + tally['child table']
+    + tally.elsewhere;
   const pct = ((tally.stored / real) * 100).toFixed(0);
   console.log(`\n${tally.stored} of ${real} fields the pages use can be stored today — ${pct}%.`);
   console.log(`  ${tally['needs a column']} need a column that does not exist`);
   console.log(`  ${tally.join} are a copy of something on another record and want a join, not a column`);
   console.log(`  ${tally['child table']} hold a list and want a child table`);
+  console.log(`  ${tally.elsewhere} belong somewhere that is not a database row at all`);
   console.log(`  ${tally.unused} more are carried by the demo data and read by no page at all`);
 
   // The ratchet. These are the numbers as they stood when this was written; a pass that widens the
@@ -439,7 +459,7 @@ function main() {
   // the old regex missed every read written as `j.field ? a : b`, so fourteen fields the pages do read
   // were being reported as width nobody misses. The number got worse because the measurement got
   // better, which is the only reason a ratchet is ever allowed to move backwards.
-  const BASELINE = { stored: 299, needsColumn: 20 };
+  const BASELINE = { stored: 301, needsColumn: 17 };
   console.log('');
   if (tally.stored < BASELINE.stored) {
     console.error(`Coverage went backwards: ${tally.stored} stored, was ${BASELINE.stored}.`);

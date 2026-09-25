@@ -222,6 +222,15 @@ const RPC = {
   record_ncr_step: ['id', 'step', 'text', 'ref'],
   add_quality_note: ['entity', 'entity_id', 'text'],
 
+  // The document register. No storage key and no file parameter anywhere in this list, deliberately:
+  // there is nowhere to put a file yet, and an endpoint that accepted a key would be an endpoint that
+  // could be handed one pointing at nothing.
+  save_document: ['id', 'title', 'kind', 'module', 'record', 'category', 'status', 'expires_on',
+    'revision', 'author', 'notes'],
+  link_document: ['id', 'module', 'record'],
+  supersede_document: ['id', 'by_id'],
+  add_document_note: ['id', 'text'],
+
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
   issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],

@@ -99,6 +99,50 @@ $$;
 -- fastest in the whole system. The panels that show it are a scrolling list about six entries tall. A
 -- record with a longer history than this has it in the log, where the audit trail is, rather than in
 -- every snapshot every screen takes.
+-- What a document is filed against, as the word a person would read: a project number, a jobcard, a
+-- merchant's name, a stock code. One function because it has to run as the engine, and it has to run as the
+-- engine because the register spans both sides of the building: a document may be filed against a purchase
+-- order or an estimate, and the floor holds no SELECT on either.
+--
+-- The first version of this looked the reference up inline, in workspace_snapshot(), which meant one
+-- certificate filed against one purchase order refused a welder the WHOLE snapshot — not the document, the
+-- whole workshop, on every screen. That is the third time that exact shape has appeared: a list in the
+-- snapshot that touches an office-only table closes the door for the floor, and it fails closed so it looks
+-- like a permissions success. The pipeline moved to workspace_money() for it. Documents cannot: a welder
+-- holding revision A while revision B is on file is the failure this register exists to prevent, so they
+-- have to be able to read it.
+--
+-- Nothing here is a price, a cost, a value or a rate, which is the test §1b sets. A merchant's NAME is new
+-- to the floor and that is deliberate: it is the name printed on the material certificate they are holding,
+-- and a welder who cannot tell which merchant a certificate came from cannot check it against the plate.
+-- SECURITY DEFINER is not a skeleton key: the engine is subject to GRANTs like anybody else, and holds
+-- SELECT on four tables. So it is given exactly the two columns per table this lookup reads and nothing
+-- else — an id to match on and the one string a person would call the record. A money column added to any
+-- of these tables later is not granted, because a column grant does not widen when the table does, which is
+-- the whole reason §1b is written column by column.
+GRANT SELECT (id, ref) ON project, jobcard, purchase_order, estimate, ncr, inspection,
+                           quality_hold, equipment, tender TO varmak_engine;
+GRANT SELECT (id, name) ON supplier, customer TO varmak_engine;
+GRANT SELECT (id, code) ON stock_item TO varmak_engine;
+
+CREATE FUNCTION document_record_label(p_entity text, p_entity_id bigint) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT CASE p_entity
+    WHEN 'project'        THEN (SELECT x.ref  FROM project x        WHERE x.id = p_entity_id)
+    WHEN 'jobcard'        THEN (SELECT x.ref  FROM jobcard x        WHERE x.id = p_entity_id)
+    WHEN 'purchase_order' THEN (SELECT x.ref  FROM purchase_order x WHERE x.id = p_entity_id)
+    WHEN 'supplier'       THEN (SELECT x.name FROM supplier x       WHERE x.id = p_entity_id)
+    WHEN 'customer'       THEN (SELECT x.name FROM customer x       WHERE x.id = p_entity_id)
+    WHEN 'estimate'       THEN (SELECT x.ref  FROM estimate x       WHERE x.id = p_entity_id)
+    WHEN 'stock_item'     THEN (SELECT x.code FROM stock_item x     WHERE x.id = p_entity_id)
+    WHEN 'ncr'            THEN (SELECT x.ref  FROM ncr x            WHERE x.id = p_entity_id)
+    WHEN 'inspection'     THEN (SELECT x.ref  FROM inspection x     WHERE x.id = p_entity_id)
+    WHEN 'quality_hold'   THEN (SELECT x.ref  FROM quality_hold x   WHERE x.id = p_entity_id)
+    WHEN 'equipment'      THEN (SELECT x.ref  FROM equipment x      WHERE x.id = p_entity_id)
+    WHEN 'tender'         THEN (SELECT x.ref  FROM tender x         WHERE x.id = p_entity_id)
+    ELSE NULL END;
+$$;
+
 CREATE FUNCTION quality_activity_of(p_entity text, p_entity_id bigint) RETURNS jsonb
 LANGUAGE sql STABLE AS $$
   SELECT coalesce(jsonb_agg(jsonb_build_object(
@@ -308,6 +352,49 @@ LANGUAGE sql STABLE AS $$
         'releaseDate', h.released_at,
         'activity', quality_activity_of('quality_hold', h.id)
       ) ORDER BY h.applied_at DESC, h.id DESC) FROM quality_hold h), '[]'::jsonb),
+
+    -- The document register. The screen's words throughout — it calls a title a `name`, a kind a `type`,
+    -- and an entity a `module` — and two of its four status values are not stored at all.
+    --
+    -- 'Review Soon' and 'Expired' are answers to "what is the date today". The screen offers both in its
+    -- status dropdown, which would store a fact that was true the morning somebody chose it and quietly
+    -- stops being true; the column holds only what somebody sets, and the two dated states are worked out
+    -- here, on every read. Thirty days is the window, which is the one number in this block that is a
+    -- judgement rather than a fact — a certificate with a month left is still valid and is worth chasing.
+    --
+    -- A superseded document keeps saying superseded whatever its date says: revision A running out is not
+    -- news once revision B is on file.
+    'documents', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', d.id::text, 'no', d.ref, 'name', d.title, 'type', d.kind,
+        'category', d.category, 'revision', d.revision,
+        'status', CASE
+          WHEN d.status = 'superseded' THEN 'Superseded'
+          WHEN d.expires_on IS NOT NULL AND d.expires_on < current_date THEN 'Expired'
+          WHEN d.expires_on IS NOT NULL AND d.expires_on <= current_date + 30 THEN 'Review Soon'
+          WHEN d.status = 'approved' THEN 'Approved'
+          WHEN d.status = 'valid' THEN 'Valid'
+          ELSE 'Draft' END,
+        -- What somebody actually chose, beside what the date makes of it. Both, because a screen that
+        -- shows only the computed word cannot offer the form a value to save back — which is how a page
+        -- ends up writing 'Review Soon' into a column as though somebody had decided it.
+        'setStatus', d.status,
+        'expiry', d.expires_on,
+        -- The screen's own two fields for a link, from the one pair of columns that holds it.
+        'module', CASE d.entity
+          WHEN 'project' THEN 'Projects'      WHEN 'jobcard' THEN 'Workshop'
+          WHEN 'purchase_order' THEN 'Purchasing' WHEN 'supplier' THEN 'Suppliers'
+          WHEN 'customer' THEN 'Customers'    WHEN 'estimate' THEN 'Estimations'
+          WHEN 'stock_item' THEN 'Store'
+          WHEN 'ncr' THEN 'Quality' WHEN 'inspection' THEN 'Quality' WHEN 'quality_hold' THEN 'Quality'
+          ELSE NULL END,
+        'record', document_record_label(d.entity, d.entity_id),
+        'author', d.author, 'notes', d.notes,
+        'uploadedBy', d.uploaded_by, 'uploaded', d.uploaded_at, 'updated', d.updated_at,
+        -- The file, and there is never one yet. Sent as nulls rather than left out so the screen's
+        -- download button can ask and be told no, instead of reading a field that is not there.
+        'fileName', d.filename, 'fileSize', d.size_bytes, 'mimeType', d.mime_type,
+        'activity', quality_activity_of('document', d.id)
+      ) ORDER BY d.updated_at DESC, d.id DESC) FROM document d), '[]'::jsonb),
 
     -- The inspections. `type` rather than `kind`, because that is the word on the screen and on the
     -- filter above it; the column is named the way the rest of this schema names a kind of thing, and
@@ -542,11 +629,17 @@ $$;
 REVOKE ALL ON FUNCTION operations_of(bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION equipment_events_of(bigint, text[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION quality_activity_of(text, bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION document_record_label(text, bigint) FROM PUBLIC;
+-- Owned by the engine, which is what makes SECURITY DEFINER mean anything: as the migration role it
+-- would run as whoever holds everything, and the point is that it runs as a role holding exactly the
+-- reads this one lookup needs.
+ALTER FUNCTION document_record_label(text, bigint) OWNER TO varmak_engine;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION operations_of(bigint), equipment_events_of(bigint, text[]),
-  quality_activity_of(text, bigint), workspace_snapshot()
+  quality_activity_of(text, bigint), workspace_snapshot(),
+  document_record_label(text, bigint)
 TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;
 

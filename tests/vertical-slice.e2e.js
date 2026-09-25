@@ -306,16 +306,38 @@ async function main() {
     // ── No two worlds ───────────────────────────────────────────────────────────────────────
     //
     // The hazard the guard exists for: signed in on the tablet, a person opens the hub and sees the
-    // workshop twice — the real records on one screen and whatever is in this browser on another,
-    // with neither screen saying which it is. Somebody would make a decision on the wrong one.
-    // Documents, which is the last one. The example has moved four times now — the hub, then Quality, then
-    // Suppliers, then Marketing — each time because the screen it named got wired. Documents is the one
-    // that cannot be: a document record is a pointer to a file, and there is nowhere for the file to live.
+    // workshop twice — the real records on one screen and whatever is in this browser on another, with
+    // neither screen saying which it is. Somebody would make a decision on the wrong one.
+    //
+    // This check used to name the one page that was still unwired, and the example moved five times — the
+    // hub, then Quality, then Suppliers, then Marketing, then Documents — each time because the screen it
+    // named got wired. Documents was the last of them, so there is no example left to name: all seventeen
+    // declare themselves wired and the guard has nothing to refuse.
+    //
+    // Which is the moment a guard quietly stops being tested. So it is asked directly instead: the page is
+    // served with its declaration taken out, exactly as an unwired page would look, and the notice has to
+    // appear and cover the screen. Intercepted rather than written to disk — nothing here touches the
+    // files the server is serving to everything else.
+    const everyPage = fs.readdirSync(path.join(__dirname, '..'))
+      .filter((f) => f.endsWith('.html') && f !== 'login.html');
+    const unwired = everyPage.filter((f) => !/window\.WORKSHOP_SERVER_READY\s*=\s*true/
+      .test(fs.readFileSync(path.join(__dirname, '..', f), 'utf8')));
+    assert.deepEqual(unwired, [], `these pages are still not wired: ${unwired.join(', ')}`);
+    step(`Two worlds: all ${everyPage.length} screens are on the database — there is no second world left`);
+
+    // Now the guard, against a page pretending not to be wired.
+    await page.route(`**/documents-desktop.html`, async (route) => {
+      const held = fs.readFileSync(path.join(__dirname, '..', 'documents-desktop.html'), 'utf8');
+      await route.fulfill({
+        status: 200, contentType: 'text/html; charset=utf-8',
+        body: held.replace(/window\.WORKSHOP_SERVER_READY\s*=\s*true;/, '')
+      });
+    });
     await page.goto(`${site}/documents-desktop.html`, { waitUntil: 'load' });
     const blocked = await page.locator('[role="alert"]').innerText();
     assert.match(blocked, /not connected to the server/,
-      'an unwired page must refuse rather than show what is in this browser');
-    step('Two worlds: signed in, an unwired screen refuses to show anything and says why');
+      'a page that does not declare itself wired must refuse rather than show what is in this browser');
+    step('Two worlds: signed in, a screen that is not wired refuses to show anything and says why');
 
     // Refused, not merely warned over the top. A page that shows stale figures with a banner is a
     // page somebody reads past — so the check is that the figures are not on screen at all.
@@ -329,8 +351,8 @@ async function main() {
     assert.equal(stillShowing, '', stillShowing);
     step('Two worlds: it covers the page rather than sitting over the top of stale figures');
 
-    // And it stays out of the way when there is no session: that is the app the workshop runs today,
-    // on browser storage, and one of the seventeen pages is still it.
+    // And it stays out of the way when there is no session: that is the app somebody can still open
+    // without signing in, and the guard has nothing to say to them.
     const guest = await context.newPage();
     await guest.goto(`${site}/documents-desktop.html`, { waitUntil: 'load' });
     assert.equal(await guest.locator('[role="alert"]').count(), 0,
@@ -338,6 +360,15 @@ async function main() {
     assert.ok(await guest.locator('body').isVisible());
     await guest.close();
     step('Two worlds: with no session every page works exactly as it did — the guard only speaks to a signed-in one');
+
+    await page.unroute(`**/documents-desktop.html`);
+    // And the real page, which is wired, opens without the notice.
+    await page.goto(`${site}/documents-desktop.html`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(),
+      { timeout: 8000 });
+    assert.equal(await page.locator('[role="alert"]').count(), 0,
+      'the register itself is wired and must open');
+    step('Two worlds: and the register itself — the seventeenth screen — opens on the database');
 
     await page.goto(`${site}/hours-mobile.html`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(), { timeout: 8000 });

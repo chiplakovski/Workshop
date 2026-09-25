@@ -895,6 +895,11 @@
     // The sales pipeline, which arrives in the office's own payload rather than in the snapshot
     // everybody reads — `lead`, `opportunity` and `tender` are not granted to the floor at all.
     'marketingLeads','marketingOpportunities','marketingTenders',
+    // The document register. Read by everybody, written by the office: a welder holding revision A of a
+    // drawing while revision B is on file is the failure this register exists to prevent, so the floor has
+    // to be able to see what is current. No file bytes in it — there is no object storage yet, and the
+    // screen says so rather than offering a download that leads nowhere.
+    'documents',
     // The staff, so a form offering "Responsible" or "Owner" offers the people this workshop has
     // instead of the three names that were written into six pages. Narrowed by the row policy on
     // app_user before it ever gets here: the office sees everybody, the floor sees itself.

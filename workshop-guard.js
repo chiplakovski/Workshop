@@ -44,6 +44,7 @@
     ['suppliers-desktop.html', 'Suppliers'],
     ['marketing-desktop.html', 'Sales'],
     ['reports-desktop.html', 'Reports'],
+    ['documents-desktop.html', 'Documents'],
     ['admin.html', 'Access']
   ];
 

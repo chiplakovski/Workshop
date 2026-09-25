@@ -1290,40 +1290,81 @@ function ncrCannotCloseOnNothing() {
 function documentsPointAtSomethingReal() {
   const f = fixture();
   accepted('a drawing on the jobcard', `INSERT INTO document
-    (entity, entity_id, kind, filename, storage_key, mime_type, size_bytes, uploaded_by)
-    VALUES ('jobcard', ${f.jobcard}, 'drawing', 'BR-4410-A.pdf', 'jobcard/1/BR-4410-A.pdf',
-            'application/pdf', 284213, 'Workshop Admin');`);
+    (title, kind, entity, entity_id, filename, storage_key, mime_type, size_bytes, uploaded_by)
+    VALUES ('Duct drawing rev A', 'Drawing', 'jobcard', ${f.jobcard}, 'BR-4410-A.pdf',
+            'jobcard/1/BR-4410-A.pdf', 'application/pdf', 284213, 'Workshop Admin');`);
+  refused('a document nobody can find by name', `INSERT INTO document
+    (title, kind, uploaded_by) VALUES ('   ', 'Drawing', 'Admin');`, /title/);
+  refused('a kind of document the screen does not offer', `INSERT INTO document
+    (title, kind, uploaded_by) VALUES ('Something', 'blueprint', 'Admin');`, /kind/);
   refused('a document filed against a table that does not exist', `INSERT INTO document
-    (entity, entity_id, kind, filename, storage_key, uploaded_by)
-    VALUES ('jobcards', ${f.jobcard}, 'drawing', 'x.pdf', 'x/1.pdf', 'Admin');`, /entity/);
+    (title, kind, entity, entity_id, uploaded_by)
+    VALUES ('x', 'Drawing', 'jobcards', ${f.jobcard}, 'Admin');`, /entity/);
   refused('two documents on one file in storage', `INSERT INTO document
-    (entity, entity_id, kind, filename, storage_key, uploaded_by)
-    VALUES ('project', ${f.project}, 'drawing', 'again.pdf', 'jobcard/1/BR-4410-A.pdf', 'Admin');`,
-    /storage_key|duplicate key/);
+    (title, kind, filename, storage_key, uploaded_by)
+    VALUES ('again', 'Drawing', 'again.pdf', 'jobcard/1/BR-4410-A.pdf', 'Admin');`,
+  /storage_key|duplicate key/);
   refused('an empty file', `INSERT INTO document
-    (entity, entity_id, kind, filename, storage_key, size_bytes, uploaded_by)
-    VALUES ('project', ${f.project}, 'drawing', 'empty.pdf', 'project/1/empty.pdf', 0, 'Admin');`, /size_bytes/);
+    (title, kind, filename, storage_key, size_bytes, uploaded_by)
+    VALUES ('empty', 'Drawing', 'empty.pdf', 'project/1/empty.pdf', 0, 'Admin');`, /size_bytes/);
   refused('a document nobody uploaded', `INSERT INTO document
-    (entity, entity_id, kind, filename, storage_key, uploaded_by)
-    VALUES ('project', ${f.project}, 'drawing', 'anon.pdf', 'project/1/anon.pdf', '  ');`, /uploaded_by/);
-  step('Documents: a document names a table that exists, a file that is there, and who put it there');
+    (title, kind, filename, storage_key, uploaded_by)
+    VALUES ('anon', 'Drawing', 'anon.pdf', 'project/1/anon.pdf', '  ');`, /uploaded_by/);
+  step('Documents: a document has a name, a kind the screen offers, a table that exists, and an owner');
+
+  // The two halves of this record that are optional, and both of them all-or-nothing.
+  //
+  // Both were NOT NULL when this table was written, which is what kept it unused for four passes: there is
+  // no object storage, so `storage_key` had nothing to hold and no register entry could be made at all —
+  // while the thing worth having was never the bytes. Half of either half is worse than none: a storage key
+  // with no filename is a file nobody can offer to download, and an entity with no id reads as though it
+  // points somewhere.
+  accepted('a register entry with no file, which is every entry today', `INSERT INTO document
+    (title, kind, category, revision, uploaded_by)
+    VALUES ('Material Certificate MTC-240516', 'Certificate', 'Materials', '1', 'Workshop Admin');`);
+  accepted('a document filed against nothing yet', `INSERT INTO document
+    (title, kind, uploaded_by) VALUES ('Welding Procedure WPS-12', 'Document', 'Workshop Admin');`);
+  refused('a link with a table and no record', `INSERT INTO document
+    (title, kind, entity, uploaded_by)
+    VALUES ('half', 'Drawing', 'project', 'Admin');`, /a_link_names_both_halves/);
+  refused('a link with a record and no table', `INSERT INTO document
+    (title, kind, entity_id, uploaded_by)
+    VALUES ('half', 'Drawing', ${f.project}, 'Admin');`, /a_link_names_both_halves/);
+  refused('a filename with nowhere to be stored', `INSERT INTO document
+    (title, kind, filename, uploaded_by)
+    VALUES ('lost', 'Drawing', 'somewhere.pdf', 'Admin');`, /a_stored_file_has_a_key/);
+  refused('a stored file nothing can name', `INSERT INTO document
+    (title, kind, storage_key, uploaded_by)
+    VALUES ('nameless', 'Drawing', 'project/1/x.pdf', 'Admin');`, /a_stored_file_has_a_key/);
+  step('Documents: the file and the link are each all or nothing — no half a file, no half a link');
 
   // A certificate that has run out is the most common document problem in a workshop, so the date it
   // runs out is a column rather than a line in the notes.
   const cert = value(`INSERT INTO document
-    (entity, entity_id, kind, title, filename, storage_key, uploaded_by, expires_on, revision, status)
-    VALUES ('equipment', (SELECT id FROM equipment LIMIT 1), 'certificate', 'Crane inspection 2026',
-            'crane-2026.pdf', 'equipment/1/crane-2026.pdf', 'Workshop Admin',
-            current_date + 180, 'B', 'current') RETURNING id;`);
+    (title, kind, entity, entity_id, uploaded_by, expires_on, revision, status)
+    VALUES ('Crane inspection 2026', 'Certificate', 'equipment', (SELECT id FROM equipment LIMIT 1),
+            'Workshop Admin', current_date + 180, 'B', 'valid') RETURNING id;`);
   assert.equal(value(`SELECT (expires_on > current_date)::text FROM document WHERE id = ${cert};`), 'true');
   refused('a document in a state a document cannot be in',
-    `UPDATE document SET status = 'lost' WHERE id = ${cert};`, /check/i);
+    `UPDATE document SET status = 'lost' WHERE id = ${cert};`, /invalid input value|check/i);
+
+  // The two states nobody sets. Both are answers to "what is the date today", worked out by
+  // workspace_snapshot() on every read — so a column holding either would be a fact that was true the
+  // morning somebody chose it and then silently stopped being true. The Documents screen offered
+  // "Review Soon" in its status dropdown, which is where this would have come from.
+  for (const dated of ['expired', 'review soon', 'Review Soon']) {
+    refused(`the state "${dated}", which is a date and not a decision`,
+      `UPDATE document SET status = '${dated}' WHERE id = ${cert};`, /invalid input value/i);
+  }
   accepted('marking it superseded when a new revision lands',
     `UPDATE document SET status = 'superseded', updated_at = now() WHERE id = ${cert};`);
+  refused('an expiry date on a template, which does not have a life',
+    `INSERT INTO document (title, kind, expires_on, uploaded_by)
+     VALUES ('Weld map', 'Template', current_date + 90, 'Admin');`, /only_a_dated_document_expires/);
   const expiring = value(`SELECT count(*) FROM document WHERE expires_on IS NOT NULL
                            AND expires_on <= current_date + 365;`);
   assert.equal(expiring, '1', 'the register has to be able to answer what runs out within the year');
-  step('Documents: a certificate carries the date it runs out, a revision and a state the register can ask about');
+  step('Documents: a certificate carries the date it runs out, and the two dated states are not storable');
 }
 
 // A step on a jobcard, and the work booked against it.

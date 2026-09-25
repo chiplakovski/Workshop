@@ -606,6 +606,217 @@ REVOKE ALL ON FUNCTION people() FROM PUBLIC;
 
 -- The bootstrap is callable without a session, because there is nobody to sign in as yet. It is the
 -- only function in the system like that, and it refuses the moment the table has anybody in it.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The document register
+--
+-- The last screen to be wired, and it had been waiting on file storage — which turned out to be the wrong
+-- thing to wait for. The part of a document register that matters is not the bytes: it is knowing that the
+-- material certificate for heat H240516 expires on the 12th, that revision B of the duct drawing supersedes
+-- revision A, and that the welding procedure filed against this job is the one the weld was actually made
+-- to. All of that is metadata, and none of it needs the scan to exist. So the register is wired now and the
+-- file half of each row stays empty until there is somewhere to put a file.
+--
+-- The screen speaks of a "module" — Projects, Purchasing, Quality — where the database has tables. One
+-- word covers three tables in the case of Quality, and 'Purchasing' is not the name of anything. The
+-- resolver below is the whole of that translation, in one place, and it looks the reference up rather than
+-- trusting it: a document filed against a project number nobody has ever used is a document that will not
+-- be found by the person who needs it, and the refusal says which reference it could not find.
+CREATE FUNCTION document_link_for(p_module text, p_record text,
+                                  OUT entity text, OUT entity_id bigint)
+LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  said text := nullif(btrim(coalesce(p_record, '')), '');
+  word text := lower(btrim(coalesce(p_module, '')));
+BEGIN
+  IF said IS NULL OR word IN ('', 'unlinked', 'general') THEN
+    RETURN;
+  END IF;
+
+  -- One module, one or more tables, tried in order. Quality is three: the screen's Quality section lists
+  -- non-conformances, inspections and holds together, and a certificate is filed against whichever of them
+  -- raised the question. Store is the one table whose human reference is not called `ref`.
+  CASE word
+    WHEN 'projects'    THEN SELECT 'project',        p.id INTO entity, entity_id FROM project p WHERE p.ref = said;
+    WHEN 'workshop'    THEN SELECT 'jobcard',        j.id INTO entity, entity_id FROM jobcard j WHERE j.ref = said;
+    WHEN 'purchasing'  THEN SELECT 'purchase_order', o.id INTO entity, entity_id FROM purchase_order o WHERE o.ref = said;
+    WHEN 'estimations' THEN SELECT 'estimate',       e.id INTO entity, entity_id FROM estimate e WHERE e.ref = said;
+    WHEN 'store'       THEN SELECT 'stock_item',     i.id INTO entity, entity_id FROM stock_item i WHERE i.code = said;
+    WHEN 'suppliers'   THEN
+      SELECT 'supplier', x.id INTO entity, entity_id FROM supplier x WHERE x.ref = said OR x.name = said;
+    WHEN 'customers'   THEN
+      SELECT 'customer', c.id INTO entity, entity_id FROM customer c WHERE c.ref = said OR c.name = said;
+    WHEN 'quality'     THEN
+      SELECT 'ncr', n.id INTO entity, entity_id FROM ncr n WHERE n.ref = said;
+      IF entity_id IS NULL THEN
+        SELECT 'inspection', i.id INTO entity, entity_id FROM inspection i WHERE i.ref = said;
+      END IF;
+      IF entity_id IS NULL THEN
+        SELECT 'quality_hold', h.id INTO entity, entity_id FROM quality_hold h WHERE h.ref = said;
+      END IF;
+    ELSE
+      RAISE EXCEPTION 'there is no module called %', p_module USING ERRCODE = 'check_violation';
+  END CASE;
+
+  IF entity_id IS NULL THEN
+    RAISE EXCEPTION 'nothing in % is called %', p_module, said USING ERRCODE = 'foreign_key_violation';
+  END IF;
+END;
+$$;
+
+-- A document in the register, created or corrected. The file half is not a parameter at all: there is
+-- nowhere to put a file, and a function that accepted a storage key would be a function that could be
+-- handed one pointing at nothing.
+CREATE FUNCTION save_document(
+  p_id bigint,
+  p_title text,
+  p_kind text DEFAULT 'Document',
+  p_module text DEFAULT NULL,
+  p_record text DEFAULT NULL,
+  p_category text DEFAULT NULL,
+  p_status document_status DEFAULT 'draft',
+  p_expires_on date DEFAULT NULL,
+  p_revision text DEFAULT NULL,
+  p_author text DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('filing a document');
+  named text := nullif(btrim(coalesce(p_title, '')), '');
+  link record;
+  saved bigint;
+BEGIN
+  IF named IS NULL THEN
+    RAISE EXCEPTION 'a document needs a name somebody can find it by' USING ERRCODE = 'check_violation';
+  END IF;
+  -- Refuses out loud when the reference names nothing, which is the point of resolving it here.
+  SELECT * INTO link FROM document_link_for(p_module, p_record);
+
+  IF p_id IS NULL THEN
+    INSERT INTO document (title, kind, category, revision, status, expires_on,
+                          entity, entity_id, author, notes, uploaded_by)
+    VALUES (named, coalesce(nullif(btrim(coalesce(p_kind,'')), ''), 'Document'),
+            nullif(btrim(coalesce(p_category,'')), ''), nullif(btrim(coalesce(p_revision,'')), ''),
+            coalesce(p_status, 'draft'), p_expires_on, link.entity, link.entity_id,
+            -- The author is whoever filed it unless somebody says otherwise: a drawing can be somebody
+            -- else's work. The session's name is the default rather than the answer, and `uploaded_by`
+            -- below is the session either way, so who put it in the register is never in doubt.
+            coalesce(nullif(btrim(coalesce(p_author,'')), ''), who),
+            nullif(btrim(coalesce(p_notes,'')), ''), who)
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('document', saved, 'filed', who, named);
+  ELSE
+    UPDATE document SET
+      title = named,
+      kind = coalesce(nullif(btrim(coalesce(p_kind,'')), ''), kind),
+      category = nullif(btrim(coalesce(p_category,'')), ''),
+      revision = nullif(btrim(coalesce(p_revision,'')), ''),
+      status = coalesce(p_status, status),
+      expires_on = p_expires_on,
+      entity = link.entity, entity_id = link.entity_id,
+      author = coalesce(nullif(btrim(coalesce(p_author,'')), ''), author),
+      notes = nullif(btrim(coalesce(p_notes,'')), ''),
+      updated_at = now()
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such document' USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('document', saved, 'corrected', who, named);
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+-- Linking a document to a record, or taking the link off. Its own function because the screen has its own
+-- action for it: a document is often filed before anybody knows which job it belongs to, and correcting
+-- that later should not mean re-typing the expiry date and the revision.
+CREATE FUNCTION link_document(p_id bigint, p_module text, p_record text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('linking a document to a record');
+  link record;
+  named text;
+BEGIN
+  SELECT * INTO link FROM document_link_for(p_module, p_record);
+  UPDATE document SET entity = link.entity, entity_id = link.entity_id, updated_at = now()
+   WHERE id = p_id
+  RETURNING title INTO named;
+  IF named IS NULL THEN
+    RAISE EXCEPTION 'no such document' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('document', p_id, 'linked', who,
+          coalesce(link.entity || ' ' || coalesce(p_record, ''), 'unlinked'));
+  RETURN coalesce(link.entity, 'unlinked');
+END;
+$$;
+
+-- Superseding a document, which is how a register stops being a pile. Revision B arrives and revision A
+-- does not become wrong — it becomes the one that was true before. Deleting it would be losing the reason
+-- the weld was made the way it was.
+CREATE FUNCTION supersede_document(p_id bigint, p_by_id bigint DEFAULT NULL) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('superseding a document');
+  old record;
+BEGIN
+  SELECT id, title, revision, status INTO old FROM document WHERE id = p_id;
+  IF old.id IS NULL THEN
+    RAISE EXCEPTION 'no such document' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF old.status = 'superseded' THEN
+    RAISE EXCEPTION '% is already superseded', old.title USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_by_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM document WHERE id = p_by_id) THEN
+    RAISE EXCEPTION 'no such replacement document' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF p_by_id = p_id THEN
+    RAISE EXCEPTION 'a document cannot supersede itself' USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE document SET status = 'superseded', updated_at = now() WHERE id = p_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('document', p_id, 'superseded', who,
+          CASE WHEN p_by_id IS NULL THEN old.title
+               ELSE old.title || ' by ' || (SELECT ref FROM document WHERE id = p_by_id) END);
+  RETURN old.title;
+END;
+$$;
+
+-- A note against a document, in the same log every other record's history comes from.
+CREATE FUNCTION add_document_note(p_id bigint, p_text text) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('adding a note to a document');
+  said text := nullif(btrim(coalesce(p_text, '')), '');
+  made bigint;
+BEGIN
+  IF said IS NULL THEN
+    RAISE EXCEPTION 'an empty note is not a note' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM document WHERE id = p_id) THEN
+    RAISE EXCEPTION 'no such document' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('document', p_id, 'note', who, said)
+  RETURNING id INTO made;
+  RETURN made;
+END;
+$$;
+
+-- Taken away from everybody first, like every other function in this file, then given back below to the
+-- roles that have business with it. The resolver goes to the office too: save_document and link_document
+-- run in the caller's own role, so a caller who cannot execute the resolver cannot file anything.
+REVOKE ALL ON FUNCTION document_link_for(text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_document(bigint, text, text, text, text, text, document_status,
+                                     date, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION link_document(bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION supersede_document(bigint, bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION add_document_note(bigint, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION document_link_for(text, text) TO varmak_admin, varmak_office;
+
 GRANT EXECUTE ON FUNCTION bootstrap_first_admin(text, text, text) TO varmak_api;
 GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigint, text),
   set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role)
@@ -3020,8 +3231,16 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   save_tender(bigint, text, bigint, bigint, tender_status, date, date, numeric, text, text, text,
               text, text, text, text, text, date),
   record_prospect_finding(bigint, text, text),
-  act_on_prospect_finding(bigint, boolean, text)
+  act_on_prospect_finding(bigint, boolean, text),
+  -- The document register. Filing, linking and superseding are the office's: the floor reads what is on
+  -- file — a welder holding the wrong revision is the failure this register exists to prevent — and does
+  -- not decide which revision is current. A note is the exception below, for the same reason a note on a
+  -- quality record is: whoever found the problem is the person who should be able to write it down.
+  save_document(bigint, text, text, text, text, text, document_status, date, text, text, text),
+  link_document(bigint, text, text),
+  supersede_document(bigint, bigint)
 TO varmak_admin, varmak_office;
+
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   record_operation(bigint, operation_status, text),
@@ -3039,7 +3258,8 @@ GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   hold_after_failed_inspection(bigint),
   create_reinspection(bigint),
   replace_inspection_checks(bigint, jsonb),
-  add_quality_note(text, bigint, text)
+  add_quality_note(text, bigint, text),
+  add_document_note(bigint, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 COMMIT;

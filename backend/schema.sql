@@ -1399,39 +1399,79 @@ CREATE INDEX ncr_open_idx ON ncr(status) WHERE status NOT IN ('closed','rejected
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Documents
 --
--- The file itself lives in object storage; this is the record of what it is and what it belongs
--- to. The entity/entity_id pair cannot be a foreign key, so the entity name is restricted to the
--- tables it may actually refer to — a spelling mistake there is a document nothing can find.
+-- The register of what the workshop holds on paper: certificates, drawings, reports, templates. A
+-- certificate that has run out is the single most common document problem in a metal shop, which is why
+-- the expiry date is a column and not a line in the notes.
+--
+-- Two halves of this are optional, and both were NOT NULL in the first version, which is what kept this
+-- table unused for four passes:
+--
+--   * The FILE. There is no object storage yet, so `storage_key` had nothing to hold and a register entry
+--     could not be made at all. But a workshop knows it holds a material certificate expiring on the 12th
+--     long before anybody scans it, and that expiry is the part worth tracking. So the file half —
+--     filename, storage_key, mime_type, size_bytes — is either all there or none of it, and a record with
+--     none of it is a register entry waiting for its scan.
+--   * The LINK. The screen has an explicit "Unlinked" state and a "Link to Record" action, so a document
+--     that belongs to nothing yet is a state somebody chose, not a mistake. entity and entity_id are
+--     either both set or both null; half a link points nowhere and reads as though it points somewhere.
+--
+-- The entity/entity_id pair cannot be a foreign key, so the entity name is restricted to the tables it may
+-- actually refer to — a spelling mistake there is a document nothing can find. save_document() resolves
+-- the screen's word for a module into one of these and looks the reference up, so a link to a record that
+-- does not exist is refused rather than stored.
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+-- The states somebody sets. 'Review Soon' and 'Expired' are NOT here and that is the point: both are
+-- answers to "what is the date today", and a status column holding either is a fact that was true when it
+-- was written and silently stops being true. The Documents screen offers "Review Soon" in its status
+-- dropdown, which is the one place its vocabulary is not just a different spelling but a different kind of
+-- thing. The view computes both from expires_on, so they cannot go stale.
+CREATE TYPE document_status AS ENUM ('draft', 'valid', 'approved', 'superseded');
 
 CREATE TABLE document (
   id          bigserial PRIMARY KEY,
   ref         text NOT NULL UNIQUE DEFAULT next_ref('DOC-', 'seq_document'::regclass, 5),
-  entity      text NOT NULL CHECK (entity IN
-                ('customer','project','jobcard','operation','equipment','stock_item',
-                 'quality_hold','inspection','ncr','supplier','purchase_order','estimate','tender')),
-  entity_id   bigint NOT NULL,
-  kind        text NOT NULL CHECK (btrim(kind) <> ''),
-  filename    text NOT NULL CHECK (btrim(filename) <> ''),
-  storage_key text NOT NULL UNIQUE CHECK (btrim(storage_key) <> ''),
-  mime_type   text,
-  size_bytes  bigint CHECK (size_bytes IS NULL OR size_bytes > 0),
-  -- What people call it, as distinct from the filename it happens to have been saved under.
-  title       text,
+  -- What people call it. The screen has one name field and this is it; `filename` below is what the file
+  -- was actually saved under, which is a different string and often an uglier one.
+  title       text NOT NULL CHECK (btrim(title) <> ''),
+  kind        text NOT NULL CHECK (kind IN
+                ('Document', 'Certificate', 'Drawing', 'Report', 'Template', 'Image')),
   category    text,
   revision    text,
+  status      document_status NOT NULL DEFAULT 'draft',
+  expires_on  date,
+
+  -- The record it belongs to, or nothing yet.
+  entity      text CHECK (entity IS NULL OR entity IN
+                ('customer','project','jobcard','operation','equipment','stock_item',
+                 'quality_hold','inspection','ncr','supplier','purchase_order','estimate','tender')),
+  entity_id   bigint,
+
+  -- The file, when there is one.
+  filename    text CHECK (filename IS NULL OR btrim(filename) <> ''),
+  storage_key text UNIQUE CHECK (storage_key IS NULL OR btrim(storage_key) <> ''),
+  mime_type   text,
+  size_bytes  bigint CHECK (size_bytes IS NULL OR size_bytes > 0),
+
   author      text,
   notes       text,
-  status      text NOT NULL DEFAULT 'current' CHECK (status IN ('draft','current','superseded','expired')),
-  -- A certificate that has run out is the single most common document problem in a workshop, so the
-  -- date is a column rather than something written in the notes.
-  expires_on  date,
   uploaded_by text NOT NULL CHECK (btrim(uploaded_by) <> ''),
   uploaded_at timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now()
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT a_link_names_both_halves CHECK ((entity IS NULL) = (entity_id IS NULL)),
+  -- A stored file needs somewhere to be stored and a name to be found by. Either both or neither: a
+  -- storage key with no filename is a file nobody can offer to download, and a filename with no key is a
+  -- download button that leads nowhere.
+  CONSTRAINT a_stored_file_has_a_key CHECK ((storage_key IS NULL) = (filename IS NULL)),
+  -- Only a certificate, a drawing or a report has a life. A template does not expire.
+  CONSTRAINT only_a_dated_document_expires CHECK (
+    expires_on IS NULL OR kind IN ('Certificate', 'Drawing', 'Report', 'Document'))
 );
 
 CREATE INDEX document_entity_idx ON document(entity, entity_id);
+-- The question the register is opened to answer: what is running out.
+CREATE INDEX document_expiry_idx ON document(expires_on) WHERE expires_on IS NOT NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- The audit trail
