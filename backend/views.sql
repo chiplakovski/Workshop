@@ -125,6 +125,38 @@ GRANT SELECT (id, ref) ON project, jobcard, purchase_order, estimate, ncr, inspe
 GRANT SELECT (id, name) ON supplier, customer TO varmak_engine;
 GRANT SELECT (id, code) ON stock_item TO varmak_engine;
 
+-- Whose name is on a record, where the record holds an id.
+--
+-- The fourth time in this project that a list in the snapshot has read a table the reader holds narrowly,
+-- and the first time it failed QUIETLY. The row policy on app_user narrows a welder to their own row, so
+-- `(SELECT display_name FROM app_user WHERE id = w.welder_id)` returned the reader's own name on their own
+-- welds and NULL on everybody else's — no refusal, no error, just a weld log reading "by (NOBODY)" for
+-- every weld somebody else made. A register whose whole purpose is traceability, saying nothing about who
+-- welded what, and nothing failing.
+--
+-- The three before it refused out loud and were found in minutes. This one would have reached a screen.
+--
+-- Narrowing app_user to the reader's own row is right for the staff list — a welder does not assign
+-- responsibility, which is why `people` in the snapshot is narrowed. A weld log is not the staff list: it
+-- exists to say who made which joint, and EN 1090 is the reason. So the name is read by a function owned
+-- by the engine, returning one column and nothing else.
+CREATE FUNCTION person_name(p_user_id bigint) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT display_name FROM app_user WHERE id = p_user_id;
+$$;
+
+-- Postgres requires the INCOMING owner of a function to hold CREATE on the schema, and on PostgreSQL 15
+-- and later `public` does not grant that to everybody. api.sql and auth.sql each do this dance around
+-- their own ownership changes and take the privilege back at the end of the file; this file has two of
+-- them and had neither, which only showed up on a hosted-shaped database — test-deploy.js installs as a
+-- non-superuser owner, and that is the whole reason it exists. The two functions here are the only ones
+-- in views.sql that change owner, so the grant opens here and closes below.
+GRANT CREATE ON SCHEMA public TO varmak_engine;
+
+REVOKE ALL ON FUNCTION person_name(bigint) FROM PUBLIC;
+ALTER FUNCTION person_name(bigint) OWNER TO varmak_engine;
+GRANT EXECUTE ON FUNCTION person_name(bigint) TO varmak_admin, varmak_office, varmak_workshop;
+
 CREATE FUNCTION document_record_label(p_entity text, p_entity_id bigint) RETURNS text
 LANGUAGE sql STABLE SECURITY DEFINER AS $$
   SELECT CASE p_entity
@@ -396,6 +428,96 @@ LANGUAGE sql STABLE AS $$
         'activity', quality_activity_of('document', d.id)
       ) ORDER BY d.updated_at DESC, d.id DESC) FROM document d), '[]'::jsonb),
 
+    -- ── The welding registers ─────────────────────────────────────────────────────────────────
+    --
+    -- The screen's words throughout, and the same rule as the document register about the two statuses
+    -- that are really dates. A welder qualification's demonstration data carries `expiring-soon` as a
+    -- STORED status, in the register whose whole job is to say who may weld — so it is worked out here,
+    -- on every read, from expires_on. Sixty days is the window, which is the one number in this block
+    -- that is a judgement: a qualification with two months left is still valid and is worth renewing
+    -- before somebody is standing at a bench unable to sign their own weld.
+    'qualityWps', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', p.id::text, 'no', p.ref, 'revision', p.revision, 'process', p.process,
+        'materialGroup', p.material_group, 'thicknessRange', p.thickness_range,
+        'diameterRange', p.diameter_range, 'jointType', p.joint_type, 'position', p.position,
+        'fillerMaterial', p.filler_material, 'shieldingGas', p.shielding_gas,
+        'preheatInterpass', p.preheat_interpass, 'supportingWpqr', p.supporting_wpqr,
+        'status', CASE p.status
+          WHEN 'approved' THEN 'valid' WHEN 'awaiting-approval' THEN 'awaiting-approval'
+          WHEN 'withdrawn' THEN 'withdrawn' ELSE 'draft' END,
+        'setStatus', p.status,
+        'approvedOn', p.approved_on, 'approvedBy', p.approved_by,
+        'documentRef', (SELECT d.title FROM document d WHERE d.id = p.document_id),
+        'notes', p.notes,
+        'activity', quality_activity_of('wps', p.id)
+      ) ORDER BY p.ref, p.revision DESC) FROM wps p), '[]'::jsonb),
+
+    'qualityWelderQuals', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', q.id::text, 'qualNo', q.qual_no,
+        -- The name, from the staff list, because the screen shows a person and the column holds an id.
+        'welder', person_name(q.welder_id),
+        'welderId', q.welder_id::text,
+        'process', q.process, 'materialGroup', q.material_group, 'thicknessRange', q.thickness_range,
+        'position', q.position, 'issuedBy', q.issued_by, 'issueDate', q.issued_on,
+        'expiryDate', q.expires_on,
+        'status', CASE
+          WHEN q.status <> 'valid' THEN q.status::text
+          WHEN q.expires_on < current_date THEN 'expired'
+          WHEN q.expires_on <= current_date + 60 THEN 'expiring-soon'
+          ELSE 'valid' END,
+        'setStatus', q.status,
+        -- How long is left, because "expiring-soon" without a number is a warning nobody can plan around.
+        'daysLeft', (q.expires_on - current_date),
+        'documentRef', (SELECT d.title FROM document d WHERE d.id = q.document_id),
+        'notes', q.notes,
+        'activity', quality_activity_of('welder_qual', q.id)
+      ) ORDER BY q.expires_on) FROM welder_qual q), '[]'::jsonb),
+
+    'qualityWelds', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', w.id::text, 'no', w.ref,
+        'projectNo', (SELECT x.ref FROM project x WHERE x.id = w.project_id),
+        'jobcard', (SELECT x.ref FROM jobcard x WHERE x.id = w.jobcard_id),
+        'operation', (SELECT o.description FROM operation o WHERE o.id = w.operation_id),
+        'component', w.component, 'drawingNo', w.drawing_no,
+        'weldMapPosition', w.weld_map_position, 'jointType', w.joint_type,
+        'baseMaterial', w.base_material, 'materialGrade', w.material_grade,
+        'thickness', w.thickness, 'process', w.process,
+        'wpsNo', (SELECT p.ref FROM wps p WHERE p.id = w.wps_id),
+        'wpqrRef', (SELECT p.supporting_wpqr FROM wps p WHERE p.id = w.wps_id),
+        'welder', person_name(w.welder_id),
+        'welderQualRef', (SELECT q.qual_no FROM welder_qual q WHERE q.id = w.welder_qual_id),
+        'fillerMaterial', w.filler_material, 'consumableBatch', w.consumable_batch,
+        'shieldingGas', w.shielding_gas, 'preheatRequired', w.preheat_required,
+        'interpassTempReq', w.interpass_temp_req, 'weldDate', w.welded_on,
+        'visualRequired', w.visual_required, 'ndtRequired', w.ndt_required, 'ndtMethod', w.ndt_method,
+        'finalResult', w.final_result, 'status', w.status, 'notes', w.notes,
+        -- The repairs, as the list the screen shows. A weld that was repaired is not a weld that was
+        -- always right, and this is the column that says which.
+        'repairHistory', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'date', r.repaired_on, 'reason', r.reason, 'by', r.repaired_by, 'notes', r.notes
+          ) ORDER BY r.repaired_on, r.id) FROM weld_repair r WHERE r.weld_id = w.id), '[]'::jsonb),
+        'activity', quality_activity_of('weld', w.id)
+      ) ORDER BY w.welded_on DESC, w.id DESC) FROM weld w), '[]'::jsonb),
+
+    'qualityNdt', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', n.id::text, 'no', n.ref,
+        'weldRef', (SELECT x.ref FROM weld x WHERE x.id = n.weld_id),
+        'projectNo', (SELECT p.ref FROM project p
+                       JOIN weld x ON x.id = n.weld_id WHERE p.id = x.project_id),
+        'jobcard', (SELECT j.ref FROM jobcard j JOIN weld x ON x.id = n.weld_id WHERE j.id = x.jobcard_id),
+        'drawingNo', n.drawing_no, 'method', n.method, 'procedureRef', n.procedure_ref,
+        'inspectionPercent', n.inspection_percent, 'inspectionArea', n.inspection_area,
+        'technician', n.technician, 'externalCompany', n.external_company,
+        'technicianCertRef', n.technician_cert_ref, 'inspectionDate', n.inspected_on,
+        'acceptanceCriteria', n.acceptance_criteria, 'result', n.result, 'findings', n.findings,
+        'repairRequired', n.repair_required, 'reinspectionRequired', n.reinspection_required,
+        'ncrRef', (SELECT c.ref FROM ncr c WHERE c.id = n.ncr_id),
+        -- The screen shows a status beside the result and they are the same fact. One column, read twice,
+        -- because two would be two answers to whether a joint is sound.
+        'status', n.result, 'notes', n.notes,
+        'activity', quality_activity_of('ndt_report', n.id)
+      ) ORDER BY n.inspected_on DESC, n.id DESC) FROM ndt_report n), '[]'::jsonb),
+
     -- The inspections. `type` rather than `kind`, because that is the word on the screen and on the
     -- filter above it; the column is named the way the rest of this schema names a kind of thing, and
     -- one of the two had to give.
@@ -634,12 +756,15 @@ REVOKE ALL ON FUNCTION document_record_label(text, bigint) FROM PUBLIC;
 -- would run as whoever holds everything, and the point is that it runs as a role holding exactly the
 -- reads this one lookup needs.
 ALTER FUNCTION document_record_label(text, bigint) OWNER TO varmak_engine;
+-- And taken back, the moment the last ownership change in this file is done. The privilege exists only
+-- while it is being used, which is the rule the other two files follow.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION operations_of(bigint), equipment_events_of(bigint, text[]),
   quality_activity_of(text, bigint), workspace_snapshot(),
-  document_record_label(text, bigint)
+  document_record_label(text, bigint), person_name(bigint)
 TO varmak_admin, varmak_office, varmak_workshop;
 GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;
 

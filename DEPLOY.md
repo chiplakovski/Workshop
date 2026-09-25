@@ -128,7 +128,7 @@ works.
 ## 6 · Backups, and the drill
 
 15. **Supabase takes its own, and they are not enough on their own.** Measured rather than assumed: a
-    `pg_dump` of this database carries around 500 `GRANT` statements and 74 row-level policies and
+    `pg_dump` of this database carries around 500 `GRANT` statements and 94 row-level policies and
     **zero `CREATE ROLE`**, because roles live in the cluster and not in the database. Restore that
     dump alone onto a clean server and every one of those grants fails, because `varmak_workshop` does
     not exist there — and you are left with the data and none of the rules about who may read it,
@@ -139,7 +139,7 @@ works.
     ```
     It writes two files and prints which one goes back first. Put it in cron weekly, keep a copy
     somewhere that is not that machine, and read
-    [`backend/test-restore.js`](backend/test-restore.js) once — it restores a backup, compares all 34
+    [`backend/test-restore.js`](backend/test-restore.js) once — it restores a backup, compares all 41
     tables by a checksum of their contents rather than a row count, and then asks whether the copy
     still *refuses* what the original refused. A restore nobody has ever done is a hope.
 16. **Do one now, before there is real data to lose**, so that the first time you restore this is not

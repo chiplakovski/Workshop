@@ -165,11 +165,11 @@ async function main() {
   assert.match(said, /varmak_api can sign in/,
     `install.sh has to prove the server's own role can connect: ${said}`);
   assert.equal(value(`SELECT count(*) FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '36');
-  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '82');
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '41');
+  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '94');
   assert.equal(value(`SELECT string_agg(rolname, ',' ORDER BY rolname) FROM pg_roles
     WHERE rolname LIKE 'varmak%';`), 'varmak_admin,varmak_api,varmak_engine,varmak_office,varmak_workshop');
-  step('Deploy: all four files install as a non-superuser owner — 36 tables, 82 policies, five roles');
+  step('Deploy: all four files install as a non-superuser owner — 41 tables, 94 policies, five roles');
 
   // The attributes, because an install that finishes with the wrong ones is the failure that looks
   // like success. varmak_api holding BYPASSRLS would make every policy above decoration.
@@ -186,7 +186,7 @@ async function main() {
   assert.equal(value(`SELECT has_schema_privilege('varmak_engine', 'public', 'CREATE')::text;`), 'false',
     'the CREATE granted for the ownership changes has to have gone back');
   assert.equal(value(`SELECT count(*) FROM pg_proc p JOIN pg_roles r ON r.oid = p.proowner
-    WHERE r.rolname = 'varmak_engine';`), '18',
+    WHERE r.rolname = 'varmak_engine';`), '20',
     'and the functions allowed to step around row security belong to the role that may');
   step('Deploy: the roles came out with the attributes that hold this system apart, and nothing more');
 

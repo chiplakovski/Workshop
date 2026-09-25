@@ -93,6 +93,10 @@ const ALL_TABLES = [
   'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
   'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document',
+  // The welding registers. In the truncate list because a fixture that leaves a weld behind is a fixture
+  // whose next test counts one more than it should — and the weld log is the one register where a row
+  // nobody expected is indistinguishable from a real one.
+  'wps', 'welder_qual', 'weld', 'weld_repair', 'ndt_report',
   'activity_log'
 ];
 
@@ -1367,6 +1371,144 @@ function documentsPointAtSomethingReal() {
   step('Documents: a certificate carries the date it runs out, and the two dated states are not storable');
 }
 
+// ── The welding registers ─────────────────────────────────────────────────────────────────
+
+// The sentence this whole subsystem exists for: a weld is made by a welder qualified for that process, to
+// a procedure that was valid on the day. Four refusals, each asserted on its wording, because a refusal
+// nobody can read is a refusal somebody works around.
+function aWeldIsMadeBySomebodyQualified() {
+  const f = fixture();
+  // Two welders, one procedure approved and one still a draft, and two qualifications — one current and
+  // one that ran out a month ago.
+  const elena = value(`INSERT INTO app_user (email, display_name, role)
+    VALUES ('elena@fixture.se', 'Elena Nikolic', 'workshop') RETURNING id;`);
+  const marko = value(`INSERT INTO app_user (email, display_name, role)
+    VALUES ('marko@fixture.se', 'Marko Ilic', 'workshop') RETURNING id;`);
+  const approved = value(`INSERT INTO wps (ref, revision, process, supporting_wpqr, status,
+      approved_on, approved_by)
+    VALUES ('WPS-304-02', 1, 'TIG', 'WPQR-304-02-R1', 'approved', current_date - 200, 'Quality Manager')
+    RETURNING id;`);
+  const draft = value(`INSERT INTO wps (ref, revision, process, status)
+    VALUES ('WPS-MAG-01', 1, 'MAG', 'draft') RETURNING id;`);
+  const current = value(`INSERT INTO welder_qual (welder_id, qual_no, process, issued_by,
+      issued_on, expires_on)
+    VALUES (${elena}, 'WPQ-EN-2024-11', 'TIG', 'Nordic Weld Cert AB',
+            current_date - 400, current_date + 200) RETURNING id;`);
+  const lapsed = value(`INSERT INTO welder_qual (welder_id, qual_no, process, issued_by,
+      issued_on, expires_on)
+    VALUES (${elena}, 'WPQ-EN-2021-03', 'TIG', 'Nordic Weld Cert AB',
+            current_date - 1200, current_date - 30) RETURNING id;`);
+
+  accepted('a weld to an approved procedure, by a welder qualified for it', `INSERT INTO weld
+    (jobcard_id, process, wps_id, welder_id, welder_qual_id, welded_on, recorded_by, component)
+    VALUES (${f.jobcard}, 'TIG', ${approved}, ${elena}, ${current}, current_date - 1,
+            'Elena Nikolic', 'Shell course');`);
+
+  const toDraft = refused('a weld to a procedure nobody has approved', `INSERT INTO weld
+    (jobcard_id, process, wps_id, welder_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'MAG', ${draft}, ${elena}, current_date, 'x');`, /is draft, not approved/);
+  assert.match(toDraft, /WPS-MAG-01/, 'the refusal names the procedure, not "a procedure"');
+
+  const wrongProcess = refused('a weld whose process is not the procedure\'s', `INSERT INTO weld
+    (jobcard_id, process, wps_id, welder_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'MAG', ${approved}, ${elena}, current_date, 'x');`,
+  /recorded as MAG against WPS-304-02, which is a TIG procedure/);
+  assert.ok(wrongProcess.includes('TIG'), 'and says what the procedure actually is');
+
+  refused('a qualification borrowed from another welder', `INSERT INTO weld
+    (jobcard_id, process, welder_id, welder_qual_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'TIG', ${marko}, ${current}, current_date, 'x');`,
+  /does not belong to Marko Ilic — a qualification cannot be borrowed/);
+
+  // The one an auditor is actually asking about, and the one worth the date being in the message —
+  // the same shape as the equipment gate, which names the day a machine's certification ran out.
+  const expired = refused('a weld on a qualification that had already run out', `INSERT INTO weld
+    (jobcard_id, process, welder_id, welder_qual_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, ${lapsed}, current_date, 'x');`,
+  /the qualification WPQ-EN-2021-03 held by Elena Nikolic expired on \d{4}-\d{2}-\d{2}/);
+  assert.match(expired, /and this weld was made on \d{4}-\d{2}-\d{2}/,
+    'the refusal gives both dates, because which side of the line the weld falls on is the question');
+
+  // A qualification that has been suspended is not a qualification, whatever its date says.
+  sql(`UPDATE welder_qual SET status = 'suspended' WHERE id = ${current};`);
+  refused('a weld citing a suspended qualification', `INSERT INTO weld
+    (jobcard_id, process, welder_id, welder_qual_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, ${current}, current_date, 'x');`,
+  /is suspended, so it cannot be cited/);
+  sql(`UPDATE welder_qual SET status = 'valid' WHERE id = ${current};`);
+
+  refused('a weld made tomorrow', `INSERT INTO weld
+    (jobcard_id, process, welder_id, welded_on, recorded_by)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, current_date + 1, 'x');`, /a_weld_is_not_made_tomorrow/);
+  refused('NDT called for with no method named', `INSERT INTO weld
+    (jobcard_id, process, welder_id, recorded_by, ndt_required)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, 'x', true);`, /ndt_that_is_required_says_how/);
+  refused('a qualification that runs backwards', `INSERT INTO welder_qual
+    (welder_id, qual_no, process, issued_by, issued_on, expires_on)
+    VALUES (${elena}, 'WPQ-BAD', 'TIG', 'X', current_date, current_date - 1);`,
+  /a_qualification_runs_forwards/);
+  refused('a procedure approved without saying who approved it', `INSERT INTO wps
+    (ref, revision, process, status) VALUES ('WPS-NOBODY', 1, 'TIG', 'approved');`,
+  /an_approved_wps_says_who/);
+  refused('two copies of one revision of one procedure', `INSERT INTO wps
+    (ref, revision, process, status) VALUES ('WPS-304-02', 1, 'MAG', 'draft');`,
+  /wps_one_revision|duplicate key/);
+  step('Welding: a weld is made by a welder qualified for that process, to an approved procedure');
+}
+
+// The rule that stops a delivery being signed off against work nobody tested.
+function aWeldIsAcceptedOnlyOnEvidence() {
+  const f = fixture();
+  const elena = value(`INSERT INTO app_user (email, display_name, role)
+    VALUES ('elena@fixture.se', 'Elena Nikolic', 'workshop') RETURNING id;`);
+  const weld = value(`INSERT INTO weld (jobcard_id, process, welder_id, welded_on, recorded_by,
+      ndt_required, ndt_method, component)
+    VALUES (${f.jobcard}, 'TIG', ${elena}, current_date - 2, 'Elena Nikolic', true, 'RT', 'Nozzle weld')
+    RETURNING id;`);
+
+  const noEvidence = refused('accepting a weld that requires radiography, with no report at all',
+    `UPDATE weld SET final_result = 'accepted' WHERE id = ${weld};`,
+    /requires RT and no report has accepted it/);
+  assert.match(noEvidence, /evidence that does not exist/,
+    'the refusal says what is missing rather than that something is wrong');
+
+  refused('a rejected report that does not say what was found', `INSERT INTO ndt_report
+    (weld_id, method, technician, result, recorded_by)
+    VALUES (${weld}, 'RT', 'A. Technician', 'rejected', 'x');`,
+  /a_rejected_report_says_what_was_found/);
+  refused('a report nobody signed', `INSERT INTO ndt_report (weld_id, method, result, recorded_by)
+    VALUES (${weld}, 'RT', 'pending', 'x');`, /ndt_is_signed_by_somebody/);
+  refused('a report written for tomorrow', `INSERT INTO ndt_report
+    (weld_id, method, technician, inspected_on, recorded_by)
+    VALUES (${weld}, 'RT', 'A. Technician', current_date + 1, 'x');`, /ndt_is_not_done_tomorrow/);
+
+  // A rejection reaches the weld by itself. Left to a function to remember, a second route into
+  // ndt_report — an import, a console — leaves a rejected report beside an accepted weld.
+  sql(`INSERT INTO ndt_report (weld_id, method, technician, result, findings, repair_required,
+      recorded_by)
+    VALUES (${weld}, 'RT', 'A. Technician', 'rejected', 'Porosity beyond level 2 at 40 mm', true, 'x');`);
+  assert.equal(value(`SELECT status::text || '/' || final_result::text FROM weld WHERE id = ${weld};`),
+    'repair-required/rejected', 'a rejected report puts the weld into repair-required without being asked');
+
+  refused('accepting it while that report stands',
+    `UPDATE weld SET final_result = 'accepted' WHERE id = ${weld};`,
+    /requires RT and no report has accepted it|calls for a repair/);
+
+  // Repaired, re-tested, and now it signs off — with the repair on file, because a weld that was
+  // repaired is not a weld that was always right.
+  sql(`INSERT INTO weld_repair (weld_id, reason, repaired_by)
+       VALUES (${weld}, 'Ground out and re-welded', 'Elena Nikolic');
+       UPDATE ndt_report SET result = 'accepted', repair_required = false,
+         findings = 'Re-tested, no relevant indications' WHERE weld_id = ${weld};`);
+  accepted('signing it off once a report accepts it',
+    `UPDATE weld SET status = 'repaired', final_result = 'accepted' WHERE id = ${weld};`);
+  assert.equal(value(`SELECT count(*) FROM weld_repair WHERE weld_id = ${weld};`), '1',
+    'and the repair is still on file — which is the question asked when a joint fails in service');
+  refused('a repair that does not say why it was needed', `INSERT INTO weld_repair
+    (weld_id, reason, repaired_by) VALUES (${weld}, '   ', 'x');`, /reason/);
+  step('Welding: a weld that needs testing cannot be signed off on evidence that does not exist');
+}
+
 // A step on a jobcard, and the work booked against it.
 function aStepRemembersTheWorkDoneOnIt() {
   const f = fixture();
@@ -1693,6 +1835,8 @@ async function main() {
   thePipelineRemembersWhyAndRespectsNo();
   ncrCannotCloseOnNothing();
   documentsPointAtSomethingReal();
+  aWeldIsMadeBySomebodyQualified();
+  aWeldIsAcceptedOnlyOnEvidence();
   theHistoryCertificationWouldNeed();
   oneMainContactWhoCanBeReached();
   aStepRemembersTheWorkDoneOnIt();

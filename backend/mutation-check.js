@@ -2532,6 +2532,38 @@ function main() {
     process.exitCode = 1;
     return;
   }
+
+  // Every suite this run depends on, passing, BEFORE anything is mutated.
+  //
+  // Without this the whole report is unfalsifiable. A mutation is "caught" when its suite fails — so a
+  // suite that was already failing catches every mutation, and the report comes back clean while testing
+  // nothing at all. That is not hypothetical: `document_record_label` was added yesterday with an
+  // ownership change that a non-superuser owner cannot make, so test-deploy.js had been failing on the
+  // install for a day — and the three deploy mutations in the run afterwards all read as caught. The
+  // harness said the rules were tested. What it had measured was a broken baseline.
+  //
+  // Run once per suite rather than once per mutation, which is the whole cost: a handful of runs against
+  // a few hundred.
+  const suites = [...new Set(SELECTED.map((m) => FILES[m.suite || m.file || 'schema'].suite))];
+  const broken = [];
+  for (const suite of suites) {
+    try {
+      execFileSync('node', [path.join(__dirname, suite)],
+        { env: { ...process.env, VARMAK_TEST_DB: 'varmak_baseline' }, encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+      broken.push(`${suite}: ${((error.stdout || '') + (error.stderr || '')).split('\n')
+        .filter((l) => /AssertionError|Error:|ERROR:/.test(l))[0] || 'failed'}`);
+    }
+  }
+  if (broken.length) {
+    console.error('These suites fail BEFORE anything is mutated, so every mutation they run would read as');
+    console.error('caught and this report would mean nothing. Fix them first:');
+    broken.forEach((line) => console.error(`  ${line.slice(0, 160)}`));
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`Baseline: ${suites.length} suite(s) pass before anything is mutated.\n`);
   SELECTED.forEach((mutation, index) => {
     const which = mutation.file || 'schema';
     const original = source[which];

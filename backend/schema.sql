@@ -1474,6 +1474,312 @@ CREATE INDEX document_entity_idx ON document(entity, entity_id);
 CREATE INDEX document_expiry_idx ON document(expires_on) WHERE expires_on IS NOT NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The welding registers
+--
+-- BACKEND.md argued for four passes that these were "paperwork for nobody": build them before there is an
+-- auditor and you have built paperwork nobody reads. That argument was right and its premise has changed —
+-- the firm is certified or on the way, so there is an auditor. What was kept against exactly this day is
+-- what these are built on: the heat number and the material certificate reference on the jobcard, which
+-- could not have been back-filled.
+--
+-- Everything here is a register except one sentence, and that sentence is why it is in a database:
+--
+--     A weld is made by a welder qualified for that process, to a procedure that was valid on the day.
+--
+-- That is what an auditor checks and what a delivery is signed off against. It is four triggers below, and
+-- each refuses in words a welder can read with the date in the message — the same shape as the equipment
+-- certification gate, which has refused to start a job on an out-of-certification machine since step 2.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE SEQUENCE seq_weld;
+CREATE SEQUENCE seq_ndt;
+CREATE SEQUENCE seq_wps;
+
+-- The two statuses somebody sets on a procedure, and on a qualification. `expiring-soon` and `expired`
+-- are in NEITHER list, and that is deliberate: both are answers to what the date is today, and a column
+-- holding either is a fact that was true the morning somebody typed it. The demonstration records carry
+-- `expiring-soon` as a stored status on a welder qualification, which is the register whose whole job is
+-- to say who may weld — so it is computed in workspace_snapshot() on every read, beside the settable
+-- value, exactly as `document` does since yesterday.
+CREATE TYPE wps_status AS ENUM ('draft', 'awaiting-approval', 'approved', 'withdrawn');
+CREATE TYPE welder_qual_status AS ENUM ('valid', 'suspended', 'withdrawn');
+CREATE TYPE weld_status AS ENUM
+  ('planned', 'welded', 'repair-required', 'repaired', 'accepted', 'rejected');
+CREATE TYPE weld_result AS ENUM ('pending', 'accepted', 'rejected');
+CREATE TYPE ndt_result AS ENUM ('pending', 'accepted', 'rejected');
+
+-- ── The procedure a weld is made to ──────────────────────────────────────────────────────────
+CREATE TABLE wps (
+  id                bigserial PRIMARY KEY,
+  ref               text NOT NULL UNIQUE CHECK (btrim(ref) <> ''),
+  revision          int NOT NULL DEFAULT 1 CHECK (revision >= 0),
+  process           text NOT NULL CHECK (btrim(process) <> ''),
+  material_group    text,
+  thickness_range   text,
+  diameter_range    text,
+  joint_type        text,
+  position          text,
+  filler_material   text,
+  shielding_gas     text,
+  preheat_interpass text,
+  -- The qualification record the procedure rests on. A WPS with no WPQR behind it is a procedure nobody
+  -- has proved, which an auditor asks for first.
+  supporting_wpqr   text,
+  status            wps_status NOT NULL DEFAULT 'draft',
+  -- The document itself lives in the register that holds documents, wired yesterday. A filename here
+  -- would be a second place for the same file to go stale.
+  document_id       bigint REFERENCES document(id) ON DELETE SET NULL,
+  approved_on       date,
+  approved_by       text,
+  notes             text,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now(),
+  -- An approved procedure says who approved it and when. Approval is the whole difference between a draft
+  -- and something a weld may be made to, so it cannot be a status somebody sets and nothing else.
+  CONSTRAINT an_approved_wps_says_who CHECK (
+    status <> 'approved' OR (approved_on IS NOT NULL AND btrim(coalesce(approved_by, '')) <> ''))
+);
+-- One revision of one procedure. A second WPS-304-02 rev 1 is a second answer to the same question.
+CREATE UNIQUE INDEX wps_one_revision ON wps(ref, revision);
+
+-- ── Which welder is qualified to what ────────────────────────────────────────────────────────
+CREATE TABLE welder_qual (
+  id              bigserial PRIMARY KEY,
+  -- The person, not their name. A qualification naming a string cannot be joined to whoever holds it, and
+  -- the staff list has been in the snapshot since yesterday — so the demonstration data's `welder: 'Elena
+  -- N.'` becomes a real reference. Two Elenas, or one Elena whose name is corrected in Access, and a text
+  -- column is a qualification belonging to nobody.
+  welder_id       bigint NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
+  qual_no         text NOT NULL CHECK (btrim(qual_no) <> ''),
+  process         text NOT NULL CHECK (btrim(process) <> ''),
+  material_group  text,
+  thickness_range text,
+  position        text,
+  issued_by       text NOT NULL CHECK (btrim(issued_by) <> ''),
+  issued_on       date NOT NULL,
+  expires_on      date NOT NULL,
+  status          welder_qual_status NOT NULL DEFAULT 'valid',
+  document_id     bigint REFERENCES document(id) ON DELETE SET NULL,
+  notes           text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT a_qualification_runs_forwards CHECK (expires_on > issued_on),
+  -- A welder holds one of each qualification number. They hold several qualifications — one per process —
+  -- so the register is per qualification and not per welder.
+  CONSTRAINT one_qualification_per_number UNIQUE (welder_id, qual_no)
+);
+CREATE INDEX welder_qual_expiry_idx ON welder_qual(expires_on);
+CREATE INDEX welder_qual_welder_idx ON welder_qual(welder_id, process);
+
+-- ── The weld log ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE weld (
+  id                bigserial PRIMARY KEY,
+  ref               text NOT NULL UNIQUE DEFAULT next_ref('WLD-', 'seq_weld'::regclass, 4),
+  project_id        bigint REFERENCES project(id) ON DELETE SET NULL,
+  jobcard_id        bigint NOT NULL REFERENCES jobcard(id) ON DELETE RESTRICT,
+  operation_id      bigint REFERENCES operation(id) ON DELETE SET NULL,
+  component         text,
+  drawing_no        text,
+  -- Where on the drawing. Without it a weld log says a weld was made and not which one.
+  weld_map_position text,
+  joint_type        text,
+  base_material     text,
+  material_grade    text,
+  thickness         numeric(8,2) CHECK (thickness IS NULL OR thickness > 0),
+  process           text NOT NULL CHECK (btrim(process) <> ''),
+  wps_id            bigint REFERENCES wps(id) ON DELETE RESTRICT,
+  wpqr_ref          text,
+  welder_id         bigint NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
+  welder_qual_id    bigint REFERENCES welder_qual(id) ON DELETE RESTRICT,
+  filler_material   text,
+  -- The batch of consumable. This is the field that answers "what went into this weld" when a filler
+  -- batch is later recalled, and it is the reason a weld log exists at all.
+  consumable_batch  text,
+  shielding_gas     text,
+  preheat_required  boolean NOT NULL DEFAULT false,
+  interpass_temp_req text,
+  welded_on         date NOT NULL DEFAULT current_date,
+  visual_required   boolean NOT NULL DEFAULT true,
+  ndt_required      boolean NOT NULL DEFAULT false,
+  ndt_method        text,
+  final_result      weld_result NOT NULL DEFAULT 'pending',
+  status            weld_status NOT NULL DEFAULT 'welded',
+  notes             text,
+  recorded_by       text NOT NULL CHECK (btrim(recorded_by) <> ''),
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT a_weld_is_not_made_tomorrow CHECK (welded_on <= current_date),
+  -- If NDT is called for, the method has to be named. "Something should be tested" is not an instruction
+  -- anybody can carry out.
+  CONSTRAINT ndt_that_is_required_says_how CHECK (
+    NOT ndt_required OR btrim(coalesce(ndt_method, '')) <> '')
+);
+CREATE INDEX weld_jobcard_idx ON weld(jobcard_id);
+CREATE INDEX weld_welder_idx ON weld(welder_id, welded_on);
+
+-- A repair is a row and not a rewrite. A weld that was repaired is not a weld that was always right, and
+-- which is which is the question an auditor asks when a joint fails in service.
+CREATE TABLE weld_repair (
+  id          bigserial PRIMARY KEY,
+  weld_id     bigint NOT NULL REFERENCES weld(id) ON DELETE CASCADE,
+  repaired_on date NOT NULL DEFAULT current_date,
+  reason      text NOT NULL CHECK (btrim(reason) <> ''),
+  repaired_by text NOT NULL CHECK (btrim(repaired_by) <> ''),
+  notes       text,
+  recorded_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX weld_repair_weld_idx ON weld_repair(weld_id);
+
+-- ── The NDT against a weld ───────────────────────────────────────────────────────────────────
+CREATE TABLE ndt_report (
+  id                    bigserial PRIMARY KEY,
+  ref                   text NOT NULL UNIQUE DEFAULT next_ref('NDT-', 'seq_ndt'::regclass, 4),
+  weld_id               bigint NOT NULL REFERENCES weld(id) ON DELETE RESTRICT,
+  drawing_no            text,
+  method                text NOT NULL CHECK (btrim(method) <> ''),
+  procedure_ref         text,
+  inspection_percent    numeric(5,2) CHECK (inspection_percent IS NULL
+                          OR (inspection_percent > 0 AND inspection_percent <= 100)),
+  inspection_area       text,
+  -- Either somebody here or a firm outside, and one of the two has to be named: an NDT report nobody
+  -- signed is not evidence of anything.
+  technician            text,
+  external_company      text,
+  technician_cert_ref   text,
+  inspected_on          date NOT NULL DEFAULT current_date,
+  acceptance_criteria   text,
+  result                ndt_result NOT NULL DEFAULT 'pending',
+  findings              text,
+  repair_required       boolean NOT NULL DEFAULT false,
+  reinspection_required boolean NOT NULL DEFAULT false,
+  ncr_id                bigint REFERENCES ncr(id) ON DELETE SET NULL,
+  notes                 text,
+  recorded_by           text NOT NULL CHECK (btrim(recorded_by) <> ''),
+  created_at            timestamptz NOT NULL DEFAULT now(),
+  updated_at            timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ndt_is_signed_by_somebody CHECK (
+    btrim(coalesce(technician, '')) <> '' OR btrim(coalesce(external_company, '')) <> ''),
+  CONSTRAINT ndt_is_not_done_tomorrow CHECK (inspected_on <= current_date),
+  -- A rejected report says what was found. "Rejected" with no findings is a decision nobody can check or
+  -- argue with, and the weld it rejects cannot be repaired without knowing what to repair.
+  CONSTRAINT a_rejected_report_says_what_was_found CHECK (
+    result <> 'rejected' OR btrim(coalesce(findings, '')) <> '')
+);
+CREATE INDEX ndt_weld_idx ON ndt_report(weld_id);
+
+-- ── The four rules that are the reason this is in a database ──────────────────────────────────
+--
+-- A screen can ask all four of these and a screen is not where they can live: a welder reaching the same
+-- jobcard through another page, an import, or a console walks straight past a check written in a browser.
+-- The same argument the equipment gate makes, and it was proved there — equipment-gates.js had refused an
+-- out-of-certification machine for months while the database would accept one.
+
+CREATE FUNCTION weld_is_properly_qualified() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  procedure record;
+  held record;
+  who text;
+BEGIN
+  SELECT display_name INTO who FROM app_user WHERE id = NEW.welder_id;
+
+  -- 1. The procedure has to be one somebody approved. A draft WPS is a proposal.
+  IF NEW.wps_id IS NOT NULL THEN
+    SELECT ref, revision, status, process INTO procedure FROM wps WHERE id = NEW.wps_id;
+    IF procedure.status <> 'approved' THEN
+      RAISE EXCEPTION 'weld cannot be recorded to % rev %: that procedure is %, not approved',
+        procedure.ref, procedure.revision, procedure.status USING ERRCODE = 'check_violation';
+    END IF;
+    IF lower(btrim(procedure.process)) <> lower(btrim(NEW.process)) THEN
+      RAISE EXCEPTION 'weld cannot be recorded as % against %, which is a % procedure',
+        NEW.process, procedure.ref, procedure.process USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  -- 2, 3. The qualification has to be the welder's own, cover the process, and not have run out on the
+  -- day the weld was made. Three refusals rather than one, because "not qualified" tells somebody nothing
+  -- about what to do next, and the third is the one an auditor is actually asking about.
+  IF NEW.welder_qual_id IS NOT NULL THEN
+    SELECT wq.id, wq.welder_id, wq.qual_no, wq.process, wq.expires_on, wq.status
+      INTO held FROM welder_qual wq WHERE wq.id = NEW.welder_qual_id;
+
+    IF held.welder_id <> NEW.welder_id THEN
+      RAISE EXCEPTION 'qualification % does not belong to % — a qualification cannot be borrowed',
+        held.qual_no, coalesce(who, 'that welder') USING ERRCODE = 'check_violation';
+    END IF;
+    IF lower(btrim(held.process)) <> lower(btrim(NEW.process)) THEN
+      RAISE EXCEPTION '% is qualified to % under %, and this weld is %',
+        coalesce(who, 'that welder'), held.process, held.qual_no, NEW.process
+        USING ERRCODE = 'check_violation';
+    END IF;
+    IF held.status <> 'valid' THEN
+      RAISE EXCEPTION 'the qualification % held by % is %, so it cannot be cited for a weld',
+        held.qual_no, coalesce(who, 'that welder'), held.status USING ERRCODE = 'check_violation';
+    END IF;
+    -- The one that matters, with the date in it, like the equipment gate.
+    IF held.expires_on < NEW.welded_on THEN
+      RAISE EXCEPTION 'the qualification % held by % expired on %, and this weld was made on %',
+        held.qual_no, coalesce(who, 'that welder'), held.expires_on, NEW.welded_on
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER weld_qualification_gate_trg BEFORE INSERT OR UPDATE ON weld
+  FOR EACH ROW EXECUTE FUNCTION weld_is_properly_qualified();
+
+-- 4. A weld that calls for NDT cannot be accepted until an NDT report accepts it.
+--
+-- This is the rule that stops a delivery being signed off against work nobody tested. It is separate from
+-- the gate above because it is asked at a different moment: the gate asks when the weld is recorded, and
+-- this asks when somebody tries to call it good.
+CREATE FUNCTION weld_accepted_only_on_evidence() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.final_result = 'accepted' AND NEW.ndt_required THEN
+    IF NOT EXISTS (SELECT 1 FROM ndt_report r
+                    WHERE r.weld_id = NEW.id AND r.result = 'accepted') THEN
+      RAISE EXCEPTION 'weld % requires % and no report has accepted it — a weld cannot be accepted on '
+        'evidence that does not exist', NEW.ref, coalesce(NEW.ndt_method, 'NDT')
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  -- And a weld cannot be accepted while a report against it is calling for a repair. Two rows disagreeing
+  -- about whether a joint is sound is worse than either answer on its own.
+  IF NEW.final_result = 'accepted' AND EXISTS (
+       SELECT 1 FROM ndt_report r WHERE r.weld_id = NEW.id
+         AND (r.result = 'rejected' OR r.repair_required)) THEN
+    RAISE EXCEPTION 'weld % cannot be accepted while a report against it calls for a repair', NEW.ref
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER weld_evidence_gate_trg BEFORE UPDATE OF final_result ON weld
+  FOR EACH ROW EXECUTE FUNCTION weld_accepted_only_on_evidence();
+
+-- And the other direction: a report that rejects a weld puts the weld into repair-required, rather than
+-- leaving a rejected report beside an accepted weld for somebody to notice.
+CREATE FUNCTION ndt_result_reaches_the_weld() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.result = 'rejected' OR NEW.repair_required THEN
+    UPDATE weld SET status = 'repair-required', final_result = 'rejected', updated_at = now()
+     WHERE id = NEW.weld_id AND status <> 'repair-required';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER ndt_reaches_the_weld_trg AFTER INSERT OR UPDATE OF result ON ndt_report
+  FOR EACH ROW EXECUTE FUNCTION ndt_result_reaches_the_weld();
+
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- The audit trail
 --
 -- Append-only by trigger. A history somebody can quietly edit is not a history.

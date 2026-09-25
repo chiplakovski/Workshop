@@ -1008,4 +1008,62 @@ TO varmak_admin, varmak_office, varmak_workshop;
 -- which device — or every row of app_user.
 DROP POLICY signed_in_can_read ON app_session;
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The welding registers: who may read and who may write
+--
+-- All five tables are granted SELECT to the floor, and that is not a concession — a welder needs to read
+-- the procedure they are welding to and the qualification they hold. Nothing in any of them could ever be
+-- a price, which is the test §1b sets for this list.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+GRANT SELECT ON wps, welder_qual, weld, weld_repair, ndt_report
+TO varmak_admin, varmak_office, varmak_workshop;
+
+-- A welder LOGS THEIR OWN WELD. This is the same rule as booking hours, for the same reason and with more
+-- at stake: a weld log filled in by somebody in the office is a document saying what should have happened.
+-- The INSERT policy is `welder_id = current_app_user()`, so a weld cannot be entered in another welder's
+-- name by anybody — including the office, including an admin. Correcting one afterwards is an office job,
+-- like correcting a timesheet.
+GRANT INSERT, UPDATE ON weld TO varmak_admin, varmak_office, varmak_workshop;
+GRANT INSERT ON weld_repair TO varmak_admin, varmak_office, varmak_workshop;
+GRANT INSERT, UPDATE ON ndt_report TO varmak_admin, varmak_office, varmak_workshop;
+
+-- A procedure and a qualification are decisions about who may weld what, not records of what happened.
+-- A welder cannot qualify themselves, and the floor holds no write on either.
+GRANT INSERT, UPDATE, DELETE ON wps, welder_qual TO varmak_admin, varmak_office;
+
+CREATE POLICY log_your_own_weld ON weld FOR INSERT
+  WITH CHECK (welder_id = current_app_user());
+CREATE POLICY correct_a_weld ON weld FOR UPDATE
+  USING (welder_id = current_app_user() OR may_see_money())
+  WITH CHECK (welder_id = current_app_user() OR may_see_money());
+
+-- A repair may be done by somebody other than whoever made the weld, and an NDT report may be signed by a
+-- firm outside — so neither is tied to the session's own id. Both record who entered them either way.
+CREATE POLICY anyone_signed_in_records_a_repair ON weld_repair FOR INSERT
+  WITH CHECK (is_signed_in());
+CREATE POLICY anyone_signed_in_records_ndt ON ndt_report FOR INSERT
+  WITH CHECK (is_signed_in());
+CREATE POLICY ndt_is_corrected_by_whoever_signed_it ON ndt_report FOR UPDATE
+  USING (recorded_by = current_app_name() OR may_see_money())
+  WITH CHECK (recorded_by = current_app_name() OR may_see_money());
+
+CREATE POLICY the_office_runs_the_procedures ON wps FOR ALL
+  USING (may_see_money()) WITH CHECK (may_see_money());
+CREATE POLICY the_office_runs_the_qualifications ON welder_qual FOR ALL
+  USING (may_see_money()) WITH CHECK (may_see_money());
+
+-- Nobody deletes a weld, a repair or an NDT report. A weld that was made was made, and a register you can
+-- delete from is not a register — the same rule as the stock movements and the activity log.
+REVOKE DELETE ON weld, weld_repair, ndt_report FROM varmak_admin, varmak_office, varmak_workshop;
+
+-- And nobody edits a repair. It is a row saying a joint was ground out and re-welded on a day, which is
+-- either true or it is not; correcting one is not a correction, it is a different past. Revoked explicitly
+-- because `GRANT SELECT, INSERT, UPDATE ... ON ALL TABLES` two hundred lines above hands admin and office
+-- a write on every table in the schema, including every table added afterwards — so a table that should
+-- not be writable has to say so. test-auth.js caught this within a minute of the tables existing: it asks
+-- which roles hold a write privilege that no policy permits, and weld_repair had UPDATE with an INSERT
+-- policy and nothing else. Fails closed, so it was safe and still wrong, which is the third time that
+-- exact sentence has been written in this project.
+REVOKE UPDATE ON weld_repair FROM varmak_admin, varmak_office, varmak_workshop;
+
 COMMIT;

@@ -817,6 +817,412 @@ REVOKE ALL ON FUNCTION supersede_document(bigint, bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION add_document_note(bigint, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION document_link_for(text, text) TO varmak_admin, varmak_office;
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The welding registers
+--
+-- Who may do what here is not a guess. A weld is RECORDED BY THE WELDER: the person at the bench is the
+-- only one who knows what they did, and a weld log filled in afterwards by somebody in the office is a
+-- document that says what should have happened. So record_weld is granted to the floor and takes the
+-- welder from the session — it cannot be handed a name at all, which is the same rule book_hours and
+-- record_equipment_event already follow.
+--
+-- A procedure and a qualification are the other way round. Those are decisions about who may weld what,
+-- not records of what happened, so save_wps, approve_wps and save_welder_qual are the office's. A welder
+-- cannot qualify themselves.
+--
+-- NDT sits between: the technician may be somebody here or a firm outside, so the function is granted to
+-- both and records which.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+-- The weld, recorded by whoever made it.
+--
+-- `p_welder_qual_id` is optional and the trigger in schema.sql decides whether what it names is any good.
+-- Left out, the function finds the welder's own valid qualification for that process — because asking a
+-- welder to type the number of the certificate in their own folder is how a weld log gets left blank.
+CREATE FUNCTION record_weld(
+  p_jobcard_id bigint,
+  p_process text,
+  p_component text DEFAULT NULL,
+  p_wps_id bigint DEFAULT NULL,
+  p_welder_qual_id bigint DEFAULT NULL,
+  p_welded_on date DEFAULT NULL,
+  p_operation_id bigint DEFAULT NULL,
+  p_drawing_no text DEFAULT NULL,
+  p_weld_map_position text DEFAULT NULL,
+  p_joint_type text DEFAULT NULL,
+  p_base_material text DEFAULT NULL,
+  p_material_grade text DEFAULT NULL,
+  p_thickness numeric DEFAULT NULL,
+  p_filler_material text DEFAULT NULL,
+  p_consumable_batch text DEFAULT NULL,
+  p_shielding_gas text DEFAULT NULL,
+  p_preheat_required boolean DEFAULT false,
+  p_interpass_temp_req text DEFAULT NULL,
+  p_visual_required boolean DEFAULT true,
+  p_ndt_required boolean DEFAULT false,
+  p_ndt_method text DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording a weld');
+  me bigint := current_app_user();
+  made_on date := coalesce(p_welded_on, current_date);
+  cited bigint := p_welder_qual_id;
+  made bigint;
+  said text := nullif(btrim(coalesce(p_process, '')), '');
+BEGIN
+  IF said IS NULL THEN
+    RAISE EXCEPTION 'a weld says which process it was made by' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM jobcard WHERE id = p_jobcard_id) THEN
+    RAISE EXCEPTION 'no such jobcard' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  -- The welder's own qualification for this process, valid on the day, if they did not name one. Their own
+  -- and nobody else's: `welder_id = me`, so this cannot reach across to somebody else's certificate.
+  IF cited IS NULL THEN
+    SELECT wq.id INTO cited FROM welder_qual wq
+     WHERE wq.welder_id = me
+       AND lower(btrim(wq.process)) = lower(btrim(said))
+       AND wq.status = 'valid'
+       AND wq.expires_on >= made_on
+     ORDER BY wq.expires_on DESC
+     LIMIT 1;
+    -- Nothing found is not an error here. The trigger refuses a BAD qualification; a weld with none cited
+    -- is a weld nobody has claimed a certificate for, which is a gap an auditor can see rather than a lie.
+  END IF;
+
+  INSERT INTO weld (jobcard_id, project_id, operation_id, component, drawing_no, weld_map_position,
+                    joint_type, base_material, material_grade, thickness, process, wps_id, welder_id,
+                    welder_qual_id, filler_material, consumable_batch, shielding_gas, preheat_required,
+                    interpass_temp_req, welded_on, visual_required, ndt_required, ndt_method, notes,
+                    recorded_by)
+  SELECT p_jobcard_id, j.project_id, p_operation_id, nullif(btrim(coalesce(p_component,'')), ''),
+         nullif(btrim(coalesce(p_drawing_no,'')), ''), nullif(btrim(coalesce(p_weld_map_position,'')), ''),
+         nullif(btrim(coalesce(p_joint_type,'')), ''), nullif(btrim(coalesce(p_base_material,'')), ''),
+         nullif(btrim(coalesce(p_material_grade,'')), ''), p_thickness, said, p_wps_id, me,
+         cited, nullif(btrim(coalesce(p_filler_material,'')), ''),
+         nullif(btrim(coalesce(p_consumable_batch,'')), ''), nullif(btrim(coalesce(p_shielding_gas,'')), ''),
+         coalesce(p_preheat_required, false), nullif(btrim(coalesce(p_interpass_temp_req,'')), ''),
+         made_on, coalesce(p_visual_required, true), coalesce(p_ndt_required, false),
+         nullif(btrim(coalesce(p_ndt_method,'')), ''), nullif(btrim(coalesce(p_notes,'')), ''), who
+    FROM jobcard j WHERE j.id = p_jobcard_id
+  RETURNING id INTO made;
+
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('weld', made, 'welded', who,
+          said || coalesce(' to ' || (SELECT ref FROM wps WHERE id = p_wps_id), ''));
+  RETURN made;
+END;
+$$;
+
+-- A repair against a weld. Its own function rather than an UPDATE, because a repair is a row: a weld that
+-- was repaired is not a weld that was always right, and which is which is the question asked when a joint
+-- fails in service.
+CREATE FUNCTION record_weld_repair(p_weld_id bigint, p_reason text, p_notes text DEFAULT NULL)
+RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording a weld repair');
+  why text := nullif(btrim(coalesce(p_reason, '')), '');
+  made bigint;
+BEGIN
+  IF why IS NULL THEN
+    RAISE EXCEPTION 'a repair says why it was needed' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM weld WHERE id = p_weld_id) THEN
+    RAISE EXCEPTION 'no such weld' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO weld_repair (weld_id, reason, repaired_by, notes)
+  VALUES (p_weld_id, why, who, nullif(btrim(coalesce(p_notes,'')), ''))
+  RETURNING id INTO made;
+  UPDATE weld SET status = 'repaired', updated_at = now() WHERE id = p_weld_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('weld', p_weld_id, 'repaired', who, why);
+  RETURN made;
+END;
+$$;
+
+-- The NDT report. The trigger in schema.sql carries a rejection back to the weld, so this function does
+-- not have to remember to — which is the point of putting it there: a second route into ndt_report, an
+-- import or a console, cannot forget.
+CREATE FUNCTION record_ndt(
+  p_weld_id bigint,
+  p_method text,
+  p_result ndt_result DEFAULT 'pending',
+  p_findings text DEFAULT NULL,
+  p_procedure_ref text DEFAULT NULL,
+  p_inspection_percent numeric DEFAULT NULL,
+  p_inspection_area text DEFAULT NULL,
+  p_external_company text DEFAULT NULL,
+  p_technician_cert_ref text DEFAULT NULL,
+  p_inspected_on date DEFAULT NULL,
+  p_acceptance_criteria text DEFAULT NULL,
+  p_repair_required boolean DEFAULT false,
+  p_reinspection_required boolean DEFAULT false,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording an NDT result');
+  outside text := nullif(btrim(coalesce(p_external_company, '')), '');
+  made bigint;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM weld WHERE id = p_weld_id) THEN
+    RAISE EXCEPTION 'no such weld' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO ndt_report (weld_id, drawing_no, method, procedure_ref, inspection_percent, inspection_area,
+                          -- The technician is the session unless the work was done outside, in which case
+                          -- the firm is named and the session is still who entered it, below.
+                          technician, external_company, technician_cert_ref, inspected_on,
+                          acceptance_criteria, result, findings, repair_required, reinspection_required,
+                          notes, recorded_by)
+  SELECT p_weld_id, w.drawing_no, nullif(btrim(coalesce(p_method,'')), ''),
+         nullif(btrim(coalesce(p_procedure_ref,'')), ''), p_inspection_percent,
+         nullif(btrim(coalesce(p_inspection_area,'')), ''),
+         CASE WHEN outside IS NULL THEN who ELSE NULL END, outside,
+         nullif(btrim(coalesce(p_technician_cert_ref,'')), ''), coalesce(p_inspected_on, current_date),
+         nullif(btrim(coalesce(p_acceptance_criteria,'')), ''), coalesce(p_result, 'pending'),
+         nullif(btrim(coalesce(p_findings,'')), ''), coalesce(p_repair_required, false),
+         coalesce(p_reinspection_required, false), nullif(btrim(coalesce(p_notes,'')), ''), who
+    FROM weld w WHERE w.id = p_weld_id
+  RETURNING id INTO made;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('ndt_report', made, coalesce(p_result, 'pending')::text, who,
+          nullif(btrim(coalesce(p_method,'')), '') || coalesce(': ' || nullif(btrim(coalesce(p_findings,'')), ''), ''));
+  RETURN made;
+END;
+$$;
+
+-- Signing a weld off. Separate from recording it, because it happens at a different moment and by a
+-- different judgement — and the trigger in schema.sql is what refuses it on evidence that does not exist.
+CREATE FUNCTION accept_weld(p_weld_id bigint, p_accepted boolean DEFAULT true, p_why text DEFAULT NULL)
+RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('signing a weld off');
+  said text;
+BEGIN
+  UPDATE weld SET final_result = (CASE WHEN p_accepted THEN 'accepted' ELSE 'rejected' END)::weld_result,
+                  status = (CASE WHEN p_accepted THEN 'accepted' ELSE 'rejected' END)::weld_status,
+                  updated_at = now()
+   WHERE id = p_weld_id
+  RETURNING ref INTO said;
+  IF said IS NULL THEN
+    RAISE EXCEPTION 'no such weld' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('weld', p_weld_id, CASE WHEN p_accepted THEN 'accepted' ELSE 'rejected' END, who,
+          nullif(btrim(coalesce(p_why,'')), ''));
+  RETURN said;
+END;
+$$;
+
+-- The procedure. Saved as a draft and approved separately, because approval is the whole difference
+-- between a proposal and something a weld may be made to — and the schema refuses an approved WPS that
+-- does not say who approved it.
+CREATE FUNCTION save_wps(
+  p_id bigint,
+  p_ref text,
+  p_process text,
+  p_revision int DEFAULT 1,
+  p_material_group text DEFAULT NULL,
+  p_thickness_range text DEFAULT NULL,
+  p_diameter_range text DEFAULT NULL,
+  p_joint_type text DEFAULT NULL,
+  p_position text DEFAULT NULL,
+  p_filler_material text DEFAULT NULL,
+  p_shielding_gas text DEFAULT NULL,
+  p_preheat_interpass text DEFAULT NULL,
+  p_supporting_wpqr text DEFAULT NULL,
+  p_document_id bigint DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('saving a welding procedure');
+  named text := nullif(btrim(coalesce(p_ref, '')), '');
+  said text := nullif(btrim(coalesce(p_process, '')), '');
+  saved bigint;
+BEGIN
+  IF named IS NULL OR said IS NULL THEN
+    RAISE EXCEPTION 'a procedure needs a reference and a process' USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_id IS NULL THEN
+    INSERT INTO wps (ref, revision, process, material_group, thickness_range, diameter_range, joint_type,
+                     position, filler_material, shielding_gas, preheat_interpass, supporting_wpqr,
+                     document_id, notes)
+    VALUES (named, coalesce(p_revision, 1), said, nullif(btrim(coalesce(p_material_group,'')), ''),
+            nullif(btrim(coalesce(p_thickness_range,'')), ''), nullif(btrim(coalesce(p_diameter_range,'')), ''),
+            nullif(btrim(coalesce(p_joint_type,'')), ''), nullif(btrim(coalesce(p_position,'')), ''),
+            nullif(btrim(coalesce(p_filler_material,'')), ''), nullif(btrim(coalesce(p_shielding_gas,'')), ''),
+            nullif(btrim(coalesce(p_preheat_interpass,'')), ''), nullif(btrim(coalesce(p_supporting_wpqr,'')), ''),
+            p_document_id, nullif(btrim(coalesce(p_notes,'')), ''))
+    RETURNING id INTO saved;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('wps', saved, 'drafted', who, named || ' rev ' || coalesce(p_revision, 1)::text);
+  ELSE
+    UPDATE wps SET ref = named, revision = coalesce(p_revision, revision), process = said,
+      material_group = nullif(btrim(coalesce(p_material_group,'')), ''),
+      thickness_range = nullif(btrim(coalesce(p_thickness_range,'')), ''),
+      diameter_range = nullif(btrim(coalesce(p_diameter_range,'')), ''),
+      joint_type = nullif(btrim(coalesce(p_joint_type,'')), ''),
+      position = nullif(btrim(coalesce(p_position,'')), ''),
+      filler_material = nullif(btrim(coalesce(p_filler_material,'')), ''),
+      shielding_gas = nullif(btrim(coalesce(p_shielding_gas,'')), ''),
+      preheat_interpass = nullif(btrim(coalesce(p_preheat_interpass,'')), ''),
+      supporting_wpqr = nullif(btrim(coalesce(p_supporting_wpqr,'')), ''),
+      document_id = coalesce(p_document_id, document_id),
+      notes = nullif(btrim(coalesce(p_notes,'')), ''), updated_at = now()
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such procedure' USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+    VALUES ('wps', saved, 'corrected', who, named);
+  END IF;
+  RETURN saved;
+END;
+$$;
+
+CREATE FUNCTION approve_wps(p_id bigint, p_approve boolean DEFAULT true) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('approving a welding procedure');
+  held record;
+BEGIN
+  SELECT ref, revision, status, supporting_wpqr INTO held FROM wps WHERE id = p_id;
+  IF held.ref IS NULL THEN
+    RAISE EXCEPTION 'no such procedure' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF p_approve AND btrim(coalesce(held.supporting_wpqr, '')) = '' THEN
+    -- The one thing an auditor asks for first: a procedure is approved because somebody welded a test
+    -- piece and it was tested. Approving one with no qualification record behind it is approving a
+    -- document because it exists.
+    RAISE EXCEPTION 'procedure % rev % cannot be approved with no supporting WPQR — a procedure is '
+      'approved on a qualification record, not on its own say-so', held.ref, held.revision
+      USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE wps SET status = (CASE WHEN p_approve THEN 'approved' ELSE 'withdrawn' END)::wps_status,
+                 approved_on = CASE WHEN p_approve THEN current_date ELSE approved_on END,
+                 approved_by = CASE WHEN p_approve THEN who ELSE approved_by END,
+                 updated_at = now()
+   WHERE id = p_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('wps', p_id, CASE WHEN p_approve THEN 'approved' ELSE 'withdrawn' END, who,
+          held.ref || ' rev ' || held.revision::text);
+  RETURN held.ref;
+END;
+$$;
+
+-- Which welder is qualified to what. The office's, because a welder cannot qualify themselves.
+CREATE FUNCTION save_welder_qual(
+  p_id bigint,
+  p_welder_id bigint,
+  p_qual_no text,
+  p_process text,
+  p_issued_by text,
+  p_issued_on date,
+  p_expires_on date,
+  p_material_group text DEFAULT NULL,
+  p_thickness_range text DEFAULT NULL,
+  p_position text DEFAULT NULL,
+  p_status welder_qual_status DEFAULT 'valid',
+  p_document_id bigint DEFAULT NULL,
+  p_notes text DEFAULT NULL
+) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('recording a welder qualification');
+  saved bigint;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM app_user WHERE id = p_welder_id AND is_active) THEN
+    RAISE EXCEPTION 'that is not somebody who works here' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF nullif(btrim(coalesce(p_qual_no, '')), '') IS NULL
+     OR nullif(btrim(coalesce(p_process, '')), '') IS NULL
+     OR nullif(btrim(coalesce(p_issued_by, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'a qualification needs a number, a process and who issued it'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_issued_on IS NULL OR p_expires_on IS NULL THEN
+    RAISE EXCEPTION 'a qualification needs the day it was issued and the day it runs out'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_id IS NULL THEN
+    INSERT INTO welder_qual (welder_id, qual_no, process, material_group, thickness_range, position,
+                             issued_by, issued_on, expires_on, status, document_id, notes)
+    VALUES (p_welder_id, btrim(p_qual_no), btrim(p_process),
+            nullif(btrim(coalesce(p_material_group,'')), ''), nullif(btrim(coalesce(p_thickness_range,'')), ''),
+            nullif(btrim(coalesce(p_position,'')), ''), btrim(p_issued_by), p_issued_on, p_expires_on,
+            coalesce(p_status, 'valid'), p_document_id, nullif(btrim(coalesce(p_notes,'')), ''))
+    RETURNING id INTO saved;
+  ELSE
+    UPDATE welder_qual SET welder_id = p_welder_id, qual_no = btrim(p_qual_no), process = btrim(p_process),
+      material_group = nullif(btrim(coalesce(p_material_group,'')), ''),
+      thickness_range = nullif(btrim(coalesce(p_thickness_range,'')), ''),
+      position = nullif(btrim(coalesce(p_position,'')), ''), issued_by = btrim(p_issued_by),
+      issued_on = p_issued_on, expires_on = p_expires_on, status = coalesce(p_status, status),
+      document_id = coalesce(p_document_id, document_id),
+      notes = nullif(btrim(coalesce(p_notes,'')), ''), updated_at = now()
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF saved IS NULL THEN
+      RAISE EXCEPTION 'no such qualification' USING ERRCODE = 'foreign_key_violation';
+    END IF;
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('welder_qual', saved, CASE WHEN p_id IS NULL THEN 'recorded' ELSE 'corrected' END, who,
+          btrim(p_qual_no) || ' (' || btrim(p_process) || ') to ' || p_expires_on::text);
+  RETURN saved;
+END;
+$$;
+
+-- A note against any of the four, in the same log every other record's history comes from.
+CREATE FUNCTION add_welding_note(p_entity text, p_id bigint, p_text text) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('adding a note to a welding record');
+  said text := nullif(btrim(coalesce(p_text, '')), '');
+  made bigint;
+  there boolean;
+BEGIN
+  IF said IS NULL THEN
+    RAISE EXCEPTION 'an empty note is not a note' USING ERRCODE = 'check_violation';
+  END IF;
+  IF p_entity NOT IN ('weld', 'ndt_report', 'wps', 'welder_qual') THEN
+    RAISE EXCEPTION 'there is no welding register called %', p_entity USING ERRCODE = 'check_violation';
+  END IF;
+  EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I WHERE id = $1)', p_entity) INTO there USING p_id;
+  IF NOT there THEN
+    RAISE EXCEPTION 'no such %', p_entity USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES (p_entity, p_id, 'note', who, said)
+  RETURNING id INTO made;
+  RETURN made;
+END;
+$$;
+
+-- Taken away from everybody first, like every other function in this file, and given back below to the
+-- roles that have business with it. These sit here rather than beside the document revokes because
+-- api.sql runs top to bottom and a REVOKE cannot name a function that does not exist yet — which is
+-- the second time that has been got wrong in this file today.
+REVOKE ALL ON FUNCTION record_weld(bigint, text, text, bigint, bigint, date, bigint, text, text, text,
+  text, text, numeric, text, text, text, boolean, text, boolean, boolean, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_weld_repair(bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_ndt(bigint, text, ndt_result, text, text, numeric, text, text, text, date,
+  text, boolean, boolean, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION accept_weld(bigint, boolean, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_wps(bigint, text, text, int, text, text, text, text, text, text, text, text,
+  text, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION approve_wps(bigint, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_welder_qual(bigint, bigint, text, text, text, date, date, text, text, text,
+  welder_qual_status, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION add_welding_note(text, bigint, text) FROM PUBLIC;
+
 GRANT EXECUTE ON FUNCTION bootstrap_first_admin(text, text, text) TO varmak_api;
 GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigint, text),
   set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role)
@@ -3238,7 +3644,13 @@ GRANT EXECUTE ON FUNCTION send_estimate(bigint, int), accept_estimate(bigint),
   -- quality record is: whoever found the problem is the person who should be able to write it down.
   save_document(bigint, text, text, text, text, text, document_status, date, text, text, text),
   link_document(bigint, text, text),
-  supersede_document(bigint, bigint)
+  supersede_document(bigint, bigint),
+  -- The welding procedures and the qualifications: decisions about who may weld what, not records of what
+  -- happened. A welder cannot qualify themselves, and cannot approve the procedure they weld to.
+  save_wps(bigint, text, text, int, text, text, text, text, text, text, text, text, text, bigint, text),
+  approve_wps(bigint, boolean),
+  save_welder_qual(bigint, bigint, text, text, text, date, date, text, text, text,
+                   welder_qual_status, bigint, text)
 TO varmak_admin, varmak_office;
 
 
@@ -3259,7 +3671,18 @@ GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   create_reinspection(bigint),
   replace_inspection_checks(bigint, jsonb),
   add_quality_note(text, bigint, text),
-  add_document_note(bigint, text)
+  add_document_note(bigint, text),
+  -- The weld log is the welder's. record_weld takes the welder from the session and cannot be handed a
+  -- name, so a weld cannot be logged for somebody else through this door either — the row policy refuses
+  -- it as well, which is the belt and the braces on the one record an auditor reads first.
+  record_weld(bigint, text, text, bigint, bigint, date, bigint, text, text, text, text, text, numeric,
+              text, text, text, boolean, text, boolean, boolean, text, text),
+  record_weld_repair(bigint, text, text),
+  -- NDT may be signed by a technician here or a firm outside, so both sides of the building reach it.
+  record_ndt(bigint, text, ndt_result, text, text, numeric, text, text, text, date, text,
+             boolean, boolean, text),
+  accept_weld(bigint, boolean, text),
+  add_welding_note(text, bigint, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 COMMIT;
