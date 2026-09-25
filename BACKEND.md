@@ -102,12 +102,21 @@ today because there is exactly one user.
 
 ### The tables
 
-Planned as twenty-five, down from forty; **thirty-four as built**, the extra nine being the child tables
-that a list on a screen turned out to need — `customer_contact`, `supplier_contact`, `inspection_check`,
-`estimate_line`, `purchase_order_line`, `allowed_transition`, `equipment_assignment`, `app_session` and
-`prospect_finding`. The count is stated as built rather than as planned because a number nobody checks is a
-number that is already wrong, and this project has now found that in the guard's list of wired pages, the
-coverage meter's map of collections, and a function list that had gone stale.
+Planned as twenty-five, down from forty; **41 tables in the installed system** as built. The extra ones
+are the child tables a list on a screen turned out to need — `customer_contact`, `supplier_contact`,
+`inspection_check`, `estimate_line`, `purchase_order_line`, `allowed_transition`,
+`equipment_assignment`, `prospect_finding`, `weld_repair` — the session and device tables that
+`auth.sql` and `api.sql` add, and the five welding registers below, which this page once argued
+against and which the firm turned out to need.
+
+The count is stated as built rather than as planned because a number nobody checks is a number that is
+already wrong, and this project has now found that in the guard's list of wired pages, the coverage
+meter's map of collections, a function list that had gone stale — and twice in this file, which said
+34 tables when there were 41, spelled out in words where no test could read it. So the counts on this
+page are written in digits and read back out of the live database by
+[`backend/test-schema.js`](backend/test-schema.js), which fails when they drift — and the enumeration
+above deliberately names its tables rather than counting them, because the list is the part a reader
+can check.
 
 Thirteen of the current collections have never held a row and fourteen more hold only fixture data — the
 reasoning is in [`REVIEW.md`](REVIEW.md), and the ones with no table at all are named with their reasons in
@@ -130,21 +139,36 @@ merchants loses one of them. It is also where every supplier catalogue import la
 One event table replaces twelve tabs. An inspection, a service, a calibration, a breakdown and a
 pre-use check are the same shape — a thing that happened to a machine on a date, with a result.
 
-**Quality** — `inspections` · `ncrs` · `holds`
+**Quality** — `inspections` · `ncrs` · `holds` · `weld` · `weld_repair` · `ndt_report` · `wps` ·
+`welder_qual`
 
-**Decided: no certification is held yet**, so the list is three tables, not six. `welds`, `wps` and
-`welder_quals` exist to satisfy EN 1090 and ISO 3834 auditors. Building them before there is an
-auditor is building paperwork for nobody.
+Three of these were written down here as deliberately absent — **"no certification is held yet, so
+the list is three tables, not six"** — on the reasoning that building the EN 1090 and ISO 3834
+registers before there was an auditor was building paperwork for nobody. That reasoning was sound
+and its premise was wrong: the firm is certified or getting there, so the auditor it said did not
+exist does. They are built.
 
-One thing is kept anyway, because it costs nothing and cannot be recovered later: **who did the
-work, and on what material.** The jobcard already carries a heat number and a certificate
-reference; add the welder's name and the filler used as plain fields on the operation. If
-certification is pursued in two years, that history is the difference between starting from a
-record and starting from nothing. The subsystem can be built then; the facts cannot be
-back-filled then.
+What the page said to keep anyway — **who did the work, and on what material** — is the thing these
+five tables are made of, and the reason for building them now rather than later stands unchanged:
+that history cannot be back-filled. A weld carries its welder as a reference to a person rather
+than a name, the filler and the consumable batch it was made with, the procedure and the
+qualification it was made on, and the dates. Five rules enforce the one sentence the subsystem
+exists for — this weld was made by a welder qualified for that process, to a procedure somebody had
+approved, and it was tested:
 
-The three that stay are the ones that protect the workshop rather than an auditor: an inspection
-result, a non-conformance, and a hold that stops work going out wrong.
+* A weld cannot cite a procedure nobody has approved, or one for a different process.
+* A weld cannot cite somebody else's qualification, or one that had run out on the day it was made.
+* NDT that is called for has to say by which method.
+* A rejected report has to say what was found, and puts its weld into repair-required by itself.
+* A weld that needs testing cannot be signed off until a report accepts it, and cannot be signed
+  off at all while a report against it calls for a repair.
+
+`wps.ref` is deliberately **not** unique on its own: a procedure is revised, rev 1 and rev 2 both
+stay on file, and the welds made to rev 1 were made to rev 1. One row per revision is the rule, and
+it is a unique index on `(ref, revision)`.
+
+The three that were always here are the ones that protect the workshop rather than an auditor: an
+inspection result, a non-conformance, and a hold that stops work going out wrong.
 
 **System** — `app_user` · `app_session` · `document` · `activity_log`
 
@@ -261,8 +285,9 @@ cannot touch anything else.
 ## 5. Order of work
 
 1. ~~**Schema and constraints**, with the safety rules as triggers from the start.~~ **Done** —
-   [`backend/schema.sql`](backend/schema.sql): 31 tables, 103 checks and 13 triggers, every one of
-   them attacked by [`backend/test-schema.js`](backend/test-schema.js). All six rules named in §1a
+   [`backend/schema.sql`](backend/schema.sql) builds 39 tables, 186 check constraints and 19 triggers on
+   its own; `auth.sql` adds the sessions, the device log and the 94 row policies. Every one of them is
+   attacked by [`backend/test-schema.js`](backend/test-schema.js). All six rules named in §1a
    above are in the database, including the two this list originally skipped — status transitions
    (as the `allowed_transition` table, seeded from the frontend's own map) and repricing a locked
    estimate line.

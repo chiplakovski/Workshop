@@ -19,6 +19,7 @@ const assert = require('node:assert/strict');
 const { ensureUp } = require('./pg');
 const { execFileSync, execFile } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const HOST = process.env.PGHOST || '/tmp';
 const PORT = process.env.PGPORT || '5433';
@@ -121,6 +122,54 @@ function everyTableIsAccountedFor() {
       `${table} is reference data and must arrive with rows — an empty rulebook refuses nothing`);
   }
   step(`Suite: all ${inDatabase.length} tables accounted for — ${ALL_TABLES.length} reset between tests, ${REFERENCE_TABLES.length} shipped as reference data`);
+}
+
+// The numbers BACKEND.md states about the schema, read back out of the schema.
+//
+// That page argues, in its own words, that "a number nobody checks is a number that is already wrong" —
+// and then said thirty-four tables when there were forty-one, and 31 tables, 103 checks and 13 triggers
+// in a second place. Neither was a lie when it was written. Both were a count nobody was checking, which
+// is the exact fault the paragraph is about.
+//
+// Two counts, because they are two different things and stating one as the other is how the second of
+// those sentences went wrong: what `schema.sql` builds on its own, and what the installed system has once
+// `auth.sql` has added its tables. The row policies are auth.sql's and are counted by test-auth.js, which
+// is the suite that has them.
+function theDocumentationCountsWhatIsThere() {
+  const prose = fs.readFileSync(path.join(__dirname, '..', 'BACKEND.md'), 'utf8');
+  const onItsOwn = {
+    tables: value(`SELECT count(*) FROM pg_tables WHERE schemaname = 'public';`),
+    checks: value(`SELECT count(*) FROM pg_constraint c
+      JOIN pg_class t ON t.oid = c.conrelid JOIN pg_namespace n ON n.oid = t.relnamespace
+      WHERE n.nspname = 'public' AND c.contype = 'c';`),
+    triggers: value(`SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal;`)
+  };
+  // One sentence, three numbers, matched as a sentence so the three cannot be read in the wrong order.
+  const said = /(\d+) tables, (\d+) check constraints and (\d+) triggers/.exec(prose);
+  assert.ok(said, 'BACKEND.md no longer says what schema.sql builds — the count is the thing being checked');
+  assert.deepEqual(
+    { tables: said[1], checks: said[2], triggers: said[3] }, onItsOwn,
+    `BACKEND.md says schema.sql builds ${said[1]} tables, ${said[2]} checks and ${said[3]} triggers`);
+
+  // And the whole system, which is those tables plus the ones the other two files add: app_session in
+  // auth.sql and device_event in api.sql. Counted from the files rather than written down, because that is
+  // the number that drifted — and counted from both files because the first version of this check asked
+  // only auth.sql and was one short.
+  const added = ['auth.sql', 'api.sql'].reduce((total, file) => total
+    + (fs.readFileSync(path.join(__dirname, file), 'utf8').match(/^CREATE TABLE /gm) || []).length, 0);
+  assert.notEqual(added, 0, 'auth.sql and api.sql should still be creating the tables this count is adding');
+  const whole = /(\d+) tables in the installed system/.exec(prose);
+  assert.ok(whole, 'BACKEND.md no longer says how many tables the installed system has');
+  assert.equal(whole[1], String(Number(onItsOwn.tables) + added),
+    `BACKEND.md says ${whole && whole[1]} tables in the installed system; schema.sql builds `
+    + `${onItsOwn.tables} and auth.sql plus api.sql add ${added}`);
+
+  // Spelled out in words, a count is one no test can read — which is how the first one drifted.
+  assert.doesNotMatch(prose,
+    /\b(twenty|thirty|forty|fifty)[- ](one|two|three|four|five|six|seven|eight|nine)?\s+tables\b/i,
+    'a table count spelled out in words is a count no test can read — write it in digits');
+  step(`Docs: BACKEND.md's counts match what is built — ${onItsOwn.tables} tables in schema.sql, `
+    + `${Number(onItsOwn.tables) + added} in the installed system`);
 }
 
 function fixture() {
@@ -1826,6 +1875,7 @@ async function main() {
   console.log(`Schema built fresh into ${DB} from ${path.basename(SCHEMA)}.\n`);
 
   everyTableIsAccountedFor();
+  theDocumentationCountsWhatIsThere();
   await countingRowsCollides();
   await sequencesNeverCollide();
   passwordsAreNeverHalfStored();

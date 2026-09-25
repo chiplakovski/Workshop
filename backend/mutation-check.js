@@ -41,6 +41,13 @@ const FILES = {
     path: path.join(__dirname, 'schema.sql'),
     suite: path.join('..', 'tests', 'documents-server.e2e.js'), env: 'VARMAK_SCHEMA'
   },
+  // And the same for the welding registers, whose rules are asserted through the Quality screen: which
+  // procedure is on offer, whose name a weld carries, and the two qualification states that are worked
+  // out rather than stored. None of that is in test-server.js either.
+  welding: {
+    path: path.join(__dirname, 'views.sql'),
+    suite: path.join('..', 'tests', 'welding-server.e2e.js'), env: 'VARMAK_VIEWS'
+  },
 
   // The shop tablet's half of the offline queue is not SQL either, and the rules in it are as easy to
   // get wrong: which id goes with a retry, whose queue may be flushed, whether a dead signal counts as
@@ -475,6 +482,35 @@ const MUTATIONS = [
     from: `  CONSTRAINT an_approved_wps_says_who CHECK (
     status <> 'approved' OR (approved_on IS NOT NULL AND btrim(coalesce(approved_by, '')) <> ''))`,
     to: '  CONSTRAINT an_approved_wps_says_who CHECK (true)'
+  },
+  {
+    // The fourth floor trap, and the first that failed quietly rather than loudly: without person_name
+    // the weld log reads "by (NOBODY)" for a welder who is right there in the staff list. A quiet wrong
+    // name on the one record an auditor reads first.
+    what: 'a weld in the log carries no welder at all',
+    file: 'views', suite: 'welding',
+    from: "        'welder', person_name(w.welder_id),",
+    to: "        'welder', NULL,"
+  },
+  {
+    // The line the qualification register exists for. Stored, 'expiring-soon' is a word that was true one
+    // morning; computed, it is true every time somebody reads it.
+    what: 'a qualification reports the status somebody set rather than the one the date says',
+    file: 'views', suite: 'welding',
+    from: `        'status', CASE
+          WHEN q.status <> 'valid' THEN q.status::text
+          WHEN q.expires_on < current_date THEN 'expired'
+          WHEN q.expires_on <= current_date + 60 THEN 'expiring-soon'
+          ELSE 'valid' END,`,
+    to: "        'status', q.status::text,"
+  },
+  {
+    // Which certificate a weld was made on. Dropped, the register still lists the weld and the line an
+    // auditor follows stops at the welder's name.
+    what: 'a weld does not say which qualification it was made on',
+    file: 'views', suite: 'welding',
+    from: "        'welderQualRef', (SELECT q.qual_no FROM welder_qual q WHERE q.id = w.welder_qual_id),",
+    to: "        'welderQualRef', NULL,"
   },
   {
     what: 'two copies of one revision of one welding procedure',
