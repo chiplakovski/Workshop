@@ -453,6 +453,45 @@ async function main() {
     }
     step('Documents: and nothing went into browser storage — the register is in one place');
 
+    // ── The three languages ─────────────────────────────────────────────────────────────────
+    //
+    // This was the seventeenth screen and the only one with no translations at all. The trap was the
+    // selects: every option carried its label as its value, and the label is what the server matches —
+    // `document_link_for` looks for 'projects' and `SETTABLE` maps 'Draft' to the enum. Translated with no
+    // value behind it, the Macedonian screen would have filed every document against nothing and saved
+    // every status as a draft, silently, because both sides fall back rather than refuse.
+    //
+    // So this switches to Macedonian, files a document through the translated form, and asks Postgres what
+    // was actually stored.
+    await page.evaluate(() => setLang('mk'));
+    await page.waitForTimeout(150);
+    const inMacedonian = await page.evaluate(() => ({
+      lang: document.documentElement.lang,
+      heading: document.querySelector('[data-i="nav_all"]').textContent,
+      upload: document.querySelector('[data-i="btn_upload"]').textContent,
+      type: [...document.getElementById('docType').options].map((o) => `${o.value}=${o.textContent}`)[1],
+      module: [...document.getElementById('docModule').options].map((o) => `${o.value}=${o.textContent}`)[0]
+    }));
+    assert.equal(inMacedonian.lang, 'mk', 'the document language has to change with it, for the reader');
+    assert.match(inMacedonian.heading, /[\u0400-\u04FF]/, `the register's own heading: ${inMacedonian.heading}`);
+    assert.match(inMacedonian.upload, /[\u0400-\u04FF]/, `and the upload button: ${inMacedonian.upload}`);
+    assert.match(inMacedonian.type, /^Certificate=[\u0400-\u04FF]/,
+      `an option keeps its English value and shows Cyrillic: ${inMacedonian.type}`);
+    assert.match(inMacedonian.module, /^Projects=[\u0400-\u04FF]/,
+      `and so does the module: ${inMacedonian.module}`);
+
+    const mk = await fileIt(page, {
+      name: 'Заварувачки сертификат MK-1', type: 'Certificate', module: 'Projects',
+      record: w.projectRef, category: 'Materials', status: 'Approved', revision: '1'
+    });
+    assert.ok(!/refused|nothing in/i.test(mk), `filing from the Macedonian form must work, and said: ${mk}`);
+    await until('the Macedonian filing to reach Postgres',
+      () => value(`SELECT count(*) FROM document WHERE title = 'Заварувачки сертификат MK-1';`) === '1');
+    assert.equal(value(`SELECT kind || '|' || status || '|' || entity || '|' || (entity_id = ${w.project})::text
+      FROM document WHERE title = 'Заварувачки сертификат MK-1';`), 'Certificate|approved|project|true',
+    'and the kind, the status and the link are the English values the database knows, not the labels');
+    step('Documents: the register reads in Macedonian and still saves the words the database knows');
+
     assert.deepEqual(thrown, [], `the page threw: ${thrown.slice(0, 3).join(' / ')}`);
   } finally {
     await browser.close();

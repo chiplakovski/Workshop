@@ -214,15 +214,25 @@ Written down because a deployment guide that implies everything works is worse t
   is how somebody plans around a limit that has been gone for a month.
 - **What a wired screen still cannot write, it refuses out loud** rather than putting it in the browser,
   which is the outcome that looks like it worked and is gone on the next machine. Today that list is:
-  estimating's nested work items, options, terms and revisions; invoicing in either direction; purchase
-  orders; marketing campaigns; the outward prospect sweep; the quality register's ITP, CAPA and dossier;
-  the four welding registers; document folders; and the bytes of any file.
+  estimating's nested work items, options, terms and revisions; the invoice arriving from a supplier and
+  the enquiry before a purchase order; purchase orders; marketing campaigns; the outward prospect sweep;
+  the quality register's ITP, CAPA and dossier; document folders; and the bytes of any file.
+
+  The four welding registers came off this list: the weld log, the NDT against those welds, the procedures
+  and the welder qualifications are tables now, with their rules in the database, and the Quality screen
+  writes all four.
 - **The estimating half of Project / Estimator writes nothing**, on purpose: that screen holds work
   items in nested groups, options, terms, revisions and a priced bill of materials, and the `estimate`
   table holds a title, a total and a date. Quoting stays on paper or in the browser-storage app until
   that gap is real work rather than a mapping.
-- **Invoicing has no table at all**, and it is the money going out of the door — the largest single gap
-  in this schema. Two screens read an `invoices` collection that nothing stores.
+- **Invoicing out is deliberately not here, and what replaces it is.** This was called the largest single
+  gap in the schema; the decision taken was that it is not a gap in that direction. Varmak issues its
+  invoices from its accounting system, and a second place that knows what a customer owes is two places
+  that disagree. What this system provides instead is the **invoice basis**, on the Reports screen under
+  *What To Invoice*: hours booked and material issued, per project, per line, with dates, exported as CSV.
+  No invoice number, no VAT, nothing stored, and no labour amount — no hourly rate is recorded anywhere
+  here, which is the accounting system's to apply. The **incoming** half is still absent: a supplier's
+  invoice against a purchase order has no table.
 - **The document register works; the files do not.** A certificate's expiry date, its revision and which
   job it belongs to are all on the database and a welder can read them. The scan itself has nowhere to
   go until there is object storage, and the screen says so at the point somebody attaches one.

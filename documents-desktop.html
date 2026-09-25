@@ -10,14 +10,37 @@
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
+  .langc{position:fixed;z-index:50;left:14px;bottom:16px;font-family:inherit;}
+  .langtoggle{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--navy);border:1px solid var(--line);color:var(--steel2);font-size:12px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:.15s;}
+  .langtoggle:hover{color:var(--ice);border-color:var(--fieldline);}
+  .langtoggle .globe{width:14px;height:14px;color:var(--steel);}
+  .langtoggle .cur{font-weight:600;letter-spacing:.08em;}
+  .langtoggle .chev{width:12px;height:12px;color:var(--steel);transition:transform .18s;}
+  .langc.open .langtoggle .chev{transform:rotate(180deg);}
+  .langmenu{position:absolute;left:0;bottom:calc(100% + 6px);min-width:158px;background:var(--navy2);border:1px solid var(--line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;visibility:hidden;transform:translateY(6px);transition:.16s;}
+  .langc.open .langmenu{opacity:1;visibility:visible;transform:translateY(0);}
+  .langmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--steel2);font-family:inherit;font-size:13px;padding:11px 14px;cursor:pointer;transition:.13s;}
+  .langmenu button:hover{background:rgba(74,144,255,.12);color:var(--ice);}
+  .langmenu button.active{color:var(--blue);box-shadow:inset 2px 0 0 var(--blue);}
+  @media(max-width:900px){ .langc{left:auto;right:14px;} }
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body><a class="skip" href="#main">Skip to documents</a><div class="backdrop" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div><aside class="sidebar"><div class="brand"><div class="brand-icon">▧</div><div><h2>DOCUMENTS</h2><small>Files, certificates & records</small></div></div><nav class="nav" id="nav"><button class="on" data-view="all"><i>▦</i>Documents Overview</button><button data-view="all"><i>▧</i>All Documents</button><button data-view="recent"><i>◷</i>Recent</button><button data-view="Projects"><i>□</i>Project Files</button><button data-view="Certificate"><i>◇</i>Certificates</button><button data-view="Drawing"><i>▣</i>Drawings</button><button data-view="Template"><i>▤</i>Templates</button><button data-view="review"><i>!</i>Review Required</button><button data-view="Superseded"><i>▥</i>Superseded</button></nav><div class="sidebox"><b>One document record</b><p>Link files to projects, suppliers, purchase orders, materials and quality records without duplicating uploads.</p></div><div class="user"><div class="avatar" data-session-initials>—</div><div><strong data-session-name>—</strong><small>Document manager</small></div></div></aside>
-<div class="shell"><header class="top"><a class="back" href="hub-desktop.html">←&nbsp; Hub</a><div class="module-icon">▧</div><div class="title"><h1>Documents</h1><p>Files, certificates & records</p></div><div class="tools"><input class="control search" id="search" aria-label="Search documents" autocomplete="off" placeholder="Search documents…"><select class="control" id="category" aria-label="Filter document category"><option value="all">All Categories</option></select><button class="btn primary" onclick="openUpload()">＋ Upload Document</button></div></header><main id="main"><section class="kpis" id="kpis"></section><div class="layout"><article class="panel main-panel"><div class="phead"><h3 id="tableTitle">All Documents</h3><button class="mini" onclick="clearFilters()">Clear filters</button></div><div class="tablewrap" id="table"></div><div class="pager"><span id="count"></span><span><button>‹</button> <button class="on">1</button> <button>2</button> <button>3</button> <button>…</button> <button>›</button></span></div></article><aside class="right"><article class="panel sidepanel"><div class="phead"><h3>Review Required</h3><button class="mini" onclick="setView('review')">View all</button></div><div id="reviewList"></div></article><article class="panel sidepanel"><div class="phead"><h3>Expiring Certificates</h3><button class="mini" onclick="setView('Certificate')">View all</button></div><div id="expiryList"></div></article><article class="panel sidepanel"><div class="phead"><h3>Recent Activity</h3><button class="mini" onclick="setView('recent')">View all</button></div><div id="activityList"></div></article></aside></div></main><footer class="actions"><button onclick="openUpload()"><i>⇧</i>Upload Document</button><button onclick="openUpload(true)"><i>▤</i>Scan Document</button><button onclick="openLink()"><i>↗</i>Link to Record</button><button onclick="openFolder()"><i>□</i>Create Folder</button><button onclick="setView('Template')"><i>▧</i>Templates</button><button onclick="openDocumentReport()"><i>▥</i>Document Report</button></footer></div>
-<div class="modal" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle"><form class="modal-card" id="uploadForm"><h2 id="uploadTitle">Upload Document</h2><p>Store metadata and link this file to the correct workshop record.</p><div class="formgrid"><div class="field wide"><label for="file">File</label><input id="file" name="file" type="file"></div><div class="field"><label for="docName">Document Name</label><input id="docName" name="name" required></div><div class="field"><label for="docType">Type</label><select id="docType" name="type"><option>Document</option><option>Certificate</option><option>Drawing</option><option>Report</option><option>Template</option><option>Image</option></select></div><div class="field"><label for="docModule">Related Module</label><select id="docModule" name="module"><option>Projects</option><option>Purchasing</option><option>Suppliers</option><option>Customers</option><option>Estimations</option><option>Quality</option><option>Store</option><option>Workshop</option></select></div><div class="field"><label for="docRecord">Related Record</label><input id="docRecord" name="record" placeholder="Example: P-2026-014"></div><div class="field"><label for="docCategory">Category</label><input id="docCategory" name="category" placeholder="Example: Drawings"></div><div class="field"><label for="docStatus">Status</label><select id="docStatus" name="status"><option>Draft</option><option>Valid</option><option>Approved</option></select></div><div class="field"><label for="docExpiry">Expiry Date</label><input id="docExpiry" name="expiry" type="date"></div><div class="field"><label for="docRevision">Revision</label><input id="docRevision" name="revision" value="1"></div><div class="field wide"><label for="docNotes">Notes</label><textarea id="docNotes" name="notes" rows="3"></textarea></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('uploadModal')">Cancel</button><button class="btn primary">Save Document</button></div></form></div>
-<div class="modal" id="linkModal" role="dialog" aria-modal="true" aria-labelledby="linkTitle"><form class="modal-card" id="linkForm"><h2 id="linkTitle">Link to Record</h2><p id="linkDocumentName"></p><div class="formgrid"><div class="field"><label for="linkModule">Related Module</label><select id="linkModule" name="module"><option>Projects</option><option>Purchasing</option><option>Suppliers</option><option>Customers</option><option>Estimations</option><option>Quality</option><option>Store</option><option>Workshop</option></select></div><div class="field"><label for="linkRecord">Related Record</label><input id="linkRecord" name="record" required placeholder="Example: P-2026-014"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('linkModal')">Cancel</button><button class="btn primary">Save Link</button></div></form></div>
-<div class="modal" id="folderModal" role="dialog" aria-modal="true" aria-labelledby="folderTitle"><form class="modal-card" id="folderForm"><h2 id="folderTitle">Create Folder</h2><p>Folders are shared document categories and remain visible even while empty.</p><div class="formgrid"><div class="field wide"><label for="folderName">Folder Name</label><input id="folderName" name="name" required></div><div class="field"><label for="folderModule">Related Module</label><select id="folderModule" name="module"><option>General</option><option>Projects</option><option>Purchasing</option><option>Suppliers</option><option>Customers</option><option>Estimations</option><option>Quality</option><option>Store</option><option>Workshop</option></select></div><div class="field"><label for="folderRecord">Related Record</label><input id="folderRecord" name="record" value="General"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('folderModal')">Cancel</button><button class="btn primary">Create Folder</button></div></form></div>
-<div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle"><form class="modal-card" id="reportForm"><h2 id="reportTitle">Generate Document Report</h2><p>Export a real snapshot of the document register.</p><div class="formgrid"><div class="field"><label for="reportFormat">Format</label><select id="reportFormat" name="format"><option value="csv">CSV</option><option value="json">JSON</option></select></div><div class="field"><label for="reportScope">Scope</label><select id="reportScope" name="scope"><option value="filtered">Current filters</option><option value="all">All active documents</option></select></div><div class="field wide"><label for="reportName">Report Name</label><input id="reportName" name="name" value="Document Register"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('reportModal')">Cancel</button><button class="btn primary">Generate & Download</button></div></form></div>
-<div class="modal" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle"><div class="modal-card preview"><h2 id="previewTitle">Document Preview</h2><p id="previewSub"></p><div class="previewbox"><div class="paper"><div class="large-icon">▧</div><h3 id="paperName"></h3><p id="paperMessage">Metadata-only document record.</p></div><div class="meta" id="previewMeta"></div></div><div class="modal-actions"><button class="btn" onclick="closeModal('previewModal')">Close</button><button class="btn" id="removeFileBtn" onclick="removeSelectedFile()">Remove Stored File</button><button class="btn primary" id="downloadBtn" onclick="downloadSelected()">Download File</button></div></div></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body><a class="skip" href="#main" data-i="skip">Skip to documents</a><div class="backdrop" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div><aside class="sidebar"><div class="brand"><div class="brand-icon">▧</div><div><h2 data-i="mod_title">DOCUMENTS</h2><small data-i="mod_sub">Files, certificates & records</small></div></div><nav class="nav" id="nav"><button class="on" data-view="all"><i>▦</i><span data-i="nav_overview">Documents Overview</span></button><button data-view="all"><i>▧</i><span data-i="nav_all">All Documents</span></button><button data-view="recent"><i>◷</i><span data-i="nav_recent">Recent</span></button><button data-view="Projects"><i>□</i><span data-i="nav_projectfiles">Project Files</span></button><button data-view="Certificate"><i>◇</i><span data-i="nav_certificates">Certificates</span></button><button data-view="Drawing"><i>▣</i><span data-i="nav_drawings">Drawings</span></button><button data-view="Template"><i>▤</i><span data-i="nav_templates">Templates</span></button><button data-view="review"><i>!</i><span data-i="nav_review">Review Required</span></button><button data-view="Superseded"><i>▥</i><span data-i="nav_superseded">Superseded</span></button></nav><div class="sidebox"><b data-i="box_title">One document record</b><p data-i="box_text">Link files to projects, suppliers, purchase orders, materials and quality records without duplicating uploads.</p></div><div class="user"><div class="avatar" data-session-initials>—</div><div><strong data-session-name>—</strong><small data-i="role_note">Document manager</small></div></div></aside>
+<div class="shell"><header class="top"><a class="back" href="hub-desktop.html">←&nbsp; <span data-i="back_hub">Hub</span></a><div class="module-icon">▧</div><div class="title"><h1 data-i="page_title">Documents</h1><p data-i="mod_sub">Files, certificates & records</p></div><div class="tools"><input class="control search" id="search" data-i-ph="search_ph" aria-label="Search documents" autocomplete="off" placeholder="Search documents…"><select class="control" id="category" aria-label="Filter document category"><option value="all" data-i="all_categories">All Categories</option></select><button class="btn primary" onclick="openUpload()">＋ <span data-i="btn_upload">Upload Document</span></button></div></header><main id="main"><section class="kpis" id="kpis"></section><div class="layout"><article class="panel main-panel"><div class="phead"><h3 id="tableTitle" data-i="nav_all">All Documents</h3><button class="mini" onclick="clearFilters()" data-i="btn_clear">Clear filters</button></div><div class="tablewrap" id="table"></div><div class="pager"><span id="count"></span><span><button>‹</button> <button class="on">1</button> <button>2</button> <button>3</button> <button>…</button> <button>›</button></span></div></article><aside class="right"><article class="panel sidepanel"><div class="phead"><h3 data-i="side_review">Review Required</h3><button class="mini" onclick="setView('review')" data-i="btn_viewall">View all</button></div><div id="reviewList"></div></article><article class="panel sidepanel"><div class="phead"><h3 data-i="side_expiring">Expiring Certificates</h3><button class="mini" onclick="setView('Certificate')" data-i="btn_viewall">View all</button></div><div id="expiryList"></div></article><article class="panel sidepanel"><div class="phead"><h3 data-i="side_activity">Recent Activity</h3><button class="mini" onclick="setView('recent')" data-i="btn_viewall">View all</button></div><div id="activityList"></div></article></aside></div></main><footer class="actions"><button onclick="openUpload()"><i>⇧</i><span data-i="act_upload">Upload Document</span></button><button onclick="openUpload(true)"><i>▤</i><span data-i="act_scan">Scan Document</span></button><button onclick="openLink()"><i>↗</i><span data-i="act_link">Link to Record</span></button><button onclick="openFolder()"><i>□</i><span data-i="act_folder">Create Folder</span></button><button onclick="setView('Template')"><i>▧</i><span data-i="act_templates">Templates</span></button><button onclick="openDocumentReport()"><i>▥</i><span data-i="act_report">Document Report</span></button></footer></div>
+<div class="modal" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle"><form class="modal-card" id="uploadForm"><h2 id="uploadTitle" data-i="m_upload_t">Upload Document</h2><p data-i="m_upload_sub">Store metadata and link this file to the correct workshop record.</p><div class="formgrid"><div class="field wide"><label for="file" data-i="f_file">File</label><input id="file" name="file" type="file"></div><div class="field"><label for="docName" data-i="f_name">Document Name</label><input id="docName" name="name" required></div><div class="field"><label for="docType" data-i="f_type">Type</label><select id="docType" name="type"><option value="Document" data-i="type_document">Document</option><option value="Certificate" data-i="type_certificate">Certificate</option><option value="Drawing" data-i="type_drawing">Drawing</option><option value="Report" data-i="type_report">Report</option><option value="Template" data-i="type_template">Template</option><option value="Image" data-i="type_image">Image</option></select></div><div class="field"><label for="docModule" data-i="f_module">Related Module</label><select id="docModule" name="module"><option value="Projects" data-i="mod_projects">Projects</option><option value="Purchasing" data-i="mod_purchasing">Purchasing</option><option value="Suppliers" data-i="mod_suppliers">Suppliers</option><option value="Customers" data-i="mod_customers">Customers</option><option value="Estimations" data-i="mod_estimations">Estimations</option><option value="Quality" data-i="mod_quality">Quality</option><option value="Store" data-i="mod_store">Store</option><option value="Workshop" data-i="mod_workshop">Workshop</option></select></div><div class="field"><label for="docRecord" data-i="f_record">Related Record</label><input id="docRecord" name="record" data-i-ph="ph_record" placeholder="Example: P-2026-014"></div><div class="field"><label for="docCategory" data-i="f_category">Category</label><input id="docCategory" name="category" data-i-ph="ph_category" placeholder="Example: Drawings"></div><div class="field"><label for="docStatus" data-i="f_status">Status</label><select id="docStatus" name="status"><option value="Draft" data-i="st_draft">Draft</option><option value="Valid" data-i="st_valid">Valid</option><option value="Approved" data-i="st_approved">Approved</option></select></div><div class="field"><label for="docExpiry" data-i="f_expiry">Expiry Date</label><input id="docExpiry" name="expiry" type="date"></div><div class="field"><label for="docRevision" data-i="f_revision">Revision</label><input id="docRevision" name="revision" value="1"></div><div class="field wide"><label for="docNotes" data-i="f_notes">Notes</label><textarea id="docNotes" name="notes" rows="3"></textarea></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('uploadModal')" data-i="btn_cancel">Cancel</button><button class="btn primary" data-i="btn_save">Save Document</button></div></form></div>
+<div class="modal" id="linkModal" role="dialog" aria-modal="true" aria-labelledby="linkTitle"><form class="modal-card" id="linkForm"><h2 id="linkTitle" data-i="m_link_t">Link to Record</h2><p id="linkDocumentName"></p><div class="formgrid"><div class="field"><label for="linkModule" data-i="f_module">Related Module</label><select id="linkModule" name="module"><option value="Projects" data-i="mod_projects">Projects</option><option value="Purchasing" data-i="mod_purchasing">Purchasing</option><option value="Suppliers" data-i="mod_suppliers">Suppliers</option><option value="Customers" data-i="mod_customers">Customers</option><option value="Estimations" data-i="mod_estimations">Estimations</option><option value="Quality" data-i="mod_quality">Quality</option><option value="Store" data-i="mod_store">Store</option><option value="Workshop" data-i="mod_workshop">Workshop</option></select></div><div class="field"><label for="linkRecord" data-i="f_record">Related Record</label><input id="linkRecord" name="record" required data-i-ph="ph_record" placeholder="Example: P-2026-014"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('linkModal')" data-i="btn_cancel">Cancel</button><button class="btn primary" data-i="btn_savelink">Save Link</button></div></form></div>
+<div class="modal" id="folderModal" role="dialog" aria-modal="true" aria-labelledby="folderTitle"><form class="modal-card" id="folderForm"><h2 id="folderTitle" data-i="m_folder_t">Create Folder</h2><p data-i="m_folder_sub">Folders are shared document categories and remain visible even while empty.</p><div class="formgrid"><div class="field wide"><label for="folderName" data-i="f_foldername">Folder Name</label><input id="folderName" name="name" required></div><div class="field"><label for="folderModule" data-i="f_module">Related Module</label><select id="folderModule" name="module"><option value="General" data-i="mod_general">General</option><option value="Projects" data-i="mod_projects">Projects</option><option value="Purchasing" data-i="mod_purchasing">Purchasing</option><option value="Suppliers" data-i="mod_suppliers">Suppliers</option><option value="Customers" data-i="mod_customers">Customers</option><option value="Estimations" data-i="mod_estimations">Estimations</option><option value="Quality" data-i="mod_quality">Quality</option><option value="Store" data-i="mod_store">Store</option><option value="Workshop" data-i="mod_workshop">Workshop</option></select></div><div class="field"><label for="folderRecord" data-i="f_record">Related Record</label><input id="folderRecord" name="record" value="General"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('folderModal')" data-i="btn_cancel">Cancel</button><button class="btn primary" data-i="btn_createfolder">Create Folder</button></div></form></div>
+<div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle"><form class="modal-card" id="reportForm"><h2 id="reportTitle" data-i="m_report_t">Generate Document Report</h2><p data-i="m_report_sub">Export a real snapshot of the document register.</p><div class="formgrid"><div class="field"><label for="reportFormat" data-i="f_format">Format</label><select id="reportFormat" name="format"><option value="csv">CSV</option><option value="json">JSON</option></select></div><div class="field"><label for="reportScope" data-i="f_scope">Scope</label><select id="reportScope" name="scope"><option value="filtered" data-i="scope_filtered">Current filters</option><option value="all" data-i="scope_all">All active documents</option></select></div><div class="field wide"><label for="reportName" data-i="f_reportname">Report Name</label><input id="reportName" name="name" value="Document Register"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('reportModal')" data-i="btn_cancel">Cancel</button><button class="btn primary" data-i="btn_generate">Generate & Download</button></div></form></div>
+<div class="modal" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle"><div class="modal-card preview"><h2 id="previewTitle" data-i="m_preview_t">Document Preview</h2><p id="previewSub"></p><div class="previewbox"><div class="paper"><div class="large-icon">▧</div><h3 id="paperName"></h3><p id="paperMessage" data-i="paper_metadata_only">Metadata-only document record.</p></div><div class="meta" id="previewMeta"></div></div><div class="modal-actions"><button class="btn" onclick="closeModal('previewModal')" data-i="btn_close">Close</button><button class="btn" id="removeFileBtn" onclick="removeSelectedFile()" data-i="btn_removefile">Remove Stored File</button><button class="btn primary" id="downloadBtn" onclick="downloadSelected()" data-i="btn_downloadfile">Download File</button></div></div></div><div class="langc" id="langc">
+  <div class="langmenu" id="langmenu">
+    <button data-lang="sv">Svenska</button><button data-lang="en">English</button><button data-lang="mk">Македонски</button>
+  </div>
+  <button class="langtoggle" id="langtoggle" aria-label="Language">
+    <svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+    <span class="cur" id="langcur">EN</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>/* Wired to the server. Declared rather than detected: this is the register that says which
    revision of a drawing is current and when a certificate runs out, and one read out of this browser
    means the answer to both lives on one person's laptop. The file bytes are NOT wired and cannot be —
@@ -33,24 +56,337 @@ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,
 let docs=WorkshopData.getDocuments(),folders=WorkshopData.getDocumentFolders(),currentView='all',selected=(docs[0]&&docs[0].id)||null;
 function refreshDocs(){docs=WorkshopData.getDocuments();folders=WorkshopData.getDocumentFolders();}
 function statusTag(s){const cls=s==='Valid'?'valid':s==='Approved'?'approved':s==='Expired'?'expired':s==='Review Soon'?'review':s==='Superseded'?'superseded':'draft';const icon=cls==='expired'?'×':cls==='review'?'◷':cls==='superseded'?'▥':cls==='draft'?'□':'✓';return `<span class="status ${cls}">${icon} ${esc(s)}</span>`}function iconClass(d){return d.type==='Image'?'img':d.name.match(/\.xlsx?$/i)?'xls':d.name.match(/\.docx?$/i)?'doc':''}function filtered(){const q=$('search').value.toLowerCase(),cat=$('category').value;return docs.filter(d=>(currentView==='Superseded'?d.status==='Superseded':d.status!=='Superseded')&&(currentView==='all'||currentView==='recent'||currentView==='Superseded'||currentView==='review'&&['Review Soon','Expired'].includes(d.status)||d.type===currentView||d.module===currentView)&&(cat==='all'||d.category===cat)&&[d.name,d.type,d.module,d.record,d.category,d.status,d.author].join(' ').toLowerCase().includes(q)).sort((a,b)=>b.updated.localeCompare(a.updated))}
-function render(){const cats=[...new Set(docs.map(d=>d.category).concat(folders.filter(f=>!f.archived).map(f=>f.name)))].filter(Boolean).sort(),old=$('category').value;$('category').innerHTML='<option value="all">All Categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');$('category').value=cats.includes(old)?old:'all';const rows=filtered();$('tableTitle').textContent=currentView==='all'?'All Documents':currentView==='recent'?'Recent Documents':currentView==='review'?'Review Required':currentView+' Documents';$('table').innerHTML=rows.length?`<table><thead><tr><th>Document</th><th>Type</th><th>Related Module</th><th>Related Record</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows.map(d=>`<tr class="${d.id===selected?'selected':''}"><td><div class="docname"><span class="fileicon ${iconClass(d)}">${d.name.split('.').pop().slice(0,3).toUpperCase()}</span><b>${esc(d.name)}</b></div></td><td>${d.type}</td><td>${d.module}</td><td class="record">${esc(d.record)}</td><td>${esc(d.category)}</td><td>${dateFmt(d.updated)}<br><small>${new Date(d.updated).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})}</small></td><td>${statusTag(d.status)}</td><td><div class="rowactions"><button class="mini" onclick="preview(${d.id})">View</button><button class="mini" aria-label="More actions for ${esc(d.name)}" onclick="supersedeDoc(${d.id})">⋮</button></div></td></tr>`).join('')}</tbody></table>`:`<div class="empty">${$('category').value!=='all'&&folders.some(f=>!f.archived&&f.name===$('category').value)?'This folder is empty.':'No documents match these filters.'}</div>`;$('count').textContent=`Showing ${rows.length} of ${docs.filter(d=>d.status!=='Superseded').length} documents · ${folders.filter(f=>!f.archived).length} folders`;renderSummary()}
-function renderSummary(){const review=docs.filter(d=>['Review Soon','Expired'].includes(d.status)),certs=docs.filter(d=>d.type==='Certificate'&&d.expiry&&d.status!=='Expired'),month=docs.filter(d=>d.updated.slice(0,7)==='2026-08');$('kpis').innerHTML=[['▧','Total Documents',docs.filter(d=>d.status!=='Superseded').length,'Across all modules',''],['□','Added This Month',month.length,'Current month','good'],['!','Review Required',review.length,'Needs attention','warn'],['◇','Certificates Expiring',certs.length,'Within 60 days','warn']].map((k,i)=>`<article class="panel kpi" style="animation-delay:${i*.05}s"><div class="label"><span class="icon">${k[0]}</span>${k[1]}</div><strong>${k[2]}</strong><small class="${k[4]}">${k[3]}</small></article>`).join('');$('reviewList').innerHTML=review.slice(0,5).map(d=>`<div class="reviewrow"><b>${esc(d.name)}</b><time>${d.status}</time><small>${d.module} · ${esc(d.record)}</small></div>`).join('')||'<div class="empty">Nothing requires review.</div>';$('expiryList').innerHTML=certs.slice(0,5).map(d=>{const days=Math.max(0,Math.ceil((new Date(d.expiry)-new Date())/86400000));return `<div class="reviewrow"><b>${esc(d.name)}</b><time class="warn">${days} days</time><small>${esc(d.record)}</small></div>`}).join('')||'<div class="empty">No expiring certificates.</div>';$('activityList').innerHTML=docs.slice().sort((a,b)=>b.updated.localeCompare(a.updated)).slice(0,5).map(d=>`<div class="activity"><span class="dot">●</span><span><b>${esc(d.name)}</b><br><small>Updated by ${esc(d.author)}</small></span><small>${dateFmt(d.updated)}</small></div>`).join('')}
+// ══════════════ TRANSLATIONS ══════════════
+//
+// This was the seventeenth screen and the only one with no translations at all — no dictionary, no toggle,
+// and 91 strings of English in a system whose office reads Swedish and whose owner reads Macedonian. It was
+// left until last because a document register shows filenames and references, which are the same word in
+// any language. The labels around them are not.
+//
+// The selects were the trap. Every option carried its label as its value, and the label is what goes to the
+// server: `document_link_for` matches the module against 'projects', and `SETTABLE` in document-record.js
+// maps 'Draft' to the enum. Translated without a value behind it, the Swedish screen would have filed every
+// document against nothing and saved every status as a draft — silently, because both sides fall back
+// rather than refuse. So each option carries an explicit English value now and the label is only a label.
+const T={
+  en:{
+    act_folder:'Create Folder',
+    act_link:'Link to Record',
+    act_report:'Document Report',
+    act_scan:'Scan Document',
+    act_templates:'Templates',
+    act_upload:'Upload Document',
+    all_categories:'All Categories',
+    back_hub:'Hub',
+    box_text:'Link files to projects, suppliers, purchase orders, materials and quality records without duplicating uploads.',
+    box_title:'One document record',
+    btn_cancel:'Cancel',
+    btn_clear:'Clear filters',
+    btn_close:'Close',
+    btn_createfolder:'Create Folder',
+    btn_downloadfile:'Download File',
+    btn_generate:'Generate & Download',
+    btn_removefile:'Remove Stored File',
+    btn_save:'Save Document',
+    btn_savelink:'Save Link',
+    btn_upload:'Upload Document',
+    btn_viewall:'View all',
+    f_category:'Category',
+    f_expiry:'Expiry Date',
+    f_file:'File',
+    f_foldername:'Folder Name',
+    f_format:'Format',
+    f_module:'Related Module',
+    f_name:'Document Name',
+    f_notes:'Notes',
+    f_record:'Related Record',
+    f_reportname:'Report Name',
+    f_revision:'Revision',
+    f_scope:'Scope',
+    f_status:'Status',
+    f_type:'Type',
+    m_folder_sub:'Folders are shared document categories and remain visible even while empty.',
+    m_folder_t:'Create Folder',
+    m_link_t:'Link to Record',
+    m_preview_t:'Document Preview',
+    m_report_sub:'Export a real snapshot of the document register.',
+    m_report_t:'Generate Document Report',
+    m_upload_sub:'Store metadata and link this file to the correct workshop record.',
+    m_upload_t:'Upload Document',
+    mod_customers:'Customers',
+    mod_estimations:'Estimations',
+    mod_general:'General',
+    mod_projects:'Projects',
+    mod_purchasing:'Purchasing',
+    mod_quality:'Quality',
+    mod_store:'Store',
+    mod_sub:'Files, certificates & records',
+    mod_suppliers:'Suppliers',
+    mod_title:'DOCUMENTS',
+    mod_workshop:'Workshop',
+    nav_all:'All Documents',
+    nav_certificates:'Certificates',
+    nav_drawings:'Drawings',
+    nav_overview:'Documents Overview',
+    nav_projectfiles:'Project Files',
+    nav_recent:'Recent',
+    nav_review:'Review Required',
+    nav_superseded:'Superseded',
+    nav_templates:'Templates',
+    page_title:'Documents',
+    paper_metadata_only:'Metadata-only document record.',
+    ph_category:'Example: Drawings',
+    ph_record:'Example: P-2026-014',
+    role_note:'Document manager',
+    scope_all:'All active documents',
+    scope_filtered:'Current filters',
+    search_ph:'Search documents…',
+    side_activity:'Recent Activity',
+    side_expiring:'Expiring Certificates',
+    side_review:'Review Required',
+    skip:'Skip to documents',
+    st_approved:'Approved',
+    st_draft:'Draft',
+    st_valid:'Valid',
+    type_certificate:'Certificate',
+    type_document:'Document',
+    type_drawing:'Drawing',
+    type_image:'Image',
+    type_report:'Report',
+    type_template:'Template',
+    kpi_total:'Total Documents',kpi_total_sub:'Across all modules',
+    kpi_month:'Added This Month',kpi_month_sub:'This month',
+    kpi_review:'Review Required',kpi_review_sub:'Needs attention',
+    kpi_expiring:'Certificates Expiring',kpi_expiring_sub:'Within 60 days',
+    nothing_to_review:'Nothing requires review.',no_expiring:'No expiring certificates.',
+    updated_by:'Updated by {who}',days_left:'{n} days',
+    title_recent:'Recent Documents',title_of:'{what} Documents',
+    c_document:'Document',c_updated:'Updated',c_actions:'Actions',
+    btn_view:'View',more_actions:'More actions for {name}',
+    folder_empty:'This folder is empty.',no_match:'No documents match these filters.',
+    showing:'Showing {shown} of {total} documents · {folders} folders',
+    st_superseded:'Superseded',st_review_soon:'Review Soon',st_expired:'Expired',
+    f_uploadedby:'Uploaded By',
+    file_stored:'{kb} KB stored in this browser and ready to download.',
+    metadata_only:'Metadata-only record — no file content is stored.',
+    confirm_supersede:'Supersede {name}? It stays on file as the revision that was current before.',
+    yes_supersede:'Supersede',superseded_ok:'Document superseded',
+    confirm_removefile:'Remove the stored file content for {name}? The metadata record will remain.',
+    yes_removefile:'Remove file',removed_ok:'Stored file content removed',
+    no_file_stored:'No file content is stored for this document',file_downloaded:'File downloaded',
+    pick_first:'Select a document first',
+    too_large:'File is too large (maximum {kb} KB)',
+    unreadable:'The selected file could not be read',
+    saved_with_file:'Document and file saved',saved_metadata:'Document metadata saved',
+    gone:'The selected document is no longer available',link_saved:'Document link saved',
+    folder_created:'Folder created: {name}',
+    report_downloaded:'Document report downloaded ({n} records)',
+    report_not_kept:'Exported. The report definition was not kept: ',
+    default_report_name:'Document Register',
+    srv_unreachable:'The server cannot be reached.',srv_refused:'The server refused that.',
+    srv_filed_no_file:'Filed in the register. The file itself is not stored on the server yet — the record, its expiry and its revision are.',
+    srv_not_here:'That document is not in this workshop.',
+    srv_no_file_to_remove:'There is no file stored on the server to remove — the register holds the record, not the file.',
+    srv_no_table:'That is not on the workshop database yet.',
+    srv_signedout:'Signed out.',err_name:'A document name is required'
+  },
+  sv:{
+    act_folder:'Skapa mapp',act_link:'Koppla till post',act_report:'Dokumentrapport',
+    act_scan:'Skanna dokument',act_templates:'Mallar',act_upload:'Ladda upp dokument',
+    all_categories:'Alla kategorier',back_hub:'Nav',
+    box_text:'Koppla filer till projekt, leverantörer, inköpsorder, material och kvalitetsposter utan att ladda upp dem två gånger.',
+    box_title:'En dokumentpost',btn_cancel:'Avbryt',btn_clear:'Rensa filter',btn_close:'Stäng',
+    btn_createfolder:'Skapa mapp',btn_downloadfile:'Ladda ner fil',btn_generate:'Skapa & ladda ner',
+    btn_removefile:'Ta bort sparad fil',btn_save:'Spara dokument',btn_savelink:'Spara koppling',
+    btn_upload:'Ladda upp dokument',btn_viewall:'Visa alla',
+    f_category:'Kategori',f_expiry:'Utgångsdatum',f_file:'Fil',f_foldername:'Mappnamn',
+    f_format:'Format',f_module:'Tillhör modul',f_name:'Dokumentnamn',f_notes:'Anteckningar',
+    f_record:'Tillhör post',f_reportname:'Rapportnamn',f_revision:'Revision',f_scope:'Omfattning',
+    f_status:'Status',f_type:'Typ',
+    m_folder_sub:'Mappar är delade dokumentkategorier och syns även när de är tomma.',
+    m_folder_t:'Skapa mapp',m_link_t:'Koppla till post',m_preview_t:'Förhandsvisning',
+    m_report_sub:'Exportera en verklig ögonblicksbild av dokumentregistret.',
+    m_report_t:'Skapa dokumentrapport',
+    m_upload_sub:'Spara uppgifterna och koppla filen till rätt post i verkstaden.',
+    m_upload_t:'Ladda upp dokument',
+    mod_customers:'Kunder',mod_estimations:'Kalkyler',mod_general:'Allmänt',mod_projects:'Projekt',
+    mod_purchasing:'Inköp',mod_quality:'Kvalitet',mod_store:'Lager',
+    mod_sub:'Filer, certifikat & handlingar',mod_suppliers:'Leverantörer',mod_title:'DOKUMENT',
+    mod_workshop:'Verkstad',
+    nav_all:'Alla dokument',nav_certificates:'Certifikat',nav_drawings:'Ritningar',
+    nav_overview:'Dokumentöversikt',nav_projectfiles:'Projektfiler',nav_recent:'Senaste',
+    nav_review:'Kräver granskning',nav_superseded:'Ersatta',nav_templates:'Mallar',
+    page_title:'Dokument',paper_metadata_only:'Post med enbart uppgifter, ingen fil.',
+    ph_category:'Exempel: Ritningar',ph_record:'Exempel: P-2026-014',role_note:'Dokumentansvarig',
+    scope_all:'Alla aktiva dokument',scope_filtered:'Nuvarande filter',search_ph:'Sök dokument…',
+    side_activity:'Senaste händelser',side_expiring:'Certifikat som går ut',
+    side_review:'Kräver granskning',skip:'Till dokumenten',
+    st_approved:'Godkänt',st_draft:'Utkast',st_valid:'Giltigt',
+    type_certificate:'Certifikat',type_document:'Dokument',type_drawing:'Ritning',
+    type_image:'Bild',type_report:'Rapport',type_template:'Mall',
+    kpi_total:'Dokument totalt',kpi_total_sub:'Över alla moduler',
+    kpi_month:'Tillagda denna månad',kpi_month_sub:'Denna månad',
+    kpi_review:'Kräver granskning',kpi_review_sub:'Behöver ses över',
+    kpi_expiring:'Certifikat som går ut',kpi_expiring_sub:'Inom 60 dagar',
+    nothing_to_review:'Ingenting kräver granskning.',no_expiring:'Inga certifikat går ut.',
+    updated_by:'Uppdaterat av {who}',days_left:'{n} dagar',
+    title_recent:'Senaste dokumenten',title_of:'{what} — dokument',
+    c_document:'Dokument',c_updated:'Uppdaterat',c_actions:'Åtgärder',
+    btn_view:'Visa',more_actions:'Fler åtgärder för {name}',
+    folder_empty:'Den här mappen är tom.',no_match:'Inga dokument matchar dessa filter.',
+    showing:'Visar {shown} av {total} dokument · {folders} mappar',
+    st_superseded:'Ersatt',st_review_soon:'Granska snart',st_expired:'Utgånget',
+    f_uploadedby:'Uppladdat av',
+    file_stored:'{kb} KB sparat i denna webbläsare och klart att ladda ner.',
+    metadata_only:'Post med enbart uppgifter — ingen fil är sparad.',
+    confirm_supersede:'Ersätt {name}? Den ligger kvar som den revision som gällde förut.',
+    yes_supersede:'Ersätt',superseded_ok:'Dokumentet ersatt',
+    confirm_removefile:'Ta bort den sparade filen för {name}? Uppgifterna om posten ligger kvar.',
+    yes_removefile:'Ta bort fil',removed_ok:'Den sparade filen borttagen',
+    no_file_stored:'Ingen fil är sparad för detta dokument',file_downloaded:'Filen nedladdad',
+    pick_first:'Välj ett dokument först',
+    too_large:'Filen är för stor (högst {kb} KB)',
+    unreadable:'Den valda filen kunde inte läsas',
+    saved_with_file:'Dokument och fil sparade',saved_metadata:'Dokumentuppgifterna sparade',
+    gone:'Det valda dokumentet finns inte längre',link_saved:'Kopplingen sparad',
+    folder_created:'Mapp skapad: {name}',
+    report_downloaded:'Dokumentrapport nedladdad ({n} poster)',
+    report_not_kept:'Exporterad. Rapportdefinitionen sparades inte: ',
+    default_report_name:'Dokumentregister',
+    srv_unreachable:'Servern kan inte nås.',srv_refused:'Servern nekade det.',
+    srv_filed_no_file:'Registrerat. Själva filen sparas ännu inte på servern — posten, dess utgångsdatum och dess revision gör det.',
+    srv_not_here:'Det dokumentet finns inte i denna verkstad.',
+    srv_no_file_to_remove:'Det finns ingen fil sparad på servern att ta bort — registret håller posten, inte filen.',
+    srv_no_table:'Det finns ännu inte i verkstadsdatabasen.',
+    srv_signedout:'Utloggad.',err_name:'Ett dokumentnamn krävs'
+  },
+  mk:{
+    act_folder:'Создај папка',act_link:'Поврзи со запис',act_report:'Извештај за документи',
+    act_scan:'Скенирај документ',act_templates:'Шаблони',act_upload:'Прикачи документ',
+    all_categories:'Сите категории',back_hub:'Центар',
+    box_text:'Поврзи датотеки со проекти, добавувачи, налози за набавка, материјали и записи за квалитет без двојно прикачување.',
+    box_title:'Еден запис за документ',btn_cancel:'Откажи',btn_clear:'Исчисти филтри',btn_close:'Затвори',
+    btn_createfolder:'Создај папка',btn_downloadfile:'Преземи датотека',btn_generate:'Создај и преземи',
+    btn_removefile:'Отстрани зачувана датотека',btn_save:'Зачувај документ',btn_savelink:'Зачувај поврзување',
+    btn_upload:'Прикачи документ',btn_viewall:'Прикажи сите',
+    f_category:'Категорија',f_expiry:'Датум на истекување',f_file:'Датотека',f_foldername:'Име на папка',
+    f_format:'Формат',f_module:'Припаѓа на модул',f_name:'Име на документ',f_notes:'Белешки',
+    f_record:'Припаѓа на запис',f_reportname:'Име на извештај',f_revision:'Ревизија',f_scope:'Обем',
+    f_status:'Статус',f_type:'Тип',
+    m_folder_sub:'Папките се заеднички категории за документи и се видливи и кога се празни.',
+    m_folder_t:'Создај папка',m_link_t:'Поврзи со запис',m_preview_t:'Преглед на документ',
+    m_report_sub:'Извези вистинска слика на регистарот на документи.',
+    m_report_t:'Создај извештај за документи',
+    m_upload_sub:'Зачувај ги податоците и поврзи ја датотеката со вистинскиот запис во работилницата.',
+    m_upload_t:'Прикачи документ',
+    mod_customers:'Клиенти',mod_estimations:'Калкулации',mod_general:'Општо',mod_projects:'Проекти',
+    mod_purchasing:'Набавки',mod_quality:'Квалитет',mod_store:'Магацин',
+    mod_sub:'Датотеки, сертификати и записи',mod_suppliers:'Добавувачи',mod_title:'ДОКУМЕНТИ',
+    mod_workshop:'Работилница',
+    nav_all:'Сите документи',nav_certificates:'Сертификати',nav_drawings:'Цртежи',
+    nav_overview:'Преглед на документи',nav_projectfiles:'Датотеки на проекти',nav_recent:'Најнови',
+    nav_review:'Бара проверка',nav_superseded:'Заменети',nav_templates:'Шаблони',
+    page_title:'Документи',paper_metadata_only:'Запис само со податоци, без датотека.',
+    ph_category:'Пример: Цртежи',ph_record:'Пример: P-2026-014',role_note:'Одговорен за документи',
+    scope_all:'Сите активни документи',scope_filtered:'Тековни филтри',search_ph:'Пребарај документи…',
+    side_activity:'Најнова активност',side_expiring:'Сертификати што истекуваат',
+    side_review:'Бара проверка',skip:'Кон документите',
+    st_approved:'Одобрено',st_draft:'Нацрт',st_valid:'Валидно',
+    type_certificate:'Сертификат',type_document:'Документ',type_drawing:'Цртеж',
+    type_image:'Слика',type_report:'Извештај',type_template:'Шаблон',
+    kpi_total:'Вкупно документи',kpi_total_sub:'Низ сите модули',
+    kpi_month:'Додадени овој месец',kpi_month_sub:'Овој месец',
+    kpi_review:'Бараат проверка',kpi_review_sub:'Бара внимание',
+    kpi_expiring:'Сертификати што истекуваат',kpi_expiring_sub:'Во рок од 60 дена',
+    nothing_to_review:'Ништо не бара проверка.',no_expiring:'Никаков сертификат не истекува.',
+    updated_by:'Ажурирано од {who}',days_left:'{n} дена',
+    title_recent:'Најнови документи',title_of:'{what} — документи',
+    c_document:'Документ',c_updated:'Ажурирано',c_actions:'Акции',
+    btn_view:'Прикажи',more_actions:'Повеќе акции за {name}',
+    folder_empty:'Оваа папка е празна.',no_match:'Нема документи што одговараат на овие филтри.',
+    showing:'Прикажани {shown} од {total} документи · {folders} папки',
+    st_superseded:'Заменето',st_review_soon:'Провери наскоро',st_expired:'Истечено',
+    f_uploadedby:'Прикачил',
+    file_stored:'{kb} KB зачувани во овој прелистувач и готови за преземање.',
+    metadata_only:'Запис само со податоци — никаква датотека не е зачувана.',
+    confirm_supersede:'Да се замени {name}? Останува на досие како ревизијата што важела претходно.',
+    yes_supersede:'Замени',superseded_ok:'Документот е заменет',
+    confirm_removefile:'Да се отстрани зачуваната датотека за {name}? Записот со податоците останува.',
+    yes_removefile:'Отстрани датотека',removed_ok:'Зачуваната датотека е отстранета',
+    no_file_stored:'Никаква датотека не е зачувана за овој документ',file_downloaded:'Датотеката е преземена',
+    pick_first:'Прво избери документ',
+    too_large:'Датотеката е премногу голема (најмногу {kb} KB)',
+    unreadable:'Избраната датотека не можеше да се прочита',
+    saved_with_file:'Документот и датотеката се зачувани',saved_metadata:'Податоците за документот се зачувани',
+    gone:'Избраниот документ веќе не е достапен',link_saved:'Поврзувањето е зачувано',
+    folder_created:'Папката е создадена: {name}',
+    report_downloaded:'Извештајот за документи е преземен ({n} записи)',
+    report_not_kept:'Извезено. Дефиницијата на извештајот не е зачувана: ',
+    default_report_name:'Регистар на документи',
+    srv_unreachable:'Серверот не е достапен.',srv_refused:'Серверот го одби тоа.',
+    srv_filed_no_file:'Внесено во регистарот. Самата датотека сѐ уште не се чува на серверот — записот, неговото истекување и неговата ревизија се чуваат.',
+    srv_not_here:'Тој документ го нема во оваа работилница.',
+    srv_no_file_to_remove:'Нема датотека зачувана на серверот за отстранување — регистарот го држи записот, не датотеката.',
+    srv_no_table:'Тоа сѐ уште не е во базата на работилницата.',
+    srv_signedout:'Одјавено.',err_name:'Потребно е име на документ'
+  }
+};
+let currentLang='en';
+function tr(key){const d=T[currentLang]||T.en;return (d[key]!==undefined?d[key]:(T.en[key]!==undefined?T.en[key]:key));}
+function tpl(key,vals){return String(tr(key)).replace(/\{(\w+)\}/g,(m,k)=>(vals&&vals[k]!=null)?vals[k]:m);}
+
+// The words the register stores, translated for the eye and never for a comparison.
+//
+// `status`, `module` and `type` arrive from the server in English and the screen filters and saves on those
+// same English words — `currentView==='Certificate'`, `d.status!=='Superseded'`. So the translation happens
+// where the word is printed and nowhere else. A dictionary lookup inside a filter is how a Swedish screen
+// would have shown an empty register.
+const STATUS_KEY={'Draft':'st_draft','Valid':'st_valid','Approved':'st_approved',
+  'Superseded':'st_superseded','Review Soon':'st_review_soon','Expired':'st_expired'};
+const MODULE_KEY={Projects:'mod_projects',Purchasing:'mod_purchasing',Suppliers:'mod_suppliers',
+  Customers:'mod_customers',Estimations:'mod_estimations',Quality:'mod_quality',Store:'mod_store',
+  Workshop:'mod_workshop',General:'mod_general'};
+const TYPE_KEY={Document:'type_document',Certificate:'type_certificate',Drawing:'type_drawing',
+  Report:'type_report',Template:'type_template',Image:'type_image'};
+const word=(map,v)=>(map[v]?tr(map[v]):(v==null?'':String(v)));
+const statusWord=s=>word(STATUS_KEY,s);
+const moduleWord=m=>word(MODULE_KEY,m);
+const typeWord=t=>word(TYPE_KEY,t);
+
+function setLang(code){
+  currentLang=T[code]?code:'en';
+  document.querySelectorAll('[data-i]').forEach(el=>{const v=tr(el.getAttribute('data-i'));if(v!=null)el.textContent=v;});
+  document.querySelectorAll('[data-i-ph]').forEach(el=>{const v=tr(el.getAttribute('data-i-ph'));el.placeholder=v;el.setAttribute('aria-label',v);});
+  // `mk` rather than `mk-Latn`: the Macedonian here is Cyrillic, and `lang` is what a screen reader takes
+  // its voice from and the browser its font and spell-checker.
+  document.documentElement.lang=currentLang;
+  document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===currentLang));
+  const cur=$('langcur');if(cur)cur.textContent=currentLang.toUpperCase();
+  try{localStorage.setItem('varmak.documents.lang',currentLang);}catch(e){}
+  // Everything the table and the panels build is built in script, so the sweep above cannot reach it.
+  render();
+  // After the sweep, because the session badge carries no data-i but the row it sits in does: a dictionary
+  // entry over a welder's name is the bug eleven other pages had, and it came back on a language switch.
+  if(window.WorkshopUI&&window.WorkshopUI.paintWhoIsSignedIn)window.WorkshopUI.paintWhoIsSignedIn();
+}
+function render(){const cats=[...new Set(docs.map(d=>d.category).concat(folders.filter(f=>!f.archived).map(f=>f.name)))].filter(Boolean).sort(),old=$('category').value;$('category').innerHTML='<option value="all">'+esc(tr('all_categories'))+'</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');$('category').value=cats.includes(old)?old:'all';const rows=filtered();$('tableTitle').textContent=currentView==='all'?tr('nav_all'):currentView==='recent'?tr('title_recent'):currentView==='review'?tr('nav_review'):tpl('title_of',{what:currentView});$('table').innerHTML=rows.length?`<table><thead><tr><th>${esc(tr('c_document'))}</th><th>${esc(tr('f_type'))}</th><th>${esc(tr('f_module'))}</th><th>${esc(tr('f_record'))}</th><th>${esc(tr('f_category'))}</th><th>${esc(tr('c_updated'))}</th><th>${esc(tr('f_status'))}</th><th>${esc(tr('c_actions'))}</th></tr></thead><tbody>${rows.map(d=>`<tr class="${d.id===selected?'selected':''}"><td><div class="docname"><span class="fileicon ${iconClass(d)}">${d.name.split('.').pop().slice(0,3).toUpperCase()}</span><b>${esc(d.name)}</b></div></td><td>${esc(typeWord(d.type))}</td><td>${esc(moduleWord(d.module))}</td><td class="record">${esc(d.record)}</td><td>${esc(d.category)}</td><td>${dateFmt(d.updated)}<br><small>${new Date(d.updated).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})}</small></td><td>${statusTag(d.status)}</td><td><div class="rowactions"><button class="mini" onclick="preview(${d.id})">${esc(tr('btn_view'))}</button><button class="mini" aria-label="${esc(tpl('more_actions',{name:d.name}))}" onclick="supersedeDoc(${d.id})">⋮</button></div></td></tr>`).join('')}</tbody></table>`:`<div class="empty">${$('category').value!=='all'&&folders.some(f=>!f.archived&&f.name===$('category').value)?tr('folder_empty'):tr('no_match')}</div>`;$('count').textContent=tpl('showing',{shown:rows.length,total:docs.filter(d=>d.status!=='Superseded').length,folders:folders.filter(f=>!f.archived).length});renderSummary()}
+function renderSummary(){const review=docs.filter(d=>['Review Soon','Expired'].includes(d.status)),certs=docs.filter(d=>d.type==='Certificate'&&d.expiry&&d.status!=='Expired'),month=docs.filter(d=>d.updated.slice(0,7)===new Date().toISOString().slice(0,7));$('kpis').innerHTML=[['▧',tr('kpi_total'),docs.filter(d=>d.status!=='Superseded').length,tr('kpi_total_sub'),''],['□',tr('kpi_month'),month.length,tr('kpi_month_sub'),'good'],['!',tr('kpi_review'),review.length,tr('kpi_review_sub'),'warn'],['◇',tr('kpi_expiring'),certs.length,tr('kpi_expiring_sub'),'warn']].map((k,i)=>`<article class="panel kpi" style="animation-delay:${i*.05}s"><div class="label"><span class="icon">${k[0]}</span>${esc(k[1])}</div><strong>${k[2]}</strong><small class="${k[4]}">${esc(k[3])}</small></article>`).join('');$('reviewList').innerHTML=review.slice(0,5).map(d=>`<div class="reviewrow"><b>${esc(d.name)}</b><time>${esc(statusWord(d.status))}</time><small>${esc(moduleWord(d.module))} · ${esc(d.record)}</small></div>`).join('')||`<div class="empty">${esc(tr('nothing_to_review'))}</div>`;$('expiryList').innerHTML=certs.slice(0,5).map(d=>{const days=Math.max(0,Math.ceil((new Date(d.expiry)-new Date())/86400000));return `<div class="reviewrow"><b>${esc(d.name)}</b><time class="warn">${esc(tpl('days_left',{n:days}))}</time><small>${esc(d.record)}</small></div>`}).join('')||`<div class="empty">${esc(tr('no_expiring'))}</div>`;$('activityList').innerHTML=docs.slice().sort((a,b)=>b.updated.localeCompare(a.updated)).slice(0,5).map(d=>`<div class="activity"><span class="dot">●</span><span><b>${esc(d.name)}</b><br><small>${esc(tpl('updated_by',{who:d.author}))}</small></span><small>${dateFmt(d.updated)}</small></div>`).join('')}
 function setView(v){currentView=v;document.querySelectorAll('.nav button[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));render();document.getElementById('main').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})}function clearFilters(){currentView='all';$('search').value='';$('category').value='all';document.querySelectorAll('.nav button[data-view]').forEach((b,i)=>b.classList.toggle('on',i===0));render()}
-function openUpload(scan=false){$('uploadTitle').textContent=scan?'Scan Document':'Upload Document';$('uploadModal').classList.add('show');requestAnimationFrame(()=>$('file').focus())}function closeModal(id){$(id).classList.remove('show')}
+function openUpload(scan=false){$('uploadTitle').textContent=scan?tr('act_scan'):tr('m_upload_t');$('uploadModal').classList.add('show');requestAnimationFrame(()=>$('file').focus())}function closeModal(id){$(id).classList.remove('show')}
 // Pass 3.31: the footer's old Link action only displayed a success-sounding toast. A selected
 // document already has real module/record fields, so edit those through WorkshopData instead.
-function openLink(){const d=docs.find(x=>x.id===selected);if(!d){notify('Select a document first');return;}$('linkDocumentName').textContent=d.name;$('linkModule').value=d.module||'Projects';$('linkRecord').value=d.record==='Unlinked'?'':(d.record||'');$('linkModal').classList.add('show');requestAnimationFrame(()=>$('linkRecord').focus())}
+function openLink(){const d=docs.find(x=>x.id===selected);if(!d){notify(tr('pick_first'));return;}$('linkDocumentName').textContent=d.name;$('linkModule').value=d.module||'Projects';$('linkRecord').value=d.record==='Unlinked'?'':(d.record||'');$('linkModal').classList.add('show');requestAnimationFrame(()=>$('linkRecord').focus())}
 function openFolder(){$('folderModal').classList.add('show');requestAnimationFrame(()=>$('folderName').focus())}function openDocumentReport(){$('reportModal').classList.add('show');requestAnimationFrame(()=>$('reportName').focus())}
-function preview(id){selected=id;const d=docs.find(x=>x.id===id);$('previewTitle').textContent='Document Preview';$('previewSub').textContent=d.name;$('paperName').textContent=d.name;$('paperMessage').textContent=d.fileData?`${Math.max(1,Math.ceil((d.fileSize||0)/1024))} KB stored in this browser and ready to download.`:'Metadata-only record — no file content is stored.';$('downloadBtn').disabled=!d.fileData;$('removeFileBtn').style.display=d.fileData?'':'none';$('previewMeta').innerHTML=[['Type',d.type],['Related Module',d.module],['Related Record',d.record],['Category',d.category],['Status',d.status],['Revision',d.revision],['Updated',dateFmt(d.updated)],['Uploaded By',d.author]].map(r=>`<div class="metarow"><small>${r[0]}</small><b>${esc(r[1])}</b></div>`).join('');$('previewModal').classList.add('show');render()}function supersedeDoc(id){const d=docs.find(x=>x.id===id);wConfirm(`Supersede ${d.name}? It stays on file as the revision that was current before.`,async ()=>{const done=await WorkshopData.archiveDocument(id);if(done&&done.error){notify(done.error);return;}refreshDocs();render();notify('Document superseded')},{yes:'Supersede',danger:true})}
+function preview(id){selected=id;const d=docs.find(x=>x.id===id);$('previewTitle').textContent=tr('m_preview_t');$('previewSub').textContent=d.name;$('paperName').textContent=d.name;$('paperMessage').textContent=d.fileData?tpl('file_stored',{kb:Math.max(1,Math.ceil((d.fileSize||0)/1024))}):tr('metadata_only');$('downloadBtn').disabled=!d.fileData;$('removeFileBtn').style.display=d.fileData?'':'none';$('previewMeta').innerHTML=[[tr('f_type'),typeWord(d.type)],[tr('f_module'),moduleWord(d.module)],[tr('f_record'),d.record],[tr('f_category'),d.category],[tr('f_status'),statusWord(d.status)],[tr('f_revision'),d.revision],[tr('c_updated'),dateFmt(d.updated)],[tr('f_uploadedby'),d.author]].map(r=>`<div class="metarow"><small>${r[0]}</small><b>${esc(r[1])}</b></div>`).join('');$('previewModal').classList.add('show');render()}function supersedeDoc(id){const d=docs.find(x=>x.id===id);wConfirm(tpl('confirm_supersede',{name:d.name}),async ()=>{const done=await WorkshopData.archiveDocument(id);if(done&&done.error){notify(done.error);return;}refreshDocs();render();notify(tr('superseded_ok'))},{yes:tr('yes_supersede'),danger:true})}
 function downloadBlob(content,type,filename){const blob=content instanceof Blob?content:new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function downloadSelected(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData){notify('No file content is stored for this document');return;}const a=document.createElement('a');a.href=d.fileData;a.download=d.fileName||d.name;document.body.appendChild(a);a.click();a.remove();notify('File downloaded')}
-function removeSelectedFile(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData)return;wConfirm(`Remove the stored file content for ${d.name}? The metadata record will remain.`,async ()=>{const done=await WorkshopData.removeDocumentContent(d.id);if(done&&done.error){notify(done.error);return;}refreshDocs();preview(d.id);notify('Stored file content removed')},{yes:'Remove file',danger:true})}
+function downloadSelected(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData){notify(tr('no_file_stored'));return;}const a=document.createElement('a');a.href=d.fileData;a.download=d.fileName||d.name;document.body.appendChild(a);a.click();a.remove();notify(tr('file_downloaded'))}
+function removeSelectedFile(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData)return;wConfirm(tpl('confirm_removefile',{name:d.name}),async ()=>{const done=await WorkshopData.removeDocumentContent(d.id);if(done&&done.error){notify(done.error);return;}refreshDocs();preview(d.id);notify(tr('removed_ok'))},{yes:tr('yes_removefile'),danger:true})}
 function csvCell(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}function documentCsv(rows){const fields=['name','type','module','record','category','status','revision','updated','author'];return [fields.join(','),...rows.map(d=>fields.map(k=>csvCell(d[k])).join(','))].join('\r\n')}
-$('file').onchange=e=>{if(e.target.files[0]&&!$('docName').value)$('docName').value=e.target.files[0].name};$('uploadForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),file=$('file').files[0];if(file&&file.size>WorkshopData.maxDocumentFileBytes){notify(`File is too large (maximum ${Math.round(WorkshopData.maxDocumentFileBytes/1024)} KB)`);return;}let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);if(file&&fileData===null){notify('The selected file could not be read');return;}const saved=await WorkshopData.upsertDocument({name:f.name,type:f.type,module:f.module,record:f.record||'Unlinked',category:f.category||'General',status:f.status,expiry:f.expiry,revision:f.revision||'1',notes:f.notes,author:currentUser(),fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('uploadModal');e.target.reset();render();notify(file?'Document and file saved':'Document metadata saved')};$('linkForm').onsubmit=async e=>{e.preventDefault();const d=docs.find(x=>x.id===selected);if(!d){closeModal('linkModal');notify('The selected document is no longer available');return;}const f=Object.fromEntries(new FormData(e.target)),record=f.record.trim();if(!record){$('linkRecord').focus();return;}const saved=await WorkshopData.updateDocument(d.id,{module:f.module,record});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('linkModal');render();notify('Document link saved')};$('folderForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),saved=WorkshopData.upsertDocumentFolder({name:f.name,module:f.module,record:f.record||'General',author:currentUser()});if(saved.error){notify(saved.error);return;}refreshDocs();closeModal('folderModal');e.target.reset();$('folderRecord').value='General';render();$('category').value=saved.name;render();notify(`Folder created: ${saved.name}`)};$('reportForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),rows=f.scope==='all'?docs.filter(d=>d.status!=='Superseded'):filtered(),stamp=new Date().toISOString(),base=(f.name.trim()||'Document Register').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'')||'document-register';if(f.format==='json')downloadBlob(JSON.stringify({name:f.name||'Document Register',generatedAt:stamp,documents:rows},null,2),'application/json',base+'.json');else downloadBlob('\ufeff'+documentCsv(rows),'text/csv;charset=utf-8',base+'.csv');const kept=WorkshopData.saveReport({name:f.name||'Document Register',category:'Documents',section:'saved',type:'document-export',format:f.format,rowCount:rows.length,generatedAt:stamp,filters:{view:currentView,category:$('category').value,search:$('search').value},favourite:false,archived:false});
+$('file').onchange=e=>{if(e.target.files[0]&&!$('docName').value)$('docName').value=e.target.files[0].name};$('uploadForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),file=$('file').files[0];if(file&&file.size>WorkshopData.maxDocumentFileBytes){notify(tpl('too_large',{kb:Math.round(WorkshopData.maxDocumentFileBytes/1024)}));return;}let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);if(file&&fileData===null){notify(tr('unreadable'));return;}const saved=await WorkshopData.upsertDocument({name:f.name,type:f.type,module:f.module,record:f.record||'Unlinked',category:f.category||'General',status:f.status,expiry:f.expiry,revision:f.revision||'1',notes:f.notes,author:currentUser(),fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('uploadModal');e.target.reset();render();notify(file?tr('saved_with_file'):tr('saved_metadata'))};$('linkForm').onsubmit=async e=>{e.preventDefault();const d=docs.find(x=>x.id===selected);if(!d){closeModal('linkModal');notify(tr('gone'));return;}const f=Object.fromEntries(new FormData(e.target)),record=f.record.trim();if(!record){$('linkRecord').focus();return;}const saved=await WorkshopData.updateDocument(d.id,{module:f.module,record});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('linkModal');render();notify(tr('link_saved'))};$('folderForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),saved=WorkshopData.upsertDocumentFolder({name:f.name,module:f.module,record:f.record||'General',author:currentUser()});if(saved.error){notify(saved.error);return;}refreshDocs();closeModal('folderModal');e.target.reset();$('folderRecord').value='General';render();$('category').value=saved.name;render();notify(tpl('folder_created',{name:saved.name}))};$('reportForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),rows=f.scope==='all'?docs.filter(d=>d.status!=='Superseded'):filtered(),stamp=new Date().toISOString(),base=(f.name.trim()||'Document Register').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'')||'document-register';if(f.format==='json')downloadBlob(JSON.stringify({name:f.name||'Document Register',generatedAt:stamp,documents:rows},null,2),'application/json',base+'.json');else downloadBlob('\ufeff'+documentCsv(rows),'text/csv;charset=utf-8',base+'.csv');const kept=WorkshopData.saveReport({name:f.name||'Document Register',category:'Documents',section:'saved',type:'document-export',format:f.format,rowCount:rows.length,generatedAt:stamp,filters:{view:currentView,category:$('category').value,search:$('search').value},favourite:false,archived:false});
   // The file has already downloaded by this point, which is what was asked for. Keeping the report's own
   // definition is the extra, and saved reports have no table — the Reports screen refuses them out loud
   // too. Said rather than swallowed: a refusal nobody is told about is the same as no refusal.
-  if(kept&&kept.error)notify('Exported. The report definition was not kept: '+kept.error);closeModal('reportModal');render();notify(`Document report downloaded (${rows.length} records)`)};function notify(m){$('toast').textContent=m;$('toast').classList.add('show');clearTimeout(window.tt);window.tt=setTimeout(()=>$('toast').classList.remove('show'),2200)}
+  if(kept&&kept.error)notify(tr('report_not_kept')+kept.error);closeModal('reportModal');render();notify(tpl('report_downloaded',{n:rows.length}))};function notify(m){$('toast').textContent=m;$('toast').classList.add('show');clearTimeout(window.tt);window.tt=setTimeout(()=>$('toast').classList.remove('show'),2200)}
 document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));$('search').oninput=render;$('category').onchange=render;document.querySelectorAll('.modal').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('show')});document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'))});if(!matchMedia('(prefers-reduced-motion:reduce)').matches){for(let i=0;i<16;i++){const e=document.createElement('i');e.className='ember';e.style.left=Math.random()*100+'%';e.style.setProperty('--drift',(Math.random()*80-40)+'px');const d=7+Math.random()*9;e.style.animationDuration=d+'s';e.style.animationDelay=(-Math.random()*d)+'s';const s=1+Math.random()*2;e.style.width=s+'px';e.style.height=s+'px';$('embers').appendChild(e)}}
 // ── The register on the database ──────────────────────────────────────────────────────────────────
 //
@@ -71,7 +407,7 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
   async function refresh(){
     const answer=await WorkshopApi.snapshot();
     if(answer.signedOut){location.href='login.html';return false;}
-    if(answer.offline||answer.failed){notify(answer.failed||'The server cannot be reached.');return false;}
+    if(answer.offline||answer.failed){notify(answer.failed||tr('srv_unreachable'));return false;}
     // Shaped on the way in, so `record` reads 'Unlinked' where the database says nothing and `_server`
     // keeps the whole row: this screen shows nine of a document's fields and saves through a form with
     // eight, and a page that shows a subset of a record must not save a subset of it.
@@ -85,8 +421,8 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
   function send(name,body){
     const mine=sending.then(async ()=>{
       const answer=await WorkshopApi.call(name,body);
-      if(answer.signedOut){location.href='login.html';return {error:'Signed out.'};}
-      if(!answer.ok){await refresh();return {error:answer.refused||'The server refused that.'};}
+      if(answer.signedOut){location.href='login.html';return {error:tr('srv_signedout')};}
+      if(!answer.ok){await refresh();return {error:answer.refused||tr('srv_refused')};}
       await refresh();
       return {result:answer.result};
     }).catch(e=>({error:String(e&&e.message||e)}));
@@ -99,7 +435,7 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
 
   const SENT={
     async upsertDocument(payload){
-      if(!payload||!payload.name)return {error:'A document name is required'};
+      if(!payload||!payload.name)return {error:tr('err_name')};
       const held=payload.id!=null?heldById(payload.id):null;
       const answer=await send('save_document',DocumentRecord.toServer(payload,held));
       if(answer.error)return {error:answer.error};
@@ -107,15 +443,14 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
       // Said once, on the save, rather than left for somebody to discover when the download button does
       // nothing: the register has the record and the server has no file.
       if(DocumentRecord.carriesAFile(payload)){
-        notify('Filed in the register. The file itself is not stored on the server yet — '
-          + 'the record, its expiry and its revision are.');
+        notify(tr('srv_filed_no_file'));
       }
       return saved||{id:answer.result};
     },
 
     async updateDocument(id,patch){
       const held=heldById(id);
-      if(!held)return {error:'That document is not in this workshop.'};
+      if(!held)return {error:tr('srv_not_here')};
       // A patch that only moves the link goes through the function made for it, so correcting where a
       // certificate belongs cannot lose its expiry date on the way past.
       const keys=Object.keys(patch||{});
@@ -133,8 +468,7 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
     },
 
     async removeDocumentContent(){
-      return {error:'There is no file stored on the server to remove — the register holds the record, '
-        + 'not the file.'};
+      return {error:tr('srv_no_file_to_remove')};
     },
 
     // No getDocuments here on purpose: refreshDocs() assigns it straight to the variable every render
@@ -154,7 +488,7 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
     WorkshopData[name]=function(){
       if(!onServer())return original[name].apply(null,arguments);
       if(SENT[name])return SENT[name].apply(null,arguments);
-      return {error:'That is not on the workshop database yet.'};
+      return {error:tr('srv_no_table')};
     };
   });
 
@@ -171,5 +505,16 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
 // Refresh from shared data whenever another module (or another tab) changes it, rather than
 // keeping a page-level copy that could go stale or overwrite newer shared state.
 window.addEventListener('workshop:data',()=>{refreshDocs();render();});
+
+// The language, last, because setLang() re-renders and the register has to be there to re-render. Kept in
+// this browser rather than pushed at the database: which language somebody reads in is theirs, not the
+// workshop's, and the other sixteen pages keep it the same way.
+$('langtoggle').addEventListener('click',()=>$('langc').classList.toggle('open'));
+document.addEventListener('click',e=>{if(!$('langc').contains(e.target))$('langc').classList.remove('open');});
+document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{
+  setLang(b.getAttribute('data-lang'));$('langc').classList.remove('open');
+}));
 render();
+(function(){let held=null;try{held=localStorage.getItem('varmak.documents.lang');}catch(e){}
+  setLang(held&&T[held]?held:'en');})();
 </script></body></html>
