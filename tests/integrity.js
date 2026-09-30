@@ -275,6 +275,68 @@ function screensThatCallTheirRecordsADemonstration(source, file) {
   return [...new Set(wrong)];
 }
 
+// The keys of one dictionary body, by walking it rather than by matching a pattern.
+//
+// A pattern was the first version and it found keys that were not there: a value written as
+// `"…about this: " + "…"` gives a regex `this: "` to match, so `this`, `detta`, `kept` and `refused` were
+// all reported as keys in one language and not another. Quoted text has to be stepped over, and a key only
+// counts at the top level of the block — anything deeper belongs to a nested object.
+function keysIn(body) {
+  const keys = new Set();
+  let depth = 0;
+  let i = 0;
+  while (i < body.length) {
+    const c = body[i];
+    if (c === "'" || c === '"' || c === '`') {
+      const quote = c;
+      i += 1;
+      while (i < body.length && body[i] !== quote) { if (body[i] === '\\') i += 1; i += 1; }
+      i += 1;
+      continue;
+    }
+    if (c === '{' || c === '[' || c === '(') { depth += 1; i += 1; continue; }
+    if (c === '}' || c === ']' || c === ')') { depth -= 1; i += 1; continue; }
+    if (depth === 0 && /[A-Za-z_'"]/.test(c)) {
+      const named = /^'([\w-]+)'\s*:|^"([\w-]+)"\s*:|^([A-Za-z_][\w]*)\s*:/.exec(body.slice(i, i + 64));
+      if (named) {
+        keys.add(named[1] || named[2] || named[3]);
+        i += named[0].length;
+        continue;
+      }
+    }
+    i += 1;
+  }
+  return keys;
+}
+
+// The three languages hold the same keys.
+//
+// The general rule the two findings above broke, and it became checkable only once `translationTables` read
+// every block on a page. Estimations had seven keys in English alone — the hold reasons — and the form falls
+// back to `t["hr_"+r] || r`, so the Swedish and Macedonian dropdowns offered "material", "customer",
+// "drawing". Equipment had one key in MACEDONIAN alone, `roleBadge: 'Админ'`, which is the exact string the
+// session-badge check exists to stop, sitting where that check could not see it.
+//
+// A key in one language and not another is a label that reads as its own name, or as English, to whoever
+// opens the other one.
+function languagesOutOfStep(source) {
+  const keysOf = new Map();
+  for (const { lang, body } of translationTables(source)) {
+    if (!keysOf.has(lang)) keysOf.set(lang, new Set());
+    for (const key of keysIn(body)) keysOf.get(lang).add(key);
+  }
+  if (keysOf.size < 2) return [];
+  const said = [];
+  const langs = [...keysOf.keys()];
+  const union = new Set(langs.flatMap((l) => [...keysOf.get(l)]));
+  for (const key of union) {
+    const has = langs.filter((l) => keysOf.get(l).has(key));
+    if (has.length === langs.length) continue;
+    said.push(`${key} is only in ${has.join(' and ')}`);
+  }
+  return said;
+}
+
 // ── Live checks: things only the rendered page can answer ──────────────────────────────────
 
 async function liveDuplicateIds(page) {
@@ -381,6 +443,11 @@ async function checkPage(context, baseUrl, file, failures) {
   const deadPrompts = promptsThatGoNowhere(source);
   if (deadPrompts.length) {
     fail(`${deadPrompts.join('; ')} — the box opens and OK does nothing`);
+  }
+  const lopsided = languagesOutOfStep(source);
+  if (lopsided.length) {
+    fail(`a key in one language and not the others: ${lopsided.slice(0, 8).join('; ')}`
+      + ' — whoever opens the other language reads the key, or English');
   }
   const pretendingToBeADemo = screensThatCallTheirRecordsADemonstration(source, file);
   if (pretendingToBeADemo.length) {
