@@ -58,7 +58,10 @@ function duplicateFunctionDeclarations(source) {
 // a naive scan stops at the first one.
 function translationTables(source) {
   const tables = [];
-  for (const table of source.matchAll(/\n\s*(en|sv|mk):\{/g)) {
+  // `Object.assign(T.mk, {…})` is a table too — Marketing extends all three languages that way and Store
+  // does it thirteen times. Left out, as it was, the duplicate-key check, the placeholder check and the
+  // demonstration check all read part of a page and reported the whole of it clean.
+  for (const table of source.matchAll(/\n\s*(?:(en|sv|mk):\{|Object\.assign\(\s*T\.(en|sv|mk)\s*,\s*\{)/g)) {
     let depth = 1;
     let i = table.index + table[0].length;
     const start = i;
@@ -76,7 +79,7 @@ function translationTables(source) {
       }
       i += 1;
     }
-    tables.push({ lang: table[1], body: source.slice(start, i - 1) });
+    tables.push({ lang: table[1] || table[2], body: source.slice(start, i - 1) });
   }
   return tables;
 }
@@ -211,17 +214,24 @@ const MAY_SAY_DEMONSTRATION = new Map([
   // The pair the page picks between at paint time. The demo half is shown only on browser storage.
   ['reporting_status_text', 'shown only when the snapshot did come from browser storage'],
   ['print_from_browser', 'the printed provenance line, shown only on browser storage'],
+  ['json_from_browser', 'the same line in an exported file, shown only on browser storage'],
   // The demonstration state the data layer ships, described where it is described.
   ['demo_reset', 'the control that puts the demonstration data back'],
-  ['demo_state', 'a description of the demonstration state itself']
+  ['demo_state', 'a description of the demonstration state itself'],
+  // The prospect sweep, which genuinely is a stub: nothing is searched, the findings are fixed examples
+  // and every source link points at an address that is not a page. That notice is the honest one on the
+  // screen and has to stay until there is a real sweep behind it.
+  ['fd_demo_t', 'the sample-findings notice on Marketing, where the sweep really is fixed examples'],
+  ['fd_demo_p', 'the same notice, explaining that nothing was searched and the links are not pages'],
+  ['fd_sample', 'the badge on a finding that came from the sample rather than from a sweep']
 ]);
 const SAYS_DEMONSTRATION = /\b(prototype|prototyp|demonstration|demo|демо|прототип)\b/i;
 
 function screensThatCallTheirRecordsADemonstration(source, file) {
   const wrong = [];
   for (const { lang, body } of translationTables(source)) {
-    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*'((?:\\.|[^'\\])*)'/g)) {
-      const [, key, value] = entry;
+    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*(['"])((?:\\.|(?!\2)[^\\])*)\2/g)) {
+      const [, key, , value] = entry;
       if (MAY_SAY_DEMONSTRATION.has(key)) continue;
       // A category somebody picks from a list — a lead wanting a prototype made — is the word as a noun
       // about the customer's work, not a claim about this software. Those are one word long.
@@ -229,6 +239,38 @@ function screensThatCallTheirRecordsADemonstration(source, file) {
       if (!SAYS_DEMONSTRATION.test(value)) continue;
       wrong.push(`${lang}:${key}`);
     }
+  }
+  // And the same words written straight into the script rather than into a dictionary.
+  //
+  // The first version of this check looked only at the dictionaries, and Quality's printed sheet said
+  // "Report status: Demonstration data." from a template literal three characters after the provenance
+  // line that had just been corrected in the same edit. The check passed the page while the sheet a
+  // customer or an auditor is handed still carried it.
+  //
+  // Comments are the one exception, because the reasoning about why a line was wrong has to be allowed
+  // to quote it — and every one of them in this project does.
+  // What the allow-listed keys actually say, so the same sentence is not reported twice: a value the
+  // dictionary is allowed to hold is allowed to appear in the script, because that is where the page reads
+  // it back out to print it.
+  const allowed = new Set();
+  for (const { body } of translationTables(source)) {
+    for (const entry of body.matchAll(/(?:^|[\s,{])'?([A-Za-z_][\w]*)'?\s*:\s*(['"])((?:\\.|(?!\2)[^\\])*)\2((?:\s*\+\s*(['"])(?:\\.|(?!\5)[^\\])*\5)*)/g)) {
+      if (!MAY_SAY_DEMONSTRATION.has(entry[1])) continue;
+      // Each fragment of a value written as `"a" + "b"`, because the script prints them back one at a time
+      // and a whole-value comparison would not match any of them.
+      allowed.add(entry[3]);
+      for (const part of (entry[4] || '').matchAll(/(['"])((?:\\.|(?!\1)[^\\])*)\1/g)) allowed.add(part[2]);
+    }
+  }
+  const script = source.replace(/<style[\s\S]*?<\/style>/g, '')
+    .split('\n').map((line) => line.replace(/^\s*(\/\/|\*|\/\*).*$/, '')).join('\n');
+  for (const held of script.matchAll(/([`'"])((?:\\.|(?!\1)[^\\\n])*)\1/g)) {
+    const value = held[2];
+    if (!/\s/.test(value) || !SAYS_DEMONSTRATION.test(value)) continue;
+    if (allowed.has(value)) continue;
+    // A `data-i` key's own default text lives in the markup and is checked as a dictionary value above;
+    // what is left here is a sentence the script writes for itself.
+    wrong.push(`in the script: ${JSON.stringify(value.slice(0, 60))}`);
   }
   return [...new Set(wrong)];
 }
@@ -571,22 +613,44 @@ const STAYS_LATIN = new Set([
 const CYRILLIC = /[Ѐ-ӿ]/;
 const A_PLACEHOLDER_ONLY = /^[\s\d%{}()\[\]<>→≥≤.,:;·—–…+\-*/]*$/;
 
+// Every Macedonian dictionary on a page, as the source text of each.
+//
+// Three shapes, and the third is the one that was missed: `mk:{…}` inside one object, `T.mk = {…}`, and
+// `Object.assign(T.mk, {…})`, which Marketing uses once and Store thirteen times. Braces are walked rather
+// than matched, because the values contain braces — "Hold {reason}" — and quoted text is skipped so a brace
+// inside a string cannot end the block early.
+function macedonianBlocks(source) {
+  const blocks = [];
+  for (const opened of source.matchAll(/(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{|Object\.assign\(\s*T\.mk\s*,\s*\{)/g)) {
+    let i = source.indexOf('{', opened.index);
+    let depth = 0;
+    for (; i < source.length; i += 1) {
+      const c = source[i];
+      if (c === '{') depth += 1;
+      else if (c === '}') { depth -= 1; if (!depth) break; }
+      else if (c === "'" || c === '"' || c === '`') {
+        const quote = c;
+        i += 1;
+        while (i < source.length && source[i] !== quote) { if (source[i] === '\\') i += 1; i += 1; }
+      }
+    }
+    blocks.push(source.slice(source.indexOf('{', opened.index), i + 1));
+  }
+  return blocks;
+}
+
 function theMacedonianIsCyrillic(failures) {
   let checked = 0;
   for (const file of appPages()) {
     const source = readPage(file);
-    // The mk dictionary, by walking braces from its opening one rather than by matching to a close — these
-    // objects contain braces inside their strings.
-    const opened = /(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{)/.exec(source);
-    if (!opened) continue;
-    let at = source.indexOf('{', opened.index);
-    let depth = 0;
-    let end = at;
-    for (; end < source.length; end += 1) {
-      if (source[end] === '{') depth += 1;
-      else if (source[end] === '}') { depth -= 1; if (!depth) break; }
-    }
-    const block = source.slice(at, end + 1);
+    // EVERY mk dictionary on the page, by walking braces from each opening one rather than by matching to a
+    // close — these objects contain braces inside their strings.
+    //
+    // Every one, because the first version took the first and stopped. Marketing extends all three
+    // languages with `Object.assign(T.mk, {…})` — 88 keys — and Store does it thirteen times, and none of
+    // that was ever read: not by this check, not by `tools/dicts.js`, and so not by the conversion either.
+    // 88 Macedonian strings sat in Latin transliteration on a screen this suite reported clean.
+    for (const block of macedonianBlocks(source)) {
     for (const found of block.matchAll(/(?<!\\)(["'])((?:\\.|(?!\1)[^\\])*)\1/g)) {
       const value = found[2];
       // A quoted KEY, not a value: the keys with a hyphen in them have to be quoted, and `nt_machine-problem`
@@ -618,6 +682,7 @@ function theMacedonianIsCyrillic(failures) {
         failures.push(`${file} has a half-converted Macedonian string: ${JSON.stringify(value.slice(0, 60))}`
           + ` — ${JSON.stringify(stillLatin.slice(0, 4))} is Latin inside Cyrillic, which reads as neither`);
       }
+    }
     }
   }
   if (!failures.length) {

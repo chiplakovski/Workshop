@@ -36,16 +36,24 @@ function oneObjectDict(code) {
 function dictsIn(file) {
   const src = fs.readFileSync(file, 'utf8');
   const scripts = [...src.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
+  // The T path first, because it MERGES the extension blocks and the single-object path does not. Asked
+  // the other way round — which is how it was first written — Marketing returned its `const T={…}` literal
+  // and stopped, so the 88 keys each `Object.assign` adds were read by nothing.
   for (const code of scripts) {
-    const single = oneObjectDict(code);
-    if (single) return single;
     if (!/\bT\s*[=.]/.test(code)) continue;
     // Everything up to and including the last assignment into T — enough to build the dictionaries and
     // nothing that touches the DOM.
     const cut = (() => {
-      const marks = [...code.matchAll(/\bT\.(?:en|sv|mk)\s*=|const\s+T\s*=|\bT\s*=\s*\{/g)];
+      // `Object.assign(T.mk, {…})` is a dictionary too, and it was not in this list. Marketing extends all
+      // three languages that way with 88 keys each, and Store does it thirteen times — so `dictsIn` read
+      // the first block and stopped, `apply.js` never converted what it could not see, and 88 Macedonian
+      // strings sat in Latin transliteration while every check reported the page clean.
+      const marks = [...code.matchAll(
+        /\bT\.(?:en|sv|mk)\s*=|Object\.assign\(\s*T\.(?:en|sv|mk)\s*,|const\s+T\s*=|\bT\s*=\s*\{/g)];
       if (!marks.length) return null;
-      // Take from the first mark to the end of the object literal that follows the last one.
+      // Take from the first mark to the end of the STATEMENT the last one starts — the object literal, and
+      // then the `)` and `;` that close an Object.assign around it. Ending at the brace leaves the call
+      // unbalanced, and the eval below fails silently into `continue`.
       const start = marks[0].index;
       let i = code.indexOf('{', marks[marks.length - 1].index);
       if (i < 0) return null;
@@ -54,7 +62,9 @@ function dictsIn(file) {
         if (code[i] === '{') depth++;
         else if (code[i] === '}') { depth--; if (!depth) break; }
       }
-      return code.slice(start, i + 1);
+      let end = i + 1;
+      while (end < code.length && /[\s);]/.test(code[end])) end += 1;
+      return code.slice(start, end);
     })();
     if (!cut) continue;
     const sandbox = { T: {} };
@@ -64,6 +74,11 @@ function dictsIn(file) {
     } catch (e) { continue; }
     const T = sandbox.OUT || sandbox.T;
     if (T && T.mk && Object.keys(T.mk).length) return T;
+  }
+  // And the other shape, for the pages that have no `T` at all.
+  for (const code of scripts) {
+    const single = oneObjectDict(code);
+    if (single) return single;
   }
   return null;
 }

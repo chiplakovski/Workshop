@@ -53,6 +53,9 @@ const KEEP = new Set([
   // Two on the barcode panels. `УСБ` and `Блуетоотх` are what a letter table gives, and neither is
   // written that way on any cable or in any settings menu.
   'USB', 'Bluetooth',
+  // Material and size designations, which are written the same on a drawing in any language. `SCH40` became
+  // `СЦХЀ40` and `S235JR, AISI 304` became `С235Ѕ40, АИСИ 304` — nobody can order steel with those.
+  'SCH', 'AISI', 'DIN', 'ASTM', 'ASME', 'JR', 'K2', 'NL',
   // Units, which are written the same in every language on a shop floor.
   'kg', 'mm', 'cm', 'm', 'st', 'h', 'kr', 'ton', 'mm2', 'm2', 'm3'
 ]);
@@ -70,6 +73,10 @@ const PROTECT = [
   /\b[A-Za-z][\w-]*(?:\/[\w-]+)*\/[\w-]+\.[A-Za-z]{1,5}\b/g,
   /\b[\w-]+\.(?:sh|js|sql|json|html|css|md|csv|pdf|xlsx?|se|com|org|io|dev)\b/g,
   /\b[A-Za-z]{2,4}-\d[\dA-Za-z-]*/g,
+  // A material or size designation: capitals with at least one digit in them. `S235JR` came out as `С235JR`
+  // because the keep list can only protect whole words and the leading S is one letter. The digit is what
+  // makes this safe — the all-caps Macedonian words this file warns about (PRISTAP, VKUPNO, DDV) have none.
+  /\b[A-Z]{1,5}\d[\dA-Z]*\b/g,
   /<[^>]*>/g,
   // Text inside typographic quotes, which in these strings is always a label quoted from somewhere else —
   // “Save as PDF” is what the browser's own print dialog says, in English, whatever language the page is

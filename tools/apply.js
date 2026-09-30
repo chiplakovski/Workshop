@@ -9,18 +9,40 @@ const fs = require('fs');
 const { dictsIn } = require('./dicts.js');
 const { convertValue, latinLeftIn } = require('./translit.js');
 
-function mkBlock(src) {
-  const m = /(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{)/.exec(src);
-  if (!m) return null;
-  let i = src.indexOf('{', m.index), depth = 0, j = i;
-  for (; j < src.length; j++) {
-    if (src[j] === '{') depth++;
-    else if (src[j] === '}') { depth--; if (!depth) break; }
+// EVERY mk block on the page, not the first.
+//
+// Three shapes: `mk:{…}`, `T.mk = {…}`, and `Object.assign(T.mk, {…})` — which Marketing uses once and Store
+// thirteen times. The first version took the first block and stopped, so a key defined in an extension was
+// looked for inside the wrong span, `literalFor` returned null, and the value was reported as a problem
+// rather than converted. Quoted text is stepped over while walking, because a value containing a brace —
+// "Hold {reason}" — would otherwise end the block early.
+function mkBlocks(src) {
+  const spans = [];
+  for (const m of src.matchAll(/(?:\bmk\s*:\s*\{|T\.mk\s*=\s*\{|Object\.assign\(\s*T\.mk\s*,\s*\{)/g)) {
+    const i = src.indexOf('{', m.index);
+    let j = i, depth = 0;
+    for (; j < src.length; j++) {
+      const c = src[j];
+      if (c === '{') depth++;
+      else if (c === '}') { depth--; if (!depth) break; }
+      else if (c === "'" || c === '"' || c === '`') {
+        const quote = c;
+        j += 1;
+        while (j < src.length && src[j] !== quote) { if (src[j] === '\\') j += 1; j += 1; }
+      }
+    }
+    spans.push({ start: i, end: j + 1 });
   }
-  return { start: i, end: j + 1 };
+  return spans;
 }
 
-// The literal that is the value for `key`, inside [from,to) of src.
+// The literal that is the value for `key`, inside [from,to) of src — and the WHOLE of it when the value is
+// written as several literals joined by `+`.
+//
+// That shape is not unusual and it corrupted a value the first time this ran without knowing about it: the
+// converted text, which is the concatenation of every fragment, was written into the FIRST fragment and the
+// rest were left as they were — so the string became the whole sentence followed by a Latin copy of its own
+// second half. Worse than the thing being fixed, and visible only by reading the file afterwards.
 function literalFor(src, from, to, key) {
   const re = new RegExp(`(^|[\\s{,])(?:${key}|'${key}'|"${key}")\\s*:\\s*`, 'g');
   re.lastIndex = from;
@@ -29,12 +51,29 @@ function literalFor(src, from, to, key) {
     const at = m.index + m[0].length;
     const quote = src[at];
     if (quote !== '"' && quote !== "'" && quote !== '`') continue;
-    let k = at + 1;
-    while (k < to) {
-      if (src[k] === '\\') { k += 2; continue; }
-      if (src[k] === quote) return { open: at, close: k, quote, raw: src.slice(at + 1, k) };
-      k++;
+    const endOf = (start) => {
+      let k = start + 1;
+      while (k < to) {
+        if (src[k] === '\\') { k += 2; continue; }
+        if (src[k] === src[start]) return k;
+        k++;
+      }
+      return -1;
+    };
+    let close = endOf(at);
+    if (close < 0) continue;
+    const raw = [src.slice(at + 1, close)];
+    // Every `+ "…"` that follows, so the span this returns covers the whole expression.
+    for (;;) {
+      const next = /^\s*\+\s*(['"`])/.exec(src.slice(close + 1, close + 40));
+      if (!next) break;
+      const start = close + 1 + next[0].length - 1;
+      const end = endOf(start);
+      if (end < 0) break;
+      raw.push(src.slice(start + 1, end));
+      close = end;
     }
+    return { open: at, close, quote, raw: raw.join(''), parts: raw.length };
   }
   return null;
 }
@@ -60,8 +99,8 @@ for (const file of fs.readdirSync('.').filter((f) => f.endsWith('.html')).sort()
     continue;
   }
   let src = fs.readFileSync(file, 'utf8');
-  const block = mkBlock(src);
-  if (!block) { problems.push(`${file}: mk block not found in source`); continue; }
+  const blocks = mkBlocks(src);
+  if (!blocks.length) { problems.push(`${file}: mk block not found in source`); continue; }
   // Collected first, applied from the end backwards so earlier offsets stay valid.
   const edits = [];
   for (const [key, value] of Object.entries(T.mk)) {
@@ -71,7 +110,11 @@ for (const file of fs.readdirSync('.').filter((f) => f.endsWith('.html')).sort()
     if (typeof value !== 'string' || !value.trim() || !latinLeftIn(value).length) { skipped++; continue; }
     const want = convertValue(key, value);
     if (want === value) { skipped++; continue; }
-    const lit = literalFor(src, block.start, block.end, key);
+    let lit = null;
+    for (const span of blocks) {
+      lit = literalFor(src, span.start, span.end, key);
+      if (lit) break;
+    }
     if (!lit) { problems.push(`${file} · ${key}: no literal found for this key`); continue; }
     edits.push({ ...lit, want });
   }

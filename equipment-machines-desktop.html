@@ -1144,7 +1144,6 @@
           <div class="kpi-card">
             <div class="kpi-label">${escapeHtml(kpi.label)}</div>
             <div class="kpi-value ${kpi.tone}">${escapeHtml(String(kpi.value))}</div>
-            <div class="kpi-sub">${escapeHtml('Live demo data')}</div>
           </div>
         `).join('');
       }
@@ -2087,7 +2086,7 @@
           const item = getEquipment().find((entry) => entry.equipmentId === value || entry.qrCode === value || entry.serial === value);
           const result = document.getElementById('scanResult');
           if (!item) {
-            result.innerHTML = '<strong>No equipment matched.</strong> Demo only — add a known QR code, serial number or equipment ID.';
+            result.innerHTML = '<strong>No equipment matched.</strong> Type a known QR code, serial number or equipment ID.';
             return;
           }
           result.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.equipmentId)} · ${escapeHtml(item.status)} · ${escapeHtml(item.currentLocation)}`;

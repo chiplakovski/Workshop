@@ -1281,7 +1281,7 @@ function preparePrint(){
   const title=SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection;
   header.querySelector('#printSectionTitle').textContent=title;
   const live=!!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());
-  header.querySelector('#printMeta').innerHTML=`<p><strong>${esc(title)}</strong></p><p>${esc(live?tr('print_from_database'):tr('print_from_browser'))}</p><p>Generated: ${new Date().toLocaleString()}</p><p>Report status: Demonstration data.</p>`;
+  header.querySelector('#printMeta').innerHTML=`<p><strong>${esc(title)}</strong></p><p>${esc(live?tr('print_from_database'):tr('print_from_browser'))}</p><p>Generated: ${new Date().toLocaleString()}</p>`;
 }
 function csvEscape(v){const s=String(v==null?'':v);return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function tableToCsv(table){if(!table)return '';return [...table.rows].filter(r=>!r.classList.contains('emptyrow')).map(r=>[...r.cells].map(c=>csvEscape(c.innerText.trim())).join(',')).join('\r\n');}

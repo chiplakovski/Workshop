@@ -522,6 +522,8 @@ const i18n={
     reporting_status_text:'Reports use browser demonstration data',
     reporting_status_live:'Reports read the workshop database',
     print_from_database:'Read from the Varmak workshop database. A working copy, not a legal record.',
+    json_from_database:'Exported from the Varmak workshop database. A working copy, not a legal record.',
+    json_from_browser:'Exported from this browser\'s own demonstration data. Not a record of anything.',
     print_from_browser:'Read from this browser\'s own demonstration data. Not a record of anything.',last_calculated:'Last calculated: —',status:'Status',
     planned:'Planned',logged:'Logged',name:'Name',customer:'Customer',category:'Category',new_report:'New Report',created:'Created',actions:'Actions',
     cancel:'Cancel',save:'Save',export_report:'Export Report',select_format:'Select export format:',export_csv:'CSV',export_json:'JSON',
@@ -580,6 +582,8 @@ const i18n={
     reporting_status_text:'Rapporter använder demonstrationsdata i webbläsaren',
     reporting_status_live:'Rapporterna läser verkstadsdatabasen',
     print_from_database:'Läst ur Varmaks verkstadsdatabas. En arbetskopia, inte en juridisk handling.',
+    json_from_database:'Exporterad ur Varmaks verkstadsdatabas. En arbetskopia, inte en juridisk handling.',
+    json_from_browser:'Exporterad ur denna webbläsares egna demonstrationsdata. Inte en handling om någonting.',
     print_from_browser:'Läst ur denna webbläsares egna demonstrationsdata. Inte en handling om någonting.',last_calculated:'Senast beräknad: —',
     status:'Status',planned:'Planerat',logged:'Loggat',name:'Namn',customer:'Kund',category:'Kategori',new_report:'Ny Rapport',created:'Skapad',
     actions:'Åtgärder',cancel:'Avbryt',save:'Spara',export_report:'Exportera Rapport',select_format:'Välj exportformat:',export_csv:'CSV',
@@ -639,6 +643,8 @@ const i18n={
     reporting_status:'Статус на извештаи',reporting_status_text:'Извештаите користат демо-податоци во прелистувачот',
     reporting_status_live:'Извештаите читаат од базата на работилницата',
     print_from_database:'Прочитано од базата на работилницата Вармак. Работна копија, не правен документ.',
+    json_from_database:'Извезено од базата на работилницата Вармак. Работна копија, не правен документ.',
+    json_from_browser:'Извезено од демо-податоците на овој прелистувач. Не е запис за ништо.',
     print_from_browser:'Прочитано од демо-податоците на овој прелистувач. Не е запис за ништо.',
     last_calculated:'Последно пресметано: —',status:'Статус',planned:'Планирано',logged:'Евидентирано',name:'Име',
     customer:'Клиент',category:'Категорија',new_report:'Нов Извештај',created:'创Создадено',actions:'Акции',cancel:'Откажи',save:'Зачувај',
@@ -1509,10 +1515,10 @@ function exportReport(format){
     const payload={section:currentSection,generatedAt:new Date().toISOString(),
       source:live?'varmak-workshop-database':'browser-storage',
       filters:{dateFilter:currentFilter,...activeFilters},
-      // Said as what it is rather than as what it is not. A working copy taken on a date: still not a legal
-      // record, and no longer a demonstration either.
-      note:live?'Exported from the Varmak workshop database. A working copy, not a legal record.'
-        :'Exported from this browser\'s own demonstration data. Not a record of anything.'};
+      // Said as what it is rather than as what it is not, and read from the dictionary like every other
+      // sentence on this page: a working copy taken on a date, still not a legal record and no longer a
+      // demonstration either.
+      note:live?tr('json_from_database'):tr('json_from_browser')};
     downloadBlob(JSON.stringify(payload,null,2),'application/json','varmak-report-'+currentSection+'.json');
     notify('JSON exported.');
   }else if(format==='print'){

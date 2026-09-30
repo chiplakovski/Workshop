@@ -4,8 +4,9 @@ One-off conversions, kept because the next one will want the same care.
 
 ## The Macedonian transliteration
 
-`translit.js` · `dicts.js` · `apply.js` — run twice on 25 September 2026: 1607 Macedonian strings from
-Latin into Cyrillic, and then 140 more that the first run had skipped or never read. Kept rather than
+`translit.js` · `dicts.js` · `apply.js` — run three times: 1607 Macedonian strings from Latin into Cyrillic,
+then 140 more the first run had skipped or never read, then 84 in a dictionary shape no tool and no check
+had ever looked at. Kept rather than
 deleted because what it records is not the table: it is the list of things a table gets wrong, every one of
 which was found by looking rather than by reasoning — and because "run once" is what the first version of
 this sentence said, before the second run had to happen.
@@ -70,6 +71,39 @@ a page the tool cannot read looked exactly like a page with nothing to do. It re
 | `veke` | ќе again, bare: `веке` is a different word from `веќе`. |
 | `real AI` | Two English words in a Macedonian sentence. `реал АИ` is neither language. |
 | `Aktiven kvalitativen zabranа` | Not a transliteration fault at all. забрана is feminine, so the phrase was wrong in either script — the conversion just made it legible enough to notice. |
+
+## The third run, and the block nothing had ever read
+
+The second run fixed the strings that were half converted. It did not find the ones that had never been
+looked at: **88 Macedonian values on Marketing, entirely in Latin transliteration**, plus their Swedish and
+English counterparts, in a dictionary shape neither tool nor check knew about.
+
+```js
+const T = { en:{…}, sv:{…}, mk:{…} };      // read
+Object.assign(T.mk, { … 88 more keys … }); // not read
+```
+
+Marketing extends all three languages that way once; Store does it thirteen times. Four places had to learn
+about it, and each had been quietly reading part of a page and reporting the whole of it clean:
+
+| | |
+|---|---|
+| `dicts.js` | Its marks were `T.mk =` and `const T =`. `Object.assign(T.mk,` was neither, so the cut stopped at the first block. Marketing read as 322 keys; it has 406. |
+| `dicts.js`, again | Adding the mark was not enough: the cut ended at the object literal's `}` and left `Object.assign(…{…}` unbalanced, so the eval threw into a silent `continue`. It ends at the statement now. |
+| `dicts.js`, a third time | The single-object path added in the second run ran FIRST and returned Marketing's `const T={…}` before the merging path could. Order matters when one path is a superset of the other. |
+| `apply.js` | `mkBlock` took the first block. A key defined in an extension was looked for in the wrong span, `literalFor` returned null, and the value was reported as a problem rather than converted. |
+| `tests/integrity.js` | Both the Cyrillic check and `translationTables` took the first block, so the duplicate-key, placeholder and demonstration checks all read part of every page that uses this shape. |
+
+**And a value spread over several literals was corrupted by the first attempt.**
+`fd_demo_p:"…first half " + "…second half"` — `apply.js` wrote the whole converted sentence into the first
+fragment and left the second as it was, so the string became the sentence followed by a Latin copy of its
+own second half. Worse than the thing being fixed, and visible only by reading the file afterwards.
+`literalFor` consumes the whole `+` chain now and replaces it with one literal.
+
+**Two more keep-list entries, from reading the output:** `SCH40` became `СЦХ40` and `S235JR, AISI 304`
+became `С235ЈР, АИСИ 304` — nobody can order steel with those. A keep list can only protect whole words, so
+the shape is protected instead: capitals with at least one digit in them. The digit is what makes it safe,
+because the all-caps Macedonian words this file warns about (`PRISTAP`, `VKUPNO`, `DDV`) have none.
 
 **The check that found most of this was the second one.** Scanning the output for surviving Latin finds a
 word that should have converted and did not. It cannot find the opposite — a word that should have stayed
