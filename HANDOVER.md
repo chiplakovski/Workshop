@@ -725,7 +725,7 @@ for.
 
 **Three files, pasted.** `backend/supabase-install.sql` is the four files as one, 7,962 lines, generated
 by `backend/make-supabase-install.sh` and with nothing in it to fill in. `backend/supabase-password.sql`
-is 38 lines and is the only file anybody edits; it is separate precisely so that nobody has to scroll
+is 44 lines and is the only file anybody edits; it is separate precisely so that nobody has to scroll
 through 7,962 lines in a dashboard looking for a line to change. `backend/supabase-check.sql` reads only
 and reports in rows.
 
@@ -735,7 +735,7 @@ one; and the Node server cannot be started from a SQL editor by any means, so th
 (Railway, Render, Fly) and the guide says which two environment variables it wants rather than leaving
 somebody hunting for a button.
 
-`test-deploy.js` went from 13 checks to 23. The new ones install that file the way a dashboard installs
+`test-deploy.js` went from 13 checks to 24. The new ones install that file the way a dashboard installs
 it — the whole buffer as **one** statement, inside the transaction the editor opens — and then compare
 the result against the database `install.sh` had just built on the same cluster: 12,701 lines of
 `pg_dump --schema-only`, every table, constraint, trigger, policy, function and **grant**, identical.
@@ -805,6 +805,13 @@ to let it pass.
 
 That is three times in this project that a suite called flaky turned out to be a defect, and zero times
 that it turned out to be a flake.
+
+**And a third, from the same full run: a mutation that had been testing nothing for two commits.** The
+one that hands `workspace_money()` to the floor quotes the GRANT it damages, and that GRANT gained
+`invoice_basis()` when the invoice basis was built — so the text stopped matching and the mutation
+stopped being applied. It is only visible because the harness reports "could not be applied at all"
+separately instead of counting an unapplied mutation as caught: a harness that reported it as caught
+would have said this rule was tested when nothing had touched it since.
 
 
 ## 5. Decisions already made — do not re-open these

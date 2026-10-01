@@ -888,10 +888,14 @@ const MUTATIONS = [
     to: "        'heat', i.heat_no, 'certificate', i.material_cert_ref, 'status', i.status, 'avgCost', i.avg_cost,"
   },
   {
+    // The grant this damages gained invoice_basis() when the invoice basis was built, and this text
+    // was not moved with it — so for two commits the mutation matched nothing and tested nothing. The
+    // harness says so out loud ("could not be applied at all") rather than counting it as caught,
+    // which is the only reason it was noticed.
     what: 'the money call is handed to the floor as well',
     file: 'views',
-    from: 'GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office;',
-    to: 'GRANT EXECUTE ON FUNCTION workspace_money() TO varmak_admin, varmak_office, varmak_workshop;'
+    from: 'GRANT EXECUTE ON FUNCTION workspace_money(), invoice_basis() TO varmak_admin, varmak_office;',
+    to: 'GRANT EXECUTE ON FUNCTION workspace_money(), invoice_basis() TO varmak_admin, varmak_office, varmak_workshop;'
   },
   {
     what: 'money crosses the wire as a JSON number again',
