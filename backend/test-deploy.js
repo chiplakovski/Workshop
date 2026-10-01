@@ -34,7 +34,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawn } = require('node:child_process');
 // A dashboard SQL editor sends the whole buffer as one simple query, which psql cannot do: -c has
 // an argument-length limit a 7,000-line file goes straight past, and -f splits it into statements.
 // So that one path is driven through the driver the server itself uses.
@@ -709,6 +709,96 @@ async function main() {
       'and recognised a database that is already installed rather than calling it half done');
     assert.match(verified.out, /Clear to install/);
     step('Deploy: the preflight refuses an unverified connection and passes a verified one, writing nothing');
+
+    // ── The command a platform will actually run ─────────────────────────────────────────────
+    //
+    // Everything above this line starts the server by requiring it into the test process, which proves
+    // the code and nothing about the deployment. A platform does something different: it clones the
+    // repository, builds it, and runs one command it worked out for itself. This repository had no
+    // `start` script, no `engines`, and no Procfile — so Railway or Render would have built it
+    // successfully and then had nothing to run, which is a failure that arrives after the person has
+    // already connected their GitHub account and started waiting.
+    //
+    // Four files now name that command and they have to name the same one. Then it is actually run —
+    // as a child process, against the hosted-shaped database, as varmak_api over verified TLS — and
+    // asked for a page.
+    const repo = path.join(__dirname, '..');
+    const uncommented = (text) => text.split('\n')
+      .filter((line) => !/^\s*#/.test(line)).join('\n');
+    const pkg = JSON.parse(fs.readFileSync(path.join(repo, 'package.json'), 'utf8'));
+    const startCommand = pkg.scripts && pkg.scripts.start;
+    assert.ok(startCommand, 'package.json has no start script, so most hosts have nothing to run');
+    const procfile = fs.readFileSync(path.join(repo, 'Procfile'), 'utf8');
+    const railway = JSON.parse(fs.readFileSync(path.join(repo, 'railway.json'), 'utf8'));
+    const render = fs.readFileSync(path.join(repo, 'render.yaml'), 'utf8');
+    assert.equal((uncommented(procfile).match(/^web:\s*(.+?)\s*$/m) || [])[1], startCommand,
+      "the Procfile's web process and package.json's start script have to be the same command");
+    assert.equal(railway.deploy.startCommand, startCommand,
+      'railway.json names a different command, so Railway and everything else would run different things');
+    assert.equal((uncommented(render).match(/^\s*startCommand:\s*(.+?)\s*$/m) || [])[1], startCommand,
+      'render.yaml names a different command');
+    const runs = startCommand.split(/\s+/).find((word) => word.endsWith('.js'));
+    assert.ok(runs && fs.existsSync(path.join(repo, runs)),
+      `the start command runs ${runs}, which is not in this repository`);
+
+    // Two things that must not be in these files. HOST is the one that breaks a deployment with
+    // nothing in the log to explain it: the server defaults to 0.0.0.0, which is what a platform
+    // router needs, and deploy/varmak.env.example sets 127.0.0.1 because Caddy is in front of it on a
+    // machine you own. Copying that line onto a platform makes the app unreachable while every log
+    // line says it started. Comments are stripped first — all three of these files *discuss* HOST,
+    // and a check defeated by a comment is a check that has already been defeated once here.
+    for (const [name, text] of [['Procfile', procfile], ['render.yaml', render],
+                                ['railway.json', JSON.stringify(railway, null, 2)]]) {
+      // The whole token, anywhere in the live text, rather than a pattern for how it is written.
+      // The first version of this looked for `HOST:` or `HOST=` and did not fire on render.yaml's own
+      // shape — `- key: HOST`, where the colon comes before the name — so it passed on exactly the
+      // file it was written to guard. These files have no honest reason to contain the word outside a
+      // comment, and comments are already stripped.
+      assert.doesNotMatch(uncommented(text), /\bHOST\b/,
+        `${name} sets HOST, which on a platform means a server nobody can reach and a log that says it is fine`);
+      assert.doesNotMatch(uncommented(text), /postgres(ql)?:\/\/[^\s@/]*:[^\s@/]*@/,
+        `${name} carries a connection string with a password in it, and this file is in git`);
+    }
+    assert.match(render, /key:\s*DATABASE_URL\s*\n\s*sync:\s*false/,
+      'render.yaml has to ask for DATABASE_URL rather than carry it');
+
+    // And run it. The platform case exactly: one command, PORT from the environment, HOST unset, and
+    // the database reached as varmak_api over TLS it verifies.
+    const argv = startCommand.split(/\s+/);
+    const childEnv = { ...process.env,
+      PORT: String(HTTP_PORT + 1),
+      DATABASE_URL: `postgresql://varmak_api:${API}@localhost:${PORT}/${DB}`,
+      PGSSLROOTCERT: CERT };
+    delete childEnv.HOST;
+    delete childEnv.PGDATABASE;
+    const child = spawn(argv[0], argv.slice(1),
+      { cwd: repo, env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
+    let said = '';
+    child.stdout.on('data', (chunk) => { said += chunk; });
+    child.stderr.on('data', (chunk) => { said += chunk; });
+    try {
+      let answered = null;
+      for (let tries = 0; tries < 80 && !answered; tries += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        if (child.exitCode !== null) break;
+        answered = await fetch(`http://127.0.0.1:${HTTP_PORT + 1}/`).catch(() => null);
+      }
+      assert.ok(answered, `the start command did not serve a page: ${said.slice(0, 500)}`);
+      assert.equal(answered.status, 200,
+        'and / has to answer without a session, because that is what a health check asks for');
+      assert.match(await answered.text(), /<html/i);
+      assert.match(said, /on http:\/\/0\.0\.0\.0:/,
+        `with HOST unset it has to listen on every interface, or a platform router cannot reach it: ${said.slice(0, 300)}`);
+      assert.doesNotMatch(said, /Refusing to start/);
+      step('Deploy: the one command four host files name boots against the hosted database and serves a page');
+    } finally {
+      child.kill('SIGTERM');
+      await new Promise((resolve) => {
+        if (child.exitCode !== null) return resolve();
+        child.once('exit', resolve);
+        setTimeout(() => { child.kill('SIGKILL'); resolve(); }, 3000);
+      });
+    }
   } finally {
     server.close();
     await pool.end().catch(() => {});

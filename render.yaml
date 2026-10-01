@@ -1,0 +1,24 @@
+# Render reads this when you point it at the repository, so the only thing left to type is the
+# database password — which is the only thing that should ever be typed.
+#
+# `sync: false` means Render asks for the value instead of storing it here. DATABASE_URL carries the
+# password, so it must never be in this file: a password in git is a password in every clone.
+services:
+  - type: web
+    name: varmak-workshop
+    runtime: node
+    # The free plan sleeps after fifteen minutes of no traffic, and the first request after that waits
+    # for a cold start. Fine while you are trying it; a workshop tablet at 7am is not the place to find
+    # out. `starter` is the smallest that stays awake.
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: node backend/server.js
+    # Serves login.html and touches no database, so it answers while the database is still waking.
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_VERSION
+        value: "22"
+      # Left unset deliberately: the server defaults to 0.0.0.0, which is what Render's router needs.
+      # HOST=127.0.0.1 belongs on a machine with Caddy in front, not here.

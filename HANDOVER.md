@@ -813,6 +813,39 @@ stopped being applied. It is only visible because the harness reports "could not
 separately instead of counting an unapplied mutation as caught: a harness that reported it as caught
 would have said this rule was tested when nothing had touched it since.
 
+### And the server half, asked the same question
+
+The owner then asked whether all of this could be done for them. The honest answer is no — four steps
+need their own accounts and their own card, and nothing should route a credential through a container
+that is thrown away. What could be done was to make the half that is not theirs smaller, and asking
+what a platform actually needs turned up a gap: **this repository had no `start` script, no `engines`,
+and no host configuration at all.** Railway or Render would have cloned it, built it successfully, and
+had nothing to run — a failure that arrives after somebody has connected their GitHub account and
+started waiting, and it reads as "the app is broken" rather than "nobody told it the command".
+
+`Procfile`, `railway.json`, `render.yaml`, `.nvmrc` and `package.json`'s `start` now name the one
+command and the Node version. test-deploy.js holds the four files to naming the same command, refuses
+any of them that sets `HOST` or carries a connection string with a password, and then **runs that
+command** as a child process against the hosted-shaped database, over verified TLS as varmak_api, and
+asks it for a page. 25 checks.
+
+`HOST` is the trap worth naming: the server defaults to `0.0.0.0`, which is what a platform router
+needs, while `deploy/varmak.env.example` sets `127.0.0.1` because Caddy sits in front of it on a
+machine you own. Copied onto a platform that line produces a server nobody can reach and a log that
+says it started.
+
+**And a fourth check that did not catch what it claimed.** The first version of that `HOST` guard
+looked for `HOST:` or `HOST=` — and render.yaml declares environment variables as `- key: HOST`, with
+the colon before the name, so the guard passed on precisely the file it was written to guard. It
+matches the whole token in the uncommented text now. Comments are stripped first, because all three
+files discuss `HOST` in prose, and a check defeated by a comment had already happened once here.
+
+One correction to `SUPABASE.md` from the same pass: it told the owner to append `?sslmode=verify-full`
+to the connection string. That is not wrong but it does nothing — `databaseSettings()` strips `sslmode`
+out on purpose, because node-postgres lets that parameter *replace* the TLS settings the code sets,
+certificate authority and all. Telling somebody to add it leaves the impression that the verification
+depends on them. It does not, and the guide now says so.
+
 
 ## 5. Decisions already made — do not re-open these
 
