@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4h, which is where this document actually ends. Everything above it is the state of a
+**HEAD:** see §4i, which is where this document actually ends. Everything above it is the state of a
 prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
-in; §4h is where it stands now. Sections 4b to 4g are the passes in between, in order, and each says what
+in; §4i is where it stands now. Sections 4b to 4h are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
 **Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
@@ -694,7 +694,8 @@ as a draft — silently.
    proved against a Postgres shaped like a hosted one, as a non-superuser, over verified TLS — but never
    against the actual project. Nothing in this repository can do that: the container these sessions run in
    is thrown away, so no credential should ever be pasted into one. This is the owner's step, and it is the
-   only one between here and the system holding real work.
+   only one between here and the system holding real work. **§4i is the version of it that needs no
+   terminal** — three files pasted into Supabase's own SQL editor.
 
    What was added to make it safer: **`backend/preflight.sh`**, step 2 of DEPLOY.md. It writes nothing and
    answers one question — will the install get all the way through on this database — because `install.sh`
@@ -713,6 +714,98 @@ as a draft — silently.
    against an `estimate` table holding a title, a total and a date.
 6. **Printing** works on four of seventeen pages. **Planning's weekly capacity** is still in `localStorage`
    per browser. Both are recorded here rather than in a comment nobody opens.
+
+## 4i. The database half, with no terminal in it — 1 October 2026
+
+The owner's answer to §4h's item 1 was that they are not technical and need to be told how to do it in
+Supabase. Steps 2 to 4 of DEPLOY.md are a shell, `psql`, four files in a fixed order and an `openssl`
+call, which is a reasonable thing to ask of a contractor and not of the person who owns the workshop. So
+the database half was rebuilt as something a person with a browser can do, and then proved — not argued
+for.
+
+**Three files, pasted.** `backend/supabase-install.sql` is the four files as one, 7,962 lines, generated
+by `backend/make-supabase-install.sh` and with nothing in it to fill in. `backend/supabase-password.sql`
+is 38 lines and is the only file anybody edits; it is separate precisely so that nobody has to scroll
+through 7,962 lines in a dashboard looking for a line to change. `backend/supabase-check.sql` reads only
+and reports in rows.
+
+**`SUPABASE.md`** is the click-by-click guide, in Macedonian, including the two honest parts: the free
+Supabase plan pauses a project after seven days and takes no daily backups, so real data needs the paid
+one; and the Node server cannot be started from a SQL editor by any means, so that half needs a host
+(Railway, Render, Fly) and the guide says which two environment variables it wants rather than leaving
+somebody hunting for a button.
+
+`test-deploy.js` went from 13 checks to 23. The new ones install that file the way a dashboard installs
+it — the whole buffer as **one** statement, inside the transaction the editor opens — and then compare
+the result against the database `install.sh` had just built on the same cluster: 12,701 lines of
+`pg_dump --schema-only`, every table, constraint, trigger, policy, function and **grant**, identical.
+That is the actual claim worth making. A file that installs *something* is not it.
+
+### Four things that were wrong, and were found by trying them rather than reading
+
+* **The four `BEGIN`/`COMMIT` pairs had to come out.** A dashboard sends the whole buffer as one
+  statement inside a transaction it opened itself. The inner `BEGIN`s then warn, and the **first inner
+  `COMMIT` ends the editor's transaction** — so a failure in `views.sql` would have left `schema.sql`,
+  `auth.sql` and `api.sql` committed. A half-installed database that looks finished is the one outcome
+  this whole path exists to prevent. With them removed the editor's own transaction covers all four
+  files; both planted failures now leave **zero tables** behind, asked of the database rather than
+  assumed.
+* **"Safe to run again" was false — in the generated file's header and in DEPLOY.md.** Not one of the 39
+  tables or 18 counters is created with `IF NOT EXISTS`, so a second run stops on
+  `relation "seq_customer" already exists` twelve lines in. `install.sh` has the same property and
+  DEPLOY.md had claimed otherwise for weeks. What is true is weaker and more useful: it stops *safely*,
+  because each file is one transaction. The one-file version now asks first and refuses in words, and
+  differently for the two cases that need opposite advice — a finished install ("you are done with this
+  file, next is the password") and a half-finished one ("make a new empty database"). Both are tested,
+  and so is DEPLOY.md's wording.
+* **A `NOTICE` may not be shown at all.** The install ends by checking its own work, and a dashboard
+  shows an exception in red — but the success case reads "Success. No rows returned", which is a thin
+  thing to trust a company's data to. Hence `supabase-check.sql`, which answers in rows, because rows
+  are always shown. Its most important row is the one no count can replace: tables left without row
+  security, which must be 0.
+* **"Работни постапки: 144" was pgcrypto's address, not a fact about the install.** Counting every
+  function in `public` counted pgcrypto's 36 — which live in `public` on this machine and in
+  `extensions` on Supabase. The same healthy install would have read 144 here and 108 there, and the
+  person reading it has no way to know which. It excludes anything an extension brought with it now, and
+  reads 108 in both places.
+
+**And the guide's own numbers are checked.** `SUPABASE.md` quotes how many tables the report will show,
+how many rules, which line of the password file to edit, and how long each file is. Every one of those
+is read back out of the live database and off the files on disk by `test-deploy.js`. A guide whose
+numbers do not match the screen is worse than no guide: it is the moment somebody decides the install
+failed and starts over on a database that was fine.
+
+**One thing a file cannot protect against, so the guide says it:** a password containing an apostrophe
+breaks the SQL literal before any of the snippet's own checks can run, and the error is
+`syntax error at or near …` with no hint. The guide asks for letters, digits and dashes only. Found by
+testing the snippet with a quote in the password.
+
+### Two things found while running everything, neither of them to do with Supabase
+
+**A rule that three files each enforced, and none of them tested.** `mutation-check.js` reported a
+MISSED that had been sitting there: deleting api.sql's `REVOKE CREATE ON SCHEMA public FROM
+varmak_engine` changed nothing any suite could see, because auth.sql, api.sql and views.sql each grant
+that privilege for their ownership changes and each take it back — so views.sql revoked it again and
+the finished database was correct either way. Every assertion about the end state passed. Each file now
+asserts its own invariant immediately after its own REVOKE, naming itself in the refusal, and there is
+a mutation per file proving that assertion is what does the catching. api.sql's comment also said "the
+last ownership change in the system", which stopped being true when views.sql was written.
+
+**`planning-server.e2e.js` was failing about four runs in five, and it was a real defect — again.**
+Dragging a card and then setting the project's dates sends two queued calls. The second one's body was
+built when the call was made, not when it was sent, so it carried the status from *before* the drag —
+and `save_project` replaces the record, so the database refused "production to planned", correctly, on
+a save the screen had already announced as done (`notify()` runs before the refusal comes back). It
+only surfaced when the snapshot refresh lost the race, which is exactly what made it look flaky. Both
+`updateProject` and `updateJobcard` on that page build their bodies at send time now — the same fix
+`jobcard-desktop.html` needed for the same reason, and this page's `queue()` already supported it. The
+suite has a sixth check that cannot lose the race, because nothing is awaited between the two calls:
+with the bug put back it fails every run, including when the old check is handed the pause that used
+to let it pass.
+
+That is three times in this project that a suite called flaky turned out to be a defect, and zero times
+that it turned out to be a flake.
+
 
 ## 5. Decisions already made — do not re-open these
 

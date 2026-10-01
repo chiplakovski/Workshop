@@ -8,6 +8,10 @@ administrator made from a screen rather than from psql. `npm run test:deploy` ru
 against a Postgres deliberately shaped like a hosted one and then asks whether a welder can still read
 a price on the result.
 
+**Without a terminal:** [`SUPABASE.md`](SUPABASE.md) does the database half entirely in Supabase's own
+SQL editor — three files pasted, click by click, in Macedonian. Same install, same result: the suite
+installs that way too and compares the two databases down to every grant.
+
 **Two halves, and they are at different stages.** There is now a real backend — PostgreSQL with
 its safety rules as triggers, two sign-in doors, three database roles with row-level security
 forced on every table, the workflows as database functions, and a thin HTTP layer that decides

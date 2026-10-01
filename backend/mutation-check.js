@@ -1832,10 +1832,28 @@ ON equipment TO varmak_engine;`,
     // CREATE and both take it back, so removing auth.sql's revoke changes nothing that can be seen —
     // api.sql's, being the last, decides what the role is left holding. Belt and braces again, and
     // again it means the mutation has to be asked where the answer actually comes from.
-    what: 'the CREATE on public granted for the ownership changes is never given back',
+    // One of these three per file, because the rule is each file's own. It went unnoticed for weeks:
+    // all three files grant CREATE on public for their ownership changes and take it back, so deleting
+    // api.sql's REVOKE left views.sql to revoke it again and the install ended correct anyway. Every
+    // assertion about the finished database passed. Each file asserts its own invariant now, and these
+    // three mutations are what proves that assertion is the thing doing the catching.
+    what: 'the CREATE on public granted for api.sql\'s ownership changes is never given back',
     file: 'deployapi',
     from: `
--- The last ownership change in the system, so the privilege goes back now.
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;`,
+    to: ''
+  },
+  {
+    what: 'the CREATE on public granted for auth.sql\'s ownership changes is never given back',
+    file: 'deploy',
+    from: `
+REVOKE CREATE ON SCHEMA public FROM varmak_engine;`,
+    to: ''
+  },
+  {
+    what: 'the CREATE on public granted for views.sql\'s ownership changes is never given back',
+    file: 'views',
+    from: `
 REVOKE CREATE ON SCHEMA public FROM varmak_engine;`,
     to: ''
   },

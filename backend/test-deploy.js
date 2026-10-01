@@ -35,6 +35,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+// A dashboard SQL editor sends the whole buffer as one simple query, which psql cannot do: -c has
+// an argument-length limit a 7,000-line file goes straight past, and -f splits it into statements.
+// So that one path is driven through the driver the server itself uses.
+const { Client } = require('pg');
 
 const BIN = process.env.VARMAK_PG_BIN || '/usr/lib/postgresql/16/bin';
 const HOME = process.env.VARMAK_DEPLOY_DIR || '/var/lib/postgresql/varmak-deploy';
@@ -100,7 +104,8 @@ function aHostedDatabase() {
 // already installed in a schema of its own that the owner does not own either.
 function anEmptyProject() {
   const root = as('postgres', SUPER, 'postgres');
-  psql(root, ['-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `DROP DATABASE IF EXISTS ${DB}_strict;`]);
+  psql(root, ['-c', `DROP DATABASE IF EXISTS ${DB};`, '-c', `DROP DATABASE IF EXISTS ${DB}_strict;`,
+    '-c', `DROP DATABASE IF EXISTS ${DB}_editor;`, '-c', `DROP DATABASE IF EXISTS ${DB}_probe;`]);
   // The roles are the cluster's, not the database's, so dropping the database leaves all five of them
   // standing — along with the membership the installer granted itself last time. A second run then
   // inherits a cluster that is already half set up, and every assertion about what the install created
@@ -343,6 +348,330 @@ async function main() {
       'and hand over the one line somebody has to run');
     step('Deploy: a database that cannot let the engine reach pgcrypto is refused at install, with the fix in it');
 
+    // ── The install with no terminal in it ────────────────────────────────────────────────
+    //
+    // Everything above installs with install.sh, which needs a shell, psql and four files in the right
+    // order. The person this was built for has none of those and should not have to acquire them: a
+    // managed database has a SQL editor in its own dashboard, so backend/supabase-install.sql is the four
+    // files as one thing to paste. That makes it a second copy of 7,000 lines of schema, and a second
+    // copy drifts — silently, and in the direction of a database that is a release behind the code.
+    //
+    // So: it is generated, and the generation is checked here against the file in the repository, byte for byte.
+    // Then it is actually installed, the way a dashboard SQL editor installs it — the whole buffer as ONE
+    // statement inside a transaction the editor opened — and the result is compared to the database
+    // install.sh just made, down to every grant. A file that installs *something* is not the claim; the
+    // claim is that the person who cannot open a terminal gets the same database as the person who can.
+    const generated = fs.mkdtempSync(path.join(os.tmpdir(), 'varmak-onefile-'));
+    try {
+      // Generated from the same four files install.sh was just handed — the mutated one included, when
+      // mutation-check.js is driving. That matters: if this pasted a pristine file while install.sh had
+      // installed a damaged one, the two databases would differ for a reason that has nothing to do with
+      // the rule the mutation damaged, and the mutation would be reported caught by a schema comparison
+      // while the check that was supposed to catch it slept.
+      const mutated = Object.values(MUTATED).some(Boolean);
+      for (const name of ['schema', 'auth', 'api', 'views']) {
+        fs.copyFileSync(MUTATED[name] || path.join(__dirname, `${name}.sql`),
+          path.join(generated, `${name}.sql`));
+      }
+      fs.copyFileSync(path.join(__dirname, 'make-supabase-install.sh'),
+        path.join(generated, 'make-supabase-install.sh'));
+      execFileSync('sh', [path.join(generated, 'make-supabase-install.sh')],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      const oneFile = fs.readFileSync(path.join(generated, 'supabase-install.sql'), 'utf8');
+
+      // Drift between the generator and the file in the repository is only a question when the four files
+      // are the four files. Under a mutation it would fail every time and say nothing.
+      if (!mutated) {
+        assert.equal(oneFile, fs.readFileSync(path.join(__dirname, 'supabase-install.sql'), 'utf8'),
+          'backend/supabase-install.sql is out of date with the four files it is made from. '
+          + 'Run `sh backend/make-supabase-install.sh` and commit the result.');
+        step('Deploy: the one-file installer is exactly what the generator produces from the four files today');
+      }
+
+      // The three properties that make "paste it unchanged" true rather than hopeful.
+      const metaCommand = oneFile.split('\n').find((line) => /^\\/.test(line));
+      assert.equal(metaCommand, undefined,
+        `a SQL editor cannot run psql's own commands, and this file has one: ${metaCommand}`);
+      assert.doesNotMatch(oneFile, /^(BEGIN|COMMIT);$/m,
+        "the four BEGIN/COMMIT pairs have to come out: the first COMMIT would end the editor's "
+        + 'transaction and commit a part of the install on its own');
+      assert.doesNotMatch(oneFile, /PASTE-|YOUR-|<[a-z-]+>|CHANGE-ME/,
+        'there is nothing to fill in in this file, and anything that looks fillable invites an edit');
+      step('Deploy: it holds no psql command, no transaction of its own, and nothing to fill in');
+
+      // An empty database shaped the way a managed one hands it over: the owner is not a superuser and
+      // pgcrypto is not in public. Made fresh for each paste below, because the file now refuses a
+      // database that is not empty and every one of these pastes is about a different starting state.
+      const emptyProject = (database) => {
+        psql(root, ['-c', `DROP DATABASE IF EXISTS ${database};`,
+          '-c', `CREATE DATABASE ${database} OWNER deploy_owner;`]);
+        psql(as('postgres', SUPER, database), [
+          '-c', 'CREATE SCHEMA extensions;',
+          '-c', 'CREATE EXTENSION pgcrypto WITH SCHEMA extensions;',
+          '-c', 'GRANT USAGE ON SCHEMA extensions TO PUBLIC;',
+          '-c', 'GRANT ALL ON SCHEMA public TO deploy_owner;'
+        ]);
+      };
+
+      // What a dashboard does: one simple query, inside a transaction it opened, as the project owner.
+      // verify-full with the cluster's own certificate authority, because that is the shape of a
+      // dashboard's own connection to its database — and node-postgres now reads a bare sslmode=require
+      // as verify-full regardless.
+      const paste = async (sql, database) => {
+        const client = new Client({ connectionString:
+          `postgresql://deploy_owner:${OWNER}@localhost:${PORT}/${database}`
+            + `?sslmode=verify-full&sslrootcert=${CERT}` });
+        const notices = [];
+        client.on('notice', (n) => notices.push(n.message));
+        await client.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(sql);
+          await client.query('COMMIT');
+          return { ok: true, notices };
+        } catch (error) {
+          return { ok: false, said: error.message, notices };
+        } finally {
+          await client.end().catch(() => {});
+        }
+      };
+      const tables = (database) => psql(as('postgres', SUPER, database),
+        ['-c', `SELECT count(*) FROM information_schema.tables
+           WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`]).trim();
+
+      emptyProject(`${DB}_editor`);
+      const pasted = await paste(oneFile, `${DB}_editor`);
+      assert.ok(pasted.ok, `the one-file install has to go in as one statement: ${pasted.said}`);
+      assert.ok(pasted.notices.some((m) => /Varmak Workshop is installed/.test(m)),
+        `and say so, because a SQL editor has no exit status to read: ${pasted.notices.join(' | ')}`);
+      assert.ok(pasted.notices.some((m) => /supabase-password\.sql/.test(m)),
+        'and point at the next thing to run, which is the only other thing to paste');
+
+      // The whole point. --no-owner because install.sh ran as deploy_owner here too and the roles that
+      // matter are the varmak_* ones; everything else — tables, constraints, triggers, policies,
+      // functions and every GRANT — is compared. The \restrict lines carry a per-dump random token.
+      const schemaOf = (database) => execFileSync('pg_dump',
+        [`postgresql://deploy_owner:${OWNER}@localhost:${PORT}/${database}`
+          + `?sslmode=verify-full&sslrootcert=${CERT}`, '--schema-only', '--no-owner'],
+        { encoding: 'utf8' })
+        .split('\n').filter((line) => !/^\\(un)?restrict /.test(line)).join('\n');
+      assert.equal(schemaOf(`${DB}_editor`), schemaOf(DB),
+        'pasting the one file has to leave the same database the four files leave — it does not');
+      step('Deploy: pasted as one statement into a SQL editor, it leaves byte for byte the database install.sh leaves');
+
+      // Nothing in those four files is repeatable — not one of the 39 tables or 18 counters is created
+      // with IF NOT EXISTS — so pressing Run twice used to stop on `relation "seq_customer" already
+      // exists`: true, and useless to the person reading it. And pressing Run again is the first thing
+      // anybody does when a dashboard looks like it did nothing. Both shapes of not-empty are asked for
+      // here, because they need opposite advice: one is finished, the other has to be thrown away.
+      const twice = await paste(oneFile, `${DB}_editor`);
+      assert.equal(twice.ok, false, 'a second run over a finished install has to refuse');
+      assert.match(twice.said, /already installed in this database/);
+      assert.match(twice.said, /supabase-password\.sql/,
+        'and send them to the step they have actually reached rather than leaving them stuck');
+      assert.doesNotMatch(twice.said, /seq_customer/,
+        'and not by letting CREATE SEQUENCE do the explaining 48 lines in');
+      assert.equal(tables(`${DB}_editor`), '41', 'and leave the working install exactly as it was');
+
+      emptyProject(`${DB}_probe`);
+      psql(as('deploy_owner', OWNER, `${DB}_probe`), ['-c', 'CREATE SEQUENCE seq_customer;']);
+      const half = await paste(oneFile, `${DB}_probe`);
+      assert.equal(half.ok, false, 'and a database holding part of an install has to refuse too');
+      assert.match(half.said, /stopped partway/);
+      assert.match(half.said, /new empty database/,
+        'because there is nothing else to do with a half-installed database, and guessing is worse');
+      step('Deploy: a second paste is refused in words — differently for a finished install and for half of one');
+
+      // A paste that does not finish is the failure worth the most, because it is the one that looks
+      // like success: no exit status, a dashboard that says "Success. No rows returned", and a database
+      // three quarters built. Both halves of the self-check are handed the thing they exist to catch.
+      const cut = oneFile.replace(
+        /^GRANT EXECUTE ON FUNCTION workspace_money\(\), invoice_basis\(\) TO varmak_admin, varmak_office;$/m,
+        '-- the last line of views.sql, never run');
+      assert.notEqual(cut, oneFile, 'the line this plants its failure in has moved — find it again');
+      emptyProject(`${DB}_probe`);
+      const short = await paste(cut, `${DB}_probe`);
+      assert.equal(short.ok, false, 'an install missing its last grant has to raise, not finish quietly');
+      assert.match(short.said, /This install is not complete/);
+      assert.match(short.said, /views\.sql did not finish/,
+        `and name the part that did not finish: ${short.said}`);
+      assert.match(short.said, /Nothing was written/, 'and say what state that leaves the database in');
+      assert.equal(tables(`${DB}_probe`), '0',
+        'which has to be true: the editor transaction covers all four files, which is why the inner '
+        + 'BEGIN/COMMIT pairs come out');
+
+      emptyProject(`${DB}_probe`);
+      const unguarded = await paste(
+        oneFile.replace('DO $selfcheck$', 'ALTER TABLE weld NO FORCE ROW LEVEL SECURITY;\nDO $selfcheck$'),
+        `${DB}_probe`);
+      assert.equal(unguarded.ok, false,
+        'a table that came out without row security is a hole, and finishing on it is worse than failing');
+      assert.match(unguarded.said, /without row security: weld/);
+      assert.match(unguarded.said, /read every row of them/);
+      assert.equal(tables(`${DB}_probe`), '0', 'and that one rolls back too');
+      step('Deploy: an unfinished paste and a table left without row security both raise in plain words, and leave nothing behind');
+
+      // ── Seeing that it worked ─────────────────────────────────────────────────────────────
+      //
+      // The install raises on anything missing, which a dashboard shows in red. What a dashboard may not
+      // show at all is a NOTICE — so the success case reads "Success. No rows returned", and that is a
+      // thin thing to trust a company's data to. backend/supabase-check.sql asks the questions back and
+      // answers them in rows, which a dashboard always shows. Checked against both states it has to tell
+      // apart: the install that is there, and the database that is empty. Reading only.
+      const report = (database) => psql(
+        `postgresql://deploy_owner:${OWNER}@localhost:${PORT}/${database}`
+          + `?sslmode=verify-full&sslrootcert=${CERT}`,
+        ['-f', path.join(__dirname, 'supabase-check.sql')]);
+
+      const onInstalled = report(`${DB}_editor`);
+      assert.match(onInstalled, /Табели \/ Tables\|41\|во ред \/ ok/,
+        `the installed database has to read back as installed: ${onInstalled}`);
+      assert.match(onInstalled, /no row security\|0\|во ред \/ ok/);
+      assert.match(onInstalled, /Rules about who may read what\|94\|во ред \/ ok/);
+      assert.match(onInstalled, /varmak_admin, varmak_api, varmak_engine, varmak_office, varmak_workshop\|во ред/);
+      assert.match(onInstalled, /Next step\|\|Залепи supabase-password\.sql/,
+        'and point at the next thing to paste, which is the only thing left to do in the database');
+      assert.doesNotMatch(onInstalled, /ПРОБЛЕМ|PROBLEM/,
+        'with nothing in it reading as a problem, or the report is noise');
+
+      // ${DB}_probe is the database the two failed pastes above rolled back out of: empty, and the state
+      // somebody is in when a paste did not take. The report has to say so rather than look reassuring.
+      const onEmpty = report(`${DB}_probe`);
+      assert.match(onEmpty, /Табели \/ Tables\|0\|ПРАЗНО/);
+      assert.match(onEmpty, /Next step\|\|Залепи supabase-install\.sql/,
+        'and send them back to the file they have not managed to run yet');
+      assert.equal(tables(`${DB}_probe`), '0', 'and the report reads without writing anything');
+      step('Deploy: the check file reads back an installed database and an empty one, and says which step is next');
+
+      // Only when the four files are the four files: these numbers describe what is shipped, and a
+      // mutated install is the wrong thing to hold a guide to.
+      if (!mutated) {
+        // ── The guide somebody actually follows ──────────────────────────────────────────────
+        //
+        // SUPABASE.md is the click-by-click version of all of the above, in Macedonian, for somebody who
+        // does not have a terminal and should not have to get one. It quotes numbers — how many tables the
+        // report will show, which line of the password file to edit, how long the big file is — and every
+        // one of those is a thing that goes quietly wrong the next time the schema grows. A guide whose
+        // numbers do not match what the screen says is worse than no guide: it is the moment somebody
+        // decides the install failed and starts over on a database that was fine.
+        const guide = fs.readFileSync(path.join(__dirname, '..', 'SUPABASE.md'), 'utf8');
+        const quoted = (label) => {
+          const found = guide.match(new RegExp(`\\| ${label} \\| (\\d+) \\|`));
+          assert.ok(found, `SUPABASE.md no longer shows a row for ${label} — the table it describes has changed`);
+          return found[1];
+        };
+        const live = (sql) => psql(as('postgres', SUPER, `${DB}_editor`), ['-c', sql]).trim();
+        assert.equal(quoted('Табели'), live(`SELECT count(*) FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r';`),
+          'the number of tables the guide says the check file will show is not the number it shows');
+        assert.equal(quoted('Правила кој што смее да чита'),
+          live(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`));
+        // Excluding what an extension brought with it, exactly as the check file does — otherwise this
+        // number is pgcrypto's address rather than a fact about the install.
+        assert.equal(quoted('Работни постапки'), live(`SELECT count(*) FROM pg_proc p
+          JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public'
+            AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid
+                             AND d.classid = 'pg_proc'::regclass AND d.deptype = 'e');`));
+        assert.ok(guide.includes(live(`SELECT string_agg(rolname, ', ' ORDER BY rolname) FROM pg_roles
+          WHERE rolname LIKE 'varmak%';`)), 'and the five roles it lists are not the five that exist');
+
+        // The three numbers that are about the files rather than the database, including the one that
+        // matters most: the line somebody is told to scroll to and edit.
+        const pwLines = fs.readFileSync(path.join(__dirname, 'supabase-password.sql'), 'utf8').split('\n');
+        const pwLine = pwLines.findIndex((line) => /pw text :=/.test(line)) + 1;
+        const toldToEdit = guide.match(/таа е линија (\d+)/);
+        assert.ok(toldToEdit, 'SUPABASE.md no longer says which line of the password file to edit');
+        assert.equal(Number(toldToEdit[1]), pwLine,
+          'the line SUPABASE.md sends somebody to is not the line they have to change');
+        const howLong = guide.match(/околу ([\d.]+) линии/);
+        assert.ok(howLong, 'SUPABASE.md no longer says roughly how long the big file is');
+        assert.equal(Number(howLong[1].replace('.', '')),
+          Math.round(oneFile.split('\n').length / 100) * 100,
+          'and the length it quotes is no longer that file rounded to the nearest hundred');
+        const shortFile = guide.match(/Тој има (\d+) линии/);
+        assert.ok(shortFile, 'SUPABASE.md no longer says how short the password file is');
+        assert.equal(Number(shortFile[1]), pwLines.length - 1,
+          'the whole argument for a separate password file is that it is short enough to read');
+        step('Deploy: the Macedonian guide quotes the numbers this database and these files actually have');
+
+        // And every file it names exists. A guide is read by somebody who cannot check it, so a path that
+        // has been renamed is not a typo to them — it is a dead end at the one step they cannot skip.
+        // Found by writing this: the guide pointed at RESTORE.md, which this repository does not have.
+        const named = [...new Set([...guide.matchAll(/`((?:backend|tools|tests)?\/?[\w.-]+\.(?:sql|js|sh|md|html))`/g)]
+          .map((m) => m[1]))];
+        assert.ok(named.length >= 6, `the guide names almost no files, which cannot be right: ${named}`);
+        const root = path.join(__dirname, '..');
+        const absent = named.filter((name) => !fs.existsSync(path.join(root, name))
+          && !fs.existsSync(path.join(__dirname, name)));
+        assert.deepEqual(absent, [],
+          `SUPABASE.md sends somebody to files that are not here: ${absent.join(', ')}`);
+        step(`Deploy: and every one of the ${named.length} files it names is where it says`);
+      }
+
+      // DEPLOY.md said for a while that install.sh was safe to run again, and it is not: not one of the
+      // 39 tables or 18 counters is created with IF NOT EXISTS, so a second run stops twelve lines into
+      // schema.sql. That claim was found by this suite trying it, not by reading. What is true is the
+      // weaker and more useful thing — it stops *safely*, because each file is one transaction — so both
+      // halves are asked here, and the document is held to saying it.
+      let twiceOver = null;
+      try { install(); } catch (error) { twiceOver = `${error.stdout || ''}${error.stderr || ''}`; }
+      assert.ok(twiceOver, 'a second install.sh over a finished install stops; if it stopped doing so, '
+        + 'DEPLOY.md and supabase-install.sql both need their wording back');
+      assert.match(twiceOver, /seq_customer" already exists/,
+        `and this is the unhelpful message the Supabase path exists to replace: ${twiceOver.slice(-200)}`);
+      assert.equal(value(`SELECT count(*) FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '41',
+        'and it has to leave the install it refused to repeat exactly as it was');
+      const deploy = fs.readFileSync(path.join(__dirname, '..', 'DEPLOY.md'), 'utf8');
+      assert.doesNotMatch(deploy, /`install\.sh` is safe to run again/,
+        'DEPLOY.md is claiming a repeatability that the line above just disproved');
+      assert.match(deploy, /SUPABASE\.md/,
+        'and it has to point at the path for somebody who has no terminal, or they will not find it');
+      step('Deploy: install.sh refuses to repeat itself and leaves the install untouched, and DEPLOY.md says so');
+
+      // ── The password, which is the only thing anybody types ───────────────────────────────
+      //
+      // Kept out of the 7,000-line file on purpose: a file somebody has to edit is a file somebody
+      // scrolls through hunting for the line to edit, in a dashboard, at the end of an install. This one
+      // is 38 lines and the line is near the top. It refuses the two mistakes that end in a server that
+      // cannot connect for a reason nobody can see from the outside.
+      const snippet = fs.readFileSync(path.join(__dirname, 'supabase-password.sql'), 'utf8');
+      const withPassword = (pw) => snippet.replace("'PASTE-A-LONG-RANDOM-PASSWORD-HERE'", `'${pw}'`);
+      assert.notEqual(withPassword('x'), snippet,
+        'the line this test replaces has moved — the snippet somebody edits is not the one being checked');
+
+      const untouched = await paste(snippet, `${DB}_editor`);
+      assert.equal(untouched.ok, false, 'run unchanged, it must refuse: that placeholder is not a password');
+      assert.match(untouched.said, /Nothing was changed/);
+      assert.match(untouched.said, /PASTE-A-LONG-RANDOM-PASSWORD-HERE/,
+        'and name the text to replace, because the alternative is hunting for it');
+
+      const tooShort = await paste(withPassword('eight-ch'), `${DB}_editor`);
+      assert.equal(tooShort.ok, false, 'and refuse one short enough to be worth guessing at');
+      assert.match(tooShort.said, /is 8 characters long/, `counting it: ${tooShort.said}`);
+      assert.match(tooShort.said, /under 24/);
+
+      const chosen = 'a-chosen-password-long-enough-to-pass';
+      const set = await paste(withPassword(chosen), `${DB}_editor`);
+      assert.ok(set.ok, `and set a real one: ${set.said}`);
+      assert.ok(set.notices.some((m) => /server can now sign in/.test(m)));
+      assert.ok(set.notices.some((m) => /DATABASE_URL/.test(m)),
+        'and say where the same password has to go, which is the step that gets forgotten');
+      // The question the whole snippet exists to answer, asked the way the server asks it: over verified
+      // TLS, with a password, as varmak_api. Against the database install.sh built, because the role is
+      // the cluster's and this is the install the rest of the suite is using.
+      assert.equal(psql(`postgresql://varmak_api:${chosen}@localhost:${PORT}/${DB}`
+        + `?sslmode=verify-full&sslrootcert=${CERT}`, ['-c', 'SELECT 1;']).trim(), '1',
+        'the server has to be able to sign in with the password that snippet just set');
+      step('Deploy: the password snippet refuses a placeholder and a short password, and the one it accepts lets the server in');
+
+      // Put back, because the pool above is holding the password install.sh set and the suite is not
+      // finished with it.
+      await paste(withPassword(API), `${DB}_editor`);
+    } finally {
+      fs.rmSync(generated, { recursive: true, force: true });
+    }
+
     // ── The preflight ───────────────────────────────────────────────────────────────────────
     //
     // Asked before anything is written, because install.sh finds out about a wrong database halfway
@@ -385,8 +714,21 @@ async function main() {
     await pool.end().catch(() => {});
   }
 
+  // SUPABASE.md tells somebody, in Macedonian, how many checks stand behind the thing they are about to
+  // paste into their company's database. That number is a claim, so it is held to the count — otherwise it
+  // is one more figure that was true once. Only when the four files are the four files: a mutation run
+  // skips two of the steps above on purpose.
+  if (!Object.values(MUTATED).some(Boolean)) {
+    const guide = fs.readFileSync(path.join(__dirname, '..', 'SUPABASE.md'), 'utf8');
+    const claimed = guide.match(/во (\d+) проверки/);
+    assert.ok(claimed, 'SUPABASE.md no longer says how many checks stand behind it');
+    assert.equal(Number(claimed[1]), checks,
+      'SUPABASE.md quotes a number of checks this suite does not run');
+  }
+
   console.log(`\n${checks} checks: this system installs onto a hosted database as a non-superuser, over`);
-  console.log('verified TLS, and a welder still cannot read a price on the result.');
+  console.log('verified TLS — from a terminal and from a dashboard SQL editor, to the same database —');
+  console.log('and a welder still cannot read a price on the result.');
 }
 
 main().catch((error) => {

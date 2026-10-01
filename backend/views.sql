@@ -835,6 +835,18 @@ ALTER FUNCTION document_record_label(text, bigint) OWNER TO varmak_engine;
 -- And taken back, the moment the last ownership change in this file is done. The privilege exists only
 -- while it is being used, which is the rule the other two files follow.
 REVOKE CREATE ON SCHEMA public FROM varmak_engine;
+
+-- Asked rather than assumed, because the three files each grant this and each take it back, so
+-- forgetting it in one of them is invisible: a later file revokes it again and the install ends
+-- correct anyway. A mutation that deleted this file's REVOKE went unnoticed by every suite for
+-- exactly that reason. The rule is "the privilege exists only while it is being used", and it is
+-- views.sql's own rule, not something to inherit from whatever happens to run next.
+DO $$
+BEGIN
+  IF has_schema_privilege('varmak_engine', 'public', 'CREATE') THEN
+    RAISE EXCEPTION 'varmak_engine still holds CREATE on schema public at the end of views.sql — the grant made for the ownership changes above was not given back';
+  END IF;
+END $$;
 REVOKE ALL ON FUNCTION workspace_snapshot() FROM PUBLIC;
 REVOKE ALL ON FUNCTION workspace_money() FROM PUBLIC;
 REVOKE ALL ON FUNCTION invoice_basis() FROM PUBLIC;

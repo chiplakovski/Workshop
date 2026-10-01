@@ -1235,7 +1235,16 @@ showView(location.hash.slice(1)||'board');
       // every item is a jobcard row and has its own call. Refused rather than quietly dropped, because
       // toServer has nowhere to put it and the dates would look saved.
       if(patch&&'jobcards'in patch)return{error:words('srv_not_built')};
-      queue('save_project',ProjectRecord.toServer(Object.assign({},record,patch,{_server:record})));
+      // Built at send time rather than now. queue() runs its calls one at a time and refreshes the
+      // snapshot between them, so a date change sent straight after a lane move has to read the record
+      // the lane move left behind. Built here it carried the status from *before* that move, and
+      // save_project replaces the record — so the database refused "production to planned", correctly,
+      // on a save this screen had already told the workshop was done. It only showed when the refresh
+      // lost the race, which is why it read as a flaky test for a while.
+      queue('save_project',()=>{
+        const fresh=projectByNo(no)||record;
+        return ProjectRecord.toServer(Object.assign({},fresh,patch,{_server:fresh}));
+      });
       return{pending:true};
     },
     updateJobcard(no,patch){
@@ -1244,8 +1253,13 @@ showView(location.hash.slice(1)||'board');
       // sharedId, because that is the field JobcardRecord.toServer reads the id from — the snapshot
       // calls it `id`, and sending it as anything else would create a second jobcard every time
       // somebody nudged a bar on the schedule.
-      queue('save_jobcard',JobcardRecord.toServer(
-        Object.assign({},record,patch,{sharedId:record.id,_server:record})));
+      // At send time, for the same reason as above: the date form writes the project and then each
+      // item that moved, in that order, and each of those arrives after a refresh of the one before.
+      queue('save_jobcard',()=>{
+        const fresh=jobcardByNo(no)||record;
+        return JobcardRecord.toServer(
+          Object.assign({},fresh,patch,{sharedId:fresh.id,_server:fresh}));
+      });
       return{pending:true};
     }
   };

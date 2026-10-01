@@ -982,6 +982,18 @@ ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text) OWNER TO varmak_
 -- And taken back, as promised above. api.sql grants it again for its own ownership changes and takes
 -- it away the same way, so the privilege exists only while it is being used.
 REVOKE CREATE ON SCHEMA public FROM varmak_engine;
+
+-- Asked rather than assumed, because the three files each grant this and each take it back, so
+-- forgetting it in one of them is invisible: a later file revokes it again and the install ends
+-- correct anyway. A mutation that deleted this file's REVOKE went unnoticed by every suite for
+-- exactly that reason. The rule is "the privilege exists only while it is being used", and it is
+-- auth.sql's own rule, not something to inherit from whatever happens to run next.
+DO $$
+BEGIN
+  IF has_schema_privilege('varmak_engine', 'public', 'CREATE') THEN
+    RAISE EXCEPTION 'varmak_engine still holds CREATE on schema public at the end of auth.sql — the grant made for the ownership changes above was not given back';
+  END IF;
+END $$;
 -- Named roles as well as PUBLIC. REVOKE ... FROM PUBLIC does not remove a privilege granted
 -- explicitly to a role, and an earlier version of this file granted EXECUTE on issue_stock to all
 -- three roles a hundred lines above. The revoke below looked like it closed that and did not: the

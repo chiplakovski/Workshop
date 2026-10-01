@@ -253,6 +253,43 @@ async function main() {
     assert.match(stale, /no longer here/, `a project that has gone should say so: ${stale}`);
     step('Planning: a project somebody else removed is refused by name rather than silently ignored');
 
+    // ── A lane move and a date change, with no pause in between ─────────────────────────────
+    //
+    // What a person actually does: drag the card, then click the dates. Both calls queue, one at a
+    // time, and the second one's body has to be built *after* the first has been accepted and the
+    // snapshot refreshed. Built when the call was made, it carried the status from before the drag —
+    // and save_project replaces the record, so the database refused "production to planned",
+    // correctly, on a save this screen had already told the workshop was done.
+    //
+    // The checks above only reached that refusal when the refresh lost the race, so this suite failed
+    // about four runs in five and read as flaky. This one cannot lose the race: nothing is awaited
+    // between the two calls. A second project, inserted after the counting assertions above so they
+    // are untouched, and because it has to start from a lane the first project has already left.
+    const second = value(`INSERT INTO project
+      (name, customer_id, status, phase, progress, planned_hours, planned_start, planned_completion,
+       deadline, po_number, responsible, notes)
+      VALUES ('Access platform', ${w.customer}, 'planned', 'planning', 0, 18,
+              '2026-11-02', '2026-11-20', '2026-11-27', 'PO-88299', 'Anna Berg', 'Galvanised')
+      RETURNING id;`);
+    const secondRef = value(`SELECT ref FROM project WHERE id = ${second};`);
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForFunction((no) => window.WorkshopData && window.WorkshopData.isServerBacked()
+      && (window.WorkshopData.get().projects || []).some((p) => String(p.no) === no),
+      secondRef, { timeout: 8000 });
+
+    await page.evaluate((no) => { setLane(no, 'progress'); openDateForm(no); }, secondRef);
+    await page.waitForSelector('#dateModal.show', { timeout: 5000 });
+    await page.locator('#dfStart').fill('2026-11-09');
+    await page.locator('#dfDeadline').fill('2026-12-04');
+    await page.evaluate(() => saveDates());
+    await until('the lane move and the dates to both reach Postgres',
+      () => value(`SELECT status || '|' || planned_start::text || '|' || deadline::text
+        FROM project WHERE id = ${second};`) === 'production|2026-11-09|2026-12-04');
+    assert.equal(value(`SELECT coalesce(po_number,'GONE') || '|' || coalesce(notes,'GONE')
+      || '|' || phase FROM project WHERE id = ${second};`), 'PO-88299|Galvanised|production',
+      'and neither of the two calls undid what the other one did, or cleared what neither mentioned');
+    step('Planning: a lane move and a date change with no pause between them both land, and neither undoes the other');
+
     assert.deepEqual(thrown, [], `the page threw: ${thrown.slice(0, 3).join(' / ')}`);
   } finally {
     await browser.close();
