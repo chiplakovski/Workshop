@@ -145,6 +145,24 @@ async function main() {
     assert.equal(await page.locator('[role="alert"]').count(), 0, 'the guard must let this page through');
     step('Reports: signed in, the reports open instead of refusing');
 
+    // The line at the top of the page saying where the figures come from. The live sentence and the
+    // demo sentence are both in the markup, marked data-when-live and data-when-demo, and something has
+    // to choose between them. For weeks nothing did: the function HANDOVER named as doing it did not
+    // exist, so this page told a signed-in workshop, over figures read out of Postgres, that "Reports use
+    // browser demonstration data" — and the owner, reading that, concluded the system was full of
+    // invented records. Asked as the reader sees it: which sentence is visible.
+    const where = await page.evaluate(() => ({
+      live: [...document.querySelectorAll('[data-when-live]')].map((el) => !el.hidden),
+      demo: [...document.querySelectorAll('[data-when-demo]')].map((el) => !el.hidden),
+      text: (document.querySelector('[data-when-live]') || {}).textContent || ''
+    }));
+    assert.ok(where.live.length > 0 && where.demo.length > 0,
+      'the page no longer marks which sentence belongs to which data — this check has nothing to look at');
+    assert.ok(where.live.every(Boolean), 'signed in, the sentence about the workshop database has to be showing');
+    assert.ok(!where.demo.some(Boolean),
+      'and the one calling the records a demonstration has to be hidden, or the workshop stops trusting its screens');
+    step('Reports: signed in, the page says the figures come from the workshop database, not a demonstration');
+
     // ── Where the hours went ────────────────────────────────────────────────────────────────
     await show('hours');
     assert.match(await text('hrs-logged'), /14/, 'the hours logged are the database\'s own sum');

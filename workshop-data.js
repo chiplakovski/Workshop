@@ -43,8 +43,29 @@
     // workshop - every metal shop sorts stock into materials, consumables, hardware and tooling,
     // and stores it on a shelf in a warehouse. Without them the first thing a new workshop must do
     // is design a numbering scheme before it can enter a single bolt. Rename or delete them freely.
-    locationGroups:demoState().locationGroups,
-    itemGroups:demoState().itemGroups,
+    //
+    // Written out here rather than borrowed from demoState(), which is what it used to do, because
+    // the demonstration's groups carry its counters: `next:1003` in Materials, `next:2002` in
+    // Consumables, `next:3001` in Hardware. A workshop starting clean got those too, so its first
+    // stainless steel item would have been numbered 1003 and nothing on any screen would explain
+    // where 1000, 1001 and 1002 had gone. Here `next` is `start`, because nothing has been entered.
+    locationGroups:[
+      {id:'warehouse',name:'Warehouse',subgroups:[
+        {id:'wh1-shelves',name:'Warehouse 1 - shelves'},
+        {id:'wh2-rack',name:'Warehouse 2 - rack'}]}
+    ],
+    itemGroups:[
+      {id:'materials',name:'Materials',start:1000,next:1000,subgroups:[
+        {id:'stainless-steel',name:'Stainless steel'},{id:'mild-steel',name:'Mild steel'},
+        {id:'aluminium',name:'Aluminium'},{id:'copper',name:'Copper'},{id:'pipe-fittings',name:'Pipe & fittings'}]},
+      {id:'consumables',name:'Consumables',start:2000,next:2000,subgroups:[
+        {id:'welding',name:'Welding consumables'},{id:'abrasives',name:'Abrasives'},
+        {id:'gases',name:'Gases'},{id:'paint',name:'Paint & coatings'}]},
+      {id:'hardware',name:'Hardware',start:3000,next:3000,subgroups:[
+        {id:'fasteners',name:'Fasteners'},{id:'seals',name:'Seals & gaskets'}]},
+      {id:'tooling',name:'Tooling',start:4000,next:4000,subgroups:[
+        {id:'cutting-tools',name:'Cutting tools'},{id:'hand-tools',name:'Hand tools'}]}
+    ],
     inventory:[],
     movements:[],
     offcuts:[],
@@ -1439,7 +1460,32 @@
     key:KEY,
     get:()=>clone(state),
     // Back to an empty system - the state a workshop opens on its first day.
-    reset:()=>{state=normalize(emptyState());save('Cleared to an empty system');return clone(state)},
+    // Clears the workshop's records out of this browser — all of them, not just the current copy.
+    // It used to overwrite the current key and stop there, which left the previous versions (v4, v3,
+    // v1), every recovery copy an import or a corrupt load had set aside, and the older per-module
+    // keys still holding whatever was in them. None of that showed on screen afterwards, because the
+    // current key wins on load. But "clear everything" that keeps the demonstration's customers in
+    // five places is not clear, and v4 and v3 are exactly what load() falls back to if the current
+    // key is ever lost — so they would have come back on the one day nobody would understand why.
+    //
+    // What stays is what is not a record: the theme, the language, a session, and the queue of writes
+    // waiting for the server, which belong to the workshop's database rather than to this browser.
+    reset:()=>{
+      const RECORD_KEYS=[LEGACY_KEY_V4,LEGACY_KEY_V3,'varmak.workshop.v1',LEGACY_PROJECTS_KEY,
+        LEGACY_PURCHASING_KEY,LEGACY_DOCUMENTS_KEY,LEGACY_REPORTS_SAVED_KEY,LEGACY_REPORTS_CONFIG_KEY];
+      try{
+        const store=global.localStorage;
+        if(store){
+          const doomed=[];
+          for(let i=0;i<store.length;i++){
+            const k=store.key(i);
+            if(RECORD_KEYS.includes(k)||(k&&k.startsWith(KEY+'.')))doomed.push(k);
+          }
+          doomed.forEach(k=>store.removeItem(k));
+        }
+      }catch(e){/* storage refused: the current copy below is still replaced */}
+      state=normalize(emptyState());save('Cleared to an empty system');return clone(state);
+    },
     // Fill the system with the demonstration records, for showing it populated or for a test to
     // exercise a rule against. Never called on load: an empty system stays empty until asked.
     loadDemoData:()=>{state=normalize(demoState());save('Demonstration data loaded');return clone(state)},

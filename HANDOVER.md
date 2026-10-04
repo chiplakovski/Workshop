@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4i, which is where this document actually ends. Everything above it is the state of a
+**HEAD:** see §4j, which is where this document actually ends. Everything above it is the state of a
 prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
-in; §4i is where it stands now. Sections 4b to 4h are the passes in between, in order, and each says what
+in; §4j is where it stands now. Sections 4b to 4i are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
 **Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
@@ -665,7 +665,8 @@ data" on the sheet somebody files; Equipment said safety controls, permissions a
 the future secured backend", all three of which are in the database and tested. Each line now says what is
 actually the case, or, where something is genuinely missing, says that instead. Where the claim depends on
 which data the session has, the page asks: `paintWhereTheDataCameFrom()` shows `[data-when-demo]` only on
-browser storage.
+browser storage. *[Not true when written: the markup went in and the function did not, so nothing acted on
+either attribute until §4j. Left as it was, with this note, because the sections here are a record.]*
 
 **Documents reads in three languages.** It was the seventeenth screen and the only one with no dictionary
 at all. The trap was its selects: every option carried its label as its value, and the label is what the
@@ -846,6 +847,48 @@ out on purpose, because node-postgres lets that parameter *replace* the TLS sett
 certificate authority and all. Telling somebody to add it leaves the impression that the verification
 depends on them. It does not, and the guide now says so.
 
+
+## 4j. "Every record is invented — delete all of it" — 4 October 2026
+
+The owner, about to install for real, said the data was fictitious and had to go. The first thing worth
+knowing is what is *not* true: a fresh browser opening any of the seventeen pages shows no invented
+record. Checked rather than assumed — every page loaded with empty storage, and the only non-empty lists
+are the two classification schemes (Warehouse; Materials, Consumables, Hardware, Tooling), which are kept
+on purpose. The database installs with no rows at all. So the question was where the owner was seeing
+invented records, and three answers came out of looking.
+
+**Reports told every signed-in workshop that its figures were a demonstration.** §4h said this was
+fixed by `paintWhereTheDataCameFrom()`. That function did not exist. The markup had both sentences —
+`data-when-live` (hidden) and `data-when-demo` (shown) — and nothing chose between them, so "Reports use
+browser demonstration data" sat over figures read out of Postgres for every session. That is very
+plausibly the sentence the owner read. The function is in workshop-ui.js now, run at load, on every
+snapshot and on a language switch, and `tests/reports-server.e2e.js` asks which sentence is actually
+visible to a signed-in office: with the function disconnected it fails.
+
+**A browser that had used the prototype had no way to get rid of it.** `reset()` was in the data layer
+with a button on no page, and even called by hand it only overwrote the current key: v4, v3, v1, every
+recovery copy an import or a corrupt load had set aside, and the older per-module keys kept the invented
+records. None of that showed afterwards — but v4 and v3 are what `load()` falls back to if the current
+key is lost. The hub's *Your data* panel has a third button now, **Clear everything**, in three
+languages, asking first and saying it cannot be undone; it sits in the row the signed-in path removes, so
+it never appears over a real database where clearing a browser would remove nothing. `reset()` takes
+every copy of the records and leaves the theme, the language, a session and the offline queue. Tested by
+filling seven places with the demonstration and pressing it in a real browser: eight customers before,
+none after, nothing named MarineVent anywhere in storage, and the language still Macedonian on reload.
+
+**A workshop that had entered nothing would have numbered its first item 1003.** The empty state
+borrowed its item groups from the demonstration, and the demonstration's groups carry its counters:
+`next:1003` in Materials, `2002` in Consumables, `3001` in Hardware. The empty state writes its own now,
+with `next` equal to `start`.
+
+Three unit tests and one e2e check, and each was proved by putting its bug back: the old `reset()` fails
+two, the borrowed groups fail one, the disconnected painter fails the e2e.
+
+**What was deliberately not deleted:** `demoState()` in workshop-data.js — 338 lines of invented
+customers, people, projects and suppliers. Nothing loads it on its own; `loadDemoData()` and
+`ensureDemoEquipment()` are reachable from no page. It is the fixture eleven browser suites, integrity.js
+and coverage.js exercise every rule against, and removing it means rewriting those fixtures — a decision
+for the owner, put to them rather than taken quietly in either direction.
 
 ## 5. Decisions already made — do not re-open these
 

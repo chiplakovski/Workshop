@@ -4411,3 +4411,51 @@ test('a lookup for a record that is not there answers nothing, and never throws'
   assert.deepEqual(threw,[],`these lookups throw on a miss rather than answering nothing: ${threw.join(' / ')}`);
   assert.deepEqual(wrong,[],`and these answered something for a record that is not there: ${wrong.join(' / ')}`);
 });
+
+// ── Starting clean, and clearing to clean ──────────────────────────────────────────────────────
+// The owner's words: every record in the prototype was invented, and all of it has to go. Two things
+// stood between that and an empty workshop, and neither showed on any screen.
+
+test('an empty workshop numbers its first item in each group from the start of that group', ()=>{
+  // The empty state borrowed its item groups from the demonstration, counters and all, so a workshop
+  // that had entered nothing would have numbered its first stainless steel 1003.
+  const WD=loadEmptyWorkshopData();
+  const groups=WD.get().itemGroups;
+  assert.ok(groups.length>0,'the classification scheme is kept — this check has nothing to look at without it');
+  for(const g of groups)assert.equal(g.next,g.start,`${g.name} starts at ${g.start} but would hand out ${g.next} first`);
+});
+
+test('clearing removes every copy of the records, and keeps the theme and the language', ()=>{
+  const {WD,localStorage}=loadWorkshopDataWithStorage({});
+  WD.loadDemoData();
+  const demo=localStorage.getItem(V5_KEY);
+  // Everywhere a browser that used the prototype can be holding invented records.
+  const copies=[V4_KEY,V3_KEY,'varmak.workshop.v1',`${V5_KEY}.before-import.1700000000000`,
+    `${V5_KEY}.corrupted.1700000000001`,'varmak.projects.ui.v1','varmak.purchasing.orders',
+    'varmak.documents.records','varmak.reports.saved.v1','varmak.reports.config.v1'];
+  for(const k of copies)localStorage.setItem(k,demo);
+  const kept={'varmak.theme':'carbon','varmak.lang':'mk','varmak.session.token':'abc','varmak.queue':'[]'};
+  for(const [k,v] of Object.entries(kept))localStorage.setItem(k,v);
+
+  WD.reset();
+
+  for(const k of copies)assert.equal(localStorage.getItem(k),null,`${k} still holds the records after clearing`);
+  for(const [k,v] of Object.entries(kept))assert.equal(localStorage.getItem(k),v,`${k} is not a record and must survive`);
+  const left=Array.from({length:localStorage.length},(_,i)=>localStorage.getItem(localStorage.key(i))).join(' ');
+  for(const name of ['MarineVent','Anna Berg','Aleksandar C.'])
+    assert.ok(!left.includes(name),`"${name}" is still somewhere in this browser after clearing`);
+  assert.equal(WD.get().customers.length,0);
+});
+
+test('a cleared workshop stays cleared when the page is opened again', ()=>{
+  // The fall-back load reads v4 and v3 when the current key is missing. Clearing has to take those
+  // with it, or the invented records come back the day the current copy is lost.
+  const {WD,localStorage}=loadWorkshopDataWithStorage({});
+  WD.loadDemoData();
+  localStorage.setItem(V4_KEY,localStorage.getItem(V5_KEY));
+  WD.reset();
+  localStorage.removeItem(V5_KEY);
+  const again=loadWorkshopData(Object.fromEntries(Array.from({length:localStorage.length},
+    (_,i)=>[localStorage.key(i),localStorage.getItem(localStorage.key(i))])));
+  assert.equal(again.get().customers.length,0,'the demonstration came back from an old copy');
+});

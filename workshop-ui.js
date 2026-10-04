@@ -318,7 +318,27 @@
     return who||'\u2014';
   };
 
+  // Which data is on the screen, said by the page rather than guessed at by whoever is reading it.
+  //
+  // Five screens told somebody their own records were a demonstration. The intended fix was this:
+  // mark the sentence that is only true on browser storage `data-when-demo`, mark the one that is
+  // only true on the database `data-when-live`, and let the page ask which it is. The marks went in.
+  // The function that acts on them did not — so the demo sentence has been showing in every session
+  // including a real workshop's, the live sentence has been `hidden` from everyone, and HANDOVER said
+  // the matter was closed. Found by going to look for the function it named.
+  //
+  // Both directions matter and the second is the one that bites: a page that says "demonstration
+  // data" over figures read out of Postgres teaches the workshop not to trust its own screens.
+  function paintWhereTheDataCameFrom(){
+    var data=window.WorkshopData;
+    var live=!!(data&&data.isServerBacked&&data.isServerBacked());
+    each('[data-when-live]',function(el){el.hidden=!live;});
+    each('[data-when-demo]',function(el){el.hidden=live;});
+  }
+
   window.addEventListener('workshop:data',paintWhoIsSignedIn);
+  window.addEventListener('workshop:data',paintWhereTheDataCameFrom);
+  window.addEventListener('workshop:lang',paintWhereTheDataCameFrom);
   // And once at load, for the snapshot a page adopts before this file is listening. Also after a language
   // switch, because the dictionary sweep walks every [data-i] on the page: an entry reading "Admin" over a
   // welder's role is exactly how this came back on the phone hub after being fixed once. None of the three
@@ -326,10 +346,13 @@
   window.addEventListener('workshop:lang',paintWhoIsSignedIn);
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',paintWhoIsSignedIn);
+    document.addEventListener('DOMContentLoaded',paintWhereTheDataCameFrom);
   }else{
     paintWhoIsSignedIn();
+    paintWhereTheDataCameFrom();
   }
 
   window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,
-    prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,initialsOf:initialsOf};
+    prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,
+    paintWhereTheDataCameFrom:paintWhereTheDataCameFrom,initialsOf:initialsOf};
 })();
