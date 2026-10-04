@@ -6,6 +6,7 @@ const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const { chromium } = require('playwright-core');
+const { workshopFixture } = require('../fixtures/workshop-state');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const HOST = '127.0.0.1';
@@ -174,7 +175,10 @@ function monitorPage(page, baseUrl) {
 // These suites exercise workflows over a populated one - a board with projects on it, a store with
 // stock in it - so each asks for the demonstration fixture explicitly before it starts.
 async function loadDemoData(page) {
-  await page.evaluate(() => window.WorkshopData.loadDemoData());
+  // Written where the app reads its records on load, then the page reloaded — the app itself can no
+  // longer fill itself, because it no longer carries any invented records to fill itself with.
+  await page.evaluate((state) => localStorage.setItem('varmak.workshop.frontend.v5', JSON.stringify(state)),
+    workshopFixture());
   await page.reload({ waitUntil: 'load' });
   await settle(page);
 }

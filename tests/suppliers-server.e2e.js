@@ -84,7 +84,7 @@ function buildDatabase() {
 // An empty register, a welder to read it, and one item for a merchant to quote.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
@@ -142,7 +142,7 @@ async function main() {
     // ── Adding one ──────────────────────────────────────────────────────────────────────────
     const added = await page.evaluate(async () => {
       openModal('supplier');
-      document.getElementById('supplierName').value = 'Nordic Steel';
+      document.getElementById('supplierName').value = 'TestKappa Steel';
       document.getElementById('supplierCategory').value = 'Steel & plate';
       document.getElementById('supplierCountry').value = 'Sweden';
       document.getElementById('supplierStatus').value = 'preferred';
@@ -155,7 +155,7 @@ async function main() {
     const merchant = value(`SELECT id FROM supplier;`);
     assert.match(value(`SELECT ref FROM supplier WHERE id = ${merchant};`), /^S-\d{3}$/);
     assert.equal(value(`SELECT name || '|' || category || '|' || country || '|' || status
-      FROM supplier WHERE id = ${merchant};`), 'Nordic Steel|Steel & plate|Sweden|preferred',
+      FROM supplier WHERE id = ${merchant};`), 'TestKappa Steel|Steel & plate|Sweden|preferred',
       'the four fields the form asks for are the four that are saved');
     // And nothing else. The screen used to fill in an address, a VAT number, a telephone number and a
     // rating for a merchant nobody had entered them for.
@@ -176,7 +176,7 @@ async function main() {
     await page.evaluate(async () => {
       const answer = await window.WorkshopApi.call('save_supplier', {
         id: Number(window.WorkshopData.get().suppliers[0].sharedId),
-        name: 'Nordic Steel', category: 'Steel & plate', status: 'preferred',
+        name: 'TestKappa Steel', category: 'Steel & plate', status: 'preferred',
         org_no: '556123-4567', vat_no: 'SE556123456701', email: 'order@nordicsteel.se',
         phone: '+46 42 555 10 20', website: 'www.nordicsteel.se',
         address: 'Hamngatan 14, 252 21 Helsingborg', city: 'Helsingborg', country: 'Sweden',
@@ -258,7 +258,7 @@ async function main() {
     await until('the note to reach Postgres', () => value(`SELECT count(*) FROM activity_log
       WHERE entity = 'supplier' AND entity_id = ${merchant} AND action = 'note';`) === '1');
     assert.equal(value(`SELECT actor FROM activity_log
-      WHERE entity = 'supplier' AND entity_id = ${merchant} AND action = 'note';`), 'Anna Berg',
+      WHERE entity = 'supplier' AND entity_id = ${merchant} AND action = 'note';`), 'Test Office',
       'a note carries whoever wrote it, from the session rather than from the page');
     await openSuppliers(page, site);
     assert.match(await page.locator('#notes').innerText(), /three weeks in January/);
@@ -287,7 +287,7 @@ async function main() {
     await signIn(floor, site, 'marko@varmak.se', 'a long enough passphrase');
     await openSuppliers(floor, site);
     const asWelder = await floor.locator('#mainContent').innerText();
-    assert.match(asWelder, /Nordic Steel/, 'a welder who rejected a batch can say whose steel it was');
+    assert.match(asWelder, /TestKappa Steel/, 'a welder who rejected a batch can say whose steel it was');
     assert.match(asWelder, /Hamngatan 14/, 'and where it came from');
     assert.equal(/30 days|30 dagar/.test(asWelder), false,
       'what this workshop is paid on is a commercial term, and the floor is not shown one');
@@ -310,13 +310,13 @@ async function main() {
     const stored = await page.evaluate(() => {
       try { return localStorage.getItem('varmak.workshop.v1'); } catch (e) { return null; }
     });
-    assert.ok(!stored || !stored.includes('Nordic Steel'),
+    assert.ok(!stored || !stored.includes('TestKappa Steel'),
       'the register was also written into browser storage, which is a second copy nobody reconciles');
     step('Suppliers: and nothing went into browser storage — the register is in one place');
 
     // ── What this screen cannot do yet ──────────────────────────────────────────────────────
     const order = await page.evaluate(() => {
-      const answer = window.WorkshopData.upsertPurchaseOrder({ supplier: 'Nordic Steel', value: 1000 });
+      const answer = window.WorkshopData.upsertPurchaseOrder({ supplier: 'TestKappa Steel', value: 1000 });
       return answer && answer.error ? answer.error : 'nothing was refused';
     });
     assert.match(order, /not on the workshop database yet/,

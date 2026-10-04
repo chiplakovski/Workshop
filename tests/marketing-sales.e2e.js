@@ -32,7 +32,7 @@ async function createAndQualifyLead(page) {
   await page.locator('#lfService').fill(SERVICE);
   await page.locator('#lfValue').fill(String(OPPORTUNITY_VALUE));
   await page.locator('#lfPriority').selectOption('high');
-  await page.locator('#lfOwner').selectOption('Aleksandar C.');
+  await page.locator('#lfOwner').selectOption('Test Admin');
   await page.locator('#lfFollowup').fill('2026-09-18');
   await saveMarketingModal(page);
 

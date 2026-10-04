@@ -35,7 +35,7 @@ async function jobcardWorkflow(page) {
 
   await page.evaluate((id) => openOpForm(id), jobcard.id);
   await page.locator('#opDesc').fill(OPERATION_NAME);
-  await page.locator('#opWorker').selectOption('Marko K.');
+  await page.locator('#opWorker').selectOption('Test Welder');
   await page.locator('#opPlannedHours').fill('6');
   await page.locator('#opPlannedStart').fill('2026-09-02');
   await saveModal(page);
@@ -48,7 +48,7 @@ async function jobcardWorkflow(page) {
 
   await page.evaluate(({ id, equipmentId }) => openAddMachineDetails(id, equipmentId), { id: jobcard.id, equipmentId: EQUIPMENT_ID });
   await page.locator('#mcPlanned').fill('4');
-  await page.locator('#mcOperator').fill('Marko K.');
+  await page.locator('#mcOperator').fill('Test Welder');
   await saveModal(page);
 
   let equipment = await page.evaluate((equipmentId) => WorkshopData.getEquipment().find((item) => item.equipmentId === equipmentId), EQUIPMENT_ID);
@@ -60,7 +60,7 @@ async function jobcardWorkflow(page) {
 
   await page.evaluate(({ id, equipmentId }) => openPreUseCheckForm(id, equipmentId), { id: jobcard.id, equipmentId: EQUIPMENT_ID });
   await page.locator('#pcDate').fill('2026-09-02');
-  await page.locator('#pcCheckedBy').fill('Marko K.');
+  await page.locator('#pcCheckedBy').fill('Test Welder');
   await page.locator('#pcResult').selectOption('passed');
   await page.locator('#pcEvidence').fill('Guard, disc and cable inspected before use.');
   await saveModal(page);
@@ -86,7 +86,7 @@ async function hoursWorkflow(page, jobcard) {
   //
   // This screen books the signed-in person's own time: the server takes the worker from the session and
   // ignores any name sent with it, so the badge IS the field, and the screen reads that label back as the
-  // worker. The name used to be written into the page — "Marko K." — so it could never be missing, and an
+  // worker. The name used to be written into the page — "Test Welder" — so it could never be missing, and an
   // hours entry always had somebody on it by accident. It is painted from the snapshot now, and this suite
   // runs with no session at all, so the badge holds an em dash. Booking against that would write hours
   // nobody can be asked about.
@@ -103,7 +103,7 @@ async function hoursWorkflow(page, jobcard) {
   // Now with a session, which on a real screen means the painter in workshop-ui.js has filled the badge
   // from the snapshot. Setting the element is exactly what that does, and it is set rather than assumed so
   // the rest of this suite depends on a name somebody put there instead of one baked into the page.
-  await page.evaluate(() => { document.querySelector('[data-session-name]').textContent = 'Marko K.'; });
+  await page.evaluate(() => { document.querySelector('[data-session-name]').textContent = 'Test Welder'; });
 
   await page.locator('#saveEntry').click();
   await page.waitForTimeout(150);
@@ -125,7 +125,7 @@ async function hoursWorkflow(page, jobcard) {
 
   assert.ok(state.hour, 'Hours did not persist the labour record');
   assert.equal(state.hour.hours, LOGGED_HOURS);
-  assert.equal(state.hour.worker, 'Marko K.');
+  assert.equal(state.hour.worker, 'Test Welder');
   assert.equal(state.operation.loggedHours, LOGGED_HOURS);
   assert.ok(state.usage, 'Equipment usage was not persisted');
   assert.equal(state.usage.meterAfter - state.usage.meterBefore, LOGGED_HOURS);

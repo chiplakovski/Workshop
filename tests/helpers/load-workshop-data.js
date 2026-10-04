@@ -3,6 +3,13 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {workshopFixture}=require('../fixtures/workshop-state');
+
+// The populated workshop most suites exercise their rules against, stored where the app reads its
+// records on load. The app has no way to fill itself any more — it ships with no invented records —
+// so a test that wants a busy workshop puts one in browser storage, as a returning user would have.
+const V5_KEY='varmak.workshop.frontend.v5';
+function fixtureEntries(){return{[V5_KEY]:JSON.stringify(workshopFixture())};}
 
 class MemoryLocalStorage{
   constructor(){this.store=new Map();}
@@ -48,14 +55,10 @@ function buildEnv(seedEntries,customLocalStorage){
 // throws on setItem, to simulate the browser rejecting a write).
 function loadWorkshopData(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
-  const g=buildEnv(seedEntries,customLocalStorage);
+  // Unless a test seeded its own storage, it gets the populated fixture.
+  const g=buildEnv(seedEntries||(customLocalStorage?null:fixtureEntries()),customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
-  const WD=fn(g);
-  // The application itself now opens on an empty system - a workshop should not find somebody
-  // else's customers waiting for it. The suite still needs records to exercise the rules against,
-  // so unless a test seeded its own storage it asks for the demonstration fixture explicitly.
-  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
-  return WD;
+  return fn(g);
 }
 
 // A workshop's first day: nothing stored, nothing assumed.
@@ -69,10 +72,9 @@ function loadEmptyWorkshopData(){
 // inspect exactly what keys/raw values were written (e.g. rescue-copy keys).
 function loadWorkshopDataWithStorage(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
-  const g=buildEnv(seedEntries,customLocalStorage);
+  const g=buildEnv(seedEntries||(customLocalStorage?null:fixtureEntries()),customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
   const WD=fn(g);
-  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
   return {WD,localStorage:g.localStorage};
 }
 
@@ -81,11 +83,10 @@ function loadWorkshopDataWithStorage(seedEntries,customLocalStorage){
 // (as another tab's write would trigger) and observe any event WorkshopData dispatches in response.
 function loadWorkshopDataWithEnv(seedEntries,customLocalStorage){
   const src=fs.readFileSync(path.join(__dirname,'..','..','workshop-data.js'),'utf8');
-  const g=buildEnv(seedEntries,customLocalStorage);
+  const g=buildEnv(seedEntries||(customLocalStorage?null:fixtureEntries()),customLocalStorage);
   const fn=new Function('window',src+'\nreturn window.WorkshopData;');
   const WD=fn(g);
-  if(!seedEntries&&!customLocalStorage)WD.loadDemoData();
   return {WD,localStorage:g.localStorage,window:g};
 }
 
-module.exports={loadWorkshopData,loadEmptyWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage};
+module.exports={fixtureEntries,loadWorkshopData,loadEmptyWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage};

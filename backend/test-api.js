@@ -308,7 +308,7 @@ function receivingExplainsItself(f) {
 
 function convertingKeepsTheTrail(f) {
   const theLead = value(`INSERT INTO lead (company, contact, email, phone, city, source)
-    VALUES ('Malmö Mekaniska AB', 'Anna Berg', 'anna@malmomek.se', '040-123456', 'Malmö', 'trade fair')
+    VALUES ('Malmö Mekaniska AB', 'Test Office', 'anna@malmomek.se', '040-123456', 'Malmö', 'trade fair')
     RETURNING id;`);
   const opp = value(`INSERT INTO opportunity (title, lead_id, value) VALUES ('Frame work', ${theLead}, 320000) RETURNING id;`);
 
@@ -556,7 +556,7 @@ function theFirstAdminAndEveryoneAfter() {
 
   // Works once, on an empty system, with no session — there is nobody to sign in as.
   const first = ok('creating the first admin on an empty system', null, null,
-    `SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    `SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   assert.equal(first, 'anna@varmak.se');
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   assert.equal(value(`SELECT role::text FROM app_user WHERE id = ${admin};`), 'admin');
@@ -688,7 +688,7 @@ function theRegisterOfMachinesAndWhatHappensToThem() {
   const machine = ok('the office putting a machine in the register', 'varmak_office', office,
     `SELECT save_equipment(NULL, 'eq-0100', 'Plasma 120', 'cutting', 'Available', 'Hypertherm',
       'Powermax 120', 'SN-99812', 'A-0100', 2022, 'Handheld plasma cutter',
-      'Bay 2', 'Bay 2', 'Fabrication', 'Anna Berg', 'Marko Ilic', 'Good', 'High',
+      'Bay 2', 'Bay 2', 'Fabrication', 'Test Office', 'Marko Ilic', 'Good', 'High',
       'Eye protection and gloves', current_date + 200, current_date - 400, 'Nordic Machines',
       84000, current_date + 100, 120.5, 500, 'QR-0100', true, 'Bought with the press');`);
   assert.equal(value(`SELECT ref FROM equipment WHERE id = ${machine};`), 'EQ-0100',
@@ -874,7 +874,7 @@ function theStoreCanBeStockedAndCounted() {
 
   // ── Steel arriving ──────────────────────────────────────────────────────────────────────
   const first = ok('fifty kilos at 14.00', 'varmak_office', office,
-    `SELECT receive_stock(${item}, 50, 14.00, 'Nordic Steel', 'DN-4471', 'H240516', 'MTC_H240516.pdf');`);
+    `SELECT receive_stock(${item}, 50, 14.00, 'TestKappa Steel', 'DN-4471', 'H240516', 'MTC_H240516.pdf');`);
   assert.match(value(`SELECT ref FROM stock_movement WHERE id = ${first};`), /^MV-\d{4}-\d{5}$/);
   assert.equal(value(`SELECT stock::text || '|' || avg_cost::text || '|' || last_price::text
     FROM stock_item WHERE id = ${item};`), '50.000|14.00|14.00');
@@ -891,7 +891,7 @@ function theStoreCanBeStockedAndCounted() {
   // The weighted average, which is the difference between a store that can cost a job and one that can
   // only tell you what the last load cost. Fifty at 14.00 plus fifty at 16.00 is a hundred at 15.00.
   ok('fifty more at 16.00', 'varmak_office', office,
-    `SELECT receive_stock(${item}, 50, 16.00, 'Nordic Steel', 'DN-4492');`);
+    `SELECT receive_stock(${item}, 50, 16.00, 'TestKappa Steel', 'DN-4492');`);
   assert.equal(value(`SELECT stock::text || '|' || avg_cost::text || '|' || last_price::text
     FROM stock_item WHERE id = ${item};`), '100.000|15.00|16.00',
     'the average is weighted by what was on the shelf, not replaced by what arrived last');
@@ -950,7 +950,7 @@ function workReachesTheFloor() {
   const project = ok('the office starting a project', 'varmak_office', office,
     `SELECT save_project(NULL, 'Conveyor frame', ${customer}, 'quotation', 40, 0,
       current_date + 60, 'Two frames and a hopper', 'planning', 'Fabrication', 'PO-77',
-      'Marieholm', 'Aleksandar C.', 'not-ordered', NULL, current_date + 7, current_date + 50,
+      'Marieholm', 'Test Admin', 'not-ordered', NULL, current_date + 7, current_date + 50,
       NULL, NULL, NULL, NULL, NULL, NULL, 420000);`);
   assert.match(value(`SELECT ref FROM project WHERE id = ${project};`), /^P-\d{4}-\d{3}$/,
     'the reference comes from the dated sequence, not from the caller');
@@ -1291,7 +1291,7 @@ function theContactListIsReplacedAtomically(w) {
 // not.
 function theListSaysWhoCanActuallyGetIn() {
   sql(`SET client_min_messages = warning; TRUNCATE app_session, app_user RESTART IDENTITY CASCADE;
-       SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+       SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   const welder = value(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
     SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
@@ -1340,7 +1340,7 @@ function theListSaysWhoCanActuallyGetIn() {
 // afternoon, and neither recoverable without a database console.
 function nobodyCanLockTheWorkshopOut() {
   sql(`SET client_min_messages = warning; TRUNCATE app_session, app_user RESTART IDENTITY CASCADE;
-       SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+       SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   const welder = value(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
     SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
@@ -1558,7 +1558,7 @@ function theRegisterOfMerchants() {
     `SELECT save_supplier(NULL, '   ');`, /needs a name/);
 
   const first = ok('adding one', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(NULL, 'Nordic Steel', 'Steel & plate', 'preferred', '556123-4567',
+    `SELECT save_supplier(NULL, 'TestKappa Steel', 'Steel & plate', 'preferred', '556123-4567',
        'SE556123456701', 'order@nordicsteel.se', '+46 42 555 10 20', 'www.nordicsteel.se',
        'Hamngatan 14, 252 21 Helsingborg', 'Helsingborg', 'Sweden', 'Company', '1994', 'DAP',
        '5 000 SEK', 'sek', 4.5, 30, 'Cuts to length on request');`);
@@ -1574,26 +1574,26 @@ function theRegisterOfMerchants() {
   // Two rows under one name is two merchants to the system and one to whoever is ringing them, which is
   // how half a supplier's orders end up invisible on the register meant to show them.
   refused('a second merchant under the same name', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(NULL, 'Nordic Steel');`, /already a supplier called/);
+    `SELECT save_supplier(NULL, 'TestKappa Steel');`, /already a supplier called/);
   refused('the same name in capitals', 'varmak_office', PEOPLE.office,
     `SELECT save_supplier(NULL, 'NORDIC STEEL');`, /already a supplier called/);
   const second = ok('a genuinely different merchant', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(NULL, 'WeldSupply', 'Welding consumables');`);
+    `SELECT save_supplier(NULL, 'TestLambda', 'Welding consumables');`);
   ok('and renaming one to something free', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(${second}, 'WeldSupply Nordic AB', 'Welding consumables');`);
+    `SELECT save_supplier(${second}, 'TestLambda Nordic AB', 'Welding consumables');`);
   refused('renaming it onto the other one', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(${second}, 'Nordic Steel');`, /already a supplier called/);
+    `SELECT save_supplier(${second}, 'TestKappa Steel');`, /already a supplier called/);
   step('Suppliers: one merchant per name, whatever case it is typed in');
 
   // A rating is a judgement about somebody's company. Nobody has to make it, and one made has to be
   // withdrawable — the screen showed four stars beside every supplier because absence was read as 4.
   ok('withdrawing a rating', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(${first}, 'Nordic Steel', 'Steel & plate', 'preferred', NULL, NULL, NULL,
+    `SELECT save_supplier(${first}, 'TestKappa Steel', 'Steel & plate', 'preferred', NULL, NULL, NULL,
        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'SEK', NULL, 30);`);
   assert.equal(value(`SELECT rating IS NULL FROM supplier WHERE id = ${first};`), 't',
     'a rating given has to be removable, or it is not a judgement anybody can change their mind about');
   refused('a rating out of more than five', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(${first}, 'Nordic Steel', NULL, 'active', NULL, NULL, NULL, NULL, NULL,
+    `SELECT save_supplier(${first}, 'TestKappa Steel', NULL, 'active', NULL, NULL, NULL, NULL, NULL,
        NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'SEK', 6);`, /rating/);
   step('Suppliers: nobody has to rate a merchant, and a rating can be taken back');
 
@@ -1604,7 +1604,7 @@ function theRegisterOfMerchants() {
   // What the floor does get is the name, because a welder who has just rejected a batch of steel needs
   // to say whose steel it was — and not what this workshop pays them on.
   assert.equal(as('varmak_workshop', PEOPLE.welder,
-    `SELECT name FROM supplier WHERE id = ${first};`).out, 'Nordic Steel');
+    `SELECT name FROM supplier WHERE id = ${first};`).out, 'TestKappa Steel');
   refused('a welder reading what we pay them on', 'varmak_workshop', PEOPLE.welder,
     `SELECT payment_terms_days FROM supplier WHERE id = ${first};`, /permission denied/);
   step('Suppliers: the register is the office’s, and the floor reads the name without the terms');
@@ -1927,9 +1927,9 @@ function aNonConformanceLivesItsWholeLife(w) {
   refused('verifying nothing', 'varmak_office', PEOPLE.office,
     `SELECT record_ncr_step(${id}, 'verify', '');`, /what was checked/);
   assert.equal(ok('recording the verification', 'varmak_office', PEOPLE.office,
-    `SELECT record_ncr_step(${id}, 'verify', 'Re-run and PT accepted to level B', 'Anna Berg');`),
+    `SELECT record_ncr_step(${id}, 'verify', 'Re-run and PT accepted to level B', 'Test Office');`),
     'waiting-verification');
-  assert.equal(value(`SELECT verified_by FROM ncr WHERE id = ${id};`), 'Anna Berg');
+  assert.equal(value(`SELECT verified_by FROM ncr WHERE id = ${id};`), 'Test Office');
   refused('closing it with no approval reference', 'varmak_office', PEOPLE.office,
     `SELECT record_ncr_step(${id}, 'close', '   ');`, /closure approval reference/);
   assert.equal(ok('closing it', 'varmak_office', PEOPLE.office,

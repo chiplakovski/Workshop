@@ -141,7 +141,7 @@ test('gate: a later UNRELATED passed inspection does NOT clear an earlier unreso
 test('gate: a failed inspection explicitly marked resolved (resolved:true) no longer blocks', ()=>{
   const g=EquipmentGates.getEquipmentSafetyGate(eq({inspections:[
     {id:'INS-2',result:'passed',critical:true},
-    {id:'INS-1',result:'failed',critical:true,resolved:true,resolvedBy:'Aleksandar C.'}
+    {id:'INS-1',result:'failed',critical:true,resolved:true,resolvedBy:'Test Admin'}
   ]}),{asOf:ASOF});
   assert.equal(g.blocked,false);
 });

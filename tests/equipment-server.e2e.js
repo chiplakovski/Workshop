@@ -86,8 +86,8 @@ function buildDatabase() {
 // An empty register, and two jobs for a machine to go to.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 40) RETURNING id;`);
   const card = (title) => value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -152,7 +152,7 @@ async function main() {
         ['equipmentId', 'eq-0100'], ['name', 'Plasma 120'], ['manufacturer', 'Hypertherm'],
         ['model', 'Powermax 120'], ['serial', 'SN-99812'], ['assetNumber', 'A-0100'],
         ['yearOfManufacture', '2022'], ['currentLocation', 'Bay 2'], ['homeLocation', 'Bay 2'],
-        ['department', 'Fabrication'], ['responsiblePerson', 'Anna Berg'],
+        ['department', 'Fabrication'], ['responsiblePerson', 'Test Office'],
         ['purchaseDate', '2022-06-01'], ['purchaseSupplier', 'Nordic Machines'],
         ['purchasePrice', '84000'], ['warrantyExpiry', '2027-06-01'],
         ['operatingHourMeter', '120.5'], ['serviceInterval', '500'],
@@ -211,7 +211,7 @@ async function main() {
     // And the date the machine is judged by moved, through the only door that can move it.
     assert.equal(value(`SELECT last_service_date::text FROM equipment WHERE id = ${machine};`), '2026-06-14');
     assert.equal(value(`SELECT performed_by FROM equipment_event
-      WHERE equipment_id = ${machine} AND kind = 'service';`), 'Anna Berg',
+      WHERE equipment_id = ${machine} AND kind = 'service';`), 'Test Office',
       'in the name of whoever recorded it, taken from the session');
     step('Machines: the three dates the form types in arrive as the events they describe');
 

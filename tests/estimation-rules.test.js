@@ -205,21 +205,21 @@ test('item lock: an item starts editable and stays so until it is locked', ()=>{
 });
 
 test('item lock: locking records who and when, and closes the lines to editing', ()=>{
-  const lock=lockItem(null,'Aleksandar C.','2026-09-11 10:00');
+  const lock=lockItem(null,'Test Admin','2026-09-11 10:00');
   assert.equal(lock.locked,true);
-  assert.equal(lock.by,'Aleksandar C.');
+  assert.equal(lock.by,'Test Admin');
   assert.equal(lock.at,'2026-09-11 10:00');
   assert.equal(canEditItemLines({lock}),false,'a locked item must refuse line edits');
 });
 
 test('item lock: unlocking releases it, keeps the reason, and names who did it', ()=>{
-  const locked=lockItem(null,'Aleksandar C.','2026-09-11 10:00');
-  const released=unlockItem(locked,'Elena N.','2026-09-11 11:30','Customer changed the scope');
+  const locked=lockItem(null,'Test Admin','2026-09-11 10:00');
+  const released=unlockItem(locked,'Test Fitter','2026-09-11 11:30','Customer changed the scope');
   assert.equal(released.locked,false);
   assert.equal(canEditItemLines({lock:released}),true);
   const last=released.trail[released.trail.length-1];
   assert.equal(last.action,'unlocked');
-  assert.equal(last.by,'Elena N.');
+  assert.equal(last.by,'Test Fitter');
   assert.equal(last.at,'2026-09-11 11:30');
   assert.equal(last.reason,'Customer changed the scope');
 });
@@ -249,10 +249,10 @@ test('item lock: an unlock with no reason given is recorded as empty, never as u
 
 test('item lock: the lock survives the project being re-read', ()=>{
   const locked={no:'JC-2026-041',lines:[{desc:'x',category:'labour',qty:1,unit:'h',cost:1,sell:2,disc:0,tax:25}],
-    lock:lockItem(null,'Aleksandar C.','2026-09-11 10:00')};
+    lock:lockItem(null,'Test Admin','2026-09-11 10:00')};
   const {workItems}=reconcileWorkItems([{no:'JC-2026-041',desc:'Cut and form panels'}],[locked]);
   assert.equal(isItemLocked(workItems[0]),true,'re-reading the project must not release a lock');
-  assert.equal(workItems[0].lock.by,'Aleksandar C.');
+  assert.equal(workItems[0].lock.by,'Test Admin');
   assert.equal(workItems[0].lines.length,1);
 });
 

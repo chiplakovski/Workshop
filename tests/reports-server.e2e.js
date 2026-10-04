@@ -68,8 +68,8 @@ function buildDatabase() {
 // minimum. Every figure the three answerable reports show can be checked by hand from this.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours, deadline)
     VALUES ('Conveyor frame', ${customer}, 'production', 40, current_date - 3) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard

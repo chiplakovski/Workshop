@@ -88,11 +88,11 @@ function buildDatabase() {
 // An empty register, a job to inspect, a merchant to complain to, and a welder to sign the result.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Pressure skid', ${customer}, 'production', 120) RETURNING id;`);
   const card = value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -350,7 +350,7 @@ async function main() {
 
     const withNothing = await page.evaluate(async (hold) => {
       openHoldReleaseModal(hold);
-      document.getElementById('hold_authority').value = 'Anna Berg';
+      document.getElementById('hold_authority').value = 'Test Office';
       document.getElementById('hold_reason').value = '   ';
       await submitHoldRelease();
       const box = document.getElementById('holdFormErr');
@@ -361,7 +361,7 @@ async function main() {
 
     const released = await page.evaluate(async (hold) => {
       openHoldReleaseModal(hold);
-      document.getElementById('hold_authority').value = 'Anna Berg';
+      document.getElementById('hold_authority').value = 'Test Office';
       document.getElementById('hold_reason').value = 'Ground out, re-run, PT accepted to level B';
       await submitHoldRelease();
       const box = document.getElementById('holdFormErr');
@@ -372,7 +372,7 @@ async function main() {
       () => value(`SELECT status::text FROM quality_hold WHERE ref = '${hold}';`) === 'released');
     assert.equal(value(`SELECT release_authority || '|' || release_reason
       FROM quality_hold WHERE ref = '${hold}';`),
-      'Anna Berg|Ground out, re-run, PT accepted to level B');
+      'Test Office|Ground out, re-run, PT accepted to level B');
     sql(`UPDATE jobcard SET status = 'completed' WHERE id = ${w.card};`);
     assert.equal(value(`SELECT status::text FROM jobcard WHERE id = ${w.card};`), 'completed',
       'and once the hold is off the work can be finished');
@@ -409,7 +409,7 @@ async function main() {
       set('ncr_title', 'Porosity beyond level B');
       set('ncr_component', 'Shell course 2');
       set('ncr_description', 'Found on the shell seam during PT');
-      set('ncr_responsible', 'Anna Berg');
+      set('ncr_responsible', 'Test Office');
       set('ncr_due', '2026-10-08');
       await submitNcr();
       const box = document.getElementById('ncrFormErr');
@@ -421,10 +421,10 @@ async function main() {
     assert.equal(ncrRaised.refused, '', `the NCR form refused this: ${ncrRaised.refused}`);
     await until('the NCR to reach Postgres', () => value(`SELECT count(*) FROM ncr;`) === '1');
     const ncr = value(`SELECT ref FROM ncr;`);
-    assert.equal(value(`SELECT detected_by FROM ncr WHERE ref = '${ncr}';`), 'Anna Berg',
+    assert.equal(value(`SELECT detected_by FROM ncr WHERE ref = '${ncr}';`), 'Test Office',
       'who found it comes from the session — the screen had one name written into the page');
     assert.equal(value(`SELECT (supplier_id = ${w.supplier})::text || '|' || responsible || '|' || due_on::text
-      FROM ncr WHERE ref = '${ncr}';`), 'true|Anna Berg|2026-10-08');
+      FROM ncr WHERE ref = '${ncr}';`), 'true|Test Office|2026-10-08');
     step('Quality: a non-conformance is raised from the form, by whoever is signed in');
 
     const life = await page.evaluate(async (ncr) => {
@@ -447,7 +447,7 @@ async function main() {
         'Shell course quarantined; welder stood down from the seam');
       await run('disposition', ncrSubmitDisposition, 'rework');
       await run('capa', ncrSubmitCapaLink, 'CAPA-2026-007');
-      await run('verify', ncrSubmitVerify, 'Re-run and PT accepted to level B', 'Anna Berg');
+      await run('verify', ncrSubmitVerify, 'Re-run and PT accepted to level B', 'Test Office');
       await run('close', ncrSubmitClose, 'QM-2026-14');
       return said;
     }, ncr);
@@ -458,7 +458,7 @@ async function main() {
     await until('the NCR to close',
       () => value(`SELECT status::text FROM ncr WHERE ref = '${ncr}';`) === 'closed');
     assert.equal(value(`SELECT containment IS NOT NULL AND disposition = 'rework'
-      AND corrective_action_ref = 'CAPA-2026-007' AND verified_by = 'Anna Berg'
+      AND corrective_action_ref = 'CAPA-2026-007' AND verified_by = 'Test Office'
       AND closure_approval = 'QM-2026-14' AND closed_on = current_date
       FROM ncr WHERE ref = '${ncr}';`), 't',
       'every step left its own record, in its own column');

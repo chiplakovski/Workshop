@@ -86,11 +86,11 @@ function buildDatabase() {
 // An empty register, a welder to read it, and four kinds of record to file against.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Pressure skid', ${customer}, 'production', 120) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -98,7 +98,7 @@ function aWorkshop() {
   const supplier = value(`INSERT INTO supplier (name, city, payment_terms_days)
     VALUES ('Stål & Metall AB', 'Helsingborg', 30) RETURNING id;`);
   const order = value(`INSERT INTO purchase_order (supplier_id, status, ordered_by)
-    VALUES (${supplier}, 'draft', 'Anna Berg') RETURNING id;`);
+    VALUES (${supplier}, 'draft', 'Test Office') RETURNING id;`);
   return {
     welder, customer, project, jobcard, supplier, order,
     projectRef: value(`SELECT ref FROM project WHERE id = ${project};`),
@@ -230,7 +230,7 @@ async function main() {
     // Who filed it. The form has no author field, and the screen used to write one name into every
     // record it made.
     assert.equal(value(`SELECT uploaded_by || '|' || author FROM document WHERE id = ${filed};`),
-      'Anna Berg|Anna Berg', 'the session filed it, and is the author until somebody says otherwise');
+      'Test Office|Test Office', 'the session filed it, and is the author until somebody says otherwise');
     step('Documents: the register records who actually filed it, from the session');
 
     // ── A reference nothing answers to ──────────────────────────────────────────────────────
@@ -248,8 +248,8 @@ async function main() {
     // the column: both are worked out on every read, which is the only way they cannot go stale.
     sql(`SET ROLE varmak_admin; SET app.user_id = '1';
       INSERT INTO document (title, kind, status, expires_on, uploaded_by)
-      VALUES ('Welder Qualification 141', 'Certificate', 'valid', current_date + 12, 'Anna Berg'),
-             ('Crane Inspection 2025', 'Certificate', 'valid', current_date - 3, 'Anna Berg');`);
+      VALUES ('Welder Qualification 141', 'Certificate', 'valid', current_date + 12, 'Test Office'),
+             ('Crane Inspection 2025', 'Certificate', 'valid', current_date - 3, 'Test Office');`);
     await page.evaluate(async () => {
       await window.WorkshopApi.snapshot().then((a) => window.WorkshopData.adoptSnapshot(a.data));
     });
@@ -370,7 +370,7 @@ async function main() {
     // and the rule read as tested while being exercised by nothing. `author: null` is what every other
     // caller sends, and it has to mean "leave whoever it was" rather than "nobody".
     sql(`SET ROLE varmak_admin; SET app.user_id = '1';
-      UPDATE document SET author = 'Marcus Lind' WHERE id = ${loose};`);
+      UPDATE document SET author = 'Test Contact Eleven' WHERE id = ${loose};`);
     // The link is sent as it stands, because save_document takes the whole record: leaving the reference out
     // would unlink it, which is correct behaviour and not what is being asked about here.
     const kept = await page.evaluate(async ({ id, ref }) => {
@@ -384,7 +384,7 @@ async function main() {
     assert.equal(kept, 'saved', `the correction was refused: ${kept}`);
     assert.equal(value(`SELECT coalesce(category,'-') FROM document WHERE id = ${loose};`),
       'Welding procedures', 'the correction has to have landed, or the next line proves nothing');
-    assert.equal(value(`SELECT author FROM document WHERE id = ${loose};`), 'Marcus Lind',
+    assert.equal(value(`SELECT author FROM document WHERE id = ${loose};`), 'Test Contact Eleven',
       'a save with no author named must leave the draughtsman\'s name on the drawing');
     step('Documents: a module nothing resolves, a self-supersede, and a lost author are all refused');
 

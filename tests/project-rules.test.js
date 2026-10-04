@@ -6,20 +6,20 @@ const assert=require('node:assert/strict');
 const ProjectRules=require('../project-rules.js');
 const {custName,custObj,uiStatus,isKnownUiStatus,canHold,canResume,canComplete,canClose,canCancel,canReopen,canApprove,canPlan,canStart,isReadonlyStatus,statusCssClass,mergeProjectFormStateAfterCustomer,STATUS_ORDER,PIPELINE}=ProjectRules;
 
-// A minimal shared-customers fixture matching real v5 ids (MarineVent AB = 1, Sanus Glutenfri AB = 2)
+// A minimal shared-customers fixture matching real v5 ids (TestAlfa AB = 1, TestBeta Glutenfri AB = 2)
 // — the exact mismatch that caused Pass 2's Projects page to show the wrong customer name.
 const SHARED_CUSTOMERS=[
-  {id:1,no:'C-001',name:'MarineVent AB'},
-  {id:2,no:'C-002',name:'Sanus Glutenfri AB'},
-  {id:3,no:'C-003',name:'Schröder Nordic'}
+  {id:1,no:'C-001',name:'TestAlfa AB'},
+  {id:2,no:'C-002',name:'TestBeta Glutenfri AB'},
+  {id:3,no:'C-003',name:'TestGamma Nordic'}
 ];
 
-test('custName: shared customer id 1 resolves to MarineVent AB, not a page-local id 1', ()=>{
-  assert.equal(custName(SHARED_CUSTOMERS,1),'MarineVent AB');
+test('custName: shared customer id 1 resolves to TestAlfa AB, not a page-local id 1', ()=>{
+  assert.equal(custName(SHARED_CUSTOMERS,1),'TestAlfa AB');
 });
 
-test('custName: shared customer id 2 (Sanus Glutenfri AB) resolves correctly and is distinct from id 1', ()=>{
-  assert.equal(custName(SHARED_CUSTOMERS,2),'Sanus Glutenfri AB');
+test('custName: shared customer id 2 (TestBeta Glutenfri AB) resolves correctly and is distinct from id 1', ()=>{
+  assert.equal(custName(SHARED_CUSTOMERS,2),'TestBeta Glutenfri AB');
   assert.notEqual(custName(SHARED_CUSTOMERS,2),custName(SHARED_CUSTOMERS,1));
 });
 
@@ -28,7 +28,7 @@ test('custName: an unknown id resolves to the em-dash placeholder, not a crash',
 });
 
 test('custObj: returns the full matching customer record or null', ()=>{
-  assert.equal(custObj(SHARED_CUSTOMERS,1).name,'MarineVent AB');
+  assert.equal(custObj(SHARED_CUSTOMERS,1).name,'TestAlfa AB');
   assert.equal(custObj(SHARED_CUSTOMERS,9999),null);
 });
 
@@ -125,12 +125,12 @@ test('mergeProjectFormStateAfterCustomer: cancelling (newCustomerId null) preser
 });
 
 test('mergeProjectFormStateAfterCustomer: works identically for a captured edit-in-progress state (not just a brand-new project)', ()=>{
-  const editState=Object.assign({},FULL_FORM_STATE,{no:'P-2026-014',name:'Edited MarineVent Name (unsaved)',customerId:1});
+  const editState=Object.assign({},FULL_FORM_STATE,{no:'P-2026-014',name:'Edited TestAlfa Name (unsaved)',customerId:1});
   const savedNewCustomer=mergeProjectFormStateAfterCustomer(editState,50);
-  assert.equal(savedNewCustomer.name,'Edited MarineVent Name (unsaved)');
+  assert.equal(savedNewCustomer.name,'Edited TestAlfa Name (unsaved)');
   assert.equal(savedNewCustomer.customerId,50);
   const cancelled=mergeProjectFormStateAfterCustomer(editState,null);
-  assert.equal(cancelled.name,'Edited MarineVent Name (unsaved)');
+  assert.equal(cancelled.name,'Edited TestAlfa Name (unsaved)');
   assert.equal(cancelled.customerId,1,'cancelling must keep the customer the project already had, unchanged');
 });
 

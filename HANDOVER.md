@@ -884,11 +884,45 @@ with `next` equal to `start`.
 Three unit tests and one e2e check, and each was proved by putting its bug back: the old `reset()` fails
 two, the borrowed groups fail one, the disconnected painter fails the e2e.
 
-**What was deliberately not deleted:** `demoState()` in workshop-data.js — 338 lines of invented
-customers, people, projects and suppliers. Nothing loads it on its own; `loadDemoData()` and
-`ensureDemoEquipment()` are reachable from no page. It is the fixture eleven browser suites, integrity.js
-and coverage.js exercise every rule against, and removing it means rewriting those fixtures — a decision
-for the owner, put to them rather than taken quietly in either direction.
+**Then the owner said: all of it — start over.** So the invented workshop left the app entirely.
+
+* **`demoState()`, `loadDemoData()` and `ensureDemoEquipment()` are gone from workshop-data.js** — 338
+  lines of invented customers, contacts, suppliers and staff. The browser suites that need a populated
+  workshop take it from `tests/fixtures/workshop-state.js`, written into browser storage the way a
+  returning user's records would be. The server serves only files sitting directly in the site
+  directory, so nothing under `tests/` can reach a browser on the live system.
+* **The test workshop's names are plainly test names** — TestAlfa AB, Test Admin, Test Welder, Test
+  Contact One — applied from one table to the fixture and to every test file at once, so whatever a
+  test writes and reads back still agree. Real places (Marieholm, Malmö) and real machine makers
+  (ESAB, Trumpf, Makita) were left as they are; they are facts, not invented records.
+* **The hardcoded list of seven invented bakeries** that migrated old prototype projects by number is
+  gone. A legacy record keeps the customer it names, or none.
+
+Looking for what else from the invented workshop the app still carried found four things a list of
+names would not have:
+
+* **The Store's receiving form arrived filled in** — barcode, supplier "SteelCo Pty Ltd", shelf
+  A1-01-02, **heat number H240516-S534 and its certificate file**, received by "John Smith". A real
+  delivery booked without retyping would have entered an invented heat number into the traceability
+  record of a certified welding shop. All empty now; "Received by" fills with whoever is signed in.
+* **Receiving goods with no name recorded "John Smith"** in the stock history. It records nobody now.
+* **"Reserve BOM" with no project chosen reserved material against P-2026-014**, a job from the
+  invented workshop. It asks for a project now. The readiness panel also preferred that project by
+  number; it takes the first in the register.
+* **A comment inside a `views.sql` function body named three invented people** — which would have been
+  stored in the real database with the function. Reworded, installer regenerated.
+
+`tests/no-invented-data.test.js` keeps it this way. It reads the people, firms, heat numbers, e-mails and
+registration numbers out of the fixture itself — no second list to forget — and fails if any appears in
+a file the system ships or installs, or if any page pre-fills a field with a fixture value. Proved by
+putting the old receiving form back. A unit test proves the "John Smith" fallback separately, since that
+name is no longer in the fixture for the guard to find.
+
+**One near-miss worth keeping.** After the move, `backend/coverage.js` reported itself *better* than
+its baseline — two fewer missing columns. It was not: the old loader's save had left one activity entry,
+the only record coverage could measure the activity log against, and the fixture had none. The fixture
+carries that entry now and the figure is back to 370 of 476, unchanged. A ratchet that moves when only
+data moved is a check reading nothing — the same lesson as everywhere else in this document.
 
 ## 5. Decisions already made — do not re-open these
 

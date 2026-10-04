@@ -10,14 +10,14 @@ test('canCompleteOp: an operation without a worker cannot be completed, even wit
 });
 
 test('canCompleteOp: an operation without positive logged hours cannot be completed, even with a worker', ()=>{
-  assert.equal(canCompleteOp({worker:'Marko K.',loggedHours:0}),false);
-  assert.equal(canCompleteOp({worker:'Marko K.',loggedHours:-2}),false);
-  assert.equal(canCompleteOp({worker:'Marko K.',loggedHours:NaN}),false);
-  assert.equal(canCompleteOp({worker:'Marko K.',loggedHours:'not a number'}),false);
+  assert.equal(canCompleteOp({worker:'Test Welder',loggedHours:0}),false);
+  assert.equal(canCompleteOp({worker:'Test Welder',loggedHours:-2}),false);
+  assert.equal(canCompleteOp({worker:'Test Welder',loggedHours:NaN}),false);
+  assert.equal(canCompleteOp({worker:'Test Welder',loggedHours:'not a number'}),false);
 });
 
 test('canCompleteOp: an operation with both a worker and positive logged hours can be completed', ()=>{
-  assert.equal(canCompleteOp({worker:'Marko K.',loggedHours:6}),true);
+  assert.equal(canCompleteOp({worker:'Test Welder',loggedHours:6}),true);
 });
 
 test('resumeTargetFor: resumes to the recorded _resumeStatus when it is a legitimate status', ()=>{

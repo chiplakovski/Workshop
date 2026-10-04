@@ -24,7 +24,7 @@ const SupplierRecord = require(MODULE);
 
 // A merchant as the snapshot sends it, with everything the New Supplier form never asks for filled in.
 const fromTheServer = () => ({
-  id: '5', no: 'S-001', name: 'Nordic Steel', category: 'Steel & plate', status: 'preferred',
+  id: '5', no: 'S-001', name: 'TestKappa Steel', category: 'Steel & plate', status: 'preferred',
   org: '556123-4567', vat: 'SE556123456701', email: 'order@nordicsteel.se',
   phone: '+46 42 555 10 20', website: 'www.nordicsteel.se',
   address: 'Hamngatan 14, 252 21 Helsingborg', city: 'Helsingborg', country: 'Sweden',
@@ -36,9 +36,9 @@ const fromTheServer = () => ({
   ],
   activity: [
     { timestamp: '2026-09-01T09:00:00Z', action: 'note', text: 'Lead time up to three weeks',
-      author: 'Anna Berg', date: '2026-09-01', note: true },
-    { timestamp: '2026-08-20T09:00:00Z', action: 'added', text: 'S-001 Nordic Steel',
-      author: 'Anna Berg', date: '2026-08-20', note: false }
+      author: 'Test Office', date: '2026-09-01', note: true },
+    { timestamp: '2026-08-20T09:00:00Z', action: 'added', text: 'S-001 TestKappa Steel',
+      author: 'Test Office', date: '2026-08-20', note: false }
   ]
 });
 
@@ -57,7 +57,7 @@ test('a form that asks for four fields does not clear the other fifteen', () => 
 
 test('the screen’s words are the schema’s longer names', () => {
   const sent = SupplierRecord.toServer({
-    name: 'WeldSupply', type: 'Company', delivery: 'EXW', minimum: '1 500 SEK', org: '556987-1122',
+    name: 'TestLambda', type: 'Company', delivery: 'EXW', minimum: '1 500 SEK', org: '556987-1122',
     vat: 'SE556987112201'
   });
   assert.equal(sent.supplier_type, 'Company');
@@ -86,7 +86,7 @@ test('the payment terms are words on screen and a count of days underneath', () 
   // And through the save, which is where it matters: the column is an int, so the words arriving
   // untranslated are not a wrong figure, they are a refused save — and the screen was reporting a
   // success either way until the form learned to wait for the answer.
-  const sent = SupplierRecord.toServer({ name: 'Nordic Steel', payment: '30 days' });
+  const sent = SupplierRecord.toServer({ name: 'TestKappa Steel', payment: '30 days' });
   assert.equal(sent.payment_terms_days, 30);
   assert.equal(typeof sent.payment_terms_days, 'number');
   assert.equal(SupplierRecord.toServer({ name: 'X', payment: 'on delivery' }).payment_terms_days, null);
@@ -116,7 +116,7 @@ test('nobody having rated a merchant is not the same as rating them zero', () =>
 
 test('the six figures that are answers computed elsewhere are not saved', () => {
   const sent = SupplierRecord.toServer({
-    name: 'Nordic Steel', performance: { delivery: 88, quality: 90 }, spendYtd: '240 000 SEK',
+    name: 'TestKappa Steel', performance: { delivery: 88, quality: 90 }, spendYtd: '240 000 SEK',
     spendYtdChange: '+12%', openPOs: 3, openPOsValue: '84 000 SEK',
     overdueDeliveries: 1, overdueDeliveriesValue: '12 000 SEK'
   });
@@ -168,14 +168,14 @@ test('the dated notes and the standing description are two things, not one word'
   // where the description belongs, so the text became "2026-09-01,Lead time up to three weeks,Anna
   // Berg". The column is `description` on this side of the wire now.
   const held = SupplierRecord.fromServer(fromTheServer());
-  assert.deepEqual(held.notes, [['2026-09-01', 'Lead time up to three weeks', 'Anna Berg']],
+  assert.deepEqual(held.notes, [['2026-09-01', 'Lead time up to three weeks', 'Test Office']],
     'only the entries marked as notes — the rest of the trail is what happened, not what somebody wrote');
   assert.equal(held.description, 'Cuts to length on request');
   assert.equal(SupplierRecord.toServer(held).notes, 'Cuts to length on request',
     'and the description goes back as the description, whatever is in the notes panel');
   // Even when the caller hands back the list under its own name, which is what the screen does.
   const edited = SupplierRecord.toServer(Object.assign({}, held, {
-    notes: [['2026-09-02', 'Another note', 'Anna Berg'], ...held.notes]
+    notes: [['2026-09-02', 'Another note', 'Test Office'], ...held.notes]
   }));
   assert.equal(edited.notes, 'Cuts to length on request',
     'a note added on screen cannot overwrite the merchant\u2019s description');

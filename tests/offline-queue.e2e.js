@@ -21,6 +21,7 @@
 //   * A tablet that cannot read the workshop does not fall back to the browser's own storage. The
 //     records still in it are demonstration data, and hours logged onto them go where nobody looks.
 
+const { workshopFixture } = require('./fixtures/workshop-state');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -111,7 +112,7 @@ function buildDatabase() {
 // share the tablet — which is the arrangement the queue's owner rule exists for.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = (email, name) => {
     const id = value(`INSERT INTO app_user (email, display_name, role)
       VALUES ('${email}', '${name}', 'workshop') RETURNING id;`);
@@ -120,7 +121,7 @@ function aWorkshop() {
   };
   const marko = welder('marko@varmak.se', 'Marko Ilic');
   const erik = welder('erik@varmak.se', 'Erik Sund');
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 40) RETURNING id;`);
   const card = (title) => value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -340,7 +341,9 @@ async function main() {
     // is the refusal being tested. That WorkshopData accepts this write at all is the point: the
     // no-two-worlds guard refuses it the moment a snapshot has been adopted, and this is the one
     // state where it cannot — signed in, with nothing adopted.
-    await page.evaluate(() => window.WorkshopData.loadDemoData());
+    // Through importBackup, the app's own way of taking in a whole workshop: the app no longer carries
+    // invented records to fill itself with, and this has to land without a reload.
+    await page.evaluate((state) => window.WorkshopData.importBackup(state), workshopFixture());
     await page.waitForFunction(() => document.querySelectorAll('#project option').length > 1,
       { timeout: 5000 });
     const bait = await page.evaluate(() => {

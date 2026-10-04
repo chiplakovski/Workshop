@@ -6,7 +6,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('fs');
 const path=require('path');
-const {loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage,loadEmptyWorkshopData}=require('./helpers/load-workshop-data');
+const {fixtureEntries,loadWorkshopData,loadWorkshopDataWithStorage,loadWorkshopDataWithEnv,MemoryLocalStorage,loadEmptyWorkshopData}=require('./helpers/load-workshop-data');
 
 const V5_KEY='varmak.workshop.frontend.v5';
 const V4_KEY='varmak.workshop.frontend.v4';
@@ -198,7 +198,7 @@ test('equipment: available equipment can be assigned', ()=>{
   // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
   // exercises a genuinely fresh assignment, not an (also-valid) same-jobcard idempotent re-assign.
   WD.returnEquipment('E-1001',{});
-  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error);
   assert.equal(res.assignedProject,'P-2026-014');
 });
@@ -219,13 +219,13 @@ test('equipment: getEquipment() does not modify stored state', ()=>{
   assert.equal(WD.getDataHealth().sourceKey,V5_KEY,'no save() should have been triggered by a read');
 });
 
-test('equipment: ensureDemoEquipment() explicitly adds demonstration equipment to an empty collection', ()=>{
-  const v5=minimalState({version:5,customers:[{id:1,no:'C-001',name:'X'}],equipment:[]});
-  const WD=loadWorkshopData({[V5_KEY]:JSON.stringify(v5)});
+test('the app carries no way to fill itself with invented records', ()=>{
+  // loadDemoData() and ensureDemoEquipment() used to pour a made-up workshop in on request. Both are
+  // gone with the records they poured; a test that wants a populated workshop seeds storage itself.
+  const WD=loadEmptyWorkshopData();
+  assert.equal(typeof WD.loadDemoData,'undefined');
+  assert.equal(typeof WD.ensureDemoEquipment,'undefined');
   assert.deepEqual(WD.getEquipment(),[]);
-  const result=WD.ensureDemoEquipment();
-  assert.ok(Array.isArray(result)&&result.length>0,'ensureDemoEquipment must add demo records when called explicitly');
-  assert.deepEqual(WD.getEquipment(),result,'getEquipment() reflects the change once explicitly made');
 });
 
 test('equipment: existing equipment records are left unchanged by getEquipment() and by loading', ()=>{
@@ -259,10 +259,10 @@ test('equipment gate: available equipment with no blocker can be reserved and th
   // Seed E-1001 already carries an assignedJobcard (JC-2026-0001) — return it first so this test
   // exercises a genuinely fresh reservation, not a (also-valid) different-jobcard conflict.
   WD.returnEquipment('E-1001',{});
-  const reserved=WD.reserveEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',reservedBy:'Marko K.'});
+  const reserved=WD.reserveEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',reservedBy:'Test Welder'});
   assert.ok(!reserved.error);
   assert.equal(reserved.status,'Reserved');
-  const assigned=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!assigned.error);
   assert.equal(assigned.assignedProject,'P-2026-014');
 });
@@ -281,37 +281,37 @@ test('equipment gate: an unrecognised/malformed status through the real API fail
 // Requirements can now ONLY be changed through updateEquipmentRequirements (never updateEquipment)
 // — used throughout this test block wherever a mandatory flag needs setting up.
 function setEqRequirements(WD,equipmentId,flags){
-  return WD.updateEquipmentRequirements(equipmentId,flags,{updatedBy:'Aleksandar C.',reason:'Test setup',approvalReference:'APPR-TEST-1'});
+  return WD.updateEquipmentRequirements(equipmentId,flags,{updatedBy:'Test Admin',reason:'Test setup',approvalReference:'APPR-TEST-1'});
 }
 test('equipment gate: overdue maintenance/inspection/certification/calibration each block through WorkshopData exactly when mandatory (set up via their dedicated methods, never updateEquipment)', ()=>{
   const WD1=loadWorkshopData();
   setEqRequirements(WD1,'E-1001',{maintenanceRequired:true});
-  WD1.addMaintenanceRecord('E-1001',{completedBy:'Marko K.',date:'2019-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2020-01-01'});
+  WD1.addMaintenanceRecord('E-1001',{completedBy:'Test Welder',date:'2019-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2020-01-01'});
   assert.equal(WD1.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true,'maintenanceDate');
 
   const WD2=loadWorkshopData();
   setEqRequirements(WD2,'E-1001',{inspectionRequired:true});
-  WD2.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2019-01-01',evidence:'Visual check OK',nextDueDate:'2020-01-01'});
+  WD2.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2019-01-01',evidence:'Visual check OK',nextDueDate:'2020-01-01'});
   assert.equal(WD2.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true,'inspectionDate');
 
   const WD3=loadWorkshopData();
   setEqRequirements(WD3,'E-1001',{certificationRequired:true});
-  WD3.addCertification('E-1001',{issuedBy:'Aleksandar C.',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
+  WD3.addCertification('E-1001',{issuedBy:'Test Admin',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
   assert.equal(WD3.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true,'certificationExpiry');
 
   const WD4=loadWorkshopData();
   setEqRequirements(WD4,'E-1001',{calibrationRequired:true});
-  WD4.addCalibration('E-1001',{calibratedBy:'Aleksandar C.',date:'2019-01-01',result:'passed',evidence:'Calibration certificate on file',nextDueDate:'2020-01-01'});
+  WD4.addCalibration('E-1001',{calibratedBy:'Test Admin',date:'2019-01-01',result:'passed',evidence:'Calibration certificate on file',nextDueDate:'2020-01-01'});
   assert.equal(WD4.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true,'calibrationDate');
 
   const WD5=loadWorkshopData();
-  WD5.addMaintenanceRecord('E-1001',{completedBy:'Marko K.',date:'2019-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2020-01-01'});
+  WD5.addMaintenanceRecord('E-1001',{completedBy:'Test Welder',date:'2019-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2020-01-01'});
   assert.equal(WD5.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,false,'not mandatory must stay backwards-compatible');
 });
 test('equipment gate: canAssignEquipment/canUseEquipment accept options.asOf for deterministic date-based checks', ()=>{
   const WD=loadWorkshopData();
   setEqRequirements(WD,'E-1001',{maintenanceRequired:true});
-  WD.addMaintenanceRecord('E-1001',{completedBy:'Marko K.',date:'2026-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2026-06-15'});
+  WD.addMaintenanceRecord('E-1001',{completedBy:'Test Welder',date:'2026-01-01',result:'completed',evidence:'Service report on file',nextDueDate:'2026-06-15'});
   assert.equal(WD.canAssignEquipment('E-1001',{asOf:'2026-06-01'}).allowed,true);
   assert.equal(WD.canAssignEquipment('E-1001',{asOf:'2026-07-01'}).allowed,false);
 });
@@ -319,7 +319,7 @@ test('equipment gate: logEquipmentUsage requires a positive, finite number of ho
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').operatingHourMeter;
   for(const hours of [0,-1,NaN,Infinity,undefined,null,'abc']){
-    const res=WD.logEquipmentUsage('E-1001',{hours,worker:'Marko K.'});
+    const res=WD.logEquipmentUsage('E-1001',{hours,worker:'Test Welder'});
     assert.ok(res.error,`hours=${hours} must be rejected`);
   }
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').operatingHourMeter,before);
@@ -333,18 +333,18 @@ test('equipment gate: canUseEquipment requires a mandatory pre-use check, but ca
 test('equipment gate: usage is blocked without a matching passed pre-use check when mandatory, and succeeds once one is recorded', ()=>{
   const WD=loadWorkshopData();
   setEqRequirements(WD,'E-1001',{preUseCheckRequired:true});
-  const blocked=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Marko K.',date:EQ_ASOF});
+  const blocked=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Test Welder',date:EQ_ASOF});
   assert.equal(blocked.code,'EQUIPMENT_SAFETY_BLOCKED');
-  const passed=WD.recordEquipmentPreUseCheck('E-1001',{result:'passed',checkedBy:'Marko K.',date:EQ_ASOF,checklist:'Guards in place, oil level OK'});
+  const passed=WD.recordEquipmentPreUseCheck('E-1001',{result:'passed',checkedBy:'Test Welder',date:EQ_ASOF,checklist:'Guards in place, oil level OK'});
   assert.ok(!passed.error);
-  const ok=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Marko K.',date:EQ_ASOF});
+  const ok=WD.logEquipmentUsage('E-1001',{hours:2,worker:'Test Welder',date:EQ_ASOF});
   assert.ok(!ok.error);
 });
 test('equipment gate: successful assigned usage transitions Reserved equipment to In Use and records an audit entry', ()=>{
   const WD=loadWorkshopData();
-  const assigned=WD.assignEquipment('E-1007',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment('E-1007',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(assigned.status,'Reserved');
-  const used=WD.logEquipmentUsage('E-1007',{hours:2.5,worker:'Marko K.',date:EQ_ASOF,project:'P-2026-014',jobcard:'JC-2026-0001'});
+  const used=WD.logEquipmentUsage('E-1007',{hours:2.5,worker:'Test Welder',date:EQ_ASOF,project:'P-2026-014',jobcard:'JC-2026-0001'});
   assert.ok(!used.error);
   assert.equal(used.status,'In Use');
   assert.equal(used.usageHistory[0].duration,2.5);
@@ -353,33 +353,33 @@ test('equipment gate: successful assigned usage transitions Reserved equipment t
 });
 test('equipment gate: a failed pre-use check immediately blocks usage and is recorded as audit history (never a single toggle)', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.recordEquipmentPreUseCheck('E-1001',{result:'failed',checkedBy:'Marko K.',date:EQ_ASOF,notes:'Guard missing'});
+  const res=WD.recordEquipmentPreUseCheck('E-1001',{result:'failed',checkedBy:'Test Welder',date:EQ_ASOF,notes:'Guard missing'});
   assert.ok(!res.error);
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   assert.equal(item.preUseChecks.length,1);
   assert.equal(item.status,'Inspection Required');
   assert.ok(item.activity.some(a=>/Pre-use check failed/.test(a.action)));
-  const usage=WD.logEquipmentUsage('E-1001',{hours:1,worker:'Marko K.'});
+  const usage=WD.logEquipmentUsage('E-1001',{hours:1,worker:'Test Welder'});
   assert.equal(usage.code,'EQUIPMENT_SAFETY_BLOCKED');
 });
 test('equipment gate: recordEquipmentPreUseCheck validates required fields and requires evidence for a passed result', ()=>{
   const WD=loadWorkshopData();
   assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{result:'passed',date:EQ_ASOF}).error,'missing checkedBy');
-  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',result:'passed'}).error,'missing date');
-  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF}).error,'missing result');
-  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed'}).error,'passed with no evidence/checklist');
-  const ok=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Guards in place, oil level OK'});
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',result:'passed'}).error,'missing date');
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:EQ_ASOF}).error,'missing result');
+  assert.ok(WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed'}).error,'passed with no evidence/checklist');
+  const ok=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'Guards in place, oil level OK'});
   assert.ok(!ok.error);
 });
 test('equipment gate: pre-use checks accumulate as history, never overwriting a single toggle', ()=>{
   const WD=loadWorkshopData();
-  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-29',result:'passed',checklist:'OK'});
-  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-29',result:'passed',checklist:'OK'});
+  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK'});
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').preUseChecks.length,2);
 });
 test('equipment gate: a failed critical inspection quarantines the equipment and blocks assignment/usage', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
+  const res=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
   assert.ok(!res.error);
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').status,'Quarantined');
   const assign=WD.assignEquipment('E-1001',{project:'P-1'});
@@ -387,23 +387,23 @@ test('equipment gate: a failed critical inspection quarantines the equipment and
 });
 test('equipment gate: an open breakdown blocks assignment and usage', ()=>{
   const WD=loadWorkshopData();
-  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder'});
   const res=WD.assignEquipment('E-1001',{project:'P-1'});
   assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
 });
 test('equipment gate: reportBreakdown places the equipment Out of Service and preserves the project/jobcard reference for traceability', ()=>{
   const WD=loadWorkshopData();
   WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001'});
-  const rec=WD.reportBreakdown('E-1001',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  const rec=WD.reportBreakdown('E-1001',{reason:'Overheating',responsiblePerson:'Test Welder'});
   assert.equal(rec.projectNo,'P-2026-014');
   assert.equal(rec.jobcardNo,'JC-2026-0001');
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').status,'Out of Service');
 });
 test('equipment gate: resolveBreakdown requires resolvedBy and resolutionEvidence, clears the open-breakdown blocker, and never deletes the record', ()=>{
   const WD=loadWorkshopData();
-  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder'});
   assert.ok(WD.resolveBreakdown('E-1001',br.id,{}).error);
-  const resolved=WD.resolveBreakdown('E-1001',br.id,{resolvedBy:'Marko K.',resolutionEvidence:'Motor replaced and tested'});
+  const resolved=WD.resolveBreakdown('E-1001',br.id,{resolvedBy:'Test Welder',resolutionEvidence:'Motor replaced and tested'});
   assert.ok(!resolved.error);
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   assert.equal(item.downtimeRecords.length,1,'the original breakdown record must not be deleted');
@@ -413,14 +413,14 @@ test('equipment gate: resolveBreakdown requires resolvedBy and resolutionEvidenc
 test('equipment gate: returnEquipment clears the assignment but preserves a blocking status', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Quarantined');
-  const res=WD.returnEquipment('E-1001',{user:'Marko K.'});
+  const res=WD.returnEquipment('E-1001',{user:'Test Welder'});
   assert.equal(res.status,'Quarantined');
   assert.equal(res.assignedProject,null);
 });
 test('equipment gate: returnEquipment sets status to Available for genuinely safe equipment', ()=>{
   const WD=loadWorkshopData();
   WD.assignEquipment('E-1001',{project:'P-1'});
-  const res=WD.returnEquipment('E-1001',{user:'Marko K.'});
+  const res=WD.returnEquipment('E-1001',{user:'Test Welder'});
   assert.equal(res.status,'Available');
 });
 test('equipment gate: updateEquipment cannot move blocked equipment directly into Available, Reserved or In Use', ()=>{
@@ -448,7 +448,7 @@ test('equipment gate: assignEquipment never trusts a caller-supplied assignment.
   const WD=loadWorkshopData();
   // Seed E-1001 is already assigned to JC-2026-0001 — assign it to that SAME jobcard (idempotent,
   // always allowed) so this test isolates the status-trust behaviour, not the conflict check.
-  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.',status:'Available'});
+  const res=WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Test Welder',assignedBy:'Test Admin',status:'Available'});
   assert.ok(!res.error);
   assert.equal(res.status,'Reserved','assignment.status must be ignored — assigning always reserves, never trusts a caller-chosen status');
 });
@@ -464,7 +464,7 @@ test('equipment gate: reserveEquipment rejects blocked equipment — it is not a
 test('bypass fix A: updateEquipment cannot disable a mandatory requirement flag', ()=>{
   const WD=loadWorkshopData();
   setEqRequirements(WD,'E-1001',{certificationRequired:true});
-  WD.addCertification('E-1001',{issuedBy:'Aleksandar C.',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
+  WD.addCertification('E-1001',{issuedBy:'Test Admin',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{asOf:EQ_ASOF}).blocked,true);
   const res=WD.updateEquipment('E-1001',{requirements:{certificationRequired:false}});
   assert.equal(res.code,'EQUIPMENT_SAFETY_FIELDS_PROTECTED');
@@ -474,7 +474,7 @@ test('bypass fix A: updateEquipment cannot disable a mandatory requirement flag'
 test('bypass fix B: updateEquipment cannot move a gate-controlling date (e.g. certificationExpiry) into the future', ()=>{
   const WD=loadWorkshopData();
   setEqRequirements(WD,'E-1001',{certificationRequired:true});
-  WD.addCertification('E-1001',{issuedBy:'Aleksandar C.',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
+  WD.addCertification('E-1001',{issuedBy:'Test Admin',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
   const res=WD.updateEquipment('E-1001',{certificationExpiry:'2030-01-01'});
   assert.equal(res.code,'EQUIPMENT_SAFETY_FIELDS_PROTECTED');
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
@@ -483,7 +483,7 @@ test('bypass fix B: updateEquipment cannot move a gate-controlling date (e.g. ce
 test('bypass fix: the full documented exploit (disable requirement + move date + assign) is rejected at every step', ()=>{
   const WD=loadWorkshopData();
   setEqRequirements(WD,'E-1001',{certificationRequired:true});
-  WD.addCertification('E-1001',{issuedBy:'Aleksandar C.',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
+  WD.addCertification('E-1001',{issuedBy:'Test Admin',date:'2019-01-01',expiryDate:'2020-01-01',certificateNumber:'CERT-TEST-1'});
   assert.equal(WD.canAssignEquipment('E-1001',{asOf:EQ_ASOF}).allowed,false,'step 2: correctly blocked');
   const tampered=WD.updateEquipment('E-1001',{requirements:{certificationRequired:false},certificationExpiry:'2030-01-01'});
   assert.equal(tampered.code,'EQUIPMENT_SAFETY_FIELDS_PROTECTED','step 3: the tamper attempt itself is rejected');
@@ -520,16 +520,16 @@ test('bypass fix D: createEquipment preserves and normalizes a supplied requirem
 test('bypass fix E: an empty or minimal {result:"passed"} inspection is rejected outright', ()=>{
   const WD=loadWorkshopData();
   assert.ok(WD.addInspection('E-1001',{result:'passed'}).error,'nothing but a result must be rejected');
-  assert.ok(WD.addInspection('E-1001',{result:'passed',inspector:'Aleksandar C.'}).error,'missing date');
-  assert.ok(WD.addInspection('E-1001',{result:'passed',inspector:'Aleksandar C.',date:EQ_ASOF}).error,'missing evidence/reference');
-  const ok=WD.addInspection('E-1001',{result:'passed',inspector:'Aleksandar C.',date:EQ_ASOF,evidence:'Visual check performed, no defects'});
+  assert.ok(WD.addInspection('E-1001',{result:'passed',inspector:'Test Admin'}).error,'missing date');
+  assert.ok(WD.addInspection('E-1001',{result:'passed',inspector:'Test Admin',date:EQ_ASOF}).error,'missing evidence/reference');
+  const ok=WD.addInspection('E-1001',{result:'passed',inspector:'Test Admin',date:EQ_ASOF,evidence:'Visual check performed, no defects'});
   assert.ok(!ok.error);
 });
 // (F) unrelated passed inspection does not clear a critical failure.
 test('bypass fix F: an unrelated later passed inspection does NOT clear an earlier critical failure', ()=>{
   const WD=loadWorkshopData();
-  WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
-  WD.addInspection('E-1001',{inspector:'Marko K.',result:'passed',date:'2026-08-25',evidence:'Unrelated routine check, different item'});
+  WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
+  WD.addInspection('E-1001',{inspector:'Test Welder',result:'passed',date:'2026-08-25',evidence:'Unrelated routine check, different item'});
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blocked,true,'the critical failure must still block');
   const assign=WD.assignEquipment('E-1001',{project:'P-1'});
   assert.equal(assign.code,'EQUIPMENT_SAFETY_BLOCKED');
@@ -537,19 +537,19 @@ test('bypass fix F: an unrelated later passed inspection does NOT clear an earli
 // (G) old passed inspection cannot authorize post-failure return to service.
 test('bypass fix G: an OLD passed inspection (predating a later failure) cannot authorize return to service', ()=>{
   const WD=loadWorkshopData();
-  const oldPass=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-01-01',evidence:'Routine annual check'});
-  WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
+  const oldPass=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-01-01',evidence:'Routine annual check'});
+  WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:oldPass.id,returnDate:EQ_ASOF});
   assert.ok(res.error,'an inspection dated before the failure cannot serve as proof of a fix that came after it');
 });
 // (H) explicit linked reinspection can resolve the correct failed inspection.
 test('bypass fix H: resolveEquipmentInspection with a genuinely newer, evidenced passed reinspection resolves the correct failure', ()=>{
   const WD=loadWorkshopData();
-  const failed=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
+  const failed=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
   const missing=WD.resolveEquipmentInspection('E-1001',failed.id,{});
   assert.ok(missing.error,'missing authority/evidence fields must be rejected');
-  const reinspection=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-08-25',evidence:'Frame repaired and re-welded, PT accepted'});
-  const resolved=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Aleksandar C.',resolutionEvidence:'Frame repaired, re-inspected and accepted',passedInspectionReference:reinspection.id,resolutionDate:'2026-08-25'});
+  const reinspection=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-08-25',evidence:'Frame repaired and re-welded, PT accepted'});
+  const resolved=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Test Admin',resolutionEvidence:'Frame repaired, re-inspected and accepted',passedInspectionReference:reinspection.id,resolutionDate:'2026-08-25'});
   assert.ok(!resolved.error);
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blocked,false);
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
@@ -559,10 +559,10 @@ test('bypass fix H: resolveEquipmentInspection with a genuinely newer, evidenced
 // (I) resolving one failure does not resolve another failure.
 test('bypass fix I: resolving one failed inspection does not resolve a second, independent failure', ()=>{
   const WD=loadWorkshopData();
-  const failed1=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-18'});
-  const failed2=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:false,findings:'Loose guard',date:'2026-08-19'});
-  const reinspection=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-08-25',evidence:'Frame repaired and re-welded'});
-  WD.resolveEquipmentInspection('E-1001',failed1.id,{resolvedBy:'Aleksandar C.',resolutionEvidence:'Frame repaired',passedInspectionReference:reinspection.id,resolutionDate:'2026-08-25'});
+  const failed1=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-18'});
+  const failed2=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:false,findings:'Loose guard',date:'2026-08-19'});
+  const reinspection=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-08-25',evidence:'Frame repaired and re-welded'});
+  WD.resolveEquipmentInspection('E-1001',failed1.id,{resolvedBy:'Test Admin',resolutionEvidence:'Frame repaired',passedInspectionReference:reinspection.id,resolutionDate:'2026-08-25'});
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blocked,true,'the second, unresolved failure must still block');
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   assert.equal(item.inspections.find(i=>i.id===failed2.id).resolved,undefined);
@@ -570,10 +570,10 @@ test('bypass fix I: resolving one failed inspection does not resolve a second, i
 // (J) failed pre-use check remains blocking until explicitly resolved.
 test('bypass fix J: an unrelated later passed pre-use check does not clear an earlier failed one; explicit resolvesCheckId does', ()=>{
   const WD=loadWorkshopData();
-  const failedCheck=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-25',result:'failed',notes:'Guard missing'});
-  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-26',result:'passed',checklist:'Different, unrelated check'});
+  const failedCheck=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-25',result:'failed',notes:'Guard missing'});
+  WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-26',result:'passed',checklist:'Different, unrelated check'});
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blockers.some(b=>b.code==='PREUSE_CHECK_FAILED'),true,'unrelated pass must not clear the earlier failure');
-  const linked=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-27',result:'passed',checklist:'Guard reattached and verified',resolvesCheckId:failedCheck.id});
+  const linked=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-27',result:'passed',checklist:'Guard reattached and verified',resolvesCheckId:failedCheck.id});
   assert.ok(!linked.error);
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blockers.some(b=>b.code==='PREUSE_CHECK_FAILED'),false,'the explicitly linked re-check must resolve it');
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
@@ -582,7 +582,7 @@ test('bypass fix J: an unrelated later passed pre-use check does not clear an ea
 // (K) currentAssignment survives save and reload.
 test('bypass fix K: currentAssignment (and assignment fields) survive a save + reload round-trip', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-1001',{project:'P-2026-014',jobcard:'JC-2026-0001',worker:'Test Welder',assignedBy:'Test Admin'});
   const reloaded=loadWorkshopData(undefined,localStorage);
   const item=reloaded.get().equipment.find(e=>e.equipmentId==='E-1001');
   assert.ok(item.currentAssignment&&typeof item.currentAssignment==='object'&&!Array.isArray(item.currentAssignment),'currentAssignment must remain a real object after reload');
@@ -609,9 +609,9 @@ test('bypass fix L: a malformed currentAssignment (array or primitive) normalize
 // (M) resolveBreakdown synchronizes both stored breakdown collections after reload.
 test('bypass fix M: resolveBreakdown synchronizes equipment.downtimeRecords AND state.breakdowns after a reload (independent object copies)', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder'});
   const reloaded=loadWorkshopData(undefined,localStorage);
-  const res=reloaded.resolveBreakdown('E-1001',br.id,{resolvedBy:'Marko K.',resolutionEvidence:'Motor replaced'});
+  const res=reloaded.resolveBreakdown('E-1001',br.id,{resolvedBy:'Test Welder',resolutionEvidence:'Motor replaced'});
   assert.ok(!res.error);
   const st=reloaded.get();
   const inEquipment=st.equipment.find(e=>e.equipmentId==='E-1001').downtimeRecords.find(d=>d.id===br.id);
@@ -622,7 +622,7 @@ test('bypass fix M: resolveBreakdown synchronizes equipment.downtimeRecords AND 
 // (N) protected history and usage fields cannot be replaced through updateEquipment.
 test('bypass fix N: updateEquipment cannot replace ANY protected field (history arrays, usage/meter, assignment fields, requirements)', ()=>{
   const WD=loadWorkshopData();
-  WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
+  WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   const attempts=[
     {inspections:[]},{maintenance:[]},{certifications:[]},{calibrations:[]},{preUseChecks:[]},
@@ -640,8 +640,8 @@ test('bypass fix N: updateEquipment cannot replace ANY protected field (history 
 // (O) blocked mutations leave the complete record unchanged.
 test('bypass fix O: a blocked returnEquipmentToService attempt leaves the equipment record completely unchanged', ()=>{
   const WD=loadWorkshopData();
-  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
@@ -652,8 +652,8 @@ test('bypass fix O: a blocked returnEquipmentToService attempt leaves the equipm
 test('equipment gate: returnEquipmentToService requires authorisedBy, approvalReference, resolutionEvidence, passedInspectionReference and returnDate', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Quarantined');
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
-  const full={authorisedBy:'Aleksandar C.',approvalReference:'RTS-1',resolutionEvidence:'Repaired and verified',passedInspectionReference:insp.id,returnDate:EQ_ASOF};
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  const full={authorisedBy:'Test Admin',approvalReference:'RTS-1',resolutionEvidence:'Repaired and verified',passedInspectionReference:insp.id,returnDate:EQ_ASOF};
   Object.keys(full).forEach(field=>{
     const partial=Object.assign({},full);delete partial[field];
     const res=WD.returnEquipmentToService('E-1001',partial);
@@ -663,14 +663,14 @@ test('equipment gate: returnEquipmentToService requires authorisedBy, approvalRe
 test('equipment gate: Retired equipment can never be returned to service', ()=>{
   const WD=loadWorkshopData();
   WD.retireEquipment('E-1001','End of life');
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.ok(res.error);
 });
 test('equipment gate: returnEquipmentToService is rejected while an open breakdown remains unresolved', ()=>{
   const WD=loadWorkshopData();
-  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.'});
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
 });
@@ -683,10 +683,10 @@ test('equipment gate: returnEquipmentToService is rejected when passedInspection
 test('equipment gate: a successful formal return to service preserves history, does not auto-assign, and adds an audit entry', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Quarantined');
-  WD.addNote('E-1001',{author:'Marko K.',text:'Under review'});
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  WD.addNote('E-1001',{author:'Test Welder',text:'Under review'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
-  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'Aleksandar C.',approvalReference:'RTS-1',resolutionEvidence:'Repaired and reinspected',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
+  const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'Test Admin',approvalReference:'RTS-1',resolutionEvidence:'Repaired and reinspected',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.ok(!res.error);
   assert.equal(res.status,'Available');
   assert.equal(res.assignedProject,null);
@@ -700,7 +700,7 @@ test('equipment gate: a blocked usage attempt leaves the equipment, hour meter a
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Out of Service');
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
-  const res=WD.logEquipmentUsage('E-1001',{hours:5,worker:'Marko K.'});
+  const res=WD.logEquipmentUsage('E-1001',{hours:5,worker:'Test Welder'});
   assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
   assert.deepEqual(WD.get().equipment.find(e=>e.equipmentId==='E-1001'),before);
 });
@@ -730,7 +730,7 @@ test('equipment gate: an intentionally empty equipment collection remains empty 
 // (1) Caller-supplied resolved:true cannot resolve a breakdown.
 test('bypass fix 2.1: caller-supplied resolved:true/status cannot make reportBreakdown create an already-resolved breakdown', ()=>{
   const WD=loadWorkshopData();
-  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Marko K.',resolved:true,status:'resolved'});
+  const br=WD.reportBreakdown('E-1001',{reason:'Motor failure',responsiblePerson:'Test Welder',resolved:true,status:'resolved'});
   assert.ok(!br.error);
   assert.ok(!br.resolved,'resolved must never be born true from caller input');
   assert.equal(br.status,'Reported','status is workflow-owned and always starts as Reported');
@@ -739,7 +739,7 @@ test('bypass fix 2.1: caller-supplied resolved:true/status cannot make reportBre
 // (2) Caller-supplied resolved:true cannot resolve a failed inspection.
 test('bypass fix 2.2: caller-supplied resolved:true cannot make addInspection create an already-resolved failed inspection', ()=>{
   const WD=loadWorkshopData();
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF,resolved:true,resolvedBy:'Nobody',resolutionEvidence:'Fake'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF,resolved:true,resolvedBy:'Nobody',resolutionEvidence:'Fake'});
   assert.ok(!insp.error);
   assert.ok(!insp.resolved,'resolved must never be born true from caller input');
   assert.equal(WD.getEquipmentSafetyGate('E-1001',{skipStatusCheck:true}).blocked,true);
@@ -747,7 +747,7 @@ test('bypass fix 2.2: caller-supplied resolved:true cannot make addInspection cr
 // (3) Caller-supplied closed/repaired status cannot resolve a failed inspection.
 test('bypass fix 2.3: a caller-supplied status string like "closed"/"repaired" cannot substitute for formal inspection resolution', ()=>{
   const WD=loadWorkshopData();
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF,status:'closed'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF,status:'closed'});
   assert.ok(!insp.error);
   const stored=WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspections.find(i=>i.id===insp.id);
   assert.notEqual(stored.status,'closed','status is a stripped, workflow-owned field on inspection records too');
@@ -757,7 +757,7 @@ test('bypass fix 2.3: a caller-supplied status string like "closed"/"repaired" c
 test('bypass fix 2.4: a pending inspection cannot advance inspectionDate', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspectionDate;
-  const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'pending',date:EQ_ASOF,nextDueDate:'2099-01-01'});
+  const res=WD.addInspection('E-1001',{inspector:'Test Admin',result:'pending',date:EQ_ASOF,nextDueDate:'2099-01-01'});
   assert.ok(res.error,'nextDueDate is only accepted on a passed inspection');
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspectionDate,before);
 });
@@ -765,14 +765,14 @@ test('bypass fix 2.4: a pending inspection cannot advance inspectionDate', ()=>{
 test('bypass fix 2.5: a failed inspection cannot advance inspectionDate', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspectionDate;
-  const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',findings:'Cracked',date:EQ_ASOF,nextDueDate:'2099-01-01'});
+  const res=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',findings:'Cracked',date:EQ_ASOF,nextDueDate:'2099-01-01'});
   assert.ok(res.error);
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspectionDate,before);
 });
 // (6) Only evidenced passed inspection can advance inspectionDate.
 test('bypass fix 2.6: only an evidenced passed inspection can advance inspectionDate', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK',nextDueDate:'2027-01-01'});
+  const res=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK',nextDueDate:'2027-01-01'});
   assert.ok(!res.error);
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').inspectionDate,'2027-01-01');
 });
@@ -791,47 +791,47 @@ test('bypass fix: the full documented FIX-1 exploit (breakdown/inspection born p
 test('bypass fix 3.1: invalid inspection dates are rejected (empty, malformed, non-existent calendar day, wrong shape)', ()=>{
   const WD=loadWorkshopData();
   for(const bad of ['','banana','2026-02-30','2026-13-01','30-08-2026']){
-    const res=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'pending',date:bad});
+    const res=WD.addInspection('E-1001',{inspector:'Test Admin',result:'pending',date:bad});
     assert.ok(res.error,`date=${bad} must be rejected`);
   }
 });
 // (8) Invalid resolutionDate is rejected.
 test('bypass fix 3.2: resolveEquipmentInspection rejects an invalid resolutionDate', ()=>{
   const WD=loadWorkshopData();
-  const failed=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
-  const reinspection=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-08-25',evidence:'Repaired and re-welded'});
-  const res=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Aleksandar C.',resolutionEvidence:'Fixed',passedInspectionReference:reinspection.id,resolutionDate:'2026-02-30'});
+  const failed=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
+  const reinspection=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-08-25',evidence:'Repaired and re-welded'});
+  const res=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Test Admin',resolutionEvidence:'Fixed',passedInspectionReference:reinspection.id,resolutionDate:'2026-02-30'});
   assert.ok(res.error);
 });
 // (9) Backdated reinspection cannot resolve a newer failure.
 test('bypass fix 3.3: resolveEquipmentInspection rejects a backdated "passed" reference (older than the failure it claims to resolve)', ()=>{
   const WD=loadWorkshopData();
-  const oldPass=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-01-01',evidence:'Routine annual check'});
-  const failed=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
-  const res=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Aleksandar C.',resolutionEvidence:'Fixed',passedInspectionReference:oldPass.id,resolutionDate:'2026-08-25'});
+  const oldPass=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-01-01',evidence:'Routine annual check'});
+  const failed=WD.addInspection('E-1001',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:'2026-08-20'});
+  const res=WD.resolveEquipmentInspection('E-1001',failed.id,{resolvedBy:'Test Admin',resolutionEvidence:'Fixed',passedInspectionReference:oldPass.id,resolutionDate:'2026-08-25'});
   assert.ok(res.error,'a passed inspection dated before the failure cannot resolve it');
 });
 // (10) Backdated pre-use check cannot resolve a newer failed check.
 test('bypass fix 3.4: a backdated pre-use check cannot resolve a newer failed check', ()=>{
   const WD=loadWorkshopData();
-  const failed=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-25',result:'failed',notes:'Guard missing'});
-  const res=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-22',result:'passed',checklist:'Backdated fix claim',resolvesCheckId:failed.id});
+  const failed=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-25',result:'failed',notes:'Guard missing'});
+  const res=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-22',result:'passed',checklist:'Backdated fix claim',resolvesCheckId:failed.id});
   assert.ok(res.error,'the resolving check must be dated after the failed check, not before');
 });
 // (11) Resolving pre-use check must match project/jobcard context.
 test('bypass fix 3.5: resolving a pre-use check tied to a project/jobcard must match that same context', ()=>{
   const WD=loadWorkshopData();
-  const failed=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-25',result:'failed',notes:'Guard missing',projectNo:'P-2026-014',jobcardNo:'JC-2026-0001'});
-  const wrongContext=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-27',result:'passed',checklist:'Fixed',resolvesCheckId:failed.id,projectNo:'P-OTHER',jobcardNo:'JC-OTHER'});
+  const failed=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-25',result:'failed',notes:'Guard missing',projectNo:'P-2026-014',jobcardNo:'JC-2026-0001'});
+  const wrongContext=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-27',result:'passed',checklist:'Fixed',resolvesCheckId:failed.id,projectNo:'P-OTHER',jobcardNo:'JC-OTHER'});
   assert.ok(wrongContext.error,"resolving check must match the failed check's project/jobcard");
-  const rightContext=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:'2026-08-27',result:'passed',checklist:'Fixed',resolvesCheckId:failed.id,projectNo:'P-2026-014',jobcardNo:'JC-2026-0001'});
+  const rightContext=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:'2026-08-27',result:'passed',checklist:'Fixed',resolvesCheckId:failed.id,projectNo:'P-2026-014',jobcardNo:'JC-2026-0001'});
   assert.ok(!rightContext.error);
 });
 // (12) Invalid resolvesCheckId causes no mutation.
 test('bypass fix 3.6: an invalid resolvesCheckId rejects the whole new pre-use check — no partial mutation', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').preUseChecks;
-  const res=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',resolvesCheckId:'DOES-NOT-EXIST'});
+  const res=WD.recordEquipmentPreUseCheck('E-1001',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',resolvesCheckId:'DOES-NOT-EXIST'});
   assert.ok(res.error);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-1001').preUseChecks;
   assert.deepEqual(after,before,'no new check may have been recorded when the linkage itself is invalid');
@@ -840,7 +840,7 @@ test('bypass fix 3.6: an invalid resolvesCheckId rejects the whole new pre-use c
 test('bypass fix 3.7: returnEquipmentToService rejects an invalid returnDate', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Quarantined');
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:'2026-02-30'});
   assert.ok(res.error);
 });
@@ -848,7 +848,7 @@ test('bypass fix 3.7: returnEquipmentToService rejects an invalid returnDate', (
 test('bypass fix 3.8: returnEquipmentToService rejects a returnDate earlier than the passed inspection it relies on', ()=>{
   const WD=loadWorkshopData();
   WD.changeEquipmentStatus('E-1001','Quarantined');
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:'2026-08-25',evidence:'Visual check OK'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:'2026-08-25',evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:'2026-08-20'});
   assert.ok(res.error);
 });
@@ -856,13 +856,13 @@ test('bypass fix 3.8: returnEquipmentToService rejects a returnDate earlier than
 test('bypass fix 3.9: equipment with an unknown/malformed status cannot use returnEquipmentToService as a shortcut back to Available', ()=>{
   const WD=loadWorkshopData();
   WD.updateEquipment('E-1001',{status:'Sitting In The Yard'});
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.ok(res.error,'an unrecognised status must fail safe, not be treated as an easy path back to Available');
 });
 test('bypass fix: already-operational equipment cannot use returnEquipmentToService', ()=>{
   const WD=loadWorkshopData();
-  const insp=WD.addInspection('E-1001',{inspector:'Aleksandar C.',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
+  const insp=WD.addInspection('E-1001',{inspector:'Test Admin',result:'passed',date:EQ_ASOF,evidence:'Visual check OK'});
   const res=WD.returnEquipmentToService('E-1001',{authorisedBy:'A',approvalReference:'R',resolutionEvidence:'E',passedInspectionReference:insp.id,returnDate:EQ_ASOF});
   assert.ok(res.error,'E-1001 is already Available — this method is not for already-operational equipment');
 });
@@ -870,29 +870,29 @@ test('bypass fix: already-operational equipment cannot use returnEquipmentToServ
 test('bypass fix 4.1: addMaintenanceRecord without a completed/passed result and evidence cannot advance maintenanceDate', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').maintenanceDate;
-  assert.ok(WD.addMaintenanceRecord('E-1001',{completedBy:'Marko K.',date:EQ_ASOF,result:'in-progress',evidence:'x',nextDueDate:'2099-01-01'}).error,'result must be completed/passed');
-  assert.ok(WD.addMaintenanceRecord('E-1001',{completedBy:'Marko K.',date:EQ_ASOF,result:'completed',nextDueDate:'2099-01-01'}).error,'evidence is required');
+  assert.ok(WD.addMaintenanceRecord('E-1001',{completedBy:'Test Welder',date:EQ_ASOF,result:'in-progress',evidence:'x',nextDueDate:'2099-01-01'}).error,'result must be completed/passed');
+  assert.ok(WD.addMaintenanceRecord('E-1001',{completedBy:'Test Welder',date:EQ_ASOF,result:'completed',nextDueDate:'2099-01-01'}).error,'evidence is required');
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').maintenanceDate,before);
 });
 // (17) Certification without certificate/reference/evidence cannot advance expiry.
 test('bypass fix 4.2: addCertification without certificateNumber/approvalReference cannot advance certificationExpiry', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').certificationExpiry;
-  assert.ok(WD.addCertification('E-1001',{issuedBy:'Aleksandar C.',date:EQ_ASOF,expiryDate:'2099-01-01'}).error,'certificateNumber/approvalReference is required');
+  assert.ok(WD.addCertification('E-1001',{issuedBy:'Test Admin',date:EQ_ASOF,expiryDate:'2099-01-01'}).error,'certificateNumber/approvalReference is required');
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').certificationExpiry,before);
 });
 // (18) Calibration without passed result and evidence cannot advance its date.
 test('bypass fix 4.3: addCalibration without a passed result and evidence cannot advance calibrationDate', ()=>{
   const WD=loadWorkshopData();
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-1001').calibrationDate;
-  assert.ok(WD.addCalibration('E-1001',{calibratedBy:'Aleksandar C.',date:EQ_ASOF,result:'failed',evidence:'x',nextDueDate:'2099-01-01'}).error,'result must be passed');
-  assert.ok(WD.addCalibration('E-1001',{calibratedBy:'Aleksandar C.',date:EQ_ASOF,result:'passed',nextDueDate:'2099-01-01'}).error,'evidence is required');
+  assert.ok(WD.addCalibration('E-1001',{calibratedBy:'Test Admin',date:EQ_ASOF,result:'failed',evidence:'x',nextDueDate:'2099-01-01'}).error,'result must be passed');
+  assert.ok(WD.addCalibration('E-1001',{calibratedBy:'Test Admin',date:EQ_ASOF,result:'passed',nextDueDate:'2099-01-01'}).error,'evidence is required');
   assert.equal(WD.get().equipment.find(e=>e.equipmentId==='E-1001').calibrationDate,before);
 });
 // (19) updateEquipmentRequirements rejects non-boolean values.
 test('bypass fix 4.4: updateEquipmentRequirements rejects non-boolean values (e.g. the string "false") rather than coercing them', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.updateEquipmentRequirements('E-1001',{certificationRequired:'false'},{updatedBy:'Aleksandar C.',reason:'test',approvalReference:'APPR-1'});
+  const res=WD.updateEquipmentRequirements('E-1001',{certificationRequired:'false'},{updatedBy:'Test Admin',reason:'test',approvalReference:'APPR-1'});
   assert.ok(res.error);
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-1001');
   assert.notEqual(item.requirements&&item.requirements.certificationRequired,'false');
@@ -900,7 +900,7 @@ test('bypass fix 4.4: updateEquipmentRequirements rejects non-boolean values (e.
 // (20) updateEquipmentRequirements requires approvalReference.
 test('bypass fix 4.5: updateEquipmentRequirements requires an approvalReference (not just updatedBy/reason)', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.updateEquipmentRequirements('E-1001',{certificationRequired:true},{updatedBy:'Aleksandar C.',reason:'test'});
+  const res=WD.updateEquipmentRequirements('E-1001',{certificationRequired:true},{updatedBy:'Test Admin',reason:'test'});
   assert.ok(res.error);
 });
 // (21) isRetired/retirementReason cannot be changed through updateEquipment.
@@ -937,7 +937,7 @@ test('bypass fix 22: rejected mutations across every newly-validated method leav
 test('quality: a critical failed inspection automatically raises an active Quality Hold', ()=>{
   const WD=loadWorkshopData();
   const insp=WD.createInspection({title:'Weld check',jobcard:'JC-2026-0001'});
-  const res=WD.completeInspection(insp.no,{result:'failed',critical:true,inspector:'Elena N.'});
+  const res=WD.completeInspection(insp.no,{result:'failed',critical:true,inspector:'Test Fitter'});
   assert.ok(res.hold,'a hold record must be created');
   assert.equal(res.hold.status,'active');
 });
@@ -951,7 +951,7 @@ test('quality: a non-critical failed inspection does not raise a hold', ()=>{
 
 test('quality: a critical NCR automatically raises an active Quality Hold', ()=>{
   const WD=loadWorkshopData();
-  const res=WD.createNcr({title:'Critical defect',severity:'critical',responsiblePerson:'Aleksandar C.',dueDate:'2026-09-10'});
+  const res=WD.createNcr({title:'Critical defect',severity:'critical',responsiblePerson:'Test Admin',dueDate:'2026-09-10'});
   assert.ok(res.hold);
   assert.equal(res.hold.status,'active');
 });
@@ -960,9 +960,9 @@ test('quality: major/critical NCRs require a responsible person and a due date',
   const WD=loadWorkshopData();
   const missingBoth=WD.createNcr({title:'Defect',severity:'major'});
   assert.ok(missingBoth.error);
-  const missingDue=WD.createNcr({title:'Defect',severity:'critical',responsiblePerson:'Aleksandar C.'});
+  const missingDue=WD.createNcr({title:'Defect',severity:'critical',responsiblePerson:'Test Admin'});
   assert.ok(missingDue.error);
-  const ok=WD.createNcr({title:'Defect',severity:'major',responsiblePerson:'Aleksandar C.',dueDate:'2026-09-10'});
+  const ok=WD.createNcr({title:'Defect',severity:'major',responsiblePerson:'Test Admin',dueDate:'2026-09-10'});
   assert.ok(!ok.error);
 });
 
@@ -977,7 +977,7 @@ test('quality: an NCR cannot close without verification evidence', ()=>{
 test('quality: an NCR cannot close without a closure approval reference', ()=>{
   const WD=loadWorkshopData();
   const {ncr}=WD.createNcr({title:'Minor defect',severity:'minor'});
-  WD.verifyNcrCorrective(ncr.no,'Corrective action verified effective','Aleksandar C.');
+  WD.verifyNcrCorrective(ncr.no,'Corrective action verified effective','Test Admin');
   const res=WD.closeNcr(ncr.no,'');
   assert.ok(res.error);
   assert.match(res.error,/approval/i);
@@ -986,7 +986,7 @@ test('quality: an NCR cannot close without a closure approval reference', ()=>{
 test('quality: an NCR with verification and an approval reference can close', ()=>{
   const WD=loadWorkshopData();
   const {ncr}=WD.createNcr({title:'Minor defect',severity:'minor'});
-  WD.verifyNcrCorrective(ncr.no,'Corrective action verified effective','Aleksandar C.');
+  WD.verifyNcrCorrective(ncr.no,'Corrective action verified effective','Test Admin');
   const res=WD.closeNcr(ncr.no,'APPROVAL-1');
   assert.ok(!res.error);
   assert.equal(res.status,'closed');
@@ -1390,11 +1390,11 @@ test('bypass fix G: re-saving an operation already in the same unsafe status via
 test('bypass fix H: editing ordinary operation fields (no unsafe status transition) remains allowed while held', ()=>{
   const WD=loadWorkshopData();
   const j=WD.findJobcard('JC-2026-0001');
-  const ops=j.operations.map(o=>o.id===6?Object.assign({},o,{worker:'Marko K.',plannedHours:20,notes:'Reassigned'}):o);
+  const ops=j.operations.map(o=>o.id===6?Object.assign({},o,{worker:'Test Welder',plannedHours:20,notes:'Reassigned'}):o);
   const res=WD.updateJobcard('JC-2026-0001',{operations:ops});
   assert.ok(!res.error);
   const op6=res.operations.find(o=>o.id===6);
-  assert.equal(op6.worker,'Marko K.');
+  assert.equal(op6.worker,'Test Welder');
   assert.equal(op6.plannedHours,20);
 });
 
@@ -1430,15 +1430,26 @@ const LEGACY_DOCUMENTS_KEY='varmak.documents.records';
 const LEGACY_REPORTS_SAVED_KEY='varmak.reports.saved.v1';
 const LEGACY_REPORTS_CONFIG_KEY='varmak.reports.config.v1';
 
-test('legacy migration: Projects legacy key (varmak.projects.ui.v1) is migrated into shared projects, customerId remapped by name', ()=>{
-  const legacy=[{id:1,no:'P-26-9001',name:'Custom Project',customerId:2,status:'active',jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
+test('legacy migration: Projects legacy key (varmak.projects.ui.v1) is migrated, keeping the customer it names', ()=>{
+  const legacy=[{id:1,no:'P-26-9001',name:'Custom Project',customer:'Named Customer AB',customerId:2,status:'active',jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
   const WD=loadWorkshopData({[LEGACY_PROJECTS_KEY]:JSON.stringify(legacy)});
   const state=WD.get();
   const migrated=state.projects.find(p=>p.no==='P-26-9001');
   assert.ok(migrated,'legacy project must be present in shared projects');
   assert.equal(migrated.name,'Custom Project');
-  assert.equal(migrated.customer,'Schröder Nordic','customerId 2 in the local picklist resolves to Schröder Nordic by name');
-  assert.ok(state.customers.some(c=>c.name==='Schröder Nordic'),'the resolved customer must exist in shared customers');
+  assert.equal(migrated.customer,'Named Customer AB','the record keeps the customer name it carried');
+  assert.ok(state.customers.some(c=>c.name==='Named Customer AB'),'and that customer exists in shared customers');
+});
+test('legacy migration: a legacy project that names no customer is never handed an invented one', ()=>{
+  // customerId used to be looked up in a hardcoded list of seven made-up bakeries, so a project with
+  // customerId 2 and no name of its own became a project for a firm that does not exist.
+  const legacy=[{id:1,no:'P-26-9002',name:'No Customer',customerId:2,status:'active',jobcards:[],hours:[],materials:[],purchases:[],documents:{},notes:[],activity:[]}];
+  const WD=loadWorkshopData({[LEGACY_PROJECTS_KEY]:JSON.stringify(legacy)});
+  const state=WD.get();
+  const migrated=state.projects.find(p=>p.no==='P-26-9002');
+  assert.ok(migrated,'the project itself is still migrated');
+  assert.equal(migrated.customer,'','with no customer rather than an invented one');
+  assert.equal(state.customers.length,0,'and no customer is created for it');
 });
 test('legacy migration: a system that already has its own data is left alone', ()=>{
   // Importing from the old key happens only into a system with nothing of its own yet. Anything
@@ -1591,11 +1602,11 @@ test('Reports-facing API: purchasing and marketing data are readable through the
 });
 
 // ── Pass 2.1: Project customer and status integration fix ──────────────────────────────────────
-test('getCustomers/listCustomers: shared customer id 1 is MarineVent AB, id 2 is Sanus Glutenfri AB', ()=>{
+test('getCustomers/listCustomers: shared customer id 1 is TestAlfa AB, id 2 is TestBeta Glutenfri AB', ()=>{
   const WD=loadWorkshopData();
   const customers=WD.getCustomers();
-  assert.equal(customers.find(c=>c.id===1).name,'MarineVent AB');
-  assert.equal(customers.find(c=>c.id===2).name,'Sanus Glutenfri AB');
+  assert.equal(customers.find(c=>c.id===1).name,'TestAlfa AB');
+  assert.equal(customers.find(c=>c.id===2).name,'TestBeta Glutenfri AB');
   assert.deepEqual(WD.listCustomers(),customers);
 });
 
@@ -1612,14 +1623,14 @@ test('upsertProject with a trusted shared customerId does not reinterpret it thr
   assert.equal(before.customerId,1);
   // Simulate the Projects page syncing an edit WITHOUT the user having changed the customer field —
   // it must send the real customerId (1) through unchanged, exactly as syncSharedProject() does.
-  const saved=WD.upsertProject({no:'P-2026-014',name:before.name,customerId:1,customer:'MarineVent AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  const saved=WD.upsertProject({no:'P-2026-014',name:before.name,customerId:1,customer:'TestAlfa AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
   assert.equal(saved.customerId,1);
-  assert.equal(WD.get().customers.find(c=>c.id===1).name,'MarineVent AB');
+  assert.equal(WD.get().customers.find(c=>c.id===1).name,'TestAlfa AB');
 });
 
 test('upsertProject: explicitly selecting a different (real) customerId changes the project correctly', ()=>{
   const WD=loadWorkshopData();
-  const saved=WD.upsertProject({no:'P-2026-014',name:'Ventilation Duct System',customerId:2,customer:'Sanus Glutenfri AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
+  const saved=WD.upsertProject({no:'P-2026-014',name:'Ventilation Duct System',customerId:2,customer:'TestBeta Glutenfri AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
   assert.equal(saved.customerId,2);
   assert.equal(WD.get().projects.find(p=>p.no==='P-2026-014').customerId,2);
 });
@@ -1649,14 +1660,14 @@ test('customer filtering uses shared ids: every real project customerId resolves
   const marineVentProject=WD.get().projects.find(p=>p.no==='P-2026-014');
   const matched=customers.find(c=>c.id===marineVentProject.customerId);
   assert.ok(matched,'the project customerId must resolve against the shared customers collection');
-  assert.equal(matched.name,'MarineVent AB');
+  assert.equal(matched.name,'TestAlfa AB');
 });
 
 test('upsertCustomer does not create a duplicate for a case/whitespace-only name difference', ()=>{
   const WD=loadWorkshopData();
   const before=WD.getCustomers().length;
-  const a=WD.upsertCustomer({name:'  MarineVent AB  ',status:'active',contacts:[],notes:[],documents:[]});
-  const b=WD.upsertCustomer({name:'marinevent ab',status:'active',contacts:[],notes:[],documents:[]});
+  const a=WD.upsertCustomer({name:'  TestAlfa AB  ',status:'active',contacts:[],notes:[],documents:[]});
+  const b=WD.upsertCustomer({name:'testalfa ab',status:'active',contacts:[],notes:[],documents:[]});
   assert.equal(WD.getCustomers().length,before);
   assert.equal(a.id,1);
   assert.equal(b.id,1);
@@ -1686,7 +1697,7 @@ test('upsertProject: a valid shared customerId canonicalises the project custome
   const WD=loadWorkshopData();
   const saved=WD.upsertProject({name:'Canonical name test',customerId:1,customer:'Whatever the caller happened to send',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
   assert.equal(saved.customerId,1);
-  assert.equal(saved.customer,'MarineVent AB');
+  assert.equal(saved.customer,'TestAlfa AB');
 });
 
 test('upsertProject: a conflicting supplied customer name cannot override a valid shared customerId', ()=>{
@@ -1694,7 +1705,7 @@ test('upsertProject: a conflicting supplied customer name cannot override a vali
   const before=WD.getCustomers().length;
   const saved=WD.upsertProject({name:'Conflicting name test',customerId:1,customer:'A Totally Different Company AB',notes:[],jobcards:[],hours:[],materials:[],purchases:[],documents:{},activity:[]});
   assert.equal(saved.customerId,1);
-  assert.equal(saved.customer,'MarineVent AB','the authoritative shared record name wins, not the conflicting caller-supplied name');
+  assert.equal(saved.customer,'TestAlfa AB','the authoritative shared record name wins, not the conflicting caller-supplied name');
   assert.equal(WD.getCustomers().length,before,'the conflicting name must not have created a new customer either');
 });
 
@@ -1732,7 +1743,7 @@ test('upsertCustomer: existing customer ids/numbers are never renumbered when a 
 // Every test below builds its own isolated fixtures (fresh equipment via createEquipment, a fresh
 // non-held Jobcard) instead of relying on demo seed data, so they are unaffected by seed changes.
 function mkJobcard(WD,no){return WD.upsertJobcard({no,projectNo:'P-2026-014',title:'Review fixture',status:'draft',machines:[],operations:[]});}
-function mkOp(WD,jcId,patch){return WD.addJobcardOperation(jcId,Object.assign({desc:'Test operation',worker:'Marko K.',machine:'',equipmentId:null,plannedHours:1,loggedHours:0,status:'pending',dependency:null,inspectionCheckpoint:false,notes:'',actualStart:null,actualCompletion:null},patch||{}));}
+function mkOp(WD,jcId,patch){return WD.addJobcardOperation(jcId,Object.assign({desc:'Test operation',worker:'Test Welder',machine:'',equipmentId:null,plannedHours:1,loggedHours:0,status:'pending',dependency:null,inspectionCheckpoint:false,notes:'',actualStart:null,actualCompletion:null},patch||{}));}
 
 // (1) Blocked equipment cannot transition to in-progress through updateJobcardOperation().
 test('review fix 1: updateJobcardOperation() unconditionally refuses "in-progress", even with no equipment requirement and no active hold', ()=>{
@@ -1749,7 +1760,7 @@ test('review fix 2: an Edit-Operation-form-style full payload (desc/worker/hours
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-02');
   const op=mkOp(WD,jc.id,{});
-  const res=WD.updateJobcardOperation(jc.id,op.id,{desc:'Edited desc',worker:'Elena N.',machine:'',equipmentId:null,status:'in-progress',plannedHours:5,loggedHours:0,plannedStart:null,dependency:null,inspectionCheckpoint:false,notes:'edited'});
+  const res=WD.updateJobcardOperation(jc.id,op.id,{desc:'Edited desc',worker:'Test Fitter',machine:'',equipmentId:null,status:'in-progress',plannedHours:5,loggedHours:0,plannedStart:null,dependency:null,inspectionCheckpoint:false,notes:'edited'});
   assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
   const stored=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
   assert.equal(stored.status,'pending');
@@ -1759,7 +1770,7 @@ test('review fix 2: an Edit-Operation-form-style full payload (desc/worker/hours
 test('review fix 3: a new operation cannot be created already in-progress via addJobcardOperation()', ()=>{
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-03');
-  const res=WD.addJobcardOperation(jc.id,{desc:'Sneaky op',status:'in-progress',worker:'Marko K.'});
+  const res=WD.addJobcardOperation(jc.id,{desc:'Sneaky op',status:'in-progress',worker:'Test Welder'});
   assert.equal(res.code,'OPERATION_START_DEDICATED_METHOD_REQUIRED');
   assert.equal(WD.findJobcard(jc.id).operations.length,0,'no operation may have been added');
 });
@@ -1788,7 +1799,7 @@ test('review fix 5: startJobcardOperation() rejects equipment that is Out of Ser
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-05');
   WD.createEquipment({equipmentId:'E-REVIEW-05',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-05',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-05',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-05',machine:'Test Drill'});
   WD.changeEquipmentStatus('E-REVIEW-05','Out of Service');
@@ -1801,10 +1812,10 @@ test('review fix 6: startJobcardOperation() rejects equipment with an open (unre
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-06');
   WD.createEquipment({equipmentId:'E-REVIEW-06',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-06',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-06',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-06',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-06',machine:'Test Drill'});
-  WD.reportBreakdown('E-REVIEW-06',{reason:'Motor failure',responsiblePerson:'Marko K.'});
+  WD.reportBreakdown('E-REVIEW-06',{reason:'Motor failure',responsiblePerson:'Test Welder'});
   const res=WD.startJobcardOperation(jc.id,op.id,{});
   assert.equal(res.code,'EQUIPMENT_SAFETY_BLOCKED');
 });
@@ -1814,7 +1825,7 @@ test('review fix 7: startJobcardOperation() rejects an op.equipmentId that is no
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-07');
   WD.createEquipment({equipmentId:'E-REVIEW-07',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-07',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-07',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder'});
   // Deliberately never added to jc.machines.
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-07',machine:'Test Drill'});
   const res=WD.startJobcardOperation(jc.id,op.id,{});
@@ -1828,7 +1839,7 @@ test('review fix 8: startJobcardOperation() rejects a legacy op.machine NAME (no
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-REVIEW-08');
   WD.createEquipment({equipmentId:'E-REVIEW-08',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-08',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-08',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-08',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:null,machine:'Test Drill'});
   const res=WD.startJobcardOperation(jc.id,op.id,{});
@@ -1841,7 +1852,7 @@ test('review fix 9: startJobcardOperation() rejects equipment that is linked her
   const jcB=mkJobcard(WD,'JC-REVIEW-09B');
   WD.createEquipment({equipmentId:'E-REVIEW-09',name:'Test Drill',category:'Power Tool'});
   // Equipment is really held by jcB...
-  WD.assignEquipment('E-REVIEW-09',{project:'P-2026-014',jobcard:jcB.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-09',{project:'P-2026-014',jobcard:jcB.no,worker:'Test Welder',assignedBy:'Test Admin'});
   // ...but jcA retains a stale local link to it (e.g. left over from before it was returned/reassigned).
   WD.updateJobcard(jcA.id,{machines:[{equipmentId:'E-REVIEW-09',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jcA.id,{equipmentId:'E-REVIEW-09',machine:'Test Drill'});
@@ -1870,13 +1881,13 @@ test('review fix 11+12: startJobcardOperation() requires a mandatory pre-use che
   const jc=mkJobcard(WD,'JC-REVIEW-11');
   WD.createEquipment({equipmentId:'E-REVIEW-11',name:'Test Drill',category:'Power Tool'});
   setEqRequirements(WD,'E-REVIEW-11',{preUseCheckRequired:true});
-  WD.assignEquipment('E-REVIEW-11',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-11',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW-11',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-REVIEW-11',machine:'Test Drill'});
   const blocked=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.equal(blocked.code,'EQUIPMENT_SAFETY_BLOCKED','no pre-use check recorded yet — must still be blocked');
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'pending');
-  WD.recordEquipmentPreUseCheck('E-REVIEW-11',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Guards in place, cable checked',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-11',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'Guards in place, cable checked',projectNo:'P-2026-014',jobcardNo:jc.no});
   const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!started.error);
   assert.equal(started.status,'in-progress');
@@ -1890,9 +1901,9 @@ test('review fix 13+14: assignEquipment cannot reassign equipment already held b
   WD.createEquipment({equipmentId:'E-REVIEW-13',name:'Test Drill',category:'Power Tool'});
   const jcA=mkJobcard(WD,'JC-REVIEW-13A');
   const jcB=mkJobcard(WD,'JC-REVIEW-13B');
-  WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcA.no,worker:'Test Welder',assignedBy:'Test Admin'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
-  const res=WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-REVIEW-13',{project:'P-2026-014',jobcard:jcB.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-13');
@@ -1902,10 +1913,10 @@ test('review fix: assignEquipment stays idempotent when re-assigning to the SAME
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-13C',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW-13C');
-  WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  const res=WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  const res=WD.assignEquipment('E-REVIEW-13C',{project:'P-2026-014',jobcard:jc.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.ok(!res.error,'re-assigning to the same Jobcard must remain allowed');
-  assert.equal(res.operator,'Elena N.');
+  assert.equal(res.operator,'Test Fitter');
 });
 // (15) + (16) logEquipmentUsage rejects a different assignedJobcard, and the rejection leaves the
 // meter and usage history completely unchanged.
@@ -1914,10 +1925,10 @@ test('review fix 15+16: logEquipmentUsage rejects usage.jobcard that does not ma
   WD.createEquipment({equipmentId:'E-REVIEW-15',name:'Test Drill',category:'Power Tool'});
   const jcA=mkJobcard(WD,'JC-REVIEW-15A');
   const jcB=mkJobcard(WD,'JC-REVIEW-15B');
-  WD.assignEquipment('E-REVIEW-15',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  WD.recordEquipmentPreUseCheck('E-REVIEW-15',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  WD.assignEquipment('E-REVIEW-15',{project:'P-2026-014',jobcard:jcA.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-15',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
-  const res=WD.logEquipmentUsage('E-REVIEW-15',{hours:2,date:EQ_ASOF,worker:'Elena N.',project:'P-2026-014',jobcard:jcB.no});
+  const res=WD.logEquipmentUsage('E-REVIEW-15',{hours:2,date:EQ_ASOF,worker:'Test Fitter',project:'P-2026-014',jobcard:jcB.no});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-15');
@@ -1930,10 +1941,10 @@ test('review fix 18: valid same-Jobcard usage still updates the equipment record
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-18',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW-18');
-  WD.assignEquipment('E-REVIEW-18',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  WD.recordEquipmentPreUseCheck('E-REVIEW-18',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  WD.assignEquipment('E-REVIEW-18',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-18',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW-18').operatingHourMeter;
-  const res=WD.logEquipmentUsage('E-REVIEW-18',{hours:3,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
+  const res=WD.logEquipmentUsage('E-REVIEW-18',{hours:3,date:EQ_ASOF,worker:'Test Welder',project:'P-2026-014',jobcard:jc.no});
   assert.ok(!res.error);
   assert.equal(res.operatingHourMeter,before+3);
   assert.ok(res.usageHistory.some(u=>u.jobcard===jc.no));
@@ -1943,9 +1954,9 @@ test('review fix 18: valid same-Jobcard usage still updates the equipment record
 test('review fix: logEquipmentUsage with no usage.jobcard at all is unaffected by the assignment check', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW-15C',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW-15C',{project:'P-2026-014',jobcard:'JC-REVIEW-15C',worker:'Marko K.'});
-  WD.recordEquipmentPreUseCheck('E-REVIEW-15C',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK'});
-  const res=WD.logEquipmentUsage('E-REVIEW-15C',{hours:1,date:EQ_ASOF,worker:'Marko K.'});
+  WD.assignEquipment('E-REVIEW-15C',{project:'P-2026-014',jobcard:'JC-REVIEW-15C',worker:'Test Welder'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW-15C',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK'});
+  const res=WD.logEquipmentUsage('E-REVIEW-15C',{hours:1,date:EQ_ASOF,worker:'Test Welder'});
   assert.ok(!res.error);
 });
 
@@ -1960,9 +1971,9 @@ test('2nd review fix 1+2: reserveEquipment cannot reassign equipment already hel
   WD.createEquipment({equipmentId:'E-REVIEW2-01',name:'Test Drill',category:'Power Tool'});
   const jcA=mkJobcard(WD,'JC-REVIEW2-01A');
   const jcB=mkJobcard(WD,'JC-REVIEW2-01B');
-  WD.assignEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcA.no,worker:'Test Welder',assignedBy:'Test Admin'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
-  const res=WD.reserveEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcB.no,reservedBy:'Elena N.'});
+  const res=WD.reserveEquipment('E-REVIEW2-01',{project:'P-2026-014',jobcard:jcB.no,reservedBy:'Test Fitter'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   assert.equal(res.assignedJobcard,jcA.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-01');
@@ -1973,8 +1984,8 @@ test('2nd review fix 3: reserveEquipment stays idempotent when reserving for the
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-03',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW2-03');
-  WD.assignEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  const res=WD.reserveEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Elena N.'});
+  WD.assignEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  const res=WD.reserveEquipment('E-REVIEW2-03',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Test Fitter'});
   assert.ok(!res.error,'reserving for the same Jobcard must remain allowed');
   assert.equal(res.status,'Reserved');
 });
@@ -1983,9 +1994,9 @@ test('2nd review fix 4: reserveEquipment with NO jobcard supplied cannot silentl
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-04',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW2-04');
-  WD.assignEquipment('E-REVIEW2-04',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW2-04',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
-  const res=WD.reserveEquipment('E-REVIEW2-04',{project:'P-2026-014',reservedBy:'Elena N.'});
+  const res=WD.reserveEquipment('E-REVIEW2-04',{project:'P-2026-014',reservedBy:'Test Fitter'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-04');
   assert.deepEqual(after,before);
@@ -1995,7 +2006,7 @@ test('2nd review fix: reserveEquipment still works normally on equipment nobody 
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-04B',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW2-04B');
-  const res=WD.reserveEquipment('E-REVIEW2-04B',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Elena N.'});
+  const res=WD.reserveEquipment('E-REVIEW2-04B',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Test Fitter'});
   assert.ok(!res.error);
   assert.equal(res.assignedJobcard,jc.no);
 });
@@ -2005,9 +2016,9 @@ test('2nd review fix 5+6: recordEquipmentPreUseCheck rejects a jobcardNo that do
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-05',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW2-05A');
-  WD.assignEquipment('E-REVIEW2-05',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW2-05',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   const before=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
-  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-05',{checkedBy:'Elena N.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-05B'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-05',{checkedBy:'Test Fitter',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-05B'});
   assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_CONFLICT');
   assert.equal(res.assignedJobcard,jc.no);
   const after=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-05');
@@ -2018,8 +2029,8 @@ test('2nd review fix 7: recordEquipmentPreUseCheck with a jobcardNo matching the
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-07',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-REVIEW2-07');
-  WD.assignEquipment('E-REVIEW2-07',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.assignEquipment('E-REVIEW2-07',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'Looks fine',projectNo:'P-2026-014',jobcardNo:jc.no});
   assert.ok(!res.error);
   assert.equal(res.jobcardNo,jc.no);
   assert.equal(res.result,'passed');
@@ -2029,8 +2040,8 @@ test('2nd review fix 7: recordEquipmentPreUseCheck with a jobcardNo matching the
 test('2nd review fix: recordEquipmentPreUseCheck with no jobcardNo at all is unaffected by the assignment check', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-07B',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-07B',{project:'P-2026-014',jobcard:'JC-REVIEW2-07B-OTHER',worker:'Marko K.'});
-  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07B',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'Looks fine'});
+  WD.assignEquipment('E-REVIEW2-07B',{project:'P-2026-014',jobcard:'JC-REVIEW2-07B-OTHER',worker:'Test Welder'});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW2-07B',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'Looks fine'});
   assert.ok(!res.error);
 });
 // reportBreakdown remains available as a safe-direction action even when a DIFFERENT Jobcard holds
@@ -2038,8 +2049,8 @@ test('2nd review fix: recordEquipmentPreUseCheck with no jobcardNo at all is una
 test('2nd review fix: reportBreakdown remains a safe-direction action regardless of which Jobcard currently holds the equipment', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-REVIEW2-BD',name:'Test Drill',category:'Power Tool'});
-  WD.assignEquipment('E-REVIEW2-BD',{project:'P-2026-014',jobcard:'JC-REVIEW2-BD-A',worker:'Marko K.'});
-  const res=WD.reportBreakdown('E-REVIEW2-BD',{reason:'Smoking motor',responsiblePerson:'Elena N.',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-BD-B'});
+  WD.assignEquipment('E-REVIEW2-BD',{project:'P-2026-014',jobcard:'JC-REVIEW2-BD-A',worker:'Test Welder'});
+  const res=WD.reportBreakdown('E-REVIEW2-BD',{reason:'Smoking motor',responsiblePerson:'Test Fitter',projectNo:'P-2026-014',jobcardNo:'JC-REVIEW2-BD-B'});
   assert.ok(!res.error,'reporting a breakdown must never be blocked by the assignment-conflict check');
   assert.equal(res.jobcardNo,'JC-REVIEW2-BD-B');
   const item=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW2-BD');
@@ -2052,11 +2063,11 @@ test('2nd review fix: reportBreakdown remains a safe-direction action regardless
 function mkStartedOpFixture(WD,jcNo,eqId){
   const jc=mkJobcard(WD,jcNo);
   WD.createEquipment({equipmentId:eqId,name:'Test Drill',category:'Power Tool'});
-  const assigned=WD.assignEquipment(eqId,{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment(eqId,{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!assigned.error,`fixture setup: assignEquipment must succeed — ${assigned.error}`);
   WD.updateJobcard(jc.id,{machines:[{equipmentId:eqId,name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:eqId,machine:'Test Drill'});
-  WD.recordEquipmentPreUseCheck(eqId,{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.recordEquipmentPreUseCheck(eqId,{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.equal(started.status,'in-progress','fixture setup must succeed');
   return {jc:WD.findJobcard(jc.id),op:started};
@@ -2141,7 +2152,7 @@ test('2nd review fix 14+15: a paused operation may change equipment, and resumin
   // stale/wrong assignment is only caught at resume time by startJobcardOperation().
   WD.createEquipment({equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',category:'Power Tool'});
   const jcElsewhere=mkJobcard(WD,'JC-REVIEW2-14-ELSEWHERE');
-  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jcElsewhere.no,worker:'Someone',assignedBy:'Aleksandar C.'});
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jcElsewhere.no,worker:'Someone',assignedBy:'Test Admin'});
   WD.updateJobcard(jc.id,{machines:(WD.findJobcard(jc.id).machines||[]).concat([{equipmentId:'E-REVIEW2-14-OTHER',name:'Other Drill',plannedUsage:1}])});
   const swapped=WD.updateJobcardOperation(jc.id,op.id,{equipmentId:'E-REVIEW2-14-OTHER',machine:'Other Drill'});
   assert.ok(!swapped.error,'changing equipment while paused must be allowed');
@@ -2152,8 +2163,8 @@ test('2nd review fix 14+15: a paused operation may change equipment, and resumin
   // Now properly return+re-assign the new equipment to THIS Jobcard (it's already linked in
   // jc.machines) and give it a matching pre-use check — resume must then succeed against it.
   WD.returnEquipment('E-REVIEW2-14-OTHER',{});
-  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  WD.recordEquipmentPreUseCheck('E-REVIEW2-14-OTHER',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.assignEquipment('E-REVIEW2-14-OTHER',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW2-14-OTHER',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!resumed.error);
   assert.equal(resumed.status,'in-progress');
@@ -2276,7 +2287,7 @@ test('3rd review fix 9: reordering the machines array or editing only plannedUsa
 test('3rd review fix 10+11: returnEquipment() automatically pauses the active operation, and safe equipment still becomes Available', ()=>{
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-10','E-REVIEW3-10');
-  const res=WD.returnEquipment('E-REVIEW3-10',{user:'Marko K.'});
+  const res=WD.returnEquipment('E-REVIEW3-10',{user:'Test Welder'});
   assert.ok(!res.error);
   assert.equal(res.status,'Available');
   assert.equal(res.assignedJobcard,null);
@@ -2298,7 +2309,7 @@ test('3rd review fix 12: returning BLOCKED equipment clears assignment but prese
   const blockRes=WD.changeEquipmentStatus('E-REVIEW3-12','Quarantined');
   assert.equal(blockRes.pausedOperations.length,1,'quarantining itself must already auto-pause the running operation');
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
-  const res=WD.returnEquipment('E-REVIEW3-12',{user:'Marko K.'});
+  const res=WD.returnEquipment('E-REVIEW3-12',{user:'Test Welder'});
   assert.equal(res.status,'Quarantined','a blocked status must never be silently cleared by returnEquipment');
   assert.equal(res.assignedJobcard,null);
   assert.equal(res.pausedOperations.length,0,'nothing new to pause — it was already paused when it became blocked');
@@ -2309,7 +2320,7 @@ test('3rd review fix 12: returning BLOCKED equipment clears assignment but prese
 test('3rd review fix 13: reportBreakdown() automatically pauses the active operation and preserves project/Jobcard references', ()=>{
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-13','E-REVIEW3-13');
-  const res=WD.reportBreakdown('E-REVIEW3-13',{reason:'Motor smoking',responsiblePerson:'Elena N.'});
+  const res=WD.reportBreakdown('E-REVIEW3-13',{reason:'Motor smoking',responsiblePerson:'Test Fitter'});
   assert.equal(res.projectNo,'P-2026-014');
   assert.equal(res.jobcardNo,jc.no);
   assert.equal(res.pausedOperations.length,1);
@@ -2322,7 +2333,7 @@ test('3rd review fix 13: reportBreakdown() automatically pauses the active opera
 test('3rd review fix 14: a failed recordEquipmentPreUseCheck automatically pauses the active operation', ()=>{
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-14','E-REVIEW3-14');
-  const res=WD.recordEquipmentPreUseCheck('E-REVIEW3-14',{checkedBy:'Marko K.',date:EQ_ASOF,result:'failed',notes:'Guard cracked',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const res=WD.recordEquipmentPreUseCheck('E-REVIEW3-14',{checkedBy:'Test Welder',date:EQ_ASOF,result:'failed',notes:'Guard cracked',projectNo:'P-2026-014',jobcardNo:jc.no});
   assert.ok(!res.error);
   assert.equal(res.pausedOperations.length,1);
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
@@ -2331,7 +2342,7 @@ test('3rd review fix 14: a failed recordEquipmentPreUseCheck automatically pause
 test('3rd review fix 15: a failed addInspection automatically pauses the active operation', ()=>{
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-15','E-REVIEW3-15');
-  const res=WD.addInspection('E-REVIEW3-15',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
+  const res=WD.addInspection('E-REVIEW3-15',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked frame',date:EQ_ASOF});
   assert.ok(!res.error);
   assert.equal(res.pausedOperations.length,1);
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
@@ -2370,7 +2381,7 @@ test('3rd review fix: updateEquipmentRequirements that newly blocks the live gat
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-17C','E-REVIEW3-17C');
   const statusBefore=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW3-17C').status;
-  const res=WD.updateEquipmentRequirements('E-REVIEW3-17C',{maintenanceRequired:true},{updatedBy:'Aleksandar C.',reason:'Policy change',approvalReference:'APPR-3-17C'});
+  const res=WD.updateEquipmentRequirements('E-REVIEW3-17C',{maintenanceRequired:true},{updatedBy:'Test Admin',reason:'Policy change',approvalReference:'APPR-3-17C'});
   assert.ok(!res.error);
   // No maintenance record exists at all, so a mandatory requirement with no maintenanceDate on file
   // blocks the gate immediately (see equipment-gates.js) — purely from the requirement flip.
@@ -2406,7 +2417,7 @@ test('3rd review fix 20: multiple in-progress operations referencing the SAME eq
   const op2seed=mkOp(WD,jc.id,{equipmentId:'E-REVIEW3-20',machine:'Test Drill'});
   const op2=WD.startJobcardOperation(jc.id,op2seed.id,{date:EQ_ASOF});
   assert.equal(op2.status,'in-progress','fixture: second operation must also have started');
-  const res=WD.reportBreakdown('E-REVIEW3-20',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  const res=WD.reportBreakdown('E-REVIEW3-20',{reason:'Overheating',responsiblePerson:'Test Welder'});
   assert.equal(res.pausedOperations.length,2);
   const pausedIds=res.pausedOperations.map(p=>p.operationId).sort();
   assert.deepEqual(pausedIds,[op1.id,op2.id].sort());
@@ -2420,7 +2431,7 @@ test('3rd review fix 21: operations using a DIFFERENT, unaffected piece of equip
   const {jc:jcAffected,op:opAffected}=mkStartedOpFixture(WD,'JC-REVIEW3-21A','E-REVIEW3-21A');
   const {jc:jcOther,op:opOther}=mkStartedOpFixture(WD,'JC-REVIEW3-21B','E-REVIEW3-21B');
   const beforeOther=WD.findJobcard(jcOther.id);
-  WD.reportBreakdown('E-REVIEW3-21A',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  WD.reportBreakdown('E-REVIEW3-21A',{reason:'Overheating',responsiblePerson:'Test Welder'});
   assert.equal(WD.findJobcard(jcAffected.id).operations.find(o=>o.id===opAffected.id).status,'paused');
   const afterOther=WD.findJobcard(jcOther.id);
   assert.deepEqual(afterOther,beforeOther,'a completely unrelated Jobcard/operation/equipment must be untouched');
@@ -2445,7 +2456,7 @@ test('3rd review fix 23: an automatically-paused operation retains equipmentId, 
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-23','E-REVIEW3-23');
   WD.updateJobcardOperation(jc.id,op.id,{loggedHours:4.5});
   const beforePause=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
-  WD.reportBreakdown('E-REVIEW3-23',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  WD.reportBreakdown('E-REVIEW3-23',{reason:'Overheating',responsiblePerson:'Test Welder'});
   const afterPause=WD.findJobcard(jc.id).operations.find(o=>o.id===op.id);
   assert.equal(afterPause.status,'paused');
   assert.equal(afterPause.equipmentId,beforePause.equipmentId);
@@ -2459,7 +2470,7 @@ test('3rd review fix 23: an automatically-paused operation retains equipmentId, 
 test('3rd review fix 24: after an automatic pause + equipment return + unlink, Resume fails closed at every step until the equipment is correctly re-linked, re-assigned and re-checked', ()=>{
   const WD=loadWorkshopData();
   const {jc,op}=mkStartedOpFixture(WD,'JC-REVIEW3-24','E-REVIEW3-24');
-  WD.returnEquipment('E-REVIEW3-24',{user:'Marko K.'});
+  WD.returnEquipment('E-REVIEW3-24',{user:'Test Welder'});
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
   // Step 1: still linked in j.machines, but no longer assigned to this Jobcard — resume fails closed.
   const blocked1=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
@@ -2474,8 +2485,8 @@ test('3rd review fix 24: after an automatic pause + equipment return + unlink, R
   assert.equal(WD.findJobcard(jc.id).operations.find(o=>o.id===op.id).status,'paused');
   // Step 3: correctly re-link, re-assign and re-check — resume must then succeed.
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-REVIEW3-24',name:'Test Drill',plannedUsage:1}]});
-  WD.assignEquipment('E-REVIEW3-24',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
-  WD.recordEquipmentPreUseCheck('E-REVIEW3-24',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.assignEquipment('E-REVIEW3-24',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
+  WD.recordEquipmentPreUseCheck('E-REVIEW3-24',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const resumed=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!resumed.error);
   assert.equal(resumed.status,'in-progress');
@@ -2695,18 +2706,18 @@ test('4th review fix 22: ordinary descriptive equipment edits (no status field a
 test('4th review fix 24: the pausedOperations field returned by an API call is never persisted inside the stored equipment/breakdown/inspection/pre-use-check records', ()=>{
   const WD=loadWorkshopData();
   const {jc}=mkStartedOpFixture(WD,'JC-REVIEW4-24','E-REVIEW4-24');
-  const breakdown=WD.reportBreakdown('E-REVIEW4-24',{reason:'Overheating',responsiblePerson:'Marko K.'});
+  const breakdown=WD.reportBreakdown('E-REVIEW4-24',{reason:'Overheating',responsiblePerson:'Test Welder'});
   assert.ok(Array.isArray(breakdown.pausedOperations)&&breakdown.pausedOperations.length===1,'sanity: the API return value does carry pausedOperations');
   const rawEquipment=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24');
   assert.equal(rawEquipment.pausedOperations,undefined,'the stored equipment record itself must never carry a pausedOperations field');
   assert.equal(rawEquipment.downtimeRecords[0].pausedOperations,undefined,'the stored breakdown record must never carry a pausedOperations field');
   WD.createEquipment({equipmentId:'E-REVIEW4-24B',name:'Test Drill',category:'Power Tool'});
-  const insp=WD.addInspection('E-REVIEW4-24B',{inspector:'Aleksandar C.',result:'failed',critical:true,findings:'Cracked',date:EQ_ASOF});
+  const insp=WD.addInspection('E-REVIEW4-24B',{inspector:'Test Admin',result:'failed',critical:true,findings:'Cracked',date:EQ_ASOF});
   assert.ok(Array.isArray(insp.pausedOperations));
   const rawEq2=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24B');
   assert.equal(rawEq2.inspections[0].pausedOperations,undefined);
   WD.createEquipment({equipmentId:'E-REVIEW4-24C',name:'Test Drill',category:'Power Tool'});
-  const puc=WD.recordEquipmentPreUseCheck('E-REVIEW4-24C',{checkedBy:'Marko K.',date:EQ_ASOF,result:'failed',notes:'Guard missing'});
+  const puc=WD.recordEquipmentPreUseCheck('E-REVIEW4-24C',{checkedBy:'Test Welder',date:EQ_ASOF,result:'failed',notes:'Guard missing'});
   assert.ok(Array.isArray(puc.pausedOperations));
   const rawEq3=WD.get().equipment.find(e=>e.equipmentId==='E-REVIEW4-24C');
   assert.equal(rawEq3.preUseChecks[0].pausedOperations,undefined);
@@ -2905,8 +2916,8 @@ test('Pass 3.2C (5): createEquipment rejects an unrecognised (but well-formed) s
 test('Pass 3.2C (6): createEquipment rejects the whole creation atomically when a workflow-owned field is supplied, even falsy/empty, with EQUIPMENT_CREATION_FIELDS_PROTECTED', ()=>{
   const WD=loadWorkshopData();
   const attempts=[
-    {assignedProject:'P-2026-014'},{assignedJobcard:'JC-2026-0001'},{operator:'Marko K.'},
-    {currentAssignment:{worker:'Marko K.'}},{isRetired:true},{isRetired:false},{retirementReason:''},
+    {assignedProject:'P-2026-014'},{assignedJobcard:'JC-2026-0001'},{operator:'Test Welder'},
+    {currentAssignment:{worker:'Test Welder'}},{isRetired:true},{isRetired:false},{retirementReason:''},
     {inspections:[{result:'passed'}]},{maintenance:[]},{certifications:[]},{calibrations:[]},
     {preUseChecks:[]},{downtimeRecords:[]},{returnToService:[]},{usageHistory:[]},
     {usageSessions:[]},{activity:[]},{safetyWarnings:[]},{safetyWarnings:null}
@@ -3014,7 +3025,7 @@ test('Pass 3.2C: createEquipment accepts matching equipmentId and id values (sam
 test('Pass 3.2C (15a): reserveEquipment rejects an unknown project number with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B1',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-32C-B1',{project:'P-DOES-NOT-EXIST',reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B1',{project:'P-DOES-NOT-EXIST',reservedBy:'Test Welder'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
   const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-B1');
   assert.equal(item.status,'Available','a rejected reservation must not touch the equipment record');
@@ -3025,21 +3036,21 @@ test('Pass 3.2C (15b): assignEquipment rejects an unknown project number with IN
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B2',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B2');
-  const res=WD.assignEquipment('E-32C-B2',{project:'P-DOES-NOT-EXIST',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B2',{project:'P-DOES-NOT-EXIST',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
 test('Pass 3.2C (16a): assignEquipment rejects an unknown Jobcard number with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B3',name:'Test Drill',category:'Power Tool'});
-  const res=WD.assignEquipment('E-32C-B3',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B3',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
 test('Pass 3.2C (16b): reserveEquipment rejects a supplied Jobcard number that does not exist with INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B4',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-32C-B4',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B4',{project:'P-2026-014',jobcard:'JC-DOES-NOT-EXIST',reservedBy:'Test Welder'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
@@ -3049,7 +3060,7 @@ test('Pass 3.2C (17): assignEquipment rejects a Jobcard that does not belong to 
   const otherProject=WD.upsertProject({name:'Other Project For Mismatch Test'});
   assert.ok(!otherProject.error);
   const jc=mkJobcard(WD,'JC-32C-B5');
-  const res=WD.assignEquipment('E-32C-B5',{project:otherProject.no,jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B5',{project:otherProject.no,jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
@@ -3058,7 +3069,7 @@ test('Pass 3.2C (18a): reserveEquipment rejects an archived project', ()=>{
   WD.createEquipment({equipmentId:'E-32C-B6',name:'Test Drill',category:'Power Tool'});
   const proj=WD.upsertProject({name:'Archived Project Test'});
   WD.archiveProject(proj.no,'test archive');
-  const res=WD.reserveEquipment('E-32C-B6',{project:proj.no,reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B6',{project:proj.no,reservedBy:'Test Welder'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
@@ -3067,7 +3078,7 @@ test('Pass 3.2C (18b): assignEquipment rejects an archived Jobcard', ()=>{
   WD.createEquipment({equipmentId:'E-32C-B7',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B7');
   WD.archiveJobcard(jc.no);
-  const res=WD.assignEquipment('E-32C-B7',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B7',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
 });
 
@@ -3077,7 +3088,7 @@ test('Pass 3.2C (19): assignEquipment rejects a Jobcard whose status is complete
   ['completed','closed'].forEach((status,i)=>{
     const jc=WD.upsertJobcard({no:`JC-32C-B8-${i}`,projectNo:'P-2026-014',title:'Terminal fixture',status,machines:[],operations:[]});
     assert.ok(!jc.error,`fixture setup: creating a ${status} jobcard directly must succeed (no hold present)`);
-    const res=WD.assignEquipment('E-32C-B8',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+    const res=WD.assignEquipment('E-32C-B8',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
     assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',`a ${status} jobcard must be rejected`);
   });
 });
@@ -3088,7 +3099,7 @@ test('Pass 3.2C (20a): assignEquipment rejects case/whitespace variants of termi
   ['Completed','CLOSED',' completed ','  CLOSED  '].forEach((rawStatus,i)=>{
     const jc=WD.upsertJobcard({no:`JC-32C-B9-${i}`,projectNo:'P-2026-014',title:'Terminal casing fixture',status:rawStatus,machines:[],operations:[]});
     assert.ok(!jc.error,`fixture setup: creating a "${rawStatus}" jobcard directly must succeed — ${jc.error}`);
-    const res=WD.assignEquipment('E-32C-B9',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+    const res=WD.assignEquipment('E-32C-B9',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
     assert.equal(res.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT',`status "${rawStatus}" must still be recognised as terminal`);
   });
 });
@@ -3097,10 +3108,10 @@ test('Pass 3.2C (20b): reserveEquipment rejects case/whitespace variants of term
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B10',name:'Test Drill',category:'Power Tool'});
   const jcClosed=WD.upsertJobcard({no:'JC-32C-B10-CLOSED',projectNo:'P-2026-014',title:'Closed casing',status:'CLOSED',machines:[],operations:[]});
-  const blocked=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcClosed.no,reservedBy:'Marko K.'});
+  const blocked=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcClosed.no,reservedBy:'Test Welder'});
   assert.equal(blocked.code,'INVALID_EQUIPMENT_ASSIGNMENT_CONTEXT');
   const jcInProgress=WD.upsertJobcard({no:'JC-32C-B10-INPROG',projectNo:'P-2026-014',title:'Active casing',status:'in-progress',machines:[],operations:[]});
-  const allowed=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcInProgress.no,reservedBy:'Marko K.'});
+  const allowed=WD.reserveEquipment('E-32C-B10',{project:'P-2026-014',jobcard:jcInProgress.no,reservedBy:'Test Welder'});
   assert.ok(!allowed.error,'an in-progress Jobcard must NOT be treated as terminal');
 });
 
@@ -3117,16 +3128,16 @@ test('Pass 3.2C (22): assignEquipment rejects a missing worker or assignedBy wit
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B12',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B12');
-  const noWorker=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,assignedBy:'Aleksandar C.'});
+  const noWorker=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,assignedBy:'Test Admin'});
   assert.equal(noWorker.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED');
-  const noAssignedBy=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.'});
+  const noAssignedBy=WD.assignEquipment('E-32C-B12',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder'});
   assert.equal(noAssignedBy.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED');
 });
 
 test('Pass 3.2C (23): a valid project-only reservation (no Jobcard) succeeds', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B13',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-32C-B13',{project:'P-2026-014',reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B13',{project:'P-2026-014',reservedBy:'Test Welder'});
   assert.ok(!res.error);
   assert.equal(res.status,'Reserved');
   assert.equal(res.assignedProject,'P-2026-014');
@@ -3137,7 +3148,7 @@ test('Pass 3.2C (24): a valid reservation with a matching project and Jobcard su
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B14',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B14');
-  const res=WD.reserveEquipment('E-32C-B14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Test Welder'});
   assert.ok(!res.error);
   assert.equal(res.assignedJobcard,jc.no);
 });
@@ -3146,11 +3157,11 @@ test('Pass 3.2C (25): a valid assignment with a real matching project, Jobcard, 
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B15',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B15');
-  const res=WD.assignEquipment('E-32C-B15',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B15',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error);
   assert.equal(res.assignedJobcard,jc.no);
-  assert.equal(res.operator,'Marko K.');
-  assert.equal(res.currentAssignment.assignedBy,'Aleksandar C.');
+  assert.equal(res.operator,'Test Welder');
+  assert.equal(res.currentAssignment.assignedBy,'Test Admin');
   assert.equal(res.currentAssignment.project,'P-2026-014');
   assert.equal(res.currentAssignment.jobcard,jc.no);
 });
@@ -3159,7 +3170,7 @@ test('Pass 3.2C (26a): assigning equipment via a numeric Jobcard id persists the
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B16',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B16');
-  const res=WD.assignEquipment('E-32C-B16',{project:'P-2026-014',jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-B16',{project:'P-2026-014',jobcard:jc.id,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error,`assignment via a numeric Jobcard id must succeed and canonicalize — ${res.error}`);
   assert.equal(res.assignedJobcard,jc.no,'assignedJobcard must be the canonical JC-... string, never the raw numeric id');
   assert.equal(typeof res.assignedJobcard,'string');
@@ -3172,7 +3183,7 @@ test('Pass 3.2C (26b): reserving equipment via a numeric Jobcard id also persist
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B17',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B17');
-  const res=WD.reserveEquipment('E-32C-B17',{project:'P-2026-014',jobcard:jc.id,reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-B17',{project:'P-2026-014',jobcard:jc.id,reservedBy:'Test Welder'});
   assert.ok(!res.error);
   assert.equal(res.assignedJobcard,jc.no);
 });
@@ -3181,10 +3192,10 @@ test('Pass 3.2C (27): a record assigned through a numeric Jobcard id continues w
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-32C-B18');
   WD.createEquipment({equipmentId:'E-32C-B18',name:'Test Drill',category:'Power Tool'});
-  const assigned=WD.assignEquipment('E-32C-B18',{project:'P-2026-014',jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment('E-32C-B18',{project:'P-2026-014',jobcard:jc.id,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!assigned.error);
   assert.equal(assigned.assignedJobcard,jc.no);
-  const check=WD.recordEquipmentPreUseCheck('E-32C-B18',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const check=WD.recordEquipmentPreUseCheck('E-32C-B18',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   assert.ok(!check.error,`pre-use check against the canonical Jobcard number must succeed — ${check.error}`);
   const canUse=WD.canUseEquipment('E-32C-B18',{asOf:EQ_ASOF,date:EQ_ASOF,jobcardNo:jc.no,projectNo:'P-2026-014'});
   assert.equal(canUse.allowed,true,'canUseEquipment must recognise the canonical pre-use check');
@@ -3193,7 +3204,7 @@ test('Pass 3.2C (27): a record assigned through a numeric Jobcard id continues w
   const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!started.error,`startJobcardOperation must succeed against the canonical assignment — ${started.error}`);
   assert.equal(started.status,'in-progress');
-  const usage=WD.logEquipmentUsage('E-32C-B18',{hours:2,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
+  const usage=WD.logEquipmentUsage('E-32C-B18',{hours:2,date:EQ_ASOF,worker:'Test Welder',project:'P-2026-014',jobcard:jc.no});
   assert.ok(!usage.error,`logEquipmentUsage against the canonical Jobcard number must succeed — ${usage.error}`);
 });
 
@@ -3202,9 +3213,9 @@ test('Pass 3.2C (28): the existing assignment-conflict protection is preserved �
   WD.createEquipment({equipmentId:'E-32C-B19',name:'Test Drill',category:'Power Tool'});
   const jcA=mkJobcard(WD,'JC-32C-B19A');
   const jcB=mkJobcard(WD,'JC-32C-B19B');
-  const first=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcA.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const first=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcA.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!first.error);
-  const conflict=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcB.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const conflict=WD.assignEquipment('E-32C-B19',{project:'P-2026-014',jobcard:jcB.id,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(conflict.code,'EQUIPMENT_ASSIGNMENT_CONFLICT','a numeric id resolving to a DIFFERENT Jobcard must still be caught as a conflict');
   const item=WD.getEquipment().find(e=>e.equipmentId==='E-32C-B19');
   assert.equal(item.assignedJobcard,jcA.no,'the original assignment must be untouched');
@@ -3214,27 +3225,27 @@ test('Pass 3.2C (29): reassigning equipment to the SAME Jobcard it is already he
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B20',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-B20');
-  const first=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const first=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!first.error);
-  const second=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  const second=WD.assignEquipment('E-32C-B20',{project:'P-2026-014',jobcard:jc.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.ok(!second.error,'reassigning to the identical Jobcard must be idempotent, not a conflict');
-  assert.equal(second.operator,'Elena N.');
+  assert.equal(second.operator,'Test Fitter');
 });
 
 test('Pass 3.2C (30): equipment blocked by the safety gate still cannot be reserved or assigned, even with a fully valid context', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B21',name:'Test Drill',category:'Power Tool',status:'Out of Service'});
   const jc=mkJobcard(WD,'JC-32C-B21');
-  const reserve=WD.reserveEquipment('E-32C-B21',{project:'P-2026-014',reservedBy:'Marko K.'});
+  const reserve=WD.reserveEquipment('E-32C-B21',{project:'P-2026-014',reservedBy:'Test Welder'});
   assert.equal(reserve.code,'EQUIPMENT_SAFETY_BLOCKED');
-  const assign=WD.assignEquipment('E-32C-B21',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assign=WD.assignEquipment('E-32C-B21',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.equal(assign.code,'EQUIPMENT_SAFETY_BLOCKED');
 });
 
 test('Pass 3.2C (31): returnEquipment still clears the assignment and pauses any active operation using it', ()=>{
   const WD=loadWorkshopData();
   const {op}=mkStartedOpFixture(WD,'JC-32C-B22','E-32C-B22');
-  const res=WD.returnEquipment('E-32C-B22',{user:'Aleksandar C.'});
+  const res=WD.returnEquipment('E-32C-B22',{user:'Test Admin'});
   assert.ok(!res.error);
   assert.equal(res.assignedJobcard,null);
   assert.equal(res.status,'Available');
@@ -3251,11 +3262,11 @@ test('Pass 3.2C (32): Quality Hold and all Pass 3.1/3.2A/3.2B protections remain
   WD.applyQualityHold({scope:'jobcard',reference:jc.no,reason:'Test hold'});
   // Equipment assignment is governed by the equipment safety gate + the new assignment-context
   // validator — never by Quality Hold, which continues to govern operation starts/completions only.
-  const assign=WD.assignEquipment('E-32C-B23',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assign=WD.assignEquipment('E-32C-B23',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!assign.error,'equipment assignment must remain unaffected by a Jobcard-level Quality Hold');
   WD.updateJobcard(jc.id,{machines:[{equipmentId:'E-32C-B23',name:'Test Drill',plannedUsage:1}]});
   const op=mkOp(WD,jc.id,{equipmentId:'E-32C-B23',machine:'Test Drill'});
-  WD.recordEquipmentPreUseCheck('E-32C-B23',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  WD.recordEquipmentPreUseCheck('E-32C-B23',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.equal(started.code,'QUALITY_HOLD_ACTIVE','starting an operation on a Jobcard under an active Quality Hold must still be blocked — unaffected by Pass 3.2C');
 });
@@ -3263,7 +3274,7 @@ test('Pass 3.2C (32): Quality Hold and all Pass 3.1/3.2A/3.2B protections remain
 test('Pass 3.2C (33a): reserveEquipment preserves the optional note in the reservation activity record', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-B24',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-32C-B24',{project:'P-2026-014',reservedBy:'Marko K.',note:'Needed for the north wall job'});
+  const res=WD.reserveEquipment('E-32C-B24',{project:'P-2026-014',reservedBy:'Test Welder',note:'Needed for the north wall job'});
   assert.ok(!res.error);
   assert.ok(res.activity[0].details.includes('Needed for the north wall job'),'the note must be preserved in the audit record');
 });
@@ -3271,11 +3282,11 @@ test('Pass 3.2C (33a): reserveEquipment preserves the optional note in the reser
 test('Pass 3.2C (33b): reserveEquipment with a blank/omitted note does not add stray note text, and the note survives a save+reload round trip', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
   WD.createEquipment({equipmentId:'E-32C-B25',name:'Test Drill',category:'Power Tool'});
-  const blank=WD.reserveEquipment('E-32C-B25',{project:'P-2026-014',reservedBy:'Marko K.'});
+  const blank=WD.reserveEquipment('E-32C-B25',{project:'P-2026-014',reservedBy:'Test Welder'});
   assert.ok(!blank.error);
   assert.equal(blank.activity[0].details,'P-2026-014 / —','no note supplied must produce the plain project/jobcard details with no trailing dash or empty note marker');
   WD.createEquipment({equipmentId:'E-32C-B26',name:'Test Drill',category:'Power Tool'});
-  WD.reserveEquipment('E-32C-B26',{project:'P-2026-014',reservedBy:'Marko K.',note:'Fragile — handle with care'});
+  WD.reserveEquipment('E-32C-B26',{project:'P-2026-014',reservedBy:'Test Welder',note:'Fragile — handle with care'});
   const reloaded=loadWorkshopData(undefined,localStorage);
   const item=reloaded.get().equipment.find(e=>e.equipmentId==='E-32C-B26');
   assert.ok(item.activity[0].details.includes('Fragile — handle with care'),'the note must survive a save + reload round trip');
@@ -3371,7 +3382,7 @@ test('Pass 3.2C review fix (40): createEquipment rejects a malformed id even whe
 test('Pass 3.2C review fix (41a): reserving equipment via a numeric Project id persists the CANONICAL project number, not the raw numeric id', ()=>{
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-F3',name:'Test Drill',category:'Power Tool'});
-  const res=WD.reserveEquipment('E-32C-F3',{project:14,reservedBy:'Marko K.'});
+  const res=WD.reserveEquipment('E-32C-F3',{project:14,reservedBy:'Test Welder'});
   assert.ok(!res.error,`reservation via a numeric Project id must succeed and canonicalize — ${res.error}`);
   assert.equal(res.assignedProject,'P-2026-014','assignedProject must be the canonical P-... string, never the raw numeric id');
   assert.equal(typeof res.assignedProject,'string');
@@ -3381,7 +3392,7 @@ test('Pass 3.2C review fix (41b): assigning equipment via a numeric Project id (
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-F4',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-F4');
-  const res=WD.assignEquipment('E-32C-F4',{project:14,jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-F4',{project:14,jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error,`assignment via a numeric Project id must succeed — ${res.error}`);
   assert.equal(res.assignedProject,'P-2026-014');
   assert.equal(res.currentAssignment.project,'P-2026-014');
@@ -3391,7 +3402,7 @@ test('Pass 3.2C review fix (42): assigning equipment via BOTH a numeric Project 
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-F5',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-F5');
-  const res=WD.assignEquipment('E-32C-F5',{project:14,jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-F5',{project:14,jobcard:jc.id,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error,`assignment via a numeric project id AND a numeric Jobcard id together must succeed — ${res.error}`);
   assert.equal(res.assignedProject,'P-2026-014');
   assert.equal(res.assignedJobcard,jc.no);
@@ -3406,11 +3417,11 @@ test('Pass 3.2C review fix (43): equipment assigned via BOTH a numeric Project i
   const WD=loadWorkshopData();
   const jc=mkJobcard(WD,'JC-32C-F6');
   WD.createEquipment({equipmentId:'E-32C-F6',name:'Test Drill',category:'Power Tool'});
-  const assigned=WD.assignEquipment('E-32C-F6',{project:14,jobcard:jc.id,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment('E-32C-F6',{project:14,jobcard:jc.id,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!assigned.error);
   assert.equal(assigned.assignedProject,'P-2026-014');
   assert.equal(assigned.assignedJobcard,jc.no);
-  const check=WD.recordEquipmentPreUseCheck('E-32C-F6',{checkedBy:'Marko K.',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
+  const check=WD.recordEquipmentPreUseCheck('E-32C-F6',{checkedBy:'Test Welder',date:EQ_ASOF,result:'passed',checklist:'OK',projectNo:'P-2026-014',jobcardNo:jc.no});
   assert.ok(!check.error,`pre-use check against the canonical numbers must succeed — ${check.error}`);
   const canUse=WD.canUseEquipment('E-32C-F6',{asOf:EQ_ASOF,date:EQ_ASOF,jobcardNo:jc.no,projectNo:'P-2026-014'});
   assert.equal(canUse.allowed,true,'canUseEquipment must recognise the canonical pre-use check');
@@ -3419,7 +3430,7 @@ test('Pass 3.2C review fix (43): equipment assigned via BOTH a numeric Project i
   const started=WD.startJobcardOperation(jc.id,op.id,{date:EQ_ASOF});
   assert.ok(!started.error,`startJobcardOperation must succeed against the canonical assignment — ${started.error}`);
   assert.equal(started.status,'in-progress');
-  const usage=WD.logEquipmentUsage('E-32C-F6',{hours:2,date:EQ_ASOF,worker:'Marko K.',project:'P-2026-014',jobcard:jc.no});
+  const usage=WD.logEquipmentUsage('E-32C-F6',{hours:2,date:EQ_ASOF,worker:'Test Welder',project:'P-2026-014',jobcard:jc.no});
   assert.ok(!usage.error,`logEquipmentUsage against the canonical numbers must succeed — ${usage.error}`);
 });
 
@@ -3432,11 +3443,11 @@ test('Pass 3.2C review fix (44a): a project-only reservation blocks a DIFFERENT 
   WD.createEquipment({equipmentId:'E-32C-F7',name:'Test Drill',category:'Power Tool'});
   const projA=WD.upsertProject({name:'Cross-Project Theft Test A'});
   const projB=WD.upsertProject({name:'Cross-Project Theft Test B'});
-  const first=WD.reserveEquipment('E-32C-F7',{project:projA.no,reservedBy:'Marko K.'});
+  const first=WD.reserveEquipment('E-32C-F7',{project:projA.no,reservedBy:'Test Welder'});
   assert.ok(!first.error);
   assert.equal(first.assignedProject,projA.no);
   assert.equal(first.assignedJobcard,null,'a project-only reservation must leave assignedJobcard null');
-  const stolen=WD.reserveEquipment('E-32C-F7',{project:projB.no,reservedBy:'Elena N.'});
+  const stolen=WD.reserveEquipment('E-32C-F7',{project:projB.no,reservedBy:'Test Fitter'});
   assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT','a different project must never be able to silently steal a project-only reservation');
   assert.equal(stolen.assignedProject,projA.no);
   assert.equal(stolen.requestedProject,projB.no);
@@ -3451,9 +3462,9 @@ test('Pass 3.2C review fix (44b): a project-only reservation blocks a DIFFERENT 
   const projA=WD.upsertProject({name:'Cross-Project Theft Test C'});
   const projB=WD.upsertProject({name:'Cross-Project Theft Test D'});
   const jcB=WD.upsertJobcard({no:'JC-32C-F8B',projectNo:projB.no,title:'Project B fixture',status:'draft',machines:[],operations:[]});
-  const first=WD.reserveEquipment('E-32C-F8',{project:projA.no,reservedBy:'Marko K.'});
+  const first=WD.reserveEquipment('E-32C-F8',{project:projA.no,reservedBy:'Test Welder'});
   assert.ok(!first.error);
-  const stolen=WD.assignEquipment('E-32C-F8',{project:projB.no,jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  const stolen=WD.assignEquipment('E-32C-F8',{project:projB.no,jobcard:jcB.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT','assignment to a different project must be rejected exactly like reservation');
   assert.equal(stolen.assignedProject,projA.no);
   assert.equal(stolen.requestedProject,projB.no);
@@ -3467,9 +3478,9 @@ test('Pass 3.2C review fix (44c): assigning a project-only reservation to a Jobc
   WD.createEquipment({equipmentId:'E-32C-F9',name:'Test Drill',category:'Power Tool'});
   const projA=WD.upsertProject({name:'Cross-Project Theft Test E'});
   const jcA=WD.upsertJobcard({no:'JC-32C-F9A',projectNo:projA.no,title:'Project A fixture',status:'draft',machines:[],operations:[]});
-  const first=WD.reserveEquipment('E-32C-F9',{project:projA.no,reservedBy:'Marko K.'});
+  const first=WD.reserveEquipment('E-32C-F9',{project:projA.no,reservedBy:'Test Welder'});
   assert.ok(!first.error);
-  const assigned=WD.assignEquipment('E-32C-F9',{project:projA.no,jobcard:jcA.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  const assigned=WD.assignEquipment('E-32C-F9',{project:projA.no,jobcard:jcA.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.ok(!assigned.error,`assigning a same-project reservation to one of its own Jobcards must remain allowed — ${assigned.error}`);
   assert.equal(assigned.assignedProject,projA.no);
   assert.equal(assigned.assignedJobcard,jcA.no);
@@ -3481,12 +3492,12 @@ test('Pass 3.2C review fix (44d): returnEquipment() first allows a DIFFERENT pro
   const projA=WD.upsertProject({name:'Cross-Project Theft Test F'});
   const projB=WD.upsertProject({name:'Cross-Project Theft Test G'});
   const jcB=WD.upsertJobcard({no:'JC-32C-F10B',projectNo:projB.no,title:'Project B fixture',status:'draft',machines:[],operations:[]});
-  const first=WD.reserveEquipment('E-32C-F10',{project:projA.no,reservedBy:'Marko K.'});
+  const first=WD.reserveEquipment('E-32C-F10',{project:projA.no,reservedBy:'Test Welder'});
   assert.ok(!first.error);
-  const returned=WD.returnEquipment('E-32C-F10',{user:'Aleksandar C.'});
+  const returned=WD.returnEquipment('E-32C-F10',{user:'Test Admin'});
   assert.ok(!returned.error);
   assert.equal(returned.assignedProject,null);
-  const assignedToB=WD.assignEquipment('E-32C-F10',{project:projB.no,jobcard:jcB.no,worker:'Elena N.',assignedBy:'Aleksandar C.'});
+  const assignedToB=WD.assignEquipment('E-32C-F10',{project:projB.no,jobcard:jcB.no,worker:'Test Fitter',assignedBy:'Test Admin'});
   assert.ok(!assignedToB.error,`after returnEquipment(), a different project must be able to assign the equipment — ${assignedToB.error}`);
   assert.equal(assignedToB.assignedProject,projB.no);
   assert.equal(assignedToB.assignedJobcard,jcB.no);
@@ -3497,10 +3508,10 @@ test('Pass 3.2C review fix (44e): a rejected cross-project reservation attempt i
   WD.createEquipment({equipmentId:'E-32C-F11',name:'Test Drill',category:'Power Tool'});
   const projA=WD.upsertProject({name:'Cross-Project Theft Test H'});
   const projB=WD.upsertProject({name:'Cross-Project Theft Test I'});
-  const first=WD.reserveEquipment('E-32C-F11',{project:projA.no,reservedBy:'Marko K.'});
+  const first=WD.reserveEquipment('E-32C-F11',{project:projA.no,reservedBy:'Test Welder'});
   assert.ok(!first.error);
   const before=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F11');
-  const stolen=WD.reserveEquipment('E-32C-F11',{project:projB.no,reservedBy:'Elena N.',note:'attempted theft'});
+  const stolen=WD.reserveEquipment('E-32C-F11',{project:projB.no,reservedBy:'Test Fitter',note:'attempted theft'});
   assert.equal(stolen.code,'EQUIPMENT_PROJECT_CONFLICT');
   const after=WD.getEquipment().find(e=>e.equipmentId==='E-32C-F11');
   assert.deepEqual(after,before,'the entire equipment record must be unchanged after a rejected cross-project attempt');
@@ -3528,12 +3539,12 @@ test('Pass 3.2C review fix (45b): assignEquipment rejects a non-string worker or
   WD.createEquipment({equipmentId:'E-32C-F13',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-F13');
   [123,true,{},[],null].forEach((bad)=>{
-    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:bad,assignedBy:'Aleksandar C.'});
+    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:bad,assignedBy:'Test Admin'});
     assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',`worker ${JSON.stringify(bad)} must be rejected`);
     assert.equal(res.reason,'WORKER_REQUIRED');
   });
   [123,true,{},[],null].forEach((bad)=>{
-    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:bad});
+    const res=WD.assignEquipment('E-32C-F13',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:bad});
     assert.equal(res.code,'EQUIPMENT_ASSIGNMENT_DETAILS_REQUIRED',`assignedBy ${JSON.stringify(bad)} must be rejected`);
     assert.equal(res.reason,'ASSIGNED_BY_REQUIRED');
   });
@@ -3546,11 +3557,11 @@ test('Pass 3.2C review fix (45c): a genuine, valid string worker/assignedBy/rese
   const WD=loadWorkshopData();
   WD.createEquipment({equipmentId:'E-32C-F14',name:'Test Drill',category:'Power Tool'});
   const jc=mkJobcard(WD,'JC-32C-F14');
-  const res=WD.assignEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,worker:'Marko K.',assignedBy:'Aleksandar C.'});
+  const res=WD.assignEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,worker:'Test Welder',assignedBy:'Test Admin'});
   assert.ok(!res.error);
-  assert.equal(res.operator,'Marko K.');
-  assert.equal(res.currentAssignment.assignedBy,'Aleksandar C.');
-  const reserveRes=WD.reserveEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Sven O.'});
+  assert.equal(res.operator,'Test Welder');
+  assert.equal(res.currentAssignment.assignedBy,'Test Admin');
+  const reserveRes=WD.reserveEquipment('E-32C-F14',{project:'P-2026-014',jobcard:jc.no,reservedBy:'Test Contact Eighteen'});
   assert.ok(!reserveRes.error);
 });
 
@@ -3679,7 +3690,7 @@ test('cross-tab reload: the Node test harness\'s window stub omitting addEventLi
 test('document content: a small data URL persists with its metadata and survives reload', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
   const fileData='data:text/plain;base64,SGVsbG8gVmFybWFr';
-  const saved=WD.upsertDocument({name:'hello.txt',type:'Document',module:'Customers',record:'MarineVent AB',fileName:'hello.txt',mimeType:'text/plain',fileSize:12,fileData});
+  const saved=WD.upsertDocument({name:'hello.txt',type:'Document',module:'Customers',record:'TestAlfa AB',fileName:'hello.txt',mimeType:'text/plain',fileSize:12,fileData});
   assert.equal(saved.fileData,fileData);
   assert.equal(WD.findDocument(saved.id).mimeType,'text/plain');
   const reloaded=loadWorkshopData(null,localStorage);
@@ -3713,8 +3724,8 @@ test('document content: cumulative browser-storage budget rejects a write before
 
 test('document folders: create is persistent, duplicate scope is idempotent, and archive is non-destructive', ()=>{
   const WD=loadWorkshopData();
-  const first=WD.upsertDocumentFolder({name:'Contracts',module:'Customers',record:'MarineVent AB'});
-  const second=WD.upsertDocumentFolder({name:'contracts',module:'Customers',record:'MarineVent AB'});
+  const first=WD.upsertDocumentFolder({name:'Contracts',module:'Customers',record:'TestAlfa AB'});
+  const second=WD.upsertDocumentFolder({name:'contracts',module:'Customers',record:'TestAlfa AB'});
   assert.equal(first.id,second.id);
   assert.equal(WD.getDocumentFolders().filter(f=>f.id===first.id).length,1);
   const archived=WD.archiveDocumentFolder(first.id);
@@ -3778,10 +3789,10 @@ test('inventory: duplicate, incomplete, invalid and over-reserved items are reje
 // ── Pass 3.36: Purchasing RFQs and supplier invoices ───────────────────────────────
 test('purchasing: RFQ create/update/archive persists a real shared workflow record', ()=>{
   const {WD,localStorage}=loadWorkshopDataWithStorage();
-  const rfq=WD.upsertPurchaseRfq({supplier:'SteelSupply AB',project:'P-2026-014',items:'8 sheets AISI 304',dueDate:'2026-09-10',status:'Sent'});
+  const rfq=WD.upsertPurchaseRfq({supplier:'TestChi AB',project:'P-2026-014',items:'8 sheets AISI 304',dueDate:'2026-09-10',status:'Sent'});
   assert.match(rfq.no,/^RFQ-\d{4}-\d{4}$/);assert.equal(rfq.status,'Sent');
   assert.equal(WD.updatePurchaseRfq(rfq.no,{status:'Replied'}).status,'Replied');
-  assert.equal(loadWorkshopData(null,localStorage).findPurchaseRfq(rfq.no).supplier,'SteelSupply AB');
+  assert.equal(loadWorkshopData(null,localStorage).findPurchaseRfq(rfq.no).supplier,'TestChi AB');
   assert.equal(WD.archivePurchaseRfq(rfq.id).archived,true);
 });
 
@@ -4222,7 +4233,7 @@ test('queue: a finding binned yesterday does not come back tomorrow', ()=>{
   const W=loadWorkshopData();
   W.recordProspectSweep(Stub.sample(),{});
   const skip=W.getProspectFindings().find(f=>f.verdict==='skip');
-  W.dismissProspectFinding(skip.id,{by:'Marko K.',reason:'not our trade'});
+  W.dismissProspectFinding(skip.id,{by:'Test Welder',reason:'not our trade'});
   W.recordProspectSweep(Stub.sample(),{});
   const same=W.getProspectFindings().filter(f=>f.fingerprint===skip.fingerprint);
   assert.equal(same.length,1,'a rejected finding returning is how a queue teaches people to ignore it');
@@ -4233,7 +4244,7 @@ test('queue: accepting makes a real lead out of what is known, and nothing else'
   W.recordProspectSweep(Stub.sample(),{});
   const f=W.getProspectFindings().find(x=>x.verdict==='go');
   const before=W.getMarketingLeads().length;
-  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  const got=W.acceptProspectFinding(f.id,{by:'Test Admin'});
   assert.ok(got.lead&&got.lead.no,'a lead with a real number is created');
   assert.equal(W.getMarketingLeads().length,before+1);
   // A forum post carries no contact, no email and no budget. None are invented to fill the card.
@@ -4249,7 +4260,7 @@ test('queue: a lead made from a sample finding says so on its face', ()=>{
   const W=loadWorkshopData();
   W.recordProspectSweep(Stub.sample(),{});
   const f=W.getProspectFindings().find(x=>x.verdict==='go');
-  const got=W.acceptProspectFinding(f.id,{by:'Aleksandar C.'});
+  const got=W.acceptProspectFinding(f.id,{by:'Test Admin'});
   assert.equal(got.lead.demo,true);
   assert.match(got.lead.notes[0].text,/sample finding/i,
     'nobody should ever ring a number believing a stub was a real find');
@@ -4258,16 +4269,16 @@ test('queue: the company can be named on the way in', ()=>{
   const W=loadWorkshopData();
   W.recordProspectSweep(Stub.sample(),{});
   const f=W.getProspectFindings().find(x=>x.verdict==='go');
-  const got=W.acceptProspectFinding(f.id,{by:'Elena N.',company:'Höörs Bygg AB',contact:'Jonas'});
+  const got=W.acceptProspectFinding(f.id,{by:'Test Fitter',company:'Höörs Bygg AB',contact:'Jonas'});
   assert.equal(got.lead.company,'Höörs Bygg AB');
   assert.equal(got.lead.contact,'Jonas');
-  assert.equal(got.lead.owner,'Elena N.');
+  assert.equal(got.lead.owner,'Test Fitter');
 });
 test('queue: with no company known, the lead carries the post itself rather than a guess', ()=>{
   const W=loadWorkshopData();
   W.recordProspectSweep(Stub.sample(),{});
   const f=W.getProspectFindings().find(x=>x.verdict==='go');
-  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  const got=W.acceptProspectFinding(f.id,{by:'Test Fitter'});
   assert.equal(got.lead.company,f.title);
 });
 test('queue: a decision is made once', ()=>{
@@ -4287,9 +4298,9 @@ test('queue: a decision records who made it and when', ()=>{
   const W=loadWorkshopData();
   W.recordProspectSweep(Stub.sample(),{});
   const f=W.getProspectFindings().find(x=>x.verdict==='go');
-  const got=W.acceptProspectFinding(f.id,{by:'Elena N.'});
+  const got=W.acceptProspectFinding(f.id,{by:'Test Fitter'});
   assert.equal(got.finding.status,'accepted');
-  assert.equal(got.finding.decidedBy,'Elena N.');
+  assert.equal(got.finding.decidedBy,'Test Fitter');
   assert.ok(got.finding.decidedAt);
   assert.equal(got.finding.leadNo,got.lead.no,'and which lead it became');
 });
@@ -4426,8 +4437,7 @@ test('an empty workshop numbers its first item in each group from the start of t
 });
 
 test('clearing removes every copy of the records, and keeps the theme and the language', ()=>{
-  const {WD,localStorage}=loadWorkshopDataWithStorage({});
-  WD.loadDemoData();
+  const {WD,localStorage}=loadWorkshopDataWithStorage(fixtureEntries());
   const demo=localStorage.getItem(V5_KEY);
   // Everywhere a browser that used the prototype can be holding invented records.
   const copies=[V4_KEY,V3_KEY,'varmak.workshop.v1',`${V5_KEY}.before-import.1700000000000`,
@@ -4442,7 +4452,7 @@ test('clearing removes every copy of the records, and keeps the theme and the la
   for(const k of copies)assert.equal(localStorage.getItem(k),null,`${k} still holds the records after clearing`);
   for(const [k,v] of Object.entries(kept))assert.equal(localStorage.getItem(k),v,`${k} is not a record and must survive`);
   const left=Array.from({length:localStorage.length},(_,i)=>localStorage.getItem(localStorage.key(i))).join(' ');
-  for(const name of ['MarineVent','Anna Berg','Aleksandar C.'])
+  for(const name of ['TestAlfa','Test Office','Test Admin'])
     assert.ok(!left.includes(name),`"${name}" is still somewhere in this browser after clearing`);
   assert.equal(WD.get().customers.length,0);
 });
@@ -4450,12 +4460,24 @@ test('clearing removes every copy of the records, and keeps the theme and the la
 test('a cleared workshop stays cleared when the page is opened again', ()=>{
   // The fall-back load reads v4 and v3 when the current key is missing. Clearing has to take those
   // with it, or the invented records come back the day the current copy is lost.
-  const {WD,localStorage}=loadWorkshopDataWithStorage({});
-  WD.loadDemoData();
+  const {WD,localStorage}=loadWorkshopDataWithStorage(fixtureEntries());
   localStorage.setItem(V4_KEY,localStorage.getItem(V5_KEY));
   WD.reset();
   localStorage.removeItem(V5_KEY);
   const again=loadWorkshopData(Object.fromEntries(Array.from({length:localStorage.length},
     (_,i)=>[localStorage.key(i),localStorage.getItem(localStorage.key(i))])));
   assert.equal(again.get().customers.length,0,'the demonstration came back from an old copy');
+});
+
+test('receiving goods nobody named records nobody, not an invented person', ()=>{
+  // The receipt fell back to 'John Smith' when no name came with it, so every delivery booked without
+  // a name went into the stock history as received by a man who does not exist. The Store's receiving
+  // form also arrived with that name already typed in. A record signed by nobody is honest; one
+  // signed by an invented person is not.
+  const WD=loadEmptyWorkshopData();
+  WD.createInventoryItem({code:'RCV-NONAME',description:'Plate',group:'materials',unit:'EA',location:'R1',stock:0,minStock:0,reorderQty:0,avgCost:1,lastPrice:1,supplier:'S'});
+  WD.receive({code:'RCV-NONAME',qty:2,supplier:'S',location:'R1',lastPrice:1});
+  const movement=WD.get().movements.find(m=>m.code==='RCV-NONAME'&&m.action==='RECEIVED');
+  assert.ok(movement,'the receipt has to be in the stock history, or this check has nothing to look at');
+  assert.equal(movement.user,'—','a receipt with no name is recorded as nobody');
 });

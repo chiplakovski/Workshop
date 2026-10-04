@@ -20,7 +20,7 @@ function step(message) {
 async function projectWorkflow(page) {
   await page.locator('button[onclick="openNewProject()"]').first().click();
   await page.locator('#npName').fill(PROJECT_NAME);
-  await page.locator('#npCust').selectOption({ label: 'MarineVent AB' });
+  await page.locator('#npCust').selectOption({ label: 'TestAlfa AB' });
   await page.locator('#npKind').selectOption('offer');
   await page.locator('#npDeadline').fill('2026-11-05');
   // The work a job is made of is described up front; it is what the estimate then prices.
@@ -33,7 +33,7 @@ async function projectWorkflow(page) {
 
   let project = await page.evaluate((name) => WorkshopData.getProjects().find((item) => item.name === name), PROJECT_NAME);
   assert.ok(project, 'new project was not persisted');
-  assert.equal(project.customer, 'MarineVent AB');
+  assert.equal(project.customer, 'TestAlfa AB');
   assert.equal(project.quoteKind, 'offer');
   assert.equal(project.status, 'quotation', 'a new project is the quotation it is being priced for');
   assert.equal(project.quotedValue, 0, 'no price is typed at creation — the estimate produces it');
@@ -117,7 +117,7 @@ async function projectWorkflow(page) {
   step('Estimating: the factor is drawn from finished work of this kind, and names it');
 
   // Give the workshop a finished job of this kind that genuinely ran long.
-  await page.evaluate(() => WorkshopData.upsertProject({ name: 'Past fabrication overrun', customer: 'MarineVent AB',
+  await page.evaluate(() => WorkshopData.upsertProject({ name: 'Past fabrication overrun', customer: 'TestAlfa AB',
     status: 'completed', plannedHours: 100, usedHours: 130, types: ['Fabrication'] }));
   await page.evaluate((no) => { const e = ESTIMATIONS.find((x) => x.projectNo === no); selectedId = e.id; renderAll(); }, project.no);
   await page.waitForTimeout(150);
@@ -140,7 +140,7 @@ async function projectWorkflow(page) {
   step('Estimating: applying the factor scales the durations, and only the durations');
 
   // A locked item is agreed, and must not be moved by this.
-  await page.evaluate(() => { const e = getEst(selectedId); e.workItems[0].lock = lockItem(e.workItems[0], 'Aleksandar C.', '2026-09-13'); syncEstimation(e); renderAll(); });
+  await page.evaluate(() => { const e = getEst(selectedId); e.workItems[0].lock = lockItem(e.workItems[0], 'Test Admin', '2026-09-13'); syncEstimation(e); renderAll(); });
   await page.waitForTimeout(150);
   await page.locator('.biasrow .tbtn').click();
   await page.locator('.wask .waskmsg').waitFor();

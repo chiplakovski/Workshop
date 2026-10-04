@@ -391,7 +391,7 @@ function invByCode(code){return SHARED.inventory.find(x=>x.code===code);}
 
 // The people this workshop has, from the snapshot, which takes them from app_user under its own row
 // policy: the office reads the whole staff list, a welder reads their own row. This was a const holding
-// three names written into the page — Aleksandar C., Elena N., Marko K. — so at a real firm the
+// three invented names written into the page, so at a real firm the
 // Responsible and Worker dropdowns offered three strangers and none of the staff, and the workers table
 // gave every one of them a job title nobody had entered.
 function staffNames(){return (SHARED.people||[]).map(p=>p.name).filter(Boolean);}

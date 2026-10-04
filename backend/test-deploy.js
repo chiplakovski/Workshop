@@ -244,7 +244,7 @@ async function main() {
     // Nobody can get in yet, which is the state an install leaves behind on purpose.
     assert.equal(value(`SELECT count(*) FROM app_user;`), '0');
     const first = await call('bootstrap_first_admin',
-      { email: 'anna@varmak.se', display_name: 'Anna Berg', password: 'correct horse battery staple' });
+      { email: 'anna@varmak.se', display_name: 'Test Office', password: 'correct horse battery staple' });
     assert.equal(first.status, 200, `the first administrator has to be makeable: ${JSON.stringify(first.body)}`);
     const admin = await signIn('anna@varmak.se', 'correct horse battery staple', 'password');
     assert.ok(admin, 'and then sign in — which is the crypt() path, and the one a search_path breaks');
@@ -256,9 +256,9 @@ async function main() {
     assert.equal(marko.status, 200);
     const markoId = value(`SELECT id FROM app_user WHERE email = 'marko@varmak.se';`);
     assert.equal((await call('set_person_pin', { user_id: Number(markoId), pin: '8472' }, admin)).status, 200);
-    const customer = await call('save_customer', { name: 'MarineVent AB', city: 'Malmö', credit_limit: '250000' }, admin);
+    const customer = await call('save_customer', { name: 'TestAlfa AB', city: 'Malmö', credit_limit: '250000' }, admin);
     assert.equal(customer.status, 200, JSON.stringify(customer.body));
-    const customerId = value(`SELECT id FROM customer WHERE name = 'MarineVent AB';`);
+    const customerId = value(`SELECT id FROM customer WHERE name = 'TestAlfa AB';`);
     assert.equal((await call('save_project',
       { name: 'Conveyor frame', customer_id: Number(customerId), status: 'production', planned_hours: 40 }, admin)).status, 200);
     const projectId = value(`SELECT id FROM project WHERE name = 'Conveyor frame';`);

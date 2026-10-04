@@ -301,7 +301,7 @@
   }
 
   // Who is doing this, for the eight screens that write it into a record — a history line, a note's
-  // author, a createdBy, the name on a stock movement. Every one of them had the literal 'Aleksandar C.'
+  // author, a createdBy, the name on a stock movement. Every one of them had the same literal name
   // in it, sixty-eight times across the eight, so a quality note added by a welder recorded that he had
   // added it and an estimation revised by the office recorded that he had revised it.
   //

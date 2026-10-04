@@ -30,7 +30,7 @@ const fromTheServer = () => ({
   id: '7', no: 'DOC-00007', name: 'Material Certificate MTC-240516', type: 'Certificate',
   category: 'Materials', revision: '1', status: 'Review Soon', setStatus: 'valid',
   expiry: '2026-10-05', module: 'Projects', record: 'P-2026-014',
-  author: 'Anna Berg', notes: 'Heat H240516', uploadedBy: 'Anna Berg',
+  author: 'Test Office', notes: 'Heat H240516', uploadedBy: 'Test Office',
   uploaded: '2026-09-01T08:14:00Z', updated: '2026-09-20T11:02:00Z',
   fileName: null, fileSize: null, mimeType: null, activity: []
 });
@@ -100,7 +100,7 @@ test('an author nobody typed does not take the name off a drawing', () => {
   // corrected a category, so null means "leave whoever filed it alone" and the database keeps it.
   assert.equal(DocumentRecord.toServer({ name: 'x' }).author, null);
   assert.equal(DocumentRecord.toServer({ name: 'x', author: '   ' }).author, null);
-  assert.equal(DocumentRecord.toServer({ name: 'x', author: 'Marcus Lind' }).author, 'Marcus Lind');
+  assert.equal(DocumentRecord.toServer({ name: 'x', author: 'Test Contact Eleven' }).author, 'Test Contact Eleven');
 });
 
 test('a document with no name is refused by the database, and the mapping does not invent one', () => {

@@ -486,7 +486,7 @@ function failedPreUseCheckStopsStart() {
     VALUES ('EQ-OTHER', 'Fixture plasma', 'cutting') RETURNING id;`);
   refused('an event resolving one about another machine',
     `INSERT INTO equipment_event (equipment_id, kind, performed_by, result, resolves_event_id)
-     VALUES (${other}, 'repair', 'Anna Berg', 'done', ${failed});`,
+     VALUES (${other}, 'repair', 'Test Office', 'done', ${failed});`,
     /same machine/);
   step('Equipment: a failure cannot be answered by another failure, nor by an event about another machine');
 }
@@ -835,7 +835,7 @@ async function perGroupNumbersNeverCollide() {
 function oneAnswerToWhoWeBuyFrom() {
   const f = fixture();
   const a = value(`INSERT INTO supplier (name, city) VALUES ('Stål & Metall AB', 'Malmö') RETURNING id;`);
-  const b = value(`INSERT INTO supplier (name, city) VALUES ('Nordic Steel', 'Helsingborg') RETURNING id;`);
+  const b = value(`INSERT INTO supplier (name, city) VALUES ('TestKappa Steel', 'Helsingborg') RETURNING id;`);
   accepted('the first supplier for an item', `INSERT INTO supplier_item
     (supplier_id, stock_item_id, article_no, price, pack_size, lead_time_days, is_preferred)
     VALUES (${a}, ${f.item}, 'ST-10-S355', 13.90, 1, 5, true);`);
@@ -976,7 +976,7 @@ function offcutsAreRealThings() {
 function thePipelineKeepsItsLinksBack() {
   const f = fixture();
   const lead = value(`INSERT INTO lead (company, contact, city, source)
-    VALUES ('Skåne Verkstad AB', 'Anna Berg', 'Lund', 'trade fair') RETURNING id;`);
+    VALUES ('Skåne Verkstad AB', 'Test Office', 'Lund', 'trade fair') RETURNING id;`);
   sql(`INSERT INTO prospect_finding (lead_id, finding, source)
        VALUES (${lead}, 'Tendering for a 40-tonne conveyor frame', 'public procurement notice');`);
   refused('a lead converted to nobody', `UPDATE lead SET status = 'converted' WHERE id = ${lead};`,
@@ -1272,10 +1272,10 @@ function ncrCannotCloseOnNothing() {
       responsible, detected_by, due_on)
     VALUES ('Porosity beyond level C', ${f.project}, ${f.jobcard}, 'welding', 'major',
             'Found on the bracket weld during visual inspection', 'Quality Manager',
-            'Aleksandar C.', '2026-12-01') RETURNING ref;`);
+            'Test Admin', '2026-12-01') RETURNING ref;`);
   assert.match(n, /^NCR-\d{4}-\d{3}$/);
   refused('an NCR about nothing', `INSERT INTO ncr (title, category, description, responsible, detected_by)
-    VALUES ('Floating problem', 'welding', 'Somewhere', 'Quality Manager', 'Aleksandar C.');`,
+    VALUES ('Floating problem', 'welding', 'Somewhere', 'Quality Manager', 'Test Admin');`,
     /ncr_names_something/);
   // Who found it is not who has to fix it, and a register that cannot say who raised a fault cannot
   // answer the only question asked after a delivery goes wrong: how long did we know.
@@ -1441,11 +1441,11 @@ function aWeldIsMadeBySomebodyQualified() {
     VALUES ('WPS-MAG-01', 1, 'MAG', 'draft') RETURNING id;`);
   const current = value(`INSERT INTO welder_qual (welder_id, qual_no, process, issued_by,
       issued_on, expires_on)
-    VALUES (${elena}, 'WPQ-EN-2024-11', 'TIG', 'Nordic Weld Cert AB',
+    VALUES (${elena}, 'WPQ-EN-2024-11', 'TIG', 'TestCert AB',
             current_date - 400, current_date + 200) RETURNING id;`);
   const lapsed = value(`INSERT INTO welder_qual (welder_id, qual_no, process, issued_by,
       issued_on, expires_on)
-    VALUES (${elena}, 'WPQ-EN-2021-03', 'TIG', 'Nordic Weld Cert AB',
+    VALUES (${elena}, 'WPQ-EN-2021-03', 'TIG', 'TestCert AB',
             current_date - 1200, current_date - 30) RETURNING id;`);
 
   accepted('a weld to an approved procedure, by a welder qualified for it', `INSERT INTO weld

@@ -130,7 +130,7 @@ async function createInventoryAndReorder(page) {
     orderedQty: qty, receivedQty: 0, value: qty * price, unitPrice: price,
     date: new Date().toISOString().slice(0, 10),
     expected: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-    buyer: 'Aleksandar C.', status: 'Confirmed'
+    buyer: 'Test Admin', status: 'Confirmed'
   }).no, { code: ITEM_CODE, supplier: SUPPLIER, qty: ORDERED_QTY, price: UNIT_PRICE });
   const orders = await page.evaluate((code) => WorkshopData.getPurchaseOrders().filter((po) => po.itemCode === code), ITEM_CODE);
   assert.equal(orders.length, 1, 'the shared register did not hold exactly one purchase order');
@@ -310,13 +310,13 @@ async function receiveGoods(page, poNo) {
   // An invoice line for something the store has never held: create it on the
   // receipt, book it in, then pull it for a job.
   await page.evaluate(() => showView('receiving'));
-  await page.locator('#receiveSupplier').fill('Nordic Steel');
+  await page.locator('#receiveSupplier').fill('TestKappa Steel');
   await page.locator('#receiveLocation').fill('E2E-PIPE-01');
   await page.locator('#receivePrice').fill('845');
   await page.locator('#receiveHeat').fill('E2E-H-PIPE');
   await page.locator('#receiving button:has-text("New item from this invoice")').click();
   await page.waitForTimeout(120);
-  assert.equal(await page.locator('#newSupplier').inputValue(), 'Nordic Steel',
+  assert.equal(await page.locator('#newSupplier').inputValue(), 'TestKappa Steel',
     'the create form must carry what the receipt already knows');
   assert.equal(await page.locator('#newLocation').inputValue(), 'E2E-PIPE-01');
   await page.locator('#newGroup').selectOption('materials');

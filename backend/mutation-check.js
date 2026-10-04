@@ -2110,7 +2110,7 @@ CREATE INDEX inspection_check_idx`
     what: 'who found a non-conformance comes from the form rather than from the session',
     file: 'api',
     from: `            btrim(p_description), btrim(p_responsible), who, p_due_on, p_operation, p_component,`,
-    to: `            btrim(p_description), btrim(p_responsible), 'Aleksandar C.', p_due_on, p_operation, p_component,`
+    to: `            btrim(p_description), btrim(p_responsible), 'Test Admin', p_due_on, p_operation, p_component,`
   },
   {
     what: 'a critical non-conformance no longer holds the work it is about',

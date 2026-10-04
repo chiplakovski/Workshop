@@ -89,11 +89,11 @@ function buildDatabase() {
 // An empty workshop, a job to weld on, and two people: the office and the welder.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Pressure skid', ${customer}, 'production', 120) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -289,7 +289,7 @@ async function main() {
     await office.evaluate(async (id) => { await approveProcedure(id); await new Promise((r) => setTimeout(r, 400)); }, wps);
     await until('the approval to land', () => value(`SELECT status FROM wps WHERE id = ${wps};`) === 'approved');
     assert.equal(value(`SELECT approved_by || '|' || (approved_on = current_date)::text
-      FROM wps WHERE id = ${wps};`), 'Anna Berg|true',
+      FROM wps WHERE id = ${wps};`), 'Test Office|true',
     'who approved it and when come from the session — the form has no field for either');
     step('Welding: with a WPQR behind it the procedure approves, signed by the session and dated today');
 
@@ -310,24 +310,24 @@ async function main() {
     await recordQualification(office, {
       welderId: w.welder, qualNo: 'WPQ-MI-2025-04', process: 'TIG',
       materialGroup: 'Stainless Steel (Group 8)', thicknessRange: '1.5–8 mm',
-      position: 'All positions', issuedBy: 'Nordic Weld Cert AB',
+      position: 'All positions', issuedBy: 'TestCert AB',
       issuedOn: sql(`SELECT (current_date - 400)::text;`), expiresOn: sql(`SELECT (current_date + 300)::text;`)
     });
     await until('the qualification to reach Postgres', () => value(`SELECT count(*) FROM welder_qual;`) === '1');
     const qual = value(`SELECT id FROM welder_qual;`);
     assert.equal(value(`SELECT welder_id || '|' || qual_no || '|' || process || '|' || issued_by
       || '|' || status FROM welder_qual WHERE id = ${qual};`),
-    `${w.welder}|WPQ-MI-2025-04|TIG|Nordic Weld Cert AB|valid`,
+    `${w.welder}|WPQ-MI-2025-04|TIG|TestCert AB|valid`,
     'against the person rather than their name, and valid is the only word stored');
 
     // One about to run out, and one that already has. Both are stored as 'valid'; the words the screen
     // shows are worked out on every read.
     await recordQualification(office, {
-      welderId: w.welder, qualNo: 'WPQ-MI-2023-01', process: 'MAG', issuedBy: 'Nordic Weld Cert AB',
+      welderId: w.welder, qualNo: 'WPQ-MI-2023-01', process: 'MAG', issuedBy: 'TestCert AB',
       issuedOn: sql(`SELECT (current_date - 700)::text;`), expiresOn: sql(`SELECT (current_date + 20)::text;`)
     });
     await recordQualification(office, {
-      welderId: w.welder, qualNo: 'WPQ-MI-2021-09', process: 'MMA', issuedBy: 'Nordic Weld Cert AB',
+      welderId: w.welder, qualNo: 'WPQ-MI-2021-09', process: 'MMA', issuedBy: 'TestCert AB',
       issuedOn: sql(`SELECT (current_date - 1500)::text;`), expiresOn: sql(`SELECT (current_date - 30)::text;`)
     });
     await until('all three qualifications to arrive', () => value(`SELECT count(*) FROM welder_qual;`) === '3');

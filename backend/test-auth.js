@@ -88,7 +88,7 @@ function makeWorkshop() {
              project, customer, stock_item, quality_hold, estimate, estimate_line, supplier,
              supplier_item, equipment, equipment_event, app_user RESTART IDENTITY CASCADE;`);
   PEOPLE.admin = value(`INSERT INTO app_user (email, display_name, role)
-    VALUES ('anna@varmak.se', 'Anna Berg', 'admin') RETURNING id;`);
+    VALUES ('anna@varmak.se', 'Test Office', 'admin') RETURNING id;`);
   PEOPLE.office = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('lars@varmak.se', 'Lars Holm', 'office') RETURNING id;`);
   PEOPLE.welder = value(`INSERT INTO app_user (email, display_name, role)
@@ -592,7 +592,7 @@ function theFloorDoesTheWork(f) {
   // policy refuses by matching no rows, not by raising. It succeeds and changes nothing, which is why
   // asserting on an error here would assert the opposite of what happens.
   const service = value(`INSERT INTO equipment_event (equipment_id, kind, performed_by, result)
-    VALUES (${f.equipment}, 'service', 'Anna Berg', 'done') RETURNING id;`);
+    VALUES (${f.equipment}, 'service', 'Test Office', 'done') RETURNING id;`);
   const overreach = as('varmak_workshop', PEOPLE.welder,
     `UPDATE equipment_event SET resolved = true WHERE kind <> 'pre-use-check' OR result <> 'fail';`);
   assert.ok(overreach.ok, 'a policy refuses by matching no rows, so this statement itself succeeds');

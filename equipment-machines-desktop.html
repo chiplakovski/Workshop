@@ -2296,9 +2296,9 @@
         });
       }
 
-      // Demo equipment is never auto-inserted on open — a genuinely empty Equipment collection is a
-      // valid user state and must stay empty. ensureDemoEquipment() remains available for an
-      // explicit user action (e.g. a future "load demo data" control) but is not called here.
+      // Nothing is inserted on open — a genuinely empty Equipment collection is a valid user state and
+      // must stay empty. There is no demonstration equipment to insert any more; the register holds
+      // the machines this workshop has entered and nothing else.
       init();
 
       // ── The register on the database ────────────────────────────────────────────────────

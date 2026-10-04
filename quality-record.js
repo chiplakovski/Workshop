@@ -195,7 +195,7 @@
       // name that matches nothing is sent as nothing rather than guessed at.
       supplier_id: (find.supplier && find.supplier(whole.supplier)) || null,
       notes: said(whole.notes)
-      // detected_by is deliberately absent. The screen had 'Aleksandar C.' written into the page, so
+      // detected_by is deliberately absent. The screen had one person's name written into the page, so
       // every non-conformance in the register would have been found by the same person whoever was
       // standing there. save_ncr takes it from the session.
     };

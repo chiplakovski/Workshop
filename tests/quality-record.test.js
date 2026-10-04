@@ -149,7 +149,7 @@ test('who found a non-conformance is never in the payload', () => {
   const sent = QualityRecord.ncrToServer({
     title: 'Porosity', projectNo: 'P-2026-004', jobcard: 'JC-2026-0011', category: 'welding',
     severity: 'major', description: 'In the root pass', responsiblePerson: 'Lars Holm',
-    dueDate: '2026-10-08', detectedBy: 'Aleksandar C.', supplier: 'Stål & Metall AB'
+    dueDate: '2026-10-08', detectedBy: 'Test Admin', supplier: 'Stål & Metall AB'
   }, LOOKUP);
   assert.equal('detected_by' in sent, false,
     'the screen had one name written into the page — every NCR would have been found by that person');

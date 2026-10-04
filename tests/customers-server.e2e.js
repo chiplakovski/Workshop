@@ -88,7 +88,7 @@ function buildDatabase() {
 // is the half the last check is about.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   sql(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
        SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
@@ -99,13 +99,13 @@ function aWorkshop() {
     (name, city, country, org_no, vat_no, email, phone, website, industry, customer_since,
      customer_type, preferred_contact, credit_limit, currency, payment_terms_days, price_list,
      delivery_terms, discount_agreement, billing_address)
-    VALUES ('MarineVent AB', 'Malmö', 'Sweden', '556789-1234', 'SE556789123401',
-            'info@marinevent.se', '+46 40 123 45 67', 'marinevent.se', 'Marine ventilation',
+    VALUES ('TestAlfa AB', 'Malmö', 'Sweden', '556789-1234', 'SE556789123401',
+            'info@testalfa.se', '+46 40 123 45 67', 'testalfa.se', 'Marine ventilation',
             '2023-03-15', 'direct', 'Email', 250000, 'SEK', 30, 'Standard Price List 2026',
-            'EXW Marieholm', '0%', 'MarineVent AB' || chr(10) || 'Östra Varvsgatan 12' || chr(10) || '211 19 Malmö')
+            'EXW Marieholm', '0%', 'TestAlfa AB' || chr(10) || 'Östra Varvsgatan 12' || chr(10) || '211 19 Malmö')
     RETURNING id;`);
   sql(`INSERT INTO customer_contact (customer_id, name, role, email, phone, is_primary)
-       VALUES (${customer}, 'Per Bengtsson', 'CEO', 'per@marinevent.se', '+46 70 555 66 77', true);`);
+       VALUES (${customer}, 'Test Contact One', 'CEO', 'per@testalfa.se', '+46 70 555 66 77', true);`);
   return { admin, welder, customer, ref: value(`SELECT ref FROM customer WHERE id = ${customer};`) };
 }
 
@@ -164,16 +164,16 @@ async function main() {
                contacts: c.contacts.length, primary: (c.contacts[0] || {}).name };
     });
     assert.equal(shown.count, 1, 'the list is the database\'s, not this browser\'s');
-    assert.equal(shown.name, 'MarineVent AB');
+    assert.equal(shown.name, 'TestAlfa AB');
     // The translations, on a real page rather than in a unit test.
     assert.equal(shown.terms, '30 days', 'a count of days reads as words on the screen');
     assert.equal(shown.credit, 250000, 'and the figure arrived as text and became a number to format');
     assert.equal(shown.ctype, 'Direct', '"direct" reads as a word');
     assert.equal(shown.preferred, 'Email', 'and the preferred contact is the method, not a flag');
-    assert.deepEqual(shown.billing, ['MarineVent AB', 'Östra Varvsgatan 12', '211 19 Malmö'],
+    assert.deepEqual(shown.billing, ['TestAlfa AB', 'Östra Varvsgatan 12', '211 19 Malmö'],
       'one block of text became the lines of an address card');
     assert.equal(shown.contacts, 1);
-    assert.equal(shown.primary, 'Per Bengtsson');
+    assert.equal(shown.primary, 'Test Contact One');
     step('Customers: the office reads the workshop\'s own customers, in the shapes the screen draws');
 
     // ── Making one, through the form ────────────────────────────────────────────────────────
@@ -221,18 +221,18 @@ async function main() {
       const c = CUSTOMERS.find((x) => x.sharedNo === ref);
       return c ? c.id : null;
     }, w.ref);
-    assert.ok(marine !== null, 'the MarineVent row should be on screen by its reference');
+    assert.ok(marine !== null, 'the TestAlfa row should be on screen by its reference');
     await page.evaluate((id) => openAddContact(id), marine);
     await page.waitForSelector('#fov.show', { timeout: 5000 });
-    await page.locator('#acName').fill('Lena Mårtensson');
+    await page.locator('#acName').fill('Test Contact Two');
     await page.locator('#acRole').fill('Purchasing');
-    await page.locator('#acEmail').fill('lena@marinevent.se');
+    await page.locator('#acEmail').fill('lena@testalfa.se');
     await page.evaluate((id) => saveAddContact(id), marine);
     await page.waitForFunction(() => document.querySelector('#fov.show') === null, { timeout: 8000 });
     await until('the contact to reach Postgres',
       () => value(`SELECT count(*) FROM customer_contact WHERE customer_id = ${w.customer};`) === '2');
     assert.equal(value(`SELECT name FROM customer_contact WHERE customer_id = ${w.customer} AND is_primary;`),
-      'Per Bengtsson', 'adding somebody must not move the main contact');
+      'Test Contact One', 'adding somebody must not move the main contact');
     step('Customers: a contact added on screen is in the database, and the main one stays the main one');
 
     // ── The check this whole file is for ────────────────────────────────────────────────────
@@ -284,11 +284,11 @@ async function main() {
       { timeout: 8000 });
 
     const asWelder = await tablet.evaluate(() => {
-      const c = CUSTOMERS.find((x) => x.name === 'MarineVent AB');
+      const c = CUSTOMERS.find((x) => x.name === 'TestAlfa AB');
       return { terms: c.terms, credit: c.credit, pricelist: c.pricelist, discount: c.discountAgreement,
                seesMoney: c.seesMoney, phone: c.phone, contact: (c.contacts[0] || {}).name };
     });
-    assert.equal(asWelder.contact, 'Per Bengtsson', 'a welder can see who to ring');
+    assert.equal(asWelder.contact, 'Test Contact One', 'a welder can see who to ring');
     assert.equal(asWelder.phone, '+46 40 99 88 77');
     assert.equal(asWelder.seesMoney, false);
     assert.equal(asWelder.terms, '—', 'and is shown a dash where the terms would be, not a number');
@@ -307,13 +307,13 @@ async function main() {
 
     // And cannot write, by the database rather than by the screen.
     const refused = await tablet.evaluate(async () => {
-      const c = CUSTOMERS.find((x) => x.name === 'MarineVent AB');
+      const c = CUSTOMERS.find((x) => x.name === 'TestAlfa AB');
       return window.WorkshopApi.call('save_customer',
         Object.assign(window.CustomerRecord.toServer(c), { name: 'Renamed By The Floor AB' }));
     });
     assert.equal(refused.ok, false);
     assert.match(refused.refused, /not yours to do/);
-    assert.equal(value(`SELECT name FROM customer WHERE id = ${w.customer};`), 'MarineVent AB');
+    assert.equal(value(`SELECT name FROM customer WHERE id = ${w.customer};`), 'TestAlfa AB');
     step('Customers: and a welder asking the API directly to rename one is refused by the database');
     await floor.close();
 

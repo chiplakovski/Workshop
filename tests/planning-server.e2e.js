@@ -87,13 +87,13 @@ function buildDatabase() {
 // is what makes "the patch must not clear the rest of the record" a question with an answer.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project
     (name, customer_id, status, phase, progress, planned_hours, planned_start, planned_completion,
      deadline, po_number, responsible, notes, workshop, material_status, work_types, quoted_value)
     VALUES ('Conveyor frame', ${customer}, 'planned', 'planning', 10, 40,
-            '2026-10-05', '2026-10-30', '2026-11-06', 'PO-88213', 'Anna Berg',
+            '2026-10-05', '2026-10-30', '2026-11-06', 'PO-88213', 'Test Office',
             'Two off, mirrored', 'Bay 2', 'ordered', 'Fabrication, Welding', 185000)
     RETURNING id;`);
   const card = (title, hours, start, done) => value(`INSERT INTO jobcard
@@ -180,7 +180,7 @@ async function main() {
       || '|' || coalesce(material_status,'GONE') || '|' || coalesce(work_types,'GONE')
       || '|' || coalesce(quoted_value::text,'GONE') || '|' || coalesce(deadline::text,'GONE')
       FROM project WHERE id = ${w.project};`),
-      'PO-88213|Anna Berg|Two off, mirrored|Bay 2|ordered|Fabrication, Welding|185000.00|2026-11-06',
+      'PO-88213|Test Office|Two off, mirrored|Bay 2|ordered|Fabrication, Welding|185000.00|2026-11-06',
       'moving a card across the board must not clear the eight fields the board never shows');
     assert.equal(value(`SELECT count(*) FROM project;`), '1', 'and it is the same project, not a second one');
     step('Planning: moving a card writes the stage and leaves every field the board does not show alone');
@@ -269,7 +269,7 @@ async function main() {
       (name, customer_id, status, phase, progress, planned_hours, planned_start, planned_completion,
        deadline, po_number, responsible, notes)
       VALUES ('Access platform', ${w.customer}, 'planned', 'planning', 0, 18,
-              '2026-11-02', '2026-11-20', '2026-11-27', 'PO-88299', 'Anna Berg', 'Galvanised')
+              '2026-11-02', '2026-11-20', '2026-11-27', 'PO-88299', 'Test Office', 'Galvanised')
       RETURNING id;`);
     const secondRef = value(`SELECT ref FROM project WHERE id = ${second};`);
     await page.reload({ waitUntil: 'load' });

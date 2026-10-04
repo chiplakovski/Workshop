@@ -67,7 +67,7 @@ function build(db) {
 // project, a released estimate with locked lines, and money nobody on the floor may read.
 function aWorkingWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   sql(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
     SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');

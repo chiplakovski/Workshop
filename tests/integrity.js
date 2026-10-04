@@ -18,6 +18,7 @@ const { appPages, startBrowserHarness } = require('./helpers/browser-harness');
 // The conversion tool's detector, so the check and the tool cannot disagree about which Latin belongs
 // in a Macedonian string. Two lists for one question is how the first version of both got it wrong.
 const { latinLeftIn } = require('../tools/translit.js');
+const { workshopFixture } = require('./fixtures/workshop-state');
 
 const ROOT = path.resolve(__dirname, '..');
 const LANGS = ['en', 'sv', 'mk'];
@@ -483,7 +484,8 @@ async function checkPage(context, baseUrl, file, failures) {
   try {
     // Demo data first: this is the page as a person with a running workshop sees it.
     await page.goto(`${baseUrl}/${file}`, { waitUntil: 'load' });
-    await page.evaluate(() => window.WorkshopData && window.WorkshopData.loadDemoData());
+    await page.evaluate((state) => localStorage.setItem('varmak.workshop.frontend.v5', JSON.stringify(state)),
+      workshopFixture());
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(120);
 

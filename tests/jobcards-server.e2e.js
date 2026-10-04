@@ -82,14 +82,14 @@ function buildDatabase() {
 
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const admin = value(`SELECT id FROM app_user WHERE email = 'anna@varmak.se';`);
   sql(`SET ROLE varmak_admin; SET app.user_id = '${admin}';
        SELECT add_person('marko@varmak.se', 'Marko Ilic', 'workshop');`);
   const welder = value(`SELECT id FROM app_user WHERE email = 'marko@varmak.se';`);
   sql(`SET ROLE varmak_admin; SET app.user_id = '${admin}'; SELECT set_person_pin(${welder}, '8472');`);
 
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 80) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, customer_id, title, item, quantity,
@@ -152,7 +152,7 @@ async function main() {
     assert.equal(shown.no, w.ref, 'the jobcard on screen is the database\'s, by its own reference');
     assert.equal(shown.title, 'Frame weldment');
     assert.match(shown.project, /^P-\d{4}-\d{3}$/);
-    assert.equal(shown.customer, 'MarineVent AB');
+    assert.equal(shown.customer, 'TestAlfa AB');
     assert.equal(shown.readiness, 'partial', 'the screen\'s own word for the material state');
     assert.equal(shown.heat, 'H240516-S534');
     assert.equal(shown.steps, 3);
@@ -165,8 +165,8 @@ async function main() {
     // ── The dropdowns that offer a person ────────────────────────────────────────────────────
     //
     // Responsible, Worker, the filter by responsible, the Reassign select, and the job title in the
-    // workers table were all fed by a const holding three names written into this page: Aleksandar C.,
-    // Elena N., Marko K. At a real firm those five controls offered three strangers and none of the
+    // workers table were all fed by a const holding three names written into this page: Test Admin,
+    // Test Fitter, Test Welder At a real firm those five controls offered three strangers and none of the
     // staff — so the one field that decides who is answerable for a weld could not be set to anybody
     // who works there. The names come from the snapshot now, which takes them from app_user.
     const offered = await page.evaluate(() => ({
@@ -174,7 +174,7 @@ async function main() {
       roleOfEach: staffNames().map((n) => staffRole(n)),
       inTheForm: ownerOptions().map((o) => o.v)
     }));
-    assert.deepEqual(offered.names, ['Anna Berg', 'Marko Ilic'],
+    assert.deepEqual(offered.names, ['Test Office', 'Marko Ilic'],
       `the dropdowns offer this workshop's people, and offered ${JSON.stringify(offered.names)}`);
     assert.deepEqual(offered.roleOfEach, ['admin', 'workshop'],
       'and the workers table states the role the database holds, not a job title nobody entered');

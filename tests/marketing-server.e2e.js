@@ -82,13 +82,13 @@ function buildDatabase() {
 
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const welder = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${welder}, 'a long enough passphrase');`);
   // One jobcard, so the welder's snapshot has work in it — which is the thing putting the pipeline in the
   // office's payload protects.
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status) VALUES ('Frame', ${customer}, 'production') RETURNING id;`);
   sql(`INSERT INTO jobcard (project_id, customer_id, title) VALUES (${project}, ${customer}, 'Weldment');`);
   return { welder, customer };

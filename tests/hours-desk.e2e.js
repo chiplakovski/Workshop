@@ -13,7 +13,7 @@
 //
 // What it does share with the phone is the rule that matters most: the worker on an entry is the
 // session, never the name on screen. This screen reads the name out of its own badge, so if the badge
-// were still saying "Marko K." — as it did, written into the page — the office would be entering
+// were still saying "Test Welder" — as it did, written into the page — the office would be entering
 // everybody's timesheets under a name the database would then ignore.
 
 const assert = require('node:assert/strict');
@@ -82,8 +82,8 @@ function buildDatabase() {
 
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 40) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -151,7 +151,7 @@ async function main() {
     await page.waitForFunction(() => window.WorkshopData && window.WorkshopData.isServerBacked(),
       { timeout: 8000 });
     assert.equal(await page.locator('[role="alert"]').count(), 0, 'the guard must let this page through');
-    assert.equal(await page.locator('#whoName').innerText(), 'Anna Berg',
+    assert.equal(await page.locator('#whoName').innerText(), 'Test Office',
       'the badge is the session\'s, and this screen reads the worker off that label');
     step('Hours (desk): the screen opens for a signed-in session and says whose it is');
 
@@ -159,7 +159,7 @@ async function main() {
     assert.match(said, /saved/i, `booking should be accepted: ${said}`);
     await until('the entry to reach Postgres', () => value(`SELECT count(*) FROM hours_entry;`) === '1');
     assert.equal(value(`SELECT worker || '|' || hours::text || '|' || operation_id::text FROM hours_entry;`),
-      `Anna Berg|6.50|${w.op}`,
+      `Test Office|6.50|${w.op}`,
       'in the session\'s name, against the step that was picked');
     // The rolled-up figures the office reads are the trigger's, so they had to move with it.
     assert.equal(value(`SELECT logged_hours::text FROM operation WHERE id = ${w.op};`), '6.50');

@@ -116,7 +116,7 @@ async function main() {
 
     // The database's own rules on a password, reaching the screen in its own words.
     await page.locator('#firstEmail').fill('anna@varmak.se');
-    await page.locator('#firstName').fill('Anna Berg');
+    await page.locator('#firstName').fill('Test Office');
     await page.locator('#firstPassword').fill('short');
     await page.locator('#firstForm button[type="submit"]').click();
     await page.waitForSelector('#firstSaid:not([hidden])', { timeout: 5000 });

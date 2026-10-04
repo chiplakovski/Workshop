@@ -206,13 +206,13 @@ test('load: against a stated supply, load is that percentage and overload is fla
 // ── peopleOnPlan / machinesOnPlan ────────────────────────────────────────────────────────────
 test('people: the plan names its own people, counted once each, hours not double-counted', ()=>{
   const people=Planning.peopleOnPlan([
-    proj({no:'A',responsible:'Aleksandar C.',workers:['Marko K.'],plannedHours:40,usedHours:0}),
-    proj({no:'B',responsible:'Aleksandar C.',workers:['Marko K.','Elena N.'],plannedHours:10,usedHours:0})
+    proj({no:'A',responsible:'Test Admin',workers:['Test Welder'],plannedHours:40,usedHours:0}),
+    proj({no:'B',responsible:'Test Admin',workers:['Test Welder','Test Fitter'],plannedHours:10,usedHours:0})
   ]);
-  assert.deepEqual(people.map(p=>p.name),['Aleksandar C.','Marko K.','Elena N.']);
+  assert.deepEqual(people.map(p=>p.name),['Test Admin','Test Welder','Test Fitter']);
   assert.equal(people[0].hours,50);
   assert.deepEqual(people[0].projects,['A','B']);
-  assert.equal(people.find(p=>p.name==='Elena N.').hours,10);
+  assert.equal(people.find(p=>p.name==='Test Fitter').hours,10);
 });
 test('people: finished and cancelled work does not keep someone busy', ()=>{
   assert.deepEqual(Planning.peopleOnPlan([
@@ -259,8 +259,8 @@ test('awaiting: a project with no dates says which date it is missing', ()=>{
 
 // ── a project's items ────────────────────────────────────────────────────────────────────────
 test('items: the two places a project keeps its work are read as one list', ()=>{
-  const project=proj({no:'P-1',jobcards:[{no:'JC-OLD',desc:'Cut frame',assigned:'Marko K.',est:8,progress:50,status:'active'}]});
-  const items=Planning.itemsOf(project,[{no:'JC-NEW',projectNo:'P-1',title:'Weld frame',plannedHours:12,plannedStart:'2026-09-07',plannedCompletion:'2026-09-11',progress:0,status:'ready',responsible:'Elena N.'}]);
+  const project=proj({no:'P-1',jobcards:[{no:'JC-OLD',desc:'Cut frame',assigned:'Test Welder',est:8,progress:50,status:'active'}]});
+  const items=Planning.itemsOf(project,[{no:'JC-NEW',projectNo:'P-1',title:'Weld frame',plannedHours:12,plannedStart:'2026-09-07',plannedCompletion:'2026-09-11',progress:0,status:'ready',responsible:'Test Fitter'}]);
   assert.deepEqual(items.map(i=>i.no),['JC-NEW','JC-OLD'],'registered jobcards first, then the ones only the project knows about');
   assert.equal(items[0].source,'jobcard');
   assert.equal(items[0].title,'Weld frame');
@@ -269,7 +269,7 @@ test('items: the two places a project keeps its work are read as one list', ()=>
   assert.equal(items[1].source,'project','an item only the project carries must say so, because that is where a date goes back');
   assert.equal(items[1].title,'Cut frame','the older records call it desc');
   assert.equal(items[1].hours,8,'and call its hours est');
-  assert.equal(items[1].responsible,'Marko K.');
+  assert.equal(items[1].responsible,'Test Welder');
   assert.equal(items[1].start,'','an item with no dates reports none rather than today');
 });
 test('items: a jobcard registered for the project wins over the project\'s own copy of it', ()=>{

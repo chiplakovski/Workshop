@@ -345,9 +345,13 @@ function dbColumns() {
 
 function frontendRecords() {
   global.window = global;
-  global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+  // The populated test workshop, read the way the app reads a returning browser's records. The app no
+  // longer carries invented records of its own, so the fixture lives with the tests.
+  const { workshopFixture } = require(path.join(ROOT, 'tests', 'fixtures', 'workshop-state.js'));
+  const stored = JSON.stringify(workshopFixture());
+  global.localStorage = { getItem: (k) => (k === 'varmak.workshop.frontend.v5' ? stored : null),
+    setItem: () => {}, removeItem: () => {} };
   require(path.join(ROOT, 'workshop-data.js'));
-  global.WorkshopData.loadDemoData();
   return global.WorkshopData.get();
 }
 

@@ -10,7 +10,7 @@ const JobcardRecord = require('../jobcard-record.js');
 
 const SERVED = {
   id: '12', no: 'JC-2026-0004', title: 'Frame weldment', item: 'Frame',
-  projectId: '3', projectNo: 'P-2026-002', customerId: '5', customer: 'MarineVent AB',
+  projectId: '3', projectNo: 'P-2026-002', customerId: '5', customer: 'TestAlfa AB',
   quantity: 2, revision: 1, drawingNo: 'BR-4410-A', workType: 'fabrication',
   location: 'workshop', priority: 'high', responsible: 'Marko Ilic',
   status: 'in-progress', progress: 45, plannedHours: 24,

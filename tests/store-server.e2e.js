@@ -80,8 +80,8 @@ function buildDatabase() {
 // A job for the steel to go to, and an empty store.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 40) RETURNING id;`);
   const jobcard = value(`INSERT INTO jobcard (project_id, customer_id, title, status, planned_hours)
@@ -150,7 +150,7 @@ async function main() {
     });
     await page.locator('#receiveQty').fill('50');
     await page.locator('#receivePrice').fill('14.00');
-    await page.locator('#receiveSupplier').fill('Nordic Steel');
+    await page.locator('#receiveSupplier').fill('TestKappa Steel');
     await page.locator('#receiveDn').fill('DN-4471');
     await page.locator('#receiveHeat').fill('H240516');
     await page.locator('#confirmReceipt').click();
@@ -158,7 +158,7 @@ async function main() {
       () => value(`SELECT stock::text FROM stock_item WHERE id = ${w.item};`) === '50.000');
     assert.equal(value(`SELECT avg_cost::text FROM stock_item WHERE id = ${w.item};`), '14.00');
     assert.equal(value(`SELECT heat_no FROM stock_item WHERE id = ${w.item};`), 'H240516');
-    assert.equal(value(`SELECT moved_by FROM stock_movement WHERE kind = 'receipt';`), 'Anna Berg',
+    assert.equal(value(`SELECT moved_by FROM stock_movement WHERE kind = 'receipt';`), 'Test Office',
       'the movement is signed by whoever was signed in, not by the name in the form');
     step('Store: steel entered on the form is on the shelf, and the movement is signed by the session');
 
@@ -188,7 +188,7 @@ async function main() {
       () => value(`SELECT stock::text FROM stock_item WHERE id = ${w.item};`) === '88.000');
     assert.equal(value(`SELECT (jobcard_id = ${w.jobcard})::text FROM stock_movement
       WHERE kind = 'issue';`), 'true', 'material is booked against a job, which is what makes it costable');
-    assert.equal(value(`SELECT moved_by FROM stock_movement WHERE kind = 'issue';`), 'Anna Berg');
+    assert.equal(value(`SELECT moved_by FROM stock_movement WHERE kind = 'issue';`), 'Test Office');
     step('Store: material leaves the shelf against the job, in the name of whoever issued it');
 
     // ── Counting it ────────────────────────────────────────────────────────────────────────

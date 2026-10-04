@@ -212,10 +212,10 @@ LANGUAGE sql STABLE AS $$
     'takenRole', current_app_role()::text,
 
     -- The people this workshop has. Six screens offered a "Responsible", "Owner" or "Estimator"
-    -- dropdown whose three options were written into the page — Aleksandar C., Elena N., Marko K. —
-    -- so on the first day at a real firm those fields offered three strangers and none of the staff.
-    -- One of the three was also the answer to every "who did this": a note added by a welder was
-    -- signed Aleksandar C., and a quality record that names the wrong person is worse than one that
+    -- dropdown whose three options were invented names written into the page, so on the first day
+    -- at a real firm those fields offered three strangers and none of the staff. One of the three was
+    -- also the answer to every "who did this": a note added by a welder was signed with that invented
+    -- name, and a quality record that names the wrong person is worse than one that
     -- names nobody.
     --
     -- Name and role only. The email, the lock state and everything about a password stay in people(),

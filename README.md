@@ -104,14 +104,20 @@ creates is C-001. The only things present are the classification scheme (item gr
 locations), because without them you would have to design a numbering system before entering a
 single bolt; rename or delete them freely.
 
-The demonstration records still exist as a fixture. `WorkshopData.loadDemoData()` fills the system
-with them — used by the test suites, and available from the browser console for showing the system
-populated. `WorkshopData.reset()` empties it again.
+There are no demonstration records in the app. The populated workshop the browser tests run against
+lives in `tests/fixtures/workshop-state.js`, with plainly test names, and the server never serves
+anything under `tests/`. `tests/no-invented-data.test.js` fails if any of it turns up in a file the
+system ships or installs.
+
+**Clear everything** (the hub's *Your data* panel, browser storage only) calls `WorkshopData.reset()`,
+which removes every copy of the records — the current one, the older v4/v3/v1 keys, every recovery
+copy and the old per-module keys — and keeps the theme, the language, a session and the offline queue.
 
 All data is stored client-side under the `varmak.workshop.frontend.v5` localStorage key. On load,
 if that key is missing or unreadable, `workshop-data.js` looks for the older
 `varmak.workshop.frontend.v4` and `...v3` keys and migrates them forward automatically, without
-ever deleting the original record or overwriting valid data with corrupted data. Call
+ever deleting the original record or overwriting valid data with corrupted data. (Loading never
+deletes anything; only an explicit **Clear everything** does.) Call
 `WorkshopData.getDataHealth()` from the browser console to see the current migration/data-health
 status. `WorkshopData.backupData()` downloads a JSON backup; `WorkshopData.validateBackup(obj)`
 and `WorkshopData.importBackup(obj)` validate and safely restore one (the current data is kept as

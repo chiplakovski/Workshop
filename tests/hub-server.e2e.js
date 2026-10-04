@@ -71,12 +71,12 @@ function buildDatabase() {
 // count on the hub is a number somebody could check by hand.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
   const marko = value(`INSERT INTO app_user (email, display_name, role)
     VALUES ('marko@varmak.se', 'Marko Ilic', 'workshop') RETURNING id;`);
   sql(`SELECT set_password(${marko}, 'a long enough passphrase');`);
   const customer = value(`INSERT INTO customer (name, city, credit_limit)
-    VALUES ('MarineVent AB', 'Malmö', 250000) RETURNING id;`);
+    VALUES ('TestAlfa AB', 'Malmö', 250000) RETURNING id;`);
   sql(`INSERT INTO customer (name, city) VALUES ('Nordvent AB', 'Lund');`);
   const project = value(`INSERT INTO project (name, customer_id, status, planned_hours)
     VALUES ('Conveyor frame', ${customer}, 'production', 40) RETURNING id;`);
@@ -137,7 +137,7 @@ async function main() {
     step('Hub: signed in, the front door opens instead of refusing — it is wired now');
 
     const anna = await badge(page);
-    assert.equal(anna.name, 'Anna Berg', 'the badge is the session\'s, not a name written into the page');
+    assert.equal(anna.name, 'Test Office', 'the badge is the session\'s, not a name written into the page');
     assert.equal(anna.role, 'Admin');
     assert.equal(anna.initials, 'AB', 'including the initials, which were AK for everybody');
     step('Hub: the badge holds the name and the role the session belongs to');
@@ -179,7 +179,7 @@ async function main() {
     await page.locator('[data-lang="sv"]').click();
     await page.waitForTimeout(80);
     const swedish = await badge(page);
-    assert.equal(swedish.name, 'Anna Berg');
+    assert.equal(swedish.name, 'Test Office');
     assert.equal(swedish.role, 'Admin', 'admin is admin in Swedish too, but it must come from the session');
     await page.locator('#langtoggle').click();
     await page.locator('[data-lang="en"]').click();

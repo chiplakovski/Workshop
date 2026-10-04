@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const ProjectRecord = require('../project-record.js');
 
 const SERVED = {
-  id: '4', no: 'P-2026-002', name: 'Conveyor frame', customerId: '5', customer: 'MarineVent AB',
+  id: '4', no: 'P-2026-002', name: 'Conveyor frame', customerId: '5', customer: 'TestAlfa AB',
   status: 'production', phase: 'fabrication', progress: 35, plannedHours: 80, usedHours: 28.5,
   deadline: '2026-11-30', plannedStart: '2026-10-01', actualStart: '2026-10-02',
   plannedCompletion: '2026-11-20', expectedCompletion: '2026-11-25', actualCompletion: null,

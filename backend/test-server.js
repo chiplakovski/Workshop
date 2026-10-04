@@ -783,7 +783,7 @@ async function theQualityRegisterWorksOverHttp(tokens, f) {
     { token: tokens.office, body: { id: ncrId, step: 'close', text: 'QM-2026-14' } }),
     422, /nothing verified/);
   wentThrough('verifying the fix', await call('POST', '/rpc/record_ncr_step',
-    { token: tokens.office, body: { id: ncrId, step: 'verify', text: 'Re-run, PT accepted', ref: 'Anna Berg' } }));
+    { token: tokens.office, body: { id: ncrId, step: 'verify', text: 'Re-run, PT accepted', ref: 'Test Office' } }));
   wentThrough('closing it', await call('POST', '/rpc/record_ncr_step',
     { token: tokens.office, body: { id: ncrId, step: 'close', text: 'QM-2026-14' } }));
   wentThrough('a note on it', await call('POST', '/rpc/add_quality_note',

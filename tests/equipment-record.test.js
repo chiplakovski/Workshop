@@ -26,7 +26,7 @@ const fromTheServer = () => ({
   manufacturer: 'Hypertherm', model: 'Powermax 120', serial: 'SN-99812', assetNumber: 'A-0100',
   yearOfManufacture: 2022, description: 'Handheld plasma cutter',
   currentLocation: 'Bay 2', homeLocation: 'Bay 2', department: 'Fabrication',
-  responsiblePerson: 'Anna Berg', operator: 'Marko Ilic', condition: 'good', criticality: 'high',
+  responsiblePerson: 'Test Office', operator: 'Marko Ilic', condition: 'good', criticality: 'high',
   safetyWarnings: 'Eye protection and gloves', certificationExpiry: '2027-04-01',
   purchaseDate: '2022-06-01', purchaseSupplier: 'Nordic Machines', purchasePrice: '84000.00',
   warrantyExpiry: '2026-06-01', operatingHourMeter: 120.5, serviceInterval: 500,

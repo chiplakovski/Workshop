@@ -103,7 +103,7 @@
   // database `notes` is the standing description of the merchant, one text column. Two different things
   // under one word, which showed up the first time a round trip was tested: the note list arrived, was
   // put in `notes`, and went back down as the description — so the standing text was replaced by
-  // "2026-09-01,Lead time up to three weeks,Anna Berg".
+  // "2026-09-01,Lead time up to three weeks,J. Smith".
   //
   // So the column is called `description` on this side of the wire, the dated list keeps `notes`, and
   // the two can never be each other again. The dated entries go through add_supplier_note, into the

@@ -78,8 +78,8 @@ function buildDatabase() {
 // A customer and nothing else, which is exactly the state a workshop is in on its second day.
 function aWorkshop() {
   sql(`SET client_min_messages = warning;
-    SELECT bootstrap_first_admin('anna@varmak.se', 'Anna Berg', 'correct horse battery staple');`);
-  const customer = value(`INSERT INTO customer (name, city) VALUES ('MarineVent AB', 'Malmö') RETURNING id;`);
+    SELECT bootstrap_first_admin('anna@varmak.se', 'Test Office', 'correct horse battery staple');`);
+  const customer = value(`INSERT INTO customer (name, city) VALUES ('TestAlfa AB', 'Malmö') RETURNING id;`);
   return { customer };
 }
 
@@ -118,7 +118,7 @@ async function main() {
       { timeout: 8000 });
     assert.equal(await page.locator('[role="alert"]').count(), 0, 'the guard must let this page through');
     const customers = await page.evaluate(() => Object.values(CUSTOMERS).map((c) => c.name));
-    assert.deepEqual(customers, ['MarineVent AB'], 'the customer comes from the database');
+    assert.deepEqual(customers, ['TestAlfa AB'], 'the customer comes from the database');
     step('Projects: the estimating screen reads the workshop\'s own customers and has no work yet');
 
     // ── Making one, through the page's own form ─────────────────────────────────────────────
@@ -170,7 +170,7 @@ async function main() {
 
     // ── And the half that is not built ─────────────────────────────────────────────────────
     const said = await page.evaluate(() => window.WorkshopData.upsertEstimation({
-      customer: 'MarineVent AB', title: 'Conveyor frame', status: 'draft', sellingPrice: 42000
+      customer: 'TestAlfa AB', title: 'Conveyor frame', status: 'draft', sellingPrice: 42000
     }));
     assert.ok(said && said.error, 'estimating has no workflow, so the page must be told');
     assert.match(said.error, /Estimating does not exist on the server yet/);
