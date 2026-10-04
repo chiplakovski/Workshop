@@ -166,7 +166,7 @@ async function main() {
     //
     // Responsible, Worker, the filter by responsible, the Reassign select, and the job title in the
     // workers table were all fed by a const holding three names written into this page: Test Admin,
-    // Test Fitter, Test Welder At a real firm those five controls offered three strangers and none of the
+    // Test Fitter, Test Welder. At a real firm those five controls offered three strangers and none of the
     // staff — so the one field that decides who is answerable for a weld could not be set to anybody
     // who works there. The names come from the snapshot now, which takes them from app_user.
     const offered = await page.evaluate(() => ({
@@ -174,9 +174,10 @@ async function main() {
       roleOfEach: staffNames().map((n) => staffRole(n)),
       inTheForm: ownerOptions().map((o) => o.v)
     }));
-    assert.deepEqual(offered.names, ['Test Office', 'Marko Ilic'],
+    // In the database's order, which is by name.
+    assert.deepEqual(offered.names, ['Marko Ilic', 'Test Office'],
       `the dropdowns offer this workshop's people, and offered ${JSON.stringify(offered.names)}`);
-    assert.deepEqual(offered.roleOfEach, ['admin', 'workshop'],
+    assert.deepEqual(offered.roleOfEach, ['workshop', 'admin'],
       'and the workers table states the role the database holds, not a job title nobody entered');
     assert.deepEqual(offered.inTheForm, offered.names, 'and the form offers the same list');
     step('Jobcards: the person dropdowns offer this workshop\'s staff, not three names from the page');
