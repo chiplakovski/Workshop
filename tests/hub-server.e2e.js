@@ -139,7 +139,7 @@ async function main() {
     const anna = await badge(page);
     assert.equal(anna.name, 'Test Office', 'the badge is the session\'s, not a name written into the page');
     assert.equal(anna.role, 'Admin');
-    assert.equal(anna.initials, 'AB', 'including the initials, which were AK for everybody');
+    assert.equal(anna.initials, 'TO', 'including the initials, which were AK for everybody');
     step('Hub: the badge holds the name and the role the session belongs to');
 
     // The counts, checked against the database by hand rather than against the page's own idea.
