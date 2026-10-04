@@ -1576,7 +1576,7 @@ function theRegisterOfMerchants() {
   refused('a second merchant under the same name', 'varmak_office', PEOPLE.office,
     `SELECT save_supplier(NULL, 'TestKappa Steel');`, /already a supplier called/);
   refused('the same name in capitals', 'varmak_office', PEOPLE.office,
-    `SELECT save_supplier(NULL, 'NORDIC STEEL');`, /already a supplier called/);
+    `SELECT save_supplier(NULL, 'TESTKAPPA STEEL');`, /already a supplier called/);
   const second = ok('a genuinely different merchant', 'varmak_office', PEOPLE.office,
     `SELECT save_supplier(NULL, 'TestLambda', 'Welding consumables');`);
   ok('and renaming one to something free', 'varmak_office', PEOPLE.office,

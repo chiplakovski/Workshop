@@ -213,7 +213,7 @@ async function main() {
     // ── One merchant per name ───────────────────────────────────────────────────────────────
     const twice = await page.evaluate(() => {
       openModal('supplier');
-      document.getElementById('supplierName').value = 'NORDIC STEEL';
+      document.getElementById('supplierName').value = 'TESTKAPPA STEEL';
       document.getElementById('supplierCategory').value = 'Steel';
       document.getElementById('modalForm').dispatchEvent(
         new Event('submit', { cancelable: true, bubbles: true }));

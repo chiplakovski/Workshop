@@ -1657,8 +1657,8 @@ test('reloading (fresh load from the same localStorage) preserves the project/cu
 test('customer filtering uses shared ids: every real project customerId resolves to a real shared customer', ()=>{
   const WD=loadWorkshopData();
   const customers=WD.getCustomers();
-  const marineVentProject=WD.get().projects.find(p=>p.no==='P-2026-014');
-  const matched=customers.find(c=>c.id===marineVentProject.customerId);
+  const testAlfaProject=WD.get().projects.find(p=>p.no==='P-2026-014');
+  const matched=customers.find(c=>c.id===testAlfaProject.customerId);
   assert.ok(matched,'the project customerId must resolve against the shared customers collection');
   assert.equal(matched.name,'TestAlfa AB');
 });
