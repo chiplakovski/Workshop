@@ -9,7 +9,7 @@ prototype with no backend, kept because the browser-storage app still runs that 
 in; §4j is where it stands now. Sections 4b to 4i are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
-**Live demo:** https://claude.ai/code/artifact/c77193c9-c065-40fe-bac6-fbd29e56a090 (Version 72)
+**Live demo:** https://claude.ai/artifact/RdS7JQGQwMTWhGnqdAPKzX (Version 82, 6 October 2026 — empty, no invented records; browser storage only, no sign-in)
 
 ---
 
