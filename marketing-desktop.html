@@ -340,7 +340,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="prospect-rules.js"></script><script src="prospect-stub.js"></script><script src="marketing-record.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="prospect-rules.js"></script><script src="marketing-record.js"></script>
 <script>/* Wired to the server. Declared rather than detected: the pipeline is where the next six months of
    work comes from, and a board read out of this browser while the enquiries are in a database is a board
    that shows the wrong six months. */
@@ -546,7 +546,7 @@ Object.assign(T.en,{
   fd_run:"Run the sweep",
   fd_running:"Sweeping…",
   fd_done:"{n} new of {found} found.",
-  fd_done_none:"{found} found, nothing new — everything had been reported already.",
+  fd_done_none:"{found} found, nothing new — everything had been reported already.",fd_not_connected:"The sweep is not connected to anything yet, so nothing was searched. Leads are entered by hand until it is.",
   fd_t_sources:"Sources",fd_t_found:"Found",fd_t_new:"New",fd_t_known:"Seen before",
   fd_t_dropped:"No source",fd_t_go:"Go",fd_t_maybe:"Maybe",fd_t_skip:"Skip",
   fd_f_waiting:"Waiting for you",fd_f_go:"Go",fd_f_maybe:"Maybe",fd_f_skip:"Skip",fd_f_decided:"Decided",
@@ -603,7 +603,7 @@ Object.assign(T.sv,{
   fd_run:"Kör genomsökningen",
   fd_running:"Söker…",
   fd_done:"{n} nya av {found} hittade.",
-  fd_done_none:"{found} hittade, inget nytt — allt var redan rapporterat.",
+  fd_done_none:"{found} hittade, inget nytt — allt var redan rapporterat.",fd_not_connected:"Genomsökningen är inte kopplad till något ännu, så ingenting har sökts. Leads matas in för hand tills den är det.",
   fd_t_sources:"Källor",fd_t_found:"Hittade",fd_t_new:"Nya",fd_t_known:"Sedda förut",
   fd_t_dropped:"Utan källa",fd_t_go:"Kör",fd_t_maybe:"Kanske",fd_t_skip:"Skippa",
   fd_f_waiting:"Väntar på dig",fd_f_go:"Kör",fd_f_maybe:"Kanske",fd_f_skip:"Skippa",fd_f_decided:"Avgjorda",
@@ -658,7 +658,7 @@ Object.assign(T.mk,{
   fd_run:"Пушти преглед",
   fd_running:"Прегледува…",
   fd_done:"{n} нови од {found} најдени.",
-  fd_done_none:"{found} најдени, ништо ново — се беше веќе јавено.",
+  fd_done_none:"{found} најдени, ништо ново — сѐ беше веќе јавено.",fd_not_connected:"Прегледот сѐ уште не е поврзан со ништо, па ништо не е пребарано. Дотогаш потенцијалните купувачи се внесуваат рачно.",
   fd_t_sources:"Извори",fd_t_found:"Најдени",fd_t_new:"Нови",fd_t_known:"Веќе видени",
   fd_t_dropped:"Без извор",fd_t_go:"Оди",fd_t_maybe:"Можеби",fd_t_skip:"Прескочи",
   fd_f_waiting:"Чека на тебе",fd_f_go:"Оди",fd_f_maybe:"Можеби",fd_f_skip:"Прескочи",fd_f_decided:"Решени",
@@ -1087,11 +1087,14 @@ function renderFindings(){
 
 function fdSetFilter(v){fdFilter=v;renderApp();}
 
-// Running the sweep means, for now, handing the stub's fixed list to the same triage a real sweep
-// would go through. When there is a model behind it, only the source of the list changes.
+// Running the sweep hands whatever a connected source found to the triage. Nothing is connected
+// yet, and the app no longer ships the ten invented findings it used to hand over instead — so with
+// no source it says that nothing was searched, rather than reporting a sweep that found nothing.
+// The tests that judge the triage inject a source of their own as window.ProspectStub.
 function fdRunSweep(){
   const tt=t();
   if(fdSweeping)return;
+  if(!window.ProspectStub){wAlert(tt.fd_not_connected);return;}
   fdSweeping=true;renderApp();
   const started=Date.now();
   setTimeout(()=>{

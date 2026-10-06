@@ -4167,7 +4167,7 @@ test('history: what it is committed to now is the same answer the delete guard g
 // is stored has been triaged against the real equipment register, a finding is shown to a person
 // exactly once, and accepting one creates a lead out of what is known rather than what would look
 // good on a lead card.
-const Stub=require('../prospect-stub.js');
+const Stub=require('./fixtures/prospect-sample.js');
 
 test('queue: an unrun sweep has nothing to show', ()=>{
   const W=loadWorkshopData();

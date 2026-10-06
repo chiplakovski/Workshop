@@ -209,22 +209,16 @@ function promptsThatGoNowhere(source) {
 //
 // So the words are not allowed loose. A value may say "demo" or "prototype" only where it is one of these:
 const MAY_SAY_DEMONSTRATION = new Map([
-  // The login screen's own demonstration door, which is exactly what it is.
-  ['btn', 'the login screen\'s "Open local demo" button, which opens the demonstration'],
-  ['hint', 'the login screen saying authentication is off on the local demonstration'],
-  // The pair the page picks between at paint time. The demo half is shown only on browser storage.
-  ['reporting_status_text', 'shown only when the snapshot did come from browser storage'],
-  ['print_from_browser', 'the printed provenance line, shown only on browser storage'],
-  ['json_from_browser', 'the same line in an exported file, shown only on browser storage'],
-  // The demonstration state the data layer ships, described where it is described.
-  ['demo_reset', 'the control that puts the demonstration data back'],
-  ['demo_state', 'a description of the demonstration state itself'],
-  // The prospect sweep, which genuinely is a stub: nothing is searched, the findings are fixed examples
-  // and every source link points at an address that is not a page. That notice is the honest one on the
-  // screen and has to stay until there is a real sweep behind it.
-  ['fd_demo_t', 'the sample-findings notice on Marketing, where the sweep really is fixed examples'],
+  // The prospect sweep's sample notice and badge. Nothing in the app produces a sample finding any more
+  // — the ten invented ones moved to tests/fixtures/prospect-sample.js and an unconnected sweep says so —
+  // but a finding that carries demo:true still has to be labelled as one wherever it came from.
+  //
+  // Seven entries came out of this list when the demonstration did: the login door, the Reports status
+  // line and both browser provenance lines, and two keys no page had any more. A list that allows a word
+  // nobody uses is a list that will quietly allow it back.
+  ['fd_demo_t', 'the sample-findings notice on Marketing, shown only for a finding marked as a sample'],
   ['fd_demo_p', 'the same notice, explaining that nothing was searched and the links are not pages'],
-  ['fd_sample', 'the badge on a finding that came from the sample rather than from a sweep']
+  ['fd_sample', 'the badge on a finding marked as a sample rather than found by a sweep']
 ]);
 const SAYS_DEMONSTRATION = /\b(prototype|prototyp|demonstration|demo|демо|прототип)\b/i;
 

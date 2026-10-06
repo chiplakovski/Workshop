@@ -130,3 +130,19 @@ test('no form in the app arrives pre-filled with a value from the test workshop'
   }
   assert.deepEqual(prefilled, [], `fields pre-filled from the invented workshop:\n${prefilled.join('\n')}`);
 });
+
+test('the app ships none of the invented prospect findings', () => {
+  // Ten made-up forum posts, ads and tenders used to ship as prospect-stub.js and filled Marketing's
+  // queue whenever somebody pressed "Run the sweep". They live with the tests now; an unconnected
+  // sweep says nothing was searched.
+  const { sample } = require('./fixtures/prospect-sample');
+  const titles = sample().map((f) => f.title);
+  assert.ok(titles.length >= 5, 'the sample has almost no findings, so this check has nothing to look at');
+  assert.ok(!fs.existsSync(path.join(ROOT, 'prospect-stub.js')), 'prospect-stub.js is back in the app');
+  const leaks = [];
+  for (const file of shippedFiles()) {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const t of titles) if (text.includes(t)) leaks.push(`${path.relative(ROOT, file)}: "${t}"`);
+  }
+  assert.deepEqual(leaks, [], `invented findings in shipped files:\n${leaks.join('\n')}`);
+});

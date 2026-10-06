@@ -1,3 +1,10 @@
+// Test data. Ten invented findings in the shape a real prospect sweep would return — forum posts,
+// classified ads and tenders that do not exist. This used to ship in the app as prospect-stub.js and
+// ran whenever somebody pressed "Run the sweep" in Marketing, labelled as samples. The owner said
+// every invented record had to go, so the app no longer carries it: with nothing connected, the sweep
+// says so and searches nothing. The tests that judge the triage still need findings to triage, and
+// inject these into the page themselves.
+//
 // A stand-in for the outward sweep, so the queue can be driven before anything is wired to a
 // model or a network. Nothing here was found anywhere: it is a fixed set of the shapes a real
 // sweep produces, written so the workflow can be judged — would you accept this? would you bin

@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const { monitorPage, startBrowserHarness, loadDemoData } = require('./helpers/browser-harness');
 
 const COMPANY = 'E2E Skane Process Systems AB';
@@ -161,6 +162,20 @@ async function runFindingsQueue(page) {
   assert.match(await page.textContent('.swwhen'), /No sweep has run yet/);
   step('Findings: an unrun sweep shows an empty queue rather than made-up leads');
 
+  // With nothing connected, the sweep says so and searches nothing. It used to hand over ten invented
+  // findings from a stub the app shipped; the app no longer carries them.
+  await page.evaluate(() => fdRunSweep());
+  await page.waitForSelector('.wask', { timeout: 3000 });
+  assert.match(await page.locator('.waskmsg').innerText(), /not connected to anything yet/);
+  await page.locator('.waskyes').click();
+  await page.waitForTimeout(120);
+  assert.equal(await page.locator('.fdcard').count(), 0, 'and nothing was added to the queue');
+  assert.equal(await page.evaluate(() => WorkshopData.lastProspectSweep()), null,
+    'and no sweep is recorded as having run');
+  step('Findings: with no source connected, the sweep says nothing was searched and records nothing');
+
+  // The triage itself is judged against invented findings the test brings with it.
+  await page.addScriptTag({ path: path.join(__dirname, 'fixtures', 'prospect-sample.js') });
   await page.evaluate(() => fdRunSweep());
   await page.waitForTimeout(700);
   await page.locator('.waskyes').click();
