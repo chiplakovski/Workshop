@@ -635,7 +635,7 @@
   function inventory(code){return state.inventory.find(x=>x.code===code)}
   // Pass 3.2C review fix (numeric Project ID canonicalization): resolves by either the real
   // project.id (possibly numeric, e.g. a caller passing 14) or the canonical project.no string
-  // (e.g. 'P-2026-014') — mirrors jobcard() below, which already resolved both. Strict === (never
+  // (e.g. 'P-2026-001') — mirrors jobcard() below, which already resolved both. Strict === (never
   // loose coercion), matching jobcard()'s behaviour exactly.
   function project(idOrNo){return state.projects.find(x=>x.no===idOrNo||x.id===idOrNo)}
   // A UI-only display placeholder (e.g. the em-dash a page shows for "no customer selected") must

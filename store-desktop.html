@@ -1074,7 +1074,7 @@ showView(location.hash.slice(1)||'inventory');
   window.renderControl=function(){
     const primary=shared.projects[0],readiness=primary&&WorkshopData.readiness(primary.no);
     // Which project this shortage list is about. The heading used to be written into the markup —
-    // "P-2026-014 — Ventilation Duct System", with a jobcard reference under it — and nothing ever
+    // a project number and title from the invented demonstration, with a jobcard reference under it — and nothing ever
     // replaced it, while the rows below came from whichever project happened to be first in the
     // register. So the panel labelled its own figures with the name of a different job, and on an
     // empty system it named a project that did not exist. Nothing threw; the list was simply about
@@ -1212,7 +1212,7 @@ showView(location.hash.slice(1)||'inventory');
   window.clearReceiving=function(){['receiveBarcode','receivePo','receiveDn','receiveQty','receiveHeat','receiveCert','receivePrice'].forEach(id=>$(id).value='');$('receiveBarcode').classList.remove('recognized');$('receiveBarcode').focus()};
 
   window.reserveSelectedItem=function(){const result=WorkshopData.reserveItem({code:$('issueItem').value,projectNo:$('issueProject').value,jobcard:$('issueJobcard').value,qty:$('issueQty').value,user:$('issueBy').value});if(result?.error)return notify(result.error);refresh(currentT.notifyReservedFor.replace('{qty}',result.reserved).replace('{unit}',result.item.unit).replace('{project}',result.project.no))};
-  window.reserveBom=function(){/* No fallback project: it used to reserve against P-2026-014, a job from the invented demonstration, when none was chosen. */const p=$('issueProject').value;if(!p)return notify(currentT.notifyProjectNotFound);const result=WorkshopData.reserveBom(p);if(!result)return notify(currentT.notifyProjectNotFound);refresh(result.status==='READY FOR PRODUCTION'?currentT.notifyMaterialReady.replace('{project}',p):currentT.notifyBomShortage)};
+  window.reserveBom=function(){/* No fallback project: it used to reserve against a job from the invented demonstration when none was chosen. */const p=$('issueProject').value;if(!p)return notify(currentT.notifyProjectNotFound);const result=WorkshopData.reserveBom(p);if(!result)return notify(currentT.notifyProjectNotFound);refresh(result.status==='READY FOR PRODUCTION'?currentT.notifyMaterialReady.replace('{project}',p):currentT.notifyBomShortage)};
 
   
   // The one real transition out of an offcut's 'available' status — without this, every registered
