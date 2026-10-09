@@ -611,7 +611,7 @@ REVOKE ALL ON FUNCTION people() FROM PUBLIC;
 --
 -- The last screen to be wired, and it had been waiting on file storage — which turned out to be the wrong
 -- thing to wait for. The part of a document register that matters is not the bytes: it is knowing that the
--- material certificate for heat H240516 expires on the 12th, that revision B of the duct drawing supersedes
+-- material certificate for a heat number expires on the 12th, that revision B of the duct drawing supersedes
 -- revision A, and that the welding procedure filed against this job is the one the weld was actually made
 -- to. All of that is metadata, and none of it needs the scan to exist. So the register is wired now and the
 -- file half of each row stays empty until there is somewhere to put a file.
