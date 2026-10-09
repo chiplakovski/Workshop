@@ -621,6 +621,7 @@
   function servedAt(){return servedFrom}
   function servedCollections(){return SERVED_COLLECTIONS.slice()}
 
+  const ACTIVITY_KEPT=1000;
   function save(reason){
     // Refused rather than quietly written to browser storage. A page in server-backed mode that
     // still called a mutator here would put the record in a place the server never sees and the next
@@ -629,7 +630,15 @@
       throw new Error('this page is reading from the server: writes go through WorkshopApi, not browser storage'
         +(reason?` (tried to save: ${reason})`:''));
     }
-    if(reason)state.activity.unshift({time:now(),reason});try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason,state:clone(state)}}))}catch(e){}return state}
+    // The activity line is kept short: every save adds one, and on a PC that keeps everything in the
+    // browser an uncapped log is what would one day fill storage and stop real records being written.
+    if(reason){state.activity.unshift({time:now(),reason});if(state.activity.length>ACTIVITY_KEPT)state.activity.length=ACTIVITY_KEPT;}
+    // A write browser storage refuses (full, or switched off) used to be swallowed, so the screen showed
+    // the change and the next reload did not have it. Say so instead; the page decides how to show it.
+    let written=true;
+    try{global.localStorage&&global.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){written=false}
+    if(!written){try{global.dispatchEvent(new CustomEvent('workshop:not-saved',{detail:{reason}}))}catch(e){}}
+    try{global.dispatchEvent(new CustomEvent('workshop:data',{detail:{reason,state:clone(state)}}))}catch(e){}return state}
   function quantity(value){const parsed=Number(value);return Number.isFinite(parsed)&&parsed>0?parsed:null}
   function next(type,prefix){state.counters[type]=(state.counters[type]||0)+1;return prefix+String(state.counters[type]).padStart(3,'0')}
   function inventory(code){return state.inventory.find(x=>x.code===code)}

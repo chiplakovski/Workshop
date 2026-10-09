@@ -1,6 +1,13 @@
 # tools/
 
-One-off conversions, kept because the next one will want the same care.
+One-off conversions, kept because the next one will want the same care — and the two packaging scripts.
+
+## Packages
+
+    sh tools/make-release.sh   # the copy for a server (see DEPLOY.md, SUPABASE.md)
+    sh tools/make-local.sh     # one HTML file for one PC, no server — records stay in that browser
+
+Both build from the committed tree and refuse to run with uncommitted changes; output goes to `dist/`.
 
 ## The Macedonian transliteration
 

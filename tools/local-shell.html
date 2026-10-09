@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Varmak Workshop</title>
+<style>
+  /* One deliberate look: the workshop's navy bar over the app's own light pages. The app inside the
+     frame carries its own themes, so the shell does not switch with the viewer's theme; every colour
+     is still a token and the ground is set explicitly. */
+  :root{
+    --bar-h: 40px;
+    --bar: #013179; --ground: #01204d; --bar-ink: #eaf0ff;
+    --bar-line: rgba(255,255,255,.08); --btn-line: rgba(255,255,255,.35); --btn-hover: rgba(255,255,255,.12);
+    --live: #5ee0a0; --page: #ffffff;
+  }
+  html,body{ height:100%; margin:0; background:var(--ground); }
+  body{ display:flex; flex-direction:column; overflow:hidden; }
+  #bar{
+    height:var(--bar-h); flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding-inline:16px; background:var(--bar); color:var(--bar-ink); font-size:13px;
+    box-shadow:0 1px 0 var(--bar-line);
+  }
+  #bar .dot{ width:7px;height:7px;border-radius:50%;background:var(--live); box-shadow:0 0 6px var(--live); flex:0 0 auto; }
+  #bar .label{ opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  #bar button{
+    margin-left:auto; flex:0 0 auto; background:transparent; color:var(--bar-ink);
+    border:1px solid var(--btn-line); border-radius:4px; padding:5px 10px;
+    font-size:12px; cursor:pointer; font-family:inherit;
+  }
+  #bar button:hover{ background:var(--btn-hover); }
+  #bar button:focus-visible{ outline:2px solid var(--bar-ink); outline-offset:2px; }
+  #frame-wrap{ flex:1 1 auto; min-height:0; }
+  #app{ width:100%; height:100%; border:none; display:block; background:var(--page); }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span class="dot" aria-hidden="true"></span>
+  <span class="label">Varmak Workshop · Kept on this computer, in this browser</span>
+  <button id="restartBtn" type="button">Back to sign-in</button>
+</div>
+<div id="frame-wrap"><iframe id="app" title="Varmak Workshop"></iframe></div>
+<script id="pages-data" type="application/json">__PAGES_JSON__</script>
+<script>
+(function(){
+  var PAGES = JSON.parse(document.getElementById('pages-data').textContent);
+  var iframe = document.getElementById('app');
+
+  // __nav is defined inside each embedded page itself (bootstrap script
+  // injected right after <head>, before anything else runs) so it is
+  // available immediately - it must not depend on the iframe's 'load'
+  // event, which only fires once every sub-resource (incl. web fonts)
+  // has settled and can be slow or blocked on a bad connection.
+  function withBootstrap(html, query){
+    var q = query ? ('?' + query) : '';
+    var boot = '<script>' +
+      'window.__query=' + JSON.stringify(q) + ';' +
+      'window.__nav=function(t){try{window.parent.postMessage({__wsNav:t},"*");}catch(e){}};' +
+      '<' + '/script>';
+    return html.replace(/<head[^>]*>/i, function(m){ return m + boot; });
+  }
+
+  function loadPage(page, query){
+    if (!Object.prototype.hasOwnProperty.call(PAGES, page)) {
+      console.warn('Unknown page:', page);
+      return;
+    }
+    iframe.srcdoc = withBootstrap(PAGES[page], query);
+  }
+
+  function doNav(target){
+    if (/^mailto:/i.test(target)) { window.location.href = target; return; }
+    var hashSplit = String(target).split('#');
+    var pageAndQuery = hashSplit[0];
+    var qSplit = pageAndQuery.split('?');
+    loadPage(qSplit[0], qSplit[1]);
+  }
+
+  window.addEventListener('message', function(ev){
+    if (ev.source === iframe.contentWindow && ev.data && typeof ev.data.__wsNav === 'string') {
+      doNav(ev.data.__wsNav);
+    }
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', function(){
+    loadPage('login.html');
+  });
+
+  loadPage('login.html');
+})();
+</script>
+</body>
+</html>

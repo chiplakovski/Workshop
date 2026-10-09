@@ -336,6 +336,21 @@
     each('[data-when-demo]',function(el){el.hidden=live;});
   }
 
+  // Browser storage refused a write: the change is on screen but will not be there after a reload.
+  // Told once per page, not once per save, so a full browser does not bury every click under a dialog.
+  var NOT_SAVED={
+    en:'This change could not be saved: this browser\'s storage is full.\n\nWhat you see now will be gone after a reload. Go to the hub, Your data, and Save a copy first. Then remove stored document files you no longer need.',
+    sv:'Ändringen kunde inte sparas: webbläsarens lagring är full.\n\nDet du ser nu försvinner när sidan laddas om. Gå till startsidan, Dina uppgifter, och Spara en kopia först. Ta sedan bort lagrade dokumentfiler som inte behövs.',
+    mk:'Промената не можеше да се зачува: меморијата на прелистувачот е полна.\n\nОна што го гледате сега ќе исчезне по повторно вчитување. Одете на почетната страница, Твоите податоци, и прво притиснете Зачувај копија. Потоа отстранете зачувани датотеки од документи што не ви требаат.'
+  };
+  var toldNotSaved=false;
+  function tellNotSaved(){
+    if(toldNotSaved)return;toldNotSaved=true;
+    var code=(document.documentElement.lang||'en').slice(0,2);
+    window.wAlert(NOT_SAVED[code]||NOT_SAVED.en);
+  }
+  window.addEventListener('workshop:not-saved',tellNotSaved);
+
   window.addEventListener('workshop:data',paintWhoIsSignedIn);
   window.addEventListener('workshop:data',paintWhereTheDataCameFrom);
   window.addEventListener('workshop:lang',paintWhereTheDataCameFrom);

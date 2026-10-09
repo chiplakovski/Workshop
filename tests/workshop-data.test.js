@@ -4481,3 +4481,31 @@ test('receiving goods nobody named records nobody, not an invented person', ()=>
   assert.ok(movement,'the receipt has to be in the stock history, or this check has nothing to look at');
   assert.equal(movement.user,'—','a receipt with no name is recorded as nobody');
 });
+
+test('a change browser storage refuses is reported, not shown as if it were kept', ()=>{
+  // The write was wrapped in a catch that did nothing: with the browser's storage full, the screen
+  // showed the new customer and the next reload did not have it. On a PC that keeps everything in the
+  // browser that is lost work nobody was told about.
+  class FullStorage extends MemoryLocalStorage{setItem(k,v){if(k===V5_KEY&&this.full)throw new Error('QuotaExceededError');super.setItem(k,v);}}
+  const storage=new FullStorage();
+  const {WD,window}=loadWorkshopDataWithEnv(null,storage);
+  const told=[];
+  window.addEventListener('workshop:not-saved',e=>told.push(e.detail.reason));
+  WD.upsertCustomer({name:'Kept Customer'});
+  assert.equal(told.length,0,'a write that went through must not be reported as lost');
+  storage.full=true;
+  WD.upsertCustomer({name:'Refused Customer'});
+  assert.equal(told.length,1,'the refused write was not reported');
+  assert.ok(!storage.getItem(V5_KEY).includes('Refused Customer'),'this check has nothing to look at unless the write really was refused');
+});
+
+test('the activity line stops growing at a thousand entries', ()=>{
+  // Every save adds a line. Uncapped, years of use in one browser would fill its storage with the log
+  // alone, and then real records stop being written.
+  const WD=loadEmptyWorkshopData();
+  for(let i=0;i<1205;i++)WD.upsertCustomer({name:`Activity Customer ${i}`});
+  const activity=WD.get().activity;
+  assert.equal(activity.length,1000);
+  assert.match(activity[0].reason,/Activity Customer 1204/,'the newest line is the one kept at the top');
+  assert.equal(WD.get().customers.length,1205,'capping the log must not touch the records');
+});

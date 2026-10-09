@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4j, which is where this document actually ends. Everything above it is the state of a
+**HEAD:** see §4k, which is where this document actually ends. Everything above it is the state of a
 prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
-in; §4j is where it stands now. Sections 4b to 4i are the passes in between, in order, and each says what
+in; §4k is where it stands now. Sections 4b to 4j are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
 **Live demo:** https://claude.ai/artifact/RdS7JQGQwMTWhGnqdAPKzX (Version 82, 6 October 2026 — empty, no invented records; browser storage only, no sign-in)
@@ -923,6 +923,32 @@ its baseline — two fewer missing columns. It was not: the old loader's save ha
 the only record coverage could measure the activity log against, and the fixture had none. The fixture
 carries that entry now and the figure is back to 370 of 476, unchanged. A ratchet that moves when only
 data moved is a check reading nothing — the same lesson as everywhere else in this document.
+
+## 4k. One computer, no server — 9 October 2026
+
+The owner wants to use it on one PC until it works the way they want, and only then put it online.
+`sh tools/make-local.sh` builds that from the committed tree: `dist/varmak-workshop-local-<day>-<sha>.zip`,
+holding `Varmak-Workshop.html` (all 17 pages inlined, opened by double-clicking) and a `README.txt` in
+Macedonian and English (`tools/local-readme.txt`: where the records live, Save a copy weekly, how to take
+a new version, what it does not do). `tools/make-local.js` is the bundle builder that used to live only in
+a scratch directory; it now takes every page in the site rather than a list, and refuses to build if any
+navigation or script reference would point at a file that is not there.
+
+Checked in Chromium over `file://` with a persistent profile: standards mode, all pages open, a record
+entered, Save a copy downloads it, browser closed and the file opened from **another folder** (the "new
+version" case) still has it, Clear then Restore a copy brings it back.
+
+**Two things that mattered only once the browser is the only place records live:**
+
+* **A write browser storage refused was swallowed.** `save()` caught the error and did nothing, so with
+  storage full the screen showed the change and the next reload did not have it. It now fires
+  `workshop:not-saved`, and `workshop-ui.js` tells the user once per page, in their language, to Save a
+  copy. Proved in the browser by filling storage to the last byte: one dialog for two refused saves.
+* **The activity log had no limit** — one line per save, forever, in the same storage. Capped at 1000.
+
+**Not built, and said so in the README:** records entered in this copy do not move to the online version.
+If the owner enters real work here and later goes online, it is either typed again or a transfer from a
+saved copy into the server is built first.
 
 ## 5. Decisions already made — do not re-open these
 
