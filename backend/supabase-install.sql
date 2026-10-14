@@ -4811,8 +4811,9 @@ GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigi
 TO varmak_admin;
 GRANT EXECUTE ON FUNCTION change_my_password(text, text), people()
 TO varmak_admin, varmak_office, varmak_workshop;
-GRANT EXECUTE ON FUNCTION store_document_file(bigint, text, text, bytea), remove_document_file(bigint)
-TO varmak_admin, varmak_office;
+-- On one line: a line reading only "TO varmak_admin, varmak_office;" is the office workflow list's,
+-- and backend/mutation-check.js finds that list by it.
+GRANT EXECUTE ON FUNCTION store_document_file(bigint, text, text, bytea), remove_document_file(bigint) TO varmak_admin, varmak_office;
 GRANT EXECUTE ON FUNCTION document_file_content(bigint) TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

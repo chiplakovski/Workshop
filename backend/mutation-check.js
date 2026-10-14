@@ -1441,14 +1441,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
     // was already empty, so the grant came out identical and the mutation was reported as untested.
     what: 'the floor can no longer read who to ring at the customer',
     file: 'auth',
-    from: `  quality_hold, inspection, ncr, hours_entry, stock_movement, document,
-  -- A name, a role, an email and a telephone number. Nothing on this table could ever be a price,
-  -- which is the test the comment above sets for being in this list — and a welder holding a drawing
-  -- that is wrong needs to be able to ring somebody.
-  customer_contact
-TO varmak_workshop;`,
-    to: `  quality_hold, inspection, ncr, hours_entry, stock_movement, document
-TO varmak_workshop;`
+    // Anchored on the line itself and the comment after it, since the list has grown past this entry
+    // twice: quoting what came before it went stale when document_file and the letterhead were added.
+    from: `  customer_contact,
+  -- The file behind a document`,
+    to: `  -- The file behind a document`
   },
 
   // ── Work: projects, jobcards and the steps on them ────────────────────────────────────────
@@ -2667,7 +2664,7 @@ ON supplier TO varmak_workshop;`,
     file: 'marketingrecord',
     from: `      submitted_on: day(whole.submitted)
         || (['submitted', 'awarded', 'declined'].indexOf(status) === -1
-          ? null : new Date().toISOString().slice(0, 10)),`,
+          ? null : (()=>{const x=new Date();return \`\${x.getFullYear()}-\${String(x.getMonth()+1).padStart(2,'0')}-\${String(x.getDate()).padStart(2,'0')}\`;})()),`,
     to: `      submitted_on: day(whole.submitted) || new Date().toISOString().slice(0, 10),`
   }
 ];
