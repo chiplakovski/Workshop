@@ -91,11 +91,12 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
 /* The dialog was missing its base rules, so it sat on the page as a loose Cancel/Save box and never covered anything; and the way back to the hub was a bare underlined link. */
 .modal{position:fixed;inset:0;background:#020914cc;display:none;place-items:center;z-index:10}.modal.show{display:grid}
 .top .back-link{display:inline-flex;align-items:center;height:38px;padding:0 13px;border:1px solid var(--field-line);color:var(--c-muted2);text-decoration:none;transition:border-color .16s,color .16s,transform .16s}.top .back-link:hover{border-color:var(--blue);color:var(--text);transform:translateY(-1px)}
+.transfer-plan{margin-top:12px;font-size:12.5px;line-height:1.6}.transfer-plan table{border-collapse:collapse;width:100%;max-width:640px}.transfer-plan td,.transfer-plan th{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}.transfer-plan td.n,.transfer-plan th.n{text-align:right}.transfer-plan .why{color:var(--muted);font-size:11.5px}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body><a class="skip-link" href="#mainContent" data-i="skip">Skip to access content</a><div class="ambient" aria-hidden="true"><div class="ambient-glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◐</div><div><h2 data-i="sb_title">ACCESS</h2><small data-i="sb_subtitle">Who may sign in</small></div></div>
-<nav class="module-side-nav" id="moduleSideNav"><button class="on" onclick="goTo('peoplePanel')"><i>◇</i><span data-i="nav_people">People</span></button><button onclick="goTo('addPanel')"><i>＋</i><span data-i="nav_add">Add somebody</span></button><button onclick="goTo('mePanel')"><i>⌸</i><span data-i="nav_me">My password</span></button><button onclick="goTo('companyPanel')"><i>▤</i><span data-i="nav_company">Company details</span></button><button onclick="signOut()"><i>⏻</i><span data-i="nav_signout">Sign out</span></button></nav>
+<nav class="module-side-nav" id="moduleSideNav"><button class="on" onclick="goTo('peoplePanel')"><i>◇</i><span data-i="nav_people">People</span></button><button onclick="goTo('addPanel')"><i>＋</i><span data-i="nav_add">Add somebody</span></button><button onclick="goTo('mePanel')"><i>⌸</i><span data-i="nav_me">My password</span></button><button onclick="goTo('companyPanel')"><i>▤</i><span data-i="nav_company">Company details</span></button><button onclick="goTo('transferPanel')"><i>⇪</i><span data-i="nav_transfer">Move PC copy</span></button><button onclick="signOut()"><i>⏻</i><span data-i="nav_signout">Sign out</span></button></nav>
 <div class="ms-sidebox"><b data-i="sb_box_title">Two doors</b><p data-i="sb_box_body">The office signs in with an email and a password. The shop floor signs in with a PIN on the shared tablet, and that session ends with the shift.</p></div>
 <div class="ms-user"><div class="ms-avatar" id="sideInitials">—</div><div><strong id="sideName" data-i="sb_nobody">Not signed in</strong><small id="sideRole"></small></div></div></aside>
 <div class="shell">
@@ -121,6 +122,7 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
 <p class="said" id="meSaid" hidden></p></article>
 
 <article class="panel" id="companyPanel" hidden><div class="panel-title"><span data-i="cp_title">Company details</span></div><p class="lede" data-i="cp_body"></p><p class="lede" id="companyLocal" data-i="cp_body_local" hidden></p><form id="companyForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="cName" data-i="f_cname"></label><input id="cName" required autocomplete="organization"></div><div class="field"><label for="cAddress" data-i="f_address"></label><input id="cAddress" autocomplete="street-address"></div><div class="field"><label for="cPostcode" data-i="f_postcode"></label><input id="cPostcode" autocomplete="postal-code"></div><div class="field"><label for="cCity" data-i="f_city"></label><input id="cCity" autocomplete="address-level2"></div><div class="field"><label for="cCountry" data-i="f_country"></label><input id="cCountry" autocomplete="country-name"></div><div class="field"><label for="cEmail" data-i="f_cemail"></label><input id="cEmail" type="email" spellcheck="false"></div><div class="field"><label for="cPhone" data-i="f_phone"></label><input id="cPhone" type="tel"></div><div class="field"><label for="cWebsite" data-i="f_website"></label><input id="cWebsite" spellcheck="false"></div><div class="field"><label for="cOrg" data-i="f_org"></label><input id="cOrg" placeholder="XXXXXX-XXXX"></div><div class="field"><label for="cVat" data-i="f_vat"></label><input id="cVat" spellcheck="false"></div><div class="field"><label>&nbsp;</label><button class="btn" type="button" id="cOrgCheck" data-i="cp_check">Check number</button></div><div class="field"><label for="cFskatt" data-i="f_fskatt"></label><select id="cFskatt"><option value="no" data-i="cp_no"></option><option value="yes" data-i="cp_yes"></option></select></div><div class="field"><label for="cBankgiro" data-i="f_bankgiro"></label><input id="cBankgiro" placeholder="123-4567"></div><div class="field"><label for="cIban" data-i="f_iban"></label><input id="cIban" spellcheck="false"></div><div class="field"><label for="cBic" data-i="f_bic"></label><input id="cBic" spellcheck="false"></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="cp_btn">Save</button></div></div></form><p class="orglookup-status" id="cOrgStatus" role="status" aria-live="polite"></p><p class="said" id="companySaid" hidden></p></article>
+<article class="panel" id="transferPanel" hidden><div class="panel-title"><span data-i="tp_title">Move the PC copy online</span></div><p class="lede" data-i="tp_body"></p><div class="form-grid"><div class="field"><label for="transferFile" data-i="tp_file">Saved copy</label><input id="transferFile" type="file" accept="application/json,.json"></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="button" id="transferGo" disabled data-i="tp_go">Move it online</button></div></div><div id="transferPlan" class="transfer-plan" hidden></div><p class="said" id="transferSaid" hidden></p><div id="transferReport" class="transfer-plan" hidden></div></article>
 </main></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="panel modal-card" style="width:min(460px,calc(100vw - 24px));padding:20px"><h2 id="modalTitle" style="margin:0 0 6px;font-size:17px;font-family:var(--font-heading)"></h2><p class="lede" id="modalWho" style="margin-bottom:14px"></p><form id="modalForm"><div id="modalFields"></div><div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn" onclick="closeModal()" data-i="modal_cancel">Cancel</button><button class="btn primary" id="modalSave" data-i="modal_save">Save</button></div></form></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -129,7 +131,7 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 <script>window.WORKSHOP_SERVER_READY=true;</script>
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="org-number.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="org-number.js"></script><script src="customer-record.js"></script><script src="supplier-record.js"></script><script src="stock-record.js"></script><script src="project-record.js"></script><script src="jobcard-record.js"></script><script src="equipment-record.js"></script><script src="document-record.js"></script><script src="pc-transfer.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
 <script>
 'use strict';
 // Access — the one screen that exists because adding a person used to mean opening psql.
@@ -198,6 +200,37 @@ const T = {
     confirm_on: 'Switch {name} back on?',
     done_generic: 'Done.', count: '{n} people', count_one: '1 person',
     f_setup: "Setup code",
+    tp_title: "Move the PC copy online",
+    tp_body: "Choose the file \"Save a copy\" made on the computer that used the one-file version. Its customers, suppliers, store items and what is on their shelves, projects, jobcards, machines, documents and company details are sent here through the same checks as the screens. Anything already here is left as it is, so running it twice changes nothing.",
+    tp_file: "Saved copy",
+    tp_go: "Move it online",
+    tp_bad: "That file is not a saved copy of the workshop.",
+    tp_plan_head: "In this file, to move:",
+    tp_left_head: "Not moved — these are entered online:",
+    tp_what: "What",
+    tp_count: "How many",
+    tp_confirm: "Send these records to the online workshop now? Records already here are left as they are.",
+    tp_running: "Moving…",
+    tp_progress: "Moving {what}: {n} of {total}",
+    tp_done: "Done. What moved, what was already here and what was refused is below.",
+    tp_moved: "Moved",
+    tp_already: "Already here",
+    tp_refused: "Refused",
+    tp_notes: "Worth a look:",
+    tk_company: "Company details",
+    tk_customers: "Customers",
+    tk_suppliers: "Suppliers",
+    tk_stock: "Store items (with stock on the shelf)",
+    tk_projects: "Projects",
+    tk_jobcards: "Jobcards (with their steps)",
+    tk_equipment: "Machines",
+    tk_documents: "Documents (with files)",
+    tl_hours: "Hours entries — booked online by each person",
+    tl_movements: "Stock movements — the stock on the shelf arrives as an opening balance",
+    tl_estimations: "Quotations",
+    tl_quality: "Quality records",
+    tl_marketing: "Leads, opportunities and tenders",
+    nav_transfer: "Move PC copy",
     cp_title: "Company details",
     cp_body: "What prints at the top of every offer, item sheet and jobcard, and on the invoice basis. Registration and bank details print only once they are entered here.",
     cp_body_local: "This copy keeps them in this browser, like everything else on this computer. Online, only an administrator can change them.",
@@ -272,6 +305,37 @@ const T = {
     done_generic: 'Klart.', count: '{n} personer', count_one: '1 person',
     signed_out: 'Utloggad.',
     f_setup: "Installationskod",
+    tp_title: "Flytta PC-kopian online",
+    tp_body: "Välj filen som \"Spara en kopia\" skapade på datorn som använde envfilsversionen. Kunder, leverantörer, lagerartiklar och det som finns på hyllan, projekt, jobbkort, maskiner, dokument och företagsuppgifter skickas hit genom samma kontroller som skärmarna. Det som redan finns här lämnas som det är, så att köra det två gånger ändrar inget.",
+    tp_file: "Sparad kopia",
+    tp_go: "Flytta online",
+    tp_bad: "Filen är ingen sparad kopia av verkstaden.",
+    tp_plan_head: "I filen, att flytta:",
+    tp_left_head: "Flyttas inte — förs in online:",
+    tp_what: "Vad",
+    tp_count: "Antal",
+    tp_confirm: "Skicka posterna till verkstaden online nu? Poster som redan finns här lämnas som de är.",
+    tp_running: "Flyttar…",
+    tp_progress: "Flyttar {what}: {n} av {total}",
+    tp_done: "Klart. Vad som flyttades, vad som redan fanns och vad som nekades står nedan.",
+    tp_moved: "Flyttade",
+    tp_already: "Fanns redan",
+    tp_refused: "Nekade",
+    tp_notes: "Värt att titta på:",
+    tk_company: "Företagsuppgifter",
+    tk_customers: "Kunder",
+    tk_suppliers: "Leverantörer",
+    tk_stock: "Lagerartiklar (med lagersaldo)",
+    tk_projects: "Projekt",
+    tk_jobcards: "Jobbkort (med moment)",
+    tk_equipment: "Maskiner",
+    tk_documents: "Dokument (med filer)",
+    tl_hours: "Tidposter — bokas online av var och en",
+    tl_movements: "Lagerrörelser — saldot kommer in som ingående balans",
+    tl_estimations: "Offerter",
+    tl_quality: "Kvalitetsposter",
+    tl_marketing: "Leads, affärer och anbud",
+    nav_transfer: "Flytta PC-kopian",
     cp_title: "Företagsuppgifter",
     cp_body: "Det som skrivs överst på varje offert, artikelblad och jobbkort, och på fakturaunderlaget. Registrerings- och bankuppgifter skrivs ut först när de har fyllts i här.",
     cp_body_local: "Den här kopian sparar dem i den här webbläsaren, som allt annat på den här datorn. Online kan bara en administratör ändra dem.",
@@ -344,6 +408,37 @@ const T = {
     confirm_on: 'Да го вклучам {name} пак?',
     done_generic: 'Готово.', count: '{n} луѓе', count_one: '1 човек',
     f_setup: "Код за поставување",
+    tp_title: "Префрли ја копијата од компјутерот онлајн",
+    tp_body: "Изберете ја датотеката што ја направи „Зачувај копија“ на компјутерот со верзијата во една датотека. Клиентите, добавувачите, артиклите во магацинот со залихата, проектите, работните картички, машините, документите и податоците за фирмата се праќаат тука низ истите проверки како екраните. Она што веќе е тука останува како што е, па ако се пушти двапати ништо не се менува.",
+    tp_file: "Зачувана копија",
+    tp_go: "Префрли онлајн",
+    tp_bad: "Таа датотека не е зачувана копија од работилницата.",
+    tp_plan_head: "Во датотеката, за префрлање:",
+    tp_left_head: "Не се префрла — се внесува онлајн:",
+    tp_what: "Што",
+    tp_count: "Колку",
+    tp_confirm: "Да се испратат записите во онлајн работилницата сега? Записите што веќе се тука остануваат како што се.",
+    tp_running: "Се префрла…",
+    tp_progress: "Се префрла {what}: {n} од {total}",
+    tp_done: "Готово. Што се префрли, што веќе беше тука и што беше одбиено е подолу.",
+    tp_moved: "Префрлени",
+    tp_already: "Веќе тука",
+    tp_refused: "Одбиени",
+    tp_notes: "Вредно за проверка:",
+    tk_company: "Податоци за фирмата",
+    tk_customers: "Клиенти",
+    tk_suppliers: "Добавувачи",
+    tk_stock: "Артикли во магацин (со залиха)",
+    tk_projects: "Проекти",
+    tk_jobcards: "Работни картички (со чекори)",
+    tk_equipment: "Машини",
+    tk_documents: "Документи (со датотеки)",
+    tl_hours: "Записи за часови — ги внесува секој онлајн",
+    tl_movements: "Движења на залиха — залихата доаѓа како почетна состојба",
+    tl_estimations: "Понуди",
+    tl_quality: "Записи за квалитет",
+    tl_marketing: "Можни клиенти, можности и тендери",
+    nav_transfer: "Префрли копија",
     cp_title: "Податоци за фирмата",
     cp_body: "Она што се печати на врвот на секоја понуда, лист за ставка и работна картичка, и на основата за фактура. Регистрациските и банкарските податоци се печатат дури откако ќе се внесат тука.",
     cp_body_local: "Оваа копија ги чува во овој прелистувач, како и сè друго на овој компјутер. Онлајн, само администратор може да ги менува.",
@@ -508,6 +603,7 @@ function showSignedOut() {
   show('addPanel', false);
   show('mePanel', false);
   show('companyPanel', false);
+  show('transferPanel', false);
   show('refreshBtn', false);
   show('signOutBtn', false);
   $('whoami').hidden = true;
@@ -711,6 +807,67 @@ $('companyForm').addEventListener('submit', async (e) => {
   say('companySaid', t('cp_done'), 'done');
 });
 
+// ── moving the PC copy online ─────────────────────────────────────────────────────────────
+// The "Save a copy" file from the one-computer version, read here and sent to the server through the
+// same workflows the screens use. Counted first, so the administrator sees what will move and what will
+// not before anything is sent; safe to run twice, because a record already online is left alone.
+let transferBackup = null;
+const KINDS = ['company', 'customers', 'suppliers', 'stock', 'projects', 'jobcards', 'equipment', 'documents'];
+const LEFT = ['hours', 'movements', 'estimations', 'quality', 'marketing'];
+function transferTable(rows, head) {
+  return `<table><thead><tr>${head.map((h, i) => `<th${i ? ' class="n"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map((r) => `<tr>${r.map((c, i) => `<td${i ? ' class="n"' : ''}>${c}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+}
+$('transferFile').addEventListener('change', async (e) => {
+  transferBackup = null;
+  $('transferGo').disabled = true;
+  show('transferPlan', false); show('transferReport', false); say('transferSaid', '');
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  let parsed = null;
+  try { parsed = JSON.parse(await file.text()); } catch (err) { parsed = null; }
+  const wrong = PcTransfer.check(parsed);
+  if (wrong) return say('transferSaid', t('tp_bad'), 'refused');
+  transferBackup = parsed;
+  const { counts, leftBehind } = PcTransfer.plan(parsed);
+  $('transferPlan').innerHTML = `<p><b>${esc(t('tp_plan_head'))}</b></p>`
+    + transferTable(KINDS.filter((k) => counts[k]).map((k) => [esc(t('tk_' + k)), String(counts[k])]), [t('tp_what'), t('tp_count')])
+    + (LEFT.some((k) => leftBehind[k]) ? `<p style="margin-top:12px"><b>${esc(t('tp_left_head'))}</b></p>`
+      + transferTable(LEFT.filter((k) => leftBehind[k]).map((k) => [esc(t('tl_' + k)), String(leftBehind[k])]), [t('tp_what'), t('tp_count')]) : '');
+  show('transferPlan', true);
+  $('transferGo').disabled = false;
+});
+function dataUrlToBlob(url, type) {
+  const comma = url.indexOf(','), meta = url.slice(5, comma), data = url.slice(comma + 1);
+  const bytes = /;base64/i.test(meta) ? Uint8Array.from(atob(data), (c) => c.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(data));
+  return new Blob([bytes], { type: type || meta.split(';')[0] || 'application/octet-stream' });
+}
+$('transferGo').addEventListener('click', () => {
+  if (!transferBackup) return;
+  window.wConfirm(t('tp_confirm'), async () => {
+    $('transferGo').disabled = true;
+    say('transferSaid', t('tp_running'), '');
+    const io = {
+      call: (name, args) => WorkshopApi.call(name, args),
+      snapshot: async () => { const a = await WorkshopApi.snapshot(); return a.data || {}; },
+      upload: (id, dataUrl, name, type) => WorkshopApi.uploadDocumentFile(id, dataUrlToBlob(dataUrl, type), name)
+    };
+    const done = await PcTransfer.run(transferBackup, io, (kind, n, total) => {
+      say('transferSaid', t('tp_progress').replace('{what}', t('tk_' + kind)).replace('{n}', n).replace('{total}', total), '');
+    });
+    if (done.error) { $('transferGo').disabled = false; return say('transferSaid', done.error, 'refused'); }
+    const rows = KINDS.filter((k) => done.report[k]).map((k) => {
+      const r = done.report[k];
+      return [esc(t('tk_' + k)), String(r.moved), String(r.alreadyThere), String(r.refused.filter((x) => !/ — /.test(x.name)).length)];
+    });
+    const notes = KINDS.flatMap((k) => (done.report[k] ? done.report[k].refused.map((x) => `<li><b>${esc(x.name)}</b> <span class="why">${esc(x.why)}</span></li>`) : []));
+    $('transferReport').innerHTML = transferTable(rows, [t('tp_what'), t('tp_moved'), t('tp_already'), t('tp_refused')])
+      + (notes.length ? `<p style="margin-top:12px"><b>${esc(t('tp_notes'))}</b></p><ul>${notes.join('')}</ul>` : '');
+    show('transferReport', true);
+    say('transferSaid', t('tp_done'), 'done');
+  });
+});
+
 (async function boot() {
   let saved = null;
   try { saved = localStorage.getItem('varmak.lang'); } catch (err) { saved = null; }
@@ -727,6 +884,7 @@ $('companyForm').addEventListener('submit', async (e) => {
   if (isAdmin()) {
     const snap = await WorkshopApi.snapshot();
     if (snap.data) { WorkshopData.adoptSnapshot(snap.data); showCompany(true); }
+    show('transferPanel', true);
   }
 })();
 </script></body></html>
