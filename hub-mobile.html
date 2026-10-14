@@ -50,19 +50,6 @@
   .tile-stack .tile h3{font-size:11px;}
   .tile-stack .tile p{font-size:9.5px;}
 
-  .teamtalk{position:relative;display:flex;flex-direction:column;min-height:270px;overflow:hidden;background:var(--lift-035);border:1px solid var(--line);}
-  .ttart{position:absolute;right:-5%;bottom:-3%;width:46%;max-width:150px;height:auto;color:var(--steel-400);opacity:.38;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(135deg,transparent 22%,#000 88%);mask-image:linear-gradient(135deg,transparent 22%,#000 88%);}
-  .tt-head,.tt-feed,.tt-input{position:relative;z-index:1;}
-  .tt-head{display:flex;align-items:center;gap:9px;padding:13px 14px;border-bottom:1px solid var(--line);}
-  .tt-head .ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--c-accent-rgb),.35);}
-  .tt-head h3{font-family:var(--font-heading);font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;} .tt-head p{font-size:9.5px;color:var(--steel-400);}
-  .tt-feed{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:12px;overflow:auto;}
-  .msg{display:flex;gap:9px;} .msg .mav{flex:none;width:24px;height:24px;background:linear-gradient(135deg,var(--c-accent2),var(--c-panel2));display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;font-family:var(--font-heading);}
-  .msg .mname{font-size:11px;font-weight:600;} .msg .mname span{color:var(--steel-400);font-weight:400;font-size:9.5px;margin-left:5px;} .msg .mtext{font-size:11px;color:var(--steel-300);line-height:1.5;margin-top:2px;}
-  .tt-input{display:flex;gap:7px;padding:11px 13px;border-top:1px solid var(--line);}
-  .tt-input input{flex:1;background:var(--field);border:1px solid var(--field-line);color:var(--ice);font-family:var(--font-body);font-size:12px;padding:9px 11px;outline:none;}
-  .tt-input input:focus{border-color:var(--spark);}
-  .tt-input button{background:linear-gradient(180deg,var(--c-accent2),var(--c-brand));border:none;color:#fff;padding:0 12px;cursor:pointer;display:flex;align-items:center;}
 
   /* language switcher (bottom-left in phone) */
   .langc{position:absolute;z-index:60;left:12px;bottom:12px;font-family:var(--font-body);}
@@ -152,15 +139,6 @@
       </div>
     </div>
 
-    <div class="teamtalk">
-      <div class="ttart"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 34h58a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H42l-16 14V76h-6a8 8 0 0 1-8-8V42a8 8 0 0 1 8-8z"/><path d="M34 50h30M34 62h20"/></svg></div>
-      <div class="tt-head">
-        <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <div><h3 data-i="m_team">Team Talk</h3><p data-i="c_team">Internal feed</p></div>
-      </div>
-      <div class="tt-feed"><div class="msg" style="opacity:.6"><div class="mbody"><div class="mtext">No messages yet.</div></div></div></div>
-      <div class="tt-input"><input type="text" id="ttInput" data-i-ph="ttph" placeholder="Write to team…" aria-label="Write to team…"><button type="button" id="ttSend" aria-label="Send"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
-    </div>
   </div>
 
   <div class="langc" id="langc">
@@ -198,7 +176,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_suppliers:"Leverantörer",c_suppliers:"Leverantörsregister",m_documents:"Dokument",c_documents:"Filer & mallar",
       m_reports:"Rapporter",c_reports:"Analys & insikter",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhål",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
-      m_team:"Team-flöde",c_team:"Internt flöde",ttph:"Inte kopplat an — inget skickas",locale:"sv-SE"},
+      locale:"sv-SE"},
     en:{role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
@@ -207,7 +185,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_suppliers:"Suppliers",c_suppliers:"Vendor directory",m_documents:"Documents",c_documents:"Files & templates",
       m_reports:"Reports",c_reports:"Analytics & insights",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
-      m_team:"Team Talk",c_team:"Internal feed",ttph:"Not connected yet — nothing is sent",locale:"en-GB"},
+      locale:"en-GB"},
     mk:{role_admin:"Админ",role_office:"Канцеларија",role_workshop:"Работилница",logout:"Одјави се",
       m_projects:"Проекти",c_projects:"Работи и ставки",m_customers:"Клиенти",c_customers:"Контакти и сметки",
       m_estim:"Проект / Проценка",c_estim:"Работи, цена и тек",m_jobcard:"Работна карта",c_jobcard:"Работни налози",
@@ -216,7 +194,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_suppliers:"Добавувачи",c_suppliers:"Регистар на добавувачи",m_documents:"Документи",c_documents:"Датотеки и шаблони",
       m_reports:"Извештаи",c_reports:"Инспекција и тест",m_equipment:"Опрема / Машини",c_equipment:"Машини и одржување",
       m_marketing:"Маркетинг",c_marketing:"Потенцијални клиенти, кампањи и развој",m_quality:"Квалитет",c_quality:"Инспекции и дефекти",
-      m_team:"Тим-феед",c_team:"Внатрешен канал",ttph:"Сѐ уште не е поврзано — не се испраќа ништо",locale:"mk"}
+      locale:"mk"}
   };
   let current="en";
   function setLang(code){current=code;const t=T[code];
@@ -265,30 +243,5 @@ window.WORKSHOP_SERVER_READY=true;</script>
     paintSession();
   })();
 
-  (function(){
-    const ttInput=document.getElementById('ttInput'),ttSend=document.getElementById('ttSend'),ttFeed=document.querySelector('.tt-feed');
-    function send(){
-      const text=ttInput.value.trim();
-      if(!text)return;
-      const now=new Date(),hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0');
-      const msg=document.createElement('div');
-      msg.className='msg';
-      msg.innerHTML=`<div class="mav">AK</div><div><div class="mname">Aleksandar<span>${hh}:${mm}</span></div><div class="mtext"></div></div>`;
-      msg.querySelector('.mtext').textContent=text;
-      ttFeed.appendChild(msg);
-      ttFeed.scrollTop=ttFeed.scrollHeight;
-      ttInput.value='';
-    }
-    ttSend.addEventListener('click',send);
-    ttInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
-
-    // And the truth about it: this feed is this browser's, for this page load. A message typed here
-    // reaches nobody — there is no table for it and no workflow that carries it — and it is gone on the
-    // next reload. A box that accepts what somebody types and drops it is exactly the kind of screen
-    // this project refuses, so it says so instead of pretending. The panel stays because deciding
-    // whether the workshop wants a message feed at all is not this pass's decision to take.
-    ttInput.disabled=true;
-    ttSend.disabled=true;
-  })();
 </script>
 </body></html>
