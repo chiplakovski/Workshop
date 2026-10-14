@@ -48,7 +48,10 @@ const TYPES = {
 // backend/server.js, node_modules and .git out — all of which are .js or would resolve happily.
 // A containment check alone would have served every one of them.
 function servableFile(pathname) {
-  const name = pathname === '/' ? 'login.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
+  let decoded;
+  // A malformed escape (`/%E0%A4%A`) is a request for no page, not a fault at our end.
+  try { decoded = decodeURIComponent(pathname); } catch { return null; }
+  const name = pathname === '/' ? 'login.html' : decoded.replace(/^\/+/, '');
   if (name.includes('/') || name.includes('\\') || name.startsWith('.')) return null;
   if (!SERVABLE.has(path.extname(name))) return null;
   const resolved = path.join(SITE, name);
@@ -128,6 +131,13 @@ function refuseToStartIf(settings) {
 
 const settings = databaseSettings();
 const pool = new Pool(settings);
+// A connection that drops while it sits idle in the pool — a hosted database restarting, a network
+// blip, a pooler closing quiet connections — is reported here. Without a listener node treats it as
+// an unhandled error and the whole server exits, taking every request in flight with it. The pool
+// has already thrown that connection away; the next request simply opens a fresh one.
+pool.on('error', (error) => {
+  console.error(`database connection dropped while idle: ${error.message}`);
+});
 
 // The only functions reachable over HTTP, and the order their arguments go in. An allow-list rather
 // than "call whatever they name": without it this is a remote SQL console, and the roles would be
@@ -299,8 +309,16 @@ function readBody(req) {
     let raw = '';
     req.on('data', (chunk) => {
       raw += chunk;
-      // A body this size is not a workshop entering hours.
-      if (raw.length > 64 * 1024) reject(new Error('request too large'));
+      // A body this size is not a workshop entering hours. Refused, and then no longer read: rejecting
+      // alone left the stream running and every further chunk still appended, so one request that
+      // never ended could take the server's memory with it.
+      if (raw.length > 64 * 1024) {
+        raw = '';
+        req.removeAllListeners('data');
+        req.removeAllListeners('end');
+        req.pause();
+        reject(Object.assign(new Error('request too large'), { status: 413 }));
+      }
     });
     req.on('end', () => {
       if (!raw) return resolve({});
@@ -518,6 +536,11 @@ const server = http.createServer(async (req, res) => {
     }
     return send(res, 404, { refused: 'no such endpoint' });
   } catch (error) {
+    if (error.status === 413) {
+      res.setHeader('connection', 'close');
+      return send(res, 413, { refused: 'that request is too large' });
+    }
+    if (error.message === 'body is not JSON') return send(res, 400, { refused: 'that request is not JSON' });
     const refusal = refusalFrom(error);
     if (refusal) return send(res, refusal.status, refusal.body);
     // Anything not recognised as a refusal is this layer's fault, and the caller is told nothing

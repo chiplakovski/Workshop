@@ -1586,8 +1586,8 @@ function renderTabMachines(j){
         ${gate.blocked?`<div style="color:var(--steel-400);font-size:11px;margin-top:3px;">${gate.reasons.map(r=>esc(r)).join('; ')}</div>`:''}
       </td>
       ${!locked?`<td><div class="opactions">
-        <button class="tbtn small" onclick="openPreUseCheckForm(${j.id},'${esc(equipment.equipmentId)}')">${esc(tt.mc_recordcheck)}</button>
-        <button class="tbtn small" onclick="openReportBreakdown(${j.id},'${esc(equipment.equipmentId)}')">${esc(tt.mc_reportproblem)}</button>
+        <button class="tbtn small" onclick="openPreUseCheckForm(${j.id},${esc(JSON.stringify(String(equipment.equipmentId??'')))})">${esc(tt.mc_recordcheck)}</button>
+        <button class="tbtn small" onclick="openReportBreakdown(${j.id},${esc(JSON.stringify(String(equipment.equipmentId??'')))})">${esc(tt.mc_reportproblem)}</button>
         <button class="tbtn small" ${removeBtnAttrs} onclick="removeMachine(${j.id},${idx})">${esc(tt.mc_remove)}</button>
       </div></td>`:''}
     </tr>`;
@@ -1619,7 +1619,7 @@ function openMachineForm(jcId){
       <td>${esc(eq.status)}</td>
       <td>${esc(eq.assignedJobcard)||'—'}</td>
       <td>${gate.blocked?`<span class="tagpill r">${esc(tt.mc_blocked)}</span>`:`<span class="tagpill g">${esc(tt.mc_safe)}</span>`}${reasonMsg?`<div style="color:var(--steel-400);font-size:11px;max-width:220px;">${esc(reasonMsg)}</div>`:''}</td>
-      <td><button class="tbtn small primary" ${decision.allowed?'':'disabled'} onclick="openAddMachineDetails(${jcId},'${esc(eq.equipmentId)}')">${esc(tt.mc_add)}</button></td>
+      <td><button class="tbtn small primary" ${decision.allowed?'':'disabled'} onclick="openAddMachineDetails(${jcId},${esc(JSON.stringify(String(eq.equipmentId??'')))})">${esc(tt.mc_add)}</button></td>
     </tr>`;
   }).join('');
   $('fcard').className='fcard wide';
@@ -1639,7 +1639,7 @@ function openAddMachineDetails(jcId,equipmentId){
   $('fcard').innerHTML=`<h2>${esc(tt.mc_add)}</h2><p class="fsub">${esc(eq.equipmentId)} — ${esc(eq.name)}</p>
     <div class="frow2">${field('mcPlanned',tt.mc_plannedusage,0,'number')}${field('mcOperator',tt.mc_operator,eq.operator||'')}</div>
     <div id="mcErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="openMachineForm(${jcId})">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="addMachineToJobcard(${jcId},'${esc(equipmentId)}')">${esc(tt.mc_add)}</button></div>`;
+    <div class="fbtns"><button class="tbtn" onclick="openMachineForm(${jcId})">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="addMachineToJobcard(${jcId},${esc(JSON.stringify(String(equipmentId??'')))})">${esc(tt.mc_add)}</button></div>`;
   $('fov').classList.add('show');
 }
 function addMachineToJobcard(jcId,equipmentId){
@@ -1679,7 +1679,7 @@ function openPreUseCheckForm(jcId,equipmentId){
     <div class="frow">${fieldTextarea('pcEvidence',tt.mc_evidence,'')}</div>
     <div class="frow">${fieldTextarea('pcNotes',tt.op_notes,'')}</div>
     <div id="pcErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="savePreUseCheckForm(${jcId},'${esc(equipmentId)}')">${esc(tt.nc_save)}</button></div>`;
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn primary" onclick="savePreUseCheckForm(${jcId},${esc(JSON.stringify(String(equipmentId??'')))})">${esc(tt.nc_save)}</button></div>`;
   $('fov').classList.add('show');
 }
 function savePreUseCheckForm(jcId,equipmentId){
@@ -1715,7 +1715,7 @@ function openReportBreakdown(jcId,equipmentId){
     <div class="frow">${field('brResponsible',tt.mc_responsibleperson,j.responsible||'')}</div>
     <div class="frow">${fieldTextarea('brNotes',tt.op_notes,'')}</div>
     <div id="brErr" class="errmsg" style="display:none;"></div>
-    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn danger" onclick="saveReportBreakdown(${jcId},'${esc(equipmentId)}')">${esc(tt.mc_reportproblem)}</button></div>`;
+    <div class="fbtns"><button class="tbtn" onclick="closeModal()">${esc(tt.nc_cancel)}</button><button class="tbtn danger" onclick="saveReportBreakdown(${jcId},${esc(JSON.stringify(String(equipmentId??'')))})">${esc(tt.mc_reportproblem)}</button></div>`;
   $('fov').classList.add('show');
 }
 function saveReportBreakdown(jcId,equipmentId){

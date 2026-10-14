@@ -2267,7 +2267,9 @@ async function saveUpload(id){
 // Duplicating creates a genuinely independent estimate: deep-cloned commercial/cost content, a brand-new
 // local id and estimation number, no shared/project linkage, reset status/revision/dates/history. The
 // original estimate is never touched.
-function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00");d2.setDate(d2.getDate()+days);return d2.toISOString().slice(0,10);}
+// Calendar arithmetic on the date itself, at UTC midnight both ways. Built at local midnight and read back
+// as UTC, every Swedish offer came out a day short: "valid 30 days" from the 14th ran to the 12th.
+function addDaysISO(iso,days){const d2=new Date(iso+"T00:00:00Z");d2.setUTCDate(d2.getUTCDate()+days);return d2.toISOString().slice(0,10);}
 
 // An estimate linked to a project cannot be safely deleted (the project still references it) — offer
 // Archive instead and explain why. Unlinked estimates can be deleted after confirmation.

@@ -344,16 +344,16 @@ function statusChips(p) {
 function rowActions(p) {
   if (!isAdmin()) return '';
   const buttons = [
-    `<button class="btn small" onclick="openModal('pin','${esc(p.id)}')">${esc(t('act_pin'))}</button>`,
-    `<button class="btn small" onclick="openModal('password','${esc(p.id)}')">${esc(t('act_password'))}</button>`
+    `<button class="btn small" onclick="openModal('pin',${esc(JSON.stringify(String(p.id??'')))})">${esc(t('act_pin'))}</button>`,
+    `<button class="btn small" onclick="openModal('password',${esc(JSON.stringify(String(p.id??'')))})">${esc(t('act_password'))}</button>`
   ];
   // Not offered on your own row. Both are refused by the database; a button that always fails is a
   // button that teaches people refusals are noise.
   if (!p.isMe) {
-    buttons.push(`<button class="btn small" onclick="openModal('role','${esc(p.id)}')">${esc(t('act_role'))}</button>`);
+    buttons.push(`<button class="btn small" onclick="openModal('role',${esc(JSON.stringify(String(p.id??'')))})">${esc(t('act_role'))}</button>`);
     buttons.push(p.active
-      ? `<button class="btn small danger" onclick="toggleActive('${esc(p.id)}')">${esc(t('act_off'))}</button>`
-      : `<button class="btn small" onclick="toggleActive('${esc(p.id)}')">${esc(t('act_on'))}</button>`);
+      ? `<button class="btn small danger" onclick="toggleActive(${esc(JSON.stringify(String(p.id??'')))})">${esc(t('act_off'))}</button>`
+      : `<button class="btn small" onclick="toggleActive(${esc(JSON.stringify(String(p.id??'')))})">${esc(t('act_on'))}</button>`);
   }
   return `<div class="rowactions">${buttons.join('')}</div>`;
 }

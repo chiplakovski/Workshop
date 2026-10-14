@@ -973,6 +973,28 @@ function world() {
   return { customer, item, project, jobcard, op, blockedOp, estimate, line, lead };
 }
 
+// What a server on the open internet meets that no page ever sends. Each of these used to end as a
+// 500 at best; the oversized body was worse, because it was refused and then kept on being read.
+async function theServerSurvivesBadRequests() {
+  const { pool } = require('./server');
+  const huge = await fetch(`${BASE}/auth/sign-in`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'x'.repeat(200 * 1024), secret: 'x', door: 'pin' })
+  }).then((r) => r.status).catch(() => 'connection closed');
+  assert.ok(huge === 413 || huge === 'connection closed', `an oversized request got ${huge}`);
+  const notJson = await fetch(`${BASE}/auth/sign-in`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{not json'
+  });
+  assert.equal(notJson.status, 400, 'a body that is not JSON is the sender\'s mistake, not ours');
+  const badEscape = await fetch(`${SITE}/%E0%A4%A`);
+  assert.equal(badEscape.status, 404, 'a malformed address is a page that does not exist');
+  assert.ok(pool.listenerCount('error') > 0, 'nothing listens for a connection dropping while idle');
+  pool.emit('error', new Error('simulated: the database closed an idle connection'));
+  const health = await fetch(`${BASE}/health`);
+  assert.equal(health.status, 200, 'the server did not survive the requests above');
+  step('Abuse: an oversized body is refused and dropped, bad JSON is a 400, a bad address a 404, and an idle connection dropping does not stop the server');
+}
+
 async function main() {
   buildDatabase();
   const f = world();
@@ -999,6 +1021,7 @@ async function main() {
     await theMovementLogReachesTheScreen(tokens);
     await theQualityRegisterWorksOverHttp(tokens, f);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
+    await theServerSurvivesBadRequests();
     console.log(`\n${checks} checks: ${attempts.refused} things refused, ${attempts.allowed} allowed, over real HTTP.`);
   } finally {
     await new Promise((resolve) => server.close(resolve));

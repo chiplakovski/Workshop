@@ -230,11 +230,18 @@ CREATE INDEX session_user_idx ON app_session(user_id) WHERE ended_at IS NULL;
 
 -- End of shift, not thirty days. 18:00 local if that is still ahead, otherwise 18:00 tomorrow —
 -- a late shift starting at 22:00 gets the following evening rather than four minutes.
+--
+-- Local means the workshop's, named here, and not whatever clock the database happens to run on. A
+-- hosted database runs on UTC, where "18:00" is 19:00 or 20:00 in Marieholm. The arithmetic is done on
+-- the Swedish wall clock, so the day the clocks change still ends at 18:00.
 CREATE FUNCTION end_of_shift() RETURNS timestamptz
 LANGUAGE sql STABLE AS $$
-  SELECT CASE WHEN now() < date_trunc('day', now()) + interval '18 hours'
-              THEN date_trunc('day', now()) + interval '18 hours'
-              ELSE date_trunc('day', now()) + interval '42 hours'
+  SELECT CASE WHEN now() < (date_trunc('day', now() AT TIME ZONE 'Europe/Stockholm') + interval '18 hours')
+                           AT TIME ZONE 'Europe/Stockholm'
+              THEN (date_trunc('day', now() AT TIME ZONE 'Europe/Stockholm') + interval '18 hours')
+                   AT TIME ZONE 'Europe/Stockholm'
+              ELSE (date_trunc('day', now() AT TIME ZONE 'Europe/Stockholm') + interval '42 hours')
+                   AT TIME ZONE 'Europe/Stockholm'
          END;
 $$;
 
@@ -440,6 +447,14 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- The workshop's calendar. Every "today" in the workflows — a date in the future refused, a
+-- certificate expired, hours booked with no date given — is current_date, and current_date is the
+-- session's. A hosted database runs on UTC, so between midnight and two in the morning in Sweden it
+-- is still yesterday there: a machine check dated today was refused as being in the future. Set on
+-- the role that connects, for the same reason as the search path above: SET LOCAL ROLE does not
+-- re-apply a role's settings, so the role that logs in carries them for the three it becomes.
+ALTER ROLE varmak_api SET timezone = 'Europe/Stockholm';
 
 -- Sequences are needed by anyone who may insert; without this an insert fails on the id.
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO varmak_admin, varmak_office, varmak_workshop;

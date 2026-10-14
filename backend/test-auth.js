@@ -527,7 +527,11 @@ function sessionsEnd() {
   const officeEnds = value(`SELECT expires_at FROM app_session WHERE token = '${office}';`);
   assert.ok(new Date(shopEnds) < new Date(Date.now() + 25 * 3600 * 1000),
     `a tablet session must end with the shift, not in thirty days — it ends ${shopEnds}`);
-  assert.match(value(`SELECT to_char(expires_at, 'HH24:MI') FROM app_session WHERE token = '${shop}';`), /^18:00$/);
+  // On the workshop's clock, whatever clock the database itself runs on — a hosted one runs on UTC.
+  assert.match(value(`SELECT to_char(expires_at AT TIME ZONE 'Europe/Stockholm', 'HH24:MI') FROM app_session WHERE token = '${shop}';`), /^18:00$/,
+    'a shift ends at 18:00 in Marieholm, not at 18:00 on the database\'s clock');
+  assert.match(value(`SELECT array_to_string(rolconfig, ',') FROM pg_roles WHERE rolname = 'varmak_api';`), /TimeZone=Europe\/Stockholm/i,
+    'the connecting role does not carry the workshop\'s time zone, so every "today" is UTC\'s');
   assert.notEqual(shopEnds, officeEnds);
   step('Sessions: the shop tablet expires at the end of the shift, not in thirty days');
 

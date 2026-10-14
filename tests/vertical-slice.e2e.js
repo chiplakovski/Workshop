@@ -165,8 +165,8 @@ async function main() {
     const session = sql(`SELECT door::text || '|' || device FROM app_session
       WHERE user_id = (SELECT id FROM app_user WHERE email = 'marko@varmak.se') ORDER BY started_at DESC LIMIT 1;`);
     assert.equal(session, 'pin|shop tablet', 'the session should record which door and which device');
-    assert.match(value(`SELECT to_char(expires_at, 'HH24:MI') FROM app_session ORDER BY started_at DESC LIMIT 1;`),
-      /^18:00$/, 'a tablet session ends with the shift');
+    assert.match(value(`SELECT to_char(expires_at AT TIME ZONE 'Europe/Stockholm', 'HH24:MI') FROM app_session ORDER BY started_at DESC LIMIT 1;`),
+      /^18:00$/, 'a tablet session ends with the shift — 18:00 in Marieholm, whatever clock the database keeps');
     assert.equal(value(`SELECT count(*) FROM activity_log WHERE action = 'signed in';`), '1',
       'the sign-in should be on the record');
     step('Login: the session is a real row — which door, which device, expiring at the end of the shift');

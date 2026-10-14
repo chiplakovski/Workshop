@@ -348,3 +348,25 @@ test('effort: an item that never had an estimate reconciles to zero, not undefin
   assert.equal(workItems[0].days,0);
   assert.equal(workItems[0].people,0);
 });
+
+test('an offer valid for 30 days is valid for 30 days on a Swedish computer', ()=>{
+  // The page built the date at local midnight and read it back as UTC, so east of Greenwich every
+  // validity date came out a day short. The test machines run on UTC, where the two agree, which is
+  // why nothing noticed: the clock has to be Sweden's for this to be asked at all.
+  const fs=require('fs');const path=require('path');
+  const page=fs.readFileSync(path.join(__dirname,'..','estimations-desktop.html'),'utf8');
+  const source=(page.match(/function addDaysISO\([^)]*\)\{[^\n]*\}/)||[])[0];
+  assert.ok(source,'addDaysISO is not in the estimations page any more');
+  const addDaysISO=new Function(`${source};return addDaysISO;`)();
+  const before=process.env.TZ;
+  try{
+    process.env.TZ='Europe/Stockholm';
+    assert.equal(new Date('2026-10-14T00:00:00').getTimezoneOffset(),-120,'this check needs the Swedish clock, or it is asking nothing');
+    assert.equal(addDaysISO('2026-10-14',30),'2026-11-13');
+    assert.equal(addDaysISO('2026-10-20',10),'2026-10-30','across the night the clocks go back');
+    assert.equal(addDaysISO('2026-03-20',10),'2026-03-30','across the night the clocks go forward');
+    assert.equal(addDaysISO('2026-12-31',1),'2027-01-01');
+  }finally{
+    if(before===undefined)delete process.env.TZ;else process.env.TZ=before;
+  }
+});

@@ -4,9 +4,9 @@ Where the Varmak Workshop prototype stands, what was decided and why, and what t
 Written so a later session can continue without re-opening settled questions.
 
 **Branch:** `claude/relaxed-albattani-sehl3a` — all work is committed and pushed here.
-**HEAD:** see §4k, which is where this document actually ends. Everything above it is the state of a
+**HEAD:** see §4l, which is where this document actually ends. Everything above it is the state of a
 prototype with no backend, kept because the browser-storage app still runs that way for anybody not signed
-in; §4k is where it stands now. Sections 4b to 4j are the passes in between, in order, and each says what
+in; §4l is where it stands now. Sections 4b to 4k are the passes in between, in order, and each says what
 was true when it was written rather than being edited afterwards — a §1 that claimed to be current would be
 one more list nobody checks.
 **Live demo:** https://claude.ai/artifact/RdS7JQGQwMTWhGnqdAPKzX (Version 82, 6 October 2026 — empty, no invented records; browser storage only, no sign-in)
@@ -949,6 +949,35 @@ version" case) still has it, Clear then Restore a copy brings it back.
 **Not built, and said so in the README:** records entered in this copy do not move to the online version.
 If the owner enters real work here and later goes online, it is either typed again or a transfer from a
 saved copy into the server is built first.
+
+## 4l. A review of the whole thing, and what it found — 14 October 2026
+
+Every suite green before anything was touched (unit 814, the six backend suites, all 26 end-to-end).
+What a green suite could not see, because the test machines run on UTC and send polite requests:
+
+* **The clock.** A hosted database runs on UTC. Every "today" in the workflows is `current_date`, so
+  between midnight and 02:00 in Sweden a machine check or inspection dated today was refused as being
+  in the future, and a PIN session meant to end at 18:00 ended at 19:00 or 20:00. `varmak_api` now
+  carries `timezone = Europe/Stockholm` (set in auth.sql, beside the search path, for the same reason),
+  and `end_of_shift()` does its arithmetic on the Swedish wall clock explicitly.
+* **Every offer was valid a day short.** `addDaysISO` in estimations built the date at local midnight
+  and read it back as UTC, so east of Greenwich "valid 30 days" from the 14th ran to the 12th. A unit
+  test now runs it on the Swedish clock — and checks that it really is on that clock first, or it
+  would pass on UTC by asking nothing.
+* **The content calendar was August 2026, written in.** It follows the real month now, with arrows.
+* **Text inside a button's handler.** 69 handlers on six pages passed a name or code as
+  `'${esc(x)}'`. The HTML parser decodes `&#39;` back into `'` before the script runs, so escaping
+  never protected the quote: a code with an apostrophe broke its button, and a crafted one would run.
+  The browser store refuses such codes; the database does not. They now pass `JSON.stringify` output.
+* **The server, on the open internet.** An oversized body was refused and then still read to the end
+  (memory); a connection dropping while idle in the pool had no listener and would stop the process;
+  bad JSON and a malformed address were 500s. All four covered in test-server.js.
+
+**Raised, not built — they are the owner's decisions:** heat numbers per delivery rather than per item
+(a second delivery overwrites the first's heat, and an issue records none — the gap that matters for
+EN 1090 traceability); no limit on one person's hours in one day across entries; the message panel on
+the phone hub is a disabled box with a fixed name in it — build it or remove it; the first admin should
+be created the minute the server is up, because until then anybody who finds the address can be it.
 
 ## 5. Decisions already made — do not re-open these
 

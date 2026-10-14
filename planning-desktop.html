@@ -677,8 +677,8 @@ function cardHtml(p){
       +(bar.late?`<span class="late">${fill(t.cardLate,{d:bar.overrunDays})}</span>`:'')
     : `<span class="nodate">${escapeHtml(t.cardNoDates)}</span>`;
   const hours=lane==='done'?t.cardDone:fill(t.cardHours,{h:num(left)});
-  return `<button type="button" class="kcard" data-no="${escapeHtml(p.no)}" onpointerdown="planPointerDown(event,'${escapeHtml(p.no)}')"
-      onpointermove="planPointerMove(event)" onpointerup="planPointerUp(event)" onclick="cardClick('${escapeHtml(p.no)}')">
+  return `<button type="button" class="kcard" data-no="${escapeHtml(p.no)}" onpointerdown="planPointerDown(event,${escapeHtml(JSON.stringify(String(p.no??'')))})"
+      onpointermove="planPointerMove(event)" onpointerup="planPointerUp(event)" onclick="cardClick(${escapeHtml(JSON.stringify(String(p.no??'')))})">
     <span class="pcno">${escapeHtml(p.no)}</span><b>${escapeHtml(p.name||'')}</b>
     <span class="pccust">${escapeHtml(customerOf(p))}</span>
     <span class="pcdates">${dates}</span>
@@ -787,7 +787,7 @@ function renderWaiting(){
     const what=r.missing.map(m=>t['missing_'+m]||m).join(', ');
     return `<div class="waitrow"><span class="wkind">${escapeHtml(t.waitKindProject)}</span>
       <div><span class="wno">${escapeHtml(r.no)}</span><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.customer||'')} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what}))}</span></small></div>
-      <button class="mini" onclick="openDateForm('${escapeHtml(r.no)}')">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
+      <button class="mini" onclick="openDateForm(${escapeHtml(JSON.stringify(String(r.no??'')))})">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
   }).join('');
   $('waitList').innerHTML=html||`<div class="waitempty">${escapeHtml(t.waitNone)}</div>`;
 }
@@ -834,7 +834,7 @@ function renderSchedule(){
     // An overrun is drawn past the deadline, so the row runs later than its bar does.
     const far=b.late?addDays(dayOf(b.expected),1):e;
     const over=b.late?`<div class="gover" style="left:${Math.max(0,Math.min(100,pos(e)))}%;width:${Math.max(0,Math.min(100,pos(far))-Math.max(0,pos(e)))}%"></div>`:'';
-    return `<div class="grow" role="link" tabindex="0" onclick="openDateForm('${escapeHtml(b.no)}')" onkeydown="if(event.key==='Enter')openDateForm('${escapeHtml(b.no)}')">
+    return `<div class="grow" role="link" tabindex="0" onclick="openDateForm(${escapeHtml(JSON.stringify(String(b.no??'')))})" onkeydown="if(event.key==='Enter')openDateForm(${escapeHtml(JSON.stringify(String(b.no??'')))})">
       <div class="glabel"><span class="gno">${escapeHtml(b.no)}</span><b>${escapeHtml(b.name||'')}</b>
         <small>${dateShort(b.start)} → ${dateShort(b.end)} · ${b.days} d · ${num(PlanningRules.remainingHours(p))} h</small></div>
       <div class="gtrack">${todayLine}
@@ -859,7 +859,7 @@ function renderSchedule(){
       .map(m=>t['missing_'+m]||m).join(', ');
     return `<div class="waitrow"><span class="wkind">${escapeHtml(t['lane_'+PlanningRules.laneOf(p)]||'')}</span>
       <div><span class="wno">${escapeHtml(p.no)}</span><b>${escapeHtml(p.name||'')}</b><small>${escapeHtml(customerOf(p))} · <span class="missing">${escapeHtml(fill(t.waitMissing,{what:missing}))}</span></small></div>
-      <button class="mini" onclick="openDateForm('${escapeHtml(p.no)}')">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
+      <button class="mini" onclick="openDateForm(${escapeHtml(JSON.stringify(String(p.no??'')))})">${escapeHtml(t.btnGiveDatesRow)}</button></div>`;
   }).join('')||`<div class="waitempty">${escapeHtml(t.unschedNone)}</div>`;
 }
 function shiftWeeks(n){rangeStart=addDays(rangeStart,n*7);renderSchedule();}

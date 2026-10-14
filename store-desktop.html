@@ -468,12 +468,12 @@ showView(location.hash.slice(1)||'inventory');
         if(meas&&meas.weightKg!=null)bits.push(`${meas.weightKg} kg`);
         const amounts=bits.length?`<div class="kcamount">${escapeHtml(bits.join(' · '))}</div>`:'';
         return `<div class="kcard ${out?'out':low?'low':''}" data-code="${escapeHtml(x[0])}"
-          onpointerdown="stockPointerDown(event,'${escapeHtml(x[0])}')"
+          onpointerdown="stockPointerDown(event,${escapeHtml(JSON.stringify(String(x[0]??'')))})"
           onpointermove="stockPointerMove(event)" onpointerup="stockPointerUp(event)">
           <span class="kcacts">
-            <button class="mini" title="${escapeHtml(currentT.btnInfo)}" onpointerdown="event.stopPropagation()" onclick="openItemInfo('${escapeHtml(x[0])}')">i</button>
-            <button class="mini" title="${escapeHtml(currentT.btnEdit)}" onpointerdown="event.stopPropagation()" onclick="openEditItemForm('${escapeHtml(x[0])}')">✎</button>
-            <button class="mini" title="${escapeHtml(currentT.btnDelete)}" onpointerdown="event.stopPropagation()" onclick="removeInventoryItem('${escapeHtml(x[0])}')">×</button>
+            <button class="mini" title="${escapeHtml(currentT.btnInfo)}" onpointerdown="event.stopPropagation()" onclick="openItemInfo(${escapeHtml(JSON.stringify(String(x[0]??'')))})">i</button>
+            <button class="mini" title="${escapeHtml(currentT.btnEdit)}" onpointerdown="event.stopPropagation()" onclick="openEditItemForm(${escapeHtml(JSON.stringify(String(x[0]??'')))})">✎</button>
+            <button class="mini" title="${escapeHtml(currentT.btnDelete)}" onpointerdown="event.stopPropagation()" onclick="removeInventoryItem(${escapeHtml(JSON.stringify(String(x[0]??'')))})">×</button>
           </span>
           <b><span class="kcno">${escapeHtml(m[9]??'—')}</span> ${escapeHtml(x[1])}</b>
           <div class="kcmeta"><span>${escapeHtml(x[6])}</span><span class="q">${available.toLocaleString()} ${escapeHtml(x[3])}</span></div>
@@ -591,7 +591,7 @@ showView(location.hash.slice(1)||'inventory');
       return (x.join(' ')+m.join(' ')).toLowerCase().includes(q);
     });
     if(stockLayout==='board')renderStockBoard(rows);
-    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td><td class="rowacts"><button class="mini" title="${escapeHtml(currentT.btnInfo)}" onclick="openItemInfo('${escapeHtml(x[0])}')">i</button><button class="mini" onclick="openEditItemForm('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnEdit)}</button><button class="mini" onclick="removeInventoryItem('${escapeHtml(x[0])}')">${escapeHtml(currentT.btnDelete)}</button></td></tr>`}).join('');
+    $('stockRows').innerHTML=rows.map(x=>{const available=x[4]-x[5],low=available<=x[7],m=META[x[0]]||['—','—',0,'—','—',false,0,0,null,null,'',''];const grp=WorkshopData.findItemGroup(m[10]),sub=grp&&(grp.subgroups||[]).find(y=>y.id===m[11]);return `<tr><td class="num code">${escapeHtml(m[9]??'—')}</td><td class="code">${escapeHtml(x[0])}</td><td>${escapeHtml(x[1])}</td><td>${escapeHtml(m[0])}<br><span class="sub">${escapeHtml(m[1])}</span></td><td>${escapeHtml(grp?grp.name:x[2])}<br><span class="sub">${escapeHtml(sub?sub.name:'—')}</span></td><td>${escapeHtml(x[3])}</td><td class="num">${x[4].toLocaleString()}</td><td class="num">${x[5].toLocaleString()}</td><td class="num avail ${low?'low':''}">${available.toLocaleString()}</td><td>${escapeHtml(x[6])}</td><td class="num">${x[7]}</td><td class="num">${m[6]||'—'}</td><td class="num">${money(m[2])}</td><td class="num">${money(m[7])}</td><td>${escapeHtml(m[3])}</td><td>${escapeHtml(m[4])}</td><td>${m[5]?'✓ 3.1':'—'}</td><td><span class="badge ${low?'low':''}">${low?currentT.badgeLow:currentT.badgeGood}</span></td><td class="rowacts"><button class="mini" title="${escapeHtml(currentT.btnInfo)}" onclick="openItemInfo(${escapeHtml(JSON.stringify(String(x[0]??'')))})">i</button><button class="mini" onclick="openEditItemForm(${escapeHtml(JSON.stringify(String(x[0]??'')))})">${escapeHtml(currentT.btnEdit)}</button><button class="mini" onclick="removeInventoryItem(${escapeHtml(JSON.stringify(String(x[0]??'')))})">${escapeHtml(currentT.btnDelete)}</button></td></tr>`}).join('');
     $('count').textContent=currentT.showingCount.replace('{n}',rows.length);
   };
 
@@ -861,7 +861,7 @@ showView(location.hash.slice(1)||'inventory');
           :`<div class="infonone">${escapeHtml(t.infoNothingPointsAt)}</div>`}</div>
       <div class="actions">
         <button class="btn" onclick="closeItemInfo()"><span>${escapeHtml(t.btnClose)}</span></button>
-        <button class="btn primary" onclick="closeItemInfo();openEditItemForm('${escapeHtml(h.code)}')"><span>${escapeHtml(t.btnEdit)}</span></button>
+        <button class="btn primary" onclick="closeItemInfo();openEditItemForm(${escapeHtml(JSON.stringify(String(h.code??'')))})"><span>${escapeHtml(t.btnEdit)}</span></button>
       </div>`;
     $('infoModal').classList.add('show');
   };
@@ -926,17 +926,17 @@ showView(location.hash.slice(1)||'inventory');
         const bins=[...new Set(items.map(x=>x.location).filter(Boolean))];
         return `<span class="subchip"><b>${escapeHtml(sub.name)}</b><span class="sub">${items.length}</span>`+
           (bins.length?`<span class="binlist">${escapeHtml(bins.slice(0,4).join(' · '))}${bins.length>4?' …':''}</span>`:'')+
-          `<button class="mini" title="${escapeHtml(currentT.btnRename)}" onclick="openSublocationForm('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">✎</button>`+
-          `<button class="mini" title="${escapeHtml(currentT.btnDelete)}" onclick="removeSublocation('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">×</button></span>`;
+          `<button class="mini" title="${escapeHtml(currentT.btnRename)}" onclick="openSublocationForm(${escapeHtml(JSON.stringify(String(g.id??'')))},${escapeHtml(JSON.stringify(String(sub.id??'')))})">✎</button>`+
+          `<button class="mini" title="${escapeHtml(currentT.btnDelete)}" onclick="removeSublocation(${escapeHtml(JSON.stringify(String(g.id??'')))},${escapeHtml(JSON.stringify(String(sub.id??'')))})">×</button></span>`;
       }).join('')||`<span class="sub">${escapeHtml(currentT.noSublocations)}</span>`;
       const unfiled=held.filter(x=>!x.locationSub).length;
       return `<div class="groupcard"><div class="grouphead">
         <div><b>${escapeHtml(g.name)}</b>${unfiled?`<small class="sub">${escapeHtml(currentT.unfiledItems.replace('{n}',unfiled))}</small>`:''}</div>
         <span class="groupcount">${escapeHtml(currentT.groupItems.replace('{n}',held.length))}</span>
         <span class="groupactions">
-          <button class="mini" onclick="openSublocationForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnAddSublocation)}</button>
-          <button class="mini" onclick="openWarehouseForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnEdit)}</button>
-          <button class="mini" onclick="removeWarehouse('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnDelete)}</button>
+          <button class="mini" onclick="openSublocationForm(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnAddSublocation)}</button>
+          <button class="mini" onclick="openWarehouseForm(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnEdit)}</button>
+          <button class="mini" onclick="removeWarehouse(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnDelete)}</button>
         </span></div><div class="subchips">${subs}</div></div>`;
     }).join('')||`<span class="sub">${escapeHtml(currentT.noWarehouses)}</span>`;
   };
@@ -999,16 +999,16 @@ showView(location.hash.slice(1)||'inventory');
       const subs=(g.subgroups||[]).map(sub=>{
         const n=items.filter(x=>x.subgroup===sub.id).length;
         return `<span class="subchip"><b>${escapeHtml(sub.name)}</b><span class="sub">${n}</span>`+
-          `<button class="mini" title="${escapeHtml(currentT.btnRename)}" onclick="openSubgroupForm('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">✎</button>`+
-          `<button class="mini" title="${escapeHtml(currentT.btnDelete)}" onclick="removeSubgroup('${escapeHtml(g.id)}','${escapeHtml(sub.id)}')">×</button></span>`;
+          `<button class="mini" title="${escapeHtml(currentT.btnRename)}" onclick="openSubgroupForm(${escapeHtml(JSON.stringify(String(g.id??'')))},${escapeHtml(JSON.stringify(String(sub.id??'')))})">✎</button>`+
+          `<button class="mini" title="${escapeHtml(currentT.btnDelete)}" onclick="removeSubgroup(${escapeHtml(JSON.stringify(String(g.id??'')))},${escapeHtml(JSON.stringify(String(sub.id??'')))})">×</button></span>`;
       }).join('')||`<span class="sub">${escapeHtml(currentT.noSubgroups)}</span>`;
       return `<div class="groupcard"><div class="grouphead">
         <div><b>${escapeHtml(g.name)}</b><small class="sub">${escapeHtml(currentT.groupRange.replace('{start}',g.start).replace('{next}',next))}</small></div>
         <span class="groupcount">${escapeHtml(currentT.groupItems.replace('{n}',items.length))}</span>
         <span class="groupactions">
-          <button class="mini" onclick="openSubgroupForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnAddSubgroup)}</button>
-          <button class="mini" onclick="openGroupForm('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnEdit)}</button>
-          <button class="mini" onclick="removeGroup('${escapeHtml(g.id)}')">${escapeHtml(currentT.btnDelete)}</button>
+          <button class="mini" onclick="openSubgroupForm(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnAddSubgroup)}</button>
+          <button class="mini" onclick="openGroupForm(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnEdit)}</button>
+          <button class="mini" onclick="removeGroup(${escapeHtml(JSON.stringify(String(g.id??'')))})">${escapeHtml(currentT.btnDelete)}</button>
         </span></div><div class="subchips">${subs}</div></div>`;
     }).join('')||`<span class="sub">${escapeHtml(currentT.noGroups)}</span>`;
   };
@@ -1094,13 +1094,13 @@ showView(location.hash.slice(1)||'inventory');
     $('scanRows').innerHTML=TRANSACTIONS.map(t=>`<div class="scanlog"><b>${escapeHtml(t.time.split(' ').slice(-1)[0])}</b><b>${escapeHtml(t.action)}</b><span>${escapeHtml(item(t.code)?.[1]||t.code)}</span><span>${escapeHtml(t.project)}</span><b>${t.qty}</b><span>${escapeHtml(t.user)}</span></div>`).join('');
     const lows=STOCK.filter(x=>x[4]-x[5]<=x[7]);
     $('reorderCards').innerHTML=lows.map(x=>{const m=META[x[0]]||[],av=x[4]-x[5],suggest=reorderQty(m[6],x[7],av);const action=`<span class="sub">${escapeHtml(currentT.lblReorderQty.replace('{n}',suggest).replace('{unit}',x[3]))}</span>`;return `<div class="reordercard"><div><b>${escapeHtml(x[1])}</b><small>${escapeHtml(x[0])} · ${escapeHtml(x[6])}</small></div><span>${currentT.thAvailable} <b>${av}</b></span><span>${currentT.thMin} <b>${x[7]}</b></span>${action}</div>`}).join('')||`<span class="sub">${currentT.allAboveMin}</span>`;
-    $('traceRows').innerHTML=STOCK.filter(x=>META[x[0]]?.[5]).map(x=>{const m=META[x[0]],used=TRANSACTIONS.find(t=>t.code===x[0]&&t.action==='ISSUED');return `<div class="tracecard"><b>${escapeHtml(x[0])}<br><span>${escapeHtml(m[0])} · ${escapeHtml(m[1])}</span></b><span>${currentT.traceHeatLot}<br><b>${escapeHtml(m[4])}</b></span><span>${currentT.thSupplier}<br><b>${escapeHtml(m[3])}</b></span><span>${currentT.traceUsedOn}<br><b>${escapeHtml(used?.project||currentT.traceNotIssued)}</b></span><button class="btn" onclick="showLabel('${escapeHtml(x[0])}')">${escapeHtml(m[8]||currentT.traceQrLabelFallback)}</button></div>`}).join('');
+    $('traceRows').innerHTML=STOCK.filter(x=>META[x[0]]?.[5]).map(x=>{const m=META[x[0]],used=TRANSACTIONS.find(t=>t.code===x[0]&&t.action==='ISSUED');return `<div class="tracecard"><b>${escapeHtml(x[0])}<br><span>${escapeHtml(m[0])} · ${escapeHtml(m[1])}</span></b><span>${currentT.traceHeatLot}<br><b>${escapeHtml(m[4])}</b></span><span>${currentT.thSupplier}<br><b>${escapeHtml(m[3])}</b></span><span>${currentT.traceUsedOn}<br><b>${escapeHtml(used?.project||currentT.traceNotIssued)}</b></span><button class="btn" onclick="showLabel(${escapeHtml(JSON.stringify(String(x[0]??'')))})">${escapeHtml(m[8]||currentT.traceQrLabelFallback)}</button></div>`}).join('');
   };
 
   window.renderOffcuts=function(){
     const q=$('offcutSearch').value.toLowerCase(),status=$('offcutStatus').value;
     const rows=shared.offcuts.filter(x=>(status==='all'||x.status===status)&&Object.values(x).join(' ').toLowerCase().includes(q));
-    $('offcutRows').innerHTML=rows.map(x=>`<div class="offcutcard"><div><b>${escapeHtml(x.code)}</b><small>${escapeHtml(x.description)}</small></div><span>${currentT.offcutGrade}<br><b>${escapeHtml(x.grade||'—')}</b></span><span>${currentT.offcutDimensions}<br><b>${escapeHtml(x.dimensions||[x.width,x.length,x.thickness].filter(Boolean).join(' × ')+' mm')}</b></span><span>${currentT.thLocation}<br><b>${escapeHtml(x.location)}</b></span><span>${currentT.offcutSource}<br><b>${escapeHtml(x.sourceProject||'—')}</b></span>${x.status==='used'?`<span class="sub">${currentT.lblOffcutUsed}</span>`:`<button class="btn" onclick="markOffcutUsed('${escapeHtml(x.code)}')">${currentT.btnUseOffcut}</button>`}</div>`).join('')||`<span class="sub">${currentT.noOffcuts}</span>`;
+    $('offcutRows').innerHTML=rows.map(x=>`<div class="offcutcard"><div><b>${escapeHtml(x.code)}</b><small>${escapeHtml(x.description)}</small></div><span>${currentT.offcutGrade}<br><b>${escapeHtml(x.grade||'—')}</b></span><span>${currentT.offcutDimensions}<br><b>${escapeHtml(x.dimensions||[x.width,x.length,x.thickness].filter(Boolean).join(' × ')+' mm')}</b></span><span>${currentT.thLocation}<br><b>${escapeHtml(x.location)}</b></span><span>${currentT.offcutSource}<br><b>${escapeHtml(x.sourceProject||'—')}</b></span>${x.status==='used'?`<span class="sub">${currentT.lblOffcutUsed}</span>`:`<button class="btn" onclick="markOffcutUsed(${escapeHtml(JSON.stringify(String(x.code??'')))})">${currentT.btnUseOffcut}</button>`}</div>`).join('')||`<span class="sub">${currentT.noOffcuts}</span>`;
   };
 
   function updateStats(){
@@ -1242,7 +1242,7 @@ showView(location.hash.slice(1)||'inventory');
     const action=operationType.toUpperCase(),to=operationType==='transfer'?d:item(code)?.[6];const result=WorkshopData.move({action,code,qty:q,to,projectNo,jobcard,user:currentUser(),remarks});if(result?.error)return notify(result.error);closeOperation();refresh(`${action}${currentT.notifyActionRecorded}`);
   };
 
-  window.recordCount=function(){const code=$('countCode').value.trim().toUpperCase(),q=Number($('countQty').value),result=WorkshopData.recordCount({code,counted:q,scope:$('countScope').value,user:currentUser()});if(result?.error||!Number.isFinite(q))return notify(result?.error||currentT.notifyEnterValidQty);$('countRows').insertAdjacentHTML('beforeend',`<tr><td><span class="code">${escapeHtml(code)}</span> · ${escapeHtml(item(code)?.[1]||'')}</td><td class="num">${result.system}</td><td class="num">${result.counted}</td><td class="num ${result.difference?'low':''}">${result.difference>0?'+':''}${result.difference}</td><td>${result.difference?`<button class="btn" onclick="applyCount('${escapeHtml(code)}',${result.counted})">${currentT.btnPostAdjustment}</button>`:currentT.matched}</td></tr>`);$('countCode').value='';$('countQty').value='';notify(currentT.notifyCountRecorded)};
+  window.recordCount=function(){const code=$('countCode').value.trim().toUpperCase(),q=Number($('countQty').value),result=WorkshopData.recordCount({code,counted:q,scope:$('countScope').value,user:currentUser()});if(result?.error||!Number.isFinite(q))return notify(result?.error||currentT.notifyEnterValidQty);$('countRows').insertAdjacentHTML('beforeend',`<tr><td><span class="code">${escapeHtml(code)}</span> · ${escapeHtml(item(code)?.[1]||'')}</td><td class="num">${result.system}</td><td class="num">${result.counted}</td><td class="num ${result.difference?'low':''}">${result.difference>0?'+':''}${result.difference}</td><td>${result.difference?`<button class="btn" onclick="applyCount(${escapeHtml(JSON.stringify(String(code??'')))},${result.counted})">${currentT.btnPostAdjustment}</button>`:currentT.matched}</td></tr>`);$('countCode').value='';$('countQty').value='';notify(currentT.notifyCountRecorded)};
   window.applyCount=function(code,counted){WorkshopData.adjustCount(code,counted);refresh(currentT.notifyAdjustmentPosted.replace('{code}',code))};
 
   window.showLabel=function(code){const x=item(code),m=META[code];if(!x||!m)return notify(currentT.selectMaterialFirst);const bits=Array.from({length:100},(_,i)=>`<i style="background:${((i*17+code.charCodeAt(i%code.length))%5)<2?'#071323':'#fff'}"></i>`).join('');$('labelBody').innerHTML=`<div style="font:800 22px Inter;margin-bottom:14px">VARMAK AB</div><div style="display:grid;grid-template-columns:1fr 112px;gap:18px"><div><b style="font-size:18px">${escapeHtml(m[0])}</b><p>${escapeHtml(x[1])}<br>${escapeHtml(m[1])}</p><p><b>${currentT.lblItemColon}</b> ${escapeHtml(code)}<br><b>${currentT.lblHeatColon}</b> ${escapeHtml(m[4])}<br><b>${currentT.lblQtyColon}</b> ${escapeHtml($('receiveQty').value||x[4])} ${escapeHtml(x[3])}<br><b>${currentT.lblLocationColon}</b> ${escapeHtml(x[6])}</p><small>${escapeHtml(m[8]||currentT.noCertAttached)}</small></div><div style="display:grid;grid-template-columns:repeat(10,10px);grid-auto-rows:10px;border:6px solid #071323;width:112px;height:112px">${bits}</div></div>`;$('labelModal').classList.add('show')};

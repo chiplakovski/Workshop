@@ -1346,9 +1346,9 @@ function renderWelds(data){
       <td>${testing}</td>
       <td>${badge(w.status,genericLabel(w.status))}</td>
       <td class="rowacts">
-        <button class="btn sm" onclick="openNdtForm('${esc(w.no)}')" data-i="record_ndt_short">NDT</button>
-        ${w.finalResult!=='accepted'?`<button class="btn sm" onclick="signWeldOff('${esc(w.no)}')" data-i="sign_off">Sign off</button>`:''}
-        ${w.status==='repair-required'?`<button class="btn sm danger" onclick="openWeldRepair('${esc(w.no)}')" data-i="log_repair">Repair</button>`:''}
+        <button class="btn sm" onclick="openNdtForm(${esc(JSON.stringify(String(w.no??'')))})" data-i="record_ndt_short">NDT</button>
+        ${w.finalResult!=='accepted'?`<button class="btn sm" onclick="signWeldOff(${esc(JSON.stringify(String(w.no??'')))})" data-i="sign_off">Sign off</button>`:''}
+        ${w.status==='repair-required'?`<button class="btn sm danger" onclick="openWeldRepair(${esc(JSON.stringify(String(w.no??'')))})" data-i="log_repair">Repair</button>`:''}
       </td></tr>`;
   }).join('')||emptyRow(9,'welds_empty');
 }
@@ -1369,7 +1369,7 @@ function renderNdt(data){
       <td>${esc((r.inspectionDate||'').slice(0,10)||'N/A')}</td>
       <td>${esc(r.findings||'N/A')}</td>
       <td>${badge(r.result,genericLabel(r.result))}</td>
-      <td class="rowacts"><button class="btn sm" onclick="openWeldingNote('ndt_report','${esc(r.no)}')" data-i="add_note">Note</button></td>
+      <td class="rowacts"><button class="btn sm" onclick="openWeldingNote('ndt_report',${esc(JSON.stringify(String(r.no??'')))})" data-i="add_note">Note</button></td>
     </tr>`).join('')||emptyRow(9,'ndt_empty');
 }
 
@@ -1389,8 +1389,8 @@ function renderWps(data){
       <td>${esc(w.supportingWpqr||'&mdash;')}</td>
       <td>${badge(w.status,genericLabel(w.status))}${w.approvedBy?`<br><small>${esc(w.approvedBy)} ${esc((w.approvedOn||'').slice(0,10))}</small>`:''}</td>
       <td class="rowacts">
-        ${w.setStatus!=='approved'?`<button class="btn sm" onclick="approveProcedure('${esc(w.id)}')" data-i="approve">Approve</button>`:''}
-        <button class="btn sm" onclick="openWpsForm('${esc(w.id)}')" data-i="edit">Edit</button>
+        ${w.setStatus!=='approved'?`<button class="btn sm" onclick="approveProcedure(${esc(JSON.stringify(String(w.id??'')))})" data-i="approve">Approve</button>`:''}
+        <button class="btn sm" onclick="openWpsForm(${esc(JSON.stringify(String(w.id??'')))})" data-i="edit">Edit</button>
       </td></tr>`).join('')||emptyRow(8,'wps_empty');
 }
 
@@ -1410,7 +1410,7 @@ function renderQuals(data){
       <td>${esc((q.expiryDate||'').slice(0,10)||'N/A')}
         ${q.daysLeft!=null?`<br><small>${q.daysLeft<0?tr('days_ago').replace('{n}',Math.abs(q.daysLeft)):tr('days_left').replace('{n}',q.daysLeft)}</small>`:''}</td>
       <td>${badge(q.status,genericLabel(q.status))}</td>
-      <td class="rowacts"><button class="btn sm" onclick="openQualForm('${esc(q.id)}')" data-i="edit">Edit</button></td>
+      <td class="rowacts"><button class="btn sm" onclick="openQualForm(${esc(JSON.stringify(String(q.id??'')))})" data-i="edit">Edit</button></td>
     </tr>`).join('')||emptyRow(8,'quals_empty');
 }
 
@@ -1497,11 +1497,11 @@ function renderInspections(data){
 
   $('insp-list-body').innerHTML=insp.map(i=>{
     const overdue=i.plannedDate&&safeDate(i.plannedDate)<new Date()&&!['completed','cancelled'].includes(i.status);
-    return `<tr class="clickable" onclick="openExecInspection('${esc(i.no)}')">
+    return `<tr class="clickable" onclick="openExecInspection(${esc(JSON.stringify(String(i.no??'')))})">
       <td><strong>${esc(i.no)}</strong></td><td>${esc(i.projectNo||'N/A')}</td><td>${esc(i.jobcard||'N/A')}</td><td>${esc(typeLabel(i.type))}</td><td>${esc(i.component||'N/A')}</td>
       <td>${esc(i.plannedDate||'N/A')}${overdue?' ⚠':''}</td><td>${esc(i.inspector||'N/A')}</td><td>${i.customerWitness?'Yes':'No'}</td>
       <td>${badge(i.status,statusLabel(i.status))}</td><td>${badge(i.result,resultLabel(i.result))}</td>
-      <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openExecInspection('${esc(i.no)}')" data-i="close">Open</button></td>
+      <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openExecInspection(${esc(JSON.stringify(String(i.no??'')))})" data-i="close">Open</button></td>
     </tr>`;
   }).join('')||'<tr class="emptyrow"><td colspan="11">No inspections match these filters</td></tr>';
 }
@@ -1835,10 +1835,10 @@ function renderNcrSection(data){
   $('ncr-critical').textContent=all.filter(n=>n.severity==='critical'&&n.status!=='closed').length;
   $('ncr-closed').textContent=all.filter(n=>n.status==='closed').length;
 
-  $('ncr-list-body').innerHTML=ncrs.map(n=>`<tr class="clickable" onclick="openNcrDetail('${esc(n.no)}')">
+  $('ncr-list-body').innerHTML=ncrs.map(n=>`<tr class="clickable" onclick="openNcrDetail(${esc(JSON.stringify(String(n.no??'')))})">
     <td><strong>${esc(n.no)}</strong></td><td>${esc(n.title||'N/A')}</td><td>${esc(n.projectNo||'N/A')}</td><td>${esc(NCR_CATEGORY_LABEL[n.category]||n.category||'N/A')}</td>
     <td>${badge(n.severity,genericLabel(n.severity))}</td><td>${esc(n.responsiblePerson||'N/A')}</td><td>${esc(n.dueDate||'N/A')}</td><td>${badge(n.status,genericLabel(n.status))}</td>
-    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openNcrDetail('${esc(n.no)}')">Open</button></td>
+    <td><button class="fbtn" style="padding:4px 8px;" onclick="event.stopPropagation();openNcrDetail(${esc(JSON.stringify(String(n.no??'')))})">Open</button></td>
   </tr>`).join('')||'<tr class="emptyrow"><td colspan="9">No NCRs match these filters</td></tr>';
 }
 $('openNewNcrBtn').addEventListener('click',()=>openNewNcrModal());
@@ -1894,11 +1894,11 @@ function openNcrDetail(no){
     <div class="phead" style="margin-top:14px;"><h3 style="font-size:12px;">Workflow Actions</h3></div>
     <div id="ncrActionArea"></div>
     <div class="mbtns" style="justify-content:flex-start;flex-wrap:wrap;">
-      <button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','containment')">Add Containment</button>
-      <button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','disposition')">Set Disposition</button>
-      <button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','capa')">Assign Corrective Action</button>
-      <button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','verify')">Verify</button>
-      ${n.status==='closed'?`<button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','reopen')">Reopen</button>`:`<button class="mbtn" onclick="ncrShowAction('${esc(n.no)}','close')">Close NCR</button>`}
+      <button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'containment')">Add Containment</button>
+      <button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'disposition')">Set Disposition</button>
+      <button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'capa')">Assign Corrective Action</button>
+      <button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'verify')">Verify</button>
+      ${n.status==='closed'?`<button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'reopen')">Reopen</button>`:`<button class="mbtn" onclick="ncrShowAction(${esc(JSON.stringify(String(n.no??'')))},'close')">Close NCR</button>`}
     </div>
   `;
   openModal('ncrDetailModal');
@@ -1906,12 +1906,12 @@ function openNcrDetail(no){
 function ncrShowAction(no,action){
   const area=$('ncrActionArea');
   const forms={
-    containment:`<div class="mrow"><label>Containment Action</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitContainment('${esc(no)}')">Save Containment</button>`,
-    disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label for="ncrActRef">Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition('${esc(no)}')">Save Disposition</button>`,
-    capa:`<div class="mrow"><label>Corrective Action Reference (CAPA No.)</label><input id="ncrActInput" type="text" placeholder="CAPA-2026-001"></div><button class="mbtn primary" onclick="ncrSubmitCapaLink('${esc(no)}')">Assign</button>`,
-    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label for="ncrActRef">Verified By</label><input id="ncrActRef" type="text" value=currentUser()></div><button class="mbtn primary" onclick="ncrSubmitVerify('${esc(no)}')">Save Verification</button>`,
-    close:`<div class="mrow"><label>Closure Approval Reference</label><input id="ncrActInput" type="text" placeholder="Approved by Quality Manager — ref #"></div><button class="mbtn primary" onclick="ncrSubmitClose('${esc(no)}')">Close NCR</button>`,
-    reopen:`<div class="mrow"><label>Reason for Reopening</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitReopen('${esc(no)}')">Reopen NCR</button>`
+    containment:`<div class="mrow"><label>Containment Action</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitContainment(${esc(JSON.stringify(String(no??'')))})">Save Containment</button>`,
+    disposition:`<div class="mrow"><label for="ncrActInput">Disposition</label><select id="ncrActInput">${NCR_DISPOSITIONS.map(d=>`<option value="${d}">${genericLabel(d)}</option>`).join('')}</select></div><div class="mrow"><label for="ncrActRef">Approval Reference (required for Use As-Is)</label><input id="ncrActRef" type="text"></div><button class="mbtn primary" onclick="ncrSubmitDisposition(${esc(JSON.stringify(String(no??'')))})">Save Disposition</button>`,
+    capa:`<div class="mrow"><label>Corrective Action Reference (CAPA No.)</label><input id="ncrActInput" type="text" placeholder="CAPA-2026-001"></div><button class="mbtn primary" onclick="ncrSubmitCapaLink(${esc(JSON.stringify(String(no??'')))})">Assign</button>`,
+    verify:`<div class="mrow"><label>Verification Result / Evidence</label><textarea id="ncrActInput"></textarea></div><div class="mrow"><label for="ncrActRef">Verified By</label><input id="ncrActRef" type="text" value=currentUser()></div><button class="mbtn primary" onclick="ncrSubmitVerify(${esc(JSON.stringify(String(no??'')))})">Save Verification</button>`,
+    close:`<div class="mrow"><label>Closure Approval Reference</label><input id="ncrActInput" type="text" placeholder="Approved by Quality Manager — ref #"></div><button class="mbtn primary" onclick="ncrSubmitClose(${esc(JSON.stringify(String(no??'')))})">Close NCR</button>`,
+    reopen:`<div class="mrow"><label>Reason for Reopening</label><textarea id="ncrActInput"></textarea></div><button class="mbtn primary" onclick="ncrSubmitReopen(${esc(JSON.stringify(String(no??'')))})">Reopen NCR</button>`
   };
   area.innerHTML=`<div class="panel" style="background:var(--lift-02);">${forms[action]||''}<div class="mformerr show" id="ncrActErr" style="display:none;"></div></div>`;
 }
@@ -2034,7 +2034,7 @@ function renderHolds(data){
         <td>${badge(h.severity,genericLabel(h.severity))}</td>
         <td>${esc((h.appliedDate||'').slice(0,10)||'N/A')}<br><small>${esc(h.appliedBy||'N/A')}</small></td>
         <td>${badge(h.status,genericLabel(h.status))}${live?'':`<br><small>${esc((h.releaseDate||'').slice(0,10)||'N/A')}</small>`}</td>
-        <td>${live?`<button class="fbtn" style="padding:4px 8px;" onclick="openHoldReleaseModal('${esc(h.no)}')" data-i="release_hold">Release</button>`:''}</td>
+        <td>${live?`<button class="fbtn" style="padding:4px 8px;" onclick="openHoldReleaseModal(${esc(JSON.stringify(String(h.no??'')))})" data-i="release_hold">Release</button>`:''}</td>
       </tr>`;
     }).join('')||'<tr class="emptyrow"><td colspan="7" data-i="holds_none">No quality holds match these filters</td></tr>';
 }
