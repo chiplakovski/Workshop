@@ -166,6 +166,40 @@ async function main() {
       'and what nobody entered is not in the register either');
     step('Suppliers: a merchant goes in from the form, and nothing else goes in with them');
 
+    // ── An org number, looked up at Bolagsverket through this server ─────────────────────────
+    {
+      const { startFakeBolagsverket } = require('./helpers/fake-bolagsverket');
+      const fake = await startFakeBolagsverket();
+      Object.assign(process.env, fake.env);
+      try {
+        await page.evaluate(() => {
+          openModal('supplier');
+          document.getElementById('supplierOrg').value = '5560125790';
+          document.getElementById('supplierCity').value = 'Lund';
+          checkSupplierOrg();
+        });
+        await page.waitForFunction(() => document.getElementById('supplierName').value !== '', null, { timeout: 8000 });
+        const filled = await page.evaluate(() => ({
+          name: document.getElementById('supplierName').value,
+          address: document.getElementById('supplierAddress').value,
+          city: document.getElementById('supplierCity').value,
+          vat: document.getElementById('supplierVat').value,
+          said: document.getElementById('supplierOrgStatus').textContent
+        }));
+        assert.equal(filled.name, 'Testa Stål Aktiebolag');
+        assert.equal(filled.address, 'Industrigatan 4, 21120 MALMÖ');
+        assert.equal(filled.city, 'Lund', 'a field somebody had already typed is left as they typed it');
+        assert.equal(filled.vat, 'SE556012579001');
+        assert.match(filled.said, /Bolagsverket: Testa Stål Aktiebolag \(Aktiebolag\) — filled in what was empty/);
+        await page.evaluate(() => closeModal());
+        step('Suppliers: an org number fills the firm\'s registered name and address from Bolagsverket, and only where empty');
+      } finally {
+        for (const k of Object.keys(fake.env)) delete process.env[k];
+        require('../backend/company-lookup').forgetToken();
+        await fake.close();
+      }
+    }
+
     // ── The rest of the record, and the subset rule ──────────────────────────────────────────
     //
     // Polled, because the screen's own re-read is what puts the merchant in its register — the form

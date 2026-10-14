@@ -122,6 +122,14 @@ anything buildpack-based works it out without being told. What is left to type i
 `VARMAK_SETUP_CODE` — any phrase of 16 characters or more that only you know, asked for once to make
 the first administrator. Without it set, nobody can make one through the server at all.
 
+Optional: `BOLAGSVERKET_CLIENT_ID` and `BOLAGSVERKET_CLIENT_SECRET`, the two keys Bolagsverket sends after
+a free customer registration (kundanmälan) for its "värdefulla datamängder" API. With them, checking an
+org number on a supplier or customer also fills the empty name and address fields from the register,
+through this server (`backend/company-lookup.js`); the keys never reach a page. If the addresses in
+Bolagsverket's own instructions differ from the defaults in that file, set `BOLAGSVERKET_TOKEN_URL` and
+`BOLAGSVERKET_API_URL` too. This was built against the published description and a stand-in, not the
+live register — the first real lookup is the test of the field names.
+
 None of them sets `HOST`, deliberately: the server defaults to `0.0.0.0`, which is what a platform
 router needs, and the `HOST=127.0.0.1` in `deploy/varmak.env.example` is right only on a machine with
 Caddy in front of it. Copied onto a platform it produces a server nobody can reach and a log that says

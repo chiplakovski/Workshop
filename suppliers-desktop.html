@@ -117,7 +117,7 @@ const T={
     supplier_list:"Supplier list",total_label:"Total",list_search_label:"Search supplier list",f_all:"All",
     status_active:"Active",status_preferred:"Preferred",status_inactive:"Inactive",status_activesupplier_label:"Active Supplier",
     showing:"Showing {n} of {m}",empty_search:"No suppliers match this search.",
-    edit_supplier:"✎ Edit Supplier",more_btn:"More ⋮",code_supplier:"Supplier Code",code_vat:"VAT Number",code_org:"Org. number",field_org:"Org. number",field_address:"Address",field_city:"City",field_website:"Website",field_payment_hint:"e.g. 30 days",org_check:"Check number",org_need:"Enter an organisation number first.",org_length:"An organisation number has 10 digits (XXXXXX-XXXX).",org_checksum:"That number does not add up — a digit is probably mistyped.",org_ok:"The number is valid.",org_vat:"VAT number filled in: {vat} (if the firm is VAT-registered).",org_open:"Look it up on allabolag.se",code_currency:"Currency",
+    edit_supplier:"✎ Edit Supplier",more_btn:"More ⋮",code_supplier:"Supplier Code",code_vat:"VAT Number",bv_found:"Bolagsverket: {name} ({form}) — filled in what was empty.",bv_inactive:"Bolagsverket lists this firm as no longer active.",bv_notfound:"Bolagsverket has no firm with that number.",bv_failed:"Bolagsverket could not be asked: {why}",code_org:"Org. number",field_org:"Org. number",field_address:"Address",field_city:"City",field_website:"Website",field_payment_hint:"e.g. 30 days",org_check:"Check number",org_need:"Enter an organisation number first.",org_length:"An organisation number has 10 digits (XXXXXX-XXXX).",org_checksum:"That number does not add up — a digit is probably mistyped.",org_ok:"The number is valid.",org_vat:"VAT number filled in: {vat} (if the firm is VAT-registered).",org_open:"Look it up on allabolag.se",code_currency:"Currency",
     tab_overview:"overview",tab_contacts:"contacts",tab_items:"items",tab_po:"purchase orders",tab_deliveries:"deliveries",tab_invoices:"invoices",tab_performance:"performance",tab_ncr:"quality / NCR",tab_documents:"documents",tab_notes:"notes",
     metric_delivery:"On-Time Delivery",metric_quality:"Quality Rating",metric_spend:"Total Spend (YTD)",metric_openpos:"Open POs",metric_overdue:"Overdue Deliveries",metric_payment:"Payment Terms",
     metric_target_delivery:"Target: ≥ 90%",metric_target_quality:"Target: ≥ 4.0",metric_vslastyear:"vs Last Year ",metric_value_prefix:"Value: ",metric_frominvoice:"From Invoice Date",
@@ -156,7 +156,7 @@ const T={
     supplier_list:"Leverantörslista",total_label:"Totalt",list_search_label:"Sök i leverantörslistan",f_all:"Alla",
     status_active:"Aktiv",status_preferred:"Föredragen",status_inactive:"Inaktiv",status_activesupplier_label:"Aktiv leverantör",
     showing:"Visar {n} av {m}",empty_search:"Inga leverantörer matchar sökningen.",
-    edit_supplier:"✎ Redigera leverantör",more_btn:"Mer ⋮",code_supplier:"Leverantörskod",code_vat:"Momsregistreringsnr",code_org:"Org.nr",field_org:"Org.nr",field_address:"Adress",field_city:"Ort",field_website:"Webbplats",field_payment_hint:"t.ex. 30 dagar",org_check:"Kontrollera nummer",org_need:"Ange ett organisationsnummer först.",org_length:"Ett organisationsnummer har 10 siffror (XXXXXX-XXXX).",org_checksum:"Numret stämmer inte — troligen är en siffra felskriven.",org_ok:"Numret är giltigt.",org_vat:"Momsnummer ifyllt: {vat} (om företaget är momsregistrerat).",org_open:"Slå upp på allabolag.se",code_currency:"Valuta",
+    edit_supplier:"✎ Redigera leverantör",more_btn:"Mer ⋮",code_supplier:"Leverantörskod",code_vat:"Momsregistreringsnr",bv_found:"Bolagsverket: {name} ({form}) — tomma fält ifyllda.",bv_inactive:"Bolagsverket anger att företaget inte längre är verksamt.",bv_notfound:"Bolagsverket har inget företag med det numret.",bv_failed:"Bolagsverket kunde inte tillfrågas: {why}",code_org:"Org.nr",field_org:"Org.nr",field_address:"Adress",field_city:"Ort",field_website:"Webbplats",field_payment_hint:"t.ex. 30 dagar",org_check:"Kontrollera nummer",org_need:"Ange ett organisationsnummer först.",org_length:"Ett organisationsnummer har 10 siffror (XXXXXX-XXXX).",org_checksum:"Numret stämmer inte — troligen är en siffra felskriven.",org_ok:"Numret är giltigt.",org_vat:"Momsnummer ifyllt: {vat} (om företaget är momsregistrerat).",org_open:"Slå upp på allabolag.se",code_currency:"Valuta",
     tab_overview:"översikt",tab_contacts:"kontakter",tab_items:"artiklar",tab_po:"inköpsordrar",tab_deliveries:"leveranser",tab_invoices:"fakturor",tab_performance:"prestanda",tab_ncr:"kvalitet / NCR",tab_documents:"dokument",tab_notes:"anteckningar",
     metric_delivery:"Leverans i tid",metric_quality:"Kvalitetsbetyg",metric_spend:"Total kostnad (i år)",metric_openpos:"Öppna inköpsordrar",metric_overdue:"Försenade leveranser",metric_payment:"Betalningsvillkor",
     metric_target_delivery:"Mål: ≥ 90%",metric_target_quality:"Mål: ≥ 4,0",metric_vslastyear:"Jämfört med förra året ",metric_value_prefix:"Värde: ",metric_frominvoice:"Från fakturadatum",
@@ -195,7 +195,7 @@ const T={
     supplier_list:"Листа на добавувачи",total_label:"Вкупно",list_search_label:"Пребарај во листата на добавувачи",f_all:"Сите",
     status_active:"Активен",status_preferred:"Префериран",status_inactive:"Неактивен",status_activesupplier_label:"Активен добавувач",
     showing:"Прикажани {n} од {m}",empty_search:"Нема добавувачи што одговараат на барењето.",
-    edit_supplier:"✎ Уреди добавувач",more_btn:"Повеќе ⋮",code_supplier:"Шифра на добавувач",code_vat:"ДДВ број",code_org:"Орг. број",field_org:"Орг. број",field_address:"Адреса",field_city:"Град",field_website:"Веб-страница",field_payment_hint:"пр. 30 дена",org_check:"Провери број",org_need:"Прво внесете организационен број.",org_length:"Организациониот број има 10 цифри (XXXXXX-XXXX).",org_checksum:"Бројот не е точен — веројатно е погрешно отчукана цифра.",org_ok:"Бројот е точен.",org_vat:"ДДВ-бројот е пополнет: {vat} (ако фирмата е регистрирана за ДДВ).",org_open:"Провери на allabolag.se",code_currency:"Валута",
+    edit_supplier:"✎ Уреди добавувач",more_btn:"Повеќе ⋮",code_supplier:"Шифра на добавувач",code_vat:"ДДВ број",bv_found:"Болагсверкет: {name} ({form}) — празните полиња се пополнети.",bv_inactive:"Болагсверкет ја води оваа фирма како неактивна.",bv_notfound:"Болагсверкет нема фирма со тој број.",bv_failed:"Болагсверкет не можеше да се праша: {why}",code_org:"Орг. број",field_org:"Орг. број",field_address:"Адреса",field_city:"Град",field_website:"Веб-страница",field_payment_hint:"пр. 30 дена",org_check:"Провери број",org_need:"Прво внесете организационен број.",org_length:"Организациониот број има 10 цифри (XXXXXX-XXXX).",org_checksum:"Бројот не е точен — веројатно е погрешно отчукана цифра.",org_ok:"Бројот е точен.",org_vat:"ДДВ-бројот е пополнет: {vat} (ако фирмата е регистрирана за ДДВ).",org_open:"Провери на allabolag.se",code_currency:"Валута",
     tab_overview:"преглед",tab_contacts:"контакти",tab_items:"артикли",tab_po:"нарачки",tab_deliveries:"испораки",tab_invoices:"фактури",tab_performance:"перформанси",tab_ncr:"квалитет / NCR",tab_documents:"документи",tab_notes:"белешки",
     metric_delivery:"Навремена испорака",metric_quality:"Оценка за квалитет",metric_spend:"Вкупна потрошувачка (оваа година)",metric_openpos:"Отворени нарачки",metric_overdue:"Задоцнети испораки",metric_payment:"Услови за плаќање",
     metric_target_delivery:"Цел: ≥ 90%",metric_target_quality:"Цел: ≥ 4.0",metric_vslastyear:"Споредено со минатата година ",metric_value_prefix:"Вредност: ",metric_frominvoice:"Од датум на фактура",
@@ -438,8 +438,17 @@ function closeModal(){$('modal').classList.remove('show');$('modalForm').reset()
 // follows from it offered to an empty field. A link opens the register for the rest.
 function checkSupplierOrg(){
   const t=T[LANG];
-  return OrgNumber.checkInto($('supplierOrg'),$('supplierVat'),$('supplierOrgStatus'),{need:t.org_need,length:t.org_length,
+  const r=OrgNumber.checkInto($('supplierOrg'),$('supplierVat'),$('supplierOrgStatus'),{need:t.org_need,length:t.org_length,
     checksum:t.org_checksum,ok:t.org_ok,vat:t.org_vat,open:t.org_open});
+  // Signed in to a server with Bolagsverket credentials: the registered name and address, into the
+  // fields that are still empty.
+  const empty=id=>!String($(id).value||'').trim();
+  OrgNumber.lookupInto(r,$('supplierOrgStatus'),{found:t.bv_found,inactive:t.bv_inactive,notFound:t.bv_notfound,failed:t.bv_failed},d=>{
+    if(empty('supplierName'))$('supplierName').value=d.name;
+    if(empty('supplierAddress')&&d.address)$('supplierAddress').value=[d.address,[d.postcode,d.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    if(empty('supplierCity')&&d.city)$('supplierCity').value=d.city;
+  });
+  return r;
 }
 $('modalForm').onsubmit=async e=>{
   e.preventDefault();

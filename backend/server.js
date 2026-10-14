@@ -25,6 +25,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { Pool } = require('pg');
+const companyLookup = require('./company-lookup');
+const OrgNumber = require('../org-number.js');
 
 const PORT = Number(process.env.PORT || 8787);
 // Every interface by default, because the usual case is a container whose port is published. Behind a
@@ -501,6 +503,32 @@ async function handleRpc(req, res, name, body) {
 // The typefaces are the one exception, and they are named rather than allowed in general: the pages
 // ask fonts.googleapis.com for them, which is also a request that will never arrive in a steel hall
 // with no internet. Self-hosting them is a separate, better job.
+// A firm's registered name and address from Bolagsverket, for the supplier and customer forms. Behind a
+// session like every read — the lookup spends this firm's Bolagsverket quota and should not be open to
+// whoever finds the address — though it touches no table. The credentials stay here, on the server.
+async function handleLookup(req, res, given) {
+  const token = bearer(req);
+  if (!token) return send(res, 401, { refused: 'sign in first' });
+  const session = await asSignedIn(token, async () => ({ status: 200 }));
+  if (session.status !== 200) return send(res, session.status, session.body);
+  if (!companyLookup.configured()) {
+    return send(res, 501, { refused: 'the Bolagsverket lookup is not set up on this server' });
+  }
+  const checked = OrgNumber.check(given);
+  if (!checked.ok) return send(res, 400, { refused: 'that is not a valid Swedish organisation number' });
+  try {
+    const found = await companyLookup.lookup(checked.digits);
+    if (!found) return send(res, 404, { refused: 'Bolagsverket has no organisation with that number' });
+    return send(res, 200, found);
+  } catch (error) {
+    if (error.lookup) return send(res, 502, { refused: error.message });
+    if (error.name === 'TimeoutError' || error.name === 'AbortError' || error.cause) {
+      return send(res, 502, { refused: 'Bolagsverket could not be reached just now' });
+    }
+    throw error;
+  }
+}
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -559,6 +587,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && route.startsWith('/read/')) {
       return await handleRead(req, res, route.slice(6));
+    }
+    if (req.method === 'GET' && route.startsWith('/lookup/company/')) {
+      return await handleLookup(req, res, decodeURIComponent(route.slice(16)));
     }
     return send(res, 404, { refused: 'no such endpoint' });
   } catch (error) {

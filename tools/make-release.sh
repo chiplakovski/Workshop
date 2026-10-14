@@ -32,7 +32,7 @@ mkdir -p "$STAGE"
 git archive HEAD \
   $(git ls-files '*.html' '*.css' | grep -v /) \
   $(git ls-files '*.js' | grep -v /) \
-  backend/server.js \
+  backend/server.js backend/company-lookup.js \
   backend/schema.sql backend/auth.sql backend/api.sql backend/views.sql \
   backend/supabase-install.sql backend/supabase-password.sql backend/supabase-check.sql \
   backend/install.sh backend/preflight.sh backend/backup.sh \

@@ -78,7 +78,32 @@
     return r;
   }
 
-  const api = { check, digitsOf, lookupUrl, checkInto };
+  // And, when this page is signed in to a server that holds Bolagsverket credentials, the registered
+  // name and address for a number that passed the check. `fill` decides which fields take them — the
+  // pages only ever fill what is still empty, so nothing somebody typed is overwritten. A server
+  // without credentials says nothing at all: the check above is still the whole answer there.
+  // `words`: found ({name}, {form}), inactive, notFound, failed ({why}).
+  async function lookupInto(result, statusEl, words, fill) {
+    const server = root.WorkshopApi;
+    if (!result || !result.ok || !server || !server.lookupCompany || !server.signedIn()) return null;
+    const answer = await server.lookupCompany(result.digits);
+    if (answer.notSetUp) return null;
+    const line = statusEl.ownerDocument.createElement('span');
+    line.className = 'orglookup-found';
+    if (!answer.ok) {
+      line.textContent = ' ' + (answer.notFound ? words.notFound : String(words.failed || '').replace('{why}', answer.refused || ''));
+      statusEl.append(line);
+      return null;
+    }
+    const d = answer.data;
+    fill(d);
+    line.textContent = ' ' + String(words.found || '').replace('{name}', d.name).replace('{form}', d.legalForm || '')
+      + (d.registered === false ? ' ' + words.inactive : '');
+    statusEl.append(line);
+    return d;
+  }
+
+  const api = { check, digitsOf, lookupUrl, checkInto, lookupInto };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.OrgNumber = api;
 })(typeof window !== 'undefined' ? window : globalThis);

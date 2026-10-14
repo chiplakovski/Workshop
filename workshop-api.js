@@ -184,6 +184,17 @@
     return { ok: false, refused: result.body.refused || 'that did not go through' };
   }
 
+  // A firm's registered name and address from Bolagsverket, asked through this workshop's own server,
+  // which holds the credentials. `notSetUp` when the server has none, so a form can stay quiet about it.
+  async function lookupCompany(orgNo) {
+    const result = await request('GET', '/lookup/company/' + encodeURIComponent(String(orgNo || '')));
+    if (result.status === 200) return { ok: true, data: result.body };
+    if (unreachable(result)) return { ok: false, offline: true, refused: 'no connection to the workshop' };
+    if (result.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+    if (result.status === 501) return { ok: false, notSetUp: true, refused: result.body.refused };
+    return { ok: false, notFound: result.status === 404, refused: result.body.refused || 'the lookup did not go through' };
+  }
+
   root.WorkshopApi = {
     available: available,
     signedIn: function () { return !!readToken(); },
@@ -192,6 +203,7 @@
     snapshot: snapshot,
     read: read,
     call: call,
+    lookupCompany: lookupCompany,
     userId: userId,
     base: BASE
   };

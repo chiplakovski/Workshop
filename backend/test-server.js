@@ -741,6 +741,86 @@ async function heatsReachTheScreen(tokens, f) {
   step('Store over HTTP: each delivery keeps its heat, an issue names one, and the screen sees what is left of each');
 }
 
+// Bolagsverket, through the server, against a stand-in that answers the way the register is described.
+// The live service could not be reached from where this was written, so what is asserted here is the
+// part that is this system's: the credentials stay on the server, a session is needed, a bad number is
+// refused before anything is asked, a token is bought once and bought again when it stops working, and
+// the answer is read into the four fields a card needs.
+async function bolagsverketThroughTheServer(tokens) {
+  const http = require('node:http');
+  const lookup = require('./company-lookup');
+  const seen = { tokens: 0, asks: [], expireNext: false };
+  const fake = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      if (req.url === '/oauth2/token') {
+        const basic = Buffer.from('test-client:test-secret').toString('base64');
+        if (req.headers.authorization !== `Basic ${basic}` || !/grant_type=client_credentials/.test(raw)) {
+          res.writeHead(401); return res.end('{}');
+        }
+        seen.tokens += 1;
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ access_token: `tok-${seen.tokens}`, expires_in: 3600 }));
+      }
+      if (req.url === '/vdm/v1/organisationer') {
+        const auth = req.headers.authorization || '';
+        if (seen.expireNext && auth === 'Bearer tok-1') { seen.expireNext = false; res.writeHead(401); return res.end('{}'); }
+        const asked = JSON.parse(raw || '{}').identitetsbeteckning;
+        seen.asks.push(asked);
+        if (asked !== '5560125790') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end('{"organisationer":[]}'); }
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ organisationer: [{
+          organisationsidentitet: { identitetsbeteckning: '5560125790' },
+          organisationsnamn: { organisationsnamnLista: [{ namn: 'Testa Stål Aktiebolag', registreringsdatum: '1990-01-01' }] },
+          organisationsform: { kod: 'AB', klartext: 'Aktiebolag' },
+          postadressOrganisation: { postadress: { utdelningsadress: 'Industrigatan 4', postnummer: '21120', postort: 'MALMÖ' } },
+          verksamOrganisation: { kod: 'JA' }
+        }] }));
+      }
+      res.writeHead(404); res.end('{}');
+    });
+  });
+  await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
+  const at = `http://127.0.0.1:${fake.address().port}`;
+  const before = { ...process.env };
+  const ask = (orgNo, token = tokens.office) => call('GET', `/lookup/company/${orgNo}`, { token });
+  try {
+    delete process.env.BOLAGSVERKET_CLIENT_ID; delete process.env.BOLAGSVERKET_CLIENT_SECRET;
+    turnedAway('a lookup on a server with no Bolagsverket credentials', await ask('556012-5790'), 501, /not set up on this server/);
+    process.env.BOLAGSVERKET_CLIENT_ID = 'test-client';
+    process.env.BOLAGSVERKET_CLIENT_SECRET = 'test-secret';
+    process.env.BOLAGSVERKET_TOKEN_URL = `${at}/oauth2/token`;
+    process.env.BOLAGSVERKET_API_URL = `${at}/vdm/v1/`;
+    lookup.forgetToken();
+    turnedAway('a lookup with nobody signed in', await call('GET', '/lookup/company/556012-5790', {}), 401, /sign in first/);
+    turnedAway('a mistyped number', await ask('556012-5791'), 400, /not a valid Swedish organisation number/);
+    assert.equal(seen.asks.length, 0, 'a number that fails its check digit is not worth asking the register about');
+    const found = await ask('556012-5790');
+    attempts.allowed += 1;
+    assert.equal(found.status, 200, JSON.stringify(found.body));
+    assert.deepEqual(found.body, { orgNo: '556012-5790', name: 'Testa Stål Aktiebolag', address: 'Industrigatan 4',
+      postcode: '21120', city: 'MALMÖ', legalForm: 'Aktiebolag', registered: true, source: 'Bolagsverket' });
+    assert.ok(!JSON.stringify(found.body).includes('test-secret') && !JSON.stringify(found.body).includes('tok-'),
+      'nothing the server holds for Bolagsverket reaches the page');
+    turnedAway('a number the register does not know', await ask('811218-9876'), 404, /no organisation with that number/);
+    assert.equal(seen.tokens, 1, 'one token, kept and reused');
+    seen.expireNext = true;
+    assert.equal((await ask('5560125790')).status, 200, 'a token the register stopped honouring is bought again');
+    assert.equal(seen.tokens, 2);
+    process.env.BOLAGSVERKET_CLIENT_SECRET = 'not-the-secret';
+    lookup.forgetToken();
+    turnedAway('credentials the register refuses', await ask('5560125790'), 502, /did not accept this server's credentials/);
+    step('Bolagsverket over HTTP: behind a session, a bad number never asked, one token reused and renewed, the answer read into a card');
+  } finally {
+    for (const k of ['BOLAGSVERKET_CLIENT_ID', 'BOLAGSVERKET_CLIENT_SECRET', 'BOLAGSVERKET_TOKEN_URL', 'BOLAGSVERKET_API_URL']) {
+      if (before[k] === undefined) delete process.env[k]; else process.env[k] = before[k];
+    }
+    lookup.forgetToken();
+    await new Promise((resolve) => fake.close(resolve));
+  }
+}
+
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
@@ -1062,6 +1142,7 @@ async function main() {
     await aRefusalFromTheDatabaseReachesThePerson(tokens, f);
     await theMovementLogReachesTheScreen(tokens);
     await heatsReachTheScreen(tokens, f);
+    await bolagsverketThroughTheServer(tokens);
     await theQualityRegisterWorksOverHttp(tokens, f);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
     await theServerSurvivesBadRequests();

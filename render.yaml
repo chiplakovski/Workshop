@@ -22,6 +22,12 @@ services:
       # make the first administrator; without it nobody can, so finding the address is not enough.
       - key: VARMAK_SETUP_CODE
         sync: false
+      # Optional: the two keys Bolagsverket sends after a kundanmälan. With them, an org number typed on a
+      # supplier or customer fills in the firm's registered name and address. Without them, it does not.
+      - key: BOLAGSVERKET_CLIENT_ID
+        sync: false
+      - key: BOLAGSVERKET_CLIENT_SECRET
+        sync: false
       - key: NODE_VERSION
         value: "22"
       # Left unset deliberately: the server defaults to 0.0.0.0, which is what Render's router needs.
