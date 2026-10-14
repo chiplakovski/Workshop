@@ -106,6 +106,39 @@ CREATE TABLE app_user (
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The workshop's own letterhead
+--
+-- What goes at the top of an offer and an invoice basis: who is quoting, and how they are paid. One
+-- row, always — a second letterhead is a question nobody has asked, and a table that could hold two
+-- would let the print pick one. The address is the firm's own and is filled in; the registration and
+-- payment details are facts only the firm can supply, so they start empty and print nothing until
+-- somebody enters them, rather than a placeholder that could reach a customer.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE company_profile (
+  id          int PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  address     text,
+  postcode    text,
+  city        text,
+  country     text,
+  email       text,
+  phone       text,
+  website     text,
+  org_no      text CHECK (org_no IS NULL OR org_no ~ '^[0-9]{6}-[0-9]{4}$'),
+  vat_no      text CHECK (vat_no IS NULL OR vat_no ~ '^[A-Z]{2}[0-9A-Z]{2,13}$'),
+  f_skatt     boolean NOT NULL DEFAULT false,
+  bankgiro    text,
+  iban        text,
+  bic         text,
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  updated_by  text
+);
+
+INSERT INTO company_profile (name, address, postcode, city, country, email)
+VALUES ('Varmak AB', 'Lagmansgatan 31', '241 71', 'Marieholm', 'Sweden', 'info@varmak.se');
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Customers, projects, jobcards
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 

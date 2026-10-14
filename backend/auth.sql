@@ -488,7 +488,10 @@ GRANT SELECT ON
   -- A name, a role, an email and a telephone number. Nothing on this table could ever be a price,
   -- which is the test the comment above sets for being in this list — and a welder holding a drawing
   -- that is wrong needs to be able to ring somebody.
-  customer_contact
+  customer_contact,
+  -- The firm's own letterhead: its address, registration and the account it is paid into. All of it
+  -- is printed on every offer the firm sends, and none of it is a price.
+  company_profile
 TO varmak_workshop;
 
 -- project holds what the job was quoted at.
@@ -734,6 +737,11 @@ $$;
 -- The transition rulebook is reference data. Changing which status may follow which is a decision
 -- about how the workshop runs, not a day's work.
 CREATE POLICY admin_edits_the_rulebook ON allowed_transition FOR ALL
+  USING (is_admin()) WITH CHECK (is_admin());
+
+-- The letterhead is the admin's. Everyone signed in reads it — it is on every printed offer — and
+-- changing the firm's bank account is not a day's work for anybody else.
+CREATE POLICY admin_keeps_the_letterhead ON company_profile FOR ALL
   USING (is_admin()) WITH CHECK (is_admin());
 
 -- And now the tables where the two roles have different answers.

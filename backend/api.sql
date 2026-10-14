@@ -600,6 +600,52 @@ LANGUAGE sql STABLE AS $$
   ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;
 $$;
 
+-- The letterhead. An admin's job: it carries the firm's registration and the account it is paid into,
+-- and a wrong bank account on an offer is money sent somewhere else. Empty means "not given", and
+-- prints nothing, which is the point of keeping these as facts the firm enters rather than defaults.
+CREATE FUNCTION save_company(
+  p_name text, p_address text DEFAULT NULL, p_postcode text DEFAULT NULL, p_city text DEFAULT NULL,
+  p_country text DEFAULT NULL, p_email text DEFAULT NULL, p_phone text DEFAULT NULL,
+  p_website text DEFAULT NULL, p_org_no text DEFAULT NULL, p_vat_no text DEFAULT NULL,
+  p_f_skatt boolean DEFAULT false, p_bankgiro text DEFAULT NULL, p_iban text DEFAULT NULL,
+  p_bic text DEFAULT NULL
+) RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  org text := regexp_replace(coalesce(p_org_no, ''), '[^0-9]', '', 'g');
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'the letterhead is changed by an admin' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'the letterhead needs the firm''s name';
+  END IF;
+  IF org <> '' AND length(org) <> 10 THEN
+    RAISE EXCEPTION 'an organisation number has ten digits';
+  END IF;
+  UPDATE company_profile SET
+    name = btrim(p_name),
+    address = nullif(btrim(coalesce(p_address, '')), ''),
+    postcode = nullif(btrim(coalesce(p_postcode, '')), ''),
+    city = nullif(btrim(coalesce(p_city, '')), ''),
+    country = nullif(btrim(coalesce(p_country, '')), ''),
+    email = nullif(lower(btrim(coalesce(p_email, ''))), ''),
+    phone = nullif(btrim(coalesce(p_phone, '')), ''),
+    website = nullif(btrim(coalesce(p_website, '')), ''),
+    org_no = CASE WHEN org = '' THEN NULL ELSE substr(org, 1, 6) || '-' || substr(org, 7) END,
+    vat_no = nullif(upper(regexp_replace(coalesce(p_vat_no, ''), '\s', '', 'g')), ''),
+    f_skatt = coalesce(p_f_skatt, false),
+    bankgiro = nullif(btrim(coalesce(p_bankgiro, '')), ''),
+    iban = nullif(upper(regexp_replace(coalesce(p_iban, ''), '\s', '', 'g')), ''),
+    bic = nullif(upper(btrim(coalesce(p_bic, ''))), ''),
+    updated_at = now(),
+    updated_by = current_app_name()
+  WHERE id = 1;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('company_profile', 1, 'updated', current_app_name(), 'letterhead');
+END;
+$$;
+
 -- The same grant-and-revoke as auth.sql does around its ownership changes, and for the same reason:
 -- Postgres requires the incoming owner to hold CREATE on the schema, and on PostgreSQL 15 and later
 -- `public` does not grant that to everybody. See the long note there.
@@ -616,6 +662,7 @@ REVOKE ALL ON FUNCTION change_my_password(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_active(bigint, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_role(bigint, user_role) FROM PUBLIC;
 REVOKE ALL ON FUNCTION people() FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_company(text, text, text, text, text, text, text, text, text, text, boolean, text, text, text) FROM PUBLIC;
 
 -- The bootstrap is callable without a session, because there is nobody to sign in as yet. It is the
 -- only function in the system like that, and it refuses the moment the table has anybody in it.
@@ -1238,7 +1285,8 @@ REVOKE ALL ON FUNCTION add_welding_note(text, bigint, text) FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION bootstrap_first_admin(text, text, text) TO varmak_api;
 GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigint, text),
-  set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role)
+  set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role),
+  save_company(text, text, text, text, text, text, text, text, text, text, boolean, text, text, text)
 TO varmak_admin;
 GRANT EXECUTE ON FUNCTION change_my_password(text, text), people()
 TO varmak_admin, varmak_office, varmak_workshop;

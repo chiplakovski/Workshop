@@ -608,6 +608,7 @@
     if(!data||typeof data!=='object')throw new Error('adoptSnapshot needs a snapshot');
     const fresh=emptyState();
     SERVED_COLLECTIONS.forEach(name=>{if(Array.isArray(data[name]))fresh[name]=data[name];});
+    if(data.company&&typeof data.company==='object')fresh.company=data.company;
     state=fresh;
     takenFor={by:data.takenBy||null,role:data.takenRole||null,byId:data.takenById||null};
     // On the state too, so a page reading WorkshopData.get() has them without a second call. The names
@@ -622,6 +623,8 @@
   function servedCollections(){return SERVED_COLLECTIONS.slice()}
 
   const ACTIVITY_KEPT=1000;
+  const COMPANY_DEFAULT={name:'Varmak AB',address:'Lagmansgatan 31',postcode:'241 71',city:'Marieholm',country:'Sweden',
+    email:'info@varmak.se',phone:'',website:'',orgNo:'',vat:'',fSkatt:false,bankgiro:'',iban:'',bic:''};
   function save(reason){
     // Refused rather than quietly written to browser storage. A page in server-backed mode that
     // still called a mutator here would put the record in a place the server never sees and the next
@@ -1267,6 +1270,39 @@
     listProjects:()=>clone(state.projects),
     getProjects:()=>clone(state.projects),
     findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    // The firm's own letterhead. The address is Varmak's and is filled in; the registration and payment
+    // details are facts only the firm can give, so they start empty and print nothing until entered.
+    getCompany(){
+      const given=state.company||{};const out=Object.assign({},COMPANY_DEFAULT);
+      Object.keys(COMPANY_DEFAULT).forEach(k=>{if(given[k]!==undefined&&given[k]!==null)out[k]=given[k];});
+      out.fSkatt=!!out.fSkatt;return out;
+    },
+    setCompany(patch){
+      const next=Object.assign(api.getCompany(),clone(patch||{}));
+      next.name=String(next.name||'').trim();if(!next.name)return{error:'The letterhead needs the firm\'s name'};
+      const org=String(next.orgNo||'').replace(/[^0-9]/g,'');
+      if(org&&org.length!==10)return{error:'An organisation number has ten digits'};
+      next.orgNo=org?`${org.slice(0,6)}-${org.slice(6)}`:'';
+      next.vat=String(next.vat||'').replace(/\s/g,'').toUpperCase();
+      next.iban=String(next.iban||'').replace(/\s/g,'').toUpperCase();
+      next.bic=String(next.bic||'').trim().toUpperCase();
+      next.fSkatt=!!next.fSkatt;
+      Object.keys(COMPANY_DEFAULT).forEach(k=>{if(typeof next[k]==='string')next[k]=next[k].trim();});
+      state.company=next;save('Company details updated');return clone(next);
+    },
+    // The lines a printed page puts under the firm's name. Labels in Swedish whatever the screen's
+    // language: "Godkänd för F-skatt" is the wording Swedish law expects on an invoice, and the rest sit
+    // beside it. A part nobody entered is left out, never printed as a blank or a placeholder.
+    companyLetterhead(){
+      const c=api.getCompany();
+      const place=[c.postcode,c.city].filter(Boolean).join(' ');
+      return{
+        name:c.name,
+        address:[c.address,place,c.email,c.phone].filter(Boolean).join(' · '),
+        registration:[c.orgNo&&`Org.nr ${c.orgNo}`,c.vat&&`Momsreg.nr ${c.vat}`,c.fSkatt&&'Godkänd för F-skatt'].filter(Boolean).join(' · '),
+        payment:[c.bankgiro&&`Bankgiro ${c.bankgiro}`,c.iban&&`IBAN ${c.iban}`,c.bic&&`BIC ${c.bic}`].filter(Boolean).join(' · ')
+      };
+    },
     // One person's hours on one day, across every entry. A single entry was capped at nothing here, and
     // several entries were never added up at all: 10 + 10 + 8 on one day went through.
     hoursOnDay(worker,date){

@@ -252,6 +252,22 @@ async function main() {
       'none', 'the old password must stop working the moment it is changed');
     step('Access: and with it, the old one stops working in the same moment');
 
+    // ── The letterhead ──────────────────────────────────────────────────────────────────────
+    await page.waitForSelector('#companyPanel:not([hidden])', { timeout: 5000 });
+    assert.equal(await page.locator('#companyLocal').isVisible(), false,
+      'online, the note about this browser keeping the details is not true and is not shown');
+    assert.equal(await page.locator('#cName').inputValue(), 'Varmak AB');
+    await page.locator('#cOrg').fill('5560125790');
+    await page.locator('#cOrgCheck').click();
+    assert.equal(await page.locator('#cVat').inputValue(), 'SE556012579001');
+    await page.locator('#cBankgiro').fill('123-4567');
+    await page.locator('#cFskatt').selectOption('yes');
+    await page.locator('#companyForm button[type="submit"]').click();
+    await page.waitForSelector('#companySaid.done', { timeout: 5000 });
+    assert.equal(value(`SELECT org_no || ' ' || vat_no || ' ' || bankgiro || ' ' || f_skatt || ' ' || updated_by FROM company_profile;`),
+      '556012-5790 SE556012579001 123-4567 true Test Office');
+    step('Access: the administrator keeps the letterhead from this screen, and it is the database\'s');
+
     // ── The same screen, as a welder ────────────────────────────────────────────────────────
     const floor = await browser.newContext({ viewport: { width: 390, height: 800 } });
     const tablet = await floor.newPage();
@@ -277,6 +293,8 @@ async function main() {
       'nor any of the buttons that only an admin may press');
     assert.equal(await tablet.locator('#mePanel').isVisible(), true,
       'their own password is still theirs to change');
+    assert.equal(await tablet.locator('#companyPanel').isVisible(), false,
+      'a welder is not offered the letterhead form, which the database would refuse');
     step('Access: a welder on the same screen sees one row — their own — and none of the admin buttons');
 
     // Not one hash reaches any of it, in either shape.

@@ -104,7 +104,8 @@ const ALL_TABLES = [
 // Reference data, shipped by schema.sql rather than written by whoever is using the system. These
 // must survive the reset — truncating the transition table would let every transition through and
 // the tests for it would pass on an empty rulebook.
-const REFERENCE_TABLES = ['allowed_transition'];
+// The letterhead is one row the schema puts there and no test writes to — reference data, like the rulebook.
+const REFERENCE_TABLES = ['allowed_transition', 'company_profile'];
 
 function everyTableIsAccountedFor() {
   const inDatabase = sql(`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY 1;`)

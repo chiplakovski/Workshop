@@ -157,6 +157,39 @@ CREATE TABLE app_user (
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The workshop's own letterhead
+--
+-- What goes at the top of an offer and an invoice basis: who is quoting, and how they are paid. One
+-- row, always — a second letterhead is a question nobody has asked, and a table that could hold two
+-- would let the print pick one. The address is the firm's own and is filled in; the registration and
+-- payment details are facts only the firm can supply, so they start empty and print nothing until
+-- somebody enters them, rather than a placeholder that could reach a customer.
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE company_profile (
+  id          int PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  name        text NOT NULL CHECK (btrim(name) <> ''),
+  address     text,
+  postcode    text,
+  city        text,
+  country     text,
+  email       text,
+  phone       text,
+  website     text,
+  org_no      text CHECK (org_no IS NULL OR org_no ~ '^[0-9]{6}-[0-9]{4}$'),
+  vat_no      text CHECK (vat_no IS NULL OR vat_no ~ '^[A-Z]{2}[0-9A-Z]{2,13}$'),
+  f_skatt     boolean NOT NULL DEFAULT false,
+  bankgiro    text,
+  iban        text,
+  bic         text,
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  updated_by  text
+);
+
+INSERT INTO company_profile (name, address, postcode, city, country, email)
+VALUES ('Varmak AB', 'Lagmansgatan 31', '241 71', 'Marieholm', 'Sweden', 'info@varmak.se');
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Customers, projects, jobcards
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -2741,7 +2774,10 @@ GRANT SELECT ON
   -- A name, a role, an email and a telephone number. Nothing on this table could ever be a price,
   -- which is the test the comment above sets for being in this list — and a welder holding a drawing
   -- that is wrong needs to be able to ring somebody.
-  customer_contact
+  customer_contact,
+  -- The firm's own letterhead: its address, registration and the account it is paid into. All of it
+  -- is printed on every offer the firm sends, and none of it is a price.
+  company_profile
 TO varmak_workshop;
 
 -- project holds what the job was quoted at.
@@ -2987,6 +3023,11 @@ $$;
 -- The transition rulebook is reference data. Changing which status may follow which is a decision
 -- about how the workshop runs, not a day's work.
 CREATE POLICY admin_edits_the_rulebook ON allowed_transition FOR ALL
+  USING (is_admin()) WITH CHECK (is_admin());
+
+-- The letterhead is the admin's. Everyone signed in reads it — it is on every printed offer — and
+-- changing the firm's bank account is not a day's work for anybody else.
+CREATE POLICY admin_keeps_the_letterhead ON company_profile FOR ALL
   USING (is_admin()) WITH CHECK (is_admin());
 
 -- And now the tables where the two roles have different answers.
@@ -3954,6 +3995,52 @@ LANGUAGE sql STABLE AS $$
   ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;
 $$;
 
+-- The letterhead. An admin's job: it carries the firm's registration and the account it is paid into,
+-- and a wrong bank account on an offer is money sent somewhere else. Empty means "not given", and
+-- prints nothing, which is the point of keeping these as facts the firm enters rather than defaults.
+CREATE FUNCTION save_company(
+  p_name text, p_address text DEFAULT NULL, p_postcode text DEFAULT NULL, p_city text DEFAULT NULL,
+  p_country text DEFAULT NULL, p_email text DEFAULT NULL, p_phone text DEFAULT NULL,
+  p_website text DEFAULT NULL, p_org_no text DEFAULT NULL, p_vat_no text DEFAULT NULL,
+  p_f_skatt boolean DEFAULT false, p_bankgiro text DEFAULT NULL, p_iban text DEFAULT NULL,
+  p_bic text DEFAULT NULL
+) RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  org text := regexp_replace(coalesce(p_org_no, ''), '[^0-9]', '', 'g');
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'the letterhead is changed by an admin' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF coalesce(btrim(p_name), '') = '' THEN
+    RAISE EXCEPTION 'the letterhead needs the firm''s name';
+  END IF;
+  IF org <> '' AND length(org) <> 10 THEN
+    RAISE EXCEPTION 'an organisation number has ten digits';
+  END IF;
+  UPDATE company_profile SET
+    name = btrim(p_name),
+    address = nullif(btrim(coalesce(p_address, '')), ''),
+    postcode = nullif(btrim(coalesce(p_postcode, '')), ''),
+    city = nullif(btrim(coalesce(p_city, '')), ''),
+    country = nullif(btrim(coalesce(p_country, '')), ''),
+    email = nullif(lower(btrim(coalesce(p_email, ''))), ''),
+    phone = nullif(btrim(coalesce(p_phone, '')), ''),
+    website = nullif(btrim(coalesce(p_website, '')), ''),
+    org_no = CASE WHEN org = '' THEN NULL ELSE substr(org, 1, 6) || '-' || substr(org, 7) END,
+    vat_no = nullif(upper(regexp_replace(coalesce(p_vat_no, ''), '\s', '', 'g')), ''),
+    f_skatt = coalesce(p_f_skatt, false),
+    bankgiro = nullif(btrim(coalesce(p_bankgiro, '')), ''),
+    iban = nullif(upper(regexp_replace(coalesce(p_iban, ''), '\s', '', 'g')), ''),
+    bic = nullif(upper(btrim(coalesce(p_bic, ''))), ''),
+    updated_at = now(),
+    updated_by = current_app_name()
+  WHERE id = 1;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('company_profile', 1, 'updated', current_app_name(), 'letterhead');
+END;
+$$;
+
 -- The same grant-and-revoke as auth.sql does around its ownership changes, and for the same reason:
 -- Postgres requires the incoming owner to hold CREATE on the schema, and on PostgreSQL 15 and later
 -- `public` does not grant that to everybody. See the long note there.
@@ -3970,6 +4057,7 @@ REVOKE ALL ON FUNCTION change_my_password(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_active(bigint, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_role(bigint, user_role) FROM PUBLIC;
 REVOKE ALL ON FUNCTION people() FROM PUBLIC;
+REVOKE ALL ON FUNCTION save_company(text, text, text, text, text, text, text, text, text, text, boolean, text, text, text) FROM PUBLIC;
 
 -- The bootstrap is callable without a session, because there is nobody to sign in as yet. It is the
 -- only function in the system like that, and it refuses the moment the table has anybody in it.
@@ -4592,7 +4680,8 @@ REVOKE ALL ON FUNCTION add_welding_note(text, bigint, text) FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION bootstrap_first_admin(text, text, text) TO varmak_api;
 GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigint, text),
-  set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role)
+  set_person_password(bigint, text), set_person_active(bigint, boolean), set_person_role(bigint, user_role),
+  save_company(text, text, text, text, text, text, text, text, text, text, boolean, text, text, text)
 TO varmak_admin;
 GRANT EXECUTE ON FUNCTION change_my_password(text, text), people()
 TO varmak_admin, varmak_office, varmak_workshop;
@@ -7283,6 +7372,14 @@ LANGUAGE sql STABLE AS $$
     -- is not a cosmetic problem: the badge is the only thing on that screen that says whose session
     -- this is, and it was saying somebody else's. The role comes from the session like the name does.
     'takenRole', current_app_role()::text,
+
+    -- The letterhead every printed offer and invoice basis carries. Read by everyone signed in, because
+    -- a welder printing a jobcard prints it too; changed only through save_company, by an admin.
+    'company', (SELECT jsonb_build_object(
+        'name', c.name, 'address', c.address, 'postcode', c.postcode, 'city', c.city,
+        'country', c.country, 'email', c.email, 'phone', c.phone, 'website', c.website,
+        'orgNo', c.org_no, 'vat', c.vat_no, 'fSkatt', c.f_skatt, 'bankgiro', c.bankgiro,
+        'iban', c.iban, 'bic', c.bic) FROM company_profile c WHERE c.id = 1),
 
     -- The people this workshop has. Six screens offered a "Responsible", "Owner" or "Estimator"
     -- dropdown whose three options were invented names written into the page, so on the first day

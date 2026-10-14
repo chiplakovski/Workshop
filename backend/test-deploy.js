@@ -170,11 +170,11 @@ async function main() {
   assert.match(said, /varmak_api can sign in/,
     `install.sh has to prove the server's own role can connect: ${said}`);
   assert.equal(value(`SELECT count(*) FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '41');
-  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '94');
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '42');
+  assert.equal(value(`SELECT count(*) FROM pg_policies WHERE schemaname = 'public';`), '96');
   assert.equal(value(`SELECT string_agg(rolname, ',' ORDER BY rolname) FROM pg_roles
     WHERE rolname LIKE 'varmak%';`), 'varmak_admin,varmak_api,varmak_engine,varmak_office,varmak_workshop');
-  step('Deploy: all four files install as a non-superuser owner — 41 tables, 94 policies, five roles');
+  step('Deploy: all four files install as a non-superuser owner — 42 tables, 96 policies, five roles');
 
   // The attributes, because an install that finishes with the wrong ones is the failure that looks
   // like success. varmak_api holding BYPASSRLS would make every policy above decoration.
@@ -471,7 +471,7 @@ async function main() {
         'and send them to the step they have actually reached rather than leaving them stuck');
       assert.doesNotMatch(twice.said, /seq_customer/,
         'and not by letting CREATE SEQUENCE do the explaining 48 lines in');
-      assert.equal(tables(`${DB}_editor`), '41', 'and leave the working install exactly as it was');
+      assert.equal(tables(`${DB}_editor`), '42', 'and leave the working install exactly as it was');
 
       emptyProject(`${DB}_probe`);
       psql(as('deploy_owner', OWNER, `${DB}_probe`), ['-c', 'CREATE SEQUENCE seq_customer;']);
@@ -524,10 +524,10 @@ async function main() {
         ['-f', path.join(__dirname, 'supabase-check.sql')]);
 
       const onInstalled = report(`${DB}_editor`);
-      assert.match(onInstalled, /Табели \/ Tables\|41\|во ред \/ ok/,
+      assert.match(onInstalled, /Табели \/ Tables\|42\|во ред \/ ok/,
         `the installed database has to read back as installed: ${onInstalled}`);
       assert.match(onInstalled, /no row security\|0\|во ред \/ ok/);
-      assert.match(onInstalled, /Rules about who may read what\|94\|во ред \/ ok/);
+      assert.match(onInstalled, /Rules about who may read what\|96\|во ред \/ ok/);
       assert.match(onInstalled, /varmak_admin, varmak_api, varmak_engine, varmak_office, varmak_workshop\|во ред/);
       assert.match(onInstalled, /Next step\|\|Залепи supabase-password\.sql/,
         'and point at the next thing to paste, which is the only thing left to do in the database');
@@ -620,7 +620,7 @@ async function main() {
       assert.match(twiceOver, /seq_customer" already exists/,
         `and this is the unhelpful message the Supabase path exists to replace: ${twiceOver.slice(-200)}`);
       assert.equal(value(`SELECT count(*) FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '41',
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`), '42',
         'and it has to leave the install it refused to repeat exactly as it was');
       const deploy = fs.readFileSync(path.join(__dirname, '..', 'DEPLOY.md'), 'utf8');
       assert.doesNotMatch(deploy, /`install\.sh` is safe to run again/,

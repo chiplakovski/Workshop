@@ -1544,6 +1544,18 @@ function pushHistory(e,action,by,at){
 // Scoped deliberately to a single item: this is the sheet you hand someone to check or approve one
 // piece of work, not the customer-facing offer for the whole estimate.
 function itemSheetRows(wi){return (wi.lines||[]).slice();}
+// The firm's name, address and registration at the top of anything printed, and how it is paid at the
+// foot of the offer — all from the letterhead the admin keeps, so a new bank account is changed once.
+function letterheadHtml(){
+  const L=WorkshopData.companyLetterhead();
+  return `<h1 style="font-family:sans-serif;">${esc(L.name)}</h1>
+    <p style="font-family:sans-serif;color:#555;">${esc(L.address)}</p>${L.registration?`
+    <p style="font-family:sans-serif;color:#555;margin-top:-8px;">${esc(L.registration)}</p>`:''}`;
+}
+function letterheadFootHtml(){
+  const L=WorkshopData.companyLetterhead(),parts=[L.name,L.registration,L.payment].filter(Boolean);
+  return `<p style="font-family:sans-serif;color:#555;font-size:11px;margin-top:26px;border-top:1px solid #ccc;padding-top:6px;">${esc(parts.join(' · '))}</p>`;
+}
 function printItem(id,idx){
   const e=getEst(id),wi=getWorkItem(e,idx);if(!e||!wi)return;
   const t=T[LANG],c=CUSTOMERS[e.customerId],ref=itemRef(e,wi.seq||idx+1),rows=itemSheetRows(wi);
@@ -1553,8 +1565,7 @@ function printItem(id,idx){
   const lockLine=isItemLocked(wi)
     ? `<p style="font-family:sans-serif;color:#555;">${esc(t.pr_locked)} ${esc(wi.lock.by)} · ${esc(wi.lock.at)}</p>` : '';
   $("printSheet").innerHTML=`
-    <h1 style="font-family:sans-serif;">Varmak AB</h1>
-    <p style="font-family:sans-serif;color:#555;">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</p>
+    ${letterheadHtml()}
     <h2 style="font-family:sans-serif;margin-top:14px;">${esc(t.pr_itemsheet)} ${esc(ref)}</h2>
     <p style="font-family:sans-serif;"><b>${esc(wi.desc)}</b></p>
     <p style="font-family:sans-serif;color:#555;">${esc(e.projectNo||e.no)} · ${esc(c.name)} · ${esc(todayISO())}</p>
@@ -2335,7 +2346,7 @@ function emailOffer(id){
     `${t.ps_total}: ${fmt0(tot.grandTotal)}`,
     `${t.ei_valid}: ${e.validUntil}`,
     '',t.offer_email_attach,'',
-    'Varmak AB · Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se'].join('\n');
+    ...(()=>{const L=WorkshopData.companyLetterhead();return [[L.name,L.address].join(' · '),L.registration].filter(Boolean);})()].join('\n');
   toast(t.demo_email,'ok');
   location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -2374,8 +2385,7 @@ function renderPrintSheet(e){
     <h3 style="font-family:sans-serif;margin-top:18px;">${esc(t.pr_optional)} — ${esc(o.name)}</h3>
     <table class="psection" style="width:100%;border-collapse:collapse;" border="1" cellpadding="6"><thead>${th}</thead><tbody>${printRows(o.lines)}</tbody></table>`).join("");
   $("printSheet").innerHTML=`
-    <h1 style="font-family:sans-serif;">Varmak AB</h1>
-    <p style="font-family:sans-serif;color:#555;">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</p>
+    ${letterheadHtml()}
     <h2 style="font-family:sans-serif;margin-top:14px;">${esc(t.pr_estimate)} ${esc(e.no)} — ${esc(t.rev_short)} ${e.revision||0}</h2>
     <table style="width:100%;margin-top:10px;font-family:sans-serif;font-size:13px;"><tr>
       <td style="vertical-align:top;width:50%;">
@@ -2413,7 +2423,8 @@ function renderPrintSheet(e){
     <div class="psection" style="margin-top:30px;font-family:sans-serif;font-size:12.5px;display:flex;gap:60px;">
       <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_customer)}<br><br>_______________________</div>
       <div style="flex:1;border-top:1px solid #333;padding-top:6px;">${esc(t.pr_signature_varmak)}<br><br>_______________________</div>
-    </div>`;
+    </div>
+    ${letterheadFootHtml()}`;
 }
 
 function setLang(code){LANG=code;

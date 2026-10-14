@@ -272,7 +272,11 @@ const RPC = {
   set_person_password: ['user_id', 'password'],
   set_person_role: ['user_id', 'role'],
   set_person_active: ['user_id', 'active'],
-  change_my_password: ['current', 'new']
+  change_my_password: ['current', 'new'],
+
+  // The letterhead. The database keeps it to an admin; this list only says what the call is shaped like.
+  save_company: ['name', 'address', 'postcode', 'city', 'country', 'email', 'phone', 'website', 'org_no',
+    'vat_no', 'f_skatt', 'bankgiro', 'iban', 'bic']
 };
 
 // The one call that works without a session, because at that moment there is nobody to sign in as.

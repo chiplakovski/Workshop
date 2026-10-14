@@ -2112,7 +2112,7 @@ function printJobcard(id){
   const matRows=(j.materials||[]).map(m=>`<tr><td>${esc(m.code)||'—'}</td><td>${esc(m.description)}</td><td>${esc(m.grade)||'—'}</td><td>${esc(m.dimension)||'—'}</td><td>${esc(m.required||0)} ${esc(m.unit)||''}</td><td class="wr"></td><td>${esc(m.heat)||'—'}</td></tr>`).join('')||`<tr><td colspan="7">${esc(tt.mat_empty)}</td></tr>`;
   const inspRows=(j.inspections||[]).map(i=>`<tr><td>${esc(tt['it_'+i.type.replace(/-/g,'')]||i.type)}</td><td>${esc(tt['req_'+i.requirement])}</td><td>${esc(i.inspector)||'—'}</td><td>${esc(tt['is_'+i.status.replace('-','')]||tt['is_'+i.status])}</td><td>${esc(i.comments)||'—'}</td></tr>`).join('')||`<tr><td colspan="5">${esc(tt.q_empty)}</td></tr>`;
   $('sheet').innerHTML=`
-    <div class="oh"><div><div class="co">Varmak AB</div><div class="cm">Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se</div></div>
+    <div class="oh"><div>${(()=>{const L=WorkshopData.companyLetterhead();return `<div class="co">${esc(L.name)}</div><div class="cm">${esc(L.address)}</div>`;})()}</div>
       <div class="ot"><h2>${esc(tt.pr_header_no)} ${esc(j.no)}</h2><div class="om">${esc(tt.pr_header_rev)} ${esc(j.revision||0)} · ${esc(tt['st_'+j.status])}</div></div></div>
     <div class="oto">
       <div><div class="lbl">${esc(tt.pr_customer)}</div>${esc(cust?cust.name:'—')}<br><div class="lbl" style="margin-top:8px;">${esc(tt.pr_project)}</div>${esc(j.projectNo)||'—'}</div>

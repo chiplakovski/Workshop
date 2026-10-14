@@ -87,11 +87,15 @@ tbody tr:hover{background:rgba(var(--c-accent-rgb),.06)}
 .panel,.btn,.control{overflow-wrap:anywhere}
 @media(max-width:700px){.shell{padding:16px}.tablewrap table{min-width:640px}.top-actions{width:100%;margin-left:0}}
 select option,select optgroup{background:var(--select-bg);color:var(--select-fg)}
+.orglookup-status{font-size:12px;color:var(--muted);margin:10px 0 0}.orglookup-status.ok{color:var(--green)}.orglookup-status.err{color:var(--red)}.orglookup-status a{color:var(--blue)}
+/* The dialog was missing its base rules, so it sat on the page as a loose Cancel/Save box and never covered anything; and the way back to the hub was a bare underlined link. */
+.modal{position:fixed;inset:0;background:#020914cc;display:none;place-items:center;z-index:10}.modal.show{display:grid}
+.top .back-link{display:inline-flex;align-items:center;height:38px;padding:0 13px;border:1px solid var(--field-line);color:var(--c-muted2);text-decoration:none;transition:border-color .16s,color .16s,transform .16s}.top .back-link:hover{border-color:var(--blue);color:var(--text);transform:translateY(-1px)}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body><a class="skip-link" href="#mainContent" data-i="skip">Skip to access content</a><div class="ambient" aria-hidden="true"><div class="ambient-glow"></div><div id="embers"></div></div>
 <aside class="module-sidebar"><div class="ms-brand"><div class="ms-icon">◐</div><div><h2 data-i="sb_title">ACCESS</h2><small data-i="sb_subtitle">Who may sign in</small></div></div>
-<nav class="module-side-nav" id="moduleSideNav"><button class="on" onclick="goTo('peoplePanel')"><i>◇</i><span data-i="nav_people">People</span></button><button onclick="goTo('addPanel')"><i>＋</i><span data-i="nav_add">Add somebody</span></button><button onclick="goTo('mePanel')"><i>⌸</i><span data-i="nav_me">My password</span></button><button onclick="signOut()"><i>⏻</i><span data-i="nav_signout">Sign out</span></button></nav>
+<nav class="module-side-nav" id="moduleSideNav"><button class="on" onclick="goTo('peoplePanel')"><i>◇</i><span data-i="nav_people">People</span></button><button onclick="goTo('addPanel')"><i>＋</i><span data-i="nav_add">Add somebody</span></button><button onclick="goTo('mePanel')"><i>⌸</i><span data-i="nav_me">My password</span></button><button onclick="goTo('companyPanel')"><i>▤</i><span data-i="nav_company">Company details</span></button><button onclick="signOut()"><i>⏻</i><span data-i="nav_signout">Sign out</span></button></nav>
 <div class="ms-sidebox"><b data-i="sb_box_title">Two doors</b><p data-i="sb_box_body">The office signs in with an email and a password. The shop floor signs in with a PIN on the shared tablet, and that session ends with the shift.</p></div>
 <div class="ms-user"><div class="ms-avatar" id="sideInitials">—</div><div><strong id="sideName" data-i="sb_nobody">Not signed in</strong><small id="sideRole"></small></div></div></aside>
 <div class="shell">
@@ -116,6 +120,7 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
 <form id="meForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="meCurrent" data-i="f_current">Current password</label><input id="meCurrent" type="password" autocomplete="current-password" required></div><div class="field"><label for="meNew" data-i="f_new">New password</label><input id="meNew" type="password" autocomplete="new-password" required></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="mp_btn">Change my password</button></div></div></form>
 <p class="said" id="meSaid" hidden></p></article>
 
+<article class="panel" id="companyPanel" hidden><div class="panel-title"><span data-i="cp_title">Company details</span></div><p class="lede" data-i="cp_body"></p><p class="lede" id="companyLocal" data-i="cp_body_local" hidden></p><form id="companyForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="cName" data-i="f_cname"></label><input id="cName" required autocomplete="organization"></div><div class="field"><label for="cAddress" data-i="f_address"></label><input id="cAddress" autocomplete="street-address"></div><div class="field"><label for="cPostcode" data-i="f_postcode"></label><input id="cPostcode" autocomplete="postal-code"></div><div class="field"><label for="cCity" data-i="f_city"></label><input id="cCity" autocomplete="address-level2"></div><div class="field"><label for="cCountry" data-i="f_country"></label><input id="cCountry" autocomplete="country-name"></div><div class="field"><label for="cEmail" data-i="f_cemail"></label><input id="cEmail" type="email" spellcheck="false"></div><div class="field"><label for="cPhone" data-i="f_phone"></label><input id="cPhone" type="tel"></div><div class="field"><label for="cWebsite" data-i="f_website"></label><input id="cWebsite" spellcheck="false"></div><div class="field"><label for="cOrg" data-i="f_org"></label><input id="cOrg" placeholder="XXXXXX-XXXX"></div><div class="field"><label for="cVat" data-i="f_vat"></label><input id="cVat" spellcheck="false"></div><div class="field"><label>&nbsp;</label><button class="btn" type="button" id="cOrgCheck" data-i="cp_check">Check number</button></div><div class="field"><label for="cFskatt" data-i="f_fskatt"></label><select id="cFskatt"><option value="no" data-i="cp_no"></option><option value="yes" data-i="cp_yes"></option></select></div><div class="field"><label for="cBankgiro" data-i="f_bankgiro"></label><input id="cBankgiro" placeholder="123-4567"></div><div class="field"><label for="cIban" data-i="f_iban"></label><input id="cIban" spellcheck="false"></div><div class="field"><label for="cBic" data-i="f_bic"></label><input id="cBic" spellcheck="false"></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="cp_btn">Save</button></div></div></form><p class="orglookup-status" id="cOrgStatus" role="status" aria-live="polite"></p><p class="said" id="companySaid" hidden></p></article>
 </main></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="panel modal-card" style="width:min(460px,calc(100vw - 24px));padding:20px"><h2 id="modalTitle" style="margin:0 0 6px;font-size:17px;font-family:var(--font-heading)"></h2><p class="lede" id="modalWho" style="margin-bottom:14px"></p><form id="modalForm"><div id="modalFields"></div><div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn" onclick="closeModal()" data-i="modal_cancel">Cancel</button><button class="btn primary" id="modalSave" data-i="modal_save">Save</button></div></form></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -124,7 +129,7 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 <script>window.WORKSHOP_SERVER_READY=true;</script>
-<script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="org-number.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-ui.js"></script>
 <script>
 'use strict';
 // Access — the one screen that exists because adding a person used to mean opening psql.
@@ -192,6 +197,35 @@ const T = {
     confirm_off: 'Switch {name} off? The tablet they are holding right now stops working, not just the next sign-in.',
     confirm_on: 'Switch {name} back on?',
     done_generic: 'Done.', count: '{n} people', count_one: '1 person',
+    cp_title: "Company details",
+    cp_body: "What prints at the top of every offer, item sheet and jobcard, and on the invoice basis. Registration and bank details print only once they are entered here.",
+    cp_body_local: "This copy keeps them in this browser, like everything else on this computer. Online, only an administrator can change them.",
+    f_cname: "Company name",
+    f_address: "Street address",
+    f_postcode: "Postcode",
+    f_city: "City",
+    f_country: "Country",
+    f_cemail: "Email",
+    f_phone: "Phone",
+    f_website: "Website",
+    f_org: "Org. number",
+    f_vat: "VAT number",
+    f_fskatt: "Approved for F-tax (F-skatt)",
+    f_bankgiro: "Bankgiro",
+    f_iban: "IBAN",
+    f_bic: "BIC",
+    cp_yes: "Yes",
+    cp_no: "No",
+    cp_check: "Check number",
+    cp_btn: "Save company details",
+    cp_done: "Saved. Every offer printed from now on carries these details.",
+    org_need: "Enter an organisation number first.",
+    org_length: "An organisation number has 10 digits (XXXXXX-XXXX).",
+    org_checksum: "That number does not add up — a digit is probably mistyped.",
+    org_ok: "The number is valid.",
+    org_vat: "VAT number filled in: {vat}.",
+    org_open: "Look it up on allabolag.se",
+    nav_company: "Company details",
     signed_out: 'Signed out.'
   },
   sv: {
@@ -235,7 +269,36 @@ const T = {
     confirm_off: 'Stänga av {name}? Plattan de håller i just nu slutar fungera, inte bara nästa inloggning.',
     confirm_on: 'Slå på {name} igen?',
     done_generic: 'Klart.', count: '{n} personer', count_one: '1 person',
-    signed_out: 'Utloggad.'
+    signed_out: 'Utloggad.',
+    cp_title: "Företagsuppgifter",
+    cp_body: "Det som skrivs överst på varje offert, artikelblad och jobbkort, och på fakturaunderlaget. Registrerings- och bankuppgifter skrivs ut först när de har fyllts i här.",
+    cp_body_local: "Den här kopian sparar dem i den här webbläsaren, som allt annat på den här datorn. Online kan bara en administratör ändra dem.",
+    f_cname: "Företagsnamn",
+    f_address: "Gatuadress",
+    f_postcode: "Postnummer",
+    f_city: "Ort",
+    f_country: "Land",
+    f_cemail: "E-post",
+    f_phone: "Telefon",
+    f_website: "Webbplats",
+    f_org: "Org.nr",
+    f_vat: "Momsreg.nr",
+    f_fskatt: "Godkänd för F-skatt",
+    f_bankgiro: "Bankgiro",
+    f_iban: "IBAN",
+    f_bic: "BIC",
+    cp_yes: "Ja",
+    cp_no: "Nej",
+    cp_check: "Kontrollera nummer",
+    cp_btn: "Spara företagsuppgifter",
+    cp_done: "Sparat. Varje offert som skrivs ut från och med nu har de här uppgifterna.",
+    org_need: "Ange ett organisationsnummer först.",
+    org_length: "Ett organisationsnummer har 10 siffror (XXXXXX-XXXX).",
+    org_checksum: "Numret stämmer inte — troligen är en siffra felskriven.",
+    org_ok: "Numret är giltigt.",
+    org_vat: "Momsnummer ifyllt: {vat}.",
+    org_open: "Slå upp på allabolag.se",
+    nav_company: "Företagsuppgifter",
   },
   mk: {
     skip: 'Прескочи до содржината',
@@ -278,6 +341,35 @@ const T = {
     confirm_off: 'Да го исклучам {name}? Таблетот што го држи сега престанува да работи, не само следната најава.',
     confirm_on: 'Да го вклучам {name} пак?',
     done_generic: 'Готово.', count: '{n} луѓе', count_one: '1 човек',
+    cp_title: "Податоци за фирмата",
+    cp_body: "Она што се печати на врвот на секоја понуда, лист за ставка и работна картичка, и на основата за фактура. Регистрациските и банкарските податоци се печатат дури откако ќе се внесат тука.",
+    cp_body_local: "Оваа копија ги чува во овој прелистувач, како и сè друго на овој компјутер. Онлајн, само администратор може да ги менува.",
+    f_cname: "Име на фирмата",
+    f_address: "Адреса",
+    f_postcode: "Поштенски број",
+    f_city: "Град",
+    f_country: "Држава",
+    f_cemail: "Е-пошта",
+    f_phone: "Телефон",
+    f_website: "Веб-страница",
+    f_org: "Орг. број",
+    f_vat: "ДДВ број",
+    f_fskatt: "Одобрена за Ф-данок",
+    f_bankgiro: "Банкгиро",
+    f_iban: "ИБАН",
+    f_bic: "БИК",
+    cp_yes: "Да",
+    cp_no: "Не",
+    cp_check: "Провери број",
+    cp_btn: "Зачувај податоци за фирмата",
+    cp_done: "Зачувано. Секоја понуда отпечатена од сега ги носи овие податоци.",
+    org_need: "Прво внесете организационен број.",
+    org_length: "Организациониот број има 10 цифри (XXXXXX-XXXX).",
+    org_checksum: "Бројот не е точен — веројатно е погрешно отчукана цифра.",
+    org_ok: "Бројот е точен.",
+    org_vat: "ДДВ-бројот е пополнет: {vat}.",
+    org_open: "Провери на allabolag.se",
+    nav_company: "Податоци за фирмата",
     signed_out: 'Одјавени сте.'
   }
 };
@@ -412,6 +504,7 @@ function showSignedOut() {
   show('peoplePanel', false);
   show('addPanel', false);
   show('mePanel', false);
+  show('companyPanel', false);
   show('refreshBtn', false);
   show('signOutBtn', false);
   $('whoami').hidden = true;
@@ -558,13 +651,78 @@ if (!reduceMotion) {
   }
 }
 
+// ── the letterhead ──────────────────────────────────────────────────────────────────────
+// The one panel on this page that also works with no server: the copy on a single computer has a
+// letterhead too, kept in that browser like the rest of its records. Online it is the admin's alone,
+// and the database says so to anybody else who tries.
+let companyOnline = false;
+const COMPANY_FIELDS = [['cName', 'name'], ['cAddress', 'address'], ['cPostcode', 'postcode'], ['cCity', 'city'],
+  ['cCountry', 'country'], ['cEmail', 'email'], ['cPhone', 'phone'], ['cWebsite', 'website'], ['cOrg', 'orgNo'],
+  ['cVat', 'vat'], ['cBankgiro', 'bankgiro'], ['cIban', 'iban'], ['cBic', 'bic']];
+function fillCompany(c) {
+  COMPANY_FIELDS.forEach(([id, k]) => { $(id).value = c[k] == null ? '' : c[k]; });
+  $('cFskatt').value = c.fSkatt ? 'yes' : 'no';
+}
+function companyFromForm() {
+  const c = {};
+  COMPANY_FIELDS.forEach(([id, k]) => { c[k] = $(id).value.trim(); });
+  c.fSkatt = $('cFskatt').value === 'yes';
+  return c;
+}
+function showCompany(online) {
+  companyOnline = online;
+  show('companyLocal', !online);
+  fillCompany(WorkshopData.getCompany());
+  show('companyPanel', true);
+}
+function orgWords() {
+  return { need: t('org_need'), length: t('org_length'), checksum: t('org_checksum'), ok: t('org_ok'), vat: t('org_vat'), open: t('org_open') };
+}
+$('cOrgCheck').addEventListener('click', () => OrgNumber.checkInto($('cOrg'), $('cVat'), $('cOrgStatus'), orgWords()));
+$('companyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const c = companyFromForm();
+  // A mistyped org number on a letterhead is printed on every offer until somebody notices.
+  if (c.orgNo && !OrgNumber.check(c.orgNo).ok) {
+    OrgNumber.checkInto($('cOrg'), $('cVat'), $('cOrgStatus'), orgWords());
+    return;
+  }
+  if (!companyOnline) {
+    const saved = WorkshopData.setCompany(c);
+    if (saved.error) return say('companySaid', saved.error, 'refused');
+    fillCompany(saved);
+    say('companySaid', t('cp_done'), 'done');
+    return;
+  }
+  const answer = await WorkshopApi.call('save_company', {
+    name: c.name, address: c.address, postcode: c.postcode, city: c.city, country: c.country,
+    email: c.email, phone: c.phone, website: c.website, org_no: c.orgNo, vat_no: c.vat,
+    f_skatt: c.fSkatt, bankgiro: c.bankgiro, iban: c.iban, bic: c.bic
+  });
+  if (answer.signedOut) return showSignedOut();
+  if (!answer.ok) return say('companySaid', answer.refused, 'refused');
+  const again = await WorkshopApi.snapshot();
+  if (again.data) WorkshopData.adoptSnapshot(again.data);
+  fillCompany(WorkshopData.getCompany());
+  say('companySaid', t('cp_done'), 'done');
+});
+
 (async function boot() {
   let saved = null;
   try { saved = localStorage.getItem('varmak.lang'); } catch (err) { saved = null; }
   setLang(saved === 'sv' || saved === 'mk' ? saved : 'en');
   // No fallback to browser storage, and that is the point of this screen rather than an omission.
-  if (!(await WorkshopApi.available())) return show('noServer', true);
+  if (!(await WorkshopApi.available())) {
+    show('noServer', true);
+    return showCompany(false);
+  }
   if (!WorkshopApi.signedIn()) return showSignedOut();
   await load();
+  // The letterhead is shown to the one role that may change it. Everybody else prints it; nobody else
+  // edits it, and a form that always refuses is a form that teaches people to ignore refusals.
+  if (isAdmin()) {
+    const snap = await WorkshopApi.snapshot();
+    if (snap.data) { WorkshopData.adoptSnapshot(snap.data); showCompany(true); }
+  }
 })();
 </script></body></html>

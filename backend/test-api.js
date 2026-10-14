@@ -401,6 +401,37 @@ function halfDoneIsNeverLeftBehind(f) {
   step('All or nothing: three workflows failed at their last write, and not one row anywhere had moved');
 }
 
+// ── The letterhead ────────────────────────────────────────────────────────────────────────
+
+function theLetterheadIsTheAdmins() {
+  const admin = value(`INSERT INTO app_user (email, display_name, role)
+    VALUES ('letterhead@varmak.se', 'Test Letterhead Admin', 'admin') RETURNING id;`);
+  assert.equal(ok('a welder reading the letterhead their jobcard prints', 'varmak_workshop', PEOPLE.welder,
+    `SELECT name || ' · ' || address || ' · ' || postcode || ' ' || city FROM company_profile;`),
+    'Varmak AB · Lagmansgatan 31 · 241 71 Marieholm');
+  assert.equal(value(`SELECT coalesce(org_no, 'none') || ' ' || coalesce(bankgiro, 'none') FROM company_profile;`), 'none none',
+    'the registration and the bank account are the firm\'s to give, and start empty');
+  refused('the office changing the bank account on every offer', 'varmak_office', PEOPLE.office,
+    `SELECT save_company('Varmak AB', null, null, null, null, null, null, null, null, null, false, '999-9999');`,
+    /permission denied for function save_company|the letterhead is changed by an admin/);
+  refused('a welder changing it', 'varmak_workshop', PEOPLE.welder,
+    `SELECT save_company('Varmak AB');`, /permission denied|the letterhead is changed by an admin/);
+  refused('an org number with a digit missing', 'varmak_admin', admin,
+    `SELECT save_company('Varmak AB', 'Lagmansgatan 31', '241 71', 'Marieholm', 'Sweden', 'info@varmak.se', null, null, '55601257');`,
+    /ten digits/);
+  ok('the admin entering the firm\'s numbers', 'varmak_admin', admin,
+    `SELECT save_company('Varmak AB', 'Lagmansgatan 31', '241 71', 'Marieholm', 'Sweden', 'INFO@varmak.se', null, null,
+                         '5560125790', 'se 5560125790 01', true, '123-4567', 'se45 5000 0000 0583 9825 7466', 'eskhsess');`);
+  assert.equal(value(`SELECT org_no || ' ' || vat_no || ' ' || f_skatt || ' ' || iban || ' ' || bic || ' ' || email FROM company_profile;`),
+    '556012-5790 SE556012579001 true SE4550000000058398257466 ESKHSESS info@varmak.se');
+  assert.equal(value(`SELECT count(*) FROM company_profile;`), '1');
+  refused('a second letterhead', 'varmak_admin', admin,
+    `INSERT INTO company_profile (id, name) VALUES (2, 'Another AB');`, /company_profile_id_check|violates/);
+  // Put back as it started, so every suite after this one prints the letterhead the firm begins with.
+  sql(`UPDATE company_profile SET org_no = NULL, vat_no = NULL, f_skatt = false, bankgiro = NULL, iban = NULL, bic = NULL, email = 'info@varmak.se';`);
+  step('Letterhead: everybody reads it, only an admin changes it, its numbers are written one way, and there is one');
+}
+
 // ── A day has twenty-four hours ───────────────────────────────────────────────────────────
 
 function aDayHasTwentyFourHours(w) {
@@ -2030,6 +2061,7 @@ async function main() {
   eachRoleReachesItsOwnWork(f, w);
   const work = workReachesTheFloor();
   theEngineWritesOnlyWhatItMust();
+  theLetterheadIsTheAdmins();
   theRegisterOfMachinesAndWhatHappensToThem();
   theStoreCanBeStockedAndCounted();
   theStepsRememberTheWorkDoneOnThem(work);

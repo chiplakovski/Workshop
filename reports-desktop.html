@@ -1433,8 +1433,10 @@ function confirmSavedModal(){
 // was exported from and the next person to open it will not have read the note on the panel.
 function invoiceBasisCsv(range){
   const projects=basisInRange(range);
+  const letterhead=WorkshopData.companyLetterhead();
   const rows=[
-    ['Varmak AB — invoice basis. A working copy, not an invoice: no invoice number, no VAT, and nothing here knows what has already been billed.'],
+    [`${letterhead.name} — invoice basis. A working copy, not an invoice: no invoice number, no VAT, and nothing here knows what has already been billed.`],
+    [[letterhead.address,letterhead.registration,letterhead.payment].filter(Boolean).join(' · ')],
     ['No labour amount: no hourly rate is recorded in the workshop system. No machine time: machine usage hours are not recorded.'],
     ['Period', String(range.start).slice(0,10)+' to '+String(range.end).slice(0,10),
      'Exported', new Date().toISOString().slice(0,19).replace('T',' ')],

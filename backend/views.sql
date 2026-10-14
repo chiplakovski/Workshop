@@ -211,6 +211,14 @@ LANGUAGE sql STABLE AS $$
     -- this is, and it was saying somebody else's. The role comes from the session like the name does.
     'takenRole', current_app_role()::text,
 
+    -- The letterhead every printed offer and invoice basis carries. Read by everyone signed in, because
+    -- a welder printing a jobcard prints it too; changed only through save_company, by an admin.
+    'company', (SELECT jsonb_build_object(
+        'name', c.name, 'address', c.address, 'postcode', c.postcode, 'city', c.city,
+        'country', c.country, 'email', c.email, 'phone', c.phone, 'website', c.website,
+        'orgNo', c.org_no, 'vat', c.vat_no, 'fSkatt', c.f_skatt, 'bankgiro', c.bankgiro,
+        'iban', c.iban, 'bic', c.bic) FROM company_profile c WHERE c.id = 1),
+
     -- The people this workshop has. Six screens offered a "Responsible", "Owner" or "Estimator"
     -- dropdown whose three options were invented names written into the page, so on the first day
     -- at a real firm those fields offered three strangers and none of the staff. One of the three was

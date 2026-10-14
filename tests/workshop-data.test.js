@@ -4526,3 +4526,28 @@ test('one person\'s hours on one day stop at 24, added up across entries', ()=>{
   assert.ok(book(25,'2026-03-04').error,'one entry over a day\'s length is refused on its own');
   assert.equal(WD.get().hours.filter(h=>h.worker==='Test Welder').length,4,'nothing refused was written');
 });
+
+test('the letterhead prints what the firm entered, and nothing it did not', ()=>{
+  const WD=loadEmptyWorkshopData();
+  const first=WD.companyLetterhead();
+  assert.equal(first.name,'Varmak AB');
+  assert.equal(first.address,'Lagmansgatan 31 · 241 71 Marieholm · info@varmak.se');
+  assert.equal(first.registration,'','no registration line until the firm gives its numbers');
+  assert.equal(first.payment,'','no payment line until the firm gives its account');
+  assert.equal(WD.setCompany({orgNo:'55601257'}).error,'An organisation number has ten digits');
+  const saved=WD.setCompany({orgNo:'5560125790',vat:'se 5560125790 01',fSkatt:true,bankgiro:'123-4567',iban:'se45 5000 0000 0583 9825 7466'});
+  assert.equal(saved.orgNo,'556012-5790');
+  assert.equal(saved.vat,'SE556012579001');
+  const now=WD.companyLetterhead();
+  assert.equal(now.registration,'Org.nr 556012-5790 · Momsreg.nr SE556012579001 · Godkänd för F-skatt');
+  assert.equal(now.payment,'Bankgiro 123-4567 · IBAN SE4550000000058398257466');
+  assert.equal(WD.getCompany().name,'Varmak AB','a patch leaves the rest of the letterhead alone');
+});
+
+test('the letterhead from the server replaces the default, and survives nothing else', ()=>{
+  const WD=loadEmptyWorkshopData();
+  WD.adoptSnapshot({takenAt:'2026-10-14T10:00:00Z',company:{name:'Varmak AB',address:'Lagmansgatan 31',postcode:'241 71',city:'Marieholm',
+    country:'Sweden',email:'info@varmak.se',phone:null,website:null,orgNo:'556012-5790',vat:null,fSkatt:false,bankgiro:null,iban:null,bic:null}});
+  assert.equal(WD.companyLetterhead().registration,'Org.nr 556012-5790');
+  assert.equal(WD.getCompany().phone,'','a null from the database is an empty field, not the word null');
+});
