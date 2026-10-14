@@ -403,7 +403,8 @@ $$;
 -- Issuing material is issue_material() in auth.sql, because it had to be the only door stock moves
 -- through. This wraps it with the same replay protection as the other two.
 CREATE FUNCTION issue_material_offline(p_item_id bigint, p_quantity numeric, p_jobcard_id bigint,
-                                       p_note text DEFAULT NULL, p_event_id text DEFAULT NULL)
+                                       p_note text DEFAULT NULL, p_event_id text DEFAULT NULL,
+                                       p_heat_no text DEFAULT NULL)
 RETURNS text
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -414,7 +415,7 @@ BEGIN
   IF seen IS NOT NULL THEN
     RETURN seen;
   END IF;
-  movement := issue_material(p_item_id, p_quantity, p_jobcard_id, p_note);
+  movement := issue_material(p_item_id, p_quantity, p_jobcard_id, p_note, p_heat_no);
   PERFORM record_result(p_event_id, (SELECT ref FROM stock_movement WHERE id = movement));
   RETURN (SELECT ref FROM stock_movement WHERE id = movement);
 END;
@@ -1481,13 +1482,16 @@ BEGIN
 
   -- The name on the movement is the session's, never the caller's. Same rule as issuing: a record of
   -- who put the steel on the shelf that anybody could sign is not a record.
-  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, moved_from, moved_to, unit, note)
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, moved_from, moved_to, unit, note,
+                              heat_no, material_cert_ref)
   VALUES (p_item_id, 'receipt', p_quantity, who,
           nullif(btrim(coalesce(p_supplier, '')), ''),
           coalesce(nullif(btrim(coalesce(p_bin_code, '')), ''), item.bin_code),
           item.unit,
           nullif(btrim(concat_ws(' · ', nullif(btrim(coalesce(p_delivery_note, '')), ''),
-                                 nullif(btrim(coalesce(p_note, '')), ''))), ''))
+                                 nullif(btrim(coalesce(p_note, '')), ''))), ''),
+          nullif(btrim(coalesce(p_heat_no, '')), ''),
+          nullif(btrim(coalesce(p_material_cert_ref, '')), ''))
   RETURNING id INTO movement_id;
 
   INSERT INTO activity_log (entity, entity_id, action, actor, detail)
@@ -3620,7 +3624,7 @@ REVOKE ALL ON FUNCTION receive_goods(bigint, numeric, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION convert_lead(bigint, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_operation(bigint, operation_status, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION issue_material_offline(bigint, numeric, bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION issue_material_offline(bigint, numeric, bigint, text, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION place_hold(bigint, bigint, text, severity, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION release_hold(bigint, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_inspection(bigint, bigint, bigint, text, text, text, text, text, text,
@@ -3730,7 +3734,7 @@ TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   record_operation(bigint, operation_status, text),
-  issue_material_offline(bigint, numeric, bigint, text, text),
+  issue_material_offline(bigint, numeric, bigint, text, text, text),
   -- The floor as well, and this one deliberately: a check signed before running a machine is signed by
   -- whoever is standing in front of it. Granted to the office too, because a service is recorded the
   -- same way and that is theirs — the function takes the name from the session either way, so a record

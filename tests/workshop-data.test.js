@@ -4551,3 +4551,31 @@ test('the letterhead from the server replaces the default, and survives nothing 
   assert.equal(WD.companyLetterhead().registration,'Org.nr 556012-5790');
   assert.equal(WD.getCompany().phone,'','a null from the database is an empty field, not the word null');
 });
+
+test('each delivery keeps its heat, and traced steel leaves from a named heat', ()=>{
+  // The item kept one heat number, so a second delivery overwrote the first's, and an issue recorded
+  // none. EN 1090 asks of a welded part which heat it came from; the store could not say.
+  const WD=loadEmptyWorkshopData();
+  WD.createInventoryItem({code:'PL-10',description:'Plate 10',group:'materials',unit:'KG',location:'R1',stock:0,minStock:0,reorderQty:0,avgCost:1,lastPrice:1,supplier:'S'});
+  const project=WD.upsertProject({name:'Heat job',customer:'Test Customer'});
+  WD.receive({code:'PL-10',qty:20,supplier:'S',heat:'HT-A',certificate:'MTC-A.pdf'});
+  WD.receive({code:'PL-10',qty:15,supplier:'S',heat:'HT-B',certificate:'MTC-B.pdf'});
+  assert.deepEqual(WD.itemHeats('PL-10').map(h=>[h.heat,h.remaining,h.certificate]),[['HT-A',20,'MTC-A.pdf'],['HT-B',15,'MTC-B.pdf']]);
+  const blind=WD.issue({code:'PL-10',projectNo:project.no,qty:5,jobcard:'JC-H'});
+  assert.equal(blind.code,'HEAT_REQUIRED');
+  assert.match(blind.error,/say which heat this came from: HT-A \(20 KG\), HT-B \(15 KG\)/);
+  assert.equal(WD.issue({code:'PL-10',projectNo:project.no,qty:5,jobcard:'JC-H',heat:'HT-X'}).code,'HEAT_UNKNOWN');
+  assert.equal(WD.issue({code:'PL-10',projectNo:project.no,qty:21,jobcard:'JC-H',heat:'HT-A'}).code,'HEAT_SHORT');
+  assert.ok(!WD.issue({code:'PL-10',projectNo:project.no,qty:5,jobcard:'JC-H',heat:'HT-A'}).error);
+  assert.deepEqual(WD.itemHeats('PL-10').map(h=>[h.heat,h.remaining]),[['HT-A',15],['HT-B',15]]);
+  assert.deepEqual(WD.jobcardHeats('JC-H').map(h=>[h.code,h.heat,h.certificate,h.qty]),[['PL-10','HT-A','MTC-A.pdf',5]]);
+  assert.equal(WD.get().inventory.find(i=>i.code==='PL-10').stock,30);
+});
+
+test('an item never received with a heat is issued without one, as before', ()=>{
+  const WD=loadEmptyWorkshopData();
+  WD.createInventoryItem({code:'BOLT-M12',description:'Bolt',group:'materials',unit:'EA',location:'R1',stock:0,minStock:0,reorderQty:0,avgCost:1,lastPrice:1,supplier:'S'});
+  const project=WD.upsertProject({name:'Bolt job',customer:'Test Customer'});
+  WD.receive({code:'BOLT-M12',qty:100,supplier:'S'});
+  assert.ok(!WD.issue({code:'BOLT-M12',projectNo:project.no,qty:10}).error);
+});

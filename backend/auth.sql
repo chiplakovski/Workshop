@@ -985,7 +985,7 @@ ALTER FUNCTION set_pin(bigint, text) SECURITY DEFINER;
 -- Note what it does NOT take: who is doing it. That comes from the session, so the movement
 -- records the person who actually issued the steel rather than whichever name the caller passed.
 CREATE FUNCTION issue_material(p_item_id bigint, p_quantity numeric, p_jobcard_id bigint,
-                               p_note text DEFAULT NULL)
+                               p_note text DEFAULT NULL, p_heat_no text DEFAULT NULL)
 RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -995,12 +995,12 @@ BEGIN
   IF who IS NULL THEN
     RAISE EXCEPTION 'sign in before taking material off the shelf' USING ERRCODE = 'insufficient_privilege';
   END IF;
-  RETURN issue_stock(p_item_id, p_quantity, p_jobcard_id, who, p_note);
+  RETURN issue_stock(p_item_id, p_quantity, p_jobcard_id, who, p_note, p_heat_no);
 END;
 $$;
 
-ALTER FUNCTION issue_material(bigint, numeric, bigint, text) OWNER TO varmak_engine;
-ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION issue_material(bigint, numeric, bigint, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text, text) OWNER TO varmak_engine;
 
 -- And taken back, as promised above. api.sql grants it again for its own ownership changes and takes
 -- it away the same way, so the privilege exists only while it is being used.
@@ -1028,11 +1028,11 @@ END $$;
 -- PUBLIC alone is enough, because EXECUTE is granted to PUBLIC by default and to no role
 -- explicitly. It stays because the next person to add a GRANT above this line should find it
 -- already closed.
-REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text, text)
 FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;
-REVOKE ALL ON FUNCTION issue_material(bigint, numeric, bigint, text)
+REVOKE ALL ON FUNCTION issue_material(bigint, numeric, bigint, text, text)
 FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;
-GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)
+GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ── Two tables where "signed in" is not enough ────────────────────────────────────────────

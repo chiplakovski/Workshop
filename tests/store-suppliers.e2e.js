@@ -85,19 +85,29 @@ async function nothingIsInventedAboutASupplier(page) {
 // The org number, checked where it is typed. And an edit that leaves status alone leaves it alone:
 // the select used to reopen on "active", so saving any change quietly demoted a preferred supplier.
 async function anOrgNumberIsCheckedAndAnEditKeepsTheStatus(page) {
-  await page.evaluate((name) => { selectSupplier(suppliers.findIndex((s) => s.name === name)); openModal('supplier', true); }, SUPPLIER);
-  assert.equal(await page.locator('#supplierStatus').inputValue(), 'preferred', 'the edit form reopened on another status');
-  await page.locator('#supplierOrg').fill('556012-5791');
-  await page.locator('#supplierOrgStatus').evaluate((el) => { el.textContent = ''; });
-  await page.evaluate(() => checkSupplierOrg());
-  assert.match(await page.locator('#supplierOrgStatus').innerText(), /does not add up/);
-  await page.locator('#supplierOrg').fill('5560125790');
-  await page.evaluate(() => checkSupplierOrg());
-  assert.equal(await page.locator('#supplierOrg').inputValue(), '556012-5790');
-  assert.equal(await page.locator('#supplierVat').inputValue(), 'SE556012579001');
-  await page.locator('#supplierCity').fill('Malmö');
-  await page.locator('#modalForm .primary').click();
-  await page.waitForTimeout(300);
+  await page.waitForFunction((name) => suppliers.some((s) => s.name === name), SUPPLIER);
+  // Each check is typed and read in one step, so nothing the page does in between (a refresh after the
+  // previous save landing) can stand between the typing and the reading.
+  const said = await page.evaluate((name) => {
+    selectSupplier(suppliers.findIndex((s) => s.name === name));
+    openModal('supplier', true);
+    const out = { status: document.getElementById('supplierStatus').value };
+    document.getElementById('supplierOrg').value = '556012-5791';
+    checkSupplierOrg();
+    out.mistyped = document.getElementById('supplierOrgStatus').textContent;
+    document.getElementById('supplierOrg').value = '5560125790';
+    checkSupplierOrg();
+    out.org = document.getElementById('supplierOrg').value;
+    out.vat = document.getElementById('supplierVat').value;
+    document.getElementById('supplierCity').value = 'Malmö';
+    document.getElementById('modalForm').requestSubmit();
+    return out;
+  }, SUPPLIER);
+  assert.equal(said.status, 'preferred', 'the edit form reopened on another status');
+  assert.match(said.mistyped, /does not add up/);
+  assert.equal(said.org, '556012-5790');
+  assert.equal(said.vat, 'SE556012579001');
+  await page.waitForFunction((name) => (WorkshopData.listSuppliers().find((item) => item.name === name) || {}).city === 'Malmö', SUPPLIER);
   const stored = await page.evaluate((name) => WorkshopData.listSuppliers().find((item) => item.name === name), SUPPLIER);
   assert.equal(stored.status, 'preferred', 'saving an edit changed the status nobody touched');
   assert.equal(stored.org, '556012-5790');
@@ -377,8 +387,17 @@ async function receiveGoods(page, poNo) {
     const o = [...document.querySelectorAll('#issueItem option')].find((x) => x.textContent.includes('Pipe DN100'));
     document.getElementById('issueItem').value = o.value;
   });
+  await page.evaluate(() => fillIssueHeats());
   await page.locator('#issueQty').fill('6');
   await page.locator('#issueJobcard').fill('JC-1456');
+  // The pipe arrived as heat E2E-H-PIPE, so it leaves from that heat or not at all.
+  const heatOptions = await page.locator('#issueHeat option').allInnerTexts();
+  assert.deepEqual(heatOptions, ['— choose the heat it came from —', 'E2E-H-PIPE — 24 M left'], `the heats offered: ${heatOptions}`);
+  await page.locator('#confirmIssue').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => WorkshopData.get().inventory.find((x) => x.description === 'Pipe DN100 SCH40').stock), 24,
+    'traced pipe issued without saying which heat must not leave the shelf');
+  await page.locator('#issueHeat').selectOption('E2E-H-PIPE');
   await page.locator('#confirmIssue').click();
   await page.waitForTimeout(150);
   const afterIssue = await page.evaluate(() => {
@@ -388,7 +407,9 @@ async function receiveGoods(page, poNo) {
   assert.equal(afterIssue.stock, 18, 'issuing for a job must come off the shelf');
   assert.equal(afterIssue.issued.length, 1);
   assert.equal(afterIssue.issued[0].jobcard, 'JC-1456');
-  step('Store: material pulled for a job comes off the shelf against that jobcard');
+  assert.equal(afterIssue.issued[0].heat, 'E2E-H-PIPE', 'and it carries the heat it came from');
+  assert.deepEqual(await page.evaluate(() => WorkshopData.jobcardHeats('JC-1456').map((h) => [h.heat, h.qty])), [['E2E-H-PIPE', 6]]);
+  step('Store: traced material leaves from a named heat, against the jobcard, and the job knows which heat it got');
 
   // The information panel answers "where is it, where did it come from, where did it go" from the
   // movements themselves — the same question the issue above just wrote an answer to.

@@ -756,10 +756,17 @@ CREATE TABLE stock_movement (
   moved_from    text,
   moved_to      text,
   unit          text,
-  note          text
+  note          text,
+  -- The heat this steel came from, on the movement rather than only on the item. The item kept one
+  -- heat number, so the second delivery of the same plate overwrote the first's, and an issue
+  -- recorded none: the question EN 1090 asks of a welded part — which heat, with which certificate —
+  -- had no answer. A receipt carries the heat it arrived with; an issue, the heat it was taken from.
+  heat_no           text CHECK (heat_no IS NULL OR btrim(heat_no) <> ''),
+  material_cert_ref text
 );
 
 CREATE INDEX movement_item_idx ON stock_movement(stock_item_id);
+CREATE INDEX movement_heat_idx ON stock_movement(stock_item_id, heat_no) WHERE heat_no IS NOT NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Quality
@@ -2240,11 +2247,16 @@ CREATE TRIGGER estimate_line_reprice_gate_trg BEFORE UPDATE ON estimate_line
 -- the CHECK fire with something nobody can act on. The CHECK stays as the floor beneath it: this
 -- function holds against the callers that use it, the CHECK holds against every other path.
 CREATE FUNCTION issue_stock(
-  p_item_id bigint, p_quantity numeric, p_jobcard_id bigint, p_by text, p_note text DEFAULT NULL
+  p_item_id bigint, p_quantity numeric, p_jobcard_id bigint, p_by text, p_note text DEFAULT NULL,
+  p_heat_no text DEFAULT NULL
 ) RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE
   item stock_item%ROWTYPE;
   movement_id bigint;
+  heat text := nullif(btrim(coalesce(p_heat_no, '')), '');
+  heat_left numeric;
+  heat_cert text;
+  heats_in_stock text;
 BEGIN
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     RAISE EXCEPTION 'a stock issue must be for more than nothing' USING ERRCODE = 'check_violation';
@@ -2259,20 +2271,53 @@ BEGIN
       p_quantity, item.unit, item.code, item.stock USING ERRCODE = 'check_violation';
   END IF;
 
+  -- Traced steel leaves the shelf from a named heat. What is left of each heat is what arrived with it,
+  -- less what has gone out from it; once an item has any heat left on the shelf, an issue that names
+  -- none would be the one part nobody can trace, so it is refused and told which heats are there.
+  IF heat IS NOT NULL THEN
+    SELECT sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END),
+           max(m.material_cert_ref) FILTER (WHERE m.kind = 'receipt')
+      INTO heat_left, heat_cert
+      FROM stock_movement m
+     WHERE m.stock_item_id = p_item_id AND m.heat_no = heat AND m.kind IN ('receipt', 'return', 'issue', 'scrap');
+    IF heat_left IS NULL THEN
+      RAISE EXCEPTION 'no delivery of % carried heat %', item.code, heat USING ERRCODE = 'check_violation';
+    END IF;
+    IF heat_left < p_quantity THEN
+      RAISE EXCEPTION 'only % % of heat % is left of what arrived with it',
+        trim_scale(heat_left), item.unit, heat USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    SELECT string_agg(h.heat_no || ' (' || trim_scale(h.left_of_it) || ' ' || item.unit || ')', ', ' ORDER BY h.first_in)
+      INTO heats_in_stock
+      FROM (SELECT m.heat_no, min(m.id) AS first_in,
+                   sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END) AS left_of_it
+              FROM stock_movement m
+             WHERE m.stock_item_id = p_item_id AND m.heat_no IS NOT NULL
+               AND m.kind IN ('receipt', 'return', 'issue', 'scrap')
+             GROUP BY m.heat_no) h
+     WHERE h.left_of_it > 0;
+    IF heats_in_stock IS NOT NULL THEN
+      RAISE EXCEPTION '% is traced by heat number — say which heat this came from: %', item.code, heats_in_stock
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
   UPDATE stock_item
      SET stock = stock - p_quantity,
          reserved = GREATEST(0, reserved - p_quantity)
    WHERE id = p_item_id;
 
-  INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by, note)
-  VALUES (p_item_id, 'issue', p_quantity, p_jobcard_id, p_by, p_note)
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by, note, heat_no, material_cert_ref)
+  VALUES (p_item_id, 'issue', p_quantity, p_jobcard_id, p_by, p_note, heat, heat_cert)
   RETURNING id INTO movement_id;
 
   -- trim_scale so the line reads the same however the caller typed the number: 30, 30.0 and
   -- 30.000 are the same amount of steel and should not read as three different records.
   INSERT INTO activity_log (entity, entity_id, action, actor, detail)
   VALUES ('stock_item', p_item_id, 'issued', p_by,
-          trim_scale(p_quantity) || ' ' || item.unit || ' of ' || item.code);
+          trim_scale(p_quantity) || ' ' || item.unit || ' of ' || item.code
+          || coalesce(', heat ' || heat, ''));
 
   RETURN movement_id;
 END;
@@ -3271,7 +3316,7 @@ ALTER FUNCTION set_pin(bigint, text) SECURITY DEFINER;
 -- Note what it does NOT take: who is doing it. That comes from the session, so the movement
 -- records the person who actually issued the steel rather than whichever name the caller passed.
 CREATE FUNCTION issue_material(p_item_id bigint, p_quantity numeric, p_jobcard_id bigint,
-                               p_note text DEFAULT NULL)
+                               p_note text DEFAULT NULL, p_heat_no text DEFAULT NULL)
 RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -3281,12 +3326,12 @@ BEGIN
   IF who IS NULL THEN
     RAISE EXCEPTION 'sign in before taking material off the shelf' USING ERRCODE = 'insufficient_privilege';
   END IF;
-  RETURN issue_stock(p_item_id, p_quantity, p_jobcard_id, who, p_note);
+  RETURN issue_stock(p_item_id, p_quantity, p_jobcard_id, who, p_note, p_heat_no);
 END;
 $$;
 
-ALTER FUNCTION issue_material(bigint, numeric, bigint, text) OWNER TO varmak_engine;
-ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION issue_material(bigint, numeric, bigint, text, text) OWNER TO varmak_engine;
+ALTER FUNCTION issue_stock(bigint, numeric, bigint, text, text, text) OWNER TO varmak_engine;
 
 -- And taken back, as promised above. api.sql grants it again for its own ownership changes and takes
 -- it away the same way, so the privilege exists only while it is being used.
@@ -3314,11 +3359,11 @@ END $$;
 -- PUBLIC alone is enough, because EXECUTE is granted to PUBLIC by default and to no role
 -- explicitly. It stays because the next person to add a GRANT above this line should find it
 -- already closed.
-REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text, text)
 FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;
-REVOKE ALL ON FUNCTION issue_material(bigint, numeric, bigint, text)
+REVOKE ALL ON FUNCTION issue_material(bigint, numeric, bigint, text, text)
 FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;
-GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)
+GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text, text)
 TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ── Two tables where "signed in" is not enough ────────────────────────────────────────────
@@ -3798,7 +3843,8 @@ $$;
 -- Issuing material is issue_material() in auth.sql, because it had to be the only door stock moves
 -- through. This wraps it with the same replay protection as the other two.
 CREATE FUNCTION issue_material_offline(p_item_id bigint, p_quantity numeric, p_jobcard_id bigint,
-                                       p_note text DEFAULT NULL, p_event_id text DEFAULT NULL)
+                                       p_note text DEFAULT NULL, p_event_id text DEFAULT NULL,
+                                       p_heat_no text DEFAULT NULL)
 RETURNS text
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -3809,7 +3855,7 @@ BEGIN
   IF seen IS NOT NULL THEN
     RETURN seen;
   END IF;
-  movement := issue_material(p_item_id, p_quantity, p_jobcard_id, p_note);
+  movement := issue_material(p_item_id, p_quantity, p_jobcard_id, p_note, p_heat_no);
   PERFORM record_result(p_event_id, (SELECT ref FROM stock_movement WHERE id = movement));
   RETURN (SELECT ref FROM stock_movement WHERE id = movement);
 END;
@@ -4876,13 +4922,16 @@ BEGIN
 
   -- The name on the movement is the session's, never the caller's. Same rule as issuing: a record of
   -- who put the steel on the shelf that anybody could sign is not a record.
-  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, moved_from, moved_to, unit, note)
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, moved_by, moved_from, moved_to, unit, note,
+                              heat_no, material_cert_ref)
   VALUES (p_item_id, 'receipt', p_quantity, who,
           nullif(btrim(coalesce(p_supplier, '')), ''),
           coalesce(nullif(btrim(coalesce(p_bin_code, '')), ''), item.bin_code),
           item.unit,
           nullif(btrim(concat_ws(' · ', nullif(btrim(coalesce(p_delivery_note, '')), ''),
-                                 nullif(btrim(coalesce(p_note, '')), ''))), ''))
+                                 nullif(btrim(coalesce(p_note, '')), ''))), ''),
+          nullif(btrim(coalesce(p_heat_no, '')), ''),
+          nullif(btrim(coalesce(p_material_cert_ref, '')), ''))
   RETURNING id INTO movement_id;
 
   INSERT INTO activity_log (entity, entity_id, action, actor, detail)
@@ -7015,7 +7064,7 @@ REVOKE ALL ON FUNCTION receive_goods(bigint, numeric, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION convert_lead(bigint, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION record_operation(bigint, operation_status, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION issue_material_offline(bigint, numeric, bigint, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION issue_material_offline(bigint, numeric, bigint, text, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION place_hold(bigint, bigint, text, severity, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION release_hold(bigint, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_inspection(bigint, bigint, bigint, text, text, text, text, text, text,
@@ -7125,7 +7174,7 @@ TO varmak_admin, varmak_office;
 
 GRANT EXECUTE ON FUNCTION book_hours(bigint, bigint, numeric, date, text, text),
   record_operation(bigint, operation_status, text),
-  issue_material_offline(bigint, numeric, bigint, text, text),
+  issue_material_offline(bigint, numeric, bigint, text, text, text),
   -- The floor as well, and this one deliberately: a check signed before running a machine is signed by
   -- whoever is standing in front of it. Granted to the office too, because a service is recorded the
   -- same way and that is theirs — the function takes the name from the session either way, so a record
@@ -7458,7 +7507,14 @@ LANGUAGE sql STABLE AS $$
         'inspectionRequired', j.inspection_required,
         'archived', j.archived, 'created', j.created_at, 'createdBy', j.created_by,
         'notes', j.notes,
-        'operations', operations_of(j.id)
+        'operations', operations_of(j.id),
+        -- Which heats went into this job, from every issue against it that named one — not the last two
+        -- hundred movements the log carries, because a dossier asks about a job that may be months old.
+        'heats', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'code', s.code, 'heat', m.heat_no, 'certificate', m.material_cert_ref,
+            'qty', m.quantity, 'unit', m.unit, 'date', m.moved_at::date
+          ) ORDER BY m.id) FROM stock_movement m JOIN stock_item s ON s.id = m.stock_item_id
+           WHERE m.jobcard_id = j.id AND m.kind = 'issue' AND m.heat_no IS NOT NULL), '[]'::jsonb)
       ) ORDER BY j.ref) FROM jobcard j), '[]'::jsonb),
 
     'equipment', coalesce((SELECT jsonb_agg(jsonb_build_object(
@@ -7759,7 +7815,19 @@ LANGUAGE sql STABLE AS $$
         -- save has to send back, and without them correcting an item's description would move it out of
         -- its group — a name is not something save_stock_item can accept for a foreign key.
         'groupId', i.group_id::text, 'subgroupId', i.subgroup_id::text,
-        'locationId', i.location_id::text, 'sublocationId', i.sublocation_id::text
+        'locationId', i.location_id::text, 'sublocationId', i.sublocation_id::text,
+        -- Every heat still on the shelf, oldest first, with what is left of it and the certificate it
+        -- arrived with. What the issue form offers, and what issue_stock checks against.
+        'heats', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'heat', h.heat_no, 'certificate', h.cert, 'received', h.received, 'remaining', h.left_of_it
+          ) ORDER BY h.first_in) FROM (
+            SELECT m.heat_no, min(m.id) AS first_in, max(m.material_cert_ref) FILTER (WHERE m.kind = 'receipt') AS cert,
+                   sum(m.quantity) FILTER (WHERE m.kind = 'receipt') AS received,
+                   sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END) AS left_of_it
+              FROM stock_movement m
+             WHERE m.stock_item_id = i.id AND m.heat_no IS NOT NULL
+               AND m.kind IN ('receipt', 'return', 'issue', 'scrap')
+             GROUP BY m.heat_no) h WHERE h.left_of_it > 0), '[]'::jsonb)
       ) ORDER BY i.code) FROM stock_item i), '[]'::jsonb),
 
     -- The movements, which are the whole reason the store's figures can be trusted: every change to a
@@ -7773,7 +7841,7 @@ LANGUAGE sql STABLE AS $$
         'id', m.id::text, 'ref', m.ref, 'time', m.moved_at, 'action', m.kind,
         'code', (SELECT s.code FROM stock_item s WHERE s.id = m.stock_item_id),
         'qty', m.quantity, 'unit', m.unit, 'from', m.moved_from, 'to', m.moved_to,
-        'user', m.moved_by, 'note', m.note,
+        'user', m.moved_by, 'note', m.note, 'heat', m.heat_no, 'certificate', m.material_cert_ref,
         'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = m.jobcard_id),
         'projectNo', (SELECT p.ref FROM project p
                       JOIN jobcard j ON j.project_id = p.id WHERE j.id = m.jobcard_id)

@@ -984,8 +984,22 @@ function theStoreCanBeStockedAndCounted() {
     `SELECT save_project(NULL, 'Store frame', ${f.customer}, 'quotation');`);
   const jobcard = ok('and a job on it', 'varmak_office', office,
     `SELECT save_jobcard(NULL, ${project}, 'Store weldment');`);
+  // Traced steel: fifty kilos arrived as heat H240516 with its certificate, so taking it off the shelf
+  // means saying which heat it was — and the movement keeps both, which is what a weld record points at.
+  refused('taking traced steel without saying which heat', 'varmak_workshop', PEOPLE.welder,
+    `SELECT issue_material_offline(${item}, 12, ${jobcard}, 'Frame plates', 'store-0000');`,
+    /S355-12 is traced by heat number — say which heat this came from: H240516 \(50 KG\)/);
+  refused('a heat that never arrived', 'varmak_workshop', PEOPLE.welder,
+    `SELECT issue_material_offline(${item}, 12, ${jobcard}, 'Frame plates', 'store-000x', 'H999999');`,
+    /no delivery of S355-12 carried heat H999999/);
+  refused('more of a heat than arrived with it', 'varmak_workshop', PEOPLE.welder,
+    `SELECT issue_material_offline(${item}, 51, ${jobcard}, 'Frame plates', 'store-000y', 'H240516');`,
+    /only 50 KG of heat H240516 is left/);
   ok('a welder taking twelve kilos for a job', 'varmak_workshop', PEOPLE.welder,
-    `SELECT issue_material_offline(${item}, 12, ${jobcard}, 'Frame plates', 'store-0001');`);
+    `SELECT issue_material_offline(${item}, 12, ${jobcard}, 'Frame plates', 'store-0001', 'H240516');`);
+  assert.equal(value(`SELECT heat_no || '|' || material_cert_ref FROM stock_movement
+    WHERE stock_item_id = ${item} AND kind = 'issue' ORDER BY id DESC LIMIT 1;`), 'H240516|MTC_H240516.pdf',
+    'the issue carries the heat it came from and the certificate that heat arrived with');
   assert.equal(value(`SELECT stock::text FROM stock_item WHERE id = ${item};`), '106.000');
   assert.equal(value(`SELECT moved_by FROM stock_movement WHERE stock_item_id = ${item}
     AND kind = 'issue' ORDER BY id DESC LIMIT 1;`), 'Marko Ilic');

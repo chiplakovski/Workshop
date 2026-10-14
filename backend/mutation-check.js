@@ -1027,10 +1027,10 @@ const MUTATIONS = [
   {
     what: 'the workshop may edit stock figures directly, with no movement written',
     file: 'auth',
-    from: 'GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)',
+    from: 'GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text, text)',
     to: `GRANT UPDATE (stock, reserved) ON stock_item TO varmak_workshop;
 CREATE POLICY floor_edits_stock ON stock_item FOR UPDATE USING (is_signed_in()) WITH CHECK (is_signed_in());
-GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)`
+GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text, text)`
   },
   {
     // The hole that was really in the file, and it took two lines to make: an explicit GRANT of
@@ -1044,13 +1044,13 @@ GRANT EXECUTE ON FUNCTION issue_material(bigint, numeric, bigint, text)`
       {
         from: 'GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;',
         to: `GRANT EXECUTE ON FUNCTION next_item_number(bigint) TO varmak_admin, varmak_office;
-GRANT EXECUTE ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+GRANT EXECUTE ON FUNCTION issue_stock(bigint, numeric, bigint, text, text, text)
 TO varmak_admin, varmak_office, varmak_workshop;`
       },
       {
-        from: `REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text)
+        from: `REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text, text)
 FROM PUBLIC, varmak_admin, varmak_office, varmak_workshop;`,
-        to: 'REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text) FROM PUBLIC;'
+        to: 'REVOKE ALL ON FUNCTION issue_stock(bigint, numeric, bigint, text, text, text) FROM PUBLIC;'
       }
     ]
   },

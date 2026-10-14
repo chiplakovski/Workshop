@@ -263,7 +263,7 @@ const RPC = {
 
   book_hours: ['jobcard_id', 'operation_id', 'hours', 'worked_on', 'note', 'event_id'],
   record_operation: ['operation_id', 'status', 'event_id'],
-  issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id'],
+  issue_material_offline: ['item_id', 'quantity', 'jobcard_id', 'note', 'event_id', 'heat_no'],
 
   // People. Without these a workshop has no way to give anybody access at all, which is the state
   // this system was in until now: adding somebody meant opening psql.

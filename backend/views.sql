@@ -296,7 +296,14 @@ LANGUAGE sql STABLE AS $$
         'inspectionRequired', j.inspection_required,
         'archived', j.archived, 'created', j.created_at, 'createdBy', j.created_by,
         'notes', j.notes,
-        'operations', operations_of(j.id)
+        'operations', operations_of(j.id),
+        -- Which heats went into this job, from every issue against it that named one — not the last two
+        -- hundred movements the log carries, because a dossier asks about a job that may be months old.
+        'heats', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'code', s.code, 'heat', m.heat_no, 'certificate', m.material_cert_ref,
+            'qty', m.quantity, 'unit', m.unit, 'date', m.moved_at::date
+          ) ORDER BY m.id) FROM stock_movement m JOIN stock_item s ON s.id = m.stock_item_id
+           WHERE m.jobcard_id = j.id AND m.kind = 'issue' AND m.heat_no IS NOT NULL), '[]'::jsonb)
       ) ORDER BY j.ref) FROM jobcard j), '[]'::jsonb),
 
     'equipment', coalesce((SELECT jsonb_agg(jsonb_build_object(
@@ -597,7 +604,19 @@ LANGUAGE sql STABLE AS $$
         -- save has to send back, and without them correcting an item's description would move it out of
         -- its group — a name is not something save_stock_item can accept for a foreign key.
         'groupId', i.group_id::text, 'subgroupId', i.subgroup_id::text,
-        'locationId', i.location_id::text, 'sublocationId', i.sublocation_id::text
+        'locationId', i.location_id::text, 'sublocationId', i.sublocation_id::text,
+        -- Every heat still on the shelf, oldest first, with what is left of it and the certificate it
+        -- arrived with. What the issue form offers, and what issue_stock checks against.
+        'heats', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'heat', h.heat_no, 'certificate', h.cert, 'received', h.received, 'remaining', h.left_of_it
+          ) ORDER BY h.first_in) FROM (
+            SELECT m.heat_no, min(m.id) AS first_in, max(m.material_cert_ref) FILTER (WHERE m.kind = 'receipt') AS cert,
+                   sum(m.quantity) FILTER (WHERE m.kind = 'receipt') AS received,
+                   sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END) AS left_of_it
+              FROM stock_movement m
+             WHERE m.stock_item_id = i.id AND m.heat_no IS NOT NULL
+               AND m.kind IN ('receipt', 'return', 'issue', 'scrap')
+             GROUP BY m.heat_no) h WHERE h.left_of_it > 0), '[]'::jsonb)
       ) ORDER BY i.code) FROM stock_item i), '[]'::jsonb),
 
     -- The movements, which are the whole reason the store's figures can be trusted: every change to a
@@ -611,7 +630,7 @@ LANGUAGE sql STABLE AS $$
         'id', m.id::text, 'ref', m.ref, 'time', m.moved_at, 'action', m.kind,
         'code', (SELECT s.code FROM stock_item s WHERE s.id = m.stock_item_id),
         'qty', m.quantity, 'unit', m.unit, 'from', m.moved_from, 'to', m.moved_to,
-        'user', m.moved_by, 'note', m.note,
+        'user', m.moved_by, 'note', m.note, 'heat', m.heat_no, 'certificate', m.material_cert_ref,
         'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = m.jobcard_id),
         'projectNo', (SELECT p.ref FROM project p
                       JOIN jobcard j ON j.project_id = p.id WHERE j.id = m.jobcard_id)

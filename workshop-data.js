@@ -1768,7 +1768,41 @@
       addMovement({action:'RECEIVED',code:inv.code,qty,unit:inv.unit,from:`${input.supplier||inv.supplier} / ${poNo||'No PO'}`,to:inv.location,user:input.user||UNNAMED,heat:input.heat,certificate:input.certificate,purchaseOrderNo:linkedPo?linkedPo.no:null,deliveryNote:String(input.deliveryNote||'').trim()});
       return clone(inv);
     },
-    issue(input){const inv=inventory(input.code),p=project(input.projectNo),qty=quantity(input.qty);if(!inv||!p)return{error:'Item or project not found'};if(!qty)return{error:'Quantity must be greater than zero'};const available=inv.stock-inv.reserved;if(qty>available&&qty>inv.reserved)return{error:'Quantity exceeds available stock'};inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||UNNAMED});return{item:clone(inv),project:clone(p)}},
+    // What is left of each heat of an item, oldest first: what arrived with it less what went out from
+    // it. The server sends this per item, worked out over every movement; this browser's copy works it
+    // out from its own movements, which here are all of them.
+    itemHeats(code){
+      const inv=inventory(code);if(!inv)return[];
+      if(Array.isArray(inv.heats))return clone(inv.heats).map(h=>Object.assign(h,{received:Number(h.received)||0,remaining:Number(h.remaining)||0}));
+      const by=new Map();
+      state.movements.slice().reverse().forEach(m=>{
+        if(m.code!==inv.code||!m.heat)return;
+        const h=by.get(m.heat)||{heat:m.heat,certificate:null,received:0,remaining:0};
+        const q=Number(m.qty)||0;
+        if(m.action==='RECEIVED'){h.received+=q;h.remaining+=q;if(m.certificate)h.certificate=m.certificate;}
+        else if(m.action==='RETURN')h.remaining+=q;
+        else if(m.action==='ISSUED'||m.action==='SCRAP')h.remaining-=q;
+        by.set(m.heat,h);
+      });
+      return [...by.values()].filter(h=>h.remaining>0);
+    },
+    // Which heats went into a job: every issue against the jobcard that named one. The answer a weld
+    // record and a dossier need, read straight off the movements.
+    jobcardHeats(jobcardNo){
+      const served=state.jobcards.find(j=>j.no===jobcardNo);
+      if(served&&Array.isArray(served.heats))return served.heats.map(h=>({code:h.code,heat:h.heat,certificate:h.certificate||null,qty:Number(h.qty)||0,unit:h.unit||'',date:String(h.date||'').slice(0,10)}));
+      return state.movements.filter(m=>m.action==='ISSUED'&&m.jobcard===jobcardNo&&m.heat)
+        .map(m=>({code:m.code,heat:m.heat,certificate:m.certificate||null,qty:Number(m.qty)||0,unit:m.unit||'',date:String(m.time||'').slice(0,10)}));
+    },
+    issue(input){const inv=inventory(input.code),p=project(input.projectNo),qty=quantity(input.qty);if(!inv||!p)return{error:'Item or project not found'};if(!qty)return{error:'Quantity must be greater than zero'};const available=inv.stock-inv.reserved;if(qty>available&&qty>inv.reserved)return{error:'Quantity exceeds available stock'};
+      // Traced steel leaves from a named heat — the same rule the database keeps.
+      const heat=String(input.heat||'').trim(),heats=api.itemHeats(inv.code);let heatCert=null;
+      if(heat){const h=heats.find(x=>x.heat===heat);
+        if(!h)return{error:`No delivery of ${inv.code} carried heat ${heat} that is still on the shelf`,code:'HEAT_UNKNOWN'};
+        if(h.remaining<qty)return{error:`Only ${h.remaining} ${inv.unit} of heat ${heat} is left of what arrived with it`,code:'HEAT_SHORT'};
+        heatCert=h.certificate||null;}
+      else if(heats.length)return{error:`${inv.code} is traced by heat number — say which heat this came from: ${heats.map(h=>`${h.heat} (${h.remaining} ${inv.unit})`).join(', ')}`,code:'HEAT_REQUIRED',heats};
+inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||UNNAMED,heat:heat||undefined,certificate:heatCert||undefined});return{item:clone(inv),project:clone(p)}},
     move(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};const from=inv.location;if(input.action==='RETURN')inv.stock+=qty;if(input.action==='SCRAP')inv.stock=Math.max(0,inv.stock-qty);if(input.action==='TRANSFER'&&input.to)inv.location=input.to;addMovement({action:input.action,code:inv.code,qty,unit:inv.unit,from,to:input.to||inv.location,projectNo:input.projectNo,jobcard:input.jobcard,user:input.user||UNNAMED});return clone(inv)},
     addOffcut(offcut){offcut=clone(offcut);offcut.id=state.counters.offcut++;offcut.code=offcut.code||`OFF-${String(offcut.id).padStart(4,'0')}`;offcut.created=now().slice(0,10);offcut.status='available';state.offcuts.unshift(offcut);save(`Offcut created: ${offcut.code}`);return clone(offcut)},
     // The one real transition out of 'available' — without this, every offcut ever registered stays

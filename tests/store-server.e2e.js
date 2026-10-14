@@ -182,14 +182,22 @@ async function main() {
       document.getElementById('issueProject').value = refs.project;
       document.getElementById('issueJobcard').value = refs.jobcard;
       document.getElementById('issueQty').value = '12';
+      fillIssueHeats();
     }, { project: w.projectRef, jobcard: w.jobcardRef });
+    // The first delivery came in as heat H240516 (the form clears the heat after a receipt, so the second
+    // is untraced), and the snapshot says what is left of it.
+    assert.deepEqual(await page.locator('#issueHeat option').allInnerTexts(),
+      ['— choose the heat it came from —', 'H240516 — 50 KG left']);
+    await page.locator('#issueHeat').selectOption('H240516');
     await page.locator('#confirmIssue').click();
     await until('the issue to reach Postgres',
       () => value(`SELECT stock::text FROM stock_item WHERE id = ${w.item};`) === '88.000');
     assert.equal(value(`SELECT (jobcard_id = ${w.jobcard})::text FROM stock_movement
       WHERE kind = 'issue';`), 'true', 'material is booked against a job, which is what makes it costable');
     assert.equal(value(`SELECT moved_by FROM stock_movement WHERE kind = 'issue';`), 'Test Office');
-    step('Store: material leaves the shelf against the job, in the name of whoever issued it');
+    assert.equal(value(`SELECT heat_no FROM stock_movement WHERE kind = 'issue';`), 'H240516',
+      'and from the heat it was taken from');
+    step('Store: material leaves the shelf against the job, from a named heat, in the name of whoever issued it');
 
     // ── Counting it ────────────────────────────────────────────────────────────────────────
     await page.evaluate(() => showView('stockcount'));

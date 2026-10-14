@@ -285,7 +285,7 @@ cannot touch anything else.
 ## 5. Order of work
 
 1. ~~**Schema and constraints**, with the safety rules as triggers from the start.~~ **Done** —
-   [`backend/schema.sql`](backend/schema.sql) builds 40 tables, 190 check constraints and 19 triggers on
+   [`backend/schema.sql`](backend/schema.sql) builds 40 tables, 191 check constraints and 19 triggers on
    its own; `auth.sql` adds the sessions, the device log and the 94 row policies. Every one of them is
    attacked by [`backend/test-schema.js`](backend/test-schema.js). All six rules named in §1a
    above are in the database, including the two this list originally skipped — status transitions

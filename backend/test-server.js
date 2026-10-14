@@ -718,6 +718,29 @@ async function theMovementLogReachesTheScreen(tokens) {
   step('Store over HTTP: the movement log is in the snapshot, so a screen can say why a figure changed');
 }
 
+// Heats, over HTTP: two deliveries of one plate as two heats, a welder taking some of the first, and the
+// snapshot saying what is left of each — which is what the store's issue form offers.
+async function heatsReachTheScreen(tokens, f) {
+  const code = value(`SELECT code FROM stock_item WHERE id = ${f.item};`);
+  for (const [qty, heat, cert] of [[20, 'HT-TEST-A', 'MTC-A.pdf'], [15, 'HT-TEST-B', 'MTC-B.pdf']]) {
+    wentThrough(`receiving ${heat}`, await call('POST', '/rpc/receive_stock',
+      { token: tokens.office, body: { item_id: f.item, quantity: qty, heat_no: heat, material_cert_ref: cert } }));
+  }
+  turnedAway('a welder taking traced plate without a heat', await call('POST', '/rpc/issue_material_offline',
+    { token: tokens.floor, body: { item_id: f.item, quantity: 5, jobcard_id: f.jobcard, event_id: 'heat-http-0' } }),
+    422, /traced by heat number — say which heat this came from: HT-TEST-A \(20 .*\), HT-TEST-B \(15 /);
+  wentThrough('a welder taking five from the first heat', await call('POST', '/rpc/issue_material_offline',
+    { token: tokens.floor, body: { item_id: f.item, quantity: 5, jobcard_id: f.jobcard, event_id: 'heat-http-1', heat_no: 'HT-TEST-A' } }));
+  const snap = (await call('GET', '/read/snapshot', { token: tokens.floor })).body;
+  const plate = snap.inventory.find((i) => i.code === code);
+  assert.deepEqual(plate.heats.map((h) => [h.heat, Number(h.remaining), h.certificate]),
+    [['HT-TEST-A', 15, 'MTC-A.pdf'], ['HT-TEST-B', 15, 'MTC-B.pdf']], 'what is left of each heat, oldest first');
+  const issued = snap.movements.find((m) => m.action === 'issue' && m.heat === 'HT-TEST-A');
+  assert.ok(issued, 'the issue is in the log with its heat');
+  assert.equal(issued.certificate, 'MTC-A.pdf', 'and the certificate that heat arrived with');
+  step('Store over HTTP: each delivery keeps its heat, an issue names one, and the screen sees what is left of each');
+}
+
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
@@ -1038,6 +1061,7 @@ async function main() {
     await replayOverHttpIsHarmless(tokens, f);
     await aRefusalFromTheDatabaseReachesThePerson(tokens, f);
     await theMovementLogReachesTheScreen(tokens);
+    await heatsReachTheScreen(tokens, f);
     await theQualityRegisterWorksOverHttp(tokens, f);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
     await theServerSurvivesBadRequests();

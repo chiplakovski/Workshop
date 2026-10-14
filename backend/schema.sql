@@ -705,10 +705,17 @@ CREATE TABLE stock_movement (
   moved_from    text,
   moved_to      text,
   unit          text,
-  note          text
+  note          text,
+  -- The heat this steel came from, on the movement rather than only on the item. The item kept one
+  -- heat number, so the second delivery of the same plate overwrote the first's, and an issue
+  -- recorded none: the question EN 1090 asks of a welded part — which heat, with which certificate —
+  -- had no answer. A receipt carries the heat it arrived with; an issue, the heat it was taken from.
+  heat_no           text CHECK (heat_no IS NULL OR btrim(heat_no) <> ''),
+  material_cert_ref text
 );
 
 CREATE INDEX movement_item_idx ON stock_movement(stock_item_id);
+CREATE INDEX movement_heat_idx ON stock_movement(stock_item_id, heat_no) WHERE heat_no IS NOT NULL;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Quality
@@ -2189,11 +2196,16 @@ CREATE TRIGGER estimate_line_reprice_gate_trg BEFORE UPDATE ON estimate_line
 -- the CHECK fire with something nobody can act on. The CHECK stays as the floor beneath it: this
 -- function holds against the callers that use it, the CHECK holds against every other path.
 CREATE FUNCTION issue_stock(
-  p_item_id bigint, p_quantity numeric, p_jobcard_id bigint, p_by text, p_note text DEFAULT NULL
+  p_item_id bigint, p_quantity numeric, p_jobcard_id bigint, p_by text, p_note text DEFAULT NULL,
+  p_heat_no text DEFAULT NULL
 ) RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE
   item stock_item%ROWTYPE;
   movement_id bigint;
+  heat text := nullif(btrim(coalesce(p_heat_no, '')), '');
+  heat_left numeric;
+  heat_cert text;
+  heats_in_stock text;
 BEGIN
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     RAISE EXCEPTION 'a stock issue must be for more than nothing' USING ERRCODE = 'check_violation';
@@ -2208,20 +2220,53 @@ BEGIN
       p_quantity, item.unit, item.code, item.stock USING ERRCODE = 'check_violation';
   END IF;
 
+  -- Traced steel leaves the shelf from a named heat. What is left of each heat is what arrived with it,
+  -- less what has gone out from it; once an item has any heat left on the shelf, an issue that names
+  -- none would be the one part nobody can trace, so it is refused and told which heats are there.
+  IF heat IS NOT NULL THEN
+    SELECT sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END),
+           max(m.material_cert_ref) FILTER (WHERE m.kind = 'receipt')
+      INTO heat_left, heat_cert
+      FROM stock_movement m
+     WHERE m.stock_item_id = p_item_id AND m.heat_no = heat AND m.kind IN ('receipt', 'return', 'issue', 'scrap');
+    IF heat_left IS NULL THEN
+      RAISE EXCEPTION 'no delivery of % carried heat %', item.code, heat USING ERRCODE = 'check_violation';
+    END IF;
+    IF heat_left < p_quantity THEN
+      RAISE EXCEPTION 'only % % of heat % is left of what arrived with it',
+        trim_scale(heat_left), item.unit, heat USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    SELECT string_agg(h.heat_no || ' (' || trim_scale(h.left_of_it) || ' ' || item.unit || ')', ', ' ORDER BY h.first_in)
+      INTO heats_in_stock
+      FROM (SELECT m.heat_no, min(m.id) AS first_in,
+                   sum(CASE WHEN m.kind IN ('receipt', 'return') THEN m.quantity ELSE -m.quantity END) AS left_of_it
+              FROM stock_movement m
+             WHERE m.stock_item_id = p_item_id AND m.heat_no IS NOT NULL
+               AND m.kind IN ('receipt', 'return', 'issue', 'scrap')
+             GROUP BY m.heat_no) h
+     WHERE h.left_of_it > 0;
+    IF heats_in_stock IS NOT NULL THEN
+      RAISE EXCEPTION '% is traced by heat number — say which heat this came from: %', item.code, heats_in_stock
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
   UPDATE stock_item
      SET stock = stock - p_quantity,
          reserved = GREATEST(0, reserved - p_quantity)
    WHERE id = p_item_id;
 
-  INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by, note)
-  VALUES (p_item_id, 'issue', p_quantity, p_jobcard_id, p_by, p_note)
+  INSERT INTO stock_movement (stock_item_id, kind, quantity, jobcard_id, moved_by, note, heat_no, material_cert_ref)
+  VALUES (p_item_id, 'issue', p_quantity, p_jobcard_id, p_by, p_note, heat, heat_cert)
   RETURNING id INTO movement_id;
 
   -- trim_scale so the line reads the same however the caller typed the number: 30, 30.0 and
   -- 30.000 are the same amount of steel and should not read as three different records.
   INSERT INTO activity_log (entity, entity_id, action, actor, detail)
   VALUES ('stock_item', p_item_id, 'issued', p_by,
-          trim_scale(p_quantity) || ' ' || item.unit || ' of ' || item.code);
+          trim_scale(p_quantity) || ' ' || item.unit || ' of ' || item.code
+          || coalesce(', heat ' || heat, ''));
 
   RETURN movement_id;
 END;
