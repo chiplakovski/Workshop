@@ -401,6 +401,28 @@ function halfDoneIsNeverLeftBehind(f) {
   step('All or nothing: three workflows failed at their last write, and not one row anywhere had moved');
 }
 
+// ── A day has twenty-four hours ───────────────────────────────────────────────────────────
+
+function aDayHasTwentyFourHours(w) {
+  const day = '2026-03-02';
+  ok('ten hours in the morning', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 10, '${day}', 'Long day', 'day-cap-1');`);
+  ok('ten more in the afternoon', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 10, '${day}', 'Long day', 'day-cap-2');`);
+  refused('a third entry that takes the day past twenty-four hours', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 5, '${day}', 'Long day', 'day-cap-3');`,
+    /that would make 25 hours for .* on 2026-03-02 — nobody works more than 24 hours in a day/);
+  ok('the last four hours of that day still fit', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 4, '${day}', 'Long day', 'day-cap-4');`);
+  ok('the next day starts from nothing', 'varmak_workshop', PEOPLE.welder,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 10, '2026-03-03', 'Long day', 'day-cap-5');`);
+  ok('a colleague\'s hours on the same day are theirs, not the welder\'s', 'varmak_workshop', PEOPLE.other,
+    `SELECT book_hours(${w.jobcard}, ${w.op}, 8, '${day}', 'Long day', 'day-cap-6');`);
+  assert.equal(value(`SELECT sum(hours)::text FROM hours_entry h JOIN app_user u ON u.display_name = h.worker
+                       WHERE u.id = ${PEOPLE.welder} AND worked_on = '${day}';`), '24.00');
+  step('Hours: one person\'s entries on one day are added up and stop at 24, per person and per day');
+}
+
 // ── The tablet with no signal ─────────────────────────────────────────────────────────────
 
 function askingTwiceIsHarmless(f) {
@@ -2004,6 +2026,7 @@ async function main() {
   const w = askingTwiceIsHarmless(f);
   theGatesStillHoldOnReplay(f, w);
   await twoTabletsFlushingAtOnce(f, w);
+  aDayHasTwentyFourHours(w);
   eachRoleReachesItsOwnWork(f, w);
   const work = workReachesTheFloor();
   theEngineWritesOnlyWhatItMust();

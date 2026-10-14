@@ -1267,7 +1267,17 @@
     listProjects:()=>clone(state.projects),
     getProjects:()=>clone(state.projects),
     findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
+    // One person's hours on one day, across every entry. A single entry was capped at nothing here, and
+    // several entries were never added up at all: 10 + 10 + 8 on one day went through.
+    hoursOnDay(worker,date){
+      const who=String(worker||'').trim();if(!who||who===UNNAMED||!date)return 0;
+      return(state.hours||[]).filter(h=>String(h.worker||h.user||'').trim()===who&&String(h.date||'').slice(0,10)===String(date).slice(0,10))
+        .reduce((sum,h)=>sum+(Number(h.hours)||0),0);
+    },
     logHours(entry){const hours=Number(entry.hours);if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be greater than zero'};
+      if(hours>24)return{error:'Nobody works more than 24 hours in a day'};
+      {const day=String(entry.date||now()).slice(0,10),already=api.hoursOnDay(entry.worker||entry.user,day);
+       if(already+hours>24)return{error:`That would make ${Math.round((already+hours)*100)/100} h for ${entry.worker||entry.user} on ${day}. Nobody works more than 24 hours in a day`,code:'DAY_OVER_24'};}
       // An id built from the clock is unique only while no two entries land in the same millisecond.
       // Eight rows entered from one returned sheet do exactly that, and were getting distinct ids
       // only because each save happens to take a fraction of a millisecond - luck, not design.

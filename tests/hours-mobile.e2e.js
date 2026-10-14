@@ -50,6 +50,32 @@ async function threeTapsToLogTime(page) {
   step('Hours on a phone: job, hours, save — three presses and the entry is real');
 }
 
+// One person, one day: the screen adds up what is already booked before it books more.
+async function aDayStopsAt24(page) {
+  const said = async (hours) => {
+    await page.locator('#hours').fill(String(hours));
+    // Named, as a signed-in session names it: an entry with nobody's name on it belongs to no day
+    // that can be added up, which is what this browser-only copy books when nobody is signed in.
+    await page.evaluate(() => { document.getElementById('whoName').textContent = 'Test Welder'; });
+    await page.locator('#saveEntry').click();
+    await page.waitForTimeout(300);
+    return page.evaluate(() => {
+      const text = [...document.querySelectorAll('.waskmsg')].map((m) => m.textContent).join(' || ');
+      document.querySelectorAll('.waskyes').forEach((y) => y.click());
+      return text;
+    });
+  };
+  const today = await page.evaluate(() => document.getElementById('date2').value);
+  assert.equal(await page.evaluate((d) => WorkshopData.hoursOnDay('Test Welder', d), today), 0);
+  const long = await said(13);
+  assert.match(long, /now has 13 h on/, `a thirteen-hour day is saved and pointed out: "${long}"`);
+  const before = await page.evaluate(() => WorkshopData.get().hours.length);
+  const over = await said(12);
+  assert.match(over, /would have 25 h on .* Nobody works more than 24 hours/, `"${over}"`);
+  assert.equal(await page.evaluate(() => WorkshopData.get().hours.length), before, 'the refused entry was booked anyway');
+  step('Hours on a phone: a long day is pointed out, and a day past 24 hours is refused before anything is booked');
+}
+
 // Workshops book time in halves. Typing 6.5 on a phone keyboard with a glove half off is the
 // slowest part of the screen, so the common answers are buttons and the rest moves in half hours.
 async function halfHourSteps(page) {
@@ -143,6 +169,7 @@ async function main() {
     await nothingPretends(page);
     await threeTapsToLogTime(page);
     await theDayReadsBack(page);
+    await aDayStopsAt24(page);
     await halfHourSteps(page);
     await yesterdayIsOnePress(page);
     await detailFoldsAway(page);

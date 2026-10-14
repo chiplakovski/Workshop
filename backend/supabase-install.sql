@@ -3692,6 +3692,7 @@ DECLARE
   who text := require_session('booking hours');
   seen text := already_done(p_event_id, 'book_hours');
   entry_id bigint;
+  day_total numeric;
 BEGIN
   IF seen IS NOT NULL THEN
     RETURN seen;
@@ -3699,6 +3700,18 @@ BEGIN
 
   -- The worker is the session, never a parameter. An hours entry somebody else's name can be put
   -- on is not a timesheet.
+  -- One person, one day, every entry added up. Each entry was held to 24 hours by the table, but
+  -- three entries of ten went through, and an hours total over a day's length goes straight into the
+  -- invoice basis. Locked per person and day so two tablets booking at once cannot both slip under.
+  PERFORM pg_advisory_xact_lock(hashtext('hours:' || who || ':' || coalesce(p_worked_on, current_date)));
+  day_total := coalesce(p_hours, 0) + (SELECT coalesce(sum(hours), 0) FROM hours_entry
+                 WHERE worker = who AND worked_on = coalesce(p_worked_on, current_date));
+  IF day_total > 24 THEN
+    RAISE EXCEPTION 'that would make % hours for % on % — nobody works more than 24 hours in a day',
+      trim_scale(day_total), who, coalesce(p_worked_on, current_date)
+      USING ERRCODE = 'check_violation';
+  END IF;
+
   -- Same as above: null means "not given", so today.
   INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours, worked_on, note)
   VALUES (p_jobcard_id, p_operation_id, who, p_hours, coalesce(p_worked_on, current_date), p_note)

@@ -4509,3 +4509,20 @@ test('the activity line stops growing at a thousand entries', ()=>{
   assert.match(activity[0].reason,/Activity Customer 1204/,'the newest line is the one kept at the top');
   assert.equal(WD.get().customers.length,1205,'capping the log must not touch the records');
 });
+
+test('one person\'s hours on one day stop at 24, added up across entries', ()=>{
+  // Each entry was checked on its own and the day never added up: 10 + 10 + 8 went through.
+  const WD=loadEmptyWorkshopData();
+  const book=(hours,date,worker='Test Welder')=>WD.logHours({jobcard:'JC-1',worker,user:worker,hours,date});
+  assert.ok(!book(10,'2026-03-02').error);
+  assert.ok(!book(10,'2026-03-02').error);
+  const over=book(5,'2026-03-02');
+  assert.equal(over.code,'DAY_OVER_24','the third entry takes the day to 25 hours');
+  assert.match(over.error,/25 h for Test Welder on 2026-03-02/);
+  assert.ok(!book(4,'2026-03-02').error,'the last four hours of the day still fit');
+  assert.ok(!book(10,'2026-03-03').error,'the next day starts from nothing');
+  assert.ok(!book(8,'2026-03-02','Test Colleague').error,'a colleague\'s day is their own');
+  assert.equal(WD.hoursOnDay('Test Welder','2026-03-02'),24);
+  assert.ok(book(25,'2026-03-04').error,'one entry over a day\'s length is refused on its own');
+  assert.equal(WD.get().hours.filter(h=>h.worker==='Test Welder').length,4,'nothing refused was written');
+});
