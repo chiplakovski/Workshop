@@ -401,6 +401,35 @@ function halfDoneIsNeverLeftBehind(f) {
   step('All or nothing: three workflows failed at their last write, and not one row anywhere had moved');
 }
 
+// ── A document's file ─────────────────────────────────────────────────────────────────────
+
+function aDocumentKeepsItsFile() {
+  const office = PEOPLE.office;
+  const doc = ok('filing a drawing', 'varmak_office', office, `SELECT save_document(NULL, 'Test frame drawing', 'Drawing');`);
+  ok('the office storing the drawing\'s file', 'varmak_office', office,
+    `SELECT store_document_file(${doc}, 'frame/rev A\\final.pdf', 'application/pdf', decode('255044462d312e37', 'hex'));`);
+  assert.equal(value(`SELECT filename || '|' || storage_key || '|' || mime_type || '|' || size_bytes FROM document WHERE id = ${doc};`),
+    `frame_rev A_final.pdf|db:${doc}|application/pdf|8`, 'the register says the file is there, under a name with no path in it');
+  assert.equal(ok('a welder opening the drawing', 'varmak_workshop', PEOPLE.welder,
+    `SELECT encode(content, 'hex') FROM document_file_content(${doc});`), '255044462d312e37');
+  refused('a welder filing a file', 'varmak_workshop', PEOPLE.welder,
+    `SELECT store_document_file(${doc}, 'x.pdf', 'application/pdf', decode('00', 'hex'));`, /permission denied/);
+  refused('a file over ten megabytes', 'varmak_office', office,
+    `SELECT store_document_file(${doc}, 'big.bin', null, decode(repeat('00', 10485761), 'hex'));`, /at most 10 MB/);
+  refused('an empty file', 'varmak_office', office,
+    `SELECT store_document_file(${doc}, 'empty.pdf', null, ''::bytea);`, /an empty file is not a document/);
+  ok('storing it again replaces it', 'varmak_office', office,
+    `SELECT store_document_file(${doc}, 'frame rev B.pdf', 'application/pdf', decode('2550', 'hex'));`);
+  assert.equal(value(`SELECT count(*) || '|' || max(octet_length(content)) FROM document_file WHERE document_id = ${doc};`), '1|2');
+  refused('a welder removing it', 'varmak_workshop', PEOPLE.welder,
+    `SELECT remove_document_file(${doc});`, /permission denied/);
+  ok('the office removing it', 'varmak_office', office, `SELECT remove_document_file(${doc});`);
+  assert.equal(value(`SELECT coalesce(filename, 'none') || '|' || coalesce(storage_key, 'none') FROM document WHERE id = ${doc};`), 'none|none');
+  refused('removing a file that is not there', 'varmak_office', office,
+    `SELECT remove_document_file(${doc});`, /no file stored for that document/);
+  step('Documents: a file is stored by the office, opened by the floor, replaced, removed, and capped at 10 MB');
+}
+
 // ── The letterhead ────────────────────────────────────────────────────────────────────────
 
 function theLetterheadIsTheAdmins() {
@@ -2076,6 +2105,7 @@ async function main() {
   const work = workReachesTheFloor();
   theEngineWritesOnlyWhatItMust();
   theLetterheadIsTheAdmins();
+  aDocumentKeepsItsFile();
   theRegisterOfMachinesAndWhatHappensToThem();
   theStoreCanBeStockedAndCounted();
   theStepsRememberTheWorkDoneOnThem(work);

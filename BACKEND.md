@@ -102,7 +102,7 @@ today because there is exactly one user.
 
 ### The tables
 
-Planned as twenty-five, down from forty; **42 tables in the installed system** as built. The extra ones
+Planned as twenty-five, down from forty; **43 tables in the installed system** as built. The extra ones
 are the child tables a list on a screen turned out to need — `customer_contact`, `supplier_contact`,
 `inspection_check`, `estimate_line`, `purchase_order_line`, `allowed_transition`,
 `equipment_assignment`, `prospect_finding`, `weld_repair` — the session and device tables that
@@ -285,7 +285,7 @@ cannot touch anything else.
 ## 5. Order of work
 
 1. ~~**Schema and constraints**, with the safety rules as triggers from the start.~~ **Done** —
-   [`backend/schema.sql`](backend/schema.sql) builds 40 tables, 191 check constraints and 19 triggers on
+   [`backend/schema.sql`](backend/schema.sql) builds 41 tables, 194 check constraints and 19 triggers on
    its own; `auth.sql` adds the sessions, the device log and the 94 row policies. Every one of them is
    attacked by [`backend/test-schema.js`](backend/test-schema.js). All six rules named in §1a
    above are in the database, including the two this list originally skipped — status transitions

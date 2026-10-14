@@ -93,7 +93,7 @@ const ALL_TABLES = [
   'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_contact', 'supplier_item',
   'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
-  'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document',
+  'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document', 'document_file',
   // The welding registers. In the truncate list because a fixture that leaves a weld behind is a fixture
   // whose next test counts one more than it should — and the weld log is the one register where a row
   // nobody expected is indistinguishable from a real one.

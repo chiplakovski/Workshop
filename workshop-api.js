@@ -195,6 +195,51 @@
     return { ok: false, notFound: result.status === 404, refused: result.body.refused || 'the lookup did not go through' };
   }
 
+  // A document's file, up and down. Not through request(), which speaks JSON: these carry the bytes.
+  async function uploadDocumentFile(documentId, file, filename) {
+    const token = readToken();
+    let response;
+    try {
+      response = await fetch(BASE + '/files/' + encodeURIComponent(documentId), {
+        method: 'POST',
+        headers: Object.assign({ 'content-type': (file && file.type) || 'application/octet-stream',
+          'x-filename': encodeURIComponent(filename || (file && file.name) || 'file') },
+          token ? { authorization: 'Bearer ' + token } : {}),
+        body: file
+      });
+    } catch (e) {
+      return { ok: false, offline: true, refused: 'no connection to the workshop' };
+    }
+    let body = {};
+    try { body = await response.json(); } catch (e) { body = {}; }
+    if (response.status === 200) return { ok: true, result: body.result };
+    if (response.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+    if (response.status === 413) return { ok: false, refused: 'that file is larger than 10 MB' };
+    return { ok: false, refused: body.refused || 'the file did not go through' };
+  }
+
+  async function downloadDocumentFile(documentId) {
+    const token = readToken();
+    let response;
+    try {
+      response = await fetch(BASE + '/files/' + encodeURIComponent(documentId),
+        { headers: token ? { authorization: 'Bearer ' + token } : {} });
+    } catch (e) {
+      return { ok: false, offline: true, refused: 'no connection to the workshop' };
+    }
+    if (response.status !== 200) {
+      let body = {};
+      try { body = await response.json(); } catch (e) { body = {}; }
+      if (response.status === 401) return { ok: false, signedOut: true, refused: 'sign in again' };
+      return { ok: false, refused: body.refused || 'the file could not be fetched' };
+    }
+    const disposition = response.headers.get('content-disposition') || '';
+    const named = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+    let filename = 'file';
+    try { if (named) filename = decodeURIComponent(named[1]); } catch (e) { /* keep the plain name */ }
+    return { ok: true, blob: await response.blob(), filename };
+  }
+
   root.WorkshopApi = {
     available: available,
     signedIn: function () { return !!readToken(); },
@@ -204,6 +249,8 @@
     read: read,
     call: call,
     lookupCompany: lookupCompany,
+    uploadDocumentFile: uploadDocumentFile,
+    downloadDocumentFile: downloadDocumentFile,
     userId: userId,
     base: BASE
   };

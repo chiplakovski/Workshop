@@ -1509,6 +1509,18 @@ CREATE TABLE document (
     expires_on IS NULL OR kind IN ('Certificate', 'Drawing', 'Report', 'Document'))
 );
 
+-- The file itself, for a document that has one. In the database rather than a separate store: a
+-- workshop's certificates and drawings are megabytes, not terabytes, and one place to back up and
+-- restore is one place that can be wrong. Ten megabytes a file, which is a scanned certificate or a
+-- drawing set with room to spare; anything bigger is a video, and this is not where videos go.
+CREATE TABLE document_file (
+  document_id bigint PRIMARY KEY REFERENCES document(id) ON DELETE CASCADE,
+  content     bytea NOT NULL CHECK (octet_length(content) BETWEEN 1 AND 10485760),
+  sha256      text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+  stored_by   text NOT NULL CHECK (btrim(stored_by) <> ''),
+  stored_at   timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE INDEX document_entity_idx ON document(entity, entity_id);
 -- The question the register is opened to answer: what is running out.
 CREATE INDEX document_expiry_idx ON document(expires_on) WHERE expires_on IS NOT NULL;

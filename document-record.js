@@ -21,9 +21,9 @@
 // called module and record. The database resolves the pair and refuses a reference nothing answers to, so
 // this file's only job is knowing that 'Unlinked' and 'General' are the screen's words for nothing.
 //
-// **The file.** There is no object storage yet, so `fileData`, `fileName`, `mimeType` and `fileSize` are
-// never sent. They are not dropped silently: the register holds the record, its expiry and its revision,
-// and the screens say so at the point somebody attaches a file.
+// **The file.** `fileData`, `fileName`, `mimeType` and `fileSize` are not part of save_document: the record
+// is saved first, and the bytes then go to /api/files/<id> (store_document_file), which sets the name,
+// type and size on the register itself. So the register cannot say a file is there when it is not.
 (function (root) {
   const trimmed = (v) => {
     const s = v === undefined || v === null ? '' : String(v).trim();

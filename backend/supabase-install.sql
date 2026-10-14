@@ -1560,6 +1560,18 @@ CREATE TABLE document (
     expires_on IS NULL OR kind IN ('Certificate', 'Drawing', 'Report', 'Document'))
 );
 
+-- The file itself, for a document that has one. In the database rather than a separate store: a
+-- workshop's certificates and drawings are megabytes, not terabytes, and one place to back up and
+-- restore is one place that can be wrong. Ten megabytes a file, which is a scanned certificate or a
+-- drawing set with room to spare; anything bigger is a video, and this is not where videos go.
+CREATE TABLE document_file (
+  document_id bigint PRIMARY KEY REFERENCES document(id) ON DELETE CASCADE,
+  content     bytea NOT NULL CHECK (octet_length(content) BETWEEN 1 AND 10485760),
+  sha256      text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+  stored_by   text NOT NULL CHECK (btrim(stored_by) <> ''),
+  stored_at   timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE INDEX document_entity_idx ON document(entity, entity_id);
 -- The question the register is opened to answer: what is running out.
 CREATE INDEX document_expiry_idx ON document(expires_on) WHERE expires_on IS NOT NULL;
@@ -2820,6 +2832,9 @@ GRANT SELECT ON
   -- which is the test the comment above sets for being in this list — and a welder holding a drawing
   -- that is wrong needs to be able to ring somebody.
   customer_contact,
+  -- The file behind a document: a drawing or a certificate a welder has to be able to open, and never
+  -- a price.
+  document_file,
   -- The firm's own letterhead: its address, registration and the account it is paid into. All of it
   -- is printed on every offer the firm sends, and none of it is a price.
   company_profile
@@ -2964,7 +2979,7 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- Both contact lists are replaced wholesale by their save functions, which delete and re-insert, so the
 -- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
 -- for an edit: a contact who has left the company is not history, they are a mistake in a list.
-GRANT DELETE ON customer_contact, supplier_contact TO varmak_office;
+GRANT DELETE ON customer_contact, supplier_contact, document_file TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
@@ -3055,7 +3070,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
     'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
-    'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event',
+    'item_group', 'location', 'offcut', 'barcode', 'document', 'document_file', 'equipment', 'equipment_event',
     'customer_contact', 'supplier_contact'
   ]
   LOOP
@@ -4041,6 +4056,68 @@ LANGUAGE sql STABLE AS $$
   ) ORDER BY u.display_name), '[]'::jsonb) FROM app_user u;
 $$;
 
+-- The file behind a document. Stored by the office, like the register itself; read by everybody signed
+-- in, because the welder holding revision A of a drawing is the reason the register exists. The row in
+-- `document` says the file is there (filename, size, type, and a storage key naming this table), so the
+-- register and the file cannot disagree about whether there is one.
+CREATE FUNCTION store_document_file(p_document_id bigint, p_filename text, p_mime_type text, p_content bytea)
+RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('storing a file');
+  name text := nullif(btrim(regexp_replace(coalesce(p_filename, ''), '[\\/\r\n]+', '_', 'g')), '');
+  doc text;
+BEGIN
+  SELECT ref INTO doc FROM document WHERE id = p_document_id;
+  IF doc IS NULL THEN
+    RAISE EXCEPTION 'no such document' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  IF p_content IS NULL OR octet_length(p_content) = 0 THEN
+    RAISE EXCEPTION 'an empty file is not a document';
+  END IF;
+  IF octet_length(p_content) > 10485760 THEN
+    RAISE EXCEPTION 'a file can be at most 10 MB — this one is % MB', round(octet_length(p_content) / 1048576.0, 1);
+  END IF;
+  INSERT INTO document_file (document_id, content, sha256, stored_by)
+  VALUES (p_document_id, p_content, encode(sha256(p_content), 'hex'), who)
+  ON CONFLICT (document_id) DO UPDATE
+    SET content = EXCLUDED.content, sha256 = EXCLUDED.sha256, stored_by = EXCLUDED.stored_by, stored_at = now();
+  UPDATE document SET filename = coalesce(name, 'file'), storage_key = 'db:' || p_document_id,
+         mime_type = nullif(btrim(coalesce(p_mime_type, '')), ''), size_bytes = octet_length(p_content),
+         updated_at = now()
+   WHERE id = p_document_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('document', p_document_id, 'file stored', who, doc || ' ' || coalesce(name, 'file'));
+  RETURN doc;
+END;
+$$;
+
+CREATE FUNCTION document_file_content(p_document_id bigint)
+RETURNS TABLE (filename text, mime_type text, content bytea)
+LANGUAGE sql STABLE AS $$
+  SELECT d.filename, d.mime_type, f.content
+    FROM document d JOIN document_file f ON f.document_id = d.id
+   WHERE d.id = p_document_id;
+$$;
+
+CREATE FUNCTION remove_document_file(p_document_id bigint) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('removing a file');
+  doc text;
+BEGIN
+  DELETE FROM document_file WHERE document_id = p_document_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'there is no file stored for that document';
+  END IF;
+  UPDATE document SET filename = NULL, storage_key = NULL, mime_type = NULL, size_bytes = NULL, updated_at = now()
+   WHERE id = p_document_id RETURNING ref INTO doc;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('document', p_document_id, 'file removed', who, doc);
+  RETURN doc;
+END;
+$$;
+
 -- The letterhead. An admin's job: it carries the firm's registration and the account it is paid into,
 -- and a wrong bank account on an offer is money sent somewhere else. Empty means "not given", and
 -- prints nothing, which is the point of keeping these as facts the firm enters rather than defaults.
@@ -4103,6 +4180,9 @@ REVOKE ALL ON FUNCTION change_my_password(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_active(bigint, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION set_person_role(bigint, user_role) FROM PUBLIC;
 REVOKE ALL ON FUNCTION people() FROM PUBLIC;
+REVOKE ALL ON FUNCTION store_document_file(bigint, text, text, bytea) FROM PUBLIC;
+REVOKE ALL ON FUNCTION document_file_content(bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION remove_document_file(bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_company(text, text, text, text, text, text, text, text, text, text, boolean, text, text, text) FROM PUBLIC;
 
 -- The bootstrap is callable without a session, because there is nobody to sign in as yet. It is the
@@ -4731,6 +4811,9 @@ GRANT EXECUTE ON FUNCTION add_person(text, text, user_role), set_person_pin(bigi
 TO varmak_admin;
 GRANT EXECUTE ON FUNCTION change_my_password(text, text), people()
 TO varmak_admin, varmak_office, varmak_workshop;
+GRANT EXECUTE ON FUNCTION store_document_file(bigint, text, text, bytea), remove_document_file(bigint)
+TO varmak_admin, varmak_office;
+GRANT EXECUTE ON FUNCTION document_file_content(bigint) TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- What the HTTP layer needs to know about a token

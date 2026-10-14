@@ -391,15 +391,39 @@ async function main() {
     // ── The file itself ─────────────────────────────────────────────────────────────────────
     const noFile = await page.evaluate(async (id) =>
       (await WorkshopData.removeDocumentContent(Number(id))).error || '', loose);
-    assert.match(noFile, /no file stored on the server/i,
-      `the screen must say what is held and what is not, and said: ${noFile}`);
+    assert.match(noFile, /no file stored for that document/i,
+      `removing a file that is not there is refused in the database's words, and said: ${noFile}`);
+    // Filed with a file, the way the form sends it: the record first, then the bytes to that record.
+    const withFile = await page.evaluate(async () => {
+      const bytes = 'Test certificate body';
+      const saved = await WorkshopData.upsertDocument({ name: 'Test certificate with a file', type: 'Certificate',
+        module: 'Projects', record: 'Unlinked', status: 'Valid', revision: '1', author: 'x',
+        fileName: 'cert 3.1.pdf', mimeType: 'application/pdf', fileSize: bytes.length,
+        fileData: 'data:application/pdf;base64,' + btoa(bytes) });
+      return saved;
+    });
+    assert.ok(withFile && !withFile.error && withFile.id, `the document with its file was withFile: ${JSON.stringify(withFile)}`);
+    assert.equal(value(`SELECT d.filename || '|' || convert_from(f.content, 'UTF8') FROM document d
+      JOIN document_file f ON f.document_id = d.id WHERE d.id = ${withFile.id};`), 'cert 3.1.pdf|Test certificate body',
+      'the file is on the server, under the record it belongs to');
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 8000 }),
+      page.evaluate((id) => { selected = id; return downloadSelected(); }, withFile.id)
+    ]);
+    assert.equal(download.suggestedFilename(), 'cert 3.1.pdf');
+    const fs = require('node:fs');
+    assert.equal(fs.readFileSync(await download.path(), 'utf8'), 'Test certificate body', 'and comes back as it went up');
+    const removed = await page.evaluate(async (id) => (await WorkshopData.removeDocumentContent(id)).error || 'ok', withFile.id);
+    assert.equal(removed, 'ok');
+    assert.equal(value(`SELECT count(*) FROM document_file WHERE document_id = ${withFile.id};`), '0');
+    step('Documents: a file goes up with its record, comes back down as it went, and can be removed');
     const folder = await page.evaluate(() => {
       const answer = WorkshopData.upsertDocumentFolder({ name: 'Certificates 2026' });
       return (answer && answer.error) || '';
     });
     assert.match(folder, /not on the workshop database yet/i,
       `a folder has no table and must refuse out loud, and said: ${folder}`);
-    step('Documents: the file and the folder refuse out loud, and say what the register does hold');
+    step('Documents: a folder refuses out loud, and says what the register does hold');
 
     // ── A welder ────────────────────────────────────────────────────────────────────────────
     //
@@ -419,7 +443,7 @@ async function main() {
       }));
       return got.docs ? got : null;
     });
-    assert.equal(forTheFloor.docs, 5, 'a welder reads the whole register');
+    assert.equal(forTheFloor.docs, Number(value(`SELECT count(*) FROM document;`)), 'a welder reads the whole register');
     assert.deepEqual(forTheFloor.onOrder, [w.orderRef],
       'including a document filed against a purchase order, by the order\'s own number');
     assert.ok(forTheFloor.jobcards >= 1,

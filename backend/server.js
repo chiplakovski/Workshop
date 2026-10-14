@@ -242,6 +242,7 @@ const RPC = {
     'revision', 'author', 'notes'],
   link_document: ['id', 'module', 'record'],
   supersede_document: ['id', 'by_id'],
+  remove_document_file: ['document_id'],
   add_document_note: ['id', 'text'],
 
   // The welding registers. `record_weld` takes no welder: the database takes it from the session, so a
@@ -350,6 +351,30 @@ function readBody(req) {
       if (!raw) return resolve({});
       try { resolve(JSON.parse(raw)); } catch { reject(new Error('body is not JSON')); }
     });
+    req.on('error', reject);
+  });
+}
+
+// A document's file, which is the one body this server takes that is not JSON and not small. Read to
+// its limit and no further, for the same reason as readBody above.
+const FILE_LIMIT = 10 * 1024 * 1024;
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > limit) {
+        chunks.length = 0;
+        req.removeAllListeners('data');
+        req.removeAllListeners('end');
+        req.pause();
+        reject(Object.assign(new Error('request too large'), { status: 413 }));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
@@ -529,6 +554,47 @@ async function handleLookup(req, res, given) {
   }
 }
 
+// The file behind a document. Stored and read through the database functions, which decide who may
+// do either; this only carries the bytes. A file is always handed back as a download, with a type that
+// cannot run: a page on this origin that rendered an uploaded HTML or SVG file would be a page anybody
+// who could upload a document could write, with every session token in reach.
+async function handleFile(req, res, given) {
+  const token = bearer(req);
+  if (!token) return send(res, 401, { refused: 'sign in first' });
+  if (!/^[0-9]{1,18}$/.test(given)) return send(res, 404, { refused: 'no such document' });
+  const id = Number(given);
+  if (req.method === 'POST') {
+    const content = await readRaw(req, FILE_LIMIT);
+    let filename = '';
+    try { filename = decodeURIComponent(String(req.headers['x-filename'] || '')); } catch { filename = ''; }
+    const mime = String(req.headers['content-type'] || '').split(';')[0].trim() || null;
+    const result = await asSignedIn(token, async (client) => {
+      const { rows } = await client.query('SELECT store_document_file($1, $2, $3, $4) AS result',
+        [id, filename, mime, content]);
+      return { status: 200, body: { result: rows[0].result } };
+    });
+    return send(res, result.status, result.body);
+  }
+  if (req.method !== 'GET') return send(res, 405, { refused: 'not allowed' });
+  const result = await asSignedIn(token, async (client) => {
+    const { rows } = await client.query('SELECT * FROM document_file_content($1)', [id]);
+    return rows.length ? { status: 200, file: rows[0] }
+      : { status: 404, body: { refused: 'no file is stored for that document' } };
+  });
+  if (!result.file) return send(res, result.status, result.body);
+  const { filename, mime_type: type, content } = result.file;
+  const runnable = /html|xml|svg|javascript|ecmascript/i.test(type || '');
+  res.writeHead(200, {
+    'content-type': !type || runnable ? 'application/octet-stream' : type,
+    'content-length': content.length,
+    'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename || 'file')}`,
+    'x-content-type-options': 'nosniff',
+    'content-security-policy': "sandbox; default-src 'none'",
+    'cache-control': 'no-store'
+  });
+  return res.end(content);
+}
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -579,6 +645,8 @@ const server = http.createServer(async (req, res) => {
 
     const route = url.pathname.slice(4);
     const key = `${req.method} ${route}`;
+    // Before the JSON body is read, because a file is neither.
+    if (route.startsWith('/files/')) return await handleFile(req, res, route.slice(7));
     const body = req.method === 'POST' ? await readBody(req) : {};
 
     if (routes[key]) return await routes[key](req, res, body);

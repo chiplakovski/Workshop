@@ -489,6 +489,9 @@ GRANT SELECT ON
   -- which is the test the comment above sets for being in this list — and a welder holding a drawing
   -- that is wrong needs to be able to ring somebody.
   customer_contact,
+  -- The file behind a document: a drawing or a certificate a welder has to be able to open, and never
+  -- a price.
+  document_file,
   -- The firm's own letterhead: its address, registration and the account it is paid into. All of it
   -- is printed on every offer the firm sends, and none of it is a price.
   company_profile
@@ -633,7 +636,7 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- Both contact lists are replaced wholesale by their save functions, which delete and re-insert, so the
 -- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
 -- for an edit: a contact who has left the company is not history, they are a mistake in a list.
-GRANT DELETE ON customer_contact, supplier_contact TO varmak_office;
+GRANT DELETE ON customer_contact, supplier_contact, document_file TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
@@ -724,7 +727,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
     'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
-    'item_group', 'location', 'offcut', 'barcode', 'document', 'equipment', 'equipment_event',
+    'item_group', 'location', 'offcut', 'barcode', 'document', 'document_file', 'equipment', 'equipment_event',
     'customer_contact', 'supplier_contact'
   ]
   LOOP

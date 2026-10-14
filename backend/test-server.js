@@ -102,7 +102,7 @@ function theServerDecidesNothing() {
     'record_equipment_event', 'record_ncr_step', 'record_ndt',
     'record_operation', 'record_prospect_finding', 'record_stocktake',
     'record_weld', 'record_weld_repair', 'release_hold',
-    'replace_inspection_checks', 'return_equipment', 'save_company', 'save_customer',
+    'remove_document_file', 'replace_inspection_checks', 'return_equipment', 'save_company', 'save_customer',
     'save_document', 'save_equipment', 'save_inspection',
     'save_jobcard', 'save_lead', 'save_ncr',
     'save_opportunity', 'save_project', 'save_stock_item',
@@ -821,6 +821,41 @@ async function bolagsverketThroughTheServer(tokens) {
   }
 }
 
+// A document's file over HTTP: up as the office, down as the floor, and never served as a page.
+async function filesOverHttp(tokens) {
+  const doc = wentThrough('filing a document to hold a file', await call('POST', '/rpc/save_document',
+    { token: tokens.office, body: { title: 'Test file holder', kind: 'Document' } }));
+  const up = (token, body, headers = {}) => fetch(`${BASE}/files/${doc}`, {
+    method: 'POST', body,
+    headers: { 'content-type': 'text/html', 'x-filename': encodeURIComponent('page.html'), ...headers,
+      ...(token ? { authorization: `Bearer ${token}` } : {}) }
+  });
+  const page = '<script>alert(document.cookie)</script>';
+  assert.equal((await up(null, page)).status, 401, 'no session, no file');
+  assert.equal((await up(tokens.floor, page)).status, 403, 'the floor does not file documents');
+  const stored = await up(tokens.office, page);
+  assert.equal(stored.status, 200, await stored.text());
+  const down = await fetch(`${BASE}/files/${doc}`, { headers: { authorization: `Bearer ${tokens.floor}` } });
+  assert.equal(down.status, 200, 'the floor opens what is on file');
+  assert.equal(await down.text(), page, 'the same bytes come back');
+  assert.equal(down.headers.get('content-type'), 'application/octet-stream',
+    'an uploaded page is handed back as bytes, never as a page this origin would run');
+  assert.match(down.headers.get('content-disposition'), /^attachment; filename\*=UTF-8''page\.html$/);
+  assert.match(down.headers.get('content-security-policy'), /sandbox/);
+  assert.equal(down.headers.get('x-content-type-options'), 'nosniff');
+  const big = await up(tokens.office, Buffer.alloc(10 * 1024 * 1024 + 1), { 'content-type': 'application/octet-stream' })
+    .then((r) => r.status).catch(() => 'connection closed');
+  assert.ok(big === 413 || big === 'connection closed', `a file over 10 MB got ${big}`);
+  assert.equal((await fetch(`${BASE}/files/999999`, { headers: { authorization: `Bearer ${tokens.floor}` } })).status, 404);
+  assert.equal((await fetch(`${BASE}/files/not-a-number`, { headers: { authorization: `Bearer ${tokens.floor}` } })).status, 404);
+  const snap = (await call('GET', '/read/snapshot', { token: tokens.floor })).body;
+  const listed = snap.documents.find((d) => String(d.id) === String(doc));
+  assert.equal(listed.fileName, 'page.html');
+  assert.equal(Number(listed.fileSize), Buffer.byteLength(page));
+  attempts.refused += 4; attempts.allowed += 2;
+  step('Documents over HTTP: the office files the bytes, the floor opens them, nothing over 10 MB, and nothing comes back as a page');
+}
+
 // ── The run ───────────────────────────────────────────────────────────────────────────────
 
 function buildDatabase() {
@@ -1143,6 +1178,7 @@ async function main() {
     await theMovementLogReachesTheScreen(tokens);
     await heatsReachTheScreen(tokens, f);
     await bolagsverketThroughTheServer(tokens);
+    await filesOverHttp(tokens);
     await theQualityRegisterWorksOverHttp(tokens, f);
     await theFirstRunRefusalSaysWhatIsActuallyWrong();
     await theServerSurvivesBadRequests();

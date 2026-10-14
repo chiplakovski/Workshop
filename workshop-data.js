@@ -584,8 +584,8 @@
     'marketingLeads','marketingOpportunities','marketingTenders',
     // The document register. Read by everybody, written by the office: a welder holding revision A of a
     // drawing while revision B is on file is the failure this register exists to prevent, so the floor has
-    // to be able to see what is current. No file bytes in it — there is no object storage yet, and the
-    // screen says so rather than offering a download that leads nowhere.
+    // to be able to see what is current. No file bytes in it: the register says a file is there (name,
+    // size, type) and the bytes are fetched from the server only when somebody opens one.
     'documents',
     // The welding registers. Read by everybody and written by whoever did the work: a welder logs their
     // own weld, and the procedures and qualifications are the office's. All four are here rather than in

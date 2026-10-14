@@ -183,7 +183,7 @@ const T={
     report_downloaded:'Document report downloaded ({n} records)',
     report_not_kept:'Exported. The report definition was not kept: ',
     default_report_name:'Document Register',
-    srv_unreachable:'The server cannot be reached.',srv_refused:'The server refused that.',
+    file_stored_server:'{kb} KB stored on the server, ready to download.',srv_file_refused:'Filed in the register, but the file did not go with it: {why}',srv_unreachable:'The server cannot be reached.',srv_refused:'The server refused that.',
     srv_filed_no_file:'Filed in the register. The file itself is not stored on the server yet — the record, its expiry and its revision are.',
     srv_not_here:'That document is not in this workshop.',
     srv_no_file_to_remove:'There is no file stored on the server to remove — the register holds the record, not the file.',
@@ -253,7 +253,7 @@ const T={
     report_downloaded:'Dokumentrapport nedladdad ({n} poster)',
     report_not_kept:'Exporterad. Rapportdefinitionen sparades inte: ',
     default_report_name:'Dokumentregister',
-    srv_unreachable:'Servern kan inte nås.',srv_refused:'Servern nekade det.',
+    file_stored_server:'{kb} KB sparat på servern, klart att ladda ner.',srv_file_refused:'Registrerat, men filen följde inte med: {why}',srv_unreachable:'Servern kan inte nås.',srv_refused:'Servern nekade det.',
     srv_filed_no_file:'Registrerat. Själva filen sparas ännu inte på servern — posten, dess utgångsdatum och dess revision gör det.',
     srv_not_here:'Det dokumentet finns inte i denna verkstad.',
     srv_no_file_to_remove:'Det finns ingen fil sparad på servern att ta bort — registret håller posten, inte filen.',
@@ -323,7 +323,7 @@ const T={
     report_downloaded:'Извештајот за документи е преземен ({n} записи)',
     report_not_kept:'Извезено. Дефиницијата на извештајот не е зачувана: ',
     default_report_name:'Регистар на документи',
-    srv_unreachable:'Серверот не е достапен.',srv_refused:'Серверот го одби тоа.',
+    file_stored_server:'{kb} KB зачувано на серверот, подготвено за преземање.',srv_file_refused:'Внесено во регистарот, но датотеката не отиде со него: {why}',srv_unreachable:'Серверот не е достапен.',srv_refused:'Серверот го одби тоа.',
     srv_filed_no_file:'Внесено во регистарот. Самата датотека сѐ уште не се чува на серверот — записот, неговото истекување и неговата ревизија се чуваат.',
     srv_not_here:'Тој документ го нема во оваа работилница.',
     srv_no_file_to_remove:'Нема датотека зачувана на серверот за отстранување — регистарот го држи записот, не датотеката.',
@@ -377,10 +377,16 @@ function openUpload(scan=false){$('uploadTitle').textContent=scan?tr('act_scan')
 // document already has real module/record fields, so edit those through WorkshopData instead.
 function openLink(){const d=docs.find(x=>x.id===selected);if(!d){notify(tr('pick_first'));return;}$('linkDocumentName').textContent=d.name;$('linkModule').value=d.module||'Projects';$('linkRecord').value=d.record==='Unlinked'?'':(d.record||'');$('linkModal').classList.add('show');requestAnimationFrame(()=>$('linkRecord').focus())}
 function openFolder(){$('folderModal').classList.add('show');requestAnimationFrame(()=>$('folderName').focus())}function openDocumentReport(){$('reportModal').classList.add('show');requestAnimationFrame(()=>$('reportName').focus())}
-function preview(id){selected=id;const d=docs.find(x=>x.id===id);$('previewTitle').textContent=tr('m_preview_t');$('previewSub').textContent=d.name;$('paperName').textContent=d.name;$('paperMessage').textContent=d.fileData?tpl('file_stored',{kb:Math.max(1,Math.ceil((d.fileSize||0)/1024))}):tr('metadata_only');$('downloadBtn').disabled=!d.fileData;$('removeFileBtn').style.display=d.fileData?'':'none';$('previewMeta').innerHTML=[[tr('f_type'),typeWord(d.type)],[tr('f_module'),moduleWord(d.module)],[tr('f_record'),d.record],[tr('f_category'),d.category],[tr('f_status'),statusWord(d.status)],[tr('f_revision'),d.revision],[tr('c_updated'),dateFmt(d.updated)],[tr('f_uploadedby'),d.author]].map(r=>`<div class="metarow"><small>${r[0]}</small><b>${esc(r[1])}</b></div>`).join('');$('previewModal').classList.add('show');render()}function supersedeDoc(id){const d=docs.find(x=>x.id===id);wConfirm(tpl('confirm_supersede',{name:d.name}),async ()=>{const done=await WorkshopData.archiveDocument(id);if(done&&done.error){notify(done.error);return;}refreshDocs();render();notify(tr('superseded_ok'))},{yes:tr('yes_supersede'),danger:true})}
+function preview(id){selected=id;const d=docs.find(x=>x.id===id);$('previewTitle').textContent=tr('m_preview_t');$('previewSub').textContent=d.name;$('paperName').textContent=d.name;const has=hasFile(d);$('paperMessage').textContent=has?tpl(storedOnServer()?'file_stored_server':'file_stored',{kb:Math.max(1,Math.ceil((d.fileSize||0)/1024))}):tr('metadata_only');$('downloadBtn').disabled=!has;$('removeFileBtn').style.display=has?'':'none';$('previewMeta').innerHTML=[[tr('f_type'),typeWord(d.type)],[tr('f_module'),moduleWord(d.module)],[tr('f_record'),d.record],[tr('f_category'),d.category],[tr('f_status'),statusWord(d.status)],[tr('f_revision'),d.revision],[tr('c_updated'),dateFmt(d.updated)],[tr('f_uploadedby'),d.author]].map(r=>`<div class="metarow"><small>${r[0]}</small><b>${esc(r[1])}</b></div>`).join('');$('previewModal').classList.add('show');render()}function supersedeDoc(id){const d=docs.find(x=>x.id===id);wConfirm(tpl('confirm_supersede',{name:d.name}),async ()=>{const done=await WorkshopData.archiveDocument(id);if(done&&done.error){notify(done.error);return;}refreshDocs();render();notify(tr('superseded_ok'))},{yes:tr('yes_supersede'),danger:true})}
 function downloadBlob(content,type,filename){const blob=content instanceof Blob?content:new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function downloadSelected(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData){notify(tr('no_file_stored'));return;}const a=document.createElement('a');a.href=d.fileData;a.download=d.fileName||d.name;document.body.appendChild(a);a.click();a.remove();notify(tr('file_downloaded'))}
-function removeSelectedFile(){const d=WorkshopData.findDocument(selected);if(!d||!d.fileData)return;wConfirm(tpl('confirm_removefile',{name:d.name}),async ()=>{const done=await WorkshopData.removeDocumentContent(d.id);if(done&&done.error){notify(done.error);return;}refreshDocs();preview(d.id);notify(tr('removed_ok'))},{yes:tr('yes_removefile'),danger:true})}
+// A document has a file when this browser holds its bytes, or — online — when the register says the
+// server stores one. The second never sets fileData: the bytes stay on the server until they are asked for.
+function storedOnServer(){return !!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());}
+function hasFile(d){return !!(d&&(d.fileData||(storedOnServer()&&d.fileName)));}
+async function downloadSelected(){const d=WorkshopData.findDocument(selected);if(!hasFile(d)){notify(tr('no_file_stored'));return;}
+  if(storedOnServer()){const got=await WorkshopApi.downloadDocumentFile(d.id);if(!got.ok){notify(got.refused);return;}downloadBlob(got.blob,got.blob.type,got.filename||d.fileName||d.name);notify(tr('file_downloaded'));return;}
+const a=document.createElement('a');a.href=d.fileData;a.download=d.fileName||d.name;document.body.appendChild(a);a.click();a.remove();notify(tr('file_downloaded'))}
+function removeSelectedFile(){const d=WorkshopData.findDocument(selected);if(!hasFile(d))return;wConfirm(tpl('confirm_removefile',{name:d.name}),async ()=>{const done=await WorkshopData.removeDocumentContent(d.id);if(done&&done.error){notify(done.error);return;}refreshDocs();preview(d.id);notify(tr('removed_ok'))},{yes:tr('yes_removefile'),danger:true})}
 function csvCell(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}function documentCsv(rows){const fields=['name','type','module','record','category','status','revision','updated','author'];return [fields.join(','),...rows.map(d=>fields.map(k=>csvCell(d[k])).join(','))].join('\r\n')}
 $('file').onchange=e=>{if(e.target.files[0]&&!$('docName').value)$('docName').value=e.target.files[0].name};$('uploadForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),file=$('file').files[0];if(file&&file.size>WorkshopData.maxDocumentFileBytes){notify(tpl('too_large',{kb:Math.round(WorkshopData.maxDocumentFileBytes/1024)}));return;}let fileData='';if(file)fileData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)}).catch(()=>null);if(file&&fileData===null){notify(tr('unreadable'));return;}const saved=await WorkshopData.upsertDocument({name:f.name,type:f.type,module:f.module,record:f.record||'Unlinked',category:f.category||'General',status:f.status,expiry:f.expiry,revision:f.revision||'1',notes:f.notes,author:currentUser(),fileName:file?file.name:'',mimeType:file?file.type:'',fileSize:file?file.size:0,fileData:fileData||''});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('uploadModal');e.target.reset();render();notify(file?tr('saved_with_file'):tr('saved_metadata'))};$('linkForm').onsubmit=async e=>{e.preventDefault();const d=docs.find(x=>x.id===selected);if(!d){closeModal('linkModal');notify(tr('gone'));return;}const f=Object.fromEntries(new FormData(e.target)),record=f.record.trim();if(!record){$('linkRecord').focus();return;}const saved=await WorkshopData.updateDocument(d.id,{module:f.module,record});if(saved.error){notify(saved.error);return;}refreshDocs();selected=saved.id;closeModal('linkModal');render();notify(tr('link_saved'))};$('folderForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),saved=WorkshopData.upsertDocumentFolder({name:f.name,module:f.module,record:f.record||'General',author:currentUser()});if(saved.error){notify(saved.error);return;}refreshDocs();closeModal('folderModal');e.target.reset();$('folderRecord').value='General';render();$('category').value=saved.name;render();notify(tpl('folder_created',{name:saved.name}))};$('reportForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),rows=f.scope==='all'?docs.filter(d=>d.status!=='Superseded'):filtered(),stamp=new Date().toISOString(),base=(f.name.trim()||'Document Register').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'')||'document-register';if(f.format==='json')downloadBlob(JSON.stringify({name:f.name||'Document Register',generatedAt:stamp,documents:rows},null,2),'application/json',base+'.json');else downloadBlob('\ufeff'+documentCsv(rows),'text/csv;charset=utf-8',base+'.csv');const kept=WorkshopData.saveReport({name:f.name||'Document Register',category:'Documents',section:'saved',type:'document-export',format:f.format,rowCount:rows.length,generatedAt:stamp,filters:{view:currentView,category:$('category').value,search:$('search').value},favourite:false,archived:false});
   // The file has already downloaded by this point, which is what was asked for. Keeping the report's own
@@ -397,14 +403,24 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
 // person's laptop knows when the certificates expire.
 //
 // So the register is the workshop's now and the file half is not. The upload form still reads the file — it
-// fills the name from it, which is worth keeping — and then says plainly that the file itself is not stored
-// on the server yet, instead of writing a copy into this browser on a page that is otherwise reading from
-// the database. That outcome is the one that looks like it worked and is gone on the next machine.
+// fills the name from it, which is worth keeping — and sends the file itself to the server, under the record
+// it belongs to, rather than writing a copy into this browser on a page that is otherwise reading from the
+// database. That outcome would be the one that looks like it worked and is gone on the next machine.
 (function(){
   const onServer=()=>!!(window.WorkshopData&&WorkshopData.isServerBacked&&WorkshopData.isServerBacked());
   let sending=Promise.resolve();
 
+  // The bytes of a file the form has already read, back into something fetch can send. Not fetch(dataUrl):
+  // this page's own content-security-policy lets it talk to its server and nothing else.
+  function dataUrlToBlob(url,type){
+    const comma=url.indexOf(','),meta=url.slice(5,comma),data=url.slice(comma+1);
+    const bytes=/;base64/i.test(meta)?Uint8Array.from(atob(data),c=>c.charCodeAt(0)):new TextEncoder().encode(decodeURIComponent(data));
+    return new Blob([bytes],{type:type||meta.split(';')[0]||'application/octet-stream'});
+  }
+
   async function refresh(){
+    // Online the limit is the server's, not this browser's storage.
+    WorkshopData.maxDocumentFileBytes=10*1024*1024;
     const answer=await WorkshopApi.snapshot();
     if(answer.signedOut){location.href='login.html';return false;}
     if(answer.offline||answer.failed){notify(answer.failed||tr('srv_unreachable'));return false;}
@@ -439,13 +455,14 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
       const held=payload.id!=null?heldById(payload.id):null;
       const answer=await send('save_document',DocumentRecord.toServer(payload,held));
       if(answer.error)return {error:answer.error};
-      const saved=heldById(answer.result);
-      // Said once, on the save, rather than left for somebody to discover when the download button does
-      // nothing: the register has the record and the server has no file.
-      if(DocumentRecord.carriesAFile(payload)){
-        notify(tr('srv_filed_no_file'));
+      // The file goes up after the record exists, to the record it belongs to. If it is refused the record
+      // stays — it is a real entry in the register — and the person is told the file did not go with it.
+      if(typeof payload.fileData==='string'&&payload.fileData.startsWith('data:')){
+        const up=await WorkshopApi.uploadDocumentFile(answer.result,dataUrlToBlob(payload.fileData,payload.mimeType),payload.fileName);
+        if(!up.ok){await refresh();return {error:tpl('srv_file_refused',{why:up.refused})};}
+        await refresh();
       }
-      return saved||{id:answer.result};
+      return heldById(answer.result)||{id:answer.result};
     },
 
     async updateDocument(id,patch){
@@ -467,8 +484,9 @@ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>set
       return answer.error?{error:answer.error}:(heldById(id)||{id});
     },
 
-    async removeDocumentContent(){
-      return {error:tr('srv_no_file_to_remove')};
+    async removeDocumentContent(id){
+      const answer=await send('remove_document_file',{document_id:Number(id)});
+      return answer.error?{error:answer.error}:(heldById(id)||{id});
     },
 
     // No getDocuments here on purpose: refreshDocs() assigns it straight to the variable every render
