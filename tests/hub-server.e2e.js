@@ -207,13 +207,13 @@ async function main() {
     assert.equal(marko.initials, 'MI');
     step('Hub: on the phone the badge is the welder\'s own name and role, not the page\'s');
 
-    // The message box that sent nothing to anybody.
-    assert.equal(await page.locator('#ttInput').isDisabled(), true,
+    // The message box that sent nothing to anybody. It was switched off and said so; now it is not
+    // there at all, and nothing else on the phone hub takes text it cannot keep.
+    assert.equal(await page.locator('#ttInput, #ttSend, .teamtalk').count(), 0,
       'a box that accepts what somebody types and drops it is worse than no box');
-    assert.equal(await page.locator('#ttSend').isDisabled(), true);
-    assert.match(await page.locator('#ttInput').getAttribute('placeholder'), /nothing is sent/i,
-      'and it says so, rather than reading "Write to team…"');
-    step('Hub: the message feed says it is not connected instead of eating what is typed into it');
+    assert.equal(await page.locator('input[type="text"], textarea').count(), 0,
+      'the phone hub has nowhere to keep text, so it should not ask for any');
+    step('Hub: the phone hub has no message box that would eat what is typed into it');
 
     // And the welder's hub carries no figure in kronor, on either page.
     await page.goto(`${site}/hub-desktop.html`, { waitUntil: 'load' });
