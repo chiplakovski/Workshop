@@ -784,8 +784,15 @@ function getDateRange(filter){
   }
   return {start,end:now};
 }
+// A bare day ("2026-10-15") is that day in the workshop, from its local midnight. Read the way Date
+// reads it, it is midnight in Greenwich - 02:00 in Sweden - and between midnight and two o'clock
+// everything booked today fell after "now" and out of the report.
+function dayOrDate(v){
+  if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)){const [y,m,d]=v.split('-').map(Number);return new Date(y,m-1,d);}
+  return safeDate(v);
+}
 function inRange(dateVal,range){
-  const d=safeDate(dateVal);
+  const d=dayOrDate(dateVal);
   if(!d)return currentFilter==='all';
   return d>=range.start&&d<=range.end;
 }
@@ -1438,7 +1445,7 @@ function invoiceBasisCsv(range){
     [`${letterhead.name} — invoice basis. A working copy, not an invoice: no invoice number, no VAT, and nothing here knows what has already been billed.`],
     [[letterhead.address,letterhead.registration,letterhead.payment].filter(Boolean).join(' · ')],
     ['No labour amount: no hourly rate is recorded in the workshop system. No machine time: machine usage hours are not recorded.'],
-    ['Period', String(range.start).slice(0,10)+' to '+String(range.end).slice(0,10),
+    ['Period', localDayISO(range.start)+' to '+localDayISO(range.end),
      'Exported', new Date().toISOString().slice(0,19).replace('T',' ')],
     [],
     ['Kind','Project','Project name','Customer','Jobcard','Step or item','Description',

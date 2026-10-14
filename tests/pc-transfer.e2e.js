@@ -162,7 +162,7 @@ async function main() {
     extra.customers.push(Object.assign({}, extra.customers[0], { id: 9999, name: 'Test Transfer Andra AB', contacts: [] }));
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pc-copy-')), 'varmak-workshop-backup.json');
     fs.writeFileSync(file, JSON.stringify(extra));
-    const page = await (await browser.newContext({ viewport: { width: 1400, height: 1000 } })).newPage();
+    const page = await (await browser.newContext({ viewport: { width: 1400, height: 1000 }, timezoneId: 'Europe/Stockholm' })).newPage();
     const thrown = [];
     page.on('pageerror', (e) => thrown.push(e.message));
     await page.goto(`${site}/login.html`, { waitUntil: 'load' });

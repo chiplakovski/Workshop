@@ -104,7 +104,7 @@ async function main() {
   const site = `http://127.0.0.1:${HTTP_PORT}`;
 
   const browser = await chromium.launch({ executablePath: findBrowser(), headless: true });
-  const context = await browser.newContext({ viewport: { width: 390, height: 800 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 800 }, timezoneId: 'Europe/Stockholm' });
   const page = await context.newPage();
   const thrown = [];
   page.on('pageerror', (error) => thrown.push(error.message));

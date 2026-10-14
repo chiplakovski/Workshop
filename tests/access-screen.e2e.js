@@ -96,7 +96,7 @@ async function main() {
   const site = `http://127.0.0.1:${HTTP_PORT}`;
 
   const browser = await chromium.launch({ executablePath: findBrowser(), headless: true });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Stockholm' });
   const page = await context.newPage();
   const thrown = [];
   page.on('pageerror', (error) => thrown.push(error.message));
@@ -285,7 +285,7 @@ async function main() {
     step('Access: the administrator keeps the letterhead from this screen, and it is the database\'s');
 
     // ── The same screen, as a welder ────────────────────────────────────────────────────────
-    const floor = await browser.newContext({ viewport: { width: 390, height: 800 } });
+    const floor = await browser.newContext({ viewport: { width: 390, height: 800 }, timezoneId: 'Europe/Stockholm' });
     const tablet = await floor.newPage();
     tablet.on('pageerror', (error) => thrown.push(`tablet: ${error.message}`));
     await tablet.goto(`${site}/login.html`, { waitUntil: 'load' });

@@ -130,7 +130,7 @@ async function main() {
   const site = `http://127.0.0.1:${HTTP_PORT}`;
 
   const browser = await chromium.launch({ executablePath: findBrowser(), headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 950 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 950 }, timezoneId: 'Europe/Stockholm' });
   const page = await context.newPage();
   const thrown = [];
   page.on('pageerror', (error) => thrown.push(error.stack || error.message));
@@ -275,7 +275,7 @@ async function main() {
     step('Customers: a quote has no workflow yet, so the screen refuses it out loud rather than losing it');
 
     // ── A welder on the same screen ─────────────────────────────────────────────────────────
-    const floor = await browser.newContext({ viewport: { width: 1440, height: 950 } });
+    const floor = await browser.newContext({ viewport: { width: 1440, height: 950 }, timezoneId: 'Europe/Stockholm' });
     const tablet = await floor.newPage();
     tablet.on('pageerror', (error) => thrown.push(`tablet: ${error.message}`));
     await signIn(tablet, site, 'marko@varmak.se', '8472', 'pin');
