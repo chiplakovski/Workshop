@@ -23,6 +23,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { Pool } = require('pg');
 
 const PORT = Number(process.env.PORT || 8787);
@@ -284,6 +285,25 @@ const RPC = {
 // decides whether the HTTP layer demands a token first.
 const WITHOUT_A_SESSION = new Set(['bootstrap_first_admin']);
 
+// The first administrator is the one account made with nobody signed in, and the database makes it
+// for whoever asks first. Between the server going up and the owner opening /admin.html, that is
+// anybody who finds the address. So the server holds a setup code, set where it runs and never in
+// git, and the first-run form has to carry it. Long enough that guessing it is not a plan; compared
+// in constant time; and with no code set, nobody can make the first administrator over HTTP at all —
+// a server deployed without one is closed, not open. Once the first administrator exists the
+// database refuses the bootstrap regardless, and the code stops mattering.
+const SETUP_CODE_MINIMUM = 16;
+function setupCodeRefusal(given) {
+  const expected = process.env.VARMAK_SETUP_CODE || '';
+  if (expected.length < SETUP_CODE_MINIMUM) {
+    return 'this server has no setup code, so the first administrator cannot be made through it. '
+      + `Set VARMAK_SETUP_CODE (${SETUP_CODE_MINIMUM} characters or more) where the server runs, restart it, and enter that code here.`;
+  }
+  const a = crypto.createHash('sha256').update(String(given == null ? '' : given)).digest();
+  const b = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(a, b) ? null : 'that is not this server\'s setup code';
+}
+
 // Reads. Same idea as RPC and the same reason for the list: without it this is a remote SQL console.
 // Both are plain function calls — the snapshot is built in SQL because renaming a field in the
 // browser is sixteen edits, and renaming it here is one.
@@ -450,6 +470,8 @@ async function handleRpc(req, res, name, body) {
   const token = bearer(req);
 
   if (WITHOUT_A_SESSION.has(name)) {
+    const notThisCode = setupCodeRefusal(body.setup_code);
+    if (notThisCode) return send(res, 403, { refused: notThisCode });
     const client = await pool.connect();
     try {
       const { rows } = await client.query(`SELECT ${name}(${placeholders}) AS result`, args);
@@ -560,6 +582,9 @@ if (require.main === module) {
     console.error(`Refusing to start: ${wrong}`);
     process.exit(1);
   }
+  if ((process.env.VARMAK_SETUP_CODE || '').length < SETUP_CODE_MINIMUM) {
+    console.log(`No VARMAK_SETUP_CODE of ${SETUP_CODE_MINIMUM}+ characters: the first administrator cannot be made over HTTP until one is set.`);
+  }
   server.listen(PORT, HOST, () => {
     const where = settings.connectionString
       ? new URL(settings.connectionString).hostname
@@ -568,4 +593,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, pool, RPC, READS, WITHOUT_A_SESSION, databaseSettings, refuseToStartIf };
+module.exports = { server, pool, RPC, READS, WITHOUT_A_SESSION, databaseSettings, refuseToStartIf, setupCodeRefusal };

@@ -18,6 +18,10 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      # Any long phrase only you know, 16 characters or more. It is asked for once, on /admin.html, to
+      # make the first administrator; without it nobody can, so finding the address is not enough.
+      - key: VARMAK_SETUP_CODE
+        sync: false
       - key: NODE_VERSION
         value: "22"
       # Left unset deliberately: the server defaults to 0.0.0.0, which is what Render's router needs.

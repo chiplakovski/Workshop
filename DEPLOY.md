@@ -118,7 +118,9 @@ The server in step 4 has no equivalent: it is a program that has to run somewher
 can start it. `SUPABASE.md` says so plainly rather than leaving somebody looking for the button — but
 what it needs is now down to one value. `Procfile`, `railway.json`, `render.yaml`, `.nvmrc` and a
 `start` script in `package.json` name the command and the Node version, so Railway, Render, Fly or
-anything buildpack-based works it out without being told. The only thing left to type is `DATABASE_URL`.
+anything buildpack-based works it out without being told. What is left to type is `DATABASE_URL` and
+`VARMAK_SETUP_CODE` — any phrase of 16 characters or more that only you know, asked for once to make
+the first administrator. Without it set, nobody can make one through the server at all.
 
 None of them sets `HOST`, deliberately: the server defaults to `0.0.0.0`, which is what a platform
 router needs, and the `HOST=127.0.0.1` in `deploy/varmak.env.example` is right only on a machine with
@@ -180,9 +182,11 @@ for a page.
 
 ## 6 · The people
 
-12. **The first administrator**, once, from the screen: open `https://your-name/admin.html`. The form
-    is offered only while the system has nobody in it, and it shuts behind itself — a second use is
-    refused by the database, not by the page.
+12. **The first administrator**, once, from the screen, and as soon as the server is up: open
+    `https://your-name/admin.html` and enter the `VARMAK_SETUP_CODE` you set. The code is what stops
+    whoever finds the address first from becoming the administrator. The form is offered only while
+    the system has nobody in it, and it shuts behind itself — a second use is refused by the database,
+    not by the page.
 13. **Everybody else** from the same screen. A person added there **cannot sign in yet** and the list
     says so: give them a PIN for the shop tablet or a password for their own phone. Two doors on
     purpose — the tablet is shared and a PIN is what somebody will actually type with gloves on; a

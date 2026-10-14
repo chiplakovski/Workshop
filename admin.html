@@ -106,8 +106,8 @@ select option,select optgroup{background:var(--select-bg);color:var(--select-fg)
 
 <article class="panel" id="signedOut" hidden><div class="panel-title"><span data-i="so_title">Sign in first</span></div><p class="lede" data-i="so_body">Who may sign in is kept in the database, so this screen needs you to be signed in before it will show you anything.</p><p><a class="btn" href="login.html" data-i="so_link">Go to sign in</a></p>
 <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
-<div class="panel-title"><span data-i="first_title">First run</span></div><p class="lede" data-i="first_body">If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good.</p>
-<form id="firstForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="firstEmail" data-i="f_email">Email</label><input id="firstEmail" type="email" autocomplete="username" spellcheck="false" required></div><div class="field"><label for="firstName" data-i="f_name">Name</label><input id="firstName" autocomplete="name" required></div><div class="field"><label for="firstPassword" data-i="f_password">Password</label><input id="firstPassword" type="password" autocomplete="new-password" required></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="first_btn">Create the first administrator</button></div></div></form>
+<div class="panel-title"><span data-i="first_title">First run</span></div><p class="lede" data-i="first_body">If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good. It asks for the setup code set where the server runs (VARMAK_SETUP_CODE), so finding this page is not enough.</p>
+<form id="firstForm" autocomplete="off"><div class="form-grid"><div class="field"><label for="firstCode" data-i="f_setup">Setup code</label><input id="firstCode" type="password" autocomplete="off" spellcheck="false" required></div><div class="field"><label for="firstEmail" data-i="f_email">Email</label><input id="firstEmail" type="email" autocomplete="username" spellcheck="false" required></div><div class="field"><label for="firstName" data-i="f_name">Name</label><input id="firstName" autocomplete="name" required></div><div class="field"><label for="firstPassword" data-i="f_password">Password</label><input id="firstPassword" type="password" autocomplete="new-password" required></div><div class="field"><label>&nbsp;</label><button class="btn primary" type="submit" data-i="first_btn">Create the first administrator</button></div></div></form>
 <p class="said" id="firstSaid" hidden></p></article>
 
 <article class="panel" id="peoplePanel" hidden><div class="panel-title"><span data-i="pp_title">People</span><span id="peopleCount" class="me"></span></div><p class="lede" id="peopleLede" data-i="pp_body">Everybody who can sign in, and how. A person with neither a password nor a PIN has no way in at all — which is how everybody starts.</p><div class="tablewrap"><table><thead><tr><th data-i="th_person">Person</th><th data-i="th_role">Role</th><th data-i="th_door">Way in</th><th data-i="th_status">Status</th><th data-i="th_lastseen">Last seen</th><th></th></tr></thead><tbody id="peopleRows"></tbody></table></div><p class="said" id="peopleSaid" hidden></p></article>
@@ -170,7 +170,7 @@ const T = {
     so_body: 'Who may sign in is kept in the database, so this screen needs you to be signed in before it will show you anything.',
     so_link: 'Go to sign in',
     first_title: 'First run',
-    first_body: 'If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good.',
+    first_body: 'If this workshop has nobody in it yet, make the first administrator here. It works once, on an empty system — after that an administrator adds everybody else, and this form stops working for good. It asks for the setup code set where the server runs (VARMAK_SETUP_CODE), so finding this page is not enough.',
     first_btn: 'Create the first administrator',
     first_done: 'Made. Sign in with that email and password.',
     pp_title: 'People', pp_body: 'Everybody who can sign in, and how. A person with neither a password nor a PIN has no way in at all — which is how everybody starts.',
@@ -197,6 +197,7 @@ const T = {
     confirm_off: 'Switch {name} off? The tablet they are holding right now stops working, not just the next sign-in.',
     confirm_on: 'Switch {name} back on?',
     done_generic: 'Done.', count: '{n} people', count_one: '1 person',
+    f_setup: "Setup code",
     cp_title: "Company details",
     cp_body: "What prints at the top of every offer, item sheet and jobcard, and on the invoice basis. Registration and bank details print only once they are entered here.",
     cp_body_local: "This copy keeps them in this browser, like everything else on this computer. Online, only an administrator can change them.",
@@ -242,7 +243,7 @@ const T = {
     so_body: 'Vem som får logga in ligger i databasen, så den här skärmen behöver att du är inloggad innan den visar något.',
     so_link: 'Till inloggningen',
     first_title: 'Första gången',
-    first_body: 'Om verkstaden ännu inte har någon, skapa den första administratören här. Det fungerar en gång, på ett tomt system — därefter lägger en administratör till alla andra, och formuläret slutar fungera för gott.',
+    first_body: 'Om verkstaden ännu inte har någon, skapa den första administratören här. Det fungerar en gång, på ett tomt system — därefter lägger en administratör till alla andra, och formuläret slutar fungera för gott. Det kräver installationskoden som satts där servern körs (VARMAK_SETUP_CODE), så det räcker inte att hitta sidan.',
     first_btn: 'Skapa den första administratören',
     first_done: 'Klart. Logga in med den e-posten och lösenordet.',
     pp_title: 'Personer', pp_body: 'Alla som kan logga in, och hur. Den som varken har lösenord eller PIN har ingen väg in alls — och så börjar alla.',
@@ -270,6 +271,7 @@ const T = {
     confirm_on: 'Slå på {name} igen?',
     done_generic: 'Klart.', count: '{n} personer', count_one: '1 person',
     signed_out: 'Utloggad.',
+    f_setup: "Installationskod",
     cp_title: "Företagsuppgifter",
     cp_body: "Det som skrivs överst på varje offert, artikelblad och jobbkort, och på fakturaunderlaget. Registrerings- och bankuppgifter skrivs ut först när de har fyllts i här.",
     cp_body_local: "Den här kopian sparar dem i den här webbläsaren, som allt annat på den här datorn. Online kan bara en administratör ändra dem.",
@@ -314,7 +316,7 @@ const T = {
     so_body: 'Кој смее да се најави се чува во базата, па овој екран бара да бидете најавени пред да ви покаже било што.',
     so_link: 'Кон најавата',
     first_title: 'Прво пуштање',
-    first_body: 'Ако работилницата сеуште нема никого, направете го првиот администратор тука. Работи еднаш, на празен систем — потоа администратор ги додава сите други, и овој формулар престанува да работи засекогаш.',
+    first_body: 'Ако работилницата сеуште нема никого, направете го првиот администратор тука. Работи еднаш, на празен систем — потоа администратор ги додава сите други, и овој формулар престанува да работи засекогаш. Бара код за поставување, внесен таму каде што работи серверот, па не е доволно да се најде страницата.',
     first_btn: 'Направи го првиот администратор',
     first_done: 'Готово. Најавете се со таа е-пошта и лозинка.',
     pp_title: 'Луѓе', pp_body: 'Сите што можат да се најават, и како. Оној што нема ниту лозинка ниту PIN нема никаков влез — и така почнуваат сите.',
@@ -341,6 +343,7 @@ const T = {
     confirm_off: 'Да го исклучам {name}? Таблетот што го држи сега престанува да работи, не само следната најава.',
     confirm_on: 'Да го вклучам {name} пак?',
     done_generic: 'Готово.', count: '{n} луѓе', count_one: '1 човек',
+    f_setup: "Код за поставување",
     cp_title: "Податоци за фирмата",
     cp_body: "Она што се печати на врвот на секоја понуда, лист за ставка и работна картичка, и на основата за фактура. Регистрациските и банкарските податоци се печатат дури откако ќе се внесат тука.",
     cp_body_local: "Оваа копија ги чува во овој прелистувач, како и сè друго на овој компјутер. Онлајн, само администратор може да ги менува.",
@@ -600,6 +603,7 @@ $('meForm').addEventListener('submit', async (e) => {
 $('firstForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const answer = await WorkshopApi.call('bootstrap_first_admin', {
+    setup_code: $('firstCode').value,
     email: $('firstEmail').value.trim().toLowerCase(),
     display_name: $('firstName').value.trim(),
     password: $('firstPassword').value

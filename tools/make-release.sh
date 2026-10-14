@@ -75,14 +75,17 @@ no tests, no developer tools, no example or invented records. It starts empty.
 ## Installing
 
 1. **Database** — follow \`SUPABASE.md\`: paste \`supabase-install.sql\`, then \`supabase-password.sql\`, then \`supabase-check.sql\`.
-2. **Server** — on a host (Railway, Render): give it this folder and set one value, \`DATABASE_URL\`.
-   Do not set \`HOST\`. On your own machine:
+2. **Server** — on a host (Railway, Render): give it this folder and set two values, \`DATABASE_URL\` and
+   \`VARMAK_SETUP_CODE\` (a phrase of 16 characters or more that only you know). Do not set \`HOST\`.
+   On your own machine:
    \`\`\`
    npm ci --omit=dev
-   DATABASE_URL='postgresql://varmak_api.xxxx:PASSWORD@….pooler.supabase.com:5432/postgres' npm start
+   DATABASE_URL='postgresql://varmak_api.xxxx:PASSWORD@….pooler.supabase.com:5432/postgres' \\
+   VARMAK_SETUP_CODE='a long phrase only you know' npm start
    \`\`\`
    It needs Node 20 or later.
-3. **First administrator** — open \`/admin.html\` on the running server and make yourself the administrator.
+3. **First administrator** — as soon as the server is up, open \`/admin.html\`, enter the setup code and
+   make yourself the administrator. Without the code nobody can, so finding the address is not enough.
 
 The server refuses to start if \`DATABASE_URL\` has no password or connects as the database owner —
 that is deliberate, and the message says which.

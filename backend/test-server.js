@@ -660,8 +660,27 @@ async function workReachesTheFloorOverHttp(tokens, f) {
 // can be, and useless to the person standing in front of it. The rule this asserts: a refusal
 // written to be read must not claim to be a privilege error.
 async function theFirstRunRefusalSaysWhatIsActuallyWrong() {
-  const second = await call('POST', '/rpc/bootstrap_first_admin',
-    { body: { email: 'someone@varmak.se', display_name: 'Someone Else', password: 'another long passphrase' } });
+  // The setup code first: without one set on the server, nobody makes the first administrator over
+  // HTTP; with one set, only somebody who has it. Asked while the system already has people in it, so
+  // nothing here can create anybody even if the gate failed — the database would still refuse.
+  const before = process.env.VARMAK_SETUP_CODE;
+  const firstRun = (code) => call('POST', '/rpc/bootstrap_first_admin',
+    { body: { email: 'someone@varmak.se', display_name: 'Someone Else', password: 'another long passphrase', setup_code: code } });
+  try {
+    delete process.env.VARMAK_SETUP_CODE;
+    turnedAway('the bootstrap on a server with no setup code', await firstRun('anything at all here'), 403, /has no setup code/);
+    process.env.VARMAK_SETUP_CODE = 'short';
+    turnedAway('the bootstrap on a server whose code is too short to be one', await firstRun('short'), 403, /has no setup code/);
+    process.env.VARMAK_SETUP_CODE = 'a setup code long enough';
+    turnedAway('the bootstrap with the wrong code', await firstRun('a setup code long enougH'), 403, /not this server's setup code/);
+    turnedAway('the bootstrap with no code', await firstRun(undefined), 403, /not this server's setup code/);
+    step('First run: the bootstrap needs the server\'s setup code, and a server without one makes nobody');
+  } finally {
+    if (before === undefined) delete process.env.VARMAK_SETUP_CODE; else process.env.VARMAK_SETUP_CODE = before;
+  }
+
+  process.env.VARMAK_SETUP_CODE = 'a setup code long enough';
+  const second = await firstRun('a setup code long enough');
   turnedAway('a second use of the bootstrap over HTTP', second, 422, /already has people in it/);
   assert.ok(!/not yours to do/.test(String(second.body.refused)),
     'this refusal is about the state of the system, not about who is asking, and has to say so');

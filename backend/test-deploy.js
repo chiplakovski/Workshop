@@ -207,6 +207,8 @@ async function main() {
   process.env.DATABASE_URL = as('varmak_api', API, DB);
   process.env.PGSSLROOTCERT = CERT;
   process.env.PORT = String(HTTP_PORT);
+  // Set where the server runs, as render.yaml asks for it: without one nobody makes the first administrator.
+  process.env.VARMAK_SETUP_CODE = 'the setup code for this install';
   // Normally the file next door. mutation-check.js hands a damaged copy in through VARMAK_SERVER, the
   // same way the SQL suites are handed a damaged schema, so the two refusals below can be checked for
   // being checked at all.
@@ -244,7 +246,8 @@ async function main() {
     // Nobody can get in yet, which is the state an install leaves behind on purpose.
     assert.equal(value(`SELECT count(*) FROM app_user;`), '0');
     const first = await call('bootstrap_first_admin',
-      { email: 'anna@varmak.se', display_name: 'Test Office', password: 'correct horse battery staple' });
+      { email: 'anna@varmak.se', display_name: 'Test Office', password: 'correct horse battery staple',
+        setup_code: 'the setup code for this install' });
     assert.equal(first.status, 200, `the first administrator has to be makeable: ${JSON.stringify(first.body)}`);
     const admin = await signIn('anna@varmak.se', 'correct horse battery staple', 'password');
     assert.ok(admin, 'and then sign in — which is the crypt() path, and the one a search_path breaks');

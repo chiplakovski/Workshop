@@ -89,6 +89,8 @@ async function main() {
 
   process.env.PGDATABASE = DB;
   process.env.PORT = String(HTTP_PORT);
+  // Set where the server runs. The first-run form has to carry it, or finding the page would be enough.
+  process.env.VARMAK_SETUP_CODE = 'the setup code for this workshop';
   const { server, pool } = require('../backend/server');
   await new Promise((resolve) => server.listen(HTTP_PORT, resolve));
   const site = `http://127.0.0.1:${HTTP_PORT}`;
@@ -114,10 +116,23 @@ async function main() {
       'nobody is signed in, so there is nothing to add anybody with');
     step('Access: with nobody signed in the screen offers the way in and nothing else');
 
+    // Somebody who found the address but does not have the setup code.
+    await page.locator('#firstCode').fill('a guess at the setup code');
+    await page.locator('#firstEmail').fill('stranger@example.com');
+    await page.locator('#firstName').fill('Stranger');
+    await page.locator('#firstPassword').fill('a long enough passphrase');
+    await page.locator('#firstForm button[type="submit"]').click();
+    await page.waitForSelector('#firstSaid:not([hidden])', { timeout: 5000 });
+    assert.match(await page.locator('#firstSaid').innerText(), /not this server's setup code/);
+    assert.equal(value(`SELECT count(*) FROM app_user;`), '0', 'a stranger with the address but not the code made an admin');
+    step('Access: finding the page is not enough — without the server\'s setup code nobody becomes the first admin');
+
     // The database's own rules on a password, reaching the screen in its own words.
+    await page.locator('#firstCode').fill('the setup code for this workshop');
     await page.locator('#firstEmail').fill('anna@varmak.se');
     await page.locator('#firstName').fill('Test Office');
     await page.locator('#firstPassword').fill('short');
+    await page.evaluate(() => { document.getElementById('firstSaid').hidden = true; });
     await page.locator('#firstForm button[type="submit"]').click();
     await page.waitForSelector('#firstSaid:not([hidden])', { timeout: 5000 });
     const shortRefusal = await page.locator('#firstSaid').innerText();
@@ -136,7 +151,8 @@ async function main() {
     assert.equal(value(`SELECT role::text FROM app_user WHERE email = 'anna@varmak.se';`), 'admin');
     step('Access: the first administrator is made from the screen, on an empty system, with no session');
 
-    // And the door shuts. Not a flag anybody has to remember to turn off.
+    // And the door shuts. Not a flag anybody has to remember to turn off — even with the right code.
+    await page.locator('#firstCode').fill('the setup code for this workshop');
     await page.locator('#firstEmail').fill('someone@varmak.se');
     await page.locator('#firstName').fill('Someone Else');
     await page.locator('#firstPassword').fill('another long passphrase');
