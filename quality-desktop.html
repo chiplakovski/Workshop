@@ -254,7 +254,7 @@
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body data-print="own">
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <a class="skip" href="#main">Skip to quality content</a>
 
@@ -872,7 +872,7 @@ function safeDate(v){if(!v)return null;const d=new Date(v);return isNaN(d.getTim
 function pctStr(n){return n==null||!Number.isFinite(n)?'N/A':Math.round(n)+'%';}
 function groupBy(arr,keyFn){const m={};(arr||[]).forEach(x=>{const k=keyFn(x)||'—';(m[k]=m[k]||[]).push(x);});return m;}
 function daysBetween(a,b){if(!a||!b)return null;return Math.round((b.getTime()-a.getTime())/86400000);}
-function todayStr(){return new Date().toISOString().slice(0,10);}
+function todayStr(){return localDayISO();}
 function badgeClass(status){
   const s=String(status||'').toLowerCase();
   if(/critical|reject|fail|expired|overdue|not.?released|scrap|ineffective|suspended/.test(s))return 'danger';
@@ -1559,7 +1559,7 @@ function openWeldForm(){
   // offering a choice the database refuses, which is worse than not offering it.
   const approved=(data.qualityWps||[]).filter(w=>w.setStatus==='approved');
   fillSelect($('wl_wps'),[['',tr('no_procedure')]].concat(approved.map(w=>[w.id,w.no+' rev '+w.revision+' ('+w.process+')'])));
-  $('wl_date').value=new Date().toISOString().slice(0,10);
+  $('wl_date').value=localDayISO();
   ['wl_component','wl_process','wl_drawing','wl_map','wl_joint','wl_thickness','wl_base','wl_filler',
    'wl_batch','wl_gas','wl_ndtmethod','wl_notes'].forEach(id=>{ $(id).value=''; });
   // The process follows the procedure unless somebody changes it, because the two disagreeing is one of the
@@ -1599,7 +1599,7 @@ function openNdtForm(weldNo){
   fillSelect($('nd_result'),[['pending',genericLabel('pending')],['accepted',genericLabel('accepted')],
     ['rejected',genericLabel('rejected')]]);
   $('nd_method').value=(chosen&&chosen.ndtMethod)||'';
-  $('nd_date').value=new Date().toISOString().slice(0,10);
+  $('nd_date').value=localDayISO();
   ['nd_procedure','nd_criteria','nd_percent','nd_area','nd_external','nd_cert','nd_findings']
     .forEach(id=>{ $(id).value=''; });
   openModal('ndtModal');

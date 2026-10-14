@@ -430,7 +430,7 @@
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body data-print="own">
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}
   /* Project-first estimating: an item carries the project's own reference, and the row says which
      project item it prices. */
@@ -608,7 +608,7 @@ const HOLD_REASONS=["material","customer","drawing","approval","breakdown","exte
 
 function fmt(n){return money(n).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";}
 function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE')+" kr";}
-function todayISO(){return new Date().toISOString().slice(0,10);}
+function todayISO(){return localDayISO();}
 // ── inline validation helpers: mark the offending field, show a translated message beside it, focus it ──
 function clearAllFieldErrors(){
   document.querySelectorAll('#fcard .fielderr').forEach(el=>el.classList.remove('fielderr'));

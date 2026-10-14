@@ -279,7 +279,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   :root[data-theme="carbon"] .dot{box-shadow:0 0 12px 2px rgba(79,140,255,1),0 0 24px 7px rgba(79,140,255,.45);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body data-print="own">
 <style>.topfull,.ms-user{display:none!important}.module-sidebar{overflow-y:auto}.langc{z-index:50}</style>
 <div class="bg"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 
@@ -328,7 +328,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function money(n){n=Number(n);if(!Number.isFinite(n))return 0;return Math.round(n*100)/100;}
 function fmt0(n){return Math.round(money(n)).toLocaleString('sv-SE');}
-function todayISO(){return new Date().toISOString().slice(0,10);}
+function todayISO(){return localDayISO();}
 function nowTime(){return new Date().toTimeString().slice(0,5);}
 // isBlank, isPositiveNumber, canCompleteOp, VALID_RESUME_TARGETS and resumeTargetFor live in
 // jobcard-rules.js (loaded above) so the page and the automated tests share one implementation.

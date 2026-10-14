@@ -176,7 +176,8 @@
 
   function datesAsEvents(e, today) {
     const kept = e._server || {};
-    const now = day(today) || new Date().toISOString().slice(0, 10);
+    // Today on this device's clock, not the UTC day.
+    const now = day(today) || (()=>{const x=new Date();return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;})();
     const out = [];
     AS_EVENTS.forEach(([field, kind, result]) => {
       const when = day(e[field]);

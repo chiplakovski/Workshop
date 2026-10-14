@@ -149,7 +149,9 @@ test('the three date fields on an enquiry are the three the schema already had',
 });
 
 test('a tender marked as gone in carries the day it was marked', () => {
-  const today = new Date().toISOString().slice(0, 10);
+  // The day as it is in the workshop, not in Greenwich: a tender marked at 00:30 is marked today.
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const sent = MarketingRecord.tenderToServer({ title: 'Duct run tender', status: 'submitted' });
   assert.equal(sent.submitted_on, today,
     'the database refuses one without a date, and the day it was marked is the honest answer');

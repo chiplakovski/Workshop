@@ -11,6 +11,11 @@
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
+// Every psql a suite runs asks "what is today" on the workshop's clock, the same one the API's own role
+// carries (auth.sql). Without this a suite's own session answered in UTC while the workflows answered
+// in Swedish time, and every check of "closed today" failed between midnight and two in the morning.
+process.env.PGTZ = process.env.PGTZ || 'Europe/Stockholm';
+
 const HOST = process.env.PGHOST || '/tmp';
 const PORT = process.env.PGPORT || '5433';
 const USER = process.env.PGUSER || 'postgres';

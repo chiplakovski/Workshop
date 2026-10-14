@@ -534,7 +534,9 @@ window.WORKSHOP_SERVER_READY=true;</script>
     document.querySelectorAll('.matname').forEach(n=>n.placeholder=t.matph);document.querySelectorAll('.matqty').forEach(q=>q.placeholder=t.qty);}
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
-  document.getElementById('date2').valueAsDate=new Date();
+  // Today on this device's own clock. valueAsDate writes the UTC date, which for the first two hours after
+  // midnight in Sweden is still yesterday — the night shift's hours went onto the wrong day.
+  {const n=new Date();document.getElementById('date2').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
   document.getElementById('date2').addEventListener('change',renderToday);
   // Yesterday is the correction a worker actually needs; every other date is the picker's job.
   document.getElementById('dayBack').addEventListener('click',()=>{

@@ -979,6 +979,45 @@ EN 1090 traceability); no limit on one person's hours in one day across entries;
 the phone hub is a disabled box with a fixed name in it — build it or remove it; the first admin should
 be created the minute the server is up, because until then anybody who finds the address can be it.
 
+## 4m. Everything the review suggested, built — 14 October 2026
+
+The owner's answer to §4l was "do everything you suggest". Ten things, each its own commit, each tested:
+
+1. **A day has 24 hours.** One entry over 24 h, or a person's entries for one day adding past 24 h, is
+   refused — on the page (`DAY_OVER_24`), and in `book_hours`, which takes an advisory lock on
+   person+day so two phones booking at once cannot both slip under the line. Over 12 h shows a note.
+2. **The phone hub's message panel is gone.** It was a disabled box with a fixed name in it.
+3. **Organisation numbers are checked where they are typed** (`org-number.js`): ten digits, Luhn check
+   digit, written back as `NNNNNN-NNNN`, the VAT number `SE…01` offered to an empty field, and a link to
+   look the firm up. Suppliers gained the address, contact and terms fields they had nowhere to keep.
+4. **The letterhead is a record** (`company_profile`, one row, admin-only `save_company`), edited in
+   Admin → Company details. Offers, the job card print, the offer email signature and the invoice basis
+   all read it. §8's missing org number, VAT, F-skatt and bankgiro go in there — still not guessed.
+5. **The first admin needs a setup code.** `VARMAK_SETUP_CODE` (16+ characters) must be set on the
+   server and typed in the first-run form; without it nobody can make themselves admin.
+6. **Heat numbers per delivery.** Every movement carries its heat and certificate. Issuing an item that
+   has heats on the shelf requires choosing one, and refuses a heat that is not there or has too little
+   left. The job card lists and prints the heats it used — the EN 1090 trail from plate to job.
+7. **Bolagsverket lookup through the server** (`backend/company-lookup.js`, `GET /api/lookup/company/…`).
+   Needs `BOLAGSVERKET_CLIENT_ID` / `_SECRET` from Bolagsverket's free registration; fills only empty
+   fields. Without them the check in 3 is the whole answer. **Written against their published
+   description and a stand-in, not the live service** — try one real number after the keys are set.
+8. **Documents keep their files online** (`document_file`, 10 MB each, `/api/files/<id>`). Downloads are
+   served as attachments under a sandbox policy, so an uploaded HTML file cannot run as the site.
+9. **PC copy → online** (`pc-transfer.js`, Admin → Transfer, admin and server only). Takes a Save-a-copy
+   file and moves company details, customers, suppliers, stock (one opening balance per heat), projects,
+   job cards with steps, equipment and documents with their files. Skips what is already online, so it
+   can be run twice. **Left behind, and listed on screen:** hours, stock movements, offers, quality
+   records and marketing — they refer to things by numbers the server gives out afresh.
+10. **Every desktop page prints** (`workshop-ui.js`): a Print button in the header, the letterhead, title
+    and "printed … by …" on top, screen chrome hidden. An open dialog (a label, a record) prints alone.
+    Pages with their own print layout opt out with `data-print="own"`.
+
+**Found on the way: "today" was Greenwich's today on the pages too.** About ninety places took the date as
+`toISOString().slice(0,10)`, which between midnight and 02:00 in Sweden is yesterday. They use
+`localDayISO()` now. The test machines' database sessions run on Stockholm time (`backend/pg.js`), and the
+unit suite passes both with `TZ=UTC` and `TZ=Europe/Stockholm` — run both after touching dates.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
@@ -1018,8 +1057,8 @@ be created the minute the server is up, because until then anybody who finds the
    whose sizes were not measured is worse than no register: somebody walks to the rack for a piece that is
    not there, or cuts a new plate because the piece that IS there reads as the wrong size.
 
-7. **Printing works on four of seventeen pages**, and photographs have nowhere to live — which is the
-   same blocker as Documents. Both are recorded rather than fixed.
+7. ~~**Printing works on four of seventeen pages**, and photographs have nowhere to live.~~ **Fixed**
+   (§4m 8 and 10): every desktop page prints, and files — photographs included — are stored online.
 
 ## 7. The road to live, in order
 

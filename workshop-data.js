@@ -24,6 +24,13 @@
   // reached constantly.
   const clone=value=>value===undefined?null:JSON.parse(JSON.stringify(value));
   const now=()=>new Date().toISOString();
+  // A calendar day on this device's own clock, as YYYY-MM-DD. toISOString() gives the UTC day, which for
+  // the first one or two hours after midnight in Sweden is still yesterday: an inspection finished at
+  // 00:30 was dated the day before, and the database — on Swedish time — disagreed with the screen. Every
+  // page that wants "today" asks this, and it is on window so they can.
+  const localDayISO=d=>{const x=d===undefined?new Date():(d instanceof Date?d:new Date(d));
+    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;};
+  global.localDayISO=localDayISO;
   // A new workshop opens an empty system. Nothing here is invented: no customers it has not
   // won, no machines it does not own, no jobs it has not been given. The shape is complete so
   // every module has something real to read; the content is what the workshop puts in.
@@ -1039,7 +1046,7 @@
         if(op&&op.status==='in-progress'&&op.equipmentId===equipmentId&&!stillAuthorized(j.no)){
           op.status='paused';
           j.activity=j.activity||[];
-          j.activity.unshift({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:'System',action:`Operation "${op.desc}" automatically paused — ${reason} (${equipmentId})`});
+          j.activity.unshift({date:localDayISO(),time:new Date().toTimeString().slice(0,5),by:'System',action:`Operation "${op.desc}" automatically paused — ${reason} (${equipmentId})`});
           pausedOperations.push({jobcardId:j.id,jobcardNo:j.no,operationId:op.id,desc:op.desc,equipmentId});
         }
       });
@@ -1247,14 +1254,14 @@
     addSupplierNote(id,note){const s=(state.suppliers||[]).find(x=>x.id===id);if(!s)return;s.notes=s.notes||[];s.notes.unshift(clone(note));save(`Supplier note: ${s.name}`)},
     addSupplierContact(id,contact){const s=(state.suppliers||[]).find(x=>x.id===id);if(!s)return;s.contacts=s.contacts||[];s.contacts.push(clone(contact));save(`Supplier contact: ${s.name}`)},
     listEstimations:()=>clone(state.estimations),
-    upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:now().slice(0,10),author:UNNAMED,reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
-    updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:now().slice(0,10),author:UNNAMED,reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
+    upsertEstimation(payload){let e=estimation(payload.id)||estimation(payload.no);if(e)Object.assign(e,clone(payload));else{e=clone(payload);e.id=e.id||state.counters.estimation++;e.no=e.no||next('estimation','EST-2026-');e.revision=e.revision||0;e.revisions=e.revisions||[{rev:0,date:localDayISO(),author:UNNAMED,reason:'Initial quotation'}];state.estimations.push(e)}save(`Estimation saved: ${e.no}`);return clone(e)},
+    updateEstimation(id,patch,reason){const e=estimation(id);if(!e)return null;Object.assign(e,clone(patch));if(reason){e.revision=(e.revision||0)+1;e.revisions=e.revisions||[];e.revisions.push({rev:e.revision,date:localDayISO(),author:UNNAMED,reason})}save(`Estimation updated: ${e.no}`);return clone(e)},
     archiveEstimation(idOrNo,reason){
       const e=estimation(idOrNo);
       if(!e)return{error:'Estimation not found'};
       e.archived=true;
       e.history=e.history||[];
-      e.history.push({date:now().slice(0,10),action:reason||'Archived',by:UNNAMED});
+      e.history.push({date:localDayISO(),action:reason||'Archived',by:UNNAMED});
       save(`Estimation archived: ${e.no}`);
       return clone(e);
     },
@@ -1266,7 +1273,7 @@
       save(`Estimation deleted: ${e.no}`);
       return{success:true};
     },
-    createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:now().slice(0,10),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:UNNAMED,workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
+    createProjectFromEstimation(idOrNo){const e=estimation(idOrNo);if(!e)return{error:'Estimation not found'};if(e.projectId){const p=state.projects.find(x=>x.id===e.projectId);return{project:clone(p),existing:true}}const id=state.counters.project++,no=`P-2026-${String(id).padStart(3,'0')}`;const p={id,no,customerId:e.customerId,customer:e.customer,name:e.title,estimationId:e.id,status:'planned',phase:'design',start:localDayISO(),deadline:e.deliveryTarget,expectedCompletion:e.deliveryTarget,progress:0,plannedHours:e.plannedHours||0,usedHours:0,responsible:UNNAMED,workers:[],machines:clone(e.machines||[]),materialStatus:'unchecked',bom:(e.bom||[]).map(x=>({code:x.code,description:x.description,required:x.qty,reserved:0,issued:0,unit:x.unit})),tasks:[],milestones:[]};state.projects.push(p);e.projectId=id;e.status='accepted';save(`Project ${no} created from ${e.no}`);return{project:clone(p),existing:false}},
     listProjects:()=>clone(state.projects),
     getProjects:()=>clone(state.projects),
     findProject:idOrNo=>clone(state.projects.find(x=>x.id===idOrNo||x.no===idOrNo)),
@@ -1318,7 +1325,7 @@
       // Eight rows entered from one returned sheet do exactly that, and were getting distinct ids
       // only because each save happens to take a fraction of a millisecond - luck, not design.
       // Counted like every other record here, so it is unique by construction.
-      const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:now().slice(0,10),user:UNNAMED},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
+      const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:localDayISO(),user:UNNAMED},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
     upsertProject(payload){
       if(!payload||!payload.name)return{error:'A project name is required'};
       let p=state.projects.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));
@@ -1377,7 +1384,7 @@
       if(!p)return{error:'Project not found'};
       p.archived=true;
       p.activity=p.activity||[];
-      p.activity.push({date:now().slice(0,10),time:now().slice(11,16),user:UNNAMED,action:reason||'Project archived'});
+      p.activity.push({date:localDayISO(),time:now().slice(11,16),user:UNNAMED,action:reason||'Project archived'});
       save(`Project archived: ${p.no}`);
       return clone(p);
     },
@@ -1760,7 +1767,7 @@
       if(linkedPo){
         linkedPo.receivedQty=(Number(linkedPo.receivedQty)||0)+qty;
         linkedPo.receivedValue=(Number(linkedPo.receivedValue)||0)+qty*(Number(input.lastPrice)||Number(inv.lastPrice)||0);
-        linkedPo.lastReceiptDate=now().slice(0,10);
+        linkedPo.lastReceiptDate=localDayISO();
         linkedPo.lastDeliveryNote=String(input.deliveryNote||'').trim();
         const orderedQty=Number(linkedPo.orderedQty)||0;
         linkedPo.status=orderedQty>0&&linkedPo.receivedQty>=orderedQty?'Received':'Partially Received';
@@ -1804,7 +1811,7 @@
       else if(heats.length)return{error:`${inv.code} is traced by heat number — say which heat this came from: ${heats.map(h=>`${h.heat} (${h.remaining} ${inv.unit})`).join(', ')}`,code:'HEAT_REQUIRED',heats};
 inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));const line=(p.bom||[]).find(x=>x.code===inv.code);if(line){line.issued=(line.issued||0)+qty;line.reserved=Math.max(0,(line.reserved||0)-qty)}p.actualMaterialCost=(p.actualMaterialCost||0)+qty*inv.avgCost;addMovement({action:'ISSUED',code:inv.code,qty,unit:inv.unit,from:inv.location,to:`${p.no}${input.jobcard?' / '+input.jobcard:''}`,projectNo:p.no,jobcard:input.jobcard,user:input.user||UNNAMED,heat:heat||undefined,certificate:heatCert||undefined});return{item:clone(inv),project:clone(p)}},
     move(input){const inv=inventory(input.code),qty=quantity(input.qty);if(!inv)return{error:'Item not found'};if(!qty)return{error:'Quantity must be greater than zero'};const from=inv.location;if(input.action==='RETURN')inv.stock+=qty;if(input.action==='SCRAP')inv.stock=Math.max(0,inv.stock-qty);if(input.action==='TRANSFER'&&input.to)inv.location=input.to;addMovement({action:input.action,code:inv.code,qty,unit:inv.unit,from,to:input.to||inv.location,projectNo:input.projectNo,jobcard:input.jobcard,user:input.user||UNNAMED});return clone(inv)},
-    addOffcut(offcut){offcut=clone(offcut);offcut.id=state.counters.offcut++;offcut.code=offcut.code||`OFF-${String(offcut.id).padStart(4,'0')}`;offcut.created=now().slice(0,10);offcut.status='available';state.offcuts.unshift(offcut);save(`Offcut created: ${offcut.code}`);return clone(offcut)},
+    addOffcut(offcut){offcut=clone(offcut);offcut.id=state.counters.offcut++;offcut.code=offcut.code||`OFF-${String(offcut.id).padStart(4,'0')}`;offcut.created=localDayISO();offcut.status='available';state.offcuts.unshift(offcut);save(`Offcut created: ${offcut.code}`);return clone(offcut)},
     // The one real transition out of 'available' — without this, every offcut ever registered stays
     // 'available' forever (Register offcut sets status but nothing ever moved it), so the same
     // remnant could be "used" an unlimited number of times with no record of where it actually went.
@@ -1815,7 +1822,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       off.status='used';
       off.usedProject=usage.project||null;
       off.usedJobcard=usage.jobcard||null;
-      off.usedDate=now().slice(0,10);
+      off.usedDate=localDayISO();
       off.usedBy=usage.user||UNNAMED;
       save(`Offcut used: ${off.code}`);
       return clone(off);
@@ -2034,19 +2041,19 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
         return operationStartBlockedResult(resolved.code,messages[resolved.code],j.no,opId,{equipmentId:eqId,assignedJobcard});
       }
       if(resolved.required&&resolved.equipment){
-        const use=api.canUseEquipment(resolved.equipment.equipmentId,{date:meta.date||now().slice(0,10),projectNo:j.projectNo,jobcardNo:j.no});
+        const use=api.canUseEquipment(resolved.equipment.equipmentId,{date:meta.date||localDayISO(),projectNo:j.projectNo,jobcardNo:j.no});
         if(!use.allowed)return equipmentGateBlockedResult('Start operation',resolved.equipment.equipmentId,use.gate,{jobcardNo:j.no,operationId:opId});
       }
       op.status=OPERATION_START_STATUS;
-      if(!op.actualStart)op.actualStart=meta.date||now().slice(0,10);
+      if(!op.actualStart)op.actualStart=meta.date||localDayISO();
       save(`Operation started: ${j.no}`);
       return clone(op);
     },
     assignJobcardWorker(idOrNo,worker){const j=jobcard(idOrNo);if(!j||!worker)return null;j.workers=j.workers||[];if(!j.workers.includes(worker))j.workers.push(worker);save(`Worker assigned to ${j.no}: ${worker}`);return clone(j)},
-    addJobcardNote(idOrNo,note){const j=jobcard(idOrNo);if(!j)return null;note=Object.assign({id:Date.now(),date:now().slice(0,10),time:new Date().toTimeString().slice(0,5)},clone(note));j.notes=j.notes||[];j.notes.unshift(note);save(`Note added: ${j.no}`);return clone(note)},
+    addJobcardNote(idOrNo,note){const j=jobcard(idOrNo);if(!j)return null;note=Object.assign({id:Date.now(),date:localDayISO(),time:new Date().toTimeString().slice(0,5)},clone(note));j.notes=j.notes||[];j.notes.unshift(note);save(`Note added: ${j.no}`);return clone(note)},
     addJobcardInspection(idOrNo,inspection){const j=jobcard(idOrNo);if(!j)return null;inspection=Object.assign({id:Date.now()},clone(inspection));j.inspections=j.inspections||[];j.inspections.push(inspection);save(`Inspection added: ${j.no}`);return clone(inspection)},
     updateJobcardInspection(idOrNo,inspId,patch){const j=jobcard(idOrNo);if(!j)return null;const insp=(j.inspections||[]).find(i=>i.id===inspId);if(!insp)return null;Object.assign(insp,clone(patch));save(`Inspection updated: ${j.no}`);return clone(insp)},
-    recordJobcardActivity(idOrNo,entry){const j=jobcard(idOrNo);if(!j)return null;entry=Object.assign({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5),by:UNNAMED},clone(entry));j.activity=j.activity||[];j.activity.unshift(entry);save(`Jobcard activity: ${j.no}`);return clone(entry)},
+    recordJobcardActivity(idOrNo,entry){const j=jobcard(idOrNo);if(!j)return null;entry=Object.assign({date:localDayISO(),time:new Date().toTimeString().slice(0,5),by:UNNAMED},clone(entry));j.activity=j.activity||[];j.activity.unshift(entry);save(`Jobcard activity: ${j.no}`);return clone(entry)},
     // A read-only accessor: it must never mutate state. normalize() already guarantees
     // state.equipment is a valid array (backfilling it only when missing/invalid, never when it is
     // a genuinely empty user collection) — see the "empty stays empty" rule. Nothing adds machines
@@ -2177,7 +2184,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
         usageSessions:[],
         isRetired:false,
         retirementReason:'',
-        creationDate:now().slice(0,10),
+        creationDate:localDayISO(),
         lastActivity:now()
       };
       state.equipment.unshift(record);
@@ -2351,7 +2358,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       // equipment always reserves it; a later logEquipmentUsage()/canUseEquipment() call is the
       // gated path into actual operational use.
       item.status='Reserved';
-      item.currentAssignment={project:canonicalProjectNo,jobcard:canonicalJobcardNo,location:assignment.location||null,worker,equipmentId:item.equipmentId, assignedBy, assignedDate:new Date().toISOString().slice(0,10)};
+      item.currentAssignment={project:canonicalProjectNo,jobcard:canonicalJobcardNo,location:assignment.location||null,worker,equipmentId:item.equipmentId, assignedBy, assignedDate:localDayISO()};
       item.activity=item.activity||[];
       item.activity.unshift({timestamp:now(),action:'Equipment assigned',user:assignedBy,reference:item.equipmentId,details:`${canonicalProjectNo} / ${canonicalJobcardNo}`});
       item.lastActivity=now();
@@ -2871,7 +2878,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     listQualityInspections:()=>clone(state.qualityInspections),
     findQualityInspection:idOrNo=>clone(qFind(state.qualityInspections,idOrNo)),
     createInspection(payload){
-      const rec=Object.assign({id:state.counters.inspection=(state.counters.inspection||0)+1,checklist:[],notes:[],documents:[],activity:[],createdBy:payload.createdBy||UNNAMED,created:now().slice(0,10),modified:now().slice(0,10)},clone(payload));
+      const rec=Object.assign({id:state.counters.inspection=(state.counters.inspection||0)+1,checklist:[],notes:[],documents:[],activity:[],createdBy:payload.createdBy||UNNAMED,created:localDayISO(),modified:localDayISO()},clone(payload));
       rec.no=rec.no||('INS-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.status=rec.status||'draft';
       rec.result=rec.result||'pending';
@@ -2886,13 +2893,13 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     },
     updateInspection(idOrNo,patch){
       const rec=qFind(state.qualityInspections,idOrNo); if(!rec)return{error:'Inspection not found'};
-      const from=rec.status; Object.assign(rec,clone(patch)); rec.modified=now().slice(0,10);
+      const from=rec.status; Object.assign(rec,clone(patch)); rec.modified=localDayISO();
       if(patch.status&&patch.status!==from)qActivity(rec,'Status changed',from,patch.status,rec.no,patch.reason||'');
       save(`Inspection updated: ${rec.no}`); return clone(rec);
     },
     startInspection(idOrNo){
       const rec=qFind(state.qualityInspections,idOrNo); if(!rec)return{error:'Inspection not found'};
-      const from=rec.status; rec.status='in-progress'; rec.modified=now().slice(0,10);
+      const from=rec.status; rec.status='in-progress'; rec.modified=localDayISO();
       qActivity(rec,'Inspection started',from,'in-progress',rec.no,'');
       save(`Inspection started: ${rec.no}`); return clone(rec);
     },
@@ -2901,9 +2908,9 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       if(!resultData||!resultData.result||resultData.result==='pending')return{error:'A result is required to complete an inspection'};
       if(resultData.result==='passed-observations'&&!(resultData.findings||'').trim())return{error:'Passed with Observations requires a comment'};
       const from=rec.status;
-      Object.assign(rec,{result:resultData.result,findings:resultData.findings||rec.findings||'',checklist:Array.isArray(resultData.checklist)?resultData.checklist:rec.checklist,actualDate:resultData.actualDate||now().slice(0,10),inspector:resultData.inspector||rec.inspector,critical:!!resultData.critical});
+      Object.assign(rec,{result:resultData.result,findings:resultData.findings||rec.findings||'',checklist:Array.isArray(resultData.checklist)?resultData.checklist:rec.checklist,actualDate:resultData.actualDate||localDayISO(),inspector:resultData.inspector||rec.inspector,critical:!!resultData.critical});
       rec.status=resultData.result==='failed'?'completed':(resultData.status||'completed');
-      rec.modified=now().slice(0,10);
+      rec.modified=localDayISO();
       qActivity(rec,resultData.result==='failed'?'Inspection failed':'Inspection completed',from,rec.status,rec.no,resultData.reason||'');
       let hold=null;
       if(resultData.result==='failed'&&resultData.critical){
@@ -2921,7 +2928,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     cancelInspection(idOrNo,reason){
       if(!reason||!reason.trim())return{error:'Cancellation requires a reason'};
       const rec=qFind(state.qualityInspections,idOrNo); if(!rec)return{error:'Inspection not found'};
-      const from=rec.status; rec.status='cancelled'; rec.modified=now().slice(0,10);
+      const from=rec.status; rec.status='cancelled'; rec.modified=localDayISO();
       qActivity(rec,'Inspection cancelled',from,'cancelled',rec.no,reason);
       save(`Inspection cancelled: ${rec.no}`); return clone(rec);
     },
@@ -2933,7 +2940,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const rec=Object.assign({id:state.counters.ncr=(state.counters.ncr||0)+1,notes:[],documents:[],activity:[]},clone(payload));
       rec.no=rec.no||('NCR-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.status=rec.status||'open';
-      rec.detectionDate=rec.detectionDate||now().slice(0,10);
+      rec.detectionDate=rec.detectionDate||localDayISO();
       qActivity(rec,'NCR created',null,rec.status,rec.no,'');
       state.qualityNcrs.unshift(rec);
       let hold=null;
@@ -3012,7 +3019,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     verifyCapa(idOrNo,{verifiedBy,effectivenessCheck,result}={}){
       const rec=qFind(state.qualityCapas,idOrNo); if(!rec)return{error:'Corrective action not found'};
       if(!effectivenessCheck||!effectivenessCheck.trim())return{error:'Effectiveness check evidence is required'};
-      rec.verifiedBy=verifiedBy||UNNAMED; rec.verificationDate=now().slice(0,10); rec.effectivenessCheck=effectivenessCheck;
+      rec.verifiedBy=verifiedBy||UNNAMED; rec.verificationDate=localDayISO(); rec.effectivenessCheck=effectivenessCheck;
       const from=rec.status; rec.status=result==='ineffective'?'ineffective':'effective';
       qActivity(rec,'Verification completed',from,rec.status,rec.no,effectivenessCheck);
       save(`CAPA verified: ${rec.no}`); return clone(rec);
@@ -3075,7 +3082,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const rec=Object.assign({id:state.counters.itp=(state.counters.itp||0)+1,lines:[],notes:[],activity:[],revisionHistory:[]},clone(payload));
       rec.no=rec.no||('ITP-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
       rec.status=rec.status||'active'; rec.revision=rec.revision||0;
-      rec.revisionHistory.push({revision:rec.revision,date:now().slice(0,10),author:rec.preparedBy||UNNAMED,reason:'Initial issue'});
+      rec.revisionHistory.push({revision:rec.revision,date:localDayISO(),author:rec.preparedBy||UNNAMED,reason:'Initial issue'});
       qActivity(rec,'ITP created',null,rec.status,rec.no,'');
       state.qualityItps.unshift(rec);
       save(`ITP created: ${rec.no}`); return clone(rec);
@@ -3115,7 +3122,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     },
     addWeldRepair(idOrNo,repairEntry){
       const rec=qFind(state.qualityWelds,idOrNo); if(!rec)return{error:'Weld record not found'};
-      rec.repairHistory=rec.repairHistory||[]; rec.repairHistory.push(Object.assign({date:now().slice(0,10)},clone(repairEntry)));
+      rec.repairHistory=rec.repairHistory||[]; rec.repairHistory.push(Object.assign({date:localDayISO()},clone(repairEntry)));
       const from=rec.status; rec.status='repaired';
       qActivity(rec,'Weld repair recorded',from,'repaired',rec.no,repairEntry.reason||'');
       save(`Weld repair recorded: ${rec.no}`); return clone(rec);
@@ -3154,7 +3161,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       // The one rule kept here as well, because it is the reason the register exists: a procedure is
       // approved on a qualification record, not on its own say-so. The database refuses it too.
       if(!rec.supportingWpqr)return{error:`procedure ${rec.no} cannot be approved with no supporting WPQR`};
-      rec.status='valid'; rec.setStatus='approved'; rec.approvedOn=now().slice(0,10);
+      rec.status='valid'; rec.setStatus='approved'; rec.approvedOn=localDayISO();
       save(`Procedure approved: ${rec.no}`); return clone(rec);
     },
     listQualityWelderQuals:()=>clone(state.qualityWelderQuals),
@@ -3171,7 +3178,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       }
       // Expiring soon and expired are the date's answer, not a stored one — worked out here the same way
       // the view works them out, so the two halves of the app agree about a word nobody types.
-      const left=Math.round((new Date(rec.expiryDate)-new Date(now().slice(0,10)))/86400000);
+      const left=Math.round((new Date(rec.expiryDate)-new Date(localDayISO()))/86400000);
       rec.daysLeft=left;
       rec.status=(rec.setStatus&&rec.setStatus!=='valid')?rec.setStatus
         :(left<0?'expired':left<=60?'expiring-soon':'valid');
@@ -3183,7 +3190,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const list=lists[entity]; if(!list)return{error:`There is no welding register called ${entity}`};
       const rec=qFind(list,idOrNo); if(!rec)return{error:'Record not found'};
       if(!text||!String(text).trim())return{error:'An empty note is not a note'};
-      rec.notes=rec.notes||[]; rec.notes.unshift({date:now().slice(0,10),author:UNNAMED,text:String(text).trim()});
+      rec.notes=rec.notes||[]; rec.notes.unshift({date:localDayISO(),author:UNNAMED,text:String(text).trim()});
       save(`Note added: ${rec.no||rec.qualNo}`); return clone(rec);
     },
 
@@ -3223,8 +3230,8 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     },
     addSupplierQualityReview(supplierName,review){
       const rec=state.supplierQuality.find(x=>x.supplier===supplierName); if(!rec)return{error:'Supplier quality record not found'};
-      rec.notes=rec.notes||[]; rec.notes.unshift(Object.assign({date:now().slice(0,10)},clone(review)));
-      rec.lastReview=now().slice(0,10);
+      rec.notes=rec.notes||[]; rec.notes.unshift(Object.assign({date:localDayISO()},clone(review)));
+      rec.lastReview=localDayISO();
       qActivity(rec,'Review added',null,null,supplierName,review.text||'');
       save(`Supplier review added: ${supplierName}`); return clone(rec);
     },
@@ -3234,7 +3241,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     createComplaint(payload){
       const rec=Object.assign({id:state.counters.complaint=(state.counters.complaint||0)+1,notes:[],documents:[],activity:[]},clone(payload));
       rec.no=rec.no||('CMP-'+new Date().getFullYear()+'-'+String(rec.id).padStart(3,'0'));
-      rec.status=rec.status||'received'; rec.complaintDate=rec.complaintDate||now().slice(0,10);
+      rec.status=rec.status||'received'; rec.complaintDate=rec.complaintDate||localDayISO();
       qActivity(rec,'Complaint received',null,rec.status,rec.no,'');
       state.qualityComplaints.unshift(rec);
       save(`Complaint created: ${rec.no}`); return clone(rec);
@@ -3305,7 +3312,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
     addQualityNote(collection,idOrNo,note){
       const arr=qCollection(collection); if(!arr)return{error:'Unknown quality record type'};
       const rec=qFind(arr,idOrNo); if(!rec)return{error:'Record not found'};
-      rec.notes=rec.notes||[]; rec.notes.unshift(Object.assign({date:now().slice(0,10),time:new Date().toTimeString().slice(0,5)},clone(note)));
+      rec.notes=rec.notes||[]; rec.notes.unshift(Object.assign({date:localDayISO(),time:new Date().toTimeString().slice(0,5)},clone(note)));
       save(`Quality note added: ${rec.no}`); return clone(rec.notes[0]);
     },
     addQualityActivity(collection,idOrNo,entry){
@@ -3367,7 +3374,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const data=clone(payload);data.supplier=String(data.supplier).trim();data.items=String(data.items).trim();data.status=status;
       if(rfq)Object.assign(rfq,data);
       else{
-        rfq=Object.assign({id:(state.counters.purchaseRfq=(state.counters.purchaseRfq||0)+1),no:`RFQ-${new Date().getFullYear()}-${String(state.counters.purchaseRfq).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',project:'',buyer:UNNAMED,archived:false},data);
+        rfq=Object.assign({id:(state.counters.purchaseRfq=(state.counters.purchaseRfq||0)+1),no:`RFQ-${new Date().getFullYear()}-${String(state.counters.purchaseRfq).padStart(4,'0')}`,date:localDayISO(),dueDate:'',project:'',buyer:UNNAMED,archived:false},data);
         state.purchaseRfqs.unshift(rfq);
       }
       save(`Purchase RFQ saved: ${rfq.no}`);return clone(rfq);
@@ -3388,7 +3395,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const data=clone(payload);data.supplier=String(data.supplier).trim();data.amount=amount;data.status=status;
       if(invoice)Object.assign(invoice,data);
       else{
-        invoice=Object.assign({id:(state.counters.supplierInvoice=(state.counters.supplierInvoice||0)+1),no:`SINV-${new Date().getFullYear()}-${String(state.counters.supplierInvoice).padStart(4,'0')}`,date:now().slice(0,10),dueDate:'',poNo:'',supplierReference:'',currency:'SEK',notes:'',archived:false},data);
+        invoice=Object.assign({id:(state.counters.supplierInvoice=(state.counters.supplierInvoice||0)+1),no:`SINV-${new Date().getFullYear()}-${String(state.counters.supplierInvoice).padStart(4,'0')}`,date:localDayISO(),dueDate:'',poNo:'',supplierReference:'',currency:'SEK',notes:'',archived:false},data);
         state.supplierInvoices.unshift(invoice);
       }
       save(`Supplier invoice saved: ${invoice.no}`);return clone(invoice);
@@ -3495,7 +3502,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       const data=Object.assign({},clone(payload),{customerId:customer.id,customer:customer.name,value,status});
       if(invoice)Object.assign(invoice,data);
       else{
-        invoice=Object.assign({id:(state.counters.invoice=(state.counters.invoice||0)+1),no:`INV-${new Date().getFullYear()}-${String(state.counters.invoice).padStart(4,'0')}`,date:now().slice(0,10),currency:'SEK',dueDate:'',reference:'',notes:'',archived:false},data);
+        invoice=Object.assign({id:(state.counters.invoice=(state.counters.invoice||0)+1),no:`INV-${new Date().getFullYear()}-${String(state.counters.invoice).padStart(4,'0')}`,date:localDayISO(),currency:'SEK',dueDate:'',reference:'',notes:'',archived:false},data);
         state.invoices.unshift(invoice);
       }
       save(`Invoice saved: ${invoice.no}`);
@@ -3651,13 +3658,13 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
         priority:f.verdict==='go'?'high':(f.verdict==='skip'?'low':'medium'),
         status:'new',
         owner:who,
-        created:now().slice(0,10),
+        created:localDayISO(),
         fromProspect:f.id,
         demo:!!f.demo,
-        notes:[{date:now().slice(0,10),author:who,
+        notes:[{date:localDayISO(),author:who,
           text:`From the outward sweep${f.demo?' (sample finding, nothing was actually found)':''}. `+
                `Source: ${f.sourceName||'—'} ${f.sourceUrl||''}`.trim()}],
-        activity:[{date:now().slice(0,10),type:'created',
+        activity:[{date:localDayISO(),type:'created',
           text:`Accepted from the findings queue — ${f.klass}, ${f.verdict.toUpperCase()}.`}]
       });
       if(lead&&lead.error)return lead;
@@ -3704,7 +3711,7 @@ inv.stock-=qty;inv.reserved=Math.max(0,inv.reserved-Math.min(inv.reserved,qty));
       else{
         r=Object.assign({favourite:false,archived:false},data);
         r.id=r.id||(`rpt-${Date.now()}`);
-        r.created=r.created||now().slice(0,10);
+        r.created=r.created||localDayISO();
         r.lastUsed=r.lastUsed||r.created;
         state.savedReports.push(r);
       }

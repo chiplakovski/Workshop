@@ -367,6 +367,58 @@
     paintWhereTheDataCameFrom();
   }
 
+  // ── Printing ─────────────────────────────────────────────────────────────────────────────
+  // Every module screen prints what it shows, on white paper, under the firm's letterhead with the page,
+  // the date and who printed it — the record a workshop files or hands over. Pages that print their own
+  // sheet (offers, jobcards, quality reports) say so with data-print="own" and are left alone. When a
+  // dialog is open, the dialog is what prints: a material label, a record somebody opened to print.
+  var PRINT_WORDS={en:'Print',sv:'Skriv ut',mk:'Печати'};
+  var PRINTED_BY={en:'Printed {when} by {who}',sv:'Utskrivet {when} av {who}',mk:'Отпечатено {when} од {who}'};
+  function lang(){var c=(document.documentElement.lang||'en').slice(0,2);return PRINT_WORDS[c]?c:'en';}
+  function printable(){
+    var key=moduleKey();
+    if(!key||/^(hub|login|admin)$/.test(key)||/-mobile$/.test(window.__module||location.pathname))return false;
+    return document.body&&document.body.getAttribute('data-print')!=='own';
+  }
+  function mountPrint(){
+    if(!printable()||document.querySelector('.ws-print-btn'))return;
+    var spot=document.querySelector('.topright')||document.querySelector('.top-actions')||
+      document.querySelector('header.top .tools')||document.querySelector('.main-head .header-actions')||document.querySelector('.main-head .toolbar')||
+      document.querySelector('.topbar')||document.querySelector('header.top');
+    if(!spot)return;
+    var b=document.createElement('button');
+    b.type='button';b.className='ws-print-btn';b.textContent=PRINT_WORDS[lang()];
+    b.addEventListener('click',function(){window.print();});
+    spot.appendChild(b);
+    new MutationObserver(function(){b.textContent=PRINT_WORDS[lang()];})
+      .observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  }
+  function beforePrint(){
+    if(!document.body||document.body.getAttribute('data-print')==='own')return;
+    afterPrint();   // once: a browser that announces the same print twice still gets one header
+    var open=document.querySelector('.modal.show,.overlay.show,#fov.show,.fov.show');
+    if(open){document.body.classList.add('ws-print-dialog');open.classList.add('ws-print-target');}
+    var head=document.createElement('div');head.className='ws-print-head';
+    var L=window.WorkshopData&&WorkshopData.companyLetterhead?WorkshopData.companyLetterhead():{name:'Varmak AB',address:'',registration:''};
+    var title=(document.querySelector('h1')||{}).textContent||document.title;
+    var who=window.currentUser?window.currentUser():'';
+    var when=new Date().toLocaleString(document.documentElement.lang||'en-GB',{dateStyle:'medium',timeStyle:'short'});
+    var line=function(text,cls){var d=document.createElement('div');d.className=cls;d.textContent=text;return d;};
+    head.appendChild(line(L.name,'ws-ph-name'));
+    if(L.address)head.appendChild(line(L.address,'ws-ph-sub'));
+    head.appendChild(line(String(title).trim(),'ws-ph-title'));
+    head.appendChild(line(PRINTED_BY[lang()].replace('{when}',when).replace('{who}',who&&who!=='—'?who:'—'),'ws-ph-sub'));
+    (open||document.body).insertBefore(head,(open||document.body).firstChild);
+  }
+  function afterPrint(){
+    document.querySelectorAll('.ws-print-head').forEach(function(el){el.remove();});
+    document.querySelectorAll('.ws-print-target').forEach(function(el){el.classList.remove('ws-print-target');});
+    if(document.body)document.body.classList.remove('ws-print-dialog');
+  }
+  window.addEventListener('beforeprint',beforePrint);
+  window.addEventListener('afterprint',afterPrint);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountPrint);else mountPrint();
+
   window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,
     prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,
     paintWhereTheDataCameFrom:paintWhereTheDataCameFrom,initialsOf:initialsOf};

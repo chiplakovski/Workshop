@@ -1115,7 +1115,7 @@ showView(location.hash.slice(1)||'inventory');
     // projects, twelve thousand kronor - on a system that might hold nothing at all. They are
     // read off the same records as the figures above them now, and say nothing when there is
     // nothing to say.
-    const today=new Date().toISOString().slice(0,10);
+    const today=localDayISO();
     const movesToday=(shared.movements||[]).filter(m=>String(m.time||'').slice(0,10)===today);
     const valueOf=list=>list.reduce((n,m)=>{
       const item=shared.inventory.find(i=>i.code===m.code);
@@ -1199,7 +1199,7 @@ showView(location.hash.slice(1)||'inventory');
     const subName=(g,id)=>(((WorkshopData.findItemGroup(g)||{}).subgroups||[]).find(y=>y.id===id)||{}).name||'';
     const rows=exported.map(x=>[x.itemNo,x.code,x.description,groupName(x.group),subName(x.group,x.subgroup),x.grade,x.dimensions,x.unit,x.stock,x.reserved,x.stock-x.reserved,x.location,x.minStock,x.reorderQty,x.avgCost,x.lastPrice,x.supplier,x.heat,x.certificate||'',x.stock-x.reserved<=x.minStock?'Low':'Good']);
     const csv='\ufeff'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n');
-    const date=new Date().toISOString().slice(0,10),name=`store-inventory-${date}.csv`,url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');
+    const date=localDayISO(),name=`store-inventory-${date}.csv`,url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');
     link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
     WorkshopData.saveReport({name:`Store inventory ${date}`,module:'Store',format:'CSV',rowCount:rows.length,lastUsed:date,parameters:{category,search:$('search').value.trim()}});
     notify((currentT.notifyReportDownloaded||'Inventory report downloaded: {name}').replace('{name}',name));

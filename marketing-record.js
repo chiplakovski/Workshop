@@ -251,7 +251,7 @@
       // tender was marked as submitted IS the day somebody marked it, which is the honest answer.
       submitted_on: day(whole.submitted)
         || (['submitted', 'awarded', 'declined'].indexOf(status) === -1
-          ? null : new Date().toISOString().slice(0, 10)),
+          ? null : (()=>{const x=new Date();return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;})()),
       value: amount(whole.value)
     };
   }

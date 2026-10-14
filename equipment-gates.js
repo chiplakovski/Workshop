@@ -49,8 +49,13 @@
     const da=toDateOnly(a),db=toDateOnly(b);
     return !!da&&!!db&&da.getTime()===db.getTime();
   }
+  // Today is the calendar day on this device's clock, held at UTC midnight like every other date here. The
+  // UTC day was a day behind for the first hours after midnight in Sweden, so a machine checked at 00:30
+  // read as not checked today.
   function resolveAsOf(options){
-    return toDateOnly((options&&options.asOf))||toDateOnly(new Date());
+    const n=new Date();
+    const today=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    return toDateOnly((options&&options.asOf))||toDateOnly(today);
   }
   // Strict calendar-date validation for workflow input (as opposed to toDateOnly()'s lenient
   // "best effort" parsing used for the gate's own overdue comparisons). A value must be a literal

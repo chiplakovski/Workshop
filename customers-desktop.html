@@ -311,7 +311,7 @@ const PROJECTS=[/* empty: a new workshop has none of these yet */];
 function hydrateSharedCustomers(){
   if(!window.WorkshopData)return;const shared=WorkshopData.get();
   shared.customers.forEach(sc=>{if(CUSTOMERS.some(c=>c.name===sc.name))return;const id=nextCustId++;
-    CUSTOMERS.push({id,sharedId:sc.id,name:sc.name,city:sc.city||"—",country:sc.country||"Sweden",status:sc.status||"active",org:sc.org||"—",email:sc.email||"—",phone:sc.phone||"—",website:sc.website||"—",since:sc.since||new Date().toISOString().slice(0,10),terms:sc.terms||"30 days",credit:sc.credit||0,currency:sc.currency||"SEK",industry:sc.industry||"—",ctype:sc.type||"Company",vat:sc.vat||"—",preferred:sc.preferred||"Email",pricelist:sc.priceList||"Standard Price List",deliveryTerms:sc.deliveryTerms||"—",discountAgreement:sc.discountAgreement||"—",remarks:sc.remarks||"",billing:sc.billing||[sc.name,"—"],shipping:sc.shipping||sc.billing||[sc.name,"—"],contacts:sc.contacts||[],quotes:shared.estimations.filter(e=>e.customerId===sc.id).map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status})),invoices:[],notes:sc.notes||[],documents:sc.documents||[]});
+    CUSTOMERS.push({id,sharedId:sc.id,name:sc.name,city:sc.city||"—",country:sc.country||"Sweden",status:sc.status||"active",org:sc.org||"—",email:sc.email||"—",phone:sc.phone||"—",website:sc.website||"—",since:sc.since||localDayISO(),terms:sc.terms||"30 days",credit:sc.credit||0,currency:sc.currency||"SEK",industry:sc.industry||"—",ctype:sc.type||"Company",vat:sc.vat||"—",preferred:sc.preferred||"Email",pricelist:sc.priceList||"Standard Price List",deliveryTerms:sc.deliveryTerms||"—",discountAgreement:sc.discountAgreement||"—",remarks:sc.remarks||"",billing:sc.billing||[sc.name,"—"],shipping:sc.shipping||sc.billing||[sc.name,"—"],contacts:sc.contacts||[],quotes:shared.estimations.filter(e=>e.customerId===sc.id).map(e=>({no:e.no,date:e.created,value:e.sellingPrice,status:e.status})),invoices:[],notes:sc.notes||[],documents:sc.documents||[]});
   });
   shared.projects.forEach(sp=>{const c=CUSTOMERS.find(x=>x.name===sp.customer);if(c&&!PROJECTS.some(p=>p.no===sp.no))PROJECTS.push({no:sp.no,name:sp.name,customerId:c.id,status:sp.status,quotedValue:(shared.estimations.find(e=>e.id===sp.estimationId)||{}).sellingPrice||0,deadline:sp.deadline})});
 }
@@ -711,7 +711,7 @@ function saveNewCustomer(){
   const billing=$("ncBilling").value.trim().split(/\n+/).filter(Boolean),shipping=$("ncShipping").value.trim().split(/\n+/).filter(Boolean);
   const created={id:nextCustId++,name,city:$("ncCity").value.trim()||"—",country:"Sweden",status:"active",
     org:$("ncOrg").value.trim()||"—",email:$("ncEmail").value.trim()||"—",phone:$("ncPhone").value.trim()||"—",
-    website:$("ncWebsite").value.trim()||"—",since:new Date().toISOString().slice(0,10),terms:$("ncTerms").value||"30 days",credit:+$("ncCredit").value||0,currency:"SEK",
+    website:$("ncWebsite").value.trim()||"—",since:localDayISO(),terms:$("ncTerms").value||"30 days",credit:+$("ncCredit").value||0,currency:"SEK",
     industry:$("ncIndustry").value||"—",ctype:"Company",vat:$("ncVat").value||"—",preferred:"Email",pricelist:"Standard Price List",deliveryTerms:$("ncDelivery").value||"—",discountAgreement:$("ncDiscount").value||"—",remarks:"",
     billing:billing.length?billing:[name,"—","Sweden"],shipping:shipping.length?shipping:(billing.length?billing:[name,"—","Sweden"]),contacts:[],quotes:[],invoices:[],notes:[],documents:[]};CUSTOMERS.push(created);syncCustomer(created);
   closeModal();selectedId=nextCustId-1;renderAll();
@@ -769,7 +769,7 @@ function openAddNote(id){
 }
 function saveAddNote(id){
   const text=$("anText").value.trim();if(!text)return;
-  const c=getCust(id);c.notes.push({date:new Date().toISOString().slice(0,10),author:currentUser(),text});syncCustomer(c);
+  const c=getCust(id);c.notes.push({date:localDayISO(),author:currentUser(),text});syncCustomer(c);
   closeModal();renderAll();
 }
 
@@ -813,11 +813,11 @@ function saveNewQuote(id){
   const desc=$("nqDesc").value.trim();
   const c=getCust(id);
   if(!c.sharedId)syncCustomer(c);
-  WorkshopData.upsertEstimation({customerId:c.sharedId,customer:c.name,title:desc||`Quote for ${c.name}`,status:'sent',sellingPrice:value,totalCost:value,currency:'SEK',created:new Date().toISOString().slice(0,10)});
+  WorkshopData.upsertEstimation({customerId:c.sharedId,customer:c.name,title:desc||`Quote for ${c.name}`,status:'sent',sellingPrice:value,totalCost:value,currency:'SEK',created:localDayISO()});
   closeModal();activeTab='quotes';renderAll();
 }
 function openNewInvoice(id){
-  const t=T[LANG],today=new Date().toISOString().slice(0,10),due=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  const t=T[LANG],today=localDayISO(),due=localDayISO(new Date(Date.now()+30*86400000));
   $("fcard").innerHTML=`<h2>${t.ni_title}</h2><p class="fsub">${esc(getCust(id).name)}</p>
     <div class="frow2"><div><label for="niDate">${t.ni_date}</label><input id="niDate" type="date" value="${today}"></div><div><label for="niDue">${t.ni_due}</label><input id="niDue" type="date" value="${due}"></div></div>
     <div class="frow2"><div><label for="niValue">${t.ni_value}</label><input id="niValue" type="number" min="0.01" step="0.01"></div><div><label for="niStatus">${t.ni_status}</label><select id="niStatus"><option value="draft">Draft</option><option value="pending" selected>Pending</option><option value="paid">Paid</option><option value="overdue">Overdue</option></select></div></div>

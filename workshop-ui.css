@@ -110,3 +110,48 @@ html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
 .scopechip.on .scopen{color:#fff;background:rgba(var(--c-accent-rgb,44,107,214),.5);}
 .scopechip.empty{opacity:.55;}
 .scopechip:focus-visible{outline:2px solid var(--spark,#4a90ff);outline-offset:2px;}
+
+/* ── Printing ─────────────────────────────────────────────────────────────────────────────────
+   The screens are dark; paper is not. Everything prints black on white, the navigation and the
+   controls are left off, and lists print in full rather than in the scroll box they sit in on screen.
+   A page with its own print sheet sets data-print="own" and none of this applies to it. */
+.ws-print-btn{background:transparent;color:inherit;border:1px solid currentColor;border-radius:3px;padding:6px 12px;
+  font:inherit;font-size:12px;cursor:pointer;opacity:.85;margin-left:8px;}
+.ws-print-btn:hover{opacity:1;}
+.ws-print-head{display:none;}
+@media print{
+  @page{margin:14mm;}
+  body:not([data-print="own"]) *{background:transparent !important;color:#111 !important;box-shadow:none !important;
+    text-shadow:none !important;border-color:#bbb !important;animation:none !important;}
+  body:not([data-print="own"]){background:#fff !important;display:block !important;}
+  /* The dark ground is painted on the page itself and on decorative layers before and after things, which
+     a rule about elements does not reach. */
+  html:has(> body:not([data-print="own"])){background:#fff !important;}
+  body:not([data-print="own"])::before,body:not([data-print="own"])::after,
+  body:not([data-print="own"]) *::before,body:not([data-print="own"]) *::after{background:transparent !important;box-shadow:none !important;}
+  body:not([data-print="own"]) .module-sidebar,body:not([data-print="own"]) .sidebar,body:not([data-print="own"]) nav,
+  body:not([data-print="own"]) .ambient,body:not([data-print="own"]) .embers,body:not([data-print="own"]) .toast,
+  body:not([data-print="own"]) .langc,body:not([data-print="own"]) .skip-link,body:not([data-print="own"]) .back-link,
+  body:not([data-print="own"]) .back,body:not([data-print="own"]) button,body:not([data-print="own"]) input,
+  body:not([data-print="own"]) select,body:not([data-print="own"]) .modal:not(.show),body:not([data-print="own"]) .whelp,
+  body:not([data-print="own"]) .wtip,body:not([data-print="own"]) .ms-user,body:not([data-print="own"]) .actionbar,
+  body:not([data-print="own"]) .actions{display:none !important;}
+  body:not([data-print="own"]) .shell,body:not([data-print="own"]) .main{margin:0 !important;padding:0 !important;min-width:0 !important;}
+  body:not([data-print="own"]) *{overflow:visible !important;max-height:none !important;}
+  body:not([data-print="own"]) table{width:100% !important;border-collapse:collapse !important;}
+  body:not([data-print="own"]) th,body:not([data-print="own"]) td{border-bottom:1px solid #ccc !important;}
+  body:not([data-print="own"]) tr,body:not([data-print="own"]) .panel{break-inside:avoid;}
+  body:not([data-print="own"]) a{text-decoration:none !important;}
+  .ws-print-head{display:block !important;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #111 !important;}
+  .ws-print-head .ws-ph-name{font-weight:700;font-size:16px;}
+  .ws-print-head .ws-ph-title{font-weight:600;font-size:14px;margin-top:6px;}
+  .ws-print-head .ws-ph-sub{font-size:11px;color:#444 !important;}
+  /* A dialog open when printing is what prints. */
+  body.ws-print-dialog *{visibility:hidden !important;}
+  /* And takes no room: what is hidden would otherwise still fill pages after the label. */
+  body.ws-print-dialog > *:not(.ws-print-target):not(:has(.ws-print-target)){display:none !important;}
+  body.ws-print-dialog .ws-print-target,body.ws-print-dialog .ws-print-target *{visibility:visible !important;}
+  body.ws-print-dialog .ws-print-target{position:absolute !important;inset:0 auto auto 0 !important;width:100% !important;
+    display:block !important;background:#fff !important;}
+  body.ws-print-dialog .ws-print-target button{display:none !important;}
+}

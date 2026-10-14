@@ -217,7 +217,7 @@ async function main() {
     // And now the point of the whole exercise: ask the database.
     const entry = sql(`SELECT worker || '|' || hours || '|' || note || '|' || worked_on
       FROM hours_entry ORDER BY id DESC LIMIT 1;`);
-    assert.equal(entry, `Marko Ilic|6.50|Booked on the tablet|${new Date().toISOString().slice(0, 10)}`,
+    assert.equal(entry, `Marko Ilic|6.50|Booked on the tablet|${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}`,
       'the hours should be in Postgres, under the name of whoever the PIN belonged to');
     step('Hours: six and a half hours typed on a tablet are in Postgres, under the welder\'s own name');
 

@@ -253,7 +253,7 @@
   :root[data-theme="carbon"] .glow{background:radial-gradient(circle,rgba(79,140,255,.09),transparent 66%);}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
-</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body>
+</style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script></head><body data-print="own">
 <div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div><div id="embers"></div></div>
 <a class="skip" href="#main">Skip to reports content</a>
 
@@ -877,7 +877,7 @@ $('saveViewBtn').addEventListener('click',()=>{
     WorkshopData.saveReport({
       id:'view-'+Date.now(),name:name.trim().slice(0,80),category:SECTION_TITLE_KEY[currentSection]?tr(SECTION_TITLE_KEY[currentSection]):currentSection,
       filters:{dateFilter:currentFilter,...activeFilters},columns:[],sorting:null,grouping:null,chartType:null,
-      visibility:'private',favourite:false,created:new Date().toISOString().slice(0,10),lastUsed:new Date().toISOString().slice(0,10),
+      visibility:'private',favourite:false,created:localDayISO(),lastUsed:localDayISO(),
       section:currentSection,type:'view'
     });
     renderSavedReports();
@@ -1364,7 +1364,7 @@ function renderSavedReports(){
 function loadSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);
   if(!r)return;
-  WorkshopData.saveReport(Object.assign({},r,{lastUsed:new Date().toISOString().slice(0,10)}));
+  WorkshopData.saveReport(Object.assign({},r,{lastUsed:localDayISO()}));
   if(r.filters){
     currentFilter=r.filters.dateFilter||'all';
     activeFilters={customer:r.filters.customer||'',project:r.filters.project||'',status:r.filters.status||''};
@@ -1382,7 +1382,7 @@ function renameSavedReport(id){
 }
 function duplicateSavedReport(id){
   const r=loadSavedReports().find(x=>x.id===id);if(!r)return;
-  const copy=Object.assign({},r,{id:'copy-'+Date.now(),name:r.name+' (copy)',created:new Date().toISOString().slice(0,10)});
+  const copy=Object.assign({},r,{id:'copy-'+Date.now(),name:r.name+' (copy)',created:localDayISO()});
   WorkshopData.saveReport(copy);
   renderSavedReports();
   notify('Report duplicated.');
@@ -1504,7 +1504,7 @@ function exportReport(format){
   if(format==='csv'&&currentSection==='invoice'){
     if(!_basis){notify(_basisRefused||tr('inv_refused'));closeModal('exportModal');return;}
     downloadBlob(invoiceBasisCsv(getDateRange(currentFilter)),'text/csv;charset=utf-8',
-      'varmak-invoice-basis-'+new Date().toISOString().slice(0,10)+'.csv');
+      'varmak-invoice-basis-'+localDayISO()+'.csv');
     notify(tr('inv_exported'));closeModal('exportModal');return;
   }
   if(format==='csv'){

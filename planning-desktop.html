@@ -394,7 +394,7 @@ const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
 // Dates are held at UTC midnight throughout, the same way planning-rules.js holds them, so a
 // bar's left edge is never a day out because the browser sits in a different timezone.
 const dayOf=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?null:new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));};
-const TODAY=dayOf(new Date().toISOString().slice(0,10));
+const TODAY=dayOf(localDayISO());
 const TODAY_ISO=iso(TODAY);
 const num=n=>(Math.round((Number(n)||0)*10)/10).toLocaleString('sv-SE');
 const clone=v=>JSON.parse(JSON.stringify(v));
