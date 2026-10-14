@@ -82,6 +82,30 @@ async function nothingIsInventedAboutASupplier(page) {
   step('Suppliers: nothing is stated about a supplier that nobody entered — and the blanks read as blank');
 }
 
+// The org number, checked where it is typed. And an edit that leaves status alone leaves it alone:
+// the select used to reopen on "active", so saving any change quietly demoted a preferred supplier.
+async function anOrgNumberIsCheckedAndAnEditKeepsTheStatus(page) {
+  await page.evaluate((name) => { selectSupplier(suppliers.findIndex((s) => s.name === name)); openModal('supplier', true); }, SUPPLIER);
+  assert.equal(await page.locator('#supplierStatus').inputValue(), 'preferred', 'the edit form reopened on another status');
+  await page.locator('#supplierOrg').fill('556012-5791');
+  await page.locator('#supplierOrgStatus').evaluate((el) => { el.textContent = ''; });
+  await page.evaluate(() => checkSupplierOrg());
+  assert.match(await page.locator('#supplierOrgStatus').innerText(), /does not add up/);
+  await page.locator('#supplierOrg').fill('5560125790');
+  await page.evaluate(() => checkSupplierOrg());
+  assert.equal(await page.locator('#supplierOrg').inputValue(), '556012-5790');
+  assert.equal(await page.locator('#supplierVat').inputValue(), 'SE556012579001');
+  await page.locator('#supplierCity').fill('Malmö');
+  await page.locator('#modalForm .primary').click();
+  await page.waitForTimeout(300);
+  const stored = await page.evaluate((name) => WorkshopData.listSuppliers().find((item) => item.name === name), SUPPLIER);
+  assert.equal(stored.status, 'preferred', 'saving an edit changed the status nobody touched');
+  assert.equal(stored.org, '556012-5790');
+  assert.equal(stored.vat, 'SE556012579001');
+  assert.equal(stored.city, 'Malmö');
+  step('Suppliers: a mistyped org number is caught, a valid one fills the VAT number, and an edit keeps the status');
+}
+
 async function createInventoryAndReorder(page) {
   await page.evaluate(() => openNewItemForm());
   await page.locator('#newCode').fill(ITEM_CODE);
@@ -606,6 +630,7 @@ async function main() {
     await loadDemoData(page);
     await createSupplier(page);
     await nothingIsInventedAboutASupplier(page);
+    await anOrgNumberIsCheckedAndAnEditKeepsTheStatus(page);
     await page.goto(`${harness.baseUrl}/store-desktop.html`, { waitUntil: 'load' });
     const poNo = await createInventoryAndReorder(page);
     await anOffcutIsMeasuredBeforeItIsRegistered(page);

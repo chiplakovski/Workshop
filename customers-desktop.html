@@ -284,7 +284,7 @@ body{overflow:hidden;min-height:0}
   <button class="langtoggle" id="langtoggle" aria-label="Language"><svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg><span class="cur" id="langcur">EN</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
 </div>
 
-<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="customer-record.js"></script>
+<script src="quality-gates.js"></script><script src="equipment-gates.js"></script><script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="customer-record.js"></script><script src="org-number.js"></script>
 <!-- This screen reads and writes the database when there is a session, so the two-worlds guard lets
      it through. Declared before the guard runs rather than after the snapshot arrives: the guard
      fires on DOMContentLoaded and the snapshot is a fetch, so a page that waited would be blocked
@@ -341,7 +341,7 @@ const T={
     qs_sent:"Sent",qs_accepted:"Accepted",qs_expired:"Expired",is_paid:"Paid",is_pending:"Pending",is_overdue:"Overdue",
     act_newcust:"New Customer",act_newquote:"New Quote",act_newproj:"New Project",act_newinv:"New Invoice",act_newnote:"New Note",act_upload:"Upload Document",act_report:"Customer Report",
     nc_title:"New Customer",nc_edit_title:"Edit Customer",nc_name:"Customer name",nc_city:"City",nc_org:"Org. number",nc_email:"Email",nc_phone:"Phone",nc_website:"Website",nc_status:"Status",nc_save:"Save",nc_cancel:"Cancel",nc_shiphint:"Leave empty to reuse billing address",
-    nc_org_fetch:"Fetch from allabolag.se",org_lookup_loading:"Looking up…",org_lookup_need_number:"Enter an organization number first.",org_lookup_bad_format:"Organization number should be 10 digits (XXXXXX-XXXX).",org_lookup_failed:"Couldn't reach allabolag.se from the browser (likely blocked by cross-origin restrictions — this app does not proxy that lookup through its own server). Enter the company details manually below.",org_lookup_success:"Filled in from allabolag.se.",
+    nc_org_fetch:"Check number",org_lookup_loading:"Looking up…",org_lookup_need_number:"Enter an organization number first.",org_lookup_bad_format:"Organization number should be 10 digits (XXXXXX-XXXX).",org_lookup_success:"The number is valid.",org_lookup_checksum:"That number does not add up — a digit is probably mistyped.",org_lookup_vat:"VAT number filled in: {vat} (if the firm is VAT-registered).",org_lookup_open:"Look it up on allabolag.se",
     ac_title:"Add Contact",ac_name:"Name",ac_role:"Role",ac_email:"Email",ac_phone:"Phone",ac_primary:"Set as primary contact",ac_save:"Add contact",
     an_title:"Add Note",an_text:"Note",an_save:"Add note",
     ud_title:"Upload Document",ud_name:"File name",ud_save:"Upload",
@@ -370,7 +370,7 @@ const T={
     qs_sent:"Skickad",qs_accepted:"Accepterad",qs_expired:"Utgången",is_paid:"Betald",is_pending:"Väntande",is_overdue:"Försenad",
     act_newcust:"Ny kund",act_newquote:"Ny offert",act_newproj:"Nytt projekt",act_newinv:"Ny faktura",act_newnote:"Ny anteckning",act_upload:"Ladda upp dokument",act_report:"Kundrapport",
     nc_title:"Ny kund",nc_edit_title:"Redigera kund",nc_name:"Kundnamn",nc_city:"Stad",nc_org:"Org.nr",nc_email:"E-post",nc_phone:"Telefon",nc_website:"Webbplats",nc_status:"Status",nc_save:"Spara",nc_cancel:"Avbryt",nc_shiphint:"Lämna tomt för att återanvända faktureringsadressen",
-    nc_org_fetch:"Hämta från allabolag.se",org_lookup_loading:"Söker…",org_lookup_need_number:"Ange ett organisationsnummer först.",org_lookup_bad_format:"Organisationsnumret ska vara 10 siffror (XXXXXX-XXXX).",org_lookup_failed:"Kunde inte nå allabolag.se från webbläsaren (troligen blockerat av cross-origin-begränsningar — denna app skickar inte den förfrågan via sin egen server). Fyll i företagsuppgifterna manuellt nedan.",org_lookup_success:"Ifyllt från allabolag.se.",
+    nc_org_fetch:"Kontrollera nummer",org_lookup_loading:"Söker…",org_lookup_need_number:"Ange ett organisationsnummer först.",org_lookup_bad_format:"Organisationsnumret ska vara 10 siffror (XXXXXX-XXXX).",org_lookup_success:"Numret är giltigt.",org_lookup_checksum:"Numret stämmer inte — troligen är en siffra felskriven.",org_lookup_vat:"Momsnummer ifyllt: {vat} (om företaget är momsregistrerat).",org_lookup_open:"Slå upp på allabolag.se",
     ac_title:"Lägg till kontakt",ac_name:"Namn",ac_role:"Roll",ac_email:"E-post",ac_phone:"Telefon",ac_primary:"Ange som primär kontakt",ac_save:"Lägg till kontakt",
     an_title:"Lägg till anteckning",an_text:"Anteckning",an_save:"Lägg till",
     ud_title:"Ladda upp dokument",ud_name:"Filnamn",ud_save:"Ladda upp",
@@ -399,7 +399,7 @@ const T={
     qs_sent:"Испратена",qs_accepted:"Прифатена",qs_expired:"Истекла",is_paid:"Платена",is_pending:"Во чекање",is_overdue:"Задоцнета",
     act_newcust:"Нов клиент",act_newquote:"Нова понуда",act_newproj:"Нов проект",act_newinv:"Нова фактура",act_newnote:"Нова белешка",act_upload:"Отпреми документ",act_report:"Извештај за клиент",
     nc_title:"Нов клиент",nc_edit_title:"Уреди клиент",nc_name:"Име на клиент",nc_city:"Град",nc_org:"ЕМБС",nc_email:"Е-пошта",nc_phone:"Телефон",nc_website:"Веб-страна",nc_status:"Статус",nc_save:"Зачувај",nc_cancel:"Откажи",nc_shiphint:"Остави празно за да се користи истата адреса како за фактура",
-    nc_org_fetch:"Преземи од allabolag.se",org_lookup_loading:"Барам…",org_lookup_need_number:"Прво внесете матичен број.",org_lookup_bad_format:"Матичниот број треба да има 10 цифри (XXXXXX-XXXX).",org_lookup_failed:"Не успеа поврзување со allabolag.se од прегледувачот (веројатно блокирано од cross-origin ограничувања — оваа апликација не го проследува барањето преку својот сервер). Внесете ги податоците за компанијата рачно подолу.",org_lookup_success:"Пополнето од allabolag.se.",
+    nc_org_fetch:"Провери број",org_lookup_loading:"Барам…",org_lookup_need_number:"Прво внесете матичен број.",org_lookup_bad_format:"Матичниот број треба да има 10 цифри (XXXXXX-XXXX).",org_lookup_success:"Бројот е точен.",org_lookup_checksum:"Бројот не е точен — веројатно е погрешно отчукана цифра.",org_lookup_vat:"ДДВ-бројот е пополнет: {vat} (ако фирмата е регистрирана за ДДВ).",org_lookup_open:"Провери на allabolag.se",
     ac_title:"Додај контакт",ac_name:"Име",ac_role:"Улога",ac_email:"Е-пошта",ac_phone:"Телефон",ac_primary:"Постави како примарен контакт",ac_save:"Додај контакт",
     an_title:"Додај белешка",an_text:"Белешка",an_save:"Додај",
     ud_title:"Отпреми документ",ud_name:"Име на фајл",ud_save:"Отпреми",
@@ -678,7 +678,7 @@ function openNewCustomer(){
   $("fcard").innerHTML=`<h2>${t.nc_title}</h2><p class="fsub">${t.csub}</p>
     <div class="frow"><label for="ncName">${t.nc_name}</label><input id="ncName"></div>
     <div class="frow2"><div><label for="ncCity">${t.nc_city}</label><input id="ncCity"></div><div><label for="ncOrg">${t.nc_org}</label><input id="ncOrg" placeholder="XXXXXX-XXXX" autocomplete="off"></div></div>
-    <div class="frow orglookup"><button type="button" class="tbtn small" id="ncOrgFetchBtn" onclick="fetchFromAllabolag()">${t.nc_org_fetch}</button><span id="ncOrgStatus" class="orglookup-status" role="status" aria-live="polite"></span></div>
+    <div class="frow orglookup"><button type="button" class="tbtn small" id="ncOrgFetchBtn" onclick="checkCustomerOrg()">${t.nc_org_fetch}</button><span id="ncOrgStatus" class="orglookup-status" role="status" aria-live="polite"></span></div>
     <div class="frow2"><div><label for="ncEmail">${t.nc_email}</label><input id="ncEmail" type="email"></div><div><label for="ncPhone">${t.nc_phone}</label><input id="ncPhone"></div></div>
     <div class="frow"><label for="ncWebsite">${t.nc_website}</label><input id="ncWebsite" placeholder="www.example.se"></div>
     <div class="frow2"><div><label for="ncVat">${t.vat}</label><input id="ncVat"></div><div><label for="ncIndustry">${t.industry}</label><input id="ncIndustry"></div></div>
@@ -689,40 +689,13 @@ function openNewCustomer(){
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveNewCustomer()">${t.nc_save}</button></div>`;
   $("fov").classList.add("show");
 }
-async function fetchFromAllabolag(){
-  const t=T[LANG];
-  const orgInput=$("ncOrg"),btn=$("ncOrgFetchBtn"),status=$("ncOrgStatus");
-  if(!orgInput||!btn||!status)return;
-  const digits=orgInput.value.replace(/[^0-9]/g,"");
-  status.className="orglookup-status";
-  if(!digits){status.classList.add("err");status.textContent=t.org_lookup_need_number;orgInput.focus();return;}
-  if(digits.length!==10){status.classList.add("err");status.textContent=t.org_lookup_bad_format;orgInput.focus();return;}
-  btn.disabled=true;
-  status.textContent=t.org_lookup_loading;
-  try{
-    // allabolag.se has no public, CORS-enabled API for third-party pages, and this
-    // prototype has no backend to proxy the request through - in a real browser this
-    // fetch is expected to fail (network/CORS error), which is reported honestly below
-    // rather than being simulated with fabricated company data.
-    const res=await fetch("https://www.allabolag.se/what/"+digits,{mode:"cors",headers:{"Accept":"application/json"}});
-    const contentType=res.headers.get("content-type")||"";
-    if(!res.ok||!contentType.includes("application/json"))throw new Error("non-json-response");
-    const data=await res.json();
-    if(!data||!data.name)throw new Error("unexpected-response-shape");
-    $("ncName").value=data.name;
-    if(data.city)$("ncCity").value=data.city;
-    if(data.website)$("ncWebsite").value=data.website;
-    if(data.industry)$("ncIndustry").value=data.industry;
-    if(data.vat)$("ncVat").value=data.vat;
-    orgInput.value=digits.slice(0,6)+"-"+digits.slice(6);
-    status.classList.add("ok");
-    status.textContent=t.org_lookup_success;
-  }catch(err){
-    status.classList.add("err");
-    status.textContent=t.org_lookup_failed;
-  }finally{
-    btn.disabled=false;
-  }
+// Checked here, not fetched: no register answers a browser directly, and a lookup that always failed
+// was a button that promised something it could not do. What can be known is known — the check digit,
+// the written form, the VAT number that follows from it — and a link opens the register for the rest.
+function checkCustomerOrg(form){
+  const t=T[LANG],f=form==='ec'?'ec':'nc';
+  return OrgNumber.checkInto($(f+"Org"),$(f+"Vat"),$(f+"OrgStatus"),{need:t.org_lookup_need_number,length:t.org_lookup_bad_format,
+    checksum:t.org_lookup_checksum,ok:t.org_lookup_success,vat:t.org_lookup_vat,open:t.org_lookup_open});
 }
 function saveNewCustomer(){
   const name=$("ncName").value.trim();if(!name)return;
@@ -743,6 +716,8 @@ function openEditCustomer(id){
       <div><label for="ecStatus">${t.nc_status}</label><select id="ecStatus"><option value="active" ${c.status==='active'?'selected':''}>${t.f_active}</option><option value="inactive" ${c.status==='inactive'?'selected':''}>${t.f_inactive}</option></select></div></div>
     <div class="frow2"><div><label for="ecEmail">${t.nc_email}</label><input id="ecEmail" value="${esc(c.email)}"></div><div><label for="ecPhone">${t.nc_phone}</label><input id="ecPhone" value="${esc(c.phone)}"></div></div>
     <div class="frow"><label for="ecWebsite">${t.nc_website}</label><input id="ecWebsite" value="${esc(c.website)}"></div>
+    <div class="frow2"><div><label for="ecOrg">${t.nc_org}</label><input id="ecOrg" placeholder="XXXXXX-XXXX" autocomplete="off" value="${esc(c.org&&c.org!=='—'?c.org:'')}"></div><div><label for="ecVat">${t.vat}</label><input id="ecVat" value="${esc(c.vat&&c.vat!=='—'?c.vat:'')}"></div></div>
+    <div class="frow orglookup"><button type="button" class="tbtn small" onclick="checkCustomerOrg('ec')">${t.nc_org_fetch}</button><span id="ecOrgStatus" class="orglookup-status" role="status" aria-live="polite"></span></div>
     <div class="frow2"><div><label for="ecTerms">${t.terms}</label><input id="ecTerms" value="${esc(c.terms)}"></div><div><label for="ecCredit">${t.credit}</label><input id="ecCredit" type="number" value="${esc(c.credit)}"></div></div>
     <div class="frow2"><div><label for="ecDelivery">${t.deliveryterms}</label><input id="ecDelivery" value="${esc(c.deliveryTerms||'—')}"></div><div><label for="ecDiscount">${t.discountagreement}</label><input id="ecDiscount" value="${esc(c.discountAgreement||'—')}"></div></div>
     <div class="fbtns"><button class="tbtn" onclick="closeModal()">${t.nc_cancel}</button><button class="tbtn primary" onclick="saveEditCustomer(${id})">${t.nc_save}</button></div>`;
@@ -752,6 +727,7 @@ function saveEditCustomer(id){
   const c=getCust(id);
   c.name=$("ecName").value.trim()||c.name;c.city=$("ecCity").value.trim()||c.city;c.status=$("ecStatus").value;
   c.email=$("ecEmail").value.trim()||c.email;c.phone=$("ecPhone").value.trim()||c.phone;c.website=$("ecWebsite").value.trim()||c.website;
+  c.org=$("ecOrg").value.trim()||"—";c.vat=$("ecVat").value.trim()||"—";
   c.terms=$("ecTerms").value||c.terms;c.credit=+$("ecCredit").value||0;c.deliveryTerms=$("ecDelivery").value||"—";c.discountAgreement=$("ecDiscount").value||"—";syncCustomer(c);
   closeModal();renderAll();
 }
