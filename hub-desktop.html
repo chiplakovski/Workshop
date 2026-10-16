@@ -307,7 +307,7 @@
 
 <div class="radio" id="radio">
   <div class="radio-panel" id="radioPanel">
-    <div class="ph">Stations</div>
+    <div class="ph" data-i="radio_stations">Stations</div>
     <div id="stationList"></div>
     <div class="vol">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
@@ -316,7 +316,7 @@
   </div>
   <div class="radio-bar">
     <svg class="rico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16v10H4z"/><circle cx="16" cy="15" r="2.5"/><path d="M8 14h2M8 17h2M4 10l13-5"/></svg>
-    <div class="rmeta"><span class="rstation" id="radioName">P4 Malmöhus</span><span class="rsub">DAB · Live</span></div>
+    <div class="rmeta"><span class="rstation" id="radioName">P4 Malmöhus</span><span class="rsub" id="radioState">DAB · Live</span></div>
     <div class="eq"><span></span><span></span><span></span><span></span></div>
     <button class="rbtn" id="radioBtn" aria-label="Play"><svg id="radioIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="rexp" id="radioExp" aria-label="Stations"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -342,7 +342,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
 <script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script>
 <script src="workshop-ui.js"></script><script>
   const T={
-    sv:{role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",yd_where_server:"Allt den har verkstaden matar in ligger i verkstadens databas, inte i den har webblasaren. Alla som loggar in ser samma uppgifter.",yd_warn_server:"Sakerhetskopior tas av den som skoter databasen, med backend/backup.sh. Att rensa den har webblasaren tar inte bort nagot.",yd_unreachable:"Verkstaden kunde inte lasas just nu, sa inga antal visas har.",logout:"Logga ut",
+    sv:{radio_stations:"Kanaler",radio_ready:"DAB · Live",radio_connecting:"Ansluter…",radio_live:"Live",radio_failed:"Nås inte",radio_failed_long:"Kanalen kunde inte nås. Kontrollera internetanslutningen eller välj en annan kanal.",role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",yd_where_server:"Allt den har verkstaden matar in ligger i verkstadens databas, inte i den har webblasaren. Alla som loggar in ser samma uppgifter.",yd_warn_server:"Sakerhetskopior tas av den som skoter databasen, med backend/backup.sh. Att rensa den har webblasaren tar inte bort nagot.",yd_unreachable:"Verkstaden kunde inte lasas just nu, sa inga antal visas har.",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
       m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
@@ -351,7 +351,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_reports:"Rapporter",c_reports:"Besiktning & test",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhåll",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       m_data:"Dina uppgifter",c_data:"Var arbetet sparas",yd_where:"Allt den har verkstaden har matat in sparas i den har webblasaren, pa den har enheten. Inget skickas nagonstans, och ingen annan har en kopia.",yd_warn:"Om webblasarens data rensas, eller om du byter enhet, finns inget kvar. Spara en kopia pa ett stalle du litar pa.",yd_save:"Spara en kopia",yd_company:"Företagsuppgifter på offerter →",yd_restore:"Aterstall en kopia",yd_empty:"Inget inmatat annu",yd_projects:"projekt",yd_jobcards:"jobbkort",yd_customers:"kunder",yd_estimations:"offerter",yd_inventory:"lagerartiklar",yd_hours:"tidposter",yd_inspections:"inspektioner",yd_documents:"dokument",yd_saved:"En kopia har sparats till dina nedladdningar. Forvara den nagon annanstans an pa den har enheten.",yd_confirm:"Att aterstalla ersatter allt som finns i den har webblasaren med innehallet i filen.\n\nDet som finns nu sparas som en aterstallningskopia, men appen visar den aterstallda datan harifran.",yd_restored:"Aterstallt. Verkstaden innehaller nu det som fanns i filen.",yd_clear:"Rensa allt",yd_clear_confirm:"Detta raderar allt som finns i den har webblasaren - varje kund, projekt, jobbkort, artikel och timme - och lamnar en tom verkstad.\n\nDet gar inte att angra. Om nagot har ar riktigt, spara en kopia forst.",yd_cleared:"Rensat. Den har webblasaren innehaller nu en tom verkstad.",yd_unreadable:"Filen kunde inte lasas som en sparad kopia.",yd_failed:"Kopian kunde inte aterstallas.",yd_nodata:"Datalagret ar inte tillgangligt pa den har sidan.",locale:"sv-SE"},
-    en:{role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",yd_where_server:"Everything this workshop enters is in the workshop database, not in this browser. Everyone who signs in sees the same records.",yd_warn_server:"Backups are taken by whoever looks after the database, with backend/backup.sh. Clearing this browser removes nothing.",yd_unreachable:"The workshop could not be read just now, so no counts are shown here.",logout:"Log out",
+    en:{radio_stations:"Stations",radio_ready:"DAB · Live",radio_connecting:"Connecting…",radio_live:"Live",radio_failed:"Unreachable",radio_failed_long:"The station could not be reached. Check the internet connection, or choose another station.",role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",yd_where_server:"Everything this workshop enters is in the workshop database, not in this browser. Everyone who signs in sees the same records.",yd_warn_server:"Backups are taken by whoever looks after the database, with backend/backup.sh. Clearing this browser removes nothing.",yd_unreachable:"The workshop could not be read just now, so no counts are shown here.",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
@@ -360,7 +360,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_reports:"Reports",c_reports:"Inspection & test",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       m_data:"Your data",c_data:"Where the work is kept",yd_where:"Everything this workshop has entered is kept in this browser, on this device. Nothing is sent anywhere, and nothing else holds a copy.",yd_warn:"Clearing this browser data, or moving to another device, leaves nothing behind. Save a copy somewhere you trust.",yd_save:"Save a copy",yd_company:"Company details on offers →",yd_restore:"Restore a copy",yd_empty:"Nothing entered yet",yd_projects:"projects",yd_jobcards:"jobcards",yd_customers:"customers",yd_estimations:"quotations",yd_inventory:"stock items",yd_hours:"hours entries",yd_inspections:"inspections",yd_documents:"documents",yd_saved:"A copy has been saved to your downloads. Keep it somewhere that is not this device.",yd_confirm:"Restoring replaces everything currently in this browser with the contents of that file.\n\nWhat is here now is kept as a recovery copy, but the app will show the restored data from this point on.",yd_restored:"Restored. The workshop now holds what was in that file.",yd_clear:"Clear everything",yd_clear_confirm:"This deletes everything kept in this browser — every customer, project, jobcard, item and hour — and leaves an empty workshop.\n\nIt cannot be undone. If anything here is real, save a copy first.",yd_cleared:"Cleared. This browser now holds an empty workshop.",yd_unreadable:"That file could not be read as a saved copy.",yd_failed:"The copy could not be restored.",yd_nodata:"The data layer is not available on this page.",locale:"en-GB"},
-    mk:{role_admin:"Админ",role_office:"Канцеларија",role_workshop:"Работилница",yd_where_server:"Сѐ што внесува оваа работилница е во базата на работилницата, не во овој прелистувач. Сите што се најавуваат гледаат исти податоци.",yd_warn_server:"Резервните копии ги прави оној што ја води базата, со backend/backup.sh. Чистењето на овој прелистувач не брише ништо.",yd_unreachable:"Работилницата не можеше да се прочита сега, па не се прикажуваат броеви тука.",logout:"Одјави се",
+    mk:{radio_stations:"Станици",radio_ready:"ДАБ · Во живо",radio_connecting:"Се поврзува…",radio_live:"Во живо",radio_failed:"Недостапна",radio_failed_long:"Станицата не може да се достигне. Проверете ја интернет врската или изберете друга станица.",role_admin:"Админ",role_office:"Канцеларија",role_workshop:"Работилница",yd_where_server:"Сѐ што внесува оваа работилница е во базата на работилницата, не во овој прелистувач. Сите што се најавуваат гледаат исти податоци.",yd_warn_server:"Резервните копии ги прави оној што ја води базата, со backend/backup.sh. Чистењето на овој прелистувач не брише ништо.",yd_unreachable:"Работилницата не можеше да се прочита сега, па не се прикажуваат броеви тука.",logout:"Одјави се",
       m_projects:"Проекти",c_projects:"Работи и ставки",m_customers:"Клиенти",c_customers:"Контакти и сметки",
       m_estim:"Проект / Проценка",c_estim:"Работи, цена и тек",m_jobcard:"Работна карта",c_jobcard:"Работни налози",
       m_hours:"Часови",c_hours:"Запиши време и материјал",m_planning:"Планирање",c_planning:"Распоред и капацитет",
@@ -381,7 +381,8 @@ window.WORKSHOP_SERVER_READY=true;</script>
     // After the data-i sweep, because #whoRole carries one and the session's answer has to win: a
     // dictionary entry reading "Admin" overwriting a welder's badge is the bug this whole block exists
     // to stop, and it would come back on every language switch.
-    if(window.paintSession)window.paintSession();}
+    if(window.paintSession)window.paintSession();
+    if(window.paintRadio)window.paintRadio();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
     try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
@@ -393,28 +394,58 @@ window.WORKSHOP_SERVER_READY=true;</script>
     document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 
   // ── web radio (DAB stations stream online) ──
+  // Each station has more than one address: broadcasters move their streams, and one that has moved
+  // used to leave this player showing "playing" over silence, because the failure was swallowed. Now
+  // it tries the next address, and says so plainly when none answers.
   const STATIONS=[
-    {name:"P4 Malmöhus",url:"https://http-live.sr.se/p4malmo-mp3-192"},
-    {name:"Sveriges Radio P1",url:"https://http-live.sr.se/p1-mp3-192"},
-    {name:"Sveriges Radio P2",url:"https://http-live.sr.se/p2-mp3-192"},
-    {name:"Sveriges Radio P3",url:"https://http-live.sr.se/p3-mp3-192"},
-    {name:"Mix Megapol",url:"https://fm02-icecast.mediatop.se/mix_128"}
+    {name:"P4 Malmöhus",urls:["https://sverigesradio.se/topsy/direkt/207-hi-mp3","https://http-live.sr.se/p4malmo-mp3-192"]},
+    {name:"Sveriges Radio P1",urls:["https://sverigesradio.se/topsy/direkt/132-hi-mp3","https://http-live.sr.se/p1-mp3-192"]},
+    {name:"Sveriges Radio P2",urls:["https://sverigesradio.se/topsy/direkt/163-hi-mp3","https://http-live.sr.se/p2-mp3-192"]},
+    {name:"Sveriges Radio P3",urls:["https://sverigesradio.se/topsy/direkt/164-hi-mp3","https://http-live.sr.se/p3-mp3-192"]},
+    {name:"Mix Megapol",urls:["https://live-bauerse-fm.sharp-stream.com/mixmegapol_instream_se_mp3","https://fm02-icecast.mediatop.se/mix_128"]}
   ];
   const rAudio=document.getElementById('radioAudio'),rBtn=document.getElementById('radioBtn'),rIcon=document.getElementById('radioIcon'),
         rName=document.getElementById('radioName'),rExp=document.getElementById('radioExp'),rWrap=document.getElementById('radio'),
-        rPanel=document.getElementById('radioPanel'),rVol=document.getElementById('radioVol'),rList=document.getElementById('stationList');
-  let curStation=0;
+        rPanel=document.getElementById('radioPanel'),rVol=document.getElementById('radioVol'),rList=document.getElementById('stationList'),
+        rState=document.getElementById('radioState');
+  let curStation=0,curUrl=0,radioState='ready',attempt=0;
   rAudio.volume=parseFloat(rVol.value);
   STATIONS.forEach((s,i)=>{const b=document.createElement('button');b.className='st';b.textContent=s.name;b.onclick=()=>{selectStation(i);};rList.appendChild(b);});
   function markActive(){rList.querySelectorAll('.st').forEach((b,i)=>b.classList.toggle('active',i===curStation));}
   markActive();
   const PLAY='<path d="M8 5v14l11-7z"/>', PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-  function play(){rAudio.src=STATIONS[curStation].url;const p=rAudio.play();
-    if(p)p.then(()=>{}).catch(()=>{ /* stream blocked in preview; UI still reflects intent */ });
-    rWrap.classList.add('playing');rIcon.innerHTML=PAUSE;}
-  function pause(){rAudio.pause();rWrap.classList.remove('playing');rIcon.innerHTML=PLAY;}
+  // What the small line under the station name says, in the page's language, and the button to match.
+  // Not a function declaration: at the top of a script that would be window.paintRadio from the
+  // first line, and setLang, which runs before this block, would call it before the player exists.
+  const paintRadio=function(){
+    const t=T[current]||T.en;
+    rState.textContent=radioState==='connecting'?t.radio_connecting:radioState==='live'?t.radio_live:radioState==='failed'?t.radio_failed:t.radio_ready;
+    rState.title=radioState==='failed'?t.radio_failed_long:'';
+    rState.style.color=radioState==='failed'?'var(--danger, #ff7a7a)':'';
+    const on=radioState==='connecting'||radioState==='live';
+    rWrap.classList.toggle('playing',radioState==='live');
+    rIcon.innerHTML=on?PAUSE:PLAY;
+    rBtn.setAttribute('aria-label',on?'Pause':'Play');
+  };
+  window.paintRadio=paintRadio;
+  paintRadio();
+  function tryUrl(){
+    const mine=++attempt;
+    const urls=STATIONS[curStation].urls;
+    if(curUrl>=urls.length){radioState='failed';rAudio.removeAttribute('src');rAudio.load();paintRadio();return;}
+    rAudio.src=urls[curUrl];
+    const p=rAudio.play();
+    // A refusal from play() and an error event both mean this address did not work: try the next.
+    // Either can come first for the same address, so only the one belonging to this attempt counts.
+    if(p)p.catch(()=>advance(mine));
+  }
+  function advance(mine){if(mine!==attempt||radioState!=='connecting')return;curUrl++;tryUrl();}
+  rAudio.addEventListener('playing',()=>{if(radioState==='connecting'){radioState='live';paintRadio();}});
+  rAudio.addEventListener('error',()=>advance(attempt));
+  function play(){radioState='connecting';curUrl=0;paintRadio();tryUrl();}
+  function pause(){attempt++;radioState='ready';rAudio.pause();rAudio.removeAttribute('src');rAudio.load();paintRadio();}
   function selectStation(i){curStation=i;rName.textContent=STATIONS[i].name;markActive();play();}
-  rBtn.addEventListener('click',()=>{rWrap.classList.contains('playing')?pause():play();});
+  rBtn.addEventListener('click',()=>{(radioState==='connecting'||radioState==='live')?pause():play();});
   rExp.addEventListener('click',e=>{e.stopPropagation();rWrap.classList.toggle('open');});
   document.addEventListener('click',e=>{if(!rWrap.contains(e.target))rWrap.classList.remove('open');});
   rVol.addEventListener('input',()=>{rAudio.volume=parseFloat(rVol.value);});

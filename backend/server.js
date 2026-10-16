@@ -602,6 +602,9 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",
   "connect-src 'self'",
+  // The hub's radio plays a broadcaster's stream from wherever that broadcaster serves it, and
+  // streams move between hosts; audio is all this allows, never a script or a page.
+  "media-src 'self' https:",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "base-uri 'none'"
