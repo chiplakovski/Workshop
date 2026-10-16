@@ -702,6 +702,7 @@ function tr(key){
 }
 
 function updateTranslations(){
+  document.documentElement.lang=currentLang;
   document.querySelectorAll('[data-i]').forEach(el=>{
     const key=el.getAttribute('data-i');
     if(el.tagName==='INPUT'||el.tagName==='BUTTON'||el.tagName==='LABEL'){

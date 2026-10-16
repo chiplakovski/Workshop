@@ -362,7 +362,7 @@ function setLang(code){
   document.documentElement.lang=currentLang;
   document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===currentLang));
   const cur=$('langcur');if(cur)cur.textContent=currentLang.toUpperCase();
-  try{localStorage.setItem('varmak.documents.lang',currentLang);}catch(e){}
+  try{localStorage.setItem('varmak.lang',currentLang);}catch(e){}
   // Everything the table and the panels build is built in script, so the sweep above cannot reach it.
   render();
   // After the sweep, because the session badge carries no data-i but the row it sits in does: a dictionary
@@ -533,6 +533,6 @@ document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('cli
   setLang(b.getAttribute('data-lang'));$('langc').classList.remove('open');
 }));
 render();
-(function(){let held=null;try{held=localStorage.getItem('varmak.documents.lang');}catch(e){}
+(function(){let held=null;try{held=localStorage.getItem('varmak.lang')||localStorage.getItem('varmak.documents.lang');}catch(e){}
   setLang(held&&T[held]?held:'en');})();
 </script></body></html>

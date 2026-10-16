@@ -2379,6 +2379,7 @@ function computeReleaseBlocking(data,projectNo,jobcardNo){
 // ── data-i translation helpers used broadly ──
 function tr(key){return (i18n[currentLang]&&i18n[currentLang][key])||i18n.en[key]||key;}
 function updateTranslations(){
+  document.documentElement.lang=currentLang;
   document.querySelectorAll('[data-i]').forEach(el=>{
     const key=el.getAttribute('data-i');
     if(el.tagName==='INPUT'||el.tagName==='BUTTON'||el.tagName==='LABEL'){

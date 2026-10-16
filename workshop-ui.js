@@ -419,6 +419,36 @@
   window.addEventListener('afterprint',afterPrint);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountPrint);else mountPrint();
 
+  // ── One language across the pages ───────────────────────────────────────────────────────────────
+  // Every page has its own switch and its own dictionary, and each used to start in English: choose
+  // Macedonian on the hub, open the store, and it was English again. The choice is kept here, once, for
+  // all of them. Remembered from the switch itself — the [data-lang] buttons on most pages, the
+  // <select id="lang"> on two — and brought back
+  // by working that same switch once the page has finished starting, so each page translates itself
+  // with its own code, exactly as if the person had chosen again.
+  var LANG_KEY='varmak.lang',LANGS={en:1,sv:1,mk:1};
+  function savedLang(){try{var v=localStorage.getItem(LANG_KEY);return LANGS[v]?v:null;}catch(e){return null;}}
+  function keepLang(code){if(!LANGS[code])return;try{localStorage.setItem(LANG_KEY,code);}catch(e){/* a private window still switches */}}
+  document.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest&&e.target.closest('[data-lang]');
+    if(b&&e.isTrusted)keepLang(b.getAttribute('data-lang'));
+  },true);
+  document.addEventListener('change',function(e){
+    var t=e.target;if(t&&t.id==='lang'&&t.tagName==='SELECT')keepLang(t.value);
+  },true);
+  function restoreLang(){
+    var want=savedLang();if(!want)return;
+    var now=(document.documentElement.lang||'').slice(0,2);
+    var select=document.querySelector('select#lang');
+    if(select){if(select.value!==want){select.value=want;select.dispatchEvent(new Event('change',{bubbles:true}));}return;}
+    if(now===want)return;
+    var button=document.querySelector('button[data-lang="'+want+'"]');
+    if(button)button.click();
+  }
+  // After the page's own start-up, which on several pages ends by calling setLang('en').
+  if(document.readyState==='complete')setTimeout(restoreLang,0);
+  else window.addEventListener('load',function(){setTimeout(restoreLang,0);});
+
   window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,
     prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,
     paintWhereTheDataCameFrom:paintWhereTheDataCameFrom,initialsOf:initialsOf};
