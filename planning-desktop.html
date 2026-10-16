@@ -282,6 +282,52 @@ body{overflow:hidden}
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:1300px){.twocol{grid-template-columns:1fr}}
 @media(max-width:900px){.grule,.grow{grid-template-columns:140px 1fr}.loadrow{grid-template-columns:110px 1fr 80px}.waitrow{grid-template-columns:1fr}}
+
+/* The crew view: a row per person, a column per day. */
+.crewwrap{overflow-x:auto}
+table.crew{width:100%;border-collapse:collapse;table-layout:fixed;min-width:760px}
+table.crew th,table.crew td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px 7px;vertical-align:top;text-align:left}
+table.crew thead th{font-size:11px;color:var(--steel-400);font-weight:600;background:var(--lift-035)}
+table.crew thead th.today{color:var(--ice);box-shadow:inset 0 -2px 0 var(--spark)}
+table.crew th.who{width:150px}table.crew th.tot,table.crew td.tot{width:110px}
+table.crew td.who b{display:block;color:var(--ice);font-size:12px}
+table.crew td.who .rm{margin-left:4px;border:0;background:none;color:var(--steel-400);cursor:pointer;font-size:12px;padding:0 3px}
+table.crew td.who .rm:hover{color:var(--danger)}
+table.crew td.cell{cursor:pointer;min-height:58px;height:62px;transition:background .12s;white-space:normal;overflow:hidden}
+table.crew td.cell:hover{background:rgba(var(--c-accent-rgb),.06)}
+table.crew td.cell.today{background:rgba(var(--c-accent-rgb),.05)}
+table.crew td.cell.drop{background:rgba(var(--c-accent-rgb),.16);outline:1px dashed var(--spark)}
+table.crew td.cell.warn{box-shadow:inset 3px 0 0 var(--warn)}
+.cchip{display:block;margin:0 0 4px;padding:4px 6px;border:1px solid var(--field-line);background:var(--field);color:var(--ice);font-size:11px;line-height:1.3;cursor:grab;text-align:left;width:100%}
+.cchip small{display:block;color:var(--steel-400);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cchip.away{border-style:dashed;color:var(--steel-300);background:transparent}
+.cchip.away.sick{border-color:var(--danger)}
+.cchip:active{cursor:grabbing}
+.cbook{font-size:10px;color:var(--steel-400);margin-top:2px}
+.cbook.short{color:var(--warn)}
+.cwarn{font-size:10px;color:var(--warn);margin-top:2px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.cchip.outside{border-left:3px solid var(--warn)}
+.cchip small.clate{color:var(--warn);white-space:normal}
+.cadd{display:none;font-size:10px;color:var(--steel-400)}
+table.crew td.cell:hover .cadd{display:block}
+table.crew tfoot td{font-size:10.5px;color:var(--steel-400)}
+table.crew td.tot{font-size:11px;color:var(--steel-300)}
+table.crew td.tot b{display:block;color:var(--ice)}
+.crewcheck{display:inline-flex;align-items:center;gap:5px;color:var(--steel-300);font-size:11px;cursor:pointer}
+.crewerr{color:var(--danger);font-size:12px;min-height:1em}
+.btn.danger{margin-right:auto;color:var(--danger)}
+.cjob{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line)}
+.cjob b{color:var(--ice)}.cjob small{display:block;color:var(--steel-400)}
+.cjob .flag{font-size:10.5px;padding:2px 7px;border:1px solid var(--warn);color:var(--warn);white-space:nowrap}
+.cjob .flag.ok{border-color:var(--field-line);color:var(--steel-400)}
+@media print{
+  .crewwrap{overflow:visible}
+  table.crew{min-width:0;font-size:10px}
+  table.crew th,table.crew td{border:1px solid #888 !important;color:#000 !important;background:#fff !important;box-shadow:none !important}
+  .cchip{border:1px solid #555 !important;color:#000 !important;background:#fff !important}
+  .cchip small,.cbook,.cwarn,table.crew tfoot td{color:#333 !important}
+  .cadd,table.crew td.who .rm,.grangebar,#crewAddPerson{display:none !important}
+}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body>
@@ -293,6 +339,7 @@ body{overflow:hidden}
 <button class="on" data-view="board"><i>▤</i><span data-i="navBoard">Board</span></button>
 <button data-view="schedule"><i>▥</i><span data-i="navSchedule">Schedule</span></button>
 <button data-view="capacity"><i>▧</i><span data-i="navCapacity">Capacity</span></button>
+<button data-view="crew"><i>▦</i><span data-i="navCrew">Crew</span></button>
 </nav>
 <div class="sidebox"><h4 data-i="sideSummary">On the plan</h4>
   <div class="srow"><span data-i="sideProjects">Projects</span><b id="sideProjects">—</b></div>
@@ -353,6 +400,18 @@ body{overflow:hidden}
 <section class="panel" data-panel="capacity"><div class="phead"><div><h3 data-i="peopleTitle">People on the plan</h3><small class="sub" data-i="peopleDesc">Taken from the projects themselves</small></div></div><div id="peopleRows"></div><div class="boardnote" data-i="peopleNote">Hours are what the projects a person is on still owe in total. The same hours appear against everyone assigned to the job, because the project does not say who does which part of it.</div></section>
 <section class="panel" data-panel="capacity"><div class="phead"><div><h3 data-i="machinesTitle">Machines on the plan</h3><small class="sub" data-i="machinesDesc">Matched against the equipment register</small></div></div><div id="machineRows"></div></section>
 </div>
+
+<section class="panel" data-panel="crew"><div class="phead"><div><h3 data-i="crewTitle">Who works on what</h3><small class="sub" data-i="crewDesc">One row per person, one column per day</small></div>
+  <div class="tools grangebar"><button class="mini" onclick="crewShift(-1)" aria-label="Earlier">‹</button><b id="crewWeekLabel">—</b><button class="mini" onclick="crewShift(1)" aria-label="Later">›</button>
+    <button class="mini" onclick="crewThisWeek()"><span data-i="btnThisWeek">This week</span></button>
+    <label class="crewcheck"><input type="checkbox" id="crewWeekend" onchange="crewToggleWeekend(this.checked)"> <span data-i="crewWeekend">Weekend</span></label>
+    <button class="mini" onclick="crewCopyLastWeek()"><span data-i="crewCopyLast">Copy last week</span></button>
+    <button class="mini" id="crewAddPerson" onclick="crewAddPerson()"><span data-i="crewAddPerson">+ Person</span></button></div></div>
+  <div class="crewwrap"><table class="crew" id="crewGrid"></table></div>
+  <div class="boardnote" id="crewNote"></div></section>
+
+<section class="panel" data-panel="crew"><div class="phead"><div><h3 data-i="crewJobsTitle">Jobs this week</h3><small class="sub" data-i="crewJobsDesc">Open jobcards due this week, and how much of them is planned</small></div></div>
+  <div id="crewJobs"></div></section>
 </div></div>
 
 <div class="modal" id="dateModal"><div class="modalcard" style="width:min(520px,92vw)"><div class="phead"><h3 id="dateFormTitle" data-i="dateFormTitle">Schedule a project</h3><button class="btn" onclick="closeDateForm()">×</button></div><div class="formbody">
@@ -374,6 +433,19 @@ body{overflow:hidden}
   <div id="itemRows"></div>
   <div id="itemSpan"></div>
   <div class="actions"><button class="btn" onclick="closeDateForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveDates()"><span data-i="btnSaveDates">Save dates</span></button></div>
+</div></div></div>
+
+<div class="modal" id="crewModal"><div class="modalcard" style="width:min(480px,92vw)"><div class="phead"><h3 id="crewFormTitle">Plan a day</h3><button class="btn" onclick="closeCrewForm()">×</button></div><div class="formbody">
+  <div class="fields" style="grid-template-columns:1fr 1fr">
+    <div class="field"><label for="cfWorker" data-i="lblCrewWorker">Person</label><input id="cfWorker" list="cfWorkers" autocomplete="off"><datalist id="cfWorkers"></datalist></div>
+    <div class="field"><label for="cfDay" data-i="lblCrewDay">Day</label><input id="cfDay" type="date"></div>
+    <div class="field" style="grid-column:1/-1"><label for="cfWhat" data-i="lblCrewWhat">Work</label><select id="cfWhat" onchange="crewWhatChanged()"></select></div>
+    <div class="field"><label for="cfHours" data-i="lblCrewHours">Hours</label><input id="cfHours" type="number" min="0.5" max="24" step="0.5" value="8"></div>
+    <div class="field"><label for="cfNote" data-i="lblCrewNote">Note</label><input id="cfNote" maxlength="500"></div>
+    <div class="field" style="grid-column:1/-1" id="cfRepeatRow"><label class="crewcheck"><input type="checkbox" id="cfRepeat"> <span data-i="lblCrewRepeat">Also on the other weekdays of this week</span></label></div>
+    <div class="field" style="grid-column:1/-1"><div class="crewerr" id="cfError" aria-live="assertive"></div></div>
+  </div>
+  <div class="actions"><button class="btn danger" id="cfDelete" onclick="deleteCrewEntry()"><span data-i="btnCrewDelete">Remove</span></button><button class="btn" onclick="closeCrewForm()"><span data-i="btnCancel">Cancel</span></button><button class="btn primary" onclick="saveCrewForm()"><span data-i="btnCrewSave">Save</span></button></div>
 </div></div></div>
 
 <div class="toast" id="toast"></div>
@@ -626,6 +698,120 @@ T.mk={
   errNoProject:'Прво избери проект.',dateFormNote:'Од овие датуми се цртаат таблата, планот и неделното оптоварување.',
   quoteCreated:'{no} создаден од {quote}. Следно внеси му ги датумите.'
 };
+Object.assign(T.en,{
+  wd:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],mon:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],dayDot:'',
+  navCrew:'Crew',crewTitle:'Who works on what',crewDesc:'One row per person, one column per day',
+  crewWeekend:'Weekend',crewCopyLast:'Copy last week',crewAddPerson:'+ Person',
+  crewJobsTitle:'Jobs this week',crewJobsDesc:'Open jobcards due this week, and how much of them is planned',
+  crewWeekLabel:'Week {n} · {from} – {to}',crewPerson:'Person',crewTotal:'Week',
+  crewRemovePerson:'Take off the list',btnCrewRemovePerson:'Take off the list',
+  hShort:'{h} h',crewBooked:'booked {h} h',crewAdd:'plan',crewPlannedH:'{h} h planned',
+  crewDayFoot:'{w} at work · {a} away · {h} h',
+  crewEmpty:'Nobody is on the list yet. Add the people who work in the workshop with + Person, or plan a day for somebody and they appear here.',
+  crewEmptyServer:'Nobody is on the list yet. People come from the Access page, and anybody planned appears here.',
+  crewNote:'Click a day to plan it, or an entry to change it. Drag an entry to another day or person to move it; hold Ctrl while dropping to copy it instead. Booked hours are what was logged on the hours pages, shown once a day has started.',
+  jobPlanned:'{h} h this week',jobLeft:'{h} h left',jobLeftUnknown:'no hours estimate',
+  jobNobody:'Nobody planned',jobOver:'More planned than left',btnPlanJob:'Plan',
+  crewJobsNone:'No open jobcard is due this week.',
+  abs_vacation:'Holiday',abs_sick:'Sick',abs_course:'Course',abs_other:'Away',
+  w_overtime:'{h} h over a normal day',w_awayAndWork:'Away ({why}) and planned on a job',
+  w_jobClosed:'{job} is finished',w_beforeJob:'{job} starts {date}',w_afterJob:'{job} was due {date}',w_jobGone:'{job} is no longer here',
+  crewFormNew:'Plan a day',crewFormEdit:'Change the plan',
+  lblCrewWorker:'Person',lblCrewDay:'Day',lblCrewWhat:'Work',lblCrewHours:'Hours',lblCrewNote:'Note',
+  lblCrewRepeat:'Also on the other weekdays of this week',btnCrewDelete:'Remove',btnCrewSave:'Save',
+  optCrewChoose:'Choose a jobcard or a reason to be away',optCrewJobs:'Jobcards',optCrewAway:'Away',
+  crewSaved:'{who} planned for {day}.',crewRepeatDone:'Planned on {n} days.',crewSkipped:'{n} skipped: {why}',
+  crewRemoved:'Removed from the plan.',crewMoved:'Moved to {who}, {day}.',crewCopied:'Copied to {who}, {day}.',
+  addPersonPrompt:'Name of the person to add to the plan',removePersonConfirm:'Take {who} off the list? The days already planned for them stay.',
+  copyNone:'Last week has no jobs to copy.',
+  copyConfirm:'Copy last week\'s {n} job entries into this week? Days away are not copied, and anything that no longer fits is skipped.',
+  copyDone:'Copied {n} entries from last week.',
+  crewErr_WORKER_NEEDED:'Choose who the work is for.',crewErr_DAY_NEEDED:'Choose a day.',
+  crewErr_JOB_NEEDED:'Choose the jobcard, or a reason for being away.',crewErr_JOB_UNKNOWN:'That jobcard is not in this workshop.',
+  crewErr_JOB_CLOSED:'That job is finished: there is no work left on it to plan.',crewErr_HOURS_NEEDED:'Hours must be more than zero.',
+  crewErr_DAY_OVER_24:'That would plan more than 24 hours in one day for this person.',
+  crewErr_ALREADY_PLANNED:'Already planned on that job that day — change those hours instead.',
+  crewErr_ALREADY_AWAY:'Already marked away that day.',crewErr_JOB_AND_ABSENCE:'An entry is either work on a jobcard or a day away, not both.',
+  crewErr_ABSENCE_UNKNOWN:'Unknown reason for being away.',crewErr_NAME_NEEDED:'A name is needed.',
+  crewErr_NAME_TOO_LONG:'That name is longer than 80 characters.',crewErr_NOTE_TOO_LONG:'The note is longer than 500 characters.',
+  crewErr_NOT_FOUND:'That entry is not there any more.'
+});
+Object.assign(T.sv,{
+  wd:['mån','tis','ons','tor','fre','lör','sön'],mon:['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'],dayDot:'',
+  navCrew:'Bemanning',crewTitle:'Vem gör vad',crewDesc:'En rad per person, en kolumn per dag',
+  crewWeekend:'Helg',crewCopyLast:'Kopiera förra veckan',crewAddPerson:'+ Person',
+  crewJobsTitle:'Jobb den här veckan',crewJobsDesc:'Öppna jobbkort som ska göras den här veckan, och hur mycket av dem som är planerat',
+  crewWeekLabel:'Vecka {n} · {from} – {to}',crewPerson:'Person',crewTotal:'Vecka',
+  crewRemovePerson:'Ta bort från listan',btnCrewRemovePerson:'Ta bort från listan',
+  hShort:'{h} h',crewBooked:'rapporterat {h} h',crewAdd:'planera',crewPlannedH:'{h} h planerat',
+  crewDayFoot:'{w} i arbete · {a} borta · {h} h',
+  crewEmpty:'Ingen står på listan än. Lägg till dem som arbetar i verkstaden med + Person, eller planera en dag för någon så dyker de upp här.',
+  crewEmptyServer:'Ingen står på listan än. Personerna kommer från sidan Åtkomst, och alla som planeras dyker upp här.',
+  crewNote:'Klicka på en dag för att planera den, eller på en rad för att ändra den. Dra en rad till en annan dag eller person för att flytta den; håll Ctrl när du släpper för att kopiera den i stället. Rapporterade timmar är det som förts in på timsidorna, och visas när dagen har börjat.',
+  jobPlanned:'{h} h den här veckan',jobLeft:'{h} h kvar',jobLeftUnknown:'ingen timuppskattning',
+  jobNobody:'Ingen planerad',jobOver:'Mer planerat än kvar',btnPlanJob:'Planera',
+  crewJobsNone:'Inget öppet jobbkort ska göras den här veckan.',
+  abs_vacation:'Semester',abs_sick:'Sjuk',abs_course:'Kurs',abs_other:'Borta',
+  w_overtime:'{h} h över en vanlig dag',w_awayAndWork:'Borta ({why}) och planerad på ett jobb',
+  w_jobClosed:'{job} är avslutat',w_beforeJob:'{job} börjar {date}',w_afterJob:'{job} skulle vara klart {date}',w_jobGone:'{job} finns inte längre',
+  crewFormNew:'Planera en dag',crewFormEdit:'Ändra planen',
+  lblCrewWorker:'Person',lblCrewDay:'Dag',lblCrewWhat:'Arbete',lblCrewHours:'Timmar',lblCrewNote:'Anteckning',
+  lblCrewRepeat:'Även de andra vardagarna den här veckan',btnCrewDelete:'Ta bort',btnCrewSave:'Spara',
+  optCrewChoose:'Välj ett jobbkort eller en anledning att vara borta',optCrewJobs:'Jobbkort',optCrewAway:'Borta',
+  crewSaved:'{who} planerad för {day}.',crewRepeatDone:'Planerat på {n} dagar.',crewSkipped:'{n} hoppades över: {why}',
+  crewRemoved:'Borttaget från planen.',crewMoved:'Flyttat till {who}, {day}.',crewCopied:'Kopierat till {who}, {day}.',
+  addPersonPrompt:'Namn på personen som ska läggas till i planen',removePersonConfirm:'Ta bort {who} från listan? Dagar som redan är planerade för personen finns kvar.',
+  copyNone:'Förra veckan har inga jobb att kopiera.',
+  copyConfirm:'Kopiera förra veckans {n} jobbrader till den här veckan? Frånvaro kopieras inte, och det som inte längre går ihop hoppas över.',
+  copyDone:'Kopierade {n} rader från förra veckan.',
+  crewErr_WORKER_NEEDED:'Välj vem arbetet gäller.',crewErr_DAY_NEEDED:'Välj en dag.',
+  crewErr_JOB_NEEDED:'Välj jobbkortet, eller en anledning att vara borta.',crewErr_JOB_UNKNOWN:'Det jobbkortet finns inte i verkstaden.',
+  crewErr_JOB_CLOSED:'Det jobbet är klart: det finns inget arbete kvar att planera.',crewErr_HOURS_NEEDED:'Timmarna måste vara fler än noll.',
+  crewErr_DAY_OVER_24:'Det skulle planera mer än 24 timmar på en dag för den här personen.',
+  crewErr_ALREADY_PLANNED:'Redan planerad på det jobbet den dagen — ändra de timmarna i stället.',
+  crewErr_ALREADY_AWAY:'Redan markerad som borta den dagen.',crewErr_JOB_AND_ABSENCE:'En rad är antingen arbete på ett jobbkort eller en dag borta, inte båda.',
+  crewErr_ABSENCE_UNKNOWN:'Okänd anledning att vara borta.',crewErr_NAME_NEEDED:'Ett namn behövs.',
+  crewErr_NAME_TOO_LONG:'Namnet är längre än 80 tecken.',crewErr_NOTE_TOO_LONG:'Anteckningen är längre än 500 tecken.',
+  crewErr_NOT_FOUND:'Den raden finns inte längre.'
+});
+Object.assign(T.mk,{
+  wd:['пон','вто','сре','чет','пет','саб','нед'],mon:['јан','фев','мар','апр','мај','јун','јул','авг','сеп','окт','ное','дек'],dayDot:'',
+  navCrew:'Распоред',crewTitle:'Кој работи на што',crewDesc:'Еден ред за секој работник, една колона за секој ден',
+  crewWeekend:'Викенд',crewCopyLast:'Копирај ја минатата недела',crewAddPerson:'+ Работник',
+  crewJobsTitle:'Налози оваа недела',crewJobsDesc:'Отворени работни налози за оваа недела и колку од нив е испланирано',
+  crewWeekLabel:'Недела {n} · {from} – {to}',crewPerson:'Работник',crewTotal:'Недела',
+  crewRemovePerson:'Тргни од листата',btnCrewRemovePerson:'Тргни од листата',
+  hShort:'{h} ч',crewBooked:'внесени {h} ч',crewAdd:'планирај',crewPlannedH:'{h} ч планирани',
+  crewDayFoot:'{w} на работа · {a} отсутни · {h} ч',
+  crewEmpty:'Сè уште нема никој на листата. Додајте ги луѓето што работат во работилницата со + Работник, или испланирајте ден за некого и тој ќе се појави тука.',
+  crewEmptyServer:'Сè уште нема никој на листата. Луѓето доаѓаат од страницата Пристап, а секој што е планиран се појавува тука.',
+  crewNote:'Кликнете на ден за да го испланирате, или на ставка за да ја смените. Повлечете ставка на друг ден или работник за да ја преместите; со притиснато копче Контрол при пуштањето таа се копира. Внесените часови се она што е внесено на страниците за часови и се прикажуваат откако денот ќе започне.',
+  jobPlanned:'{h} ч оваа недела',jobLeft:'{h} ч преостануваат',jobLeftUnknown:'нема проценка на часови',
+  jobNobody:'Никој не е планиран',jobOver:'Планирано повеќе од преостанатото',btnPlanJob:'Планирај',
+  crewJobsNone:'Нема отворен работен налог за оваа недела.',
+  abs_vacation:'Одмор',abs_sick:'Боледување',abs_course:'Обука',abs_other:'Отсутен',
+  w_overtime:'{h} ч над нормален ден',w_awayAndWork:'Отсутен ({why}) и планиран на налог',
+  w_jobClosed:'{job} е завршен',w_beforeJob:'{job} почнува {date}',w_afterJob:'{job} требаше да заврши {date}',w_jobGone:'{job} повеќе не постои',
+  crewFormNew:'Планирај ден',crewFormEdit:'Смени го планот',
+  lblCrewWorker:'Работник',lblCrewDay:'Ден',lblCrewWhat:'Работа',lblCrewHours:'Часови',lblCrewNote:'Белешка',
+  lblCrewRepeat:'И на другите работни денови оваа недела',btnCrewDelete:'Отстрани',btnCrewSave:'Зачувај',
+  optCrewChoose:'Изберете работен налог или причина за отсуство',optCrewJobs:'Работни налози',optCrewAway:'Отсуство',
+  crewSaved:'{who} планиран за {day}.',crewRepeatDone:'Планирано на {n} дена.',crewSkipped:'{n} прескокнати: {why}',
+  crewRemoved:'Отстрането од планот.',crewMoved:'Преместено на {who}, {day}.',crewCopied:'Копирано на {who}, {day}.',
+  addPersonPrompt:'Име на работникот што се додава во планот',removePersonConfirm:'Да се тргне {who} од листата? Веќе испланираните денови остануваат.',
+  copyNone:'Минатата недела нема налози за копирање.',
+  copyConfirm:'Да се копираат {n} ставки од минатата недела во оваа? Отсуствата не се копираат, а она што повеќе не се вклопува се прескокнува.',
+  copyDone:'Копирани {n} ставки од минатата недела.',
+  crewErr_WORKER_NEEDED:'Изберете за кого е работата.',crewErr_DAY_NEEDED:'Изберете ден.',
+  crewErr_JOB_NEEDED:'Изберете работен налог или причина за отсуство.',crewErr_JOB_UNKNOWN:'Тој работен налог го нема во работилницата.',
+  crewErr_JOB_CLOSED:'Тој налог е завршен: нема преостаната работа за планирање.',crewErr_HOURS_NEEDED:'Часовите мора да бидат повеќе од нула.',
+  crewErr_DAY_OVER_24:'Тоа би било повеќе од 24 часа во еден ден за овој работник.',
+  crewErr_ALREADY_PLANNED:'Веќе е планиран на тој налог тој ден — сменете ги тие часови.',
+  crewErr_ALREADY_AWAY:'Веќе е означен како отсутен тој ден.',crewErr_JOB_AND_ABSENCE:'Ставката е или работа на налог или ден отсуство, не двете.',
+  crewErr_ABSENCE_UNKNOWN:'Непозната причина за отсуство.',crewErr_NAME_NEEDED:'Потребно е име.',
+  crewErr_NAME_TOO_LONG:'Името е подолго од 80 знаци.',crewErr_NOTE_TOO_LONG:'Белешката е подолга од 500 знаци.',
+  crewErr_NOT_FOUND:'Таа ставка повеќе ја нема.'
+});
 let LANG='en',currentT=T.en;
 const fill=(s,vals)=>String(s||'').replace(/\{(\w+)\}/g,(m,k)=>vals[k]!==undefined?vals[k]:m);
 
@@ -910,6 +1096,191 @@ function saveSupply(v){
 function setCapWeeks(v){capWeeks=Number(v)||8;renderCapacity();}
 function focusSupply(){const el=$('hoursPerWeek');if(el){el.focus();el.select();}}
 
+// ── Crew: who works on what, day by day ──────────────────────────────────────────────────────
+// Drawn from the crew plan and the hours booked; nothing is kept on this page. A click on a day plans
+// it, an entry dragged to another day or person moves there (with Ctrl held, a copy goes instead).
+const CREW_WEEKEND_KEY='varmak.planning.crewWeekend';
+const ABSENCES=['vacation','sick','course','other'];
+let crewStart=null,crewWeekend=(()=>{try{return localStorage.getItem(CREW_WEEKEND_KEY)==='1';}catch(e){return false;}})();
+let crewEditing=null;
+function crewMonday(){if(!crewStart)crewStart=iso(PlanningRules.weekStart(TODAY_ISO));return crewStart;}
+function isoWeek(dayIso){const d=dayOf(dayIso);const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+3-((d.getUTCDay()+6)%7)));
+  const y=new Date(Date.UTC(t.getUTCFullYear(),0,4));return 1+Math.round(((t-y)/DAY-3+((y.getUTCDay()+6)%7))/7);}
+// Day and month names from this page's own dictionary rather than the browser's: a browser that has no
+// Macedonian calendar falls back to English, and the week would read "Oct 12" on a Macedonian screen.
+function dayLabel(d,opts){const x=dayOf(d);if(!x)return '';opts=opts||{};
+  const t=currentT,parts=[];
+  if(opts.weekday)parts.push(t.wd[(x.getUTCDay()+6)%7]);
+  const dm=(opts.day?x.getUTCDate()+(t.dayDot||'')+' ':'')+(opts.month?t.mon[x.getUTCMonth()]:'');
+  if(dm.trim())parts.push(dm.trim());
+  return parts.join(' ')+(opts.year?' '+x.getUTCFullYear():'');}
+function crewDays(){return PlanningRules.crewDays(crewMonday(),crewWeekend);}
+function absenceName(a){return currentT['abs_'+a]||a;}
+function crewWeekData(){
+  const data=shared();
+  return PlanningRules.crewWeek({days:crewDays(),entries:WorkshopData.crewEntries({from:crewDays()[0],to:crewDays()[crewDays().length-1]}),
+    roster:WorkshopData.crewRoster(),jobcards:WorkshopData.listJobcards()||[],hours:data.hours||[],today:TODAY_ISO});
+}
+function warningText(w){
+  const t=currentT;
+  if(w.code==='overtime')return fill(t.w_overtime,{h:num(w.hours)});
+  if(w.code==='awayAndWork')return fill(t.w_awayAndWork,{why:absenceName(w.absence)});
+  if(w.code==='jobClosed')return fill(t.w_jobClosed,{job:w.job});
+  if(w.code==='beforeJob')return fill(t.w_beforeJob,{job:w.job,date:dayLabel(w.start,{day:true,month:true})});
+  if(w.code==='afterJob')return fill(t.w_afterJob,{job:w.job,date:dayLabel(w.end,{day:true,month:true})});
+  if(w.code==='jobGone')return fill(t.w_jobGone,{job:w.job});
+  return w.code;
+}
+function renderCrew(){
+  const grid=$('crewGrid');if(!grid)return;
+  const t=currentT,w=crewWeekData(),days=w.days;
+  const onServer=WorkshopData.isServerBacked();
+  $('crewWeekLabel').textContent=fill(t.crewWeekLabel,{n:isoWeek(days[0]),from:dayLabel(days[0],{day:'numeric',month:'short'}),to:dayLabel(days[days.length-1],{day:'numeric',month:'short',year:'numeric'})});
+  $('crewWeekend').checked=crewWeekend;
+  $('crewAddPerson').hidden=onServer;
+  const jobTitle=no=>{const j=(WorkshopData.listJobcards()||[]).find(x=>x.no===no);return j?j.title:'';};
+  const head=`<thead><tr><th class="who">${escapeHtml(t.crewPerson)}</th>${days.map(d=>`<th class="${d===TODAY_ISO?'today':''}">${escapeHtml(dayLabel(d,{weekday:'short',day:'numeric',month:'short'}))}</th>`).join('')}<th class="tot">${escapeHtml(t.crewTotal)}</th></tr></thead>`;
+  const byHand=new Set((shared().crewRoster||[]));
+  // A day outside the job's own dates is said on the entry itself, not as a line under every day.
+  const onChip=x=>x.code==='beforeJob'||x.code==='afterJob';
+  const body=w.rows.map(r=>`<tr><td class="who"><b>${escapeHtml(r.worker)}${onServer||!byHand.has(r.worker)?'':`<button class="rm" title="${escapeHtml(t.crewRemovePerson)}" aria-label="${escapeHtml(t.crewRemovePerson)}" onclick='crewRemovePerson(${JSON.stringify(r.worker)})'>×</button>`}</b></td>${r.cells.map(c=>{
+      const chips=c.entries.map(e=>e.absence
+        ?`<button class="cchip away ${escapeHtml(e.absence)}" draggable="true" data-id="${escapeHtml(e.id)}">${escapeHtml(absenceName(e.absence))} · ${escapeHtml(fill(t.hShort,{h:num(e.hours)}))}${e.note?`<small>${escapeHtml(e.note)}</small>`:''}</button>`
+        :(()=>{const late=c.warnings.find(x=>onChip(x)&&x.job===e.jobcard);
+          return `<button class="cchip${late?' outside':''}" draggable="true" data-id="${escapeHtml(e.id)}"${late?` title="${escapeHtml(warningText(late))}"`:''}>${escapeHtml(e.jobcard)} · ${escapeHtml(fill(t.hShort,{h:num(e.hours)}))}<small>${escapeHtml(e.note||jobTitle(e.jobcard))}</small>${late?`<small class="clate">⚠ ${escapeHtml(warningText(late))}</small>`:''}</button>`;})()).join('');
+      const booked=c.logged===null||(!c.planned&&!c.logged)?'':`<div class="cbook${c.planned&&c.logged<c.planned?' short':''}">${escapeHtml(fill(t.crewBooked,{h:num(c.logged)}))}</div>`;
+      const warns=c.warnings.filter(x=>!onChip(x)).map(x=>`<div class="cwarn">⚠ ${escapeHtml(warningText(x))}</div>`).join('');
+      return `<td class="cell${c.day===TODAY_ISO?' today':''}${c.warnings.some(x=>!onChip(x))?' warn':''}" data-worker="${escapeHtml(r.worker)}" data-day="${c.day}">${chips}${booked}${warns}<div class="cadd">＋ ${escapeHtml(t.crewAdd)}</div></td>`;
+    }).join('')}<td class="tot"><b>${escapeHtml(fill(t.crewPlannedH,{h:num(r.planned)}))}</b>${r.logged!==null?escapeHtml(fill(t.crewBooked,{h:num(r.logged)})):''}</td></tr>`).join('');
+  const foot=w.rows.length?`<tfoot><tr><td></td>${w.dayTotals.map(d=>`<td>${escapeHtml(fill(t.crewDayFoot,{w:d.working,a:d.away,h:num(d.hours)}))}</td>`).join('')}<td>${escapeHtml(fill(t.crewPlannedH,{h:num(w.planned)}))}</td></tr></tfoot>`:'';
+  grid.innerHTML=head+(w.rows.length?`<tbody>${body}</tbody>`:`<tbody><tr><td colspan="${days.length+2}"><div class="waitempty">${escapeHtml(onServer?t.crewEmptyServer:t.crewEmpty)}</div></td></tr></tbody>`)+foot;
+  $('crewNote').textContent=t.crewNote;
+  // The jobs that need people this week.
+  $('crewJobs').innerHTML=w.jobs.map(j=>`<div class="cjob"><div><b>${escapeHtml(j.no)}</b> ${escapeHtml(j.title)}<small>${escapeHtml([j.customer,j.start&&j.end?dayLabel(j.start,{day:true,month:true})+' → '+dayLabel(j.end,{day:true,month:true}):'',j.people.join(', ')].filter(Boolean).join(' · '))}</small></div>
+      <span class="num">${escapeHtml(fill(t.jobPlanned,{h:num(j.thisWeek)}))}</span>
+      <span class="num">${escapeHtml(j.remaining===null?t.jobLeftUnknown:fill(t.jobLeft,{h:num(j.remaining)}))}</span>
+      <span>${j.unplanned?`<span class="flag">${escapeHtml(t.jobNobody)}</span>`:j.overplanned?`<span class="flag">${escapeHtml(t.jobOver)}</span>`:''} <button class="mini" onclick='openCrewForm({jobcard:${JSON.stringify(j.no)}})'>${escapeHtml(t.btnPlanJob)}</button></span></div>`).join('')
+    ||`<div class="waitempty">${escapeHtml(t.crewJobsNone)}</div>`;
+}
+function crewShift(n){crewStart=iso(addDays(dayOf(crewMonday()),n*7));renderCrew();}
+function crewThisWeek(){crewStart=null;renderCrew();}
+function crewToggleWeekend(on){crewWeekend=!!on;try{localStorage.setItem(CREW_WEEKEND_KEY,on?'1':'0');}catch(e){}renderCrew();}
+function crewError(r){
+  const t=currentT;if(!r||!r.error)return '';
+  const said=t['crewErr_'+r.code];
+  return said?fill(said,{}):r.error;
+}
+// The form. `seed` carries whatever is already known: an entry to change, or a person, a day, a job.
+function openCrewForm(seed){
+  const t=currentT;seed=seed||{};
+  const entry=seed.id?(WorkshopData.crewEntries().find(e=>String(e.id)===String(seed.id))||null):null;
+  crewEditing=entry;
+  $('crewFormTitle').textContent=entry?t.crewFormEdit:t.crewFormNew;
+  const names=WorkshopData.crewRoster().concat(WorkshopData.crewNameSuggestions());
+  $('cfWorkers').innerHTML=names.map(n=>`<option value="${escapeHtml(n)}"></option>`).join('');
+  const open=(WorkshopData.listJobcards()||[]).filter(j=>!j.archived&&['completed','closed','cancelled'].indexOf(String(j.status))<0);
+  $('cfWhat').innerHTML=`<option value="">${escapeHtml(t.optCrewChoose)}</option><optgroup label="${escapeHtml(t.optCrewJobs)}">${open.map(j=>`<option value="job:${escapeHtml(j.no)}">${escapeHtml(j.no+' · '+(j.title||''))}</option>`).join('')}</optgroup><optgroup label="${escapeHtml(t.optCrewAway)}">${ABSENCES.map(a=>`<option value="away:${a}">${escapeHtml(absenceName(a))}</option>`).join('')}</optgroup>`;
+  const src=entry||seed;
+  $('cfWorker').value=src.worker||'';
+  $('cfDay').value=src.day||(crewDays().indexOf(TODAY_ISO)>=0?TODAY_ISO:crewDays()[0]);
+  $('cfWhat').value=src.absence?'away:'+src.absence:(src.jobcard?'job:'+src.jobcard:'');
+  $('cfHours').value=src.hours!=null?src.hours:8;
+  $('cfNote').value=src.note||'';
+  $('cfRepeat').checked=false;
+  $('cfRepeatRow').hidden=!!entry;
+  $('cfDelete').hidden=!entry;
+  $('cfError').textContent='';
+  $('crewModal').classList.add('show');
+  setTimeout(()=>{const f=src.worker?$('cfWhat'):$('cfWorker');if(f)f.focus();},30);
+}
+function closeCrewForm(){$('crewModal').classList.remove('show');crewEditing=null;}
+function crewWhatChanged(){}
+function crewFormEntry(day){
+  const what=$('cfWhat').value;
+  return {worker:$('cfWorker').value.trim(),day:day||$('cfDay').value,
+    jobcard:what.indexOf('job:')===0?what.slice(4):null,absence:what.indexOf('away:')===0?what.slice(5):null,
+    hours:Number($('cfHours').value),note:$('cfNote').value.trim()};
+}
+function saveCrewForm(){
+  const t=currentT,entry=crewFormEntry();
+  if(crewEditing)entry.id=crewEditing.id;
+  const first=WorkshopData.saveCrewEntry(entry);
+  if(first&&first.error){$('cfError').textContent=crewError(first);return;}
+  let note=fill(t.crewSaved,{who:entry.worker,day:dayLabel(entry.day,{weekday:'short',day:'numeric',month:'short'})});
+  if(!crewEditing&&$('cfRepeat').checked){
+    // The other weekdays of the week the chosen day is in. Each is checked on its own: a day that
+    // would go past 24 hours, or already has this job, is skipped and said so, and the rest still go in.
+    const monday=iso(PlanningRules.weekStart(entry.day));
+    const others=PlanningRules.crewDays(monday,false).filter(d=>d!==entry.day);
+    let done=1;const skipped=[];
+    others.forEach(d=>{const r=WorkshopData.saveCrewEntry(Object.assign({},entry,{day:d}));if(r&&r.error)skipped.push(dayLabel(d,{weekday:'short'})+': '+crewError(r));else done++;});
+    note=fill(t.crewRepeatDone,{n:done})+(skipped.length?' '+fill(t.crewSkipped,{n:skipped.length,why:skipped.join('; ')}):'');
+  }
+  closeCrewForm();renderCrew();notify(note);
+}
+function deleteCrewEntry(){
+  if(!crewEditing)return;
+  const r=WorkshopData.removeCrewEntry(crewEditing.id);
+  if(r&&r.error){$('cfError').textContent=crewError(r);return;}
+  closeCrewForm();renderCrew();notify(currentT.crewRemoved);
+}
+function crewAddPerson(){
+  const t=currentT;
+  wPrompt(t.addPersonPrompt,'',name=>{
+    const r=WorkshopData.addCrewWorker(name);
+    if(r&&r.error)return wAlert(crewError(r));
+    renderCrew();
+  },{yes:t.btnCrewSave,no:t.btnCancel});
+}
+function crewRemovePerson(name){
+  wConfirm(fill(currentT.removePersonConfirm,{who:name}),()=>{WorkshopData.removeCrewWorker(name);renderCrew();},{yes:currentT.btnCrewRemovePerson,no:currentT.btnCancel});
+}
+function crewCopyLastWeek(){
+  const t=currentT,days=crewDays();
+  const prevFrom=iso(addDays(dayOf(days[0]),-7)),prevTo=iso(addDays(dayOf(days[days.length-1]),-7));
+  const last=WorkshopData.crewEntries({from:prevFrom,to:prevTo}).filter(e=>e.jobcard);
+  if(!last.length)return wAlert(t.copyNone);
+  wConfirm(fill(t.copyConfirm,{n:last.length}),()=>{
+    let done=0;const skipped=[];
+    last.forEach(e=>{const r=WorkshopData.saveCrewEntry({worker:e.worker,day:iso(addDays(dayOf(e.day),7)),jobcard:e.jobcard,hours:e.hours,note:e.note});
+      if(r&&r.error)skipped.push(e.worker+' '+dayLabel(e.day,{weekday:'short'})+': '+crewError(r));else done++;});
+    renderCrew();
+    notify(fill(t.copyDone,{n:done}));
+    if(skipped.length)wAlert(fill(t.crewSkipped,{n:skipped.length,why:'\n'+skipped.join('\n')}));
+  },{yes:t.crewCopyLast,no:t.btnCancel});
+}
+// Clicks and drags on the grid, handled once for the whole table rather than per cell.
+(function(){
+  const grid=$('crewGrid');if(!grid)return;
+  let dragged=null;
+  grid.addEventListener('click',e=>{
+    const chip=e.target.closest('.cchip');
+    if(chip){openCrewForm({id:chip.dataset.id});return;}
+    const cell=e.target.closest('td.cell');
+    if(cell)openCrewForm({worker:cell.dataset.worker,day:cell.dataset.day});
+  });
+  grid.addEventListener('dragstart',e=>{const chip=e.target.closest('.cchip');if(!chip)return;dragged=chip.dataset.id;
+    try{e.dataTransfer.setData('text/plain',dragged);e.dataTransfer.effectAllowed='copyMove';}catch(err){}});
+  grid.addEventListener('dragend',()=>{dragged=null;grid.querySelectorAll('td.drop').forEach(c=>c.classList.remove('drop'));});
+  grid.addEventListener('dragover',e=>{const cell=e.target.closest('td.cell');if(!cell||!dragged)return;e.preventDefault();
+    try{e.dataTransfer.dropEffect=(e.ctrlKey||e.altKey)?'copy':'move';}catch(err){}
+    grid.querySelectorAll('td.drop').forEach(c=>{if(c!==cell)c.classList.remove('drop');});cell.classList.add('drop');});
+  grid.addEventListener('dragleave',e=>{const cell=e.target.closest('td.cell');if(cell&&!cell.contains(e.relatedTarget))cell.classList.remove('drop');});
+  grid.addEventListener('drop',e=>{
+    const cell=e.target.closest('td.cell');if(!cell||!dragged)return;e.preventDefault();
+    const id=dragged;dragged=null;cell.classList.remove('drop');
+    const entry=WorkshopData.crewEntries().find(x=>String(x.id)===String(id));if(!entry)return;
+    const to={worker:cell.dataset.worker,day:cell.dataset.day};
+    if(to.worker===entry.worker&&to.day===entry.day)return;
+    const copy=e.ctrlKey||e.altKey;
+    const r=copy?WorkshopData.saveCrewEntry({worker:to.worker,day:to.day,jobcard:entry.jobcard,absence:entry.absence,hours:entry.hours,note:entry.note})
+                :WorkshopData.saveCrewEntry({id:entry.id,worker:to.worker,day:to.day});
+    if(r&&r.error)return wAlert(crewError(r));
+    renderCrew();
+    notify(fill(copy?currentT.crewCopied:currentT.crewMoved,{who:to.worker,day:dayLabel(to.day,{weekday:'short',day:'numeric',month:'short'})}));
+  });
+})();
+
 // ── Stats and the sidebar summary ────────────────────────────────────────────────────────────
 function renderStats(){
   const t=currentT,open=openProjects(),all=projects();
@@ -1131,7 +1502,7 @@ function saveDates(){
 }
 
 // ── Pages ────────────────────────────────────────────────────────────────────────────────────
-const PLANNING_VIEWS=['board','schedule','capacity'];
+const PLANNING_VIEWS=['board','schedule','capacity','crew'];
 let planView='board';
 function viewLabel(v){const b=document.querySelector(`#nav button[data-view="${v}"] span`);return b?b.textContent.trim():'';}
 function showView(view){
@@ -1151,6 +1522,7 @@ function renderAll(){
   renderWaiting();
   renderSchedule();
   renderCapacity();
+  renderCrew();
 }
 function setLang(c){
   const t=T[c]||T.en;LANG=c;currentT=t;document.documentElement.lang=c;
@@ -1261,10 +1633,29 @@ showView(location.hash.slice(1)||'board');
           Object.assign({},fresh,patch,{sharedId:fresh.id,_server:fresh}));
       });
       return{pending:true};
+    },
+    // The crew plan. Checked here first with the same rules the PC copy applies, against the snapshot,
+    // so a refusal arrives at once and in the page's language; the database checks it again on arrival,
+    // and is the one that decides. The whole entry is sent, because save_crew_plan replaces the row and a
+    // drag only names the new day and person.
+    saveCrewEntry(input){
+      const checked=WorkshopData.checkCrewEntry(input);
+      if(checked.error)return checked;
+      const rec=checked.record,id=checked.existing?checked.existing.id:null;
+      const job=rec.jobcard?jobcardByNo(rec.jobcard):null;
+      if(rec.jobcard&&!job)return{error:words('srv_no_jobcard'),code:'JOB_UNKNOWN'};
+      queue('save_crew_plan',{id:id!=null?Number(id):null,worker:rec.worker,day:rec.day,
+        jobcard_id:job?Number(job.id):null,absence:rec.absence,hours:rec.hours,note:rec.note||null});
+      return Object.assign({pending:true},rec);
+    },
+    removeCrewEntry(id){
+      queue('remove_crew_plan',{id:Number(id)});
+      return{pending:true};
     }
   };
 
-  const NOT_BUILT=['createProjectFromEstimation'];
+  // Online the list of people is the staff register on the Access page, so there is nothing to add here.
+  const NOT_BUILT=['createProjectFromEstimation','addCrewWorker','removeCrewWorker'];
 
   const original={};
   Object.keys(SENT).concat(NOT_BUILT).forEach(name=>{

@@ -290,6 +290,55 @@ async function main() {
       'and neither of the two calls undid what the other one did, or cleared what neither mentioned');
     step('Planning: a lane move and a date change with no pause between them both land, and neither undoes the other');
 
+    // ── The crew plan ─────────────────────────────────────────────────────────────────────────
+    // The office plans a person onto a job for the whole week from one form, the database holds five
+    // rows, a duplicate is refused before anything is sent, a drag moves a row, and Remove removes one.
+    const firstRef = value(`SELECT ref FROM jobcard WHERE id = ${w.first};`);
+    await page.evaluate(() => showView('crew'));
+    await page.waitForSelector('#crewGrid td.cell', { timeout: 5000 });
+    assert.equal(await page.locator('#crewAddPerson').isHidden(), true,
+      'online the people come from the Access page, so there is no + Person here');
+    const monday = await page.evaluate(() => crewDays()[0]);
+    await page.locator('#crewGrid td.cell').first().click();
+    await page.waitForSelector('#crewModal.show', { timeout: 5000 });
+    await page.fill('#cfWorker', 'Marko Ilic');
+    await page.fill('#cfDay', monday);
+    await page.selectOption('#cfWhat', `job:${firstRef}`);
+    await page.fill('#cfHours', '7.5');
+    await page.check('#cfRepeat');
+    await page.click('#crewModal .btn.primary');
+    await until('five planned days to reach Postgres',
+      () => value(`SELECT count(*) FROM crew_plan WHERE worker = 'Marko Ilic' AND jobcard_id = ${w.first};`) === '5');
+    assert.equal(value(`SELECT min(day)::text || '|' || sum(hours)::text || '|' || max(created_by) FROM crew_plan;`),
+      `${monday}|37.50|Test Office`, 'Monday to Friday, 7.5 hours each, and who planned it');
+    await until('the grid to show them', async () => (await page.locator('#crewGrid .cchip').count()) === 5);
+    step('Crew: the office plans a week on a job from one form, and the database holds five days');
+
+    await page.locator('#crewGrid td.cell[data-worker="Marko Ilic"]').first().click({ position: { x: 5, y: 55 } });
+    await page.waitForSelector('#crewModal.show', { timeout: 5000 });
+    await page.selectOption('#cfWhat', `job:${firstRef}`);
+    await page.click('#crewModal .btn.primary');
+    assert.match(await page.locator('#cfError').textContent(), /Already planned on that job that day/,
+      'the same job twice on one day is refused in the form, before anything is sent');
+    await page.click('#crewModal .btn:not(.primary):not(.danger)');
+    assert.equal(value(`SELECT count(*) FROM crew_plan;`), '5');
+    step('Crew: the same job twice on one day is refused at once, and nothing is sent');
+
+    const mondayRow = value(`SELECT id FROM crew_plan WHERE day = '${monday}';`);
+    const chip = page.locator(`#crewGrid .cchip[data-id="${mondayRow}"]`);
+    const officeMonday = page.locator('#crewGrid td.cell[data-worker="Test Office"]').first();
+    await chip.dragTo(officeMonday);
+    await until('the dragged day to belong to the other person',
+      () => value(`SELECT worker || '|' || hours::text FROM crew_plan WHERE id = ${mondayRow};`) === 'Test Office|7.50');
+    step('Crew: dragging a day to another person moves it in the database, and keeps its hours');
+
+    await until('the moved day to be drawn', async () => (await page.locator(`#crewGrid .cchip[data-id="${mondayRow}"]`).count()) === 1);
+    await page.locator(`#crewGrid .cchip[data-id="${mondayRow}"]`).click();
+    await page.waitForSelector('#crewModal.show', { timeout: 5000 });
+    await page.click('#cfDelete');
+    await until('the removed day to leave Postgres', () => value(`SELECT count(*) FROM crew_plan;`) === '4');
+    step('Crew: Remove takes a day off the plan');
+
     assert.deepEqual(thrown, [], `the page threw: ${thrown.slice(0, 3).join(' / ')}`);
   } finally {
     await browser.close();

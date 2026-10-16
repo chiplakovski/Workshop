@@ -1377,7 +1377,9 @@
       state.crewRoster=(state.crewRoster||[]).filter(n=>n!==who);
       save(`Removed from the crew plan: ${who}`);return{ok:true};
     },
-    saveCrewEntry(input){
+    // The checks alone, writing nothing: the Planning page's bridge asks this before it sends anything to
+    // the server, so a refusal reads the same on a PC copy and online, and arrives before the call.
+    checkCrewEntry(input){
       if(!input||typeof input!=='object')return{error:'Nothing to save',code:'EMPTY'};
       const list=state.crewPlan=state.crewPlan||[];
       const existing=input.id!=null?list.find(e=>String(e.id)===String(input.id)):null;
@@ -1416,7 +1418,14 @@
         return{error:`${worker} is already marked away that day`,code:'ALREADY_AWAY'};
       const total=others.reduce((t,e)=>t+(Number(e.hours)||0),0)+hours;
       if(total>24)return{error:`That would plan ${Math.round(total*100)/100} h for ${worker} on ${day}. Nobody works more than 24 hours in a day`,code:'DAY_OVER_24'};
-      const record={worker,day,jobcard:jobNo,absence,hours,note};
+      return{record:{worker,day,jobcard:jobNo,absence,hours,note},existing:existing?clone(existing):null};
+    },
+    saveCrewEntry(input){
+      const checked=api.checkCrewEntry(input);
+      if(checked.error)return checked;
+      const record=checked.record,list=state.crewPlan=state.crewPlan||[];
+      const existing=checked.existing?list.find(e=>String(e.id)===String(checked.existing.id)):null;
+      const {worker,day,jobcard:jobNo,absence}=record;
       if(existing){Object.assign(existing,record);save(`Crew plan changed: ${worker} ${day}`);return clone(existing);}
       const seq=state.counters.crewPlan=(state.counters.crewPlan||0)+1;
       const created=Object.assign({id:`CP-${seq}`},record);
