@@ -4,7 +4,7 @@
 // reads that file and sends its records to the server through the same workflows the screens use — the
 // database checks every one exactly as it would if somebody typed it in — in the order the records point
 // at each other: the letterhead, customers and suppliers, store items and what is on their shelves,
-// projects, their jobcards and steps, the machines, and the documents with their files.
+// projects, their jobcards and steps, the machines, the documents with their files, and the crew plan.
 //
 // What it does not move, and says so in its report rather than leaving anybody to find out:
 //   * hours and stock movements. Every hour online is booked by the person signed in, and every
@@ -56,7 +56,8 @@
       projects: list(backup.projects).length,
       jobcards: list(backup.jobcards).length,
       equipment: list(backup.equipment).length,
-      documents: list(backup.documents).length
+      documents: list(backup.documents).length,
+      crewPlan: list(backup.crewPlan).length
     };
     const leftBehind = {
       hours: list(backup.hours).length,
@@ -304,6 +305,35 @@
         if (!up.ok) refused('documents', `${d.name} — file`, up.refused);
       }
       tell('documents', i + 1, docs.length);
+    }
+
+    // ── The crew plan ───────────────────────────────────────────────────────────────────────
+    // Who was planned on what, day by day. A day on a job follows its jobcard to the number it has online
+    // — moved just now or found there already, by project and title as above; a day away needs nothing.
+    // The same day already online is counted as there, which is what makes a second run harmless.
+    const crew = list(backup.crewPlan);
+    if (crew.length) {
+      const now = (await io.snapshot()) || {};
+      const jobIdOf = new Map();
+      list(backup.jobcards).forEach((j) => {
+        const projectId = projectIds.get(String(j.projectNo));
+        const there = list(now.jobcards).find((x) => String(x.projectId) === String(projectId) && key(x.title) === key(j.title));
+        if (there) jobIdOf.set(String(j.no), { id: Number(there.id), ref: there.no });
+      });
+      const already = new Set(list(now.crewPlan).map((e) => `${key(e.worker)}|${e.day}|${e.jobcard || ''}|${e.absence || ''}`));
+      for (const [i, e] of crew.entries()) {
+        tally('crewPlan');
+        const job = e.jobcard ? jobIdOf.get(String(e.jobcard)) : null;
+        const label = `${e.worker} ${e.day}`;
+        if (e.jobcard && !job) { refused('crewPlan', label, `its jobcard ${e.jobcard} did not come across`); tell('crewPlan', i + 1, crew.length); continue; }
+        if (already.has(`${key(e.worker)}|${e.day}|${job ? job.ref : ''}|${e.absence || ''}`)) { report.crewPlan.alreadyThere += 1; tell('crewPlan', i + 1, crew.length); continue; }
+        const answer = await io.call('save_crew_plan', { id: null, worker: e.worker, day: e.day,
+          jobcard_id: job ? job.id : null, absence: e.absence || null, hours: Number(e.hours), note: e.note || null });
+        if (answer.ok) report.crewPlan.moved += 1;
+        else if (/already planned|already marked away/.test(String(answer.refused))) report.crewPlan.alreadyThere += 1;
+        else refused('crewPlan', label, answer.refused);
+        tell('crewPlan', i + 1, crew.length);
+      }
     }
 
     return { report, leftBehind: plan(backup).leftBehind };

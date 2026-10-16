@@ -73,6 +73,11 @@ function aPcCopy() {
     category: 'General', status: 'Valid', revision: '1', fileName: 'cert-3.1.pdf', mimeType: 'application/pdf',
     fileSize: body.length, fileData: 'data:application/pdf;base64,' + Buffer.from(body).toString('base64') });
   WD.logHours({ jobcard: job.no, worker: 'Test Welder', user: 'Test Welder', hours: 4, date: '2026-10-01' });
+  // The crew plan: tomorrow on the job, the day after away. Near today, because the snapshot carries the
+  // plan from four weeks back, and that is what a second run is matched against.
+  const ahead = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+  assert.ok(!WD.saveCrewEntry({ worker: 'Test Welder', day: ahead(1), jobcard: job.no, hours: 7.5 }).error);
+  assert.ok(!WD.saveCrewEntry({ worker: 'Test Welder', day: ahead(2), absence: 'course', hours: 8 }).error);
   return JSON.parse(JSON.stringify(WD.get()));
 }
 
@@ -108,14 +113,14 @@ async function main() {
     const copy = aPcCopy();
     assert.equal(PcTransfer.check({ hello: 'world' }), 'that file is not a saved copy of the workshop');
     const { counts, leftBehind } = PcTransfer.plan(copy);
-    assert.deepEqual(counts, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1 });
+    assert.deepEqual(counts, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2 });
     assert.equal(leftBehind.hours, 1, 'the hours entry is counted as left behind, not lost silently');
     step('Transfer: a saved copy is recognised, counted, and what will not move is named before anything is sent');
 
     const first = await PcTransfer.run(copy, io);
     const moved = Object.fromEntries(Object.entries(first.report).map(([k, r]) => [k, r.moved]));
     if (process.env.SHOW_REPORT) console.log(JSON.stringify(first.report, null, 1));
-    assert.deepEqual(moved, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1 },
+    assert.deepEqual(moved, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2 },
       JSON.stringify(first.report, null, 1));
     const refusedHard = Object.values(first.report).flatMap((r) => r.refused);
     assert.deepEqual(refusedHard, [], `nothing should have been refused: ${JSON.stringify(refusedHard)}`);
@@ -148,11 +153,16 @@ async function main() {
     assert.equal(value(`SELECT count(*) FROM hours_entry;`), '0', 'hours are not moved under somebody else\'s name');
     step('Transfer: a document arrives linked to the project, with its file — and no hours are booked in the wrong name');
 
+    assert.equal(value(`SELECT string_agg(c.worker || '|' || coalesce(j.title, c.absence) || '|' || c.hours, ',' ORDER BY c.day)
+      FROM crew_plan c LEFT JOIN jobcard j ON j.id = c.jobcard_id;`), 'Test Welder|Transfer weldment|7.50,Test Welder|course|8.00',
+      'the planned day follows its jobcard to its number online, and the day away comes as it was');
+    step('Transfer: the crew plan arrives, each day on the jobcard it was planned on');
+
     const before = value(`SELECT (SELECT count(*) FROM customer) || '|' || (SELECT count(*) FROM stock_movement) || '|' ||
       (SELECT count(*) FROM jobcard) || '|' || (SELECT count(*) FROM document)`);
     const second = await PcTransfer.run(copy, io);
     const again = Object.fromEntries(Object.entries(second.report).filter(([k]) => k !== 'company').map(([k, r]) => [k, [r.moved, r.alreadyThere]]));
-    assert.deepEqual(again, { customers: [0, 1], suppliers: [0, 1], stock: [0, 1], projects: [0, 1], jobcards: [0, 1], equipment: [0, 1], documents: [0, 1] });
+    assert.deepEqual(again, { customers: [0, 1], suppliers: [0, 1], stock: [0, 1], projects: [0, 1], jobcards: [0, 1], equipment: [0, 1], documents: [0, 1], crewPlan: [0, 2] });
     assert.equal(value(`SELECT (SELECT count(*) FROM customer) || '|' || (SELECT count(*) FROM stock_movement) || '|' ||
       (SELECT count(*) FROM jobcard) || '|' || (SELECT count(*) FROM document)`), before, 'a second run moved nothing twice');
     step('Transfer: run twice, everything is already there and nothing is doubled');

@@ -34,6 +34,15 @@
   .who .out:hover{border-color:var(--spark);color:var(--ice);}
 
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:80px;}
+  /* Where the person holding the phone is planned, today and the next few days. */
+  .myplan{margin:-60px 0 20px;padding:10px 12px;background:var(--lift-05);border:1px solid var(--line);}
+  .myplan h4{margin:0 0 6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel-400);}
+  .myplan .pr{display:grid;grid-template-columns:62px 1fr auto;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:12px;align-items:baseline;}
+  .myplan .pr:first-of-type{border-top:0;}
+  .myplan .pr.today b{color:var(--c-tint,var(--ice));}
+  .myplan .pr small{display:block;color:var(--steel-400);font-size:10.5px;}
+  .myplan .pr .h{color:var(--steel-300);white-space:nowrap;}
+  .myplan .none{font-size:12px;color:var(--steel-400);}
   .tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:118px;overflow:hidden;
     background:var(--lift-04);border:1px solid var(--line);padding:13px;cursor:pointer;transition:.16s;}
   .tile:active{transform:scale(.98);border-color:rgba(var(--c-accent-rgb),.6);background:rgba(var(--c-accent-rgb),.09);}
@@ -73,6 +82,8 @@
       <div class="clock"><div class="time" id="time">—</div><div class="date" id="date">—</div></div>
     </div>
     <div class="who" data-help-slot><div class="badge"><span class="av" id="whoAv" data-session-initials>—</span><span id="whoName" data-session-name>—</span><span class="role" id="whoRole" data-session-role>—</span></div><button class="out" id="logoutBtn" data-i="logout">Log out</button></div>
+
+    <section class="myplan" id="myPlan" hidden><h4 data-i="plan_title">Your plan</h4><div id="myPlanRows"></div></section>
 
     <div class="tiles">
       <div class="tile" role="link" tabindex="0" onclick="location.href='estimations-desktop.html'">
@@ -168,7 +179,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
   }
   combineModuleTiles();
   const T={
-    sv:{role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",logout:"Logga ut",
+    sv:{wd:["mån","tis","ons","tor","fre","lör","sön"],plan_title:"Din plan",plan_today:"Idag",plan_none:"Inget är planerat för dig de närmaste sju dagarna.",abs_vacation:"Semester",abs_sick:"Sjuk",abs_course:"Kurs",abs_other:"Borta",hShort:"{h} h",role_admin:"Admin",role_office:"Kontor",role_workshop:"Verkstad",logout:"Logga ut",
       m_projects:"Projekt",c_projects:"Jobb & poster",m_customers:"Kunder",c_customers:"Kontakter & konton",
       m_estim:"Projekt / Kalkyl",c_estim:"Jobb, pris & flöde",m_jobcard:"Jobbkort",c_jobcard:"Arbetsorder",
       m_hours:"Timmar",c_hours:"Registrera tid & material",m_planning:"Planering",c_planning:"Schema & kapacitet",
@@ -177,7 +188,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_reports:"Rapporter",c_reports:"Analys & insikter",m_equipment:"Utrustning / Maskiner",c_equipment:"Maskiner & underhål",
       m_marketing:"Marknadsföring",c_marketing:"Leads, kampanjer & tillväxt",m_quality:"Kvalitet",c_quality:"Besiktningar & avvikelser",
       locale:"sv-SE"},
-    en:{role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",logout:"Log out",
+    en:{wd:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],plan_title:"Your plan",plan_today:"Today",plan_none:"Nothing is planned for you in the next seven days.",abs_vacation:"Holiday",abs_sick:"Sick",abs_course:"Course",abs_other:"Away",hShort:"{h} h",role_admin:"Admin",role_office:"Office",role_workshop:"Workshop",logout:"Log out",
       m_projects:"Projects",c_projects:"Jobs & items",m_customers:"Customers",c_customers:"Contacts & accounts",
       m_estim:"Project / Estimator",c_estim:"Jobs, pricing & workflow",m_jobcard:"Jobcard",c_jobcard:"Work orders",
       m_hours:"Hours",c_hours:"Log time & materials",m_planning:"Planning",c_planning:"Schedule & capacity",
@@ -186,7 +197,7 @@ window.WORKSHOP_SERVER_READY=true;</script>
       m_reports:"Reports",c_reports:"Analytics & insights",m_equipment:"Equipment / Machines",c_equipment:"Machines & maintenance",
       m_marketing:"Marketing",c_marketing:"Leads, campaigns & growth",m_quality:"Quality",c_quality:"Inspections & defects",
       locale:"en-GB"},
-    mk:{role_admin:"Админ",role_office:"Канцеларија",role_workshop:"Работилница",logout:"Одјави се",
+    mk:{wd:["пон","вто","сре","чет","пет","саб","нед"],plan_title:"Твојот план",plan_today:"Денес",plan_none:"Ништо не е планирано за тебе во следните седум дена.",abs_vacation:"Одмор",abs_sick:"Боледување",abs_course:"Обука",abs_other:"Отсутен",hShort:"{h} ч",role_admin:"Админ",role_office:"Канцеларија",role_workshop:"Работилница",logout:"Одјави се",
       m_projects:"Проекти",c_projects:"Работи и ставки",m_customers:"Клиенти",c_customers:"Контакти и сметки",
       m_estim:"Проект / Проценка",c_estim:"Работи, цена и тек",m_jobcard:"Работна карта",c_jobcard:"Работни налози",
       m_hours:"Часови",c_hours:"Запиши време и материјал",m_planning:"Планирање",c_planning:"Распоред и капацитет",
@@ -204,7 +215,8 @@ window.WORKSHOP_SERVER_READY=true;</script>
     document.querySelectorAll('.langmenu button').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===code));
     var _c=document.getElementById('langcur');if(_c)_c.textContent=code.toUpperCase();tick();
     // After the data-i sweep: #whoRole carries one, and the session's answer has to win.
-    if(window.paintSession)window.paintSession();}
+    if(window.paintSession)window.paintSession();
+    if(window.paintPlan)window.paintPlan();}
   document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));var l=document.getElementById('langc');if(l)l.classList.remove('open');}));
   function tick(){const n=new Date();document.getElementById('time').textContent=n.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});try{document.getElementById('date').textContent=n.toLocaleDateString(T[current].locale,{weekday:'short',day:'numeric',month:'short'});}catch(e){document.getElementById('date').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   setLang("en");setInterval(tick,10000);
@@ -241,7 +253,33 @@ window.WORKSHOP_SERVER_READY=true;</script>
     sessionName=answer.data.takenBy||null;
     sessionRole=answer.data.takenRole||null;
     paintSession();
+    planData=answer.data;
+    paintPlan();
   })();
+
+  // ── Where you are planned ───────────────────────────────────────────────────────────────
+  // From the crew plan the office keeps on the Planning page: today and the six days after it, for the
+  // person this phone is signed in as. Nothing here without a session — a phone nobody has signed in
+  // on does not know whose plan to show.
+  let planData=null;
+  window.paintPlan=function paintPlan(){
+    const box=document.getElementById('myPlan');
+    if(!box||!planData||!sessionName)return;
+    const t=T[current]||T.en;
+    const today=localDayISO();
+    const until=localDayISO(new Date(Date.now()+6*86400000));
+    const mine=(planData.crewPlan||[]).filter(e=>e.worker===sessionName&&e.day>=today&&e.day<=until)
+      .sort((a,b)=>a.day.localeCompare(b.day)||(a.absence?1:0)-(b.absence?1:0));
+    const title=no=>{const j=(planData.jobcards||[]).find(x=>x.no===no);return j?j.title:'';};
+    const esc=v=>String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    // Day names from the dictionary: a browser with no Macedonian calendar would write them in English.
+    const dayName=d=>{if(d===today)return t.plan_today;const x=new Date(d+'T12:00:00');return t.wd[(x.getDay()+6)%7]+' '+x.getDate();};
+    document.getElementById('myPlanRows').innerHTML=mine.length?mine.map(e=>`<div class="pr${e.day===today?' today':''}"><b>${esc(dayName(e.day))}</b>
+      <span>${e.absence?esc(t['abs_'+e.absence]||e.absence):`${esc(e.jobcard)}<small>${esc(e.note||title(e.jobcard))}</small>`}</span>
+      <span class="h">${esc(String(t.hShort).replace('{h}',Number(e.hours)))}</span></div>`).join('')
+      :`<div class="none">${esc(t.plan_none)}</div>`;
+    box.hidden=false;
+  };
 
 </script>
 </body></html>

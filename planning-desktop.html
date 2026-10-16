@@ -326,7 +326,9 @@ table.crew td.tot b{display:block;color:var(--ice)}
   table.crew th,table.crew td{border:1px solid #888 !important;color:#000 !important;background:#fff !important;box-shadow:none !important}
   .cchip{border:1px solid #555 !important;color:#000 !important;background:#fff !important}
   .cchip small,.cbook,.cwarn,table.crew tfoot td{color:#333 !important}
-  .cadd,table.crew td.who .rm,.grangebar,#crewAddPerson{display:none !important}
+  .cadd,table.crew td.who .rm,.grangebar,#crewAddPerson,#crewNote{display:none !important}
+  /* The entries are buttons on screen, and the shared print rules hide buttons: these are the plan. */
+  body:not([data-print="own"]) table.crew .cchip{display:block !important}
 }
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>

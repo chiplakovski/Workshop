@@ -137,6 +137,8 @@ html:not([data-compact]) .tbtn{font-size:var(--fs-button);}
   body:not([data-print="own"]) .wtip,body:not([data-print="own"]) .ms-user,body:not([data-print="own"]) .actionbar,
   body:not([data-print="own"]) .actions{display:none !important;}
   body:not([data-print="own"]) .shell,body:not([data-print="own"]) .main{margin:0 !important;padding:0 !important;min-width:0 !important;}
+  /* A page laid out as sidebar-and-main keeps the sidebar's column even with the sidebar hidden. */
+  body:not([data-print="own"]) .app{display:block !important;}
   body:not([data-print="own"]) *{overflow:visible !important;max-height:none !important;}
   body:not([data-print="own"]) table{width:100% !important;border-collapse:collapse !important;}
   body:not([data-print="own"]) th,body:not([data-print="own"]) td{border-bottom:1px solid #ccc !important;}

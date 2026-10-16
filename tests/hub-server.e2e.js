@@ -87,6 +87,13 @@ function aWorkshop() {
   sql(`INSERT INTO stock_item (code, description, unit, min_stock)
     VALUES ('S355-12', 'Plate S355J2 12mm', 'KG', 500);`);
   sql(`INSERT INTO hours_entry (jobcard_id, worker, hours) VALUES (${jobcard}, 'Marko Ilic', 6.5);`);
+  // The crew plan: Marko on the frame today and away tomorrow; somebody else today; and a day too far
+  // ahead for the phone's seven days.
+  sql(`INSERT INTO crew_plan (worker, day, jobcard_id, absence, hours) VALUES
+    ('Marko Ilic', current_date, ${jobcard}, NULL, 7.5),
+    ('Marko Ilic', current_date + 1, NULL, 'vacation', 8),
+    ('Test Office', current_date, ${jobcard}, NULL, 4),
+    ('Marko Ilic', current_date + 10, ${jobcard}, NULL, 8);`);
   return { marko, customer, project, jobcard };
 }
 
@@ -107,7 +114,7 @@ const badge = (page) => page.evaluate(() => ({
 
 async function main() {
   buildDatabase();
-  aWorkshop();
+  const w = aWorkshop();
 
   process.env.PGDATABASE = DB;
   process.env.PORT = String(HTTP_PORT);
@@ -206,6 +213,14 @@ async function main() {
       'the phone hub said Admin to everybody, which is the one line on it that says whose session this is');
     assert.equal(marko.initials, 'MI');
     step('Hub: on the phone the badge is the welder\'s own name and role, not the page\'s');
+
+    await page.waitForSelector('#myPlan:not([hidden])', { timeout: 8000 });
+    const planRows = await page.locator('#myPlanRows .pr').allTextContents();
+    const jobRef = value(`SELECT ref FROM jobcard WHERE id = ${w.jobcard};`);
+    assert.equal(planRows.length, 2, `today and tomorrow, his own, within seven days: ${JSON.stringify(planRows)}`);
+    assert.match(planRows[0], new RegExp(`Today\\s*${jobRef}[\\s\\S]*Frame weldment[\\s\\S]*7\\.5 h`));
+    assert.match(planRows[1], /Holiday[\s\S]*8 h/);
+    step('Hub: the phone shows the welder where they are planned, today and the days after, and nobody else\'s');
 
     // The message box that sent nothing to anybody. It was switched off and said so; now it is not
     // there at all, and nothing else on the phone hub takes text it cannot keep.

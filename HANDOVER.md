@@ -1018,6 +1018,39 @@ The owner's answer to §4l was "do everything you suggest". Ten things, each its
 `localDayISO()` now. The test machines' database sessions run on Stockholm time (`backend/pg.js`), and the
 unit suite passes both with `TZ=UTC` and `TZ=Europe/Stockholm` — run both after touching dates.
 
+## 4n. The crew plan — who works on what, day by day — 16 October 2026
+
+Asked for after the owner looked at OpenProject. Integrating OpenProject was advised against: it is a
+separate Ruby on Rails application under GPL v3, it would mean a second server and the same records in two
+places, and most of what it offers is already here, built for a workshop. Of what it has and this did
+not, the per-person day plan was judged the most useful, and built:
+
+* **Planning → Crew.** A row per person, a column per day (weekend on request). An entry is a person on
+  a day, either on a jobcard for some hours or away (holiday, sick, course, other). Click a day to plan
+  it, click an entry to change or remove it, drag to move, drag with Ctrl to copy, "Copy last week" to
+  bring last week's jobs forward. The form can repeat an entry over the other weekdays of the week.
+* **Held against what happened:** each day shows the hours booked once it has started. Marked on the
+  grid: over 8 h, away and planned at once, a finished job, a day outside the job's planned dates.
+  Below, the open jobs due this week with hours planned against hours left, "Nobody planned" first.
+* **Rules, on the PC copy and in the database alike** (`checkCrewEntry` / `save_crew_plan`): not past
+  24 h a day, not the same job twice a day, not away twice, not a job and an absence in one entry, not a
+  completed/closed/cancelled job, not 31 February.
+* **Online:** table `crew_plan`; the office writes it (`save_crew_plan`, `remove_crew_plan`, and the
+  office may DELETE a plan line — a change of plan, not of history); everybody reads it. In the
+  snapshot from four weeks back. The welder's phone hub shows **Your plan**: today and the next six days.
+* **On the PC copy** the people are added by name (+ Person); online they are the Access page's staff.
+* The PC → online transfer moves the plan, each day following its jobcard to its new number.
+* Day and month names come from the page dictionaries: Chromium without a Macedonian calendar printed
+  "Oct 12" on a Macedonian screen.
+
+Counts: 44 tables, 100 policies, 114 workflows. Tests: `tests/crew.e2e.js`, crew steps in
+`planning-server.e2e.js`, `hub-server.e2e.js` and `pc-transfer.e2e.js`, unit tests in
+`workshop-data.test.js` and `planning-rules.test.js`, `crewPlanHoldsOneThingADay` in test-schema and
+`crewPlanIsTheOffices` in test-api, two mutations.
+
+**Not built yet, and the obvious next steps:** planned against actual per job after the fact (the
+baseline), and links between steps ("assembly waits for galvanising", "the job waits for its material").
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |
