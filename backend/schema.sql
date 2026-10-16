@@ -584,6 +584,29 @@ CREATE TABLE hours_entry (
 CREATE INDEX hours_jobcard_idx ON hours_entry(jobcard_id);
 CREATE INDEX hours_worked_on_idx ON hours_entry(worked_on);
 
+-- The crew plan: who is meant to be on what, day by day. hours_entry is what happened; this is what
+-- was intended, and the Planning page holds one against the other. One row is one person on one day,
+-- either on a jobcard for some hours or away — never both, which is the last CHECK. The worker is a
+-- name, as on hours_entry, so a plan and the hours booked against it are matched the same way.
+-- A jobcard deleted takes its plan with it: a plan for work that no longer exists means nothing.
+CREATE TABLE crew_plan (
+  id          bigserial PRIMARY KEY,
+  worker      text NOT NULL CHECK (btrim(worker) <> '' AND length(worker) <= 80),
+  day         date NOT NULL,
+  jobcard_id  bigint REFERENCES jobcard(id) ON DELETE CASCADE,
+  absence     text CHECK (absence IN ('vacation', 'sick', 'course', 'other')),
+  hours       numeric(4,2) NOT NULL CHECK (hours > 0 AND hours <= 24),
+  note        text CHECK (note IS NULL OR length(note) <= 500),
+  created_by  text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz,
+  CHECK ((jobcard_id IS NULL) <> (absence IS NULL))
+);
+-- The same job twice on one day is a mistake rather than a plan, and so is being away twice.
+CREATE UNIQUE INDEX crew_plan_one_job_a_day ON crew_plan(worker, day, jobcard_id) WHERE jobcard_id IS NOT NULL;
+CREATE UNIQUE INDEX crew_plan_away_once_a_day ON crew_plan(worker, day) WHERE absence IS NOT NULL;
+CREATE INDEX crew_plan_day_idx ON crew_plan(day);
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Store
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

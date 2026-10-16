@@ -483,6 +483,37 @@ function aDayHasTwentyFourHours(w) {
   step('Hours: one person\'s entries on one day are added up and stop at 24, per person and per day');
 }
 
+// ── The crew plan ─────────────────────────────────────────────────────────────────────────
+
+function crewPlanIsTheOffices(w) {
+  const office = PEOPLE.office;
+  const plan = (id, worker, day, job, absence, hours) => `SELECT save_crew_plan(${id}, '${worker}', '${day}',
+    ${job || 'NULL'}, ${absence ? `'${absence}'` : 'NULL'}, ${hours}, NULL);`;
+  const first = ok('the office planning a day on the job', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-06', w.jobcard, null, 8));
+  ok('and a second job the same day', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-07', w.jobcard, null, 6));
+  refused('the same job twice on one day', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-06', w.jobcard, null, 2),
+    /already planned on .* that day/);
+  refused('a day past twenty-four hours', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-07', null, 'course', 19),
+    /that would plan 25 h for Marko Ilic on 2026-04-07 — nobody works more than 24 hours in a day/);
+  ok('a day away', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-08', null, 'vacation', 8));
+  refused('away twice on one day', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-08', null, 'sick', 8),
+    /already marked away that day/);
+  refused('a job and a day away in one entry', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-09', w.jobcard, 'sick', 8),
+    /either work on a jobcard or a day away/);
+  refused('neither', 'varmak_office', office, plan('NULL', 'Marko Ilic', '2026-04-09', null, null, 8), /choose the jobcard/);
+  ok('moving the first day to the Friday', 'varmak_office', office, plan(first, 'Marko Ilic', '2026-04-10', w.jobcard, null, 8));
+  assert.equal(value(`SELECT day::text FROM crew_plan WHERE id = ${first};`), '2026-04-10');
+  refused('a welder planning themselves a day off', 'varmak_workshop', PEOPLE.welder,
+    plan('NULL', 'Marko Ilic', '2026-04-13', null, 'vacation', 8), /the crew plan is the office's to change/);
+  refused('a welder removing an entry', 'varmak_workshop', PEOPLE.welder, `SELECT remove_crew_plan(${first});`,
+    /the crew plan is the office's to change/);
+  assert.equal(ok('a welder reading the plan', 'varmak_workshop', PEOPLE.welder,
+    `SELECT count(*) FROM crew_plan WHERE worker = 'Marko Ilic';`), '3');
+  ok('the office removing an entry', 'varmak_office', office, `SELECT remove_crew_plan(${first});`);
+  refused('removing it twice', 'varmak_office', office, `SELECT remove_crew_plan(${first});`, /not there any more/);
+  step('Crew plan: the office plans who is on what; a welder reads it and cannot change it; a day stops at 24 hours');
+}
+
 // ── The tablet with no signal ─────────────────────────────────────────────────────────────
 
 function askingTwiceIsHarmless(f) {
@@ -2101,6 +2132,7 @@ async function main() {
   theGatesStillHoldOnReplay(f, w);
   await twoTabletsFlushingAtOnce(f, w);
   aDayHasTwentyFourHours(w);
+  crewPlanIsTheOffices(w);
   eachRoleReachesItsOwnWork(f, w);
   const work = workReachesTheFloor();
   theEngineWritesOnlyWhatItMust();

@@ -635,6 +635,29 @@ CREATE TABLE hours_entry (
 CREATE INDEX hours_jobcard_idx ON hours_entry(jobcard_id);
 CREATE INDEX hours_worked_on_idx ON hours_entry(worked_on);
 
+-- The crew plan: who is meant to be on what, day by day. hours_entry is what happened; this is what
+-- was intended, and the Planning page holds one against the other. One row is one person on one day,
+-- either on a jobcard for some hours or away — never both, which is the last CHECK. The worker is a
+-- name, as on hours_entry, so a plan and the hours booked against it are matched the same way.
+-- A jobcard deleted takes its plan with it: a plan for work that no longer exists means nothing.
+CREATE TABLE crew_plan (
+  id          bigserial PRIMARY KEY,
+  worker      text NOT NULL CHECK (btrim(worker) <> '' AND length(worker) <= 80),
+  day         date NOT NULL,
+  jobcard_id  bigint REFERENCES jobcard(id) ON DELETE CASCADE,
+  absence     text CHECK (absence IN ('vacation', 'sick', 'course', 'other')),
+  hours       numeric(4,2) NOT NULL CHECK (hours > 0 AND hours <= 24),
+  note        text CHECK (note IS NULL OR length(note) <= 500),
+  created_by  text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz,
+  CHECK ((jobcard_id IS NULL) <> (absence IS NULL))
+);
+-- The same job twice on one day is a mistake rather than a plan, and so is being away twice.
+CREATE UNIQUE INDEX crew_plan_one_job_a_day ON crew_plan(worker, day, jobcard_id) WHERE jobcard_id IS NOT NULL;
+CREATE UNIQUE INDEX crew_plan_away_once_a_day ON crew_plan(worker, day) WHERE absence IS NOT NULL;
+CREATE INDEX crew_plan_day_idx ON crew_plan(day);
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Store
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -2832,6 +2855,8 @@ GRANT SELECT ON
   -- which is the test the comment above sets for being in this list — and a welder holding a drawing
   -- that is wrong needs to be able to ring somebody.
   customer_contact,
+  -- Who is on which job on which day. A welder looks up where they are tomorrow; no figure in it is money.
+  crew_plan,
   -- The file behind a document: a drawing or a certificate a welder has to be able to open, and never
   -- a price.
   document_file,
@@ -2979,7 +3004,9 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- Both contact lists are replaced wholesale by their save functions, which delete and re-insert, so the
 -- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
 -- for an edit: a contact who has left the company is not history, they are a mistake in a list.
-GRANT DELETE ON customer_contact, supplier_contact, document_file TO varmak_office;
+-- And a line of the crew plan: taking somebody off a day is a change of plan, not a rewriting of what
+-- happened — that is hours_entry, which the office still cannot delete.
+GRANT DELETE ON customer_contact, supplier_contact, document_file, crew_plan TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
@@ -3071,7 +3098,7 @@ BEGIN
     'estimate', 'estimate_line', 'supplier', 'supplier_item', 'purchase_order',
     'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender',
     'item_group', 'location', 'offcut', 'barcode', 'document', 'document_file', 'equipment', 'equipment_event',
-    'customer_contact', 'supplier_contact'
+    'customer_contact', 'supplier_contact', 'crew_plan'
   ]
   LOOP
     EXECUTE format($p$CREATE POLICY the_office_runs_this ON %I FOR ALL
@@ -4118,6 +4145,100 @@ BEGIN
 END;
 $$;
 
+-- The crew plan. The office decides who is on what; a welder reads it. The rules are the same ones the
+-- copy on one PC applies, worded the same way, and checked here rather than left to the constraints so
+-- that the refusal says what was wrong instead of naming an index.
+CREATE FUNCTION save_crew_plan(
+  p_id bigint, p_worker text, p_day date, p_jobcard_id bigint DEFAULT NULL, p_absence text DEFAULT NULL,
+  p_hours numeric DEFAULT 8, p_note text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('planning the crew');
+  name text := btrim(coalesce(p_worker, ''));
+  job jobcard%ROWTYPE;
+  day_total numeric;
+  saved bigint;
+BEGIN
+  IF NOT may_see_money() THEN
+    RAISE EXCEPTION 'the crew plan is the office''s to change';
+  END IF;
+  IF name = '' THEN
+    RAISE EXCEPTION 'choose who the work is for';
+  END IF;
+  IF p_day IS NULL THEN
+    RAISE EXCEPTION 'choose a day';
+  END IF;
+  IF p_absence IS NOT NULL AND p_jobcard_id IS NOT NULL THEN
+    RAISE EXCEPTION 'an entry is either work on a jobcard or a day away, not both';
+  END IF;
+  IF p_absence IS NULL AND p_jobcard_id IS NULL THEN
+    RAISE EXCEPTION 'choose the jobcard, or a reason for being away';
+  END IF;
+  IF p_jobcard_id IS NOT NULL THEN
+    SELECT * INTO job FROM jobcard WHERE id = p_jobcard_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'that jobcard is not in this workshop';
+    END IF;
+    IF job.status IN ('completed', 'closed', 'cancelled') THEN
+      RAISE EXCEPTION '% is %: there is no work left on it to plan', job.ref, job.status;
+    END IF;
+  END IF;
+  IF p_hours IS NULL OR p_hours <= 0 THEN
+    RAISE EXCEPTION 'hours must be more than zero';
+  END IF;
+
+  -- One person, one day, every entry added up — locked the same way book_hours is, so two people
+  -- planning at once cannot both slip under the line.
+  PERFORM pg_advisory_xact_lock(hashtext('crew:' || name || ':' || p_day));
+  IF p_jobcard_id IS NOT NULL AND EXISTS (SELECT 1 FROM crew_plan WHERE worker = name AND day = p_day
+       AND jobcard_id = p_jobcard_id AND id IS DISTINCT FROM p_id) THEN
+    RAISE EXCEPTION '% is already planned on % that day — change those hours instead', name, job.ref;
+  END IF;
+  IF p_absence IS NOT NULL AND EXISTS (SELECT 1 FROM crew_plan WHERE worker = name AND day = p_day
+       AND absence IS NOT NULL AND id IS DISTINCT FROM p_id) THEN
+    RAISE EXCEPTION '% is already marked away that day', name;
+  END IF;
+  day_total := p_hours + (SELECT coalesce(sum(hours), 0) FROM crew_plan
+                 WHERE worker = name AND day = p_day AND id IS DISTINCT FROM p_id);
+  IF day_total > 24 THEN
+    RAISE EXCEPTION 'that would plan % h for % on % — nobody works more than 24 hours in a day',
+      trim_scale(day_total), name, p_day USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO crew_plan (worker, day, jobcard_id, absence, hours, note, created_by)
+    VALUES (name, p_day, p_jobcard_id, p_absence, p_hours, nullif(btrim(coalesce(p_note, '')), ''), who)
+    RETURNING id INTO saved;
+  ELSE
+    UPDATE crew_plan SET worker = name, day = p_day, jobcard_id = p_jobcard_id, absence = p_absence,
+           hours = p_hours, note = nullif(btrim(coalesce(p_note, '')), ''), updated_at = now()
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'that plan entry is not there any more';
+    END IF;
+  END IF;
+  RETURN saved::text;
+END;
+$$;
+
+CREATE FUNCTION remove_crew_plan(p_id bigint) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('changing the crew plan');
+BEGIN
+  IF NOT may_see_money() THEN
+    RAISE EXCEPTION 'the crew plan is the office''s to change';
+  END IF;
+  DELETE FROM crew_plan WHERE id = p_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'that plan entry is not there any more';
+  END IF;
+  RETURN p_id::text;
+END;
+$$;
+
 -- The letterhead. An admin's job: it carries the firm's registration and the account it is paid into,
 -- and a wrong bank account on an offer is money sent somewhere else. Empty means "not given", and
 -- prints nothing, which is the point of keeping these as facts the firm enters rather than defaults.
@@ -4814,6 +4935,8 @@ TO varmak_admin, varmak_office, varmak_workshop;
 -- On one line: a line reading only "TO varmak_admin, varmak_office;" is the office workflow list's,
 -- and backend/mutation-check.js finds that list by it.
 GRANT EXECUTE ON FUNCTION store_document_file(bigint, text, text, bytea), remove_document_file(bigint) TO varmak_admin, varmak_office;
+-- The crew plan, on one line for the same reason as the line above.
+GRANT EXECUTE ON FUNCTION save_crew_plan(bigint, text, date, bigint, text, numeric, text), remove_crew_plan(bigint) TO varmak_admin, varmak_office;
 GRANT EXECUTE ON FUNCTION document_file_content(bigint) TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -7530,6 +7653,14 @@ LANGUAGE sql STABLE AS $$
     'people', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', u.id::text, 'name', u.display_name, 'role', u.role, 'active', u.is_active
       ) ORDER BY u.display_name) FROM app_user u WHERE u.is_active), '[]'::jsonb),
+
+    -- Who is on what, day by day, for everybody: a welder reads where they are tomorrow. From four weeks
+    -- back, so a plan can be held against the hours booked, and everything ahead.
+    'crewPlan', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', cp.id::text, 'worker', cp.worker, 'day', cp.day,
+        'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = cp.jobcard_id),
+        'jobcardId', cp.jobcard_id::text, 'absence', cp.absence, 'hours', cp.hours, 'note', cp.note
+      ) ORDER BY cp.day, cp.worker, cp.id) FROM crew_plan cp WHERE cp.day >= current_date - 28), '[]'::jsonb),
 
     'customers', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', c.id::text, 'no', c.ref, 'name', c.name, 'status', c.status,

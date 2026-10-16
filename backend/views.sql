@@ -236,6 +236,14 @@ LANGUAGE sql STABLE AS $$
         'id', u.id::text, 'name', u.display_name, 'role', u.role, 'active', u.is_active
       ) ORDER BY u.display_name) FROM app_user u WHERE u.is_active), '[]'::jsonb),
 
+    -- Who is on what, day by day, for everybody: a welder reads where they are tomorrow. From four weeks
+    -- back, so a plan can be held against the hours booked, and everything ahead.
+    'crewPlan', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', cp.id::text, 'worker', cp.worker, 'day', cp.day,
+        'jobcard', (SELECT j.ref FROM jobcard j WHERE j.id = cp.jobcard_id),
+        'jobcardId', cp.jobcard_id::text, 'absence', cp.absence, 'hours', cp.hours, 'note', cp.note
+      ) ORDER BY cp.day, cp.worker, cp.id) FROM crew_plan cp WHERE cp.day >= current_date - 28), '[]'::jsonb),
+
     'customers', coalesce((SELECT jsonb_agg(jsonb_build_object(
         'id', c.id::text, 'no', c.ref, 'name', c.name, 'status', c.status,
         'city', c.city, 'country', c.country, 'org', c.org_no, 'vat', c.vat_no,

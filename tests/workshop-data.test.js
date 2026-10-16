@@ -4579,3 +4579,61 @@ test('an item never received with a heat is issued without one, as before', ()=>
   WD.receive({code:'BOLT-M12',qty:100,supplier:'S'});
   assert.ok(!WD.issue({code:'BOLT-M12',projectNo:project.no,qty:10}).error);
 });
+
+test('the crew plan: one person, one day, a jobcard or a reason to be away', ()=>{
+  const WD=loadWorkshopData();
+  const plan=e=>WD.saveCrewEntry(Object.assign({worker:'Test Welder',day:'2026-03-02',jobcard:'JC-2026-0001',hours:8},e));
+  const first=plan({});
+  assert.ok(!first.error,first.error);
+  assert.match(first.id,/^CP-\d+$/);
+  assert.equal(first.jobcard,'JC-2026-0001');
+  assert.equal(first.absence,null);
+  assert.equal(plan({}).code,'ALREADY_PLANNED','the same job twice on one day is a mistake, not a plan');
+  assert.ok(!plan({jobcard:'JC-2026-0002',hours:4}).error,'a second job the same day fits');
+  assert.equal(plan({jobcard:'JC-2026-0001',day:'2026-03-03',hours:25}).code,'DAY_OVER_24');
+  const over=plan({jobcard:'JC-2026-0002',day:'2026-03-02',worker:'Test Welder',hours:1});
+  assert.equal(over.code,'ALREADY_PLANNED');
+  assert.equal(plan({absence:'sick',jobcard:null,hours:13}).code,'DAY_OVER_24','12 h planned plus 13 h away is a 25-hour day');
+  assert.equal(plan({jobcard:null,hours:8}).code,'JOB_NEEDED');
+  assert.equal(plan({jobcard:'JC-NOPE'}).code,'JOB_UNKNOWN');
+  assert.equal(plan({absence:'holiday',jobcard:null}).code,'ABSENCE_UNKNOWN');
+  assert.equal(plan({absence:'vacation'}).code,'JOB_AND_ABSENCE');
+  assert.equal(plan({worker:'  '}).code,'WORKER_NEEDED');
+  assert.equal(plan({worker:'—'}).code,'WORKER_NEEDED','the page\'s "nobody" dash is not a person');
+  assert.equal(plan({day:'2026-02-31'}).code,'DAY_NEEDED','31 February is not quietly 3 March');
+  assert.equal(plan({day:'2026-03-02x'}).code,'DAY_NEEDED');
+  assert.equal(plan({hours:0}).code,'HOURS_NEEDED');
+  const away=plan({day:'2026-03-04',jobcard:null,absence:'vacation'});
+  assert.ok(!away.error,away.error);
+  assert.equal(plan({day:'2026-03-04',jobcard:null,absence:'sick'}).code,'ALREADY_AWAY');
+
+  // Moved by dragging: the id and the new day, nothing else.
+  const moved=WD.saveCrewEntry({id:first.id,day:'2026-03-05'});
+  assert.equal(moved.day,'2026-03-05');
+  assert.equal(moved.jobcard,'JC-2026-0001','a move keeps what it was');
+  assert.equal(moved.hours,8);
+  assert.equal(WD.saveCrewEntry({id:'CP-999',day:'2026-03-05'}).code,'NOT_FOUND');
+
+  // A finished job has nothing left to plan.
+  WD.upsertJobcard({id:WD.listJobcards().find(j=>j.no==='JC-2026-0002').id,no:'JC-2026-0002',status:'completed'});
+  assert.equal(WD.listJobcards().find(j=>j.no==='JC-2026-0002').status,'completed');
+  assert.equal(plan({jobcard:'JC-2026-0002',day:'2026-03-10'}).code,'JOB_CLOSED');
+
+  const week=WD.crewEntries({from:'2026-03-02',to:'2026-03-08'});
+  assert.deepEqual(week.map(e=>e.day),['2026-03-02','2026-03-04','2026-03-05']);
+  assert.ok(WD.removeCrewEntry(away.id).ok);
+  assert.equal(WD.removeCrewEntry(away.id).code,'NOT_FOUND');
+  assert.equal(WD.crewEntries().length,2,'nothing refused was written');
+});
+
+test('the crew roster: the names added, and anybody who already has an entry', ()=>{
+  const WD=loadEmptyWorkshopData();
+  assert.deepEqual(WD.crewRoster(),[]);
+  assert.equal(WD.addCrewWorker(' ').code,'NAME_NEEDED');
+  assert.ok(WD.addCrewWorker('Örjan Test').ok);
+  assert.ok(WD.addCrewWorker('Anna Test').ok);
+  assert.ok(WD.addCrewWorker('Anna Test').ok,'adding twice is harmless');
+  assert.deepEqual(WD.crewRoster(),['Anna Test','Örjan Test'],'sorted the Swedish way: Ö after A');
+  WD.removeCrewWorker('Anna Test');
+  assert.deepEqual(WD.crewRoster(),['Örjan Test']);
+});

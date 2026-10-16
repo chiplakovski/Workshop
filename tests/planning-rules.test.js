@@ -379,3 +379,58 @@ test('real data: every machine the plan names exists in the equipment register',
     assert.ok(m.equipment.status,'a matched machine must bring its real status with it');
   });
 });
+
+test('crew week: Monday to Friday, or the whole week',()=>{
+  assert.deepEqual(Planning.crewDays('2026-10-15',false),['2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16']);
+  assert.equal(Planning.crewDays('2026-10-18',true).length,7,'a Sunday belongs to the week that started on the Monday before');
+  assert.equal(Planning.crewDays('2026-10-18',true)[0],'2026-10-12');
+});
+
+test('crew week: what is planned, what was booked, and what is wrong with it',()=>{
+  const days=Planning.crewDays('2026-10-12',false);
+  const jobcards=[
+    {no:'JC-A',title:'Frame',status:'in-progress',plannedStart:'2026-10-01',plannedCompletion:'2026-10-14',plannedHours:40},
+    {no:'JC-B',title:'Rail',status:'released',plannedStart:'2026-10-13',plannedCompletion:'2026-10-20',plannedHours:16},
+    {no:'JC-C',title:'Stair',status:'ready',plannedHours:30},
+    {no:'JC-D',title:'Done',status:'completed',plannedHours:5},
+    {no:'JC-E',title:'Later',status:'released',plannedStart:'2026-11-01',plannedCompletion:'2026-11-10'}
+  ];
+  const entries=[
+    {worker:'Anna',day:'2026-10-12',jobcard:'JC-A',hours:8},
+    {worker:'Anna',day:'2026-10-13',jobcard:'JC-A',hours:6},
+    {worker:'Anna',day:'2026-10-13',jobcard:'JC-B',hours:4},
+    {worker:'Anna',day:'2026-10-15',jobcard:'JC-A',hours:8},
+    {worker:'Bo',day:'2026-10-13',absence:'sick',hours:8},
+    {worker:'Bo',day:'2026-10-13',jobcard:'JC-B',hours:2},
+    {worker:'Bo',day:'2026-10-14',jobcard:'JC-D',hours:3},
+    {worker:'Bo',day:'2026-10-19',jobcard:'JC-B',hours:8}
+  ];
+  const hours=[{worker:'Anna',date:'2026-10-12',hours:7.5,jobcard:'JC-A'},{worker:'Anna',date:'2026-10-12',hours:1,jobcard:'JC-B'},
+    {worker:'Anna',date:'2026-09-30',hours:20,jobcard:'JC-A'}];
+  const w=Planning.crewWeek({days,entries,roster:['Cecilia'],jobcards,hours,today:'2026-10-13'});
+  assert.deepEqual(w.rows.map(r=>r.worker),['Anna','Bo','Cecilia'],'somebody on the list with nothing planned still has a row');
+  const anna=w.rows[0];
+  assert.equal(anna.cells[0].planned,8);
+  assert.equal(anna.cells[0].logged,8.5,'both bookings that day, whatever job they went to');
+  assert.equal(anna.cells[1].planned,10);
+  assert.deepEqual(anna.cells[1].warnings.map(x=>x.code),['overtime'],'10 h planned is 2 h over an 8-hour day');
+  assert.equal(anna.cells[1].warnings[0].hours,2);
+  assert.equal(anna.cells[2].logged,null,'a day that has not started is not held against its plan');
+  assert.deepEqual(anna.cells[3].warnings.map(x=>x.code),['afterJob'],'planned on JC-A after its planned finish');
+  assert.equal(anna.planned,26);
+  const bo=w.rows[1];
+  assert.deepEqual(bo.cells[1].warnings.map(x=>x.code),['awayAndWork'],'sick and on a job the same day');
+  assert.equal(bo.cells[1].away.absence,'sick');
+  assert.deepEqual(bo.cells[2].warnings.map(x=>x.code),['jobClosed']);
+  assert.equal(bo.planned,5,'the absence is not work, and next Monday is not this week');
+  assert.deepEqual(w.dayTotals[1],{day:'2026-10-13',working:2,away:1,hours:12});
+  const jobs=Object.fromEntries(w.jobs.map(j=>[j.no,j]));
+  assert.equal(jobs['JC-C'].unplanned,true,'ready to start and nobody on it this week');
+  assert.equal(w.jobs[0].no,'JC-C','the job with nobody on it comes first');
+  assert.equal(jobs['JC-A'].thisWeek,22);
+  assert.equal(jobs['JC-A'].remaining,12.5,'40 planned less 27.5 booked');
+  assert.equal(jobs['JC-A'].overplanned,true,'22 h planned this week against 12.5 h left');
+  assert.deepEqual(jobs['JC-B'].people,['Anna','Bo']);
+  assert.equal(jobs['JC-D'],undefined,'a finished job is not listed as work to plan');
+  assert.equal(jobs['JC-E'],undefined,'nor one whose dates are weeks away');
+});

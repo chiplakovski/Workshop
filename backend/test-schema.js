@@ -93,7 +93,7 @@ const ALL_TABLES = [
   'stock_movement', 'offcut', 'barcode', 'supplier', 'supplier_contact', 'supplier_item',
   'purchase_order',
   'purchase_order_line', 'lead', 'prospect_finding', 'opportunity', 'tender', 'estimate',
-  'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document', 'document_file',
+  'estimate_line', 'quality_hold', 'inspection', 'inspection_check', 'ncr', 'document', 'document_file', 'crew_plan',
   // The welding registers. In the truncate list because a fixture that leaves a weld behind is a fixture
   // whose next test counts one more than it should — and the weld log is the one register where a row
   // nobody expected is indistinguishable from a real one.
@@ -683,6 +683,30 @@ function hoursMustBePossible() {
     `INSERT INTO hours_entry (jobcard_id, operation_id, worker, hours)
      VALUES (${elsewhere}, ${f.op1}, 'Welder', 4);`, /operation .* belongs to|does not belong/);
   step('Hours: an entry cannot name one jobcard and an operation from a different one');
+}
+
+// The crew plan: one person, one day, either a job or a reason to be away — never both, never neither.
+function crewPlanHoldsOneThingADay() {
+  const f = fixture();
+  accepted('a day on a job', `INSERT INTO crew_plan (worker, day, jobcard_id, hours)
+    VALUES ('Welder', '2026-10-12', ${f.jobcard}, 8);`);
+  refused('the same job twice on one day', `INSERT INTO crew_plan (worker, day, jobcard_id, hours)
+    VALUES ('Welder', '2026-10-12', ${f.jobcard}, 2);`, /crew_plan_one_job_a_day|duplicate/);
+  accepted('a day away', `INSERT INTO crew_plan (worker, day, absence, hours)
+    VALUES ('Welder', '2026-10-13', 'vacation', 8);`);
+  refused('away twice on one day', `INSERT INTO crew_plan (worker, day, absence, hours)
+    VALUES ('Welder', '2026-10-13', 'sick', 8);`, /crew_plan_away_once_a_day|duplicate/);
+  refused('a job and a reason to be away in one entry', `INSERT INTO crew_plan (worker, day, jobcard_id, absence, hours)
+    VALUES ('Welder', '2026-10-14', ${f.jobcard}, 'sick', 8);`, /check/);
+  refused('neither a job nor a reason', `INSERT INTO crew_plan (worker, day, hours)
+    VALUES ('Welder', '2026-10-14', 8);`, /check/);
+  refused('a reason nobody wrote down', `INSERT INTO crew_plan (worker, day, absence, hours)
+    VALUES ('Welder', '2026-10-14', 'fishing', 8);`, /absence|check/);
+  refused('twenty-five hours', `INSERT INTO crew_plan (worker, day, jobcard_id, hours)
+    VALUES ('Welder', '2026-10-14', ${f.jobcard}, 25);`, /hours/);
+  refused('nobody', `INSERT INTO crew_plan (worker, day, jobcard_id, hours)
+    VALUES ('  ', '2026-10-14', ${f.jobcard}, 8);`, /worker/);
+  step('Crew plan: one person, one day, a job or a reason to be away — never both and never twice');
 }
 
 // ── Stock ─────────────────────────────────────────────────────────────────────────────────
@@ -1895,6 +1919,7 @@ async function main() {
   theProjectKnowsItsOwnHours();
   stoppingAJobIsOnTheRecord();
   hoursMustBePossible();
+  crewPlanHoldsOneThingADay();
   stockNeverGoesNegative();
   issuingLeavesATrail();
   await twoPeopleCannotIssueTheSameLastPiece();

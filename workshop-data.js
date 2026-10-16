@@ -43,7 +43,7 @@
 
   const emptyState=()=>({
     version:VERSION,
-    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0,wps:0,welderqual:0},
+    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0,crewPlan:0,wps:0,welderqual:0},
     customers:[],
     estimations:[],
     projects:[],
@@ -107,6 +107,11 @@
     prospectSweeps:[],
     marketingCampaigns:[],
     savedReports:[],
+    // Who works on what, day by day: the Planning page's crew view. One entry is one person on one day,
+    // either on a jobcard for some hours or away (holiday, sick, a course). And the names that view lists
+    // on a copy with no server, where there is no staff register to take them from.
+    crewPlan:[],
+    crewRoster:[],
     // The staff, from the snapshot. Empty in browser-storage mode, and deliberately: this module has
     // no way to know who works at a workshop, and the six pages that used to guess are the reason
     // every note in this system was signed by the same man.
@@ -616,6 +621,8 @@
     const fresh=emptyState();
     SERVED_COLLECTIONS.forEach(name=>{if(Array.isArray(data[name]))fresh[name]=data[name];});
     if(data.company&&typeof data.company==='object')fresh.company=data.company;
+    // Read by everybody — a welder looks up where they are tomorrow — and written by the office.
+    if(Array.isArray(data.crewPlan))fresh.crewPlan=data.crewPlan;
     state=fresh;
     takenFor={by:data.takenBy||null,role:data.takenRole||null,byId:data.takenById||null};
     // On the state too, so a page reading WorkshopData.get() has them without a second call. The names
@@ -1326,6 +1333,101 @@
       // only because each save happens to take a fraction of a millisecond - luck, not design.
       // Counted like every other record here, so it is unique by construction.
       const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:localDayISO(),user:UNNAMED},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
+    // ── The crew plan ─────────────────────────────────────────────────────────────────────────
+    // One entry: a person, a day, and either a jobcard with the hours planned on it or a reason they are
+    // away. The same rules as the database's save_crew_plan, so a copy on one PC refuses what the server
+    // would: a day past 24 hours, a job that is finished, the same job twice on one day.
+    crewEntries(range){
+      const from=range&&range.from?String(range.from).slice(0,10):'',to=range&&range.to?String(range.to).slice(0,10):'';
+      return clone((state.crewPlan||[]).filter(e=>(!from||e.day>=from)&&(!to||e.day<=to))
+        .sort((a,b)=>a.day.localeCompare(b.day)||String(a.worker).localeCompare(String(b.worker))||String(a.jobcard||'').localeCompare(String(b.jobcard||''))));
+    },
+    // The names the crew view lists: the staff register when signed in, the names added by hand on a copy
+    // with no server, and anybody who already has an entry.
+    crewRoster(){
+      const names=new Set();
+      (state.people||[]).forEach(p=>{if(p&&p.name&&p.active!==false)names.add(String(p.name).trim());});
+      (state.crewRoster||[]).forEach(n=>{if(n)names.add(String(n).trim());});
+      (state.crewPlan||[]).forEach(e=>{if(e.worker)names.add(String(e.worker).trim());});
+      names.delete('');names.delete(UNNAMED);
+      return [...names].sort((a,b)=>a.localeCompare(b,'sv'));
+    },
+    // Names this workshop has already written somewhere, offered when somebody is added to the plan so a
+    // welder is not typed three ways.
+    crewNameSuggestions(){
+      const names=new Set();
+      (state.jobcards||[]).forEach(j=>{(j.workers||[]).forEach(w=>names.add(w));if(j.responsible)names.add(j.responsible);
+        (j.operations||[]).forEach(o=>{if(o.worker)names.add(o.worker);});});
+      (state.hours||[]).forEach(h=>{if(h.worker||h.user)names.add(h.worker||h.user);});
+      (state.people||[]).forEach(p=>{if(p&&p.name)names.add(p.name);});
+      const known=new Set(api.crewRoster());
+      return [...names].map(n=>String(n||'').trim()).filter(n=>n&&n!==UNNAMED&&!known.has(n)).sort((a,b)=>a.localeCompare(b,'sv'));
+    },
+    addCrewWorker(name){
+      const who=String(name||'').trim();
+      if(!who||who===UNNAMED)return{error:'A name is needed',code:'NAME_NEEDED'};
+      if(who.length>80)return{error:'That name is longer than 80 characters',code:'NAME_TOO_LONG'};
+      state.crewRoster=state.crewRoster||[];
+      if(!state.crewRoster.includes(who))state.crewRoster.push(who);
+      save(`Added to the crew plan: ${who}`);return{ok:true,name:who};
+    },
+    // Off the list, not out of history: their entries stay, and a week that has one still shows them.
+    removeCrewWorker(name){
+      const who=String(name||'').trim();
+      state.crewRoster=(state.crewRoster||[]).filter(n=>n!==who);
+      save(`Removed from the crew plan: ${who}`);return{ok:true};
+    },
+    saveCrewEntry(input){
+      if(!input||typeof input!=='object')return{error:'Nothing to save',code:'EMPTY'};
+      const list=state.crewPlan=state.crewPlan||[];
+      const existing=input.id!=null?list.find(e=>String(e.id)===String(input.id)):null;
+      if(input.id!=null&&!existing)return{error:'That plan entry is not there any more',code:'NOT_FOUND'};
+      const merged=Object.assign({},existing||{},clone(input));
+      const worker=String(merged.worker||'').trim();
+      if(!worker||worker===UNNAMED)return{error:'Choose who the work is for',code:'WORKER_NEEDED'};
+      if(worker.length>80)return{error:'That name is longer than 80 characters',code:'NAME_TOO_LONG'};
+      // A real calendar day: 31 February is refused, not quietly read as 3 March.
+      const day=String(merged.day||'').trim();
+      const dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(day),dd=dm&&new Date(Date.UTC(+dm[1],+dm[2]-1,+dm[3]));
+      if(!dm||dd.getUTCMonth()!==+dm[2]-1||dd.getUTCDate()!==+dm[3])return{error:'Choose a day',code:'DAY_NEEDED'};
+      const ABSENCES=['vacation','sick','course','other'];
+      const absence=merged.absence?String(merged.absence):null;
+      if(absence&&ABSENCES.indexOf(absence)<0)return{error:'Unknown reason for being away',code:'ABSENCE_UNKNOWN'};
+      let jobNo=null;
+      if(absence){
+        if(merged.jobcard)return{error:'An entry is either work on a jobcard or a day away, not both',code:'JOB_AND_ABSENCE'};
+      }else{
+        if(!merged.jobcard)return{error:'Choose the jobcard, or a reason for being away',code:'JOB_NEEDED'};
+        const j=jobcard(merged.jobcard);
+        if(!j)return{error:`Jobcard ${merged.jobcard} is not in this workshop`,code:'JOB_UNKNOWN'};
+        if(['completed','closed','cancelled'].indexOf(String(j.status))>=0||j.archived)
+          return{error:`${j.no} is ${j.archived?'archived':j.status}: there is no work left on it to plan`,code:'JOB_CLOSED'};
+        jobNo=j.no;
+      }
+      const hours=Math.round(Number(merged.hours)*100)/100;
+      if(!Number.isFinite(hours)||hours<=0)return{error:'Hours must be more than zero',code:'HOURS_NEEDED'};
+      if(hours>24)return{error:'Nobody works more than 24 hours in a day',code:'DAY_OVER_24'};
+      const note=String(merged.note||'').trim();
+      if(note.length>500)return{error:'The note is longer than 500 characters',code:'NOTE_TOO_LONG'};
+      const others=list.filter(e=>e!==existing&&e.worker===worker&&e.day===day);
+      if(jobNo&&others.some(e=>e.jobcard===jobNo))
+        return{error:`${worker} is already planned on ${jobNo} that day — change those hours instead`,code:'ALREADY_PLANNED'};
+      if(absence&&others.some(e=>e.absence))
+        return{error:`${worker} is already marked away that day`,code:'ALREADY_AWAY'};
+      const total=others.reduce((t,e)=>t+(Number(e.hours)||0),0)+hours;
+      if(total>24)return{error:`That would plan ${Math.round(total*100)/100} h for ${worker} on ${day}. Nobody works more than 24 hours in a day`,code:'DAY_OVER_24'};
+      const record={worker,day,jobcard:jobNo,absence,hours,note};
+      if(existing){Object.assign(existing,record);save(`Crew plan changed: ${worker} ${day}`);return clone(existing);}
+      const seq=state.counters.crewPlan=(state.counters.crewPlan||0)+1;
+      const created=Object.assign({id:`CP-${seq}`},record);
+      list.push(created);
+      save(`Crew plan: ${worker} ${day} ${jobNo||absence}`);return clone(created);
+    },
+    removeCrewEntry(id){
+      const list=state.crewPlan||[];const i=list.findIndex(e=>String(e.id)===String(id));
+      if(i<0)return{error:'That plan entry is not there any more',code:'NOT_FOUND'};
+      const [gone]=list.splice(i,1);save(`Crew plan entry removed: ${gone.worker} ${gone.day}`);return{ok:true};
+    },
     upsertProject(payload){
       if(!payload||!payload.name)return{error:'A project name is required'};
       let p=state.projects.find(x=>(payload.id!=null&&x.id===payload.id)||(payload.no&&x.no===payload.no));

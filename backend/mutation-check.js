@@ -1441,11 +1441,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO varmak_api;`
     // was already empty, so the grant came out identical and the mutation was reported as untested.
     what: 'the floor can no longer read who to ring at the customer',
     file: 'auth',
-    // Anchored on the line itself and the comment after it, since the list has grown past this entry
-    // twice: quoting what came before it went stale when document_file and the letterhead were added.
-    from: `  customer_contact,
-  -- The file behind a document`,
-    to: `  -- The file behind a document`
+    // Anchored on the entry's own comment and the line itself. Whatever comes after it in the list has
+    // changed three times (document_file, the letterhead, the crew plan); its own comment has not.
+    from: `  -- that is wrong needs to be able to ring somebody.
+  customer_contact,`,
+    to: `  -- that is wrong needs to be able to ring somebody.`
   },
 
   // ── Work: projects, jobcards and the steps on them ────────────────────────────────────────
@@ -2666,6 +2666,31 @@ ON supplier TO varmak_workshop;`,
         || (['submitted', 'awarded', 'declined'].indexOf(status) === -1
           ? null : (()=>{const x=new Date();return \`\${x.getFullYear()}-\${String(x.getMonth()+1).padStart(2,'0')}-\${String(x.getDate()).padStart(2,'0')}\`;})()),`,
     to: `      submitted_on: day(whole.submitted) || new Date().toISOString().slice(0, 10),`
+  },
+  {
+    what: 'a welder can rewrite the crew plan',
+    file: 'api',
+    from: `  who text := require_session('planning the crew');
+  name text := btrim(coalesce(p_worker, ''));
+  job jobcard%ROWTYPE;
+  day_total numeric;
+  saved bigint;
+BEGIN
+  IF NOT may_see_money() THEN`,
+    to: `  who text := require_session('planning the crew');
+  name text := btrim(coalesce(p_worker, ''));
+  job jobcard%ROWTYPE;
+  day_total numeric;
+  saved bigint;
+BEGIN
+  IF false THEN`
+  },
+  {
+    what: 'a planned day is never added up',
+    file: 'api',
+    from: `  day_total := p_hours + (SELECT coalesce(sum(hours), 0) FROM crew_plan
+                 WHERE worker = name AND day = p_day AND id IS DISTINCT FROM p_id);`,
+    to: `  day_total := p_hours;`
   }
 ];
 

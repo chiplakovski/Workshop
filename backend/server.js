@@ -279,6 +279,9 @@ const RPC = {
   change_my_password: ['current', 'new'],
 
   // The letterhead. The database keeps it to an admin; this list only says what the call is shaped like.
+  // The crew plan: the office's, which the database checks, not this list.
+  save_crew_plan: ['id', 'worker', 'day', 'jobcard_id', 'absence', 'hours', 'note'],
+  remove_crew_plan: ['id'],
   save_company: ['name', 'address', 'postcode', 'city', 'country', 'email', 'phone', 'website', 'org_no',
     'vat_no', 'f_skatt', 'bankgiro', 'iban', 'bic']
 };

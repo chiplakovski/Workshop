@@ -663,6 +663,100 @@ BEGIN
 END;
 $$;
 
+-- The crew plan. The office decides who is on what; a welder reads it. The rules are the same ones the
+-- copy on one PC applies, worded the same way, and checked here rather than left to the constraints so
+-- that the refusal says what was wrong instead of naming an index.
+CREATE FUNCTION save_crew_plan(
+  p_id bigint, p_worker text, p_day date, p_jobcard_id bigint DEFAULT NULL, p_absence text DEFAULT NULL,
+  p_hours numeric DEFAULT 8, p_note text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('planning the crew');
+  name text := btrim(coalesce(p_worker, ''));
+  job jobcard%ROWTYPE;
+  day_total numeric;
+  saved bigint;
+BEGIN
+  IF NOT may_see_money() THEN
+    RAISE EXCEPTION 'the crew plan is the office''s to change';
+  END IF;
+  IF name = '' THEN
+    RAISE EXCEPTION 'choose who the work is for';
+  END IF;
+  IF p_day IS NULL THEN
+    RAISE EXCEPTION 'choose a day';
+  END IF;
+  IF p_absence IS NOT NULL AND p_jobcard_id IS NOT NULL THEN
+    RAISE EXCEPTION 'an entry is either work on a jobcard or a day away, not both';
+  END IF;
+  IF p_absence IS NULL AND p_jobcard_id IS NULL THEN
+    RAISE EXCEPTION 'choose the jobcard, or a reason for being away';
+  END IF;
+  IF p_jobcard_id IS NOT NULL THEN
+    SELECT * INTO job FROM jobcard WHERE id = p_jobcard_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'that jobcard is not in this workshop';
+    END IF;
+    IF job.status IN ('completed', 'closed', 'cancelled') THEN
+      RAISE EXCEPTION '% is %: there is no work left on it to plan', job.ref, job.status;
+    END IF;
+  END IF;
+  IF p_hours IS NULL OR p_hours <= 0 THEN
+    RAISE EXCEPTION 'hours must be more than zero';
+  END IF;
+
+  -- One person, one day, every entry added up — locked the same way book_hours is, so two people
+  -- planning at once cannot both slip under the line.
+  PERFORM pg_advisory_xact_lock(hashtext('crew:' || name || ':' || p_day));
+  IF p_jobcard_id IS NOT NULL AND EXISTS (SELECT 1 FROM crew_plan WHERE worker = name AND day = p_day
+       AND jobcard_id = p_jobcard_id AND id IS DISTINCT FROM p_id) THEN
+    RAISE EXCEPTION '% is already planned on % that day — change those hours instead', name, job.ref;
+  END IF;
+  IF p_absence IS NOT NULL AND EXISTS (SELECT 1 FROM crew_plan WHERE worker = name AND day = p_day
+       AND absence IS NOT NULL AND id IS DISTINCT FROM p_id) THEN
+    RAISE EXCEPTION '% is already marked away that day', name;
+  END IF;
+  day_total := p_hours + (SELECT coalesce(sum(hours), 0) FROM crew_plan
+                 WHERE worker = name AND day = p_day AND id IS DISTINCT FROM p_id);
+  IF day_total > 24 THEN
+    RAISE EXCEPTION 'that would plan % h for % on % — nobody works more than 24 hours in a day',
+      trim_scale(day_total), name, p_day USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF p_id IS NULL THEN
+    INSERT INTO crew_plan (worker, day, jobcard_id, absence, hours, note, created_by)
+    VALUES (name, p_day, p_jobcard_id, p_absence, p_hours, nullif(btrim(coalesce(p_note, '')), ''), who)
+    RETURNING id INTO saved;
+  ELSE
+    UPDATE crew_plan SET worker = name, day = p_day, jobcard_id = p_jobcard_id, absence = p_absence,
+           hours = p_hours, note = nullif(btrim(coalesce(p_note, '')), ''), updated_at = now()
+     WHERE id = p_id
+    RETURNING id INTO saved;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'that plan entry is not there any more';
+    END IF;
+  END IF;
+  RETURN saved::text;
+END;
+$$;
+
+CREATE FUNCTION remove_crew_plan(p_id bigint) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('changing the crew plan');
+BEGIN
+  IF NOT may_see_money() THEN
+    RAISE EXCEPTION 'the crew plan is the office''s to change';
+  END IF;
+  DELETE FROM crew_plan WHERE id = p_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'that plan entry is not there any more';
+  END IF;
+  RETURN p_id::text;
+END;
+$$;
+
 -- The letterhead. An admin's job: it carries the firm's registration and the account it is paid into,
 -- and a wrong bank account on an offer is money sent somewhere else. Empty means "not given", and
 -- prints nothing, which is the point of keeping these as facts the firm enters rather than defaults.
@@ -1359,6 +1453,8 @@ TO varmak_admin, varmak_office, varmak_workshop;
 -- On one line: a line reading only "TO varmak_admin, varmak_office;" is the office workflow list's,
 -- and backend/mutation-check.js finds that list by it.
 GRANT EXECUTE ON FUNCTION store_document_file(bigint, text, text, bytea), remove_document_file(bigint) TO varmak_admin, varmak_office;
+-- The crew plan, on one line for the same reason as the line above.
+GRANT EXECUTE ON FUNCTION save_crew_plan(bigint, text, date, bigint, text, numeric, text), remove_crew_plan(bigint) TO varmak_admin, varmak_office;
 GRANT EXECUTE ON FUNCTION document_file_content(bigint) TO varmak_admin, varmak_office, varmak_workshop;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
