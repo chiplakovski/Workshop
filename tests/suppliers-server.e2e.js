@@ -165,6 +165,10 @@ async function main() {
       FROM supplier WHERE id = ${merchant};`), '-|-|-|-|-|-',
       'and what nobody entered is not in the register either');
     step('Suppliers: a merchant goes in from the form, and nothing else goes in with them');
+    // The page is still finishing that save when the row is in Postgres — refreshing, then closing and
+    // resetting its form. Opened before that, the next form was reset under the lookup filling it in.
+    await page.waitForFunction(() => !document.getElementById('modal').classList.contains('show')
+      && /TestKappa Steel/.test(document.getElementById('profile').textContent), null, { timeout: 8000 });
 
     // ── An org number, looked up at Bolagsverket through this server ─────────────────────────
     {
