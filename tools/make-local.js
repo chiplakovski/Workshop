@@ -45,7 +45,10 @@ function transformPage(name, raw) {
     str[offset + match.length] === '+' ? match : `__nav(${quote}${val}${quote})`);
   html = html.split('href="hub-desktop.html"').join('href="#" onclick="__nav(\'hub-desktop.html\');return false;"');
   // A page shown from memory has no address bar query; it reads the one it was handed instead.
-  if (name === 'estimations-desktop.html') html = html.split('location.search').join('(window.__query||"")');
+  // Estimations opens a quotation, Store an item and Suppliers a merchant from the address they are given.
+  if (['estimations-desktop.html', 'store-desktop.html', 'suppliers-desktop.html'].includes(name)) {
+    html = html.split('location.search').join('(window.__query||"")');
+  }
   return html;
 }
 

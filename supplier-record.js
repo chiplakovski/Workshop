@@ -185,6 +185,9 @@
         line.leadTime ? `${line.leadTime} d` : '—'
       ])
       : [];
+    // And the same lines as they came, for the data layer: the Store reads who sells an item, and at what,
+    // from these rather than from rows already worded for one panel.
+    shaped.prices = Array.isArray(given.priceList) ? given.priceList.map((line) => Object.assign({}, line)) : [];
     shaped._server = Object.assign({}, given);
     // Filled in only when the office has the money payload — a welder's snapshot has no terms at all,
     // and an empty field is the truthful thing for them to see rather than a guess.

@@ -78,6 +78,8 @@ function aPcCopy() {
   const ahead = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
   assert.ok(!WD.saveCrewEntry({ worker: 'Test Welder', day: ahead(1), jobcard: job.no, hours: 7.5 }).error);
   assert.ok(!WD.saveCrewEntry({ worker: 'Test Welder', day: ahead(2), absence: 'course', hours: 8 }).error);
+  // What the merchant charges for the plate, and that they are who it is bought from.
+  assert.ok(!WD.saveSupplierPrice({ supplier: 'Test Transfer Stål AB', code: 'TT-PL10', price: 14.25, articleNo: 'TS-10', leadTime: 4, preferred: true }).error);
   return JSON.parse(JSON.stringify(WD.get()));
 }
 
@@ -98,7 +100,17 @@ async function main() {
       const b = await r.json().catch(() => ({}));
       return r.status === 200 ? { ok: true, result: b.result } : { ok: false, refused: b.refused };
     },
-    async snapshot() { return (await fetch(`${api}/read/snapshot`, { headers: auth })).json(); },
+    // As WorkshopApi.snapshot() reads it on the Access page: the snapshot with the office's money payload
+    // merged in by id — which is where each supplier's price list arrives.
+    async snapshot() {
+      const data = await (await fetch(`${api}/read/snapshot`, { headers: auth })).json();
+      const money = await (await fetch(`${api}/read/money`, { headers: auth })).json();
+      for (const [name, sent] of Object.entries(money || {})) {
+        if (Array.isArray(sent)) data[name] = sent;
+        else (data[name] || []).forEach((r) => Object.assign(r, sent[r.id] || {}));
+      }
+      return data;
+    },
     async upload(id, dataUrl, name, type) {
       const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
       const r = await fetch(`${api}/files/${id}`, { method: 'POST', body: bytes,
@@ -113,14 +125,14 @@ async function main() {
     const copy = aPcCopy();
     assert.equal(PcTransfer.check({ hello: 'world' }), 'that file is not a saved copy of the workshop');
     const { counts, leftBehind } = PcTransfer.plan(copy);
-    assert.deepEqual(counts, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2 });
+    assert.deepEqual(counts, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2, supplierPrices: 1 });
     assert.equal(leftBehind.hours, 1, 'the hours entry is counted as left behind, not lost silently');
     step('Transfer: a saved copy is recognised, counted, and what will not move is named before anything is sent');
 
     const first = await PcTransfer.run(copy, io);
     const moved = Object.fromEntries(Object.entries(first.report).map(([k, r]) => [k, r.moved]));
     if (process.env.SHOW_REPORT) console.log(JSON.stringify(first.report, null, 1));
-    assert.deepEqual(moved, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2 },
+    assert.deepEqual(moved, { company: 1, customers: 1, suppliers: 1, stock: 1, projects: 1, jobcards: 1, equipment: 1, documents: 1, crewPlan: 2, supplierPrices: 1 },
       JSON.stringify(first.report, null, 1));
     const refusedHard = Object.values(first.report).flatMap((r) => r.refused);
     assert.deepEqual(refusedHard, [], `nothing should have been refused: ${JSON.stringify(refusedHard)}`);
@@ -158,11 +170,16 @@ async function main() {
       'the planned day follows its jobcard to its number online, and the day away comes as it was');
     step('Transfer: the crew plan arrives, each day on the jobcard it was planned on');
 
+    assert.equal(value(`SELECT s.name || '|' || i.code || '|' || si.price || '|' || si.article_no || '|' || si.is_preferred
+      FROM supplier_item si JOIN supplier s ON s.id = si.supplier_id JOIN stock_item i ON i.id = si.stock_item_id;`),
+      'Test Transfer Stål AB|TT-PL10|14.25|TS-10|true', 'the merchant\'s price arrives on the same merchant and item, still the one it is bought from');
+    step('Transfer: a supplier\'s price for an item arrives joined to both');
+
     const before = value(`SELECT (SELECT count(*) FROM customer) || '|' || (SELECT count(*) FROM stock_movement) || '|' ||
       (SELECT count(*) FROM jobcard) || '|' || (SELECT count(*) FROM document)`);
     const second = await PcTransfer.run(copy, io);
     const again = Object.fromEntries(Object.entries(second.report).filter(([k]) => k !== 'company').map(([k, r]) => [k, [r.moved, r.alreadyThere]]));
-    assert.deepEqual(again, { customers: [0, 1], suppliers: [0, 1], stock: [0, 1], projects: [0, 1], jobcards: [0, 1], equipment: [0, 1], documents: [0, 1], crewPlan: [0, 2] });
+    assert.deepEqual(again, { customers: [0, 1], suppliers: [0, 1], stock: [0, 1], projects: [0, 1], jobcards: [0, 1], equipment: [0, 1], documents: [0, 1], crewPlan: [0, 2], supplierPrices: [0, 1] });
     assert.equal(value(`SELECT (SELECT count(*) FROM customer) || '|' || (SELECT count(*) FROM stock_movement) || '|' ||
       (SELECT count(*) FROM jobcard) || '|' || (SELECT count(*) FROM document)`), before, 'a second run moved nothing twice');
     step('Transfer: run twice, everything is already there and nothing is doubled');

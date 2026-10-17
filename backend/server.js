@@ -212,6 +212,7 @@ const RPC = {
     'currency', 'rating', 'payment_terms_days', 'notes'],
   set_supplier_contacts: ['supplier_id', 'contacts'],
   add_supplier_note: ['supplier_id', 'text'],
+  remove_supplier_item: ['supplier_id', 'stock_item_id'],
   save_supplier_item: ['supplier_id', 'stock_item_id', 'price', 'article_no', 'currency', 'pack_size',
     'lead_time_days', 'is_preferred'],
 

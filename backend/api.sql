@@ -3125,6 +3125,26 @@ BEGIN
 END;
 $$;
 
+-- A merchant who no longer sells an item comes off its price list. A price list is what they quote
+-- today, not a record of what happened — that is the stock movements and the purchase orders — so the
+-- line goes, and the trail says who took it off.
+CREATE FUNCTION remove_supplier_item(p_supplier_id bigint, p_stock_item_id bigint) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('changing a supplier price list');
+  code text;
+BEGIN
+  DELETE FROM supplier_item WHERE supplier_id = p_supplier_id AND stock_item_id = p_stock_item_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'that price line is not there any more';
+  END IF;
+  SELECT i.code INTO code FROM stock_item i WHERE i.id = p_stock_item_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'price list', who, coalesce(code, '?') || ' taken off');
+  RETURN code;
+END;
+$$;
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Quality
 --
@@ -3806,6 +3826,9 @@ REVOKE ALL ON FUNCTION save_supplier(bigint, text, text, text, text, text, text,
 REVOKE ALL ON FUNCTION set_supplier_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION add_supplier_note(bigint, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION remove_supplier_item(bigint, bigint) FROM PUBLIC;
+-- On one line, beside the save it undoes, for the reason given at store_document_file's grant.
+GRANT EXECUTE ON FUNCTION remove_supplier_item(bigint, bigint) TO varmak_admin, varmak_office;
 REVOKE ALL ON FUNCTION save_lead(bigint, text, text, text, text, text, text, text, text, text, text,
                  numeric, text, lead_status, text, date, date, text, boolean, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_opportunity(bigint, text, bigint, bigint, opportunity_stage, numeric, int,

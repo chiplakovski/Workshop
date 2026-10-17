@@ -43,7 +43,7 @@
 
   const emptyState=()=>({
     version:VERSION,
-    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0,crewPlan:0,wps:0,welderqual:0},
+    counters:{customer:0,estimation:0,project:0,movement:0,offcut:0,jobcard:0,inspection:0,ncr:0,capa:0,weld:0,ndt:0,itp:0,hold:0,complaint:0,release:0,dossier:0,wps:0,welderqual:0,purchaseOrder:0,purchaseRfq:0,supplierInvoice:0,document:0,documentFolder:0,invoice:0,marketingLead:0,marketingOpportunity:0,marketingCampaign:0,marketingTender:0,hours:0,crewPlan:0,supplierItem:0,wps:0,welderqual:0},
     customers:[],
     estimations:[],
     projects:[],
@@ -111,6 +111,10 @@
     // either on a jobcard for some hours or away (holiday, sick, a course). And the names that view lists
     // on a copy with no server, where there is no staff register to take them from.
     crewPlan:[],
+    // What each merchant charges for a store item: their article number, price, pack size and lead time,
+    // and which of them this workshop buys that item from. Online this is supplier_item, and it arrives on
+    // the suppliers in the office's payload; on a copy with no server it is kept here.
+    supplierItems:[],
     crewRoster:[],
     // The staff, from the snapshot. Empty in browser-storage mode, and deliberately: this module has
     // no way to know who works at a workshop, and the six pages that used to guess are the reason
@@ -623,6 +627,15 @@
     if(data.company&&typeof data.company==='object')fresh.company=data.company;
     // Read by everybody — a welder looks up where they are tomorrow — and written by the office.
     if(Array.isArray(data.crewPlan))fresh.crewPlan=data.crewPlan;
+    // The price lists ride on the suppliers (office only — a price list is a price). Taken off them into
+    // one list, so the store and the supplier screen read the same thing in the same shape.
+    fresh.supplierItems=(Array.isArray(data.suppliers)?data.suppliers:[]).flatMap(sup=>{
+      const lines=Array.isArray(sup.prices)?sup.prices:(Array.isArray(sup.priceList)&&sup.priceList.length&&!Array.isArray(sup.priceList[0])?sup.priceList:[]);
+      const supId=sup.sharedId!=null?sup.sharedId:sup.id;
+      return lines.map(l=>({id:`${supId}:${l.itemId}`,supplier:sup.name,supplierId:supId!=null?String(supId):null,code:l.code,itemId:l.itemId!=null?String(l.itemId):null,
+        articleNo:l.articleNo||'',price:Number(l.price),currency:l.currency||'SEK',packSize:l.packSize!=null?Number(l.packSize):1,
+        leadTime:l.leadTime!=null&&l.leadTime!==''?Number(l.leadTime):null,preferred:!!l.preferred}));
+    });
     state=fresh;
     takenFor={by:data.takenBy||null,role:data.takenRole||null,byId:data.takenById||null};
     // On the state too, so a page reading WorkshopData.get() has them without a second call. The names
@@ -1333,6 +1346,61 @@
       // only because each save happens to take a fraction of a millisecond - luck, not design.
       // Counted like every other record here, so it is unique by construction.
       const seq=state.counters.hours=(state.counters.hours||0)+1;const record=Object.assign({id:`H-${seq}`,date:localDayISO(),user:UNNAMED},clone(entry),{hours});state.hours=state.hours||[];state.hours.unshift(record);save(`Hours logged: ${hours} h`);return clone(record)},
+    // ── Supplier prices: which merchant sells which store item, at what ───────────────────────────
+    // Filtered by supplier name, by item code, or both. Preferred first, then cheapest.
+    supplierPrices(filter){
+      const f=filter||{},who=f.supplier!=null?String(f.supplier).trim().toLowerCase():null,code=f.code!=null?String(f.code):null;
+      return clone((state.supplierItems||[]).filter(l=>(who===null||String(l.supplier||'').trim().toLowerCase()===who)&&(code===null||l.code===code))
+        .map(l=>{const item=inventory(l.code);return Object.assign({},l,{description:item?item.description:'',unit:item?item.unit:''});})
+        .sort((a,b)=>(b.preferred-a.preferred)||(a.price-b.price)||String(a.supplier).localeCompare(String(b.supplier),'sv')||String(a.code).localeCompare(String(b.code))));
+    },
+    // The checks alone, writing nothing — the pages' server bridge asks this before it sends anything.
+    checkSupplierPrice(input){
+      if(!input||typeof input!=='object')return{error:'Nothing to save',code:'EMPTY'};
+      const list=state.supplierItems||[];
+      const existing=input.id!=null?list.find(l=>String(l.id)===String(input.id)):null;
+      if(input.id!=null&&!existing)return{error:'That price line is not there any more',code:'NOT_FOUND'};
+      const merged=Object.assign({},existing||{},clone(input));
+      const sup=(state.suppliers||[]).find(x=>String(x.name||'').trim().toLowerCase()===String(merged.supplier||'').trim().toLowerCase());
+      if(!sup)return{error:`${merged.supplier||'That supplier'} is not in the supplier register`,code:'SUPPLIER_UNKNOWN'};
+      const item=inventory(merged.code);
+      if(!item)return{error:`Item ${merged.code||''} is not in the store`,code:'ITEM_UNKNOWN'};
+      const price=Number(merged.price);
+      if(merged.price===''||merged.price==null||!Number.isFinite(price)||price<0)return{error:'A price line needs a price',code:'PRICE_NEEDED'};
+      const packSize=merged.packSize===''||merged.packSize==null?1:Number(merged.packSize);
+      if(!Number.isFinite(packSize)||packSize<=0)return{error:'A pack holds more than nothing',code:'PACK_INVALID'};
+      const leadTime=merged.leadTime===''||merged.leadTime==null?null:Number(merged.leadTime);
+      if(leadTime!==null&&(!Number.isInteger(leadTime)||leadTime<0))return{error:'Lead time is a whole number of days',code:'LEAD_INVALID'};
+      const articleNo=String(merged.articleNo||'').trim();
+      if(articleNo.length>80)return{error:'That article number is longer than 80 characters',code:'ARTICLE_TOO_LONG'};
+      const currency=String(merged.currency||'SEK').trim().toUpperCase();
+      if(!/^[A-Z]{3}$/.test(currency))return{error:'A currency is three letters, like SEK',code:'CURRENCY_INVALID'};
+      const twin=list.find(l=>l!==existing&&l.code===item.code&&String(l.supplier).trim().toLowerCase()===String(sup.name).trim().toLowerCase());
+      return{record:{supplier:sup.name,supplierId:sup.sharedId!=null?String(sup.sharedId):(sup.id!=null?String(sup.id):null),code:item.code,itemId:item.id!=null?String(item.id):null,
+        // Not given means "leave it as it is": correcting a price must not quietly stop this being the
+        // merchant the item is bought from. The database's save_supplier_item has the same rule.
+        articleNo,price:Math.round(price*100)/100,currency,packSize,leadTime,preferred:merged.preferred==null?!!((existing||twin)&&(existing||twin).preferred):!!merged.preferred},
+        existing:existing?clone(existing):(twin?clone(twin):null)};
+    },
+    // One line per merchant and item: saving the same pair again changes that line rather than adding a
+    // second. Preferred is one merchant per item, and becomes the store's "Bought from".
+    saveSupplierPrice(input){
+      const checked=api.checkSupplierPrice(input);
+      if(checked.error)return checked;
+      const rec=checked.record,list=state.supplierItems=state.supplierItems||[];
+      let line=checked.existing?list.find(l=>String(l.id)===String(checked.existing.id)):null;
+      if(rec.preferred)list.forEach(l=>{if(l.code===rec.code&&l!==line)l.preferred=false;});
+      if(line)Object.assign(line,rec);
+      else{const seq=state.counters.supplierItem=(state.counters.supplierItem||0)+1;line=Object.assign({id:`SI-${seq}`},rec);list.push(line);}
+      if(rec.preferred){const item=inventory(rec.code);if(item)item.supplier=rec.supplier;}
+      save(`Price from ${rec.supplier} for ${rec.code}: ${rec.price} ${rec.currency}`);
+      return clone(line);
+    },
+    removeSupplierPrice(id){
+      const list=state.supplierItems||[];const i=list.findIndex(l=>String(l.id)===String(id));
+      if(i<0)return{error:'That price line is not there any more',code:'NOT_FOUND'};
+      const [gone]=list.splice(i,1);save(`Price from ${gone.supplier} for ${gone.code} removed`);return{ok:true};
+    },
     // ── The crew plan ─────────────────────────────────────────────────────────────────────────
     // One entry: a person, a day, and either a jobcard with the hours planned on it or a reason they are
     // away. The same rules as the database's save_crew_plan, so a copy on one PC refuses what the server

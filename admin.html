@@ -226,6 +226,7 @@ const T = {
     tk_equipment: "Machines",
     tk_documents: "Documents (with files)",
     tk_crewPlan: "Crew plan days",
+    tk_supplierPrices: "Supplier prices",
     tl_hours: "Hours entries — booked online by each person",
     tl_movements: "Stock movements — the stock on the shelf arrives as an opening balance",
     tl_estimations: "Quotations",
@@ -332,6 +333,7 @@ const T = {
     tk_equipment: "Maskiner",
     tk_documents: "Dokument (med filer)",
     tk_crewPlan: "Dagar i bemanningsplanen",
+    tk_supplierPrices: "Leverantörspriser",
     tl_hours: "Tidposter — bokas online av var och en",
     tl_movements: "Lagerrörelser — saldot kommer in som ingående balans",
     tl_estimations: "Offerter",
@@ -436,6 +438,7 @@ const T = {
     tk_equipment: "Машини",
     tk_documents: "Документи (со датотеки)",
     tk_crewPlan: "Денови во распоредот",
+    tk_supplierPrices: "Цени од добавувачи",
     tl_hours: "Записи за часови — ги внесува секој онлајн",
     tl_movements: "Движења на залиха — залихата доаѓа како почетна состојба",
     tl_estimations: "Понуди",
@@ -815,7 +818,7 @@ $('companyForm').addEventListener('submit', async (e) => {
 // same workflows the screens use. Counted first, so the administrator sees what will move and what will
 // not before anything is sent; safe to run twice, because a record already online is left alone.
 let transferBackup = null;
-const KINDS = ['company', 'customers', 'suppliers', 'stock', 'projects', 'jobcards', 'equipment', 'documents', 'crewPlan'];
+const KINDS = ['company', 'customers', 'suppliers', 'stock', 'projects', 'jobcards', 'equipment', 'documents', 'crewPlan', 'supplierPrices'];
 const LEFT = ['hours', 'movements', 'estimations', 'quality', 'marketing'];
 function transferTable(rows, head) {
   return `<table><thead><tr>${head.map((h, i) => `<th${i ? ' class="n"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>`

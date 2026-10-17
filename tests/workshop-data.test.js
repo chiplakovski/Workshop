@@ -4637,3 +4637,36 @@ test('the crew roster: the names added, and anybody who already has an entry', (
   WD.removeCrewWorker('Anna Test');
   assert.deepEqual(WD.crewRoster(),['Örjan Test']);
 });
+
+test('supplier prices: one line per merchant and item, one preferred merchant per item', ()=>{
+  const WD=loadEmptyWorkshopData();
+  WD.upsertSupplier({name:'Test Stål AB',category:'Steel',country:'Sweden'});
+  WD.upsertSupplier({name:'Test Metall AB',category:'Steel',country:'Sweden'});
+  assert.ok(!WD.createInventoryItem({code:'TP-10',description:'Plate 10',group:'materials',unit:'KG',location:'R1',stock:0,minStock:0,reorderQty:0,avgCost:0,lastPrice:0}).error);
+  const price=e=>WD.saveSupplierPrice(Object.assign({supplier:'Test Stål AB',code:'TP-10',price:14.5,articleNo:'ST-10'},e));
+  const first=price({preferred:true});
+  assert.ok(!first.error,first.error);
+  assert.equal(first.price,14.5);
+  assert.equal(first.packSize,1,'a pack of one unless said otherwise');
+  assert.equal(WD.get().inventory.find(i=>i.code==='TP-10').supplier,'Test Stål AB','the preferred merchant is who the store says it is bought from');
+  const again=price({price:14.1});
+  assert.equal(again.id,first.id,'the same merchant and item is the same line, changed');
+  assert.equal(again.preferred,true,'changing the price does not stop them being the preferred merchant');
+  const other=price({supplier:'test metall ab',price:13.9,preferred:true,leadTime:5});
+  assert.equal(other.supplier,'Test Metall AB','the register\'s spelling, whatever was typed');
+  const lines=WD.supplierPrices({code:'TP-10'});
+  assert.deepEqual(lines.map(l=>[l.supplier,l.preferred]),[['Test Metall AB',true],['Test Stål AB',false]],'one preferred merchant per item, listed first');
+  assert.equal(lines[0].description,'Plate 10');
+  assert.equal(WD.get().inventory.find(i=>i.code==='TP-10').supplier,'Test Metall AB');
+  assert.deepEqual(WD.supplierPrices({supplier:'Test Stål AB'}).map(l=>l.code),['TP-10']);
+  assert.equal(price({supplier:'Nobody AB'}).code,'SUPPLIER_UNKNOWN');
+  assert.equal(price({code:'NOPE'}).code,'ITEM_UNKNOWN');
+  assert.equal(price({price:''}).code,'PRICE_NEEDED');
+  assert.equal(price({price:-1}).code,'PRICE_NEEDED');
+  assert.equal(price({packSize:0}).code,'PACK_INVALID');
+  assert.equal(price({leadTime:2.5}).code,'LEAD_INVALID');
+  assert.equal(price({currency:'kronor'}).code,'CURRENCY_INVALID');
+  assert.ok(WD.removeSupplierPrice(first.id).ok);
+  assert.equal(WD.removeSupplierPrice(first.id).code,'NOT_FOUND');
+  assert.equal(WD.supplierPrices().length,1,'nothing refused was written');
+});

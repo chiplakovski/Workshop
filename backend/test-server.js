@@ -102,7 +102,7 @@ function theServerDecidesNothing() {
     'record_equipment_event', 'record_ncr_step', 'record_ndt',
     'record_operation', 'record_prospect_finding', 'record_stocktake',
     'record_weld', 'record_weld_repair', 'release_hold',
-    'remove_crew_plan', 'remove_document_file', 'replace_inspection_checks', 'return_equipment', 'save_company',
+    'remove_crew_plan', 'remove_document_file', 'remove_supplier_item', 'replace_inspection_checks', 'return_equipment', 'save_company',
     'save_crew_plan', 'save_customer',
     'save_document', 'save_equipment', 'save_inspection',
     'save_jobcard', 'save_lead', 'save_ncr',

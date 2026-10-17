@@ -1818,6 +1818,14 @@ function theRegisterOfMerchants() {
     '1');
   refused('a welder setting a price', 'varmak_workshop', PEOPLE.welder,
     `SELECT save_supplier_item(${first}, ${item}, 1.00);`, /permission denied/);
+  refused('a welder taking a merchant off the list', 'varmak_workshop', PEOPLE.welder,
+    `SELECT remove_supplier_item(${first}, ${item});`, /permission denied/);
+  ok('the office taking the first merchant off the plate', 'varmak_office', PEOPLE.office,
+    `SELECT remove_supplier_item(${first}, ${item});`);
+  assert.equal(value(`SELECT count(*) FROM supplier_item WHERE stock_item_id = ${item};`), '1',
+    'one line gone, the other merchant\'s still there');
+  refused('taking it off twice', 'varmak_office', PEOPLE.office,
+    `SELECT remove_supplier_item(${first}, ${item});`, /not there any more/);
   step('Suppliers: two merchants quote the same plate, one of them is who we buy from, and the floor sets neither');
 }
 

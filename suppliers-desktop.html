@@ -60,6 +60,7 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 
   select option,select optgroup{background:var(--select-bg);color:var(--select-fg);}
 .orglookup{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.orglookup-status{font-size:11px;color:var(--muted);line-height:1.5}.orglookup-status.ok{color:var(--green)}.orglookup-status.err{color:var(--red)}.orglookup-status a{color:var(--blue)}
+.itemlink{color:var(--text);font-weight:600;text-decoration:none;border-bottom:1px dotted var(--muted)}.itemlink:hover{color:var(--blue,#4a90ff)}.pref{color:#f5c542}tr.unpriced td{opacity:.75}
 </style><link rel="stylesheet" href="workshop-ui.css"><script>(function(){try{var v=localStorage.getItem('varmak.theme');if(v==='carbon'||v==='iris')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 </head>
 <body><a class="skip-link" href="#mainContent" data-i="skip">Skip to supplier content</a><div class="ambient" aria-hidden="true"><div class="ambient-glow"></div><div id="embers"></div></div>
@@ -67,7 +68,7 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
 <div class="shell">
 <header class="top"><a class="back-link" href="hub-desktop.html">←&nbsp; <span data-i="back_hub">Hub</span></a><div class="module-icon" aria-hidden="true">▱</div><div class="title"><h1 data-i="title">Suppliers</h1><p data-i="subtitle">Vendor directory & management</p></div><div class="top-actions"><label for="globalSearch" data-i="search_all_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search all suppliers</label><input class="control search" id="globalSearch" name="globalSupplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><label for="filter" data-i="filter_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Filter suppliers</label><select class="control" id="filter"><option value="all" data-i="filter_all">All suppliers</option><option value="active" data-i="status_active">Active</option><option value="preferred" data-i="status_preferred">Preferred</option><option value="inactive" data-i="status_inactive">Inactive</option></select><button class="btn primary" onclick="openModal('supplier')" data-i="btn_new_supplier">＋ New Supplier</button></div></header>
 <main class="layout" id="mainContent"><aside class="panel pad supplier-panel"><div class="panel-title"><span data-i="supplier_list">Supplier list</span><span id="total">Total: 0</span></div><div class="list-search"><label for="listSearch" data-i="list_search_label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Search supplier list</label><input class="control" id="listSearch" name="supplierSearch" autocomplete="off" placeholder="Search suppliers…" data-i-ph="search_ph"><button class="btn" aria-label="Search supplier list">⌕</button></div><div class="tabs-small"><button class="on" data-filter="all" data-i="f_all">All</button><button data-filter="active" data-i="status_active">Active</button><button data-filter="preferred" data-i="status_preferred">Preferred</button><button data-filter="inactive" data-i="status_inactive">Inactive</button></div><div class="supplier-list" id="supplierList"></div><div class="pager"><span id="showing"></span></div></aside>
-<section class="detail"><article class="panel profile" id="profile"></article><div class="metrics" id="metrics"></div><div class="content-grid"><article class="panel table-panel"><div class="panel-title"><span data-i="recent_po">Recent purchase orders</span></div><div id="poTable"></div></article><article class="panel table-panel"><div class="panel-title"><span data-i="price_list">Price list</span><button class="btn" onclick="switchTab('items')" data-i="viewall">View all</button></div><div id="itemsTable"></div></article></div><div class="bottom-grid"><article class="panel info"><div class="panel-title" data-i="supplier_info">Supplier information</div><div id="supplierInfo"></div></article><article class="panel notes"><div class="panel-title"><span data-i="notes_title">Notes</span><button class="btn" onclick="openModal('note')" data-i="add_note">＋ Add note</button></div><div id="notes"></div></article></div></section>
+<section class="detail"><article class="panel profile" id="profile"></article><div class="metrics" id="metrics"></div><div class="content-grid"><article class="panel table-panel"><div class="panel-title"><span data-i="recent_po">Recent purchase orders</span></div><div id="poTable"></div></article><article class="panel table-panel"><div class="panel-title" id="priceListPanel"><span data-i="price_list">Price list</span><button class="btn" onclick="openSupplierPrice()" data-i="add_price">＋ Add price</button></div><div id="itemsTable"></div></article></div><div class="bottom-grid"><article class="panel info"><div class="panel-title" data-i="supplier_info">Supplier information</div><div id="supplierInfo"></div></article><article class="panel notes"><div class="panel-title"><span data-i="notes_title">Notes</span><button class="btn" onclick="openModal('note')" data-i="add_note">＋ Add note</button></div><div id="notes"></div></article></div></section>
 <aside class="right"><article class="panel contacts"><div class="panel-title"><span data-i="contacts_title">Contact persons</span><button class="btn" onclick="openModal('contact')" data-i="add_contact">＋ Add contact</button></div><div id="contacts"></div></article><article class="panel performance"><div class="panel-title"><span><span data-i="performance_title">Performance</span> <small data-i="performance_sub">(last 12 months)</small></span><button class="btn" onclick="switchTab('performance')" data-i="details_btn">Details</button></div><div id="performance"></div></article><article class="panel documents"><div class="panel-title"><span data-i="documents_title">Documents</span><button class="btn" onclick="openModal('doc')" data-i="upload_btn">Upload</button></div><div id="documents"></div></article><article class="panel activity"><div class="panel-title" data-i="activity_title">Recent activity</div><div id="activity"></div></article></aside></main>
 <footer class="actionbar"><button onclick="openModal('po')"><span class="action-icon" aria-hidden="true">▤</span><span data-i="act_new_po">New Purchase Order</span></button><button onclick="switchTab('items')"><span class="action-icon" aria-hidden="true">◇</span><span data-i="act_pricelist">View Price List</span></button><button onclick="switchTab('performance')"><span class="action-icon" aria-hidden="true">☆</span><span data-i="act_evaluation">Supplier Evaluation</span></button><button onclick="importSupplierItems()"><span class="action-icon" aria-hidden="true">⇧</span><span data-i="act_import">Import Items</span></button><button onclick="switchTab('notes')"><span class="action-icon" aria-hidden="true">▣</span><span data-i="act_commlog">Communication Log</span></button><button class="danger" onclick="confirmToggleSupplier()"><span class="action-icon" aria-hidden="true">♲</span><span id="toggleLabel" data-i="act_deactivate">Deactivate Supplier</span></button></footer></div><input id="supplierItemImport" type="file" accept=".csv,text/csv" hidden onchange="handleSupplierItemImport(this)">
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="panel modal-card"><h2 id="modalTitle"></h2><form id="modalForm"><div class="form-grid" id="modalFields"></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal()" data-i="modal_cancel">Cancel</button><button class="btn primary" data-i="modal_save_supplier">Save Supplier Record</button></div></form></div></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -82,7 +83,7 @@ table{table-layout:auto}th,td{overflow-wrap:anywhere}
    company. */
 window.WORKSHOP_SERVER_READY=true;</script>
 <script src="workshop-data.js"></script><script src="workshop-api.js"></script><script src="workshop-guard.js"></script><script src="workshop-forms.js"></script>
-<script src="workshop-ui.js"></script><script>
+<script src="workshop-ui.js"></script><script src="supplier-prices.js"></script><script>
 const suppliers=[/* empty: hydrated from the shared supplier register */];
 let selected=0,currentFilter='all',activeTab='overview',LANG='en';const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])), fmt=n=>new Intl.NumberFormat('sv-SE',{style:'currency',currency:'SEK',maximumFractionDigits:0}).format(n);
 // The "New Purchase Order" action (Pass 3.5) already creates a real WorkshopData purchase order,
@@ -107,7 +108,7 @@ function supplierDocRows(s){
 }
 
 const T={
-  en:{
+  en:{add_price:"＋ Add price",add_price_row:"Add price",edit_price:"Change",th_pack:"Pack",days_short:"d",preferred_tip:"We buy this item from this supplier",price_missing:"bought here, no price recorded",price_missing_last:"bought here, no price recorded — last paid {p}",
     skip:"Skip to supplier content",
     sb_title:"SUPPLIERS",sb_subtitle:"Vendor management",
     nav_overview:"Supplier Overview",nav_contacts:"Contacts",nav_items:"Items & Prices",nav_po:"Purchase Orders",nav_deliveries:"Deliveries",nav_performance:"Performance",nav_ncr:"Quality / NCR",nav_documents:"Documents",nav_new:"New Supplier",
@@ -146,7 +147,7 @@ const T={
     toast_deactivated:"deactivated",toast_activated:"activated",toast_saved:"Supplier record saved",toast_view_selected_suffix:"view selected",
     confirm_deactivate:"Deactivate {name}? New purchase orders will be restricted."
   },
-  sv:{
+  sv:{add_price:"＋ Lägg till pris",add_price_row:"Lägg till pris",edit_price:"Ändra",th_pack:"Förp.",days_short:"d",preferred_tip:"Vi köper den här artikeln från den här leverantören",price_missing:"köps här, inget pris noterat",price_missing_last:"köps här, inget pris noterat — senast betalt {p}",
     skip:"Hoppa till leverantörsinnehåll",
     sb_title:"LEVERANTÖRER",sb_subtitle:"Leverantörshantering",
     nav_overview:"Leverantörsöversikt",nav_contacts:"Kontakter",nav_items:"Artiklar & priser",nav_po:"Inköpsordrar",nav_deliveries:"Leveranser",nav_performance:"Prestanda",nav_ncr:"Kvalitet / NCR",nav_documents:"Dokument",nav_new:"Ny leverantör",
@@ -185,7 +186,7 @@ const T={
     toast_deactivated:"inaktiverad",toast_activated:"aktiverad",toast_saved:"Leverantörspost sparad",toast_view_selected_suffix:"vy vald",
     confirm_deactivate:"Inaktivera {name}? Nya inköpsordrar kommer att begränsas."
   },
-  mk:{
+  mk:{add_price:"＋ Додај цена",add_price_row:"Додај цена",edit_price:"Смени",th_pack:"Пакување",days_short:"д",preferred_tip:"Овој артикл го купуваме од овој добавувач",price_missing:"се купува тука, нема запишана цена",price_missing_last:"се купува тука, нема запишана цена — последно платено {p}",
     skip:"Прескочи до содржината за добавувач",
     sb_title:"ДОБАВУВАЧИ",sb_subtitle:"Управување со добавувачи",
     nav_overview:"Преглед на добавувач",nav_contacts:"Контакти",nav_items:"Артикли и цени",nav_po:"Нарачки",nav_deliveries:"Испораки",nav_performance:"Перформанси",nav_ncr:"Квалитет / NCR",nav_documents:"Документи",nav_new:"Нов добавувач",
@@ -325,7 +326,7 @@ function enrich(s){
 // guess. The dash is what every other register in this app prints for a blank.
 function shown(v){return (v===undefined||v===null||v==='')?'—':v}
 function selectSupplier(i){selected=i;render()}
-function switchTab(tab){activeTab=tab;const t=T[LANG];const label=tabLabel(tab).split(' ').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');notify(label+' '+t.toast_view_selected_suffix);const s=suppliers[selected];renderProfile(s);renderTables(s)}
+function switchTab(tab){activeTab=tab;const t=T[LANG];if(tab==='items'){const p=$('priceListPanel');if(p)setTimeout(()=>p.scrollIntoView({behavior:'smooth',block:'center'}),0);}const label=tabLabel(tab).split(' ').map(w=>w?w[0].toUpperCase()+w.slice(1):w).join(' ');notify(label+' '+t.toast_view_selected_suffix);const s=suppliers[selected];renderProfile(s);renderTables(s)}
 function sideNavigate(tab){document.querySelectorAll('[data-side]').forEach(b=>b.classList.toggle('on',b.dataset.side===tab));switchTab(tab);document.querySelector('.detail').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}
 function tabLabel(key){const t=T[LANG];const map={overview:t.tab_overview,contacts:t.tab_contacts,items:t.tab_items,'purchase orders':t.tab_po,deliveries:t.tab_deliveries,invoices:t.tab_invoices,performance:t.tab_performance,'quality / NCR':t.tab_ncr,documents:t.tab_documents,notes:t.tab_notes};return map[key]||key}
 function renderProfile(s){const t=T[LANG];$('profile').innerHTML=`<div class="profile-actions"><button class="btn" onclick="openModal('supplier',true)">${t.edit_supplier}</button><button class="btn">${t.more_btn}</button></div><div class="profile-top"><div class="logo">${esc(initials(s.name))}</div><div><div class="name-line"><h2>${esc(s.name)}</h2><span class="active">● ${s.status==='inactive'?t.status_inactive:t.status_activesupplier_label}</span>${s.status==='preferred'?`<span class="chip">${t.status_preferred}</span>`:''}</div><div class="identity"><span>⌖ ${esc(shown(s.address))}</span><span>✉ ${esc(shown(s.email))}</span><span>◷ ${esc(shown(s.phone))}</span><span>◎ ${esc(shown(s.website))}</span></div></div><div class="codes"><span>${t.code_supplier}</span><b>${esc(shown(s.sharedNo||s.id))}</b><span>${t.code_org}</span><b>${esc(shown(s.org))}</b><span>${t.code_vat}</span><b>${esc(shown(s.vat))}</b><span>${t.code_currency}</span><b>${esc(shown(s.currency))}</b></div></div><div class="main-tabs">${['overview','contacts','items','purchase orders','deliveries','invoices','performance','quality / NCR','documents','notes'].map(tb=>`<button class="${activeTab===tb?'on':''}" onclick="switchTab('${tb}')">${esc(tabLabel(tb))}</button>`).join('')}</div>`}
@@ -367,12 +368,32 @@ function renderTables(s){const t=T[LANG];const isNcr=activeTab==='quality / NCR'
   // What the merchant quotes, rather than what has been bought from them. The panel was headed "Total
   // qty / Total spend", which needs the invoices this system does not keep — so it could only ever be
   // empty. What each supplier charges for an item IS on the register, so that is what it shows.
-  const prices=s.priceList||[];
-  $('itemsTable').innerHTML=prices.length
-    ?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_articleno)+'</th><th class="num">'+esc(t.th_price)+'</th><th class="num">'+esc(t.th_leadtime)+'</th></tr></thead><tbody>'
-      +prices.map(r=>'<tr>'+r.map((x,i)=>`<td class="${i>1?'num':''}">${esc(x)}</td>`).join('')+'</tr>').join('')+'</tbody></table>'
+  // Every line this merchant quotes, and — after them — the store items that name this merchant as where
+  // they are bought but have no price from them yet, so the gap is on the screen with a button to close it.
+  const prices=WorkshopData.supplierPrices({supplier:s.name});
+  const priced=new Set(prices.map(l=>l.code));
+  const unpriced=(WorkshopData.get().inventory||[]).filter(i=>String(i.supplier||'').trim().toLowerCase()===String(s.name||'').trim().toLowerCase()&&!priced.has(i.code));
+  const itemCell=(code,desc)=>`<a href="#" class="itemlink" onclick='openInStore(${JSON.stringify(code)});return false;'>${esc(code)}</a> <small>${esc(desc||'')}</small>`;
+  $('itemsTable').innerHTML=(prices.length||unpriced.length)
+    ?'<table><thead><tr><th>'+esc(t.th_item)+'</th><th>'+esc(t.th_articleno)+'</th><th class="num">'+esc(t.th_price)+'</th><th class="num">'+esc(t.th_pack)+'</th><th class="num">'+esc(t.th_leadtime)+'</th><th></th></tr></thead><tbody>'
+      +prices.map(l=>`<tr><td>${l.preferred?`<span class="pref" title="${esc(t.preferred_tip)}">★</span> `:''}${itemCell(l.code,l.description)}</td><td>${esc(l.articleNo||'—')}</td>
+        <td class="num">${esc(Number(l.price).toLocaleString('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2}))} ${esc(l.currency)}${l.unit?' / '+esc(l.unit):''}</td>
+        <td class="num">${esc(l.packSize)}</td><td class="num">${l.leadTime!=null?esc(l.leadTime)+' '+esc(t.days_short):'—'}</td>
+        <td class="num"><button class="btn" onclick='openSupplierPrice(${JSON.stringify(l.id)})'>${esc(t.edit_price)}</button></td></tr>`).join('')
+      +unpriced.map(i=>`<tr class="unpriced"><td>${itemCell(i.code,i.description)}</td><td>—</td>
+        <td class="num" colspan="3"><small>${esc(i.lastPrice?t.price_missing_last.replace('{p}',i.lastPrice):t.price_missing)}</small></td>
+        <td class="num"><button class="btn" onclick='openSupplierPrice(null,${JSON.stringify(i.code)})'>${esc(t.add_price_row)}</button></td></tr>`).join('')
+      +'</tbody></table>'
     :`<div class="empty">${esc(t.empty_prices)}</div>`;
 }
+// The price form, shared with the Store. Opened for a line (id), or for this merchant and one item.
+function openSupplierPrice(id,code){
+  const s=suppliers[selected];if(!s)return;
+  SupplierPrices.open(id!=null?{id,onDone:priceDone}:{supplier:s.name,code:code||'',onDone:priceDone});
+}
+function priceDone(message){notify(message);render();}
+// Through __nav when this page runs inside the one-file copy, which has no files to go to.
+function openInStore(code){const to='store-desktop.html?item='+encodeURIComponent(code);if(window.__nav)window.__nav(to);else location.href=to;}
 function renderSide(s){
   const t=T[LANG];
   $('contacts').innerHTML=s.contacts.map((c,i)=>`<div class="contact"><span class="avatar" aria-hidden="true">${esc(c[0])}</span><span><b>${esc(c[1])}${i===0?` <i class="chip">${esc(t.primary_chip)}</i>`:''}</b><small>${esc(c[2])}</small><small>${esc(shown(c[3]))}<br>${esc(shown(c[4]))}</small></span>${c[3]?`<button type="button" class="btn mailto-btn" data-email="${esc(c[3])}" aria-label="Email ${esc(c[1])}">✉</button>`:''}</div>`).join('')||`<div class="empty">${esc(t.empty_contacts)}</div>`;
@@ -510,6 +531,17 @@ function setLang(code){
 document.querySelectorAll('.langmenu button').forEach(b=>b.addEventListener('click',()=>{setLang(b.getAttribute('data-lang'));$('langc').classList.remove('open');}));
 (function(){var lc=$('langc'),lt=$('langtoggle');if(lt){lt.addEventListener('click',function(e){e.stopPropagation();lc.classList.toggle('open');});document.addEventListener('click',function(e){if(!lc.contains(e.target))lc.classList.remove('open');});}})();
 setLang('en');
+// Opened from the Store with a supplier named in the address: that supplier, at its price list.
+let addressAnswered=false;
+function selectFromAddress(){
+  if(addressAnswered)return;
+  const name=new URLSearchParams(location.search).get('supplier');
+  if(!name)return;
+  const at=suppliers.findIndex(x=>String(x.name||'').trim().toLowerCase()===name.trim().toLowerCase());
+  if(at<0)return;
+  addressAnswered=true;selectSupplier(at);switchTab('items');
+}
+selectFromAddress();
 // Picks up a supplier created elsewhere, and forces the re-render supplierOrderRows()/
 // supplierDocRows() need to actually show a PO/document created in another tab - see
 // hydrateSharedSuppliers()'s own comment.
@@ -557,6 +589,7 @@ window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();}
     adopt(answer.data);
     hydrateSharedSuppliers();
     render();
+    selectFromAddress();
     return true;
   }
 
@@ -612,7 +645,24 @@ window.addEventListener('workshop:data',()=>{hydrateSharedSuppliers();render();}
       });
       return answer.error?{error:answer.error}:{};
     },
-    async listSuppliers(){return (WorkshopData.get().suppliers||[]);}
+    async listSuppliers(){return (WorkshopData.get().suppliers||[]);},
+    // A merchant's price for an item. Checked here with the PC copy's rules first, so a refusal arrives at
+    // once and in the form; the database checks again and decides.
+    async saveSupplierPrice(input){
+      const checked=WorkshopData.checkSupplierPrice(input);
+      if(checked.error)return checked;
+      const r=checked.record;
+      const answer=await send('save_supplier_item',{supplier_id:Number(r.supplierId),stock_item_id:Number(r.itemId),
+        price:r.price,article_no:r.articleNo||null,currency:r.currency,pack_size:r.packSize,lead_time_days:r.leadTime,
+        is_preferred:input&&input.preferred!=null?!!input.preferred:null});
+      return answer.error?{error:answer.error}:{ok:true};
+    },
+    async removeSupplierPrice(id){
+      const line=WorkshopData.supplierPrices().find(l=>String(l.id)===String(id));
+      if(!line)return {error:'That price line is not there any more.',code:'NOT_FOUND'};
+      const answer=await send('remove_supplier_item',{supplier_id:Number(line.supplierId),stock_item_id:Number(line.itemId)});
+      return answer.error?{error:answer.error}:{ok:true};
+    }
   };
 
   // Four things this screen offers that it cannot do against the database, refusing out loud rather than

@@ -310,10 +310,42 @@ async function main() {
     await openSuppliers(page, site);
     const prices = await page.locator('#itemsTable').innerText();
     assert.match(prices, /ST-10-S355/, `the merchant's own article number has to be on the panel: ${prices}`);
-    assert.match(prices, /13\.90 SEK/, 'and their price, as the exact decimal the column holds');
+    assert.match(prices, /13[,.]90 SEK/, 'and their price, as the exact decimal the column holds');
     assert.equal(/Total spend/i.test(prices), false,
       'the panel is what they quote, not what has been bought — that needs invoices nobody keeps');
     step('Suppliers: the price panel answers what a merchant quotes, which is a question the register has');
+
+    // Changed from the panel's own form, which goes to save_supplier_item, and still the merchant bought from.
+    await page.click('#itemsTable button:has-text("Change")');
+    await page.fill('.spform input[name="price"]', '14.2');
+    await page.click('.spform .waskyes');
+    await page.waitForSelector('.spform', { state: 'detached', timeout: 8000 });
+    assert.equal(value(`SELECT price::text || '|' || is_preferred::text FROM supplier_item;`), '14.20|true',
+      'the new price, and still the merchant this item is bought from');
+    step('Suppliers: a price changed from the form reaches the database and keeps who the item is bought from');
+
+    // The other end: the item in the Store says who sells it, at what.
+    await page.goto(`${site}/store-desktop.html?item=S355-10`, { waitUntil: 'load' });
+    await page.waitForSelector('#infoModal.show', { timeout: 8000 });
+    assert.match(await page.locator('#infoBody').textContent(), /TestKappa Steel[\s\S]*14,20 SEK/);
+    step('Store: the item shows the merchant and the price from the database');
+
+    await openSuppliers(page, site);
+    await page.click('#itemsTable button:has-text("Change")');
+    await page.click('.spform .spremove');
+    await page.waitForSelector('.spform', { state: 'detached', timeout: 8000 });
+    assert.equal(value(`SELECT count(*) FROM supplier_item;`), '0');
+    step('Suppliers: a price taken off the list is removed from the database');
+
+    // Put back for the welder's view below, which checks a price is not shown to the floor.
+    await page.evaluate(async (item) => {
+      const answer = await window.WorkshopApi.call('save_supplier_item', {
+        supplier_id: Number(window.WorkshopData.get().suppliers[0].sharedId),
+        stock_item_id: Number(item), price: 13.9, article_no: 'ST-10-S355', currency: 'SEK',
+        pack_size: 1, lead_time_days: 5, is_preferred: true
+      });
+      if (!answer.ok) throw new Error(answer.refused);
+    }, w.item);
 
     // ── What a welder sees ──────────────────────────────────────────────────────────────────
     const floor = await context.newPage();
@@ -329,7 +361,7 @@ async function main() {
     const info = await floor.locator('#supplierInfo').innerText();
     assert.match(info, /—/, `the terms read as a blank rather than as a figure: ${info}`);
     const floorPrices = await floor.locator('#itemsTable').innerText();
-    assert.equal(/13\.90/.test(floorPrices), false, 'and a price list is a price');
+    assert.equal(/13[,.]90/.test(floorPrices), false, 'and a price list is a price');
     step('Suppliers: a welder reads the merchant and the address, and neither the terms nor the prices');
 
     const refused = await floor.evaluate(async () => {

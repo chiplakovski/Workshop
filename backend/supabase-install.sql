@@ -3005,8 +3005,9 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
 -- for an edit: a contact who has left the company is not history, they are a mistake in a list.
 -- And a line of the crew plan: taking somebody off a day is a change of plan, not a rewriting of what
--- happened — that is hours_entry, which the office still cannot delete.
-GRANT DELETE ON customer_contact, supplier_contact, document_file, crew_plan TO varmak_office;
+-- happened — that is hours_entry, which the office still cannot delete. A line of a merchant's price list
+-- is the same kind of thing: what they quote today, not what was bought.
+GRANT DELETE ON customer_contact, supplier_contact, document_file, crew_plan, supplier_item TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
@@ -6607,6 +6608,26 @@ BEGIN
 END;
 $$;
 
+-- A merchant who no longer sells an item comes off its price list. A price list is what they quote
+-- today, not a record of what happened — that is the stock movements and the purchase orders — so the
+-- line goes, and the trail says who took it off.
+CREATE FUNCTION remove_supplier_item(p_supplier_id bigint, p_stock_item_id bigint) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  who text := require_session('changing a supplier price list');
+  code text;
+BEGIN
+  DELETE FROM supplier_item WHERE supplier_id = p_supplier_id AND stock_item_id = p_stock_item_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'that price line is not there any more';
+  END IF;
+  SELECT i.code INTO code FROM stock_item i WHERE i.id = p_stock_item_id;
+  INSERT INTO activity_log (entity, entity_id, action, actor, detail)
+  VALUES ('supplier', p_supplier_id, 'price list', who, coalesce(code, '?') || ' taken off');
+  RETURN code;
+END;
+$$;
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Quality
 --
@@ -7288,6 +7309,9 @@ REVOKE ALL ON FUNCTION save_supplier(bigint, text, text, text, text, text, text,
 REVOKE ALL ON FUNCTION set_supplier_contacts(bigint, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION add_supplier_note(bigint, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_supplier_item(bigint, bigint, numeric, text, text, numeric, int, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION remove_supplier_item(bigint, bigint) FROM PUBLIC;
+-- On one line, beside the save it undoes, for the reason given at store_document_file's grant.
+GRANT EXECUTE ON FUNCTION remove_supplier_item(bigint, bigint) TO varmak_admin, varmak_office;
 REVOKE ALL ON FUNCTION save_lead(bigint, text, text, text, text, text, text, text, text, text, text,
                  numeric, text, lead_status, text, date, date, text, boolean, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION save_opportunity(bigint, text, bigint, bigint, opportunity_stage, numeric, int,

@@ -4,7 +4,8 @@
 // reads that file and sends its records to the server through the same workflows the screens use — the
 // database checks every one exactly as it would if somebody typed it in — in the order the records point
 // at each other: the letterhead, customers and suppliers, store items and what is on their shelves,
-// projects, their jobcards and steps, the machines, the documents with their files, and the crew plan.
+// projects, their jobcards and steps, the machines, the documents with their files, the crew plan, and
+// what each supplier charges for each store item.
 //
 // What it does not move, and says so in its report rather than leaving anybody to find out:
 //   * hours and stock movements. Every hour online is booked by the person signed in, and every
@@ -57,7 +58,8 @@
       jobcards: list(backup.jobcards).length,
       equipment: list(backup.equipment).length,
       documents: list(backup.documents).length,
-      crewPlan: list(backup.crewPlan).length
+      crewPlan: list(backup.crewPlan).length,
+      supplierPrices: list(backup.supplierItems).length
     };
     const leftBehind = {
       hours: list(backup.hours).length,
@@ -333,6 +335,31 @@
         else if (/already planned|already marked away/.test(String(answer.refused))) report.crewPlan.alreadyThere += 1;
         else refused('crewPlan', label, answer.refused);
         tell('crewPlan', i + 1, crew.length);
+      }
+    }
+
+    // ── Supplier prices ─────────────────────────────────────────────────────────────────────
+    // Each line joins a merchant and an item by name and code, so both are looked up online after the
+    // suppliers and the store have come across. Saving the same pair again changes that line rather than
+    // adding one, which is what makes a second run harmless.
+    const priceLines = list(backup.supplierItems);
+    if (priceLines.length) {
+      const now = (await io.snapshot()) || {};
+      const supplierId = new Map(list(now.suppliers).map((x) => [key(x.name), Number(x.id)]));
+      const itemId = new Map(list(now.inventory).map((x) => [String(x.code), Number(x.id)]));
+      const already = new Set(list(now.suppliers).flatMap((x) => list(x.priceList).map((l) => `${x.id}|${l.itemId}|${Number(l.price)}`)));
+      for (const [i, l] of priceLines.entries()) {
+        tally('supplierPrices');
+        const sid = supplierId.get(key(l.supplier)), iid = itemId.get(String(l.code));
+        const label = `${l.supplier} — ${l.code}`;
+        if (!sid) { refused('supplierPrices', label, `the supplier ${l.supplier} did not come across`); tell('supplierPrices', i + 1, priceLines.length); continue; }
+        if (!iid) { refused('supplierPrices', label, `the item ${l.code} did not come across`); tell('supplierPrices', i + 1, priceLines.length); continue; }
+        if (already.has(`${sid}|${iid}|${Number(l.price)}`)) { report.supplierPrices.alreadyThere += 1; tell('supplierPrices', i + 1, priceLines.length); continue; }
+        const answer = await io.call('save_supplier_item', { supplier_id: sid, stock_item_id: iid, price: Number(l.price),
+          article_no: l.articleNo || null, currency: l.currency || 'SEK', pack_size: Number(l.packSize) || 1,
+          lead_time_days: l.leadTime == null || l.leadTime === '' ? null : Number(l.leadTime), is_preferred: !!l.preferred });
+        if (answer.ok) report.supplierPrices.moved += 1; else refused('supplierPrices', label, answer.refused);
+        tell('supplierPrices', i + 1, priceLines.length);
       }
     }
 

@@ -1051,6 +1051,28 @@ Counts: 44 tables, 100 policies, 114 workflows. Tests: `tests/crew.e2e.js`, crew
 **Not built yet, and the obvious next steps:** planned against actual per job after the fact (the
 baseline), and links between steps ("assembly waits for galvanising", "the job waits for its material").
 
+## 4o. Store and Suppliers joined by price — 17 October 2026
+
+Reported by the owner as "store and suppliers not connected with items", and it was true: a store item
+carried a typed supplier name, a supplier's "Items & Prices" was empty on the PC copy (the price list
+existed only online, and nothing on screen could add to it), and no page called `save_supplier_item`.
+
+* **One price line per merchant and item** (`supplierItems` on the PC copy, `supplier_item` online):
+  their article number, price, currency, pack size, lead time, and whether this is the merchant the item
+  is bought from — one per item, and saving it sets the item's "Bought from". A price correction keeps
+  the preferred flag (the same rule as `save_supplier_item`).
+* **`supplier-prices.js`**: one form, opened from either page, in the shared dialog style and the
+  page's language. Online each page's bridge checks with `checkSupplierPrice` first, then sends.
+* **Suppliers → price list**: every line, ★ for bought-from, Change/Remove, and the store items that name
+  this merchant but have no price yet, with Add price. An item code opens it in the Store.
+* **Store → item information → Suppliers and prices**: who sells it, at what, bought-from first, a name
+  opens that merchant's page; + Add supplier price. The supplier boxes on Receive and New item suggest
+  the register's names.
+* Online: `remove_supplier_item` (office may DELETE a price line); 115 workflows. The PC transfer
+  moves price lines by supplier name and item code.
+
+Tested in `tests/supplier-prices.e2e.js`, `suppliers-server.e2e.js`, `pc-transfer.e2e.js`, test-api.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |

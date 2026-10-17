@@ -639,8 +639,9 @@ ON app_user TO varmak_admin, varmak_office, varmak_workshop;
 -- office needs DELETE on them. It is the one place in the system where deleting a row is the right shape
 -- for an edit: a contact who has left the company is not history, they are a mistake in a list.
 -- And a line of the crew plan: taking somebody off a day is a change of plan, not a rewriting of what
--- happened — that is hours_entry, which the office still cannot delete.
-GRANT DELETE ON customer_contact, supplier_contact, document_file, crew_plan TO varmak_office;
+-- happened — that is hours_entry, which the office still cannot delete. A line of a merchant's price list
+-- is the same kind of thing: what they quote today, not what was bought.
+GRANT DELETE ON customer_contact, supplier_contact, document_file, crew_plan, supplier_item TO varmak_office;
 
 -- And on the steps of a jobcard, for the same reason and with the same test applied: editing a plan
 -- means taking a line off it, and a line nobody has worked on is not a record of anything. What makes
