@@ -449,6 +449,20 @@
   if(document.readyState==='complete')setTimeout(restoreLang,0);
   else window.addEventListener('load',function(){setTimeout(restoreLang,0);});
 
+  // ── The radio, on every desktop page ──────────────────────────────────────────────────────────────
+  // Inside the PC copy the shell's bar has it, outside the frame, so it never stops between pages; a page
+  // there (it has __nav) mounts nothing. Opened on their own, the desktop pages each mount it in the corner
+  // and it carries on from the page before. Not on sign-in or the phone screens.
+  (function(){
+    if(window.__nav||window.parent!==window&&window.parent.WorkshopRadio)return;
+    var page=(location.pathname.split('/').pop()||'').toLowerCase();
+    if(!/-desktop\.html$/.test(page))return;
+    function go(){if(window.WorkshopRadio)window.WorkshopRadio.mount();}
+    if(window.WorkshopRadio){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();return;}
+    var s=document.createElement('script');s.src='workshop-radio.js';s.onload=go;
+    (document.head||document.documentElement).appendChild(s);
+  })();
+
   window.WorkshopUI={openHelp:openHelp,hideTip:hide,confirm:window.wConfirm,alert:window.wAlert,
     prompt:window.wPrompt,paintWhoIsSignedIn:paintWhoIsSignedIn,
     paintWhereTheDataCameFrom:paintWhereTheDataCameFrom,initialsOf:initialsOf};

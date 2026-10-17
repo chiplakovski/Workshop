@@ -1073,6 +1073,15 @@ existed only online, and nothing on screen could add to it), and no page called 
 
 Tested in `tests/supplier-prices.e2e.js`, `suppliers-server.e2e.js`, `pc-transfer.e2e.js`, test-api.
 
+## 4p. The radio on every page — 17 October 2026
+
+"The radio stops and is nowhere": it was the hub's markup, so any other page stopped it. Now it is
+`workshop-radio.js`. In the PC copy it is mounted in the shell's top bar, outside the frame the pages
+are swapped in, so it plays on from page to page (pages there mount nothing — they have `__nav`). Opened
+as separate pages, `workshop-ui.js` mounts it on every `*-desktop.html` page and it remembers station,
+volume and playing (`varmak.radio`); a browser that will not start sound before a click shows "Press ▶
+to continue". Tested in `tests/radio.e2e.js`, including a build of the one-file copy.
+
 ## 5. Decisions already made — do not re-open these
 
 | Decision | Why |

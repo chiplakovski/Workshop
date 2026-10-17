@@ -68,6 +68,9 @@ if (unhandled.length) { console.error('Refusing: these would break in the one-fi
 const json = JSON.stringify(pages).replace(/<\/script/gi, '<\\/script');
 const shell = fs.readFileSync(path.join(__dirname, 'local-shell.html'), 'utf8');
 if (!shell.includes('__PAGES_JSON__')) throw new Error('local-shell.html is missing the __PAGES_JSON__ placeholder');
-const out = shell.replace('__PAGES_JSON__', () => json);
+if (!shell.includes('__RADIO_JS__')) throw new Error('local-shell.html is missing the __RADIO_JS__ placeholder');
+// The radio goes in the shell, outside the frame, so it is not stopped by moving between pages.
+const radio = read('workshop-radio.js').replace(/<\/script/gi, '<\\/script');
+const out = shell.replace('__PAGES_JSON__', () => json).replace('__RADIO_JS__', () => radio);
 fs.writeFileSync(OUT, out);
 console.log(`Wrote ${OUT}: ${PAGE_FILES.length} pages, ${(out.length / 1048576).toFixed(1)} MB`);

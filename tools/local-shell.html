@@ -23,6 +23,15 @@
   }
   #bar .dot{ width:7px;height:7px;border-radius:50%;background:var(--live); box-shadow:0 0 6px var(--live); flex:0 0 auto; }
   #bar .label{ opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  /* The radio lives here, outside the frame the pages are swapped in, so it plays on from page to page. */
+  #radioSlot{ margin-left:auto; flex:0 0 auto; }
+  #radioSlot .wsradio .radio-bar{ color:var(--bar-ink); }
+  #bar #restartBtn{ margin-left:12px; }
+  #bar #radioSlot button{ margin:0; border:none; border-radius:0; }
+  #bar #radioSlot .rbtn, #bar #radioSlot .rexp{ padding:0; }
+  #bar #radioSlot .rbtn{ background:linear-gradient(180deg,#4a90ff,#2c6bd6); color:#fff; }
+  #bar #radioSlot .st{ padding:9px 14px; font-size:13px; }
+  #bar #radioSlot .st:hover{ background:rgba(74,144,255,.14); }
   #bar button{
     margin-left:auto; flex:0 0 auto; background:transparent; color:var(--bar-ink);
     border:1px solid var(--btn-line); border-radius:4px; padding:5px 10px;
@@ -38,10 +47,14 @@
 <div id="bar">
   <span class="dot" aria-hidden="true"></span>
   <span class="label">Varmak Workshop · Kept on this computer, in this browser</span>
+  <span id="radioSlot"></span>
   <button id="restartBtn" type="button">Back to sign-in</button>
 </div>
 <div id="frame-wrap"><iframe id="app" title="Varmak Workshop"></iframe></div>
 <script id="pages-data" type="application/json">__PAGES_JSON__</script>
+<script>window.__radioInShell=true;</script>
+<script>__RADIO_JS__</script>
+<script>WorkshopRadio.mount(document.getElementById('radioSlot'));</script>
 <script>
 (function(){
   var PAGES = JSON.parse(document.getElementById('pages-data').textContent);
